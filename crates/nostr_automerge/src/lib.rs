@@ -7,13 +7,16 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
+mod disposition;
 mod error;
 mod limits;
 mod profile;
+mod report;
 mod types;
 mod wire;
 mod work_budget;
 
+pub use disposition::{Completion, ProtocolDisposition};
 pub use error::HexError;
 pub use limits::{ByteLimit, ItemLimit, LimitConversionError, ProtocolLimits};
 pub use profile::ProtocolRevision;
