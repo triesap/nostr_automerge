@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::evidence::corpus_builder::BuiltCorpus;
+use crate::evidence::event::EventEvidence;
 use crate::evidence::indexes::{
     ChangeIndexRecord, ChangeIndexes, ControlIndexRecord, ControlIndexes, IndexValidity,
     index_changes, index_controls,
@@ -13,12 +14,21 @@ pub(crate) struct InvalidCarrierEvidence {
     pub(crate) diagnostic: DiagnosticCode,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct UnsupportedRevisionEvidence {
+    pub(crate) event_id: EventId,
+    pub(crate) declared_version: Option<u64>,
+    pub(crate) declared_profile: Option<String>,
+    pub(crate) diagnostic: DiagnosticCode,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct EvidenceCorpus {
     pub(crate) ingress: BuiltCorpus,
     pub(crate) controls: ControlIndexes,
     pub(crate) changes: ChangeIndexes,
     pub(crate) invalid_carriers: BTreeMap<EventId, InvalidCarrierEvidence>,
+    pub(crate) unsupported_revisions: BTreeMap<EventId, UnsupportedRevisionEvidence>,
 }
 
 impl EvidenceCorpus {
@@ -32,25 +42,78 @@ impl EvidenceCorpus {
             .into_iter()
             .map(|evidence| (evidence.event_id, evidence))
             .collect();
-        let controls = controls.into_iter().map(|mut record| {
+        let unsupported_revisions = unsupported_revisions(&ingress);
+        let controls = controls.into_iter().filter_map(|mut record| {
+            if unsupported_revisions.contains_key(&record.event_id) {
+                return None;
+            }
             if invalid_carriers.contains_key(&record.event_id) {
                 record.validity = IndexValidity::Invalid;
             }
-            record
+            Some(record)
         });
-        let changes = changes.into_iter().map(|mut record| {
+        let changes = changes.into_iter().filter_map(|mut record| {
+            if unsupported_revisions.contains_key(&record.event_id) {
+                return None;
+            }
             if invalid_carriers.contains_key(&record.event_id) {
                 record.validity = IndexValidity::Invalid;
             }
-            record
+            Some(record)
         });
         Self {
             ingress,
             controls: index_controls(controls),
             changes: index_changes(changes),
             invalid_carriers,
+            unsupported_revisions,
         }
     }
+
+    pub(crate) fn unsupported_report(&self) -> Vec<String> {
+        self.unsupported_revisions
+            .values()
+            .map(|evidence| {
+                format!(
+                    "{}|v={}|profile={}|{}",
+                    evidence.event_id.to_hex(),
+                    evidence
+                        .declared_version
+                        .map_or_else(|| "none".to_owned(), |value| value.to_string()),
+                    evidence.declared_profile.as_deref().unwrap_or("none"),
+                    evidence.diagnostic.as_str(),
+                )
+            })
+            .collect()
+    }
+}
+
+fn unsupported_revisions(ingress: &BuiltCorpus) -> BTreeMap<EventId, UnsupportedRevisionEvidence> {
+    ingress
+        .events
+        .iter()
+        .filter_map(|(event_id, evidence)| match evidence {
+            EventEvidence::UnsupportedRevision {
+                carrier:
+                    crate::carrier::VerifiedCarrier::UnsupportedRevision {
+                        declared_version,
+                        declared_profile,
+                        ..
+                    },
+                diagnostic,
+                ..
+            } => Some((
+                *event_id,
+                UnsupportedRevisionEvidence {
+                    event_id: *event_id,
+                    declared_version: *declared_version,
+                    declared_profile: declared_profile.clone(),
+                    diagnostic: *diagnostic,
+                },
+            )),
+            _ => None,
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -58,9 +121,14 @@ mod tests {
     use std::collections::BTreeMap;
 
     use super::{EvidenceCorpus, InvalidCarrierEvidence};
+    use crate::carrier::VerifiedCarrier;
     use crate::evidence::corpus_builder::BuiltCorpus;
+    use crate::evidence::event::{EventEvidence, RawChecksum};
     use crate::evidence::indexes::{ChangeIndexRecord, ControlIndexRecord, IndexValidity};
-    use crate::{ActorId, ChangeHash, DiagnosticCode, EventId};
+    use crate::{
+        ActorId, ChangeHash, DiagnosticCode, EventId, ProtocolRevision, RawEventBytes,
+        VerifiedNip01Event,
+    };
 
     #[test]
     fn represent_invalid_evidence_without_state_poisoning() {
@@ -139,6 +207,61 @@ mod tests {
                 .changes
                 .hashes_by_control
                 .contains_key(&invalid_control)
+        );
+    }
+
+    #[test]
+    fn represent_unsupported_revisions() {
+        let raw = RawEventBytes::new(
+            include_bytes!("../../../../fixtures/v1_draft/nip01/valid_event.json"),
+            ProtocolRevision::draft_v1(),
+        );
+        assert!(raw.is_ok());
+        let raw = match raw {
+            Ok(raw) => raw,
+            Err(_) => return,
+        };
+        let checksum = RawChecksum::of(&raw);
+        let event = VerifiedNip01Event::verify(raw);
+        assert!(event.is_ok());
+        let event = match event {
+            Ok(event) => event,
+            Err(_) => return,
+        };
+        let event_id = event.event_id();
+        let evidence = EventEvidence::UnsupportedRevision {
+            carrier: VerifiedCarrier::UnsupportedRevision {
+                event,
+                declared_version: Some(2),
+                declared_profile: Some("automerge-change-v2".to_owned()),
+            },
+            raw_checksum: checksum,
+            diagnostic: DiagnosticCode::registered("carrier.revision"),
+        };
+        let ingress = BuiltCorpus {
+            events: BTreeMap::from([(event_id, evidence)]),
+            invalid: BTreeMap::new(),
+            duplicates: Vec::new(),
+        };
+        let corpus = EvidenceCorpus::build(
+            ingress,
+            [ControlIndexRecord {
+                event_id,
+                parent: None,
+                validity: IndexValidity::Valid,
+            }],
+            [],
+            [],
+        );
+
+        assert!(!corpus.controls.controls_by_id.contains_key(&event_id));
+        assert_eq!(corpus.unsupported_revisions.len(), 1);
+        assert_eq!(
+            corpus.unsupported_report(),
+            vec![format!(
+                "{}|v=2|profile=automerge-change-v2|carrier.revision",
+                event_id.to_hex()
+            )]
         );
     }
 }
