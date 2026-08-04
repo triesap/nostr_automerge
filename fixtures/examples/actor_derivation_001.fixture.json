@@ -1,0 +1,29 @@
+{
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "fixture_id": "actor_derivation_001",
+  "revision": "draft_2026_08",
+  "requirements": [
+    "NCRDT-ACTOR-001"
+  ],
+  "seed": null,
+  "provenance": {
+    "generator": "handoff_builder",
+    "generator_revision": "nostr_automerge_v1_spec_handoff_v1",
+    "created_at": "2026-08-04",
+    "source_versions": {
+      "sha256": "standard"
+    }
+  },
+  "inputs": [
+    {
+      "name": "actor_derivation_input",
+      "path": "actor_derivation_001.input.json",
+      "sha256": "850a14c1264b682952f9588fe61e1bc9b5d295d0f895c5763bfaa1cf6ed2a114",
+      "media_type": "application/json"
+    }
+  ],
+  "expected": {
+    "report_path": "actor_derivation_001.expected.json",
+    "sha256": "51f1b10b8d302e5e333f0ae857bbddafff224df3d795fe4cbcbe0fde6786e279"
+  }
+}
