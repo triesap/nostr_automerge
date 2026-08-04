@@ -72,6 +72,32 @@ pub(crate) fn apply_exact_closure(
     })
 }
 
+pub(crate) fn materialize_history(
+    raw_changes: &BTreeMap<ChangeHash, Vec<u8>>,
+    ordered: &[ChangeHash],
+) -> Result<AppliedDocument, ExactApplyError> {
+    if ordered.iter().copied().collect::<BTreeSet<_>>() != raw_changes.keys().copied().collect() {
+        return Err(ExactApplyError::ClosureMismatch);
+    }
+    let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+    for hash in ordered {
+        let raw = raw_changes
+            .get(hash)
+            .ok_or(ExactApplyError::ClosureMismatch)?;
+        let change = Change::try_from(raw.as_slice()).map_err(|_| ExactApplyError::Decode)?;
+        if change.hash().as_ref() != hash.as_bytes() {
+            return Err(ExactApplyError::HashMismatch);
+        }
+        document
+            .apply_changes([change])
+            .map_err(|_| ExactApplyError::Application)?;
+    }
+    Ok(AppliedDocument {
+        heads: heads(&document)?,
+        canonical_bytes: document.save_nocompress(),
+    })
+}
+
 fn heads(document: &Automerge) -> Result<BTreeSet<ChangeHash>, ExactApplyError> {
     document
         .get_heads()
