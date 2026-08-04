@@ -82,4 +82,4 @@ mod tests {
     }
 }
 #[allow(dead_code)]
-mod kinds;
+pub(crate) mod kinds;

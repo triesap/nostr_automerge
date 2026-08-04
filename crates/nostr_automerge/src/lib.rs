@@ -9,6 +9,8 @@
 
 #[allow(dead_code)]
 mod automerge_adapter;
+#[allow(dead_code)]
+mod carrier;
 mod crypto;
 mod diagnostic;
 mod disposition;
