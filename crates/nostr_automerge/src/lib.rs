@@ -7,8 +7,10 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
+mod diagnostic;
 mod disposition;
 mod error;
+mod integrity;
 mod limits;
 mod profile;
 mod report;
@@ -16,8 +18,14 @@ mod types;
 mod wire;
 mod work_budget;
 
+pub use diagnostic::DiagnosticCode;
 pub use disposition::{Completion, ProtocolDisposition};
 pub use error::HexError;
+pub use integrity::{
+    AlertError, CanonicalControlReorganizationAlert, CheckpointMismatchAlert,
+    ControllerEquivocationAlert, DeviceEquivocationAlert, IntegrityAlert,
+    PotentialClonedDeviceKeyAlert,
+};
 pub use limits::{ByteLimit, ItemLimit, LimitConversionError, ProtocolLimits};
 pub use profile::ProtocolRevision;
 pub use types::{
