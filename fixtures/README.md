@@ -2,10 +2,9 @@
 
 This directory defines language-neutral inputs and expected reports.
 
-The included actor derivation fixture is an illustrative seed. History and
-disposition digest fields are zero placeholders because that fixture does not
-evaluate document history. A production fixture generator must use the
-approved digest contract for document scenarios.
+The included actor derivation fixture is an illustrative seed. Its empty
+history and disposition sets use the approved binary digest contracts; no
+zero-placeholder digest is permitted.
 
 Malformed protocol fixtures must preserve raw bytes/files rather than only
 parsed JSON.

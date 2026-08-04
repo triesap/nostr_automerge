@@ -1,13 +1,13 @@
 # nostr_automerge Draft V1 RCLD 01: Executable Protocol Contracts
 
-Status: active
+Status: complete
 Created: 2026-08-04
 Updated: 2026-08-04
 Mode: rcl-durable
 Repository: `triesap/nostr_automerge`
 Base commit: `9a7b082`
 Governing plan: `docs/execution/rcl/nostr_automerge_v1_multi_rcld.md`
-Current checkpoint: `step_016`
+Current checkpoint: none
 
 ## Purpose
 
@@ -47,8 +47,8 @@ baseline validators and `git diff --check`.
 | `step_012` | complete | `dcc69a9` | history digest vectors and malformed cases |
 | `step_013` | complete | `b52994e` | dispositions digest vectors and malformed cases |
 | `step_014` | complete | `d6ab709` | closed diagnostic registry validation |
-| `step_015` | complete | pending commit | typed provisional limits validation |
-| `step_016` | active | pending | byte-identical complete baseline report |
+| `step_015` | complete | `1fe2e1b` | typed provisional limits validation |
+| `step_016` | complete | pending commit | byte-identical complete baseline report |
 
 ## Completion Report Contract
 

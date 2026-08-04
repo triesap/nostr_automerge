@@ -24,6 +24,6 @@
   ],
   "expected": {
     "report_path": "actor_derivation_001.expected.json",
-    "sha256": "51f1b10b8d302e5e333f0ae857bbddafff224df3d795fe4cbcbe0fde6786e279"
+    "sha256": "ac038980bab5d7f9847c86e6ade659e644056f44b0838b65f663465d3d95ee58"
   }
 }
