@@ -42,6 +42,7 @@ mod document_id;
 mod event_id;
 pub(crate) mod fixed_32;
 pub(crate) mod public_key;
+pub(crate) mod role;
 mod signature;
 
 pub use actor_id::ActorId;
