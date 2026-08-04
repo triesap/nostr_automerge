@@ -64,3 +64,11 @@ fn complete_public_documentation_and_examples() {
     assert!(readme.contains("Validation and checkpoints"));
     assert!(readme.contains("full replay remains required"));
 }
+#[test]
+fn review_public_api_and_semver_surface() {
+    let report = include_str!("../../../reports/api_review.md");
+    for forbidden in ["pub automerge::", "pub secp256k1::", "pub serde_json::"] {
+        assert!(!report.contains(forbidden));
+    }
+    assert!(include_str!("../../../reports/public_api.txt").contains("third_party_types: none"));
+}

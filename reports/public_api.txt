@@ -1,0 +1,5 @@
+nostr_automerge@0.1.0-alpha.0
+modules: authoring,checkpoint
+boundaries: raw_event,verified_nip01,work_budget
+third_party_types: none
+semver: alpha
