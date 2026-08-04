@@ -25,6 +25,12 @@
       "source": "radrootslabs/nostr_automerge",
       "target": "triesap/nostr_automerge",
       "classification": "repository_metadata_only"
+    },
+    {
+      "id": "adr_0001_repository_identity",
+      "source": "radrootslabs/nostr_automerge",
+      "target": "triesap/nostr_automerge",
+      "classification": "repository_metadata_only"
     }
   ],
   "imported_files": [
@@ -56,6 +62,12 @@
       "path": "spec/ACCEPTANCE_CRITERIA.md",
       "source_sha256": "fffbad5ffbd4077b96caa667164516b201d4e4f74ab6cf5a446e9ad2de2b86cb",
       "target_sha256": "939722b44bf1c58ac8c834b23d79f443ca5f3de400ceab3d3fa1e755c2244671",
+      "adapted": true
+    },
+    {
+      "path": "docs/adr/adr_0001_standalone_repository.md",
+      "source_sha256": "8b70f726a2c772d734f3eaf325e9d0dab370be7f8d6ed223b045cf9f616e7b0c",
+      "target_sha256": "7c541ab28b9ca2aea10be8bf1305100ee79998ca3f697168dcd0d20d83f2e9f4",
       "adapted": true
     },
     {

@@ -1,0 +1,20 @@
+# Architecture decision records
+
+All imported decisions are approved for the draft-v1 implementation baseline.
+Consensus-affecting changes require a new superseding ADR and the complete
+change-control process.
+
+| ADR | Status | Primary requirements |
+| --- | --- | --- |
+| [0001](adr_0001_standalone_repository.md) | Approved | `NCRDT-REPO-001`, `NCRDT-CORE-001` |
+| [0002](adr_0002_snake_case_naming.md) | Approved | `NCRDT-REPO-001`, `NCRDT-ACTOR-001` |
+| [0003](adr_0003_automerge_specific_profile.md) | Approved | `NCRDT-PROFILE-001` |
+| [0004](adr_0004_sealed_protocol_profile.md) | Approved | `NCRDT-VERSION-001`, `NCRDT-LIMITS-001`, `NCRDT-FEATURES-001` |
+| [0005](adr_0005_batch_reference_evaluator.md) | Approved | `NCRDT-EVALUATOR-001`, `NCRDT-EVIDENCE-001` |
+| [0006](adr_0006_strict_raw_nip01_boundary.md) | Approved | `NCRDT-NIPBOUNDARY-001`, `NCRDT-NIP01-001` |
+| [0007](adr_0007_automerge_anti_corruption_adapter.md) | Approved | `NCRDT-AUTOADAPTER-001`, `NCRDT-AUTOADAPTER-002`, `NCRDT-AUTOADAPTER-003` |
+| [0008](adr_0008_causal_control_authorization.md) | Approved | `NCRDT-CONTROL-001`, `NCRDT-CHAIN-001`, `NCRDT-BARRIER-001` |
+| [0009](adr_0009_equivocation_and_integrity_alerts.md) | Approved | `NCRDT-EQUIV-001`, `NCRDT-ALERT-001`, `NCRDT-ALERT-002` |
+| [0010](adr_0010_protocol_disposition_separate_from_local_completion.md) | Approved | `NCRDT-DISPOSITION-001`, `NCRDT-COMPLETION-001` |
+| [0011](adr_0011_verified_history_checkpoints_only.md) | Approved | `NCRDT-CHECKPOINT-001`, `NCRDT-CPRECOVERY-001` |
+| [0012](adr_0012_conformance_digest_and_typed_assertions.md) | Approved | `NCRDT-CONF-001`, `NCRDT-CONF-004` |
