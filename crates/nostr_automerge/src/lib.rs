@@ -12,6 +12,7 @@ mod limits;
 mod profile;
 mod types;
 mod wire;
+mod work_budget;
 
 pub use error::HexError;
 pub use limits::{ByteLimit, ItemLimit, LimitConversionError, ProtocolLimits};
@@ -21,6 +22,7 @@ pub use types::{
     DevicePublicKey, DispositionsDigest, DocumentCoordinate, DocumentId, EventId, HistoryDigest,
     SnapshotHash,
 };
+pub use work_budget::{BudgetExhausted, CancellationCheck, NeverCancelled, WorkBudget};
 
 /// The package version of this implementation.
 pub const IMPLEMENTATION_VERSION: &str = env!("CARGO_PKG_VERSION");
