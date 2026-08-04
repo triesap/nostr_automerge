@@ -139,6 +139,19 @@ impl Document {
         self.inner.save_nocompress()
     }
 
+    #[cfg(test)]
+    pub(crate) fn author_test_change(&mut self) -> Option<Vec<u8>> {
+        use automerge::{ROOT, ReadDoc, transaction::CommitOptions, transaction::Transactable};
+
+        let mut transaction = self.inner.transaction();
+        transaction.put(ROOT, "metadata", true).ok()?;
+        let (hash, _) = transaction.commit_with(CommitOptions::default().with_time(0));
+        let hash = hash?;
+        self.inner
+            .get_change_by_hash(&hash)
+            .map(|change| change.raw_bytes().to_vec())
+    }
+
     pub(crate) fn load_utf16(bytes: &[u8]) -> Result<Self, DocumentLoadError> {
         let options = LoadOptions::new()
             .text_encoding(TextEncoding::Utf16CodeUnit)
