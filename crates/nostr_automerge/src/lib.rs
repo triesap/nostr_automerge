@@ -33,6 +33,7 @@ pub use types::{
     DevicePublicKey, DispositionsDigest, DocumentCoordinate, DocumentId, EventId, HistoryDigest,
     SnapshotHash,
 };
+pub use wire::raw_event::{RawEventBytes, RawEventError};
 pub use work_budget::{BudgetExhausted, CancellationCheck, NeverCancelled, WorkBudget};
 
 /// The package version of this implementation.

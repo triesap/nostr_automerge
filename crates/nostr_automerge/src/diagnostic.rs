@@ -52,6 +52,10 @@ const CODES: &[&str] = &[
 ];
 
 impl DiagnosticCode {
+    pub(crate) const fn registered(code: &'static str) -> Self {
+        Self(code)
+    }
+
     /// Looks up an exact code in the sealed draft-v1 registry.
     #[must_use]
     pub fn lookup(code: &str) -> Option<Self> {
