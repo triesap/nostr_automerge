@@ -15,6 +15,8 @@ mod crypto;
 mod diagnostic;
 mod disposition;
 mod error;
+#[allow(dead_code)]
+mod evidence;
 mod integrity;
 mod limits;
 mod profile;
