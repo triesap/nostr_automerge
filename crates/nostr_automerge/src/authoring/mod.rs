@@ -8,6 +8,7 @@ mod actor_state;
 mod change;
 mod change_builder;
 mod commit;
+mod control;
 mod document;
 mod fan_in;
 
@@ -15,6 +16,7 @@ pub use actor_state::{ActorState, ActorStateError};
 pub use change::{AuthoredChange, AuthoringError, Operation};
 pub use change_builder::ChangeBuilder;
 pub use commit::{CommitMetadata, CommitMetadataError};
+pub use control::{ControlDraft, ControlDraftError, ControlGrant, ControlPredecessor, ControlRole};
 pub use document::{AuthoringDocument, AuthoringDocumentError};
 pub use fan_in::{FanInError, FanInPlan};
 
