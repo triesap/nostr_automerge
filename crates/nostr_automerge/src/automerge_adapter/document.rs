@@ -19,6 +19,12 @@ pub(crate) struct AppliedDocument {
     pub(crate) heads: BTreeSet<ChangeHash>,
     pub(crate) canonical_bytes: Vec<u8>,
 }
+#[derive(Clone, Debug)]
+pub(crate) struct EmbeddedChange {
+    pub(crate) hash: ChangeHash,
+    pub(crate) dependencies: Vec<ChangeHash>,
+    pub(crate) operations: u64,
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum ExactApplyError {
@@ -151,6 +157,26 @@ fn heads(document: &Automerge) -> Result<BTreeSet<ChangeHash>, ExactApplyError> 
 }
 
 impl Document {
+    pub(crate) fn embedded_changes(&self) -> Result<Vec<EmbeddedChange>, ExactApplyError> {
+        self.inner
+            .get_changes(&[])
+            .into_iter()
+            .map(|change| {
+                let hash = ChangeHash::from_bytes(change.hash().0);
+                let dependencies = change
+                    .deps()
+                    .iter()
+                    .map(|dep| ChangeHash::from_bytes(dep.0))
+                    .collect();
+                Ok(EmbeddedChange {
+                    hash,
+                    dependencies,
+                    operations: u64::try_from(change.len())
+                        .map_err(|_| ExactApplyError::HashMismatch)?,
+                })
+            })
+            .collect()
+    }
     pub(crate) fn new_utf16() -> Self {
         Self {
             inner: Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit),
