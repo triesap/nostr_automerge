@@ -1,12 +1,12 @@
 # nostr_automerge Draft V1 Full Implementation Multi-RCLD
 
-Status: approved; RCLD 00 through RCLD 11 complete
+Status: approved; RCLD 00 through RCLD 11 complete; RCLD 12 active
 Created: 2026-08-04
 Updated: 2026-08-04
 Mode: rcl-durable
 Coordination and Rust implementation repository: `triesap/nostr_automerge`
 Cargo workspace root: repository root
-Current base commit: `359f90f`
+Current base commit: `d9d7b04`
 
 ## Purpose
 
@@ -635,28 +635,14 @@ authority is granted.
 
 ## Current State
 
-- Target repository is clean at `359f90f`.
-- No Rust crate source, tests, CI, committed lockfile, or repository-local
-  implementation authority exists yet.
-- The existing workspace points at a nonexistent wildcard member.
-- No implementation checkpoint has started.
-- Child RCLD 00 is the only child eligible to be materialized and activated.
+- RCLDs 00 through 11 and steps `step_000` through `step_176` are complete.
+- The Rust core, conformance tooling, authoring API, verified-history
+  checkpoints, hardening policy, and local alpha package evidence are green.
+- Publication remains held because independent interoperability, NIP readiness,
+  sustained fuzzing, mutation completion, and external review are not claimed.
+- RCLD 12 is active at `step_177`.
 
 ## Remaining Child RCLDs
 
-All fourteen child RCLDs are unfinished:
-
-1. `nostr_automerge_v1_00_authority_and_adaptation_rcld`
-2. `nostr_automerge_v1_01_executable_protocol_contracts_rcld`
-3. `nostr_automerge_v1_02_workspace_and_core_types_rcld`
-4. `nostr_automerge_v1_03_strict_wire_and_nip01_rcld`
-5. `nostr_automerge_v1_04_automerge_qualification_rcld`
-6. `nostr_automerge_v1_05_carriers_and_evidence_rcld`
-7. `nostr_automerge_v1_06_control_engine_rcld`
-8. `nostr_automerge_v1_07_change_engine_and_evaluator_rcld`
-9. `nostr_automerge_v1_08_conformance_fixtures_and_cli_rcld`
-10. `nostr_automerge_v1_09_authoring_primitives_rcld`
-11. `nostr_automerge_v1_10_verified_history_checkpoints_rcld`
-12. `nostr_automerge_v1_11_hardening_and_alpha_evidence_rcld`
-13. `nostr_automerge_v1_12_independent_typescript_interop_rcld`
-14. `nostr_automerge_v1_13_nip_readiness_rcld`
+1. `nostr_automerge_v1_12_independent_typescript_interop_rcld` — active
+2. `nostr_automerge_v1_13_nip_readiness_rcld` — dependency-blocked on RCLD 12
