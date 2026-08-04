@@ -52,3 +52,9 @@ fn add_coverage_reporting() {
     let workflow = include_str!("../../../.github/workflows/coverage.yml");
     assert!(workflow.contains("cargo llvm-cov --workspace --all-targets --locked"));
 }
+#[test]
+fn add_dependency_advisory_and_license_policy() {
+    let policy = include_str!("../../../deny.toml");
+    assert!(policy.contains("unknown-git = \"deny\""));
+    assert!(include_str!("../../../Cargo.toml").contains("automerge = { version = \"=0.10.0\""));
+}
