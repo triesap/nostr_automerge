@@ -62,6 +62,11 @@ pub fn assemble_chunks<C: CancellationCheck>(
         .map_err(|_| AssemblyError::Chunks)?;
         output.extend_from_slice(&chunk.data);
     }
+    if output.len() as u64 != descriptor.raw_size
+        || <[u8; 32]>::from(Sha256::digest(&output)) != *descriptor.snapshot_hash.as_bytes()
+    {
+        return Err(AssemblyError::Identity);
+    }
     Ok(output)
 }
 
@@ -72,7 +77,7 @@ mod tests {
     use std::collections::BTreeSet;
     fn descriptor(root: [u8; 32]) -> CheckpointDescriptor {
         CheckpointDescriptor {
-            snapshot_hash: SnapshotHash::from_bytes([9; 32]),
+            snapshot_hash: SnapshotHash::from_bytes(Sha256::digest(b"ab").into()),
             heads: BTreeSet::from([ChangeHash::from_bytes([8; 32])]),
             raw_size: 2,
             chunk_size: 1,
@@ -112,6 +117,25 @@ mod tests {
         assert_eq!(
             assemble_chunks(&descriptor(root), &mut chunks, &mut budget, &NeverCancelled),
             Err(AssemblyError::Budget)
+        );
+    }
+    #[test]
+    fn verify_complete_snapshot_size_and_hash() {
+        let leaf = leaf_hash(0, 1, Sha256::digest(b"x").into());
+        let mut chunk = vec![CheckpointChunk {
+            index: 0,
+            count: 1,
+            data: b"x".to_vec(),
+            proof: vec![],
+        }];
+        let mut value = descriptor(leaf);
+        value.raw_size = 1;
+        value.chunk_count = 1;
+        value.snapshot_hash = SnapshotHash::from_bytes([0; 32]);
+        let mut budget = WorkBudget::new(1, 1);
+        assert_eq!(
+            assemble_chunks(&value, &mut chunk, &mut budget, &NeverCancelled),
+            Err(AssemblyError::Identity)
         );
     }
 }
