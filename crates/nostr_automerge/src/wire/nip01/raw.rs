@@ -1,8 +1,9 @@
 use serde_json::{Map, Value};
 
-use crate::RawEventBytes;
+use crate::types::public_key::VerifiedPublicKey;
 use crate::wire::nip01::tags::{Nip01Tags, TagShapeError};
 use crate::wire::strict_json::{StrictJsonError, scan_top_level_members};
+use crate::{EventId, HexError, Nip01Signature, RawEventBytes};
 
 const SAFE_INTEGER_MAX: u64 = 9_007_199_254_740_991;
 const REQUIRED_MEMBERS: &[&str] = &[
@@ -18,13 +19,13 @@ const REQUIRED_MEMBERS: &[&str] = &[
 #[derive(Clone, Debug, PartialEq)]
 #[allow(dead_code)]
 pub(crate) struct RawNip01Event {
-    pub(crate) id: String,
-    pub(crate) pubkey: String,
+    pub(crate) id: EventId,
+    pub(crate) pubkey: VerifiedPublicKey,
     pub(crate) created_at: u64,
     pub(crate) kind: u16,
     pub(crate) tags: Nip01Tags,
     pub(crate) content: String,
-    pub(crate) signature: String,
+    pub(crate) signature: Nip01Signature,
 }
 
 pub(crate) fn parse(raw: &RawEventBytes) -> Result<RawNip01Event, RawNip01Error> {
@@ -42,13 +43,18 @@ pub(crate) fn parse(raw: &RawEventBytes) -> Result<RawNip01Event, RawNip01Error>
         .ok_or(RawNip01Error::Shape)?;
     let kind = u16::try_from(kind_u64).map_err(|_| RawNip01Error::Shape)?;
     Ok(RawNip01Event {
-        id: string(object, "id")?.to_owned(),
-        pubkey: string(object, "pubkey")?.to_owned(),
+        id: string(object, "id")?
+            .parse()
+            .map_err(RawNip01Error::Identifier)?,
+        pubkey: VerifiedPublicKey::parse(string(object, "pubkey")?)
+            .map_err(RawNip01Error::Identifier)?,
         created_at,
         kind,
         tags: Nip01Tags::parse(member(object, "tags")?).map_err(RawNip01Error::Tags)?,
         content: string(object, "content")?.to_owned(),
-        signature: string(object, "sig")?.to_owned(),
+        signature: string(object, "sig")?
+            .parse()
+            .map_err(RawNip01Error::Identifier)?,
     })
 }
 
@@ -74,6 +80,7 @@ fn member<'a>(object: &'a Map<String, Value>, name: &str) -> Result<&'a Value, R
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum RawNip01Error {
     Json(StrictJsonError),
+    Identifier(HexError),
     Tags(TagShapeError),
     Shape,
 }
@@ -91,9 +98,12 @@ mod tests {
 
     #[test]
     fn parses_exact_shape() {
-        let event = raw(
-            r#"{"id":"00","pubkey":"00","created_at":0,"kind":1,"tags":[],"content":"","sig":"00"}"#,
-        );
+        let event = raw(&format!(
+            r#"{{"id":"{}","pubkey":"{}","created_at":0,"kind":1,"tags":[],"content":"","sig":"{}"}}"#,
+            "00".repeat(32),
+            "11".repeat(32),
+            "22".repeat(64)
+        ));
         assert!(parse(&event).is_ok());
     }
 

@@ -70,6 +70,10 @@ impl From<DevicePublicKey> for VerifiedPublicKey {
 }
 
 impl VerifiedPublicKey {
+    pub(crate) fn parse(value: &str) -> Result<Self, HexError> {
+        decode_fixed_32(value).map(Self)
+    }
+
     #[allow(dead_code)]
     pub(crate) const fn as_bytes(&self) -> &[u8; 32] {
         self.0.as_bytes()

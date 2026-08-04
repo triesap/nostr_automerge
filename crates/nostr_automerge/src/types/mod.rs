@@ -42,6 +42,7 @@ mod document_id;
 mod event_id;
 pub(crate) mod fixed_32;
 pub(crate) mod public_key;
+mod signature;
 
 pub use actor_id::ActorId;
 pub use change_hash::{ChangeHash, ChunkHash, SnapshotHash};
@@ -50,3 +51,4 @@ pub use document_coordinate::{CoordinateError, DocumentCoordinate};
 pub use document_id::DocumentId;
 pub use event_id::EventId;
 pub use public_key::{AccountPublicKey, ControllerPublicKey, DevicePublicKey};
+pub use signature::Nip01Signature;

@@ -31,7 +31,7 @@ pub use profile::ProtocolRevision;
 pub use types::{
     AccountPublicKey, ActorId, ChangeHash, ChunkHash, ControllerPublicKey, CoordinateError,
     DevicePublicKey, DispositionsDigest, DocumentCoordinate, DocumentId, EventId, HistoryDigest,
-    SnapshotHash,
+    Nip01Signature, SnapshotHash,
 };
 pub use wire::raw_event::{RawEventBytes, RawEventError};
 pub use work_budget::{BudgetExhausted, CancellationCheck, NeverCancelled, WorkBudget};
