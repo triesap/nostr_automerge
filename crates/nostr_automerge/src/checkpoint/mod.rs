@@ -16,8 +16,7 @@ pub const CHUNK_KIND: u16 = 1_627;
 pub const MAX_CHUNK_SIZE: u32 = 32_768;
 /// Maximum chunks in one checkpoint.
 pub const MAX_CHUNK_COUNT: u32 = 4_096;
-pub(crate) const LEAF_DOMAIN: &[u8] = b"nostr-crdt/checkpoint/leaf/v1";
-pub(crate) const NODE_DOMAIN: &[u8] = b"nostr-crdt/checkpoint/node/v1";
+pub(crate) const MERKLE_DOMAIN: &[u8] = b"nostr-crdt/checkpoint-merkle/v1";
 
 #[cfg(test)]
 mod tests {
@@ -28,6 +27,6 @@ mod tests {
             (super::MAX_CHUNK_SIZE, super::MAX_CHUNK_COUNT),
             (32_768, 4_096)
         );
-        assert!(super::LEAF_DOMAIN.starts_with(b"nostr-crdt/checkpoint/"));
+        assert_eq!(super::MERKLE_DOMAIN, b"nostr-crdt/checkpoint-merkle/v1");
     }
 }

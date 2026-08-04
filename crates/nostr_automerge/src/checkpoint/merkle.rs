@@ -27,7 +27,8 @@ pub enum MerkleError {
 #[must_use]
 pub fn leaf_hash(index: u32, count: u32, chunk_hash: [u8; 32]) -> [u8; 32] {
     let mut hash = Sha256::new();
-    hash.update(super::LEAF_DOMAIN);
+    hash.update([0]);
+    hash.update(super::MERKLE_DOMAIN);
     hash.update([0]);
     hash.update(index.to_be_bytes());
     hash.update(count.to_be_bytes());
@@ -37,7 +38,8 @@ pub fn leaf_hash(index: u32, count: u32, chunk_hash: [u8; 32]) -> [u8; 32] {
 
 fn node(left: [u8; 32], right: [u8; 32]) -> [u8; 32] {
     let mut hash = Sha256::new();
-    hash.update(super::NODE_DOMAIN);
+    hash.update([1]);
+    hash.update(super::MERKLE_DOMAIN);
     hash.update([0]);
     hash.update(left);
     hash.update(right);
@@ -73,5 +75,23 @@ pub fn verify_proof(
         Ok(())
     } else {
         Err(MerkleError::Proof)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use sha2::{Digest, Sha256};
+    #[test]
+    fn implement_ordered_merkle_leaf_hashing() {
+        let chunk_hash: [u8; 32] = Sha256::digest(b"chunk").into();
+        let actual = super::leaf_hash(2, 5, chunk_hash);
+        let mut manual = Sha256::new();
+        manual.update([0]);
+        manual.update(super::super::MERKLE_DOMAIN);
+        manual.update([0]);
+        manual.update(2_u32.to_be_bytes());
+        manual.update(5_u32.to_be_bytes());
+        manual.update(chunk_hash);
+        assert_eq!(actual, <[u8; 32]>::from(manual.finalize()));
     }
 }
