@@ -6,11 +6,13 @@
 
 mod actor_state;
 mod change;
+mod change_builder;
 mod commit;
 mod document;
 
 pub use actor_state::{ActorState, ActorStateError};
 pub use change::{AuthoredChange, AuthoringError, Operation};
+pub use change_builder::ChangeBuilder;
 pub use commit::{CommitMetadata, CommitMetadataError};
 pub use document::{AuthoringDocument, AuthoringDocumentError};
 
