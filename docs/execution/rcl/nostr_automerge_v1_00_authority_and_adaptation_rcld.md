@@ -7,7 +7,7 @@ Mode: rcl-durable
 Repository: `triesap/nostr_automerge`
 Base commit: `a67d446`
 Governing plan: `docs/execution/rcl/nostr_automerge_v1_multi_rcld.md`
-Current checkpoint: `step_001`
+Current checkpoint: `step_002`
 
 ## Purpose
 
@@ -262,8 +262,8 @@ Commit: `test(conformance): define canonical report schema`
 | Step | Status | Commit | Result |
 | --- | --- | --- | --- |
 | `step_000` | complete | this checkpoint | Repository adaptation recorded |
-| `step_001` | active | — | Approved baseline import |
-| `step_002` | pending | — | Agent instructions |
+| `step_001` | complete | this checkpoint | Approved baseline imported and validated |
+| `step_002` | active | — | Agent instructions |
 | `step_003` | pending | — | Governance and security |
 | `step_004` | pending | — | NIP snapshot |
 | `step_005` | pending | — | Companion specifications |

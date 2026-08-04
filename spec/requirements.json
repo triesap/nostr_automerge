@@ -1,0 +1,529 @@
+{
+  "schema": "nostr_automerge.requirements.v1",
+  "project": "nostr_automerge_v1_spec",
+  "requirement_count": 87,
+  "requirements": [
+    {
+      "id": "NCRDT-SCOPE-001",
+      "section": "Scope",
+      "text": "The key words MUST, MUST NOT, SHOULD, SHOULD NOT, and MAY are to be interpreted as described in RFC 2119 and RFC 8174.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-NIP01-001",
+      "section": "NIP-01 validation",
+      "text": "Clients MUST validate the event id and Schnorr signature according to [NIP-01](01.md) before processing any event defined here.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-NIP01-002",
+      "section": "NIP-01 validation",
+      "text": "A parser used for this NIP MUST reject duplicate top-level JSON member names. All public keys, event ids, change hashes, and SHA-256 values defined here MUST be 64 lowercase hexadecimal characters.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-NIP01-003",
+      "section": "NIP-01 validation",
+      "text": "`created_at`, relay arrival order, subscription order, relay URL, and transport path MUST NOT determine document state, control order, authorization, checkpoint selection, or conflict resolution.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-ACQ-001",
+      "section": "Acquisition channel",
+      "text": "The acquisition channel MUST NOT change validation or document state. A client that republishes a carrier MUST preserve the complete signed event.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-TAG-001",
+      "section": "Tags",
+      "text": "Every required tag defined here MUST appear exactly once and MUST contain exactly the elements shown in its event definition. A required tag is invalid when it is missing, repeated, missing a value, contains extra elements, or has a malformed value.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-TAG-002",
+      "section": "Tags",
+      "text": "Tag order does not affect protocol meaning. Unknown tags MUST be ignored and MUST NOT change v1 state. An extension that changes identity, authorization, dependencies, or state requires a new protocol version or event kind.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-TAG-003",
+      "section": "Tags",
+      "text": "Durable events of kinds `1624`, `1625`, `1626`, `1627`, and `31624` MUST NOT contain a [NIP-40](40.md) `expiration` tag or the [NIP-70](70.md) protected-event `-` tag. Other authorized devices may need to preserve and republish the same signed history.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-JSON-001",
+      "section": "Canonical JSON",
+      "text": "The `content` of manifests, controls, checkpoint descriptors, and checkpoint chunks MUST use the JSON Canonicalization Scheme defined by [RFC 8785](https://www.rfc-editor.org/rfc/rfc8785).",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-JSON-002",
+      "section": "Canonical JSON",
+      "text": "A v1 decoder MUST reject:",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-JSON-003",
+      "section": "Canonical JSON",
+      "text": "Arrays declared as sorted MUST already be sorted. Consumers MUST NOT repair signed content before validation.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-B64-001",
+      "section": "Base64",
+      "text": "Binary content MUST use standard RFC 4648 base64 with padding. URL-safe, unpadded, whitespace-tolerant, and non-canonical forms are invalid.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-LIMIT-001",
+      "section": "Interoperability limits",
+      "text": "A conforming v1 client MUST accept valid objects up to these limits:",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-DOC-001",
+      "section": "Document identity and lifecycle",
+      "text": "Clients SHOULD share public documents using a [NIP-19](19.md) `naddr` for the manifest, with relay hints where useful.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-ACTOR-001",
+      "section": "Device keys and Automerge actors",
+      "text": "Each editing installation MUST use a distinct device key.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-ACTOR-002",
+      "section": "Device keys and Automerge actors",
+      "text": "A removed device key MUST NOT appear in a later control. Reinstatement, device replacement, or privilege elevation uses a fresh device key and therefore a fresh ActorId.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-ACTOR-003",
+      "section": "Device keys and Automerge actors",
+      "text": "A device key SHOULD NOT be active on more than one installation. If a key is cloned, the equivocation rules below protect convergence but cannot restore confidentiality or trust.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-FRAME-001",
+      "section": "Change Chunk framing",
+      "text": "Before invoking an Automerge parser, a client MUST validate this framing:",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-ENC-001",
+      "section": "Canonical encoding",
+      "text": "A valid change MUST decode and encode to the same bytes:",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-ENC-002",
+      "section": "Canonical encoding",
+      "text": "Equivalent APIs may be used. The result MUST match the language-neutral v1 test vectors.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-SEM-001",
+      "section": "Change semantics",
+      "text": "The v1 Automerge profile uses 32-byte actors, UTF-16 code-unit text indexing, time 0, no message, empty extra bytes, the listed v1 action/object/scalar/column/mark semantics, and treats unknown semantics in a declared v1 object as invalid.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-SEQ-001",
+      "section": "Actor sequence and operation counters",
+      "text": "All arithmetic MUST be checked for overflow.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-SEQ-002",
+      "section": "Actor sequence and operation counters",
+      "text": "For `seq > 1`, the accepted dependency closure MUST contain exactly one accepted change from the same actor with `seq - 1`.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-FANIN-001",
+      "section": "Frontier consolidation",
+      "text": "A control frontier contains at most 64 heads. When a document has more heads, an authorized writer SHOULD create empty Automerge merge changes before the control is issued.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-FANIN-002",
+      "section": "Frontier consolidation",
+      "text": "A merge change may contain at most 256 dependencies. Producers SHOULD sort heads by decoded ChangeHash bytes and build a bounded fan-in chain until the final frontier contains at most 64 heads.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-MANIFEST-001",
+      "section": "Document manifest: kind `31624`",
+      "text": "- `control` SHOULD be the canonical control tip known to the controller and MUST name a valid control event for this coordinate; - `checkpoint` is `null` or one advisory checkpoint descriptor event id; - `format` is `automerge-change-v1`; - `text_encoding` is `utf16`; - `status` is `active`, `frozen`, or `superseded`; - `successor` is `null` or a document coordinate; - `relays` contains at most 16 unique absolute `ws` or `wss` URLs, sorted by UTF-8 bytes; - `name` is `null` or at most 256 UTF-8 bytes; - `description` is `null` or at most 2,048 UTF-8 bytes; and - `application` is `null` or the object shown above, where `id` is printable ASCII of at most 128 bytes, `schema_version` is at most 64 UTF-8 bytes, and `schema_hash` is `null` or one SHA-256 value.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-MANIFEST-002",
+      "section": "Document manifest: kind `31624`",
+      "text": "The latest manifest is selected according to NIP-01 before manifest validation. If the selected event is invalid, the manifest is unavailable. Clients MUST NOT fall back to an older manifest because a relay may already have discarded it.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CONTROL-001",
+      "section": "Control event: kind `1625`",
+      "text": "- `seq` starts at `0` and increases by one; - genesis has no parent and an empty `base_heads` array; - `format`, `text_encoding`, and `policy` are fixed for the document; - members are sorted by decoded device pubkey bytes and contain no duplicate device key; - `account` is `null` or one Nostr public key and is fixed from the device's first appearance; - roles are sorted, unique, non-empty, and contain only `checkpoint` and `write`; - `write` authorizes change events; - `checkpoint` authorizes checkpoint descriptors and chunks; - the controller has no implicit device role; - an existing device's later role set MUST be a subset of its earlier role set; - a removed device key MUST NOT reappear; - `base_heads` is sorted by decoded hash bytes, unique, an antichain, and contains at most 64 hashes; - every base head is accepted under the parent control; - for every writer retained from the parent control, the base closure contains that ActorId's highest accepted change in the parent accepted state; - `predecessor` is `null` except on genesis; - `successor` is `null` unless the control is terminal; and - a control is terminal when no member has `write`. A terminal control has no valid child.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CHAIN-001",
+      "section": "Canonical control chain",
+      "text": "A newly received lower-id sibling may change the canonical chain. Clients MUST retain signed evidence and rebuild derived state when this happens.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-BARRIER-001",
+      "section": "Control publication barrier",
+      "text": "A producer MUST durably persist the exact signed control before signing a change or checkpoint that references it.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-BARRIER-002",
+      "section": "Control publication barrier",
+      "text": "A producer SHOULD publish the control before publishing dependent carriers. A client that receives a dependent carrier before its control MUST retain the carrier as pending.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-BARRIER-003",
+      "section": "Control publication barrier",
+      "text": "After a dependent carrier has been signed, additional control durability MUST be obtained by republishing the same signed control event. The controller MUST NOT create a semantically equivalent control with a different event id and treat it as the same authorization epoch.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-DUP-001",
+      "section": "Duplicate carriers",
+      "text": "Clients SHOULD retain at least one complete valid carrier for every accepted ChangeHash.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-EQUIV-001",
+      "section": "Device equivocation",
+      "text": "Clients SHOULD preserve equivocation evidence and prompt the controller to revoke the device.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-STATE-001",
+      "section": "Deterministic state construction",
+      "text": "Clients MUST rerun this process from genesis when new evidence can change a control choice, dependency, or equivocation result.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-STATE-002",
+      "section": "Deterministic state construction",
+      "text": "Implementations may optimize storage and traversal. They MUST produce the same canonical controls, accepted ChangeHashes, excluded ChangeHashes, heads, and materialized document.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-OUTCOME-001",
+      "section": "Processing outcomes",
+      "text": "Clients SHOULD keep these local outcome categories distinct:",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CHECKPOINT-001",
+      "section": "Checkpoints",
+      "text": "Checkpoint publication is optional. A conforming client MUST support ordinary change replay when no checkpoint is available.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CPDESC-001",
+      "section": "Checkpoint descriptor: kind `1626`",
+      "text": "The snapshot MUST be one complete Automerge `save()` made after closing pending transactions. Incremental saves and bundles are invalid.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CPDESC-002",
+      "section": "Checkpoint descriptor: kind `1626`",
+      "text": "`heads` MUST be sorted, unique, and equal the heads obtained after loading the snapshot.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CPDESC-003",
+      "section": "Checkpoint descriptor: kind `1626`",
+      "text": "The loaded change set MUST equal exactly the ancestor closure of `heads`. Extra disconnected changes make the checkpoint invalid.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CPDESC-004",
+      "section": "Checkpoint descriptor: kind `1626`",
+      "text": "`raw_size` MUST be greater than zero. `chunk_size` MUST be between `1` and `32768`. `chunk_count` MUST equal `ceil(raw_size / chunk_size)` and MUST be between `1` and `4096`.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CPDESC-005",
+      "section": "Checkpoint descriptor: kind `1626`",
+      "text": "The declared heads and all embedded changes MUST be accepted no later than the referenced control. A checkpoint MUST NOT include state authorized only by a later control.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CPDESC-006",
+      "section": "Checkpoint descriptor: kind `1626`",
+      "text": "All declared counts and limits MUST match the loaded snapshot.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CPCHUNK-001",
+      "section": "Checkpoint chunk: kind `1627`",
+      "text": "The index, count, chunk size, chunk hash, proof, and descriptor root MUST validate.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CPCHUNK-002",
+      "section": "Checkpoint chunk: kind `1627`",
+      "text": "All non-final chunks MUST have the descriptor `chunk_size`. The final chunk contains the remaining bytes.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CPCHUNK-003",
+      "section": "Checkpoint chunk: kind `1627`",
+      "text": "After assembly, the client MUST verify:",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CPTRUST-001",
+      "section": "Verified-history checkpoints",
+      "text": "Every change embedded in a usable v1 checkpoint MUST have at least one valid carrier and the client MUST verify the full control chain, signatures, actors, counters, dependencies, frontiers, and equivocation rules.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CPTRUST-002",
+      "section": "Checkpoint trust modes",
+      "text": "Checkpoint parsing SHOULD use bounded memory and deterministic work budgets. Local budget exhaustion is not proof that a checkpoint is invalid.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-BACKFILL-001",
+      "section": "Live subscription and backfill",
+      "text": "Clients SHOULD open a live subscription before, or together with, historical backfill. All received events are deduplicated by Nostr event id. Document changes are additionally deduplicated by ChangeHash.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-BACKFILL-002",
+      "section": "Live subscription and backfill",
+      "text": "Clients SHOULD use [NIP-77](77.md) when available. NIP-77 reconciles event ids; actual carriers still move through ordinary `EVENT` and `REQ` messages and are validated by this NIP.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-BACKFILL-003",
+      "section": "Live subscription and backfill",
+      "text": "A plain `EOSE` marks the stored/live boundary. It does not prove that a relay returned every matching stored event. Clients SHOULD use [NIP-67](67.md) hints when available and otherwise continue bounded pagination and dependency recovery.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-STATUS-001",
+      "section": "Sync status",
+      "text": "A client MUST NOT claim global finality.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-PUB-001",
+      "section": "Publishing",
+      "text": "Producers SHOULD coalesce high-frequency local edits into bounded Automerge changes. They SHOULD publish at meaningful durability or interaction boundaries rather than publishing one event for every keystroke, pointer movement, or transient UI action.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-PUB-002",
+      "section": "Publishing",
+      "text": "A local commit MUST NOT wait for relay publication. Clients SHOULD durably persist signed carriers in a local outbox before network publication.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-PUB-003",
+      "section": "Publishing",
+      "text": "Retries are idempotent by event id. Clients SHOULD publish durable carriers to more than one independently operated relay and SHOULD read back important controls and checkpoint objects by exact event id.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CONV-001",
+      "section": "Convergence",
+      "text": "Given the same complete set of relevant signed events, two conforming v1 clients MUST derive the same:",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-RELAY-001",
+      "section": "Relay behavior",
+      "text": "A suitable relay SHOULD:",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-RELAY-002",
+      "section": "Relay behavior",
+      "text": "Clients MUST NOT treat a relay's [NIP-11](11.md) declaration as proof of complete history, permanent retention, checkpoint availability, or CRDT validation. Relays implementing [NIP-77](77.md) advertise that capability separately.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-RELAY-003",
+      "section": "Relay behavior",
+      "text": "Relays MAY require [NIP-42](42.md), payment, proof of work, or other local admission policy. Relay admission does not change document validity.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-RETENTION-001",
+      "section": "Undo, deletion, freeze, and retention",
+      "text": "Relays are not required to retain complete document history indefinitely. Producers SHOULD use local durable storage and more than one retention domain. They SHOULD create a successor document before a document approaches the v1 resource limits or when its retention, privacy, membership, or governance boundary must be reset.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-APP-001",
+      "section": "Application profiles",
+      "text": "Application rules MUST NOT change the core control chain, accepted ChangeHashes, or Automerge heads defined by this NIP.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-APP-002",
+      "section": "Application profiles",
+      "text": "Large binary objects SHOULD be stored outside the Automerge document. The document may contain hashes and metadata for those objects.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-VERSION-001",
+      "section": "Versioning",
+      "text": "A client MAY retain an unknown protocol revision or unknown Automerge profile as `unsupported_revision` evidence but MUST NOT apply it. Known-v1 unknown semantics are invalid.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-SECCTRL-001",
+      "section": "Controller compromise",
+      "text": "Controller keys SHOULD be kept separate from routine editing keys and SHOULD have a tested recovery procedure.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-RESOURCE-001",
+      "section": "Parsing and resource use",
+      "text": "Clients MUST enforce the v1 limits before large allocations where possible. They SHOULD use bounded workers for Automerge and checkpoint parsing and MUST avoid recursion or work that is unbounded by validated input limits.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CONF-001",
+      "section": "Conformance",
+      "text": "A client claiming v1 conformance MUST pass language-neutral vectors for manifests, controls, changes, causal transitions, forks, equivocation, verified-history checkpoints, dependencies, and randomized delivery.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CONF-002",
+      "section": "Conformance",
+      "text": "Each required vector MUST produce expected canonical controls, protocol dispositions, accepted ChangeHashes, heads, history_digest, dispositions_digest, typed state assertions, and alerts.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CONF-003",
+      "section": "Conformance",
+      "text": "The vectors are maintained outside the NIPs repository and MUST be linked from the proposal before it is marked ready for acceptance. If the prose and a vector disagree, the prose in this NIP controls.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-PROFILE-001",
+      "section": "Protocol profile",
+      "text": "Implementations MUST treat kinds, limits, encodings, actor derivation, and selection rules as one sealed revision; applications cannot customize them while claiming conformance.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-DISPOSITION-001",
+      "section": "Protocol dispositions",
+      "text": "Canonical dispositions are accepted, pending, excluded, invalid, and unsupported_revision.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-COMPLETION-001",
+      "section": "Local completion",
+      "text": "Complete, budget_exhausted, and cancelled are local completion states and MUST NOT alter canonical dispositions or disposition digests.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CPRECOVERY-001",
+      "section": "Deferred recovery",
+      "text": "Recovery from a snapshot whose historical carriers are unavailable is outside v1 and MUST NOT be inferred from a manifest pointer.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CONF-004",
+      "section": "Conformance digest",
+      "text": "The initial conformance contract MUST NOT define a digest over Automerge save bytes until independent byte-identical behavior is proven.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-ALERT-001",
+      "section": "Integrity alerts",
+      "text": "Clients MUST surface controller equivocation and canonical-control reorganization as integrity alerts.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-ALERT-002",
+      "section": "Integrity alerts",
+      "text": "Clients MUST surface the first device-equivocated actor sequence and affected changes as an integrity alert.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-LIMITS-001",
+      "section": "Draft limits",
+      "text": "Draft protocol limits are sealed for the draft revision but remain production-provisional until measured cross-platform qualification.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-REPO-001",
+      "section": "Repository boundary",
+      "text": "The generic implementation MUST be a standalone snake_case repository/package/crate and MUST NOT depend on radroots_* crates.",
+      "source": "spec/ARCHITECTURE.md"
+    },
+    {
+      "id": "NCRDT-CORE-001",
+      "section": "Core boundary",
+      "text": "The initial core MUST be deterministic, batch-oriented, network-free, database-free, async-runtime-free, FFI-free, and application-schema-free.",
+      "source": "spec/ARCHITECTURE.md"
+    },
+    {
+      "id": "NCRDT-AUTOADAPTER-001",
+      "section": "Automerge adapter",
+      "text": "All Automerge calls MUST be isolated in the anti-corruption adapter.",
+      "source": "spec/AUTOMERGE_PROFILE.md"
+    },
+    {
+      "id": "NCRDT-AUTOADAPTER-002",
+      "section": "Automerge adapter",
+      "text": "Every protocol document construction/load MUST explicitly select UTF-16, disable migration, and reject partial load.",
+      "source": "spec/AUTOMERGE_PROFILE.md"
+    },
+    {
+      "id": "NCRDT-AUTOADAPTER-003",
+      "section": "Automerge adapter",
+      "text": "The canonical re-encoding path MUST be qualified as bounded, uncompressed, fallible, and cross-language compatible before it is used as a validity rule.",
+      "source": "spec/AUTOMERGE_PROFILE.md"
+    },
+    {
+      "id": "NCRDT-NIPBOUNDARY-001",
+      "section": "NIP-01 boundary",
+      "text": "Public ingestion MUST begin from raw event JSON bytes so duplicate members can be rejected.",
+      "source": "spec/WIRE_FORMAT.md"
+    },
+    {
+      "id": "NCRDT-EVIDENCE-001",
+      "section": "Evidence model",
+      "text": "Invalid evidence for a ChangeHash MUST NOT poison a valid carrier for that ChangeHash.",
+      "source": "spec/DATA_MODEL.md"
+    },
+    {
+      "id": "NCRDT-EVALUATOR-001",
+      "section": "Reference evaluator",
+      "text": "The initial reference evaluator MUST perform deterministic complete batch reconstruction and serve as the oracle for optimized implementations.",
+      "source": "spec/ARCHITECTURE.md"
+    },
+    {
+      "id": "NCRDT-FEATURES-001",
+      "section": "Feature policy",
+      "text": "Cargo features MUST NOT change protocol validity or conformance semantics.",
+      "source": "spec/VERSIONING_AND_COMPATIBILITY.md"
+    },
+    {
+      "id": "NCRDT-TS-001",
+      "section": "Independent implementation",
+      "text": "The TypeScript implementation MUST be independently written and MUST NOT import or call the Rust implementation.",
+      "source": "implementation/TYPESCRIPT_INTEROP_PLAN.md"
+    }
+  ]
+}

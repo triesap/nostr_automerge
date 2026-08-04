@@ -1,0 +1,87 @@
+{
+  "schema": "nostr_automerge.import_adaptation.v1",
+  "source_artifact": {
+    "name": "nostr_automerge_v1_spec_handoff_v1",
+    "generated_at": "2026-08-04",
+    "status": "approved_implementation_baseline",
+    "package_manifest_sha256": "e0777e8330d60c8595b8ba2f6c3fb86cdbae91fe6217d85daa4eaf40ed84e408"
+  },
+  "target_repository": "triesap/nostr_automerge",
+  "transformations": [
+    {
+      "id": "repository_identity",
+      "source": "radrootslabs/nostr_automerge",
+      "target": "triesap/nostr_automerge",
+      "classification": "repository_metadata_only"
+    },
+    {
+      "id": "requirement_source_directory",
+      "source": "specs/",
+      "target": "spec/",
+      "classification": "repository_path_only"
+    }
+  ],
+  "imported_files": [
+    {
+      "path": "spec/NIP_DRAFT.md",
+      "source_sha256": "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3",
+      "target_sha256": "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3",
+      "adapted": false
+    },
+    {
+      "path": "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
+      "source_sha256": "f8a2e53c66fff9b61cab1b1c22074dd513e6525fea4c298b73a91e905c097de7",
+      "target_sha256": "f8a2e53c66fff9b61cab1b1c22074dd513e6525fea4c298b73a91e905c097de7",
+      "adapted": false
+    },
+    {
+      "path": "spec/requirements.json",
+      "source_sha256": "19e09e9862fd3a22051a43eec6329a9015e8ea24628fd93d83fca2e2376849c3",
+      "target_sha256": "6db34703bc37ac52d57bc92235d311674cfc259cadf54fe6f55f73ee5d4bfd9e",
+      "adapted": true
+    },
+    {
+      "path": "spec/protocol_revision.json",
+      "source_sha256": "ae6899a6bbb8b9089cb690c7304034e90d65de39b84af9cba7646767eee75233",
+      "target_sha256": "165902e6be66f3528ff3d4745544eeea6468fd01811cc7aab047c54ab2ab5aa1",
+      "adapted": true
+    },
+    {
+      "path": "implementation/COMMIT_SEQUENCE.md",
+      "source_sha256": "be1cef373a12b79bc291f087de41972c7440f661a521b2cbc8f4cff563cfa7be",
+      "target_sha256": "be1cef373a12b79bc291f087de41972c7440f661a521b2cbc8f4cff563cfa7be",
+      "adapted": false
+    },
+    {
+      "path": "implementation/commit_sequence.json",
+      "source_sha256": "6df796933737b7d662b5735782ba98d14fc2cbe7912db3b079c572dc46012167",
+      "target_sha256": "6df796933737b7d662b5735782ba98d14fc2cbe7912db3b079c572dc46012167",
+      "adapted": false
+    },
+    {
+      "path": "implementation/TYPESCRIPT_INTEROP_PLAN.md",
+      "source_sha256": "ad65330fe9ec4d94c157595f881d510e05ae511e55451cc64b2ac7efd164b6cf",
+      "target_sha256": "ad65330fe9ec4d94c157595f881d510e05ae511e55451cc64b2ac7efd164b6cf",
+      "adapted": false
+    },
+    {
+      "path": "docs/provenance/source_package_manifest.json",
+      "source_sha256": "e0777e8330d60c8595b8ba2f6c3fb86cdbae91fe6217d85daa4eaf40ed84e408",
+      "target_sha256": "e0777e8330d60c8595b8ba2f6c3fb86cdbae91fe6217d85daa4eaf40ed84e408",
+      "adapted": false
+    }
+  ],
+  "frozen_protocol_fields": [
+    "actor_domain",
+    "protocol_revision",
+    "format",
+    "text_encoding",
+    "event_kinds",
+    "draft_limits",
+    "canonical_encodings",
+    "authorization",
+    "control_selection",
+    "equivocation",
+    "checkpoints"
+  ]
+}

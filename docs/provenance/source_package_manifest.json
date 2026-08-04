@@ -1,0 +1,528 @@
+{
+  "schema": "nostr_automerge.handoff_package.v1",
+  "package": "nostr_automerge_v1_spec_handoff_v1",
+  "generated_at": "2026-08-04",
+  "status": "approved_implementation_baseline",
+  "authoritative_entrypoints": [
+    "PROMPT.md",
+    "summary.txt",
+    "specs/NIP_DRAFT.md",
+    "specs/NOSTR_AUTOMERGE_V1_SPEC.md",
+    "implementation/COMMIT_SEQUENCE.md",
+    "repo/AGENTS.md"
+  ],
+  "commit_step_count": 192,
+  "requirement_count": 87,
+  "files": [
+    {
+      "path": "PROMPT.md",
+      "sha256": "69f99fb8552facbd664ba6e67679b85f815bff1b5b505bba2937facf715d5bc5",
+      "size_bytes": 9460
+    },
+    {
+      "path": "README.md",
+      "sha256": "92a53fb42c25a04980d663624af81d0ee0c82e68cd8138440d8d182a5be77bbb",
+      "size_bytes": 1553
+    },
+    {
+      "path": "archive/README.md",
+      "sha256": "a43f3cdca20f4d1e0d31d46b5822905dbff4fba97b1aaf759f1a82e2e1c9b2dd",
+      "size_bytes": 831
+    },
+    {
+      "path": "archive/reference/farm_workspace_profile.yaml",
+      "sha256": "78d864fc5dd2d06b933d21ec7a881efcf1d673c2901fdcc1ace9b6e632e3bd20",
+      "size_bytes": 13154
+    },
+    {
+      "path": "archive/reference/farm_workspaces_master_phase_plan.md",
+      "sha256": "73de70df1619774fb81d0cff468f98eeea12217183a2790cd74770e125acb5f4",
+      "size_bytes": 64241
+    },
+    {
+      "path": "archive/reference/farm_workspaces_pressure_tested_proposal.md",
+      "sha256": "fb8663e1a969307f541ae3bc7f8bdf1040463802340ac4c8c571e914da54fa85",
+      "size_bytes": 67676
+    },
+    {
+      "path": "archive/reference/farm_workspaces_production_signoff.md",
+      "sha256": "dca6c8f22271fca8a1d49461d37f924bab3db6488f235f23dd2eed226629a4d6",
+      "size_bytes": 5384
+    },
+    {
+      "path": "archive/reference/nostr_crdt_cto_architecture.md",
+      "sha256": "90ea7fd3d11db110623811fa9d93adf686caedc46d5c21d63e2e25e46ac3a7fe",
+      "size_bytes": 12042
+    },
+    {
+      "path": "archive/reference/nostr_crdt_examples.json",
+      "sha256": "c2c7831b99e664b6b62283491ec1ea2686a779f2ea4904235fcbf3840ecd5fc1",
+      "size_bytes": 20209
+    },
+    {
+      "path": "archive/reference/nostr_crdt_pressure_test_report.md",
+      "sha256": "f9dada30fef708fb8a285f7e6ed54b3a09626e9c95ed108f59374f3c49077caf",
+      "size_bytes": 6040
+    },
+    {
+      "path": "archive/reference/nostr_crdt_release_gates.json",
+      "sha256": "131e4c4b3e55255ee90a93e1d15114f23924eb7b1332696d5deecd7a18786aa3",
+      "size_bytes": 1834
+    },
+    {
+      "path": "archive/reference/nostr_crdt_research_matrix.md",
+      "sha256": "362037c7bad105e11846be21810850413870088e0238ef589e212d4b1d5bd746",
+      "size_bytes": 9369
+    },
+    {
+      "path": "archive/reference/nostr_crdt_schemas.json",
+      "sha256": "dec2764255bbba6fcc78572326441ca08c2514757c6fb5d9ae9000684609c472",
+      "size_bytes": 14090
+    },
+    {
+      "path": "archive/reference/pressure_tested_full_nip.md",
+      "sha256": "470aa91b6217bc8f2556287737467dfca100b2dac38fe7167aea5623d2692d52",
+      "size_bytes": 72070
+    },
+    {
+      "path": "archive/reference/prior_nip_handoff/HANDOFF.md",
+      "sha256": "ad570ee2c20f7d4bb09b5db60f88205ac637436fe746ee309ebf135aad4848a0",
+      "size_bytes": 3310
+    },
+    {
+      "path": "archive/reference/prior_nip_handoff/PROJECT-CONTEXT.md",
+      "sha256": "ce9217ecbe778bbacc5a0c9d19020c7d536035b981b66bf74bf2fb7c32333b7b",
+      "size_bytes": 3997
+    },
+    {
+      "path": "archive/reference/prior_nip_handoff/conformance/FIXTURE-CONTRACT.md",
+      "sha256": "8f13ee6007a20ff3a929d7ba5a4284b5c8e1017a640c851a2798fbfdab31b2e0",
+      "size_bytes": 2032
+    },
+    {
+      "path": "archive/reference/prior_nip_handoff/conformance/OUTPUT-CONTRACT.md",
+      "sha256": "29268fb0740a5b417fab42163e9e0f68df3fdfa098450916a4d6ff6b93d864d9",
+      "size_bytes": 911
+    },
+    {
+      "path": "archive/reference/prior_nip_handoff/governance/DECISIONS.md",
+      "sha256": "387da7bf6171b73caedc9944a3e26f21639fa7909dd5d85830f73cb64d173195",
+      "size_bytes": 2626
+    },
+    {
+      "path": "archive/reference/prior_nip_handoff/governance/OPEN-DECISIONS.md",
+      "sha256": "0d795c9c6a1d0e63391bd0f82f4004e1a7898180646d45dccabeba9807e62164",
+      "size_bytes": 1645
+    },
+    {
+      "path": "archive/reference/prior_nip_handoff/implementation/RUST-CORE.md",
+      "sha256": "83bd69cb2bd333355815ea006a7c7dd229565ac3d9fb9b267b57b1af45423393",
+      "size_bytes": 1511
+    },
+    {
+      "path": "archive/reference/prior_nip_handoff/implementation/TYPESCRIPT-INTEROP.md",
+      "sha256": "585734d5bf06b174e3f1454c1f8b993ff93922f5fbfc9a7df480ec1abda003ec",
+      "size_bytes": 1101
+    },
+    {
+      "path": "archive/reference/prior_nip_handoff/nip/PR-DESCRIPTION.md",
+      "sha256": "e9b24a02b2f04a4b2deec21d8420222fcd9008111d678e49fd50046a4f96b209",
+      "size_bytes": 3272
+    },
+    {
+      "path": "archive/reference/prior_nip_handoff/nip/README-PATCH-GUIDE.md",
+      "sha256": "ec50d7b599667828d7ec5d52a0d6e88eb90b409dd4a7164fa8910133da87a055",
+      "size_bytes": 745
+    },
+    {
+      "path": "archive/reference/prior_nip_handoff/nip/automerge-crdt-documents.md",
+      "sha256": "d9ad5e30ea4bbd6afdbc6d6ce5790f4fd06ff6c98e5847c74838c585f980a1ae",
+      "size_bytes": 39963
+    },
+    {
+      "path": "archive/reference/prior_nip_handoff/research/IDENTIFIER.md",
+      "sha256": "a400a53d14f1b9de5c1874da7c2467510a234881a36491d2f93f24118a4800ae",
+      "size_bytes": 882
+    },
+    {
+      "path": "archive/reference/prior_nip_handoff/research/PRIOR-ART.md",
+      "sha256": "25013d0d1205e2ddc3f77658ff9fc90b0054b0e5033bbb9a3413203ed4c4b411",
+      "size_bytes": 4730
+    },
+    {
+      "path": "archive/reference/prior_nip_handoff/spec/NORMATIVE-REQUIREMENTS.md",
+      "sha256": "dcedf790083d92872f7c3f6df9e41a75564cff9bda6e60bd3c4a8414c0c04c47",
+      "size_bytes": 15355
+    },
+    {
+      "path": "archive/reference/prior_nip_handoff/spec/requirements-registry.json",
+      "sha256": "16f85d49e36191588b55bc0d5ed5a4caa9089f6e10337064d0f8cc3aa3125a5d",
+      "size_bytes": 22603
+    },
+    {
+      "path": "archive/reference/tangle_farm_tenant_profile.yaml",
+      "sha256": "ebc44cfe0c542915292629e4bc64f7a45b5f4f3190f0c199d558aa6b49cd26ad",
+      "size_bytes": 3376
+    },
+    {
+      "path": "decisions/ADR_0001_STANDALONE_REPOSITORY.md",
+      "sha256": "8b70f726a2c772d734f3eaf325e9d0dab370be7f8d6ed223b045cf9f616e7b0c",
+      "size_bytes": 456
+    },
+    {
+      "path": "decisions/ADR_0002_SNAKE_CASE_NAMING.md",
+      "sha256": "8bfa01a33d79a7182c6914611e616a0fca92c3fec7935f6d269a97743eb90f72",
+      "size_bytes": 397
+    },
+    {
+      "path": "decisions/ADR_0003_AUTOMERGE_SPECIFIC_PROFILE.md",
+      "sha256": "cb3846a6172b1f7436bf7d3f7c116fbbf293be377d51b79e348e7dc43658ad08",
+      "size_bytes": 330
+    },
+    {
+      "path": "decisions/ADR_0004_SEALED_PROTOCOL_PROFILE.md",
+      "sha256": "12f9bb676674eb73eb4ee6c07a304c7b71f0547bf3dab5d26568087a61c42266",
+      "size_bytes": 373
+    },
+    {
+      "path": "decisions/ADR_0005_BATCH_REFERENCE_EVALUATOR.md",
+      "sha256": "45379de55d50f5462b08150eebad1538c655d50c79c00a072fa86840e7469e3d",
+      "size_bytes": 402
+    },
+    {
+      "path": "decisions/ADR_0006_STRICT_RAW_NIP01_BOUNDARY.md",
+      "sha256": "aa5ea27ccfaca25a30e1728252192250a314245ea6da8dd670e8ec09e1f13bc2",
+      "size_bytes": 356
+    },
+    {
+      "path": "decisions/ADR_0007_AUTOMERGE_ANTI_CORRUPTION_ADAPTER.md",
+      "sha256": "b3b476b942d04a8f304ff8f4fbd7eef0971fab31a09c587c83fb2c2813ee80f5",
+      "size_bytes": 446
+    },
+    {
+      "path": "decisions/ADR_0008_CAUSAL_CONTROL_AUTHORIZATION.md",
+      "sha256": "eda6cf3762a4db835196403390eee456ea1f17b617646315cd8e081798e66234",
+      "size_bytes": 402
+    },
+    {
+      "path": "decisions/ADR_0009_EQUIVOCATION_AND_INTEGRITY_ALERTS.md",
+      "sha256": "adefd8aa7f90a09225ab9ad7b8923cf6dc065d1fd6c99845fe64d69f35f87fe6",
+      "size_bytes": 321
+    },
+    {
+      "path": "decisions/ADR_0010_PROTOCOL_DISPOSITION_SEPARATE_FROM_LOCAL_COMPLETION.md",
+      "sha256": "8d5abf4855cdbfbcc46586f91f3c269d3603d915bda821e878b0fffcd8fdd55f",
+      "size_bytes": 306
+    },
+    {
+      "path": "decisions/ADR_0011_VERIFIED_HISTORY_CHECKPOINTS_ONLY.md",
+      "sha256": "bcfc4342655deea64894211a33e6ed0d2d096e25f176c28b48ec79b1ac7c4972",
+      "size_bytes": 401
+    },
+    {
+      "path": "decisions/ADR_0012_CONFORMANCE_DIGEST_AND_TYPED_ASSERTIONS.md",
+      "sha256": "24f2711b3732cd0f8507ce02b5a76487f753ace42b5f205c0e8ce7ce4a57576d",
+      "size_bytes": 432
+    },
+    {
+      "path": "fixtures/README.md",
+      "sha256": "7e9053dd7a6cc985835c15df1d417dfa76336a3bdfaaa504eb344badd6b2ea6f",
+      "size_bytes": 508
+    },
+    {
+      "path": "fixtures/examples/actor_derivation_001.expected.json",
+      "sha256": "51f1b10b8d302e5e333f0ae857bbddafff224df3d795fe4cbcbe0fde6786e279",
+      "size_bytes": 779
+    },
+    {
+      "path": "fixtures/examples/actor_derivation_001.fixture.json",
+      "sha256": "6493455734fa668d52da55d48cbfd2ac6ecd1b9bfeb0e517cdc42baec32b30f2",
+      "size_bytes": 802
+    },
+    {
+      "path": "fixtures/examples/actor_derivation_001.input.json",
+      "sha256": "850a14c1264b682952f9588fe61e1bc9b5d295d0f895c5763bfaa1cf6ed2a114",
+      "size_bytes": 239
+    },
+    {
+      "path": "fixtures/schema/fixture.schema.json",
+      "sha256": "1a6cf6c07e2ef0fc053b63b81a20ab6d06903a6df79179306fb902bda6fba326",
+      "size_bytes": 2583
+    },
+    {
+      "path": "fixtures/schema/report.schema.json",
+      "sha256": "45b635060fb229fba8697b7e8d9761cf4b231983f353cc11b892138ded3d9233",
+      "size_bytes": 2581
+    },
+    {
+      "path": "implementation/CODEX_REPORT_TEMPLATE.md",
+      "sha256": "14190212d59fa3b7d733ab266798dc25e2961901045fadccc9c2282b54f4357b",
+      "size_bytes": 417
+    },
+    {
+      "path": "implementation/COMMIT_SEQUENCE.md",
+      "sha256": "be1cef373a12b79bc291f087de41972c7440f661a521b2cbc8f4cff563cfa7be",
+      "size_bytes": 329501
+    },
+    {
+      "path": "implementation/MILESTONES.md",
+      "sha256": "0ef04a74636656605f5a8e922fd63c6ba56459bd94cdc20534842a5be51aa73d",
+      "size_bytes": 958
+    },
+    {
+      "path": "implementation/OPEN_QUESTIONS.md",
+      "sha256": "42f71e9b720d3bb3c93dea05f8c0d128f57de2c3c244f76c8e3a071036a80c91",
+      "size_bytes": 1394
+    },
+    {
+      "path": "implementation/PERFORMANCE_AND_RESOURCE_PLAN.md",
+      "sha256": "17bd0a058ac5b875fdab8c8f1034ddb0d5693954d2c742d9e47c98d0766693ec",
+      "size_bytes": 981
+    },
+    {
+      "path": "implementation/RELEASE_PLAN.md",
+      "sha256": "44ef7fc71c3c5b4d97638bfee47c0e54912ae1ef4488878b1bde0402d0caf212",
+      "size_bytes": 824
+    },
+    {
+      "path": "implementation/REQUIREMENTS_TRACEABILITY.md",
+      "sha256": "46ae96ed24bbd568d5dd2c03789ae31fbf5476a553496ca85bf7eb2a23d6b3e7",
+      "size_bytes": 583
+    },
+    {
+      "path": "implementation/TEST_PLAN.md",
+      "sha256": "2907a634354c2b9314363a86ef0ae92bbe7750285c074f7bd71d61a470dfcbab",
+      "size_bytes": 2029
+    },
+    {
+      "path": "implementation/TYPESCRIPT_INTEROP_PLAN.md",
+      "sha256": "ad65330fe9ec4d94c157595f881d510e05ae511e55451cc64b2ac7efd164b6cf",
+      "size_bytes": 1194
+    },
+    {
+      "path": "implementation/VERIFICATION.md",
+      "sha256": "ee0d78b9951cafe7615cca94c227127785a457113c1a1c462af216815e7268e8",
+      "size_bytes": 1347
+    },
+    {
+      "path": "machine/architecture_decisions.json",
+      "sha256": "0e407b836cadcc2084b0299a49ccd6c89270d6dbd3d66e8a64b56c62d2ffbd15",
+      "size_bytes": 2253
+    },
+    {
+      "path": "machine/commit_sequence.json",
+      "sha256": "6df796933737b7d662b5735782ba98d14fc2cbe7912db3b079c572dc46012167",
+      "size_bytes": 266568
+    },
+    {
+      "path": "machine/diagnostic_codes.json",
+      "sha256": "08c6a0678ee8fc8f1da6cc6778245d171732b339b47c3e8573e6160521b6118b",
+      "size_bytes": 2160
+    },
+    {
+      "path": "machine/draft_limits.json",
+      "sha256": "04e2bb67340fd4a531bb666cd4b126527f2979afacb62d1330a09f96567b109c",
+      "size_bytes": 874
+    },
+    {
+      "path": "machine/open_questions.json",
+      "sha256": "6327f8944f2eecd80af5c48358837ecf7938908b3d4eab2a932ce3351cee1313",
+      "size_bytes": 2391
+    },
+    {
+      "path": "machine/product_surfaces.json",
+      "sha256": "3359ca9025b1ef817412fbe268480029e5904d7499f04337aa0397702adb693a",
+      "size_bytes": 996
+    },
+    {
+      "path": "machine/protocol_revision.json",
+      "sha256": "ae6899a6bbb8b9089cb690c7304034e90d65de39b84af9cba7646767eee75233",
+      "size_bytes": 1083
+    },
+    {
+      "path": "machine/requirements.json",
+      "sha256": "19e09e9862fd3a22051a43eec6329a9015e8ea24628fd93d83fca2e2376849c3",
+      "size_bytes": 26567
+    },
+    {
+      "path": "process/CHANGE_CONTROL.md",
+      "sha256": "ec0595d281ab821a10b4ffc34430d09042edff8059471f48de16d25766002ef9",
+      "size_bytes": 738
+    },
+    {
+      "path": "process/DEVIATION_POLICY.md",
+      "sha256": "18bd135d67d6e310c651cc2f5cf8c430034f53d0e2f185ed4b93c9ba427f9c40",
+      "size_bytes": 591
+    },
+    {
+      "path": "process/HANDOFF_WORKFLOW.md",
+      "sha256": "ef585d32f9a2939ac34ade6e20732d6d82a960d26c52bbd52adb2c31b058a1d3",
+      "size_bytes": 514
+    },
+    {
+      "path": "process/REVIEW_CHECKLIST.md",
+      "sha256": "d23baa9854cbd7e551ad06664f097106d1d52d3ea84ec54fed4e9259e892fbd3",
+      "size_bytes": 944
+    },
+    {
+      "path": "repo/AGENTS.md",
+      "sha256": "e506ab8ebe9c65c03d35f014b9bce2a69a87759051f1a4dd47e82d7f3473f7f6",
+      "size_bytes": 2004
+    },
+    {
+      "path": "repo/CI_POLICY.md",
+      "sha256": "ea38b3ae9b6a6f539f2bbadf88937b1cf9f080c07b77d7dca6aa5b1fd6104625",
+      "size_bytes": 702
+    },
+    {
+      "path": "repo/CODING_STANDARDS.md",
+      "sha256": "4bacc00d4a743245ca2343ec819298f2dc5edbbf54f0af5ca5610fff50ba0eaa",
+      "size_bytes": 975
+    },
+    {
+      "path": "repo/Cargo.toml.template",
+      "sha256": "bf1cd75a1e4cca04f1881b0c53519a8457c499a63ca9896113616287a79c1d0f",
+      "size_bytes": 591
+    },
+    {
+      "path": "repo/DEPENDENCY_POLICY.md",
+      "sha256": "e490b4e7edce51c89ed21e1ca0b603f8c4c2d6d8578ddc200dcf1af8980a05bd",
+      "size_bytes": 806
+    },
+    {
+      "path": "repo/EXPECTED_LAYOUT.md",
+      "sha256": "1ab3405714250f2fe669b5349961bbddca19f68143c4d8249c663f2b23a71b80",
+      "size_bytes": 1277
+    },
+    {
+      "path": "repo/NIPS_README_PATCH_GUIDE.md",
+      "sha256": "8845a7b0907fcaca570902fc93fd2d8c74e8a0c4b5d25e326a648d14dd7dd6ea",
+      "size_bytes": 540
+    },
+    {
+      "path": "repo/rust-toolchain.toml.template",
+      "sha256": "0c9b811689c2817b6404b2858b3e8f7aebf513af379da94774521025b7008863",
+      "size_bytes": 86
+    },
+    {
+      "path": "research/FINDINGS_AND_REVISIONS.md",
+      "sha256": "3fdf77657f27ce4e029668f71c3b624e3c7d5335de0cc549939ebc528ca95af8",
+      "size_bytes": 1441
+    },
+    {
+      "path": "research/IDENTIFIER_AND_KINDS.md",
+      "sha256": "f80e1d8e2d0770cc68c38b903b10cc1f15a46728f4bd8f5125427da6d20017ac",
+      "size_bytes": 754
+    },
+    {
+      "path": "research/PRIOR_ART.md",
+      "sha256": "e50e0b6783d7c22c96d7d66dd62adf29667c15e8a20a5ee0a38f38c14fe4e320",
+      "size_bytes": 2577
+    },
+    {
+      "path": "research/SOURCE_MANIFEST.md",
+      "sha256": "b39bf973a9665aab60f718e5f8eb60706770e6b03c31047e44dd09ae7b808145",
+      "size_bytes": 837
+    },
+    {
+      "path": "scripts/validate_handoff.py",
+      "sha256": "27a2dda7ddd63896751ff38f65349afbcf39a605a36ffd1b45d074c869422b6e",
+      "size_bytes": 7802
+    },
+    {
+      "path": "specs/ACCEPTANCE_CRITERIA.md",
+      "sha256": "fffbad5ffbd4077b96caa667164516b201d4e4f74ab6cf5a446e9ad2de2b86cb",
+      "size_bytes": 2191
+    },
+    {
+      "path": "specs/API_CONTRACTS.md",
+      "sha256": "1114079b3f90a04895947e4b25a720a13fe8e28380cf824e2935a3fa373b8593",
+      "size_bytes": 4538
+    },
+    {
+      "path": "specs/ARCHITECTURE.md",
+      "sha256": "383698e68c313c7509d07472bd6fc715b16e32cfeef7db7339e9e1af7404f56f",
+      "size_bytes": 3459
+    },
+    {
+      "path": "specs/AUTOMERGE_PROFILE.md",
+      "sha256": "51315f74ace53e618a22e4e4fa72d5bae41ef1c3e2bb9fe4bd1937d9a38b8400",
+      "size_bytes": 2316
+    },
+    {
+      "path": "specs/CHECKPOINT_PROFILE.md",
+      "sha256": "6e6c4228eba2cf90b2cf16f4bd84a384a531cbaf7fba462a59661666a9b8da76",
+      "size_bytes": 1496
+    },
+    {
+      "path": "specs/CONFORMANCE.md",
+      "sha256": "805e0e52d6e7018160664f00d9b84ff92e38ab73ab772d764b9d4c9d49b754b7",
+      "size_bytes": 2599
+    },
+    {
+      "path": "specs/CONTROL_AND_AUTHORIZATION.md",
+      "sha256": "29562c49ad3e34f347e5ddb6dabda38115300049ae93652f8ff5dfbde972d5a0",
+      "size_bytes": 2240
+    },
+    {
+      "path": "specs/DATA_MODEL.md",
+      "sha256": "bd4004831f89bb402190fb1225b69200cc02240242b4f6b9efeb21f843e3812c",
+      "size_bytes": 3436
+    },
+    {
+      "path": "specs/FUTURE_FARM_WORKSPACES_CONTEXT.md",
+      "sha256": "713d141a1619778605bba632107b604acb08d051a727422db7eb181d114bc3a1",
+      "size_bytes": 2454
+    },
+    {
+      "path": "specs/NIP_DRAFT.md",
+      "sha256": "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3",
+      "size_bytes": 41157
+    },
+    {
+      "path": "specs/NIP_PR_DESCRIPTION.md",
+      "sha256": "7841e46c0a7023b04880999f7575a78058ff6f22a83d32cfe27cb9a342f16bf2",
+      "size_bytes": 1677
+    },
+    {
+      "path": "specs/NORMATIVE_REQUIREMENTS.md",
+      "sha256": "764e9150b2b07f165eadab09989c4b6bcf26e3cc8fa8401c2592dd53736839a2",
+      "size_bytes": 19530
+    },
+    {
+      "path": "specs/NOSTR_AUTOMERGE_V1_SPEC.md",
+      "sha256": "f8a2e53c66fff9b61cab1b1c22074dd513e6525fea4c298b73a91e905c097de7",
+      "size_bytes": 2820
+    },
+    {
+      "path": "specs/OUT_OF_SCOPE_AND_FUTURE_WORK.md",
+      "sha256": "993446f8cf3741ab339b0547533d48ba5e8f7cb84a29cb8684258d79ed27182d",
+      "size_bytes": 1476
+    },
+    {
+      "path": "specs/PRODUCT_SPEC.md",
+      "sha256": "7690d7c31420b0f010b51e39e302f66d8bf3394defe065d7ccf4d8d0c5975947",
+      "size_bytes": 2072
+    },
+    {
+      "path": "specs/SECURITY.md",
+      "sha256": "55305dd0a8510099892f7964b2e848d8eeaf8495eb8e2490eea5474838c06b1e",
+      "size_bytes": 2243
+    },
+    {
+      "path": "specs/VERSIONING_AND_COMPATIBILITY.md",
+      "sha256": "88f88ce729916edb28b03274d4d19e7dec4f5f881ed432e7082f92867047f218",
+      "size_bytes": 1338
+    },
+    {
+      "path": "specs/WIRE_FORMAT.md",
+      "sha256": "42d1a51abf488532d28910c8e5bae951bdef289415a9e4926f6e6eeb75048e61",
+      "size_bytes": 1771
+    },
+    {
+      "path": "summary.txt",
+      "sha256": "fd1bca77eaf645bf06c1b41327f7b544f1d047895dc3337d3c465d444ddb4f44",
+      "size_bytes": 26527
+    }
+  ]
+}

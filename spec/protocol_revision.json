@@ -1,0 +1,37 @@
+{
+  "schema": "nostr_automerge.protocol_revision.v1",
+  "project": "nostr_automerge_v1_spec",
+  "revision": "draft_2026_08",
+  "status": "approved_implementation_baseline",
+  "sealed": true,
+  "nip": {
+    "current_identifier": "XX",
+    "preferred_identifier": "CA",
+    "title": "Automerge CRDT Documents over Nostr"
+  },
+  "repository": "triesap/nostr_automerge",
+  "cargo_package": "nostr_automerge",
+  "rust_crate": "nostr_automerge",
+  "format": "automerge-change-v1",
+  "text_encoding": "utf16",
+  "actor_domain": "nostr-crdt/automerge/actor/v1",
+  "kinds": {
+    "change": 1624,
+    "control": 1625,
+    "checkpoint_descriptor": 1626,
+    "checkpoint_chunk": 1627,
+    "manifest": 31624
+  },
+  "checkpoints": {
+    "status": "later_milestone",
+    "v1_provenance": "verified_history_only",
+    "missing_history_recovery": "deferred"
+  },
+  "limits_status": "normative_for_draft_provisional_for_production",
+  "conformance": {
+    "normative_save_bytes_digest": false,
+    "history_digest": true,
+    "dispositions_digest": true,
+    "typed_state_assertions": true
+  }
+}
