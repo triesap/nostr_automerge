@@ -4,10 +4,9 @@ semantic_id!(
 );
 
 impl ActorId {
-    pub(crate) fn derive(
-        coordinate: crate::DocumentCoordinate,
-        device: crate::DevicePublicKey,
-    ) -> Self {
+    /// Derives the sealed actor identity from a document coordinate and device key.
+    #[must_use]
+    pub fn derive(coordinate: crate::DocumentCoordinate, device: crate::DevicePublicKey) -> Self {
         use sha2::{Digest, Sha256};
 
         let mut hasher = Sha256::new();

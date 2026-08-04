@@ -34,6 +34,17 @@ The authoritative draft is [`spec/NIP_DRAFT.md`](spec/NIP_DRAFT.md). The
 companion implementation contract is
 [`spec/NOSTR_AUTOMERGE_V1_SPEC.md`](spec/NOSTR_AUTOMERGE_V1_SPEC.md).
 
+## Pure authoring
+
+The crate can derive an actor, build canonical control content, create a
+canonical Automerge change, and prepare an unsigned NIP-01 event ID using only
+explicit inputs. See
+[`crates/nostr_automerge/examples/basic_authoring.rs`](crates/nostr_automerge/examples/basic_authoring.rs).
+
+The example deliberately keeps key custody, signing, durable outbox writes,
+relay publication, and evidence collection in caller code. Signed bytes are
+reingested through the strict public NIP-01 boundary before they are trusted.
+
 ## Development
 
 Implementation follows the repository-owned rolling checkpoint sequence in
