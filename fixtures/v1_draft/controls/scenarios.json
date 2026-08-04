@@ -1,0 +1,11 @@
+{
+  "scenarios": [
+    {"name":"genesis_fork","valid_candidates":[3,2],"pending":[],"selected":2},
+    {"name":"transition_matrix","valid_candidates":[5],"pending":[],"selected":5},
+    {"name":"freeze","valid_candidates":[],"pending":[],"selected":null},
+    {"name":"terminal","valid_candidates":[],"pending":[],"selected":null},
+    {"name":"retained_frontier","valid_candidates":[8],"pending":[],"selected":8},
+    {"name":"missing_evidence","valid_candidates":[],"pending":[9],"selected":null},
+    {"name":"reorganization","valid_candidates":[3,2],"pending":[],"selected":2,"previous":3}
+  ]
+}
