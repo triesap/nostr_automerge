@@ -18,6 +18,9 @@ present, the standard local checks are:
 - `cargo fmt --all --check`
 - `cargo check --workspace --all-targets --locked`
 - `cargo test --workspace --all-targets --locked`
+- `cargo run -p nostr_automerge_xtask --locked -- validate`
+- Run `cargo run -p nostr_automerge_conformance --locked -- run_corpus fixtures`
+  twice and compare the exact stdout bytes for the local conformance-CI equivalent.
 - `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings`
 - `cargo doc --workspace --no-deps --locked`
 
