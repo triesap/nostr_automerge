@@ -19,6 +19,12 @@
       "source": "specs/",
       "target": "spec/",
       "classification": "repository_path_only"
+    },
+    {
+      "id": "acceptance_repository_identity",
+      "source": "radrootslabs/nostr_automerge",
+      "target": "triesap/nostr_automerge",
+      "classification": "repository_metadata_only"
     }
   ],
   "imported_files": [
@@ -44,6 +50,12 @@
       "path": "spec/protocol_revision.json",
       "source_sha256": "ae6899a6bbb8b9089cb690c7304034e90d65de39b84af9cba7646767eee75233",
       "target_sha256": "165902e6be66f3528ff3d4745544eeea6468fd01811cc7aab047c54ab2ab5aa1",
+      "adapted": true
+    },
+    {
+      "path": "spec/ACCEPTANCE_CRITERIA.md",
+      "source_sha256": "fffbad5ffbd4077b96caa667164516b201d4e4f74ab6cf5a446e9ad2de2b86cb",
+      "target_sha256": "939722b44bf1c58ac8c834b23d79f443ca5f3de400ceab3d3fa1e755c2244671",
       "adapted": true
     },
     {
