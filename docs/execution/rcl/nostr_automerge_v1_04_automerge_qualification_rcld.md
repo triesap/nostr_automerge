@@ -1,13 +1,13 @@
 # nostr_automerge Draft V1 RCLD 04: Automerge Qualification
 
-Status: active
+Status: complete
 Created: 2026-08-04
 Updated: 2026-08-04
 Mode: rcl-durable
 Repository: `triesap/nostr_automerge`
 Base commit: `503e22a`
 Governing plan: `docs/execution/rcl/nostr_automerge_v1_multi_rcld.md`
-Current checkpoint: `step_049`
+Current checkpoint: none
 
 ## Purpose
 
