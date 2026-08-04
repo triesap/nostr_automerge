@@ -5,6 +5,8 @@ use std::process::ExitCode;
 #[allow(dead_code)]
 mod checksum;
 #[allow(dead_code)]
+mod expected;
+#[allow(dead_code)]
 mod fixture;
 
 const HELP: &str = "nostr_automerge_conformance\n\nUSAGE:\n    nostr_automerge_conformance --help\n\nThe conformance runner is reserved but not implemented yet.";
