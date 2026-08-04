@@ -4,7 +4,7 @@ use crate::automerge_adapter::document::Document;
 /// A deterministic UTF-16 Automerge document kept behind the authoring boundary.
 pub struct AuthoringDocument {
     pub(crate) document: Document,
-    actor_state: ActorState,
+    pub(crate) actor_state: ActorState,
 }
 
 /// Why an accepted document and explicit actor state cannot initialize authoring.

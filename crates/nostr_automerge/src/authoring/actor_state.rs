@@ -87,6 +87,29 @@ impl ActorState {
     pub const fn last_authored_change(&self) -> Option<ChangeHash> {
         self.last_authored_change
     }
+
+    pub(crate) fn transition(
+        &self,
+        change_hash: ChangeHash,
+        operation_count: u64,
+    ) -> Result<Self, ActorStateError> {
+        Ok(Self {
+            actor_id: self.actor_id,
+            next_sequence: self
+                .next_sequence
+                .checked_add(1)
+                .ok_or(ActorStateError::CounterOverflow)?,
+            next_operation: if operation_count == 0 {
+                self.next_operation
+            } else {
+                self.next_operation
+                    .checked_add(operation_count)
+                    .ok_or(ActorStateError::CounterOverflow)?
+            },
+            accepted_heads: BTreeSet::from([change_hash]),
+            last_authored_change: Some(change_hash),
+        })
+    }
 }
 
 #[cfg(test)]

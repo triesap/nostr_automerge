@@ -1,7 +1,7 @@
 use crate::ChangeHash;
 use crate::automerge_adapter::document::{AdapterAuthoringError, AuthoringOperation};
 
-use super::AuthoringDocument;
+use super::{ActorState, AuthoringDocument};
 
 /// One caller-selected local operation in an explicit authored batch.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -43,15 +43,21 @@ pub enum Operation {
 pub struct AuthoredChange {
     raw: Vec<u8>,
     change_hash: ChangeHash,
+    previous_state: ActorState,
+    new_state: ActorState,
 }
 
 impl AuthoredChange {
     pub(crate) fn from_adapter(
         change: crate::automerge_adapter::document::AdapterAuthoredChange,
+        previous_state: ActorState,
+        new_state: ActorState,
     ) -> Self {
         Self {
             raw: change.raw,
             change_hash: change.hash,
+            previous_state,
+            new_state,
         }
     }
     /// Returns the canonical uncompressed change bytes.
@@ -64,6 +70,16 @@ impl AuthoredChange {
     pub const fn change_hash(&self) -> ChangeHash {
         self.change_hash
     }
+    /// Returns the durable state consumed by this atomic transition.
+    #[must_use]
+    pub const fn previous_state(&self) -> &ActorState {
+        &self.previous_state
+    }
+    /// Returns the durable state that must be used for the next change.
+    #[must_use]
+    pub const fn new_state(&self) -> &ActorState {
+        &self.new_state
+    }
 }
 
 /// Why a requested local operation batch was not authored.
@@ -75,6 +91,8 @@ pub enum AuthoringError {
     Operation,
     /// A sealed byte, dependency, or operation limit would be exceeded.
     Limit,
+    /// Explicit actor counters could not advance without overflow.
+    State,
 }
 
 impl AuthoringDocument {
@@ -88,16 +106,31 @@ impl AuthoringDocument {
             .cloned()
             .map(Into::into)
             .collect::<Vec<_>>();
-        self.document
+        let previous_state = self.actor_state().clone();
+        previous_state
+            .next_sequence()
+            .checked_add(1)
+            .ok_or(AuthoringError::State)?;
+        let mut staged = self.document.clone();
+        let authored = staged
             .author_operations(&operations)
-            .map(AuthoredChange::from_adapter)
             .map_err(|error| match error {
                 AdapterAuthoringError::Empty => AuthoringError::Empty,
                 AdapterAuthoringError::Limit => AuthoringError::Limit,
                 AdapterAuthoringError::Operation
                 | AdapterAuthoringError::Missing
                 | AdapterAuthoringError::Hash => AuthoringError::Operation,
-            })
+            })?;
+        let new_state = previous_state
+            .transition(authored.hash, authored.operation_count)
+            .map_err(|_| AuthoringError::State)?;
+        self.document = staged;
+        self.actor_state = new_state.clone();
+        Ok(AuthoredChange::from_adapter(
+            authored,
+            previous_state,
+            new_state,
+        ))
     }
 }
 
@@ -179,5 +212,64 @@ mod tests {
                 .saturating_add(1)
         ];
         assert_eq!(first.author_change(&too_many), Err(AuthoringError::Limit));
+    }
+
+    #[test]
+    fn return_checked_actor_state_transitions() {
+        let actor = ActorId::from_bytes([9; 32]);
+        let state = ActorState::initial(actor, BTreeSet::new());
+        let document = AuthoringDocument::empty(state.clone());
+        assert!(document.is_ok());
+        let Ok(mut document) = document else { return };
+        let result = document.author_change(&[Operation::PutString {
+            key: "k".to_owned(),
+            value: "v".to_owned(),
+        }]);
+        assert!(result.is_ok());
+        let Ok(result) = result else { return };
+        assert_eq!(result.previous_state(), &state);
+        assert_eq!(result.new_state(), document.actor_state());
+        assert_eq!(result.new_state().next_sequence(), 2);
+        assert!(result.new_state().next_operation() > 1);
+        assert_eq!(
+            result.new_state().accepted_heads(),
+            &BTreeSet::from([result.change_hash()])
+        );
+
+        let before = document.actor_state().clone();
+        assert_eq!(document.author_change(&[]), Err(AuthoringError::Empty));
+        assert_eq!(document.actor_state(), &before);
+
+        let overflow = ActorState::restore(
+            actor,
+            u64::MAX - 1,
+            1,
+            BTreeSet::new(),
+            Some(result.change_hash()),
+        );
+        assert!(overflow.is_ok());
+        let Ok(overflow) = overflow else { return };
+        let mut overflow_document = AuthoringDocument::empty(overflow);
+        assert!(overflow_document.is_ok());
+        let Ok(ref mut overflow_document) = overflow_document else {
+            return;
+        };
+        assert!(
+            overflow_document
+                .author_change(&[Operation::PutString {
+                    key: "first".into(),
+                    value: "v".into()
+                }])
+                .is_ok()
+        );
+        let before = overflow_document.actor_state().clone();
+        assert_eq!(
+            overflow_document.author_change(&[Operation::PutString {
+                key: "second".into(),
+                value: "v".into()
+            }]),
+            Err(AuthoringError::State)
+        );
+        assert_eq!(overflow_document.actor_state(), &before);
     }
 }

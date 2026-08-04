@@ -9,6 +9,7 @@ use crate::ChangeHash;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct DocumentLoadError;
 
+#[derive(Clone)]
 pub(crate) struct Document {
     inner: Automerge,
 }
@@ -53,6 +54,7 @@ pub(crate) enum AuthoringOperation {
 pub(crate) struct AdapterAuthoredChange {
     pub(crate) raw: Vec<u8>,
     pub(crate) hash: ChangeHash,
+    pub(crate) operation_count: u64,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -252,10 +254,13 @@ impl Document {
             return Err(AdapterAuthoringError::Limit);
         }
         let bytes: [u8; 32] = hash.0;
+        let operation_count =
+            u64::try_from(change.len()).map_err(|_| AdapterAuthoringError::Limit)?;
         self.inner = staged;
         Ok(AdapterAuthoredChange {
             raw,
             hash: ChangeHash::from_bytes(bytes),
+            operation_count,
         })
     }
 
@@ -286,6 +291,7 @@ impl Document {
         Ok(AdapterAuthoredChange {
             raw,
             hash: ChangeHash::from_bytes(bytes),
+            operation_count: 0,
         })
     }
 

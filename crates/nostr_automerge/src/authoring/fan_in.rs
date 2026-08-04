@@ -54,14 +54,22 @@ impl FanInPlan {
         {
             return Err(FanInError::Authoring);
         }
-        document
-            .document
-            .author_empty_change()
-            .map(AuthoredChange::from_adapter)
-            .map_err(|error| match error {
-                AdapterAuthoringError::Limit => FanInError::DependencyLimit,
-                _ => FanInError::Authoring,
-            })
+        let previous_state = document.actor_state().clone();
+        let mut staged = document.document.clone();
+        let authored = staged.author_empty_change().map_err(|error| match error {
+            AdapterAuthoringError::Limit => FanInError::DependencyLimit,
+            _ => FanInError::Authoring,
+        })?;
+        let new_state = previous_state
+            .transition(authored.hash, 0)
+            .map_err(|_| FanInError::Authoring)?;
+        document.document = staged;
+        document.actor_state = new_state.clone();
+        Ok(AuthoredChange::from_adapter(
+            authored,
+            previous_state,
+            new_state,
+        ))
     }
 }
 
