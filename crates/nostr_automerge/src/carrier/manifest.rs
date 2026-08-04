@@ -1,7 +1,11 @@
 use serde_json::{Map, Value};
 
-use crate::ProtocolRevision;
 use crate::wire::canonical_json::parse::{CanonicalJsonError, parse_canonical};
+use crate::wire::{hex, scalars, tags};
+use crate::{
+    ControllerPublicKey, DocumentCoordinate, DocumentId, EventId, ProtocolRevision,
+    VerifiedNip01Event,
+};
 
 const MANIFEST_FIELDS: &[&str] = &[
     "application",
@@ -40,10 +44,143 @@ pub(crate) struct Application {
     pub(crate) schema_version: String,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct ValidatedManifest {
+    pub(crate) event_id: EventId,
+    pub(crate) coordinate: DocumentCoordinate,
+    pub(crate) application: Option<ValidatedApplication>,
+    pub(crate) checkpoint: Option<EventId>,
+    pub(crate) control: EventId,
+    pub(crate) description: Option<String>,
+    pub(crate) name: Option<String>,
+    pub(crate) relays: Vec<String>,
+    pub(crate) status: ManifestStatus,
+    pub(crate) successor: Option<DocumentCoordinate>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct ValidatedApplication {
+    pub(crate) id: String,
+    pub(crate) schema_hash: Option<[u8; 32]>,
+    pub(crate) schema_version: String,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ManifestStatus {
+    Active,
+    Frozen,
+    Superseded,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum ManifestContentError {
     Canonical(CanonicalJsonError),
     Shape,
+    Tags,
+    Semantics,
+}
+
+pub(crate) fn validate(
+    event: &VerifiedNip01Event,
+) -> Result<ValidatedManifest, ManifestContentError> {
+    if event.kind() != 31_624 {
+        return Err(ManifestContentError::Semantics);
+    }
+    validate_parts(
+        event.event_id(),
+        *event.author_bytes(),
+        event.tags(),
+        event.content(),
+    )
+}
+
+fn validate_parts(
+    event_id: EventId,
+    author: [u8; 32],
+    event_tags: &[Vec<String>],
+    content: &str,
+) -> Result<ValidatedManifest, ManifestContentError> {
+    let d = tags::required_tag(event_tags, "d", 2).map_err(|_| ManifestContentError::Tags)?;
+    for forbidden in ["a", "e", "x"] {
+        tags::require_absent(event_tags, forbidden).map_err(|_| ManifestContentError::Tags)?;
+    }
+    tags::require_durable_tags(event_tags).map_err(|_| ManifestContentError::Tags)?;
+    let document_id: DocumentId = d[1].parse().map_err(|_| ManifestContentError::Tags)?;
+    let coordinate = DocumentCoordinate::new(ControllerPublicKey::from_bytes(author), document_id);
+
+    let parsed = parse_content(content)?;
+    if parsed.version != 1
+        || parsed.format != ProtocolRevision::draft_v1().format()
+        || parsed.text_encoding != ProtocolRevision::draft_v1().text_encoding()
+        || parsed.relays.len() > 16
+        || scalars::validate_sorted_unique_strings(&parsed.relays).is_err()
+        || parsed
+            .relays
+            .iter()
+            .any(|value| scalars::validate_relay_url(value).is_err())
+        || parsed
+            .name
+            .as_deref()
+            .is_some_and(|value| scalars::validate_utf8_bytes(value, 256).is_err())
+        || parsed
+            .description
+            .as_deref()
+            .is_some_and(|value| scalars::validate_utf8_bytes(value, 2_048).is_err())
+    {
+        return Err(ManifestContentError::Semantics);
+    }
+    let status = match parsed.status.as_str() {
+        "active" => ManifestStatus::Active,
+        "frozen" => ManifestStatus::Frozen,
+        "superseded" => ManifestStatus::Superseded,
+        _ => return Err(ManifestContentError::Semantics),
+    };
+    Ok(ValidatedManifest {
+        event_id,
+        coordinate,
+        application: parsed.application.map(validate_application).transpose()?,
+        checkpoint: parse_optional(&parsed.checkpoint)?,
+        control: parsed
+            .control
+            .parse()
+            .map_err(|_| ManifestContentError::Semantics)?,
+        description: parsed.description,
+        name: parsed.name,
+        relays: parsed.relays,
+        status,
+        successor: parsed
+            .successor
+            .map(|value| value.parse())
+            .transpose()
+            .map_err(|_| ManifestContentError::Semantics)?,
+    })
+}
+
+fn validate_application(value: Application) -> Result<ValidatedApplication, ManifestContentError> {
+    if scalars::validate_printable_ascii(&value.id, 128).is_err()
+        || scalars::validate_utf8_bytes(&value.schema_version, 64).is_err()
+    {
+        return Err(ManifestContentError::Semantics);
+    }
+    Ok(ValidatedApplication {
+        id: value.id,
+        schema_hash: value
+            .schema_hash
+            .map(|value| hex::decode_bytes(&value))
+            .transpose()
+            .map_err(|_| ManifestContentError::Semantics)?,
+        schema_version: value.schema_version,
+    })
+}
+
+fn parse_optional<T: core::str::FromStr>(
+    value: &Option<String>,
+) -> Result<Option<T>, ManifestContentError> {
+    value
+        .as_deref()
+        .map(str::parse)
+        .transpose()
+        .map_err(|_| ManifestContentError::Semantics)
 }
 
 pub(crate) fn parse_content(content: &str) -> Result<ManifestContent, ManifestContentError> {
@@ -128,7 +265,8 @@ fn string_array(value: &Value) -> Result<Vec<String>, ManifestContentError> {
 
 #[cfg(test)]
 mod tests {
-    use super::{ManifestContentError, parse_content};
+    use super::{ManifestContentError, ManifestStatus, parse_content, validate_parts};
+    use crate::EventId;
 
     const CONTENT: &str = r#"{"application":{"id":"org.example.editor","schema_hash":null,"schema_version":"1"},"checkpoint":null,"control":"1111111111111111111111111111111111111111111111111111111111111111","description":null,"format":"automerge-change-v1","name":null,"relays":["wss://relay.example"],"status":"active","successor":null,"text_encoding":"utf16","v":1}"#;
 
@@ -154,5 +292,39 @@ mod tests {
         assert_eq!(parse_content(&unknown), Err(ManifestContentError::Shape));
         let wrong_null = CONTENT.replace("\"checkpoint\":null", "\"checkpoint\":false");
         assert_eq!(parse_content(&wrong_null), Err(ManifestContentError::Shape));
+    }
+
+    #[test]
+    fn validate_manifests_and_addressable_selection_input() {
+        let author = [0x22; 32];
+        let tags = vec![vec!["d".to_owned(), "33".repeat(32)]];
+        let validated = validate_parts(EventId::from_bytes([0x44; 32]), author, &tags, CONTENT);
+        assert!(validated.is_ok());
+        let validated = match validated {
+            Ok(value) => value,
+            Err(_) => return,
+        };
+        assert_eq!(validated.coordinate.controller().as_bytes(), &author);
+        assert_eq!(validated.control, EventId::from_bytes([0x11; 32]));
+        assert_eq!(validated.status, ManifestStatus::Active);
+
+        let unsorted = CONTENT.replace(
+            "[\"wss://relay.example\"]",
+            "[\"wss://z.example\",\"wss://a.example\"]",
+        );
+        assert_eq!(
+            validate_parts(EventId::from_bytes([0; 32]), author, &tags, &unsorted),
+            Err(ManifestContentError::Semantics)
+        );
+        let bad_status = CONTENT.replace("\"active\"", "\"paused\"");
+        assert_eq!(
+            validate_parts(EventId::from_bytes([0; 32]), author, &tags, &bad_status),
+            Err(ManifestContentError::Semantics)
+        );
+        let forbidden = vec![tags[0].clone(), vec!["e".to_owned(), "00".repeat(32)]];
+        assert_eq!(
+            validate_parts(EventId::from_bytes([0; 32]), author, &forbidden, CONTENT),
+            Err(ManifestContentError::Tags)
+        );
     }
 }
