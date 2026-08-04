@@ -16,6 +16,8 @@ pub enum AuthoringDocumentError {
     Load,
     /// Loaded Automerge heads do not equal the actor state's accepted frontier.
     Heads,
+    /// The last authored identity is not present in the bound accepted frontier.
+    StaleState,
 }
 
 impl AuthoringDocument {
@@ -44,6 +46,12 @@ impl AuthoringDocument {
             .map_err(|_| AuthoringDocumentError::Load)?;
         if heads != *actor_state.accepted_heads() {
             return Err(AuthoringDocumentError::Heads);
+        }
+        if actor_state
+            .last_authored_change()
+            .is_some_and(|change| !heads.contains(&change))
+        {
+            return Err(AuthoringDocumentError::StaleState);
         }
         document.replace_unused_actor(actor_state.actor_id().as_bytes());
         Ok(Self {

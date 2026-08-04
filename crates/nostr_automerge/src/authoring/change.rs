@@ -93,6 +93,8 @@ pub enum AuthoringError {
     Limit,
     /// Explicit actor counters could not advance without overflow.
     State,
+    /// The document no longer matches the frontier bound into actor state.
+    Stale,
 }
 
 impl AuthoringDocument {
@@ -107,6 +109,14 @@ impl AuthoringDocument {
             .map(Into::into)
             .collect::<Vec<_>>();
         let previous_state = self.actor_state().clone();
+        if self
+            .document
+            .semantic_heads()
+            .map_err(|_| AuthoringError::Stale)?
+            != *previous_state.accepted_heads()
+        {
+            return Err(AuthoringError::Stale);
+        }
         previous_state
             .next_sequence()
             .checked_add(1)
@@ -158,7 +168,7 @@ mod tests {
     use super::{AuthoringError, Operation};
     use crate::authoring::{ActorState, AuthoringDocument};
     use crate::automerge_adapter::decode::decode_change;
-    use crate::{ActorId, ProtocolRevision};
+    use crate::{ActorId, ChangeHash, ProtocolRevision};
     use std::collections::BTreeSet;
 
     #[test]
@@ -271,5 +281,42 @@ mod tests {
             Err(AuthoringError::State)
         );
         assert_eq!(overflow_document.actor_state(), &before);
+    }
+
+    #[test]
+    fn guard_against_stale_out_of_order_actor_state() {
+        let actor = ActorId::from_bytes([7; 32]);
+        let original = ActorState::initial(actor, BTreeSet::new());
+        let document = AuthoringDocument::empty(original.clone());
+        assert!(document.is_ok());
+        let Ok(mut document) = document else { return };
+        let authored = document.author_change(&[Operation::PutString {
+            key: "k".into(),
+            value: "v".into(),
+        }]);
+        assert!(authored.is_ok());
+        let Ok(authored) = authored else { return };
+        let bytes = document.accepted_state_bytes();
+
+        assert_eq!(
+            AuthoringDocument::from_accepted(&bytes, original).err(),
+            Some(crate::authoring::AuthoringDocumentError::Heads)
+        );
+        let changed_heads = ActorState::restore(
+            actor,
+            authored.new_state().next_sequence(),
+            authored.new_state().next_operation(),
+            BTreeSet::from([ChangeHash::from_bytes([8; 32])]),
+            Some(authored.change_hash()),
+        );
+        assert!(changed_heads.is_ok());
+        let Ok(changed_heads) = changed_heads else {
+            return;
+        };
+        assert_eq!(
+            AuthoringDocument::from_accepted(&bytes, changed_heads).err(),
+            Some(crate::authoring::AuthoringDocumentError::Heads)
+        );
+        assert!(AuthoringDocument::from_accepted(&bytes, authored.new_state().clone()).is_ok());
     }
 }
