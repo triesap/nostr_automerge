@@ -46,6 +46,13 @@ impl ProtocolRevision {
             SealedRevision::Draft2026_08 => "utf16",
         }
     }
+
+    #[allow(dead_code)]
+    pub(crate) const fn classify_kind(self, kind: u16) -> Option<kinds::CarrierKind> {
+        match self.0 {
+            SealedRevision::Draft2026_08 => kinds::classify(kind),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -62,5 +69,9 @@ mod tests {
         assert_eq!(ProtocolRevision::lookup("draft_2026_09"), None);
         assert_eq!(ProtocolRevision::draft_v1().format(), "automerge-change-v1");
         assert_eq!(ProtocolRevision::draft_v1().text_encoding(), "utf16");
+        assert!(ProtocolRevision::draft_v1().classify_kind(1624).is_some());
+        assert!(ProtocolRevision::draft_v1().classify_kind(1).is_none());
     }
 }
+#[allow(dead_code)]
+mod kinds;
