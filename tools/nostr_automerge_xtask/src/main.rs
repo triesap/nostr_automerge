@@ -3,9 +3,10 @@
 use std::process::ExitCode;
 
 mod requirements;
+mod sbom;
 mod validate;
 
-const HELP: &str = "nostr_automerge_xtask\n\nUSAGE:\n    nostr_automerge_xtask validate\n    nostr_automerge_xtask --help";
+const HELP: &str = "nostr_automerge_xtask\n\nUSAGE:\n    nostr_automerge_xtask validate\n    nostr_automerge_xtask sbom\n    nostr_automerge_xtask --help";
 
 fn main() -> ExitCode {
     let mut args = std::env::args().skip(1);
@@ -32,6 +33,10 @@ fn main() -> ExitCode {
                     ExitCode::FAILURE
                 }
             }
+        }
+        Some("sbom") if args.next().is_none() => {
+            println!("{}", sbom::generate());
+            ExitCode::SUCCESS
         }
         _ => {
             eprintln!("{HELP}");

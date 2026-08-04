@@ -1,0 +1,12 @@
+name: release-evidence
+on: { workflow_dispatch: {} }
+permissions: { contents: read }
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo run -p nostr_automerge_xtask --locked -- sbom > nostr_automerge.cdx.json
+      - uses: actions/upload-artifact@v4
+        with: { name: release-evidence, path: nostr_automerge.cdx.json }
