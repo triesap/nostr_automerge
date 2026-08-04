@@ -47,6 +47,14 @@ impl ProtocolRevision {
         }
     }
 
+    /// Returns read-only validity limits for this sealed revision.
+    #[must_use]
+    pub const fn limits(self) -> crate::ProtocolLimits {
+        match self.0 {
+            SealedRevision::Draft2026_08 => crate::ProtocolLimits::draft_v1(),
+        }
+    }
+
     #[allow(dead_code)]
     pub(crate) const fn classify_kind(self, kind: u16) -> Option<kinds::CarrierKind> {
         match self.0 {

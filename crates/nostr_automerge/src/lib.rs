@@ -8,11 +8,13 @@
 #![deny(missing_docs)]
 
 mod error;
+mod limits;
 mod profile;
 mod types;
 mod wire;
 
 pub use error::HexError;
+pub use limits::{ByteLimit, ItemLimit, LimitConversionError, ProtocolLimits};
 pub use profile::ProtocolRevision;
 pub use types::{
     AccountPublicKey, ActorId, ChangeHash, ChunkHash, ControllerPublicKey, CoordinateError,
