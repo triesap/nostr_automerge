@@ -1,20 +1,22 @@
 # nostr_automerge Draft V1 Full Implementation Multi-RCLD
 
-Status: approved; RCLD 00 through RCLD 12 complete
+Status: approved; RCLD 00 through RCLD 12 protocol work complete; RCLD 13 eligible
 Created: 2026-08-04
 Updated: 2026-08-04
 Mode: rcl-durable
 Coordination and Rust implementation repository: `triesap/nostr_automerge`
 Cargo workspace root: repository root
-Current base commit: `b97eece`
+Current base commit: `9f889c6`
 
 ## Purpose
 
 Implement the complete approved draft-v1 `nostr_automerge` protocol as a
 standalone public Rust workspace, qualify it against language-neutral fixtures,
-produce an independent TypeScript implementation, and prepare the draft NIP for
-review without overstating adoption, production readiness, or downstream
-application readiness.
+produce an independent TypeScript implementation, and close locally proven
+code, requirement, robustness, optimization, and interoperability readiness
+without overstating NIP adoption, production readiness, or downstream
+application readiness. Authoring and advancing the NIP document itself are
+outside this implementation program.
 
 The program uses fourteen dependency-ordered child RCLDs. The original 192
 implementation steps remain distinct, reviewable checkpoints. One corrective
@@ -45,14 +47,13 @@ External workspace and task-tracker state are not repository authority and
 must not appear in public source, documentation, fixtures, reports, package
 metadata, or commit messages.
 
-The following are separate later repository identities:
+The following is a separate implementation repository identity:
 
-- `triesap/nostr_automerge_typescript` for independent TypeScript interop;
-- `triesap/nips` for the proposal branch before any upstream pull request.
+- `triesap/nostr_automerge_typescript` for independent TypeScript interop.
 
-Their work is coordinated by this program but is not committed to this Rust
-repository. Creating, pushing, publishing, or opening pull requests in those
-repositories requires the applicable later execution authority.
+Its work is coordinated by this program but is not committed to this Rust
+repository. Creating or mutating a remote, pushing, publishing, or opening a
+pull request requires separate execution authority.
 
 ## Authority Order
 
@@ -63,7 +64,8 @@ During implementation, apply authority in this order:
    `spec/NOSTR_AUTOMERGE_V1_SPEC.md` and its focused contracts;
 3. the machine-readable requirements, protocol revision, diagnostics, limits,
    schemas, fixtures, and approved ADRs imported into repository-owned paths;
-4. repository-local `AGENTS.md`, dependency, security, CI, and coding policy;
+4. repository-local `AGENTS.md`, dependency, security, local-runner, and coding
+   policy;
 5. this governing multi-RCLD and the currently active child RCLD;
 6. the repository-owned implementation sequence imported into
    `implementation/COMMIT_SEQUENCE.md` and
@@ -308,7 +310,7 @@ interop, or release lane below.
 | 10 | Verified-history checkpoints | `step_145`–`step_160` | Rust repository | Checkpoint/full-replay equality and checkpoint report |
 | 11 | Hardening and alpha evidence | `step_161`–`step_176` | Rust repository | Fuzz/resource/supply-chain/API/release gates |
 | 12 | Independent TypeScript interop | `step_177`–`step_188` | Rust coordination plus separate TypeScript repository | Byte-identical independent differential conformance |
-| 13 | NIP readiness | `step_189`–`step_192` | Rust coordination plus `triesap/nips` | Current allocation review and evidence-based draft status |
+| 13 | Local implementation readiness | `step_189`–`step_192` | Rust coordination plus separate TypeScript repository | Local-only runner, complete requirement, robustness, optimization, and interop evidence |
 
 Strict dependency chain:
 
@@ -559,7 +561,8 @@ Scope:
 - independently implement strict NIP-01, Automerge JS qualification,
   carriers/evidence, controls, changes, reports, and checkpoints;
 - run core/checkpoint/malformed/property differential families;
-- establish mismatch triage and cross-repository fixture-version CI.
+- establish mismatch triage and cross-repository fixture-version drift
+  detection.
 
 Green:
 
@@ -568,24 +571,37 @@ Green:
 - canonical report bytes agree for every required fixture;
 - all mismatches are resolved as spec, fixture, Rust, TypeScript, or upstream
   version issues;
-- ongoing CI detects a deliberate mismatch.
+- the local differential lane detects a deliberate mismatch.
 
-### 13 — NIP readiness
+### 13 — Local implementation readiness
 
 Scope:
 
-- use the `triesap/nips` fork through its canonical standalone checkout;
-- recheck current identifier, kinds, issues, PRs, and registry collisions;
-- update the proposal with Rust/TypeScript/checkpoint/security evidence;
-- publish implementation and security matrices;
-- perform final readiness review.
+- remove every tracked GitHub workflow and enforce ignored, untracked
+  `.act/workflows/**` local runner policy in both implementation repositories;
+- establish complete tracked gate commands and ignored local `act` runner
+  suites for Rust and TypeScript;
+- reproduce independent differential agreement and deliberate mismatch
+  detection from both repository entry points on the local machine;
+- classify all 87 registered requirements and provide direct implementation
+  and test evidence for every code-applicable requirement;
+- complete sustained fuzz, mutation, property, coverage, dependency, resource,
+  and measured optimization campaigns in both implementations;
+- publish accurate local-only requirements, optimization, security, release,
+  and interop evidence.
 
 Green:
 
-- the proposal remains draft unless all stated gates pass;
-- no identifier or kind is described as allocated without maintainer action;
-- two independent clients and applicable relay compatibility have evidence;
-- external mutation, push, or PR creation occurs only with separate authority.
+- no `.github/workflows/**` or `.act/workflows/**` file is tracked;
+- every required ignored `act` job passes locally in both repositories;
+- every code-applicable requirement has direct implementation and executable
+  evidence in each applicable implementation;
+- no unexplained material mutation, crash, timeout, nondeterminism, or
+  critical/high dependency finding remains;
+- measured optimizations preserve deterministic canonical bytes and resource
+  ceilings;
+- both local interop entry points agree byte-for-byte and detect a deliberate
+  mismatch.
 
 ## Program Gates And Stop Conditions
 
@@ -598,8 +614,9 @@ Green:
 - RCLD 11 cannot claim production limits without measured Rust, JS/WASM,
   representative mobile, relay, and checkpoint-streaming evidence.
 - RCLD 12 cannot claim independence if it consumes Rust implementation logic.
-- RCLD 13 cannot claim adoption, allocation, or readiness without external
-  evidence and maintainer action.
+- RCLD 13 stops if a tracked GitHub workflow remains, a required local `act`
+  job cannot be reproduced, a code-applicable requirement lacks direct
+  evidence, or a material robustness/optimization finding remains unresolved.
 
 Blocked gates produce a durable report and leave later children pending. They
 do not justify weakening a requirement.
@@ -626,8 +643,9 @@ checkpoint plus `step_000` has an accurate report and independently reviewable
 commit.
 
 The full implementation program is complete only when RCLDs 00–13 are green,
-including independent TypeScript differential agreement and an accurate NIP
-readiness outcome.
+including independent TypeScript differential agreement, complete
+code-applicable requirement coverage, and accurate local-only readiness
+evidence.
 
 An alpha release is permitted only after its security, resource, dependency,
 API, clean-checkout, interop, and review gates pass and separate release
@@ -635,15 +653,20 @@ authority is granted.
 
 ## Current State
 
-- RCLDs 00 through 12 and steps `step_000` through `step_188` are complete.
+- RCLDs 00 through 12 and steps `step_000` through `step_188` completed their
+  protocol work. RCLD 12's tracked-workflow policy is superseded and will be
+  corrected by RCLD 13 `step_189`.
 - The Rust core, conformance tooling, authoring API, verified-history
   checkpoints, hardening policy, and local alpha package evidence are green.
 - Independent TypeScript core, checkpoint, malformed, and property reports are
-  byte-identical locally; hosted execution is not claimed.
-- Publication remains held because NIP readiness, sustained fuzzing, mutation
-  completion, and external review are not claimed.
+  byte-identical locally. Complete ignored local-runner reproduction is still
+  pending.
+- Publication remains held because the revised local runner, requirement,
+  sustained fuzzing, mutation, optimization, and final readiness gates are not
+  complete. External review also remains a non-claim rather than a task in
+  this implementation sequence.
 - RCLD 13 is the only remaining child and is eligible for activation.
 
 ## Remaining Child RCLDs
 
-1. `nostr_automerge_v1_13_nip_readiness_rcld` — eligible
+1. `nostr_automerge_v1_13_local_implementation_readiness_rcld` — approved and eligible

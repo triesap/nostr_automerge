@@ -9,10 +9,10 @@ All five fixtures passed in both implementations. Core, checkpoint, malformed,
 and property profile reports were byte-identical. Both corpus summaries have
 SHA-256 `e1c96aa1046df5108c713d6484857d2030cb73ab1ac668f3aac28821f71779d4`.
 
-Both repositories contain a cross-repository workflow pinned to the evaluated
-counterpart. The comparison lane detects a deliberate one-byte mismatch. These
-workflow definitions have not been observed on hosted infrastructure because
-neither repository was pushed by this execution.
+The comparison lane detects a deliberate one-byte mismatch. The former tracked
+GitHub workflow definitions are superseded and removed. Ongoing reproduction
+must use ignored, untracked `.act/workflows/**` runners on the local machine.
+The complete local Act runner suite is pending RCLD 13.
 
-This is local differential evidence. Hosted cross-repository CI activation,
-repository publication, release, and production qualification are not claimed.
+This is local differential evidence. Hosted execution, repository publication,
+release, and production qualification are not claimed.

@@ -1,6 +1,6 @@
 # nostr_automerge Draft V1 RCLD 12: Independent TypeScript Interop
 
-Status: complete
+Status: protocol evidence complete; runner-policy correction pending in RCLD 13
 Created: 2026-08-04
 Updated: 2026-08-04
 Mode: rcl-durable
@@ -19,11 +19,14 @@ engine. Canonical reports must agree byte-for-byte for every required fixture.
 
 The Rust repository owns the normative fixture distribution, Rust conformance
 runner, coordination evidence, and this RCLD. The TypeScript repository owns
-its package, implementation, tests, conformance CLI, and consumer CI. Neither
-repository contains source from the other implementation.
+its package, implementation, tests, and conformance CLI. Neither repository
+contains source from the other implementation.
 
 No step authorizes a push, package publication, release, tag, or pull request.
-Hosted cross-repository activation remains distinct from committed CI policy.
+GitHub-hosted workflows are prohibited. The approved ongoing runner policy is
+ignored, untracked `.act/workflows/**` execution on the local machine. The
+tracked GitHub workflow files created under the superseded policy are removed
+and the readiness wording is reconciled by RCLD 13 `step_189`.
 
 ## Ordered Checkpoints
 
@@ -40,7 +43,7 @@ Hosted cross-repository activation remains distinct from committed CI policy.
 | `step_185` | TypeScript | Implement changes, dependencies, and equivocation evaluation | Replay and integrity tests pass |
 | `step_186` | TypeScript | Implement reports, typed assertions, digests, and checkpoints | Canonical report and checkpoint/full-replay tests pass |
 | `step_187` | Both | Run differential, malformed, permutation, and property families | Exact-byte agreement and mismatch classification pass |
-| `step_188` | Both | Add fixture-version CI and publish local interop evidence | Deliberate mismatch is detected and readiness report is accurate |
+| `step_188` | Both | Establish fixture-version drift detection and publish local interop evidence | Deliberate mismatch is detected and readiness report is accurate |
 
 ## Required Independence
 
@@ -77,7 +80,7 @@ RCLD 12 is complete only when:
 - both independent implementations consume the same versioned distribution;
 - canonical report bytes agree for every required fixture;
 - all discovered mismatches are resolved and classified;
-- a deliberate mismatch makes the committed interop CI lane fail;
+- a deliberate mismatch makes the local interop comparison lane fail;
 - the result does not claim hosted execution, publication, or production
   qualification that did not occur.
 
@@ -86,5 +89,9 @@ RCLD 12 is complete only when:
 Steps `step_177` through `step_188` created the versioned neutral distribution,
 expanded Rust conformance execution, established the independent TypeScript
 repository, implemented the sealed protocol layers, proved all five required
-fixture reports byte-identical, classified zero mismatches, and committed CI
-policy that detects a deliberate mismatch. Hosted execution is not claimed.
+fixture reports byte-identical, classified zero mismatches, and established a
+comparison policy that detects a deliberate mismatch. The protocol agreement
+and deliberate-mismatch evidence remain valid. The committed-workflow portion
+of that policy was later superseded: RCLD 13 must remove tracked GitHub
+workflows, replace them with ignored local `act` runners, and reproduce the
+evidence on the local machine before the complete program is green.

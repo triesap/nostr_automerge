@@ -49,8 +49,9 @@ fn add_mutation_tests_for_critical_validators() {
 }
 #[test]
 fn add_coverage_reporting() {
-    let workflow = include_str!("../../../.github/workflows/coverage.yml");
-    assert!(workflow.contains("cargo llvm-cov --workspace --all-targets --locked"));
+    let policy = include_str!("../../../docs/coverage.md");
+    assert!(policy.contains("cargo llvm-cov --workspace --all-targets --locked"));
+    assert!(policy.contains("local Act"));
 }
 #[test]
 fn add_dependency_advisory_and_license_policy() {

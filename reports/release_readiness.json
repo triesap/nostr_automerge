@@ -1,1 +1,1 @@
-{"decision":"hold_publication","local_alpha_package":"ready","locked_gate":"pass","external_review":"not_completed","interop":"local_differential_pass","mutation_campaign":"not_completed","nip_readiness":"rcld_13_pending","sustained_fuzzing":"not_completed"}
+{"decision":"hold_publication","external_review":"not_completed_nonclaim","interop":"local_differential_pass_act_pending","local_alpha_package":"ready","local_implementation_readiness":"rcld_13_step_189","locked_gate":"pass","mutation_campaign":"not_completed","sustained_fuzzing":"not_completed"}

@@ -1,19 +1,18 @@
-//! Structural validation for the deterministic conformance workflow.
+//! Structural validation for the local-only runner policy.
 
 use std::fs;
 use std::path::Path;
 
 #[test]
-fn add_deterministic_conformance_ci() {
+fn require_local_only_conformance_runner() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let workflow = fs::read_to_string(root.join(".github/workflows/conformance.yml"));
-    assert!(workflow.is_ok());
-    let Ok(workflow) = workflow else { return };
-    assert!(workflow.contains("cargo run -p nostr_automerge_xtask --locked -- validate"));
-    assert_eq!(workflow.matches("run_corpus fixtures").count(), 2);
-    assert!(workflow.contains("cmp core-profile-1.json core-profile-2.json"));
-    assert!(workflow.contains("actions/upload-artifact@v4"));
-    assert!(workflow.contains("if-no-files-found: error"));
+    let hosted_workflows = root.join(".github/workflows");
+    assert!(
+        !hosted_workflows.exists()
+            || fs::read_dir(hosted_workflows).is_ok_and(|mut entries| entries.next().is_none())
+    );
+    let ignore = fs::read_to_string(root.join(".gitignore"));
+    assert!(ignore.is_ok_and(|text| text.contains("/.act/workflows/")));
     let contributing = fs::read_to_string(root.join("CONTRIBUTING.md"));
     assert!(contributing.is_ok());
     assert!(contributing.is_ok_and(|text| text.contains("local conformance-CI equivalent")));

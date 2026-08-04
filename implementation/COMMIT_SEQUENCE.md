@@ -8116,7 +8116,7 @@ docs(release): publish alpha readiness report
 
 Report the step ID, commit SHA, files changed, requirements covered, tests and commands run with results, self-review findings, unverified items, deviations, and whether the next step is safe.
 
-## phase_11_typescript_interop_and_nip_readiness
+## phase_11_typescript_interop_and_local_readiness
 
 ### step_177: Publish neutral fixture distribution contract
 
@@ -8634,7 +8634,7 @@ test(interop): harden differential edge cases
 
 Report the step ID, commit SHA, files changed, requirements covered, tests and commands run with results, self-review findings, unverified items, deviations, and whether the next step is safe.
 
-### step_188: Establish mismatch triage and ongoing CI
+### step_188: Establish mismatch triage and local evidence
 
 **Purpose**
 
@@ -8642,15 +8642,18 @@ Prevent implementations drifting after the first report.
 
 **Exact scope of code changes**
 
-Add scheduled/cross-repo fixture release CI, mismatch issue template, version pin verification and report artifact retention.
+Add mismatch classification, fixture-version pin verification, deliberate
+mismatch detection, and accurate local evidence retention. The originally
+implemented tracked-workflow policy is superseded by the approved deviation in
+`implementation/deviations/step_189.md` and is corrected by `step_189`.
 
 **Files/modules likely involved**
 
-`CI in both repos; docs/interop_process.md`
+`interop commands and reports in both repositories; docs/interop_process.md`
 
 **Tests required**
 
-Deliberate mismatch fails CI and produces actionable diff.
+Deliberate mismatch fails the comparator and produces an actionable diff.
 
 **Verification commands**
 
@@ -8681,31 +8684,43 @@ ci(interop): enforce ongoing cross-language agreement
 
 Report the step ID, commit SHA, files changed, requirements covered, tests and commands run with results, self-review findings, unverified items, deviations, and whether the next step is safe.
 
-### step_189: Recheck NIP identifier and event-kind registry
+### step_189: Reconcile local runner authority
 
 **Purpose**
 
-Avoid submitting stale/colliding allocations.
+Remove the prohibited hosted-workflow surface and establish local-only runner
+authority before adding final verification infrastructure.
 
 **Exact scope of code changes**
 
-Search current NIPs tree, issues/PRs, and registry of kinds; update preferred NIP-CA recommendation and provisional/final kind decision with evidence.
+In both implementation repositories, remove every tracked
+`.github/workflows/**` file, ignore `/.act/workflows/` and local runner state,
+and add a tracked validator with positive and negative policy tests. In the
+Rust coordination repository, correct RCLD 12, the multi-RCLD plan, interop
+evidence, security evidence, and release evidence so they require local `act`
+execution and make no committed-CI or hosted-runner claim.
 
 **Files/modules likely involved**
 
-`NIP PR branch; reports/kind_registry_review.md`
+`both .gitignore files; repository policy validators/tests; RCLD 12; reports`
 
 **Tests required**
 
-Automated collision check plus manual review record.
+No GitHub or local workflow is tracked; `.act/workflows/**` is ignored; policy
+negative fixtures fail; both complete repository gates pass.
 
 **Verification commands**
 
 ```sh
-# In the NIPs/spec coordination repository, discover the current Markdown, link, and registry validation commands.
-python3 scripts/check_kind_collisions.py  # expected category; use actual repository tool
-python3 scripts/validate_spec.py          # expected category; use actual repository tool
-# Re-run the latest Rust and TypeScript conformance reports when this step changes a claim.
+git ls-files '.github/workflows/**' '.act/workflows/**'
+git check-ignore -q .act/workflows/policy_probe.yml
+cargo fmt --all --check
+cargo check --workspace --all-targets --locked
+cargo test --workspace --all-targets --locked
+cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+cargo doc --workspace --no-deps --locked
+cargo run -p nostr_automerge_xtask --locked -- validate
+pnpm check
 git diff --check
 ```
 
@@ -8718,38 +8733,48 @@ The stated scope is complete, the specified tests pass, the full applicable veri
 **Commit message**
 
 ```text
-docs(nip): refresh identifier and kind allocation
+ci(policy): reconcile local runner authority
 ```
 
 **Required completion report**
 
 Report the step ID, commit SHA, files changed, requirements covered, tests and commands run with results, self-review findings, unverified items, deviations, and whether the next step is safe.
 
-### step_190: Update the draft NIP PR with implementation evidence
+### step_190: Establish complete local runner suites
 
 **Purpose**
 
-Move the proposal from design-only draft toward substantive review.
+Make every implementation, quality, security, robustness, resource,
+optimization, and package gate executable through ignored local `act`
+workflows in both repositories.
 
 **Exact scope of code changes**
 
-Update NIP text, prior art, README table guidance, implementation links, fixture release, conformance claims, limits status, and checkpoint packaging decision.
+Add or consolidate tracked repository-owned commands for standard checks,
+conformance, coverage, dependency/license/advisory policy, fuzzing, mutation,
+sanitizers, SBOM/provenance, package inspection, resource limits, and benchmark
+capture in Rust and TypeScript. Add a tracked runner manifest in each
+repository. Create ignored `.act/workflows/**` orchestration and ignored local
+configuration that invoke those commands without GitHub events, services,
+tokens, checkout actions, or remote implementation clones.
 
 **Files/modules likely involved**
 
-`nostr-protocol/nips fork/PR`
+`tracked local-gate scripts; package scripts; runner manifests; ignored local act workflows`
 
 **Tests required**
 
-Markdown/lint/link checks; NIP references exact immutable releases/commits.
+Every required manifest job exists and passes with local `act`; missing-job and
+policy negative tests fail; repeatable summaries are byte-identical; neither
+worktree is dirtied by generated output.
 
 **Verification commands**
 
 ```sh
-# In the NIPs/spec coordination repository, discover the current Markdown, link, and registry validation commands.
-python3 scripts/check_kind_collisions.py  # expected category; use actual repository tool
-python3 scripts/validate_spec.py          # expected category; use actual repository tool
-# Re-run the latest Rust and TypeScript conformance reports when this step changes a claim.
+# Run every job declared by each repository's tracked local-runner manifest.
+act -W .act/workflows/<rust-local-suite>.yml
+act -W .act/workflows/<typescript-local-suite>.yml
+# Re-run both repository standard gates and confirm generated output is ignored.
 git diff --check
 ```
 
@@ -8762,38 +8787,48 @@ The stated scope is complete, the specified tests pass, the full applicable veri
 **Commit message**
 
 ```text
-docs(nip): attach interoperable implementation evidence
+ci(local): define complete repository gates
 ```
 
 **Required completion report**
 
 Report the step ID, commit SHA, files changed, requirements covered, tests and commands run with results, self-review findings, unverified items, deviations, and whether the next step is safe.
 
-### step_191: Publish implementation and security matrix
+### step_191: Prove local independent interoperability
 
 **Purpose**
 
-Give maintainers a concise evidence view.
+Replace obsolete cross-repository hosted workflow assumptions with two local
+entry points that prove exact agreement without sharing implementation logic.
 
 **Exact scope of code changes**
 
-List Rust/TypeScript features, relay requirements, fixture pass counts, security/resource review, known gaps, and no-overclaim status.
+Add one tracked interop command per repository. Each command accepts explicit
+local checkout and fixture paths, verifies repository identities, commit pins,
+distribution checksum, and toolchain pins, runs every required differential
+family, compares canonical bytes, classifies mismatches, injects a deliberate
+mismatch, writes raw output only to ignored paths, and emits a path-neutral
+canonical summary. Create and run one ignored local interop workflow in each
+repository, then update durable differential evidence.
 
 **Files/modules likely involved**
 
-`reports/IMPLEMENTATIONS.md; reports/SECURITY_STATUS.md`
+`interop commands in both repositories; ignored local interop workflows; reports/interop_*`
 
 **Tests required**
 
-Every claim links an artifact/commit; no unsupported production claim.
+Both repository entry points and repeated runs emit byte-identical canonical
+summaries; every fixture family passes; deliberate mismatch returns nonzero;
+both full repository gates pass and worktrees remain clean.
 
 **Verification commands**
 
 ```sh
-# In the NIPs/spec coordination repository, discover the current Markdown, link, and registry validation commands.
-python3 scripts/check_kind_collisions.py  # expected category; use actual repository tool
-python3 scripts/validate_spec.py          # expected category; use actual repository tool
-# Re-run the latest Rust and TypeScript conformance reports when this step changes a claim.
+act -W .act/workflows/<rust-interop>.yml
+act -W .act/workflows/<typescript-interop>.yml
+cmp <rust-canonical-summary> <typescript-canonical-summary>
+# Run each entry point twice, run the deliberate-mismatch job, and run both
+# complete repository checks.
 git diff --check
 ```
 
@@ -8806,38 +8841,58 @@ The stated scope is complete, the specified tests pass, the full applicable veri
 **Commit message**
 
 ```text
-docs(nip): publish implementation status
+test(interop): record local runner agreement
 ```
 
 **Required completion report**
 
 Report the step ID, commit SHA, files changed, requirements covered, tests and commands run with results, self-review findings, unverified items, deviations, and whether the next step is safe.
 
-### step_192: Mark NIP ready only after final readiness review
+### step_192: Close requirements, robustness, and optimization
 
 **Purpose**
 
-Make the ready-for-review transition evidence-based.
+Complete the implementation program with direct coverage of every
+code-applicable registered requirement and locally measured robustness,
+resource, and optimization evidence for both independent implementations.
 
 **Exact scope of code changes**
 
-Run complete sign-off checklist, close/block unresolved consensus ambiguities, verify two independent clients and applicable relay compatibility, then update PR status. Otherwise leave draft and publish blockers.
+Generate and validate a canonical classification matrix for all 87 registered
+requirements. Every code-applicable row names implementation, direct tests,
+fixture/property evidence when applicable, and a local runner job in each
+applicable repository. Run sustained fuzz, mutation, property, coverage,
+sanitizer, dependency, resource, and package campaigns locally. Profile
+release-equivalent representative and draft-limit cases before editing;
+optimize only measured hot paths; preserve strict rejection, deterministic
+behavior, public APIs, and canonical bytes; record before/after wall time,
+memory, allocation where supported, and output digests. Rerun every local job
+and both interop entry points, then publish accurate local-only readiness
+summaries.
 
 **Files/modules likely involved**
 
-`reports/nip_readiness.md; PR metadata`
+`requirement matrix/validator; robustness and benchmark tooling; local-only readiness reports in both repositories`
 
 **Tests required**
 
-All gates pass or accurate blocked decision; clean immutable evidence archive.
+All 87 requirements are classified with no uncovered code-applicable row; no
+material mutation, crash, timeout, nondeterminism, or critical/high dependency
+finding remains; resource ceilings pass; accepted optimizations do not regress
+any draft-limit median target by more than ten percent without an approved
+tradeoff; canonical interop remains identical; every ignored local `act` job
+passes; both worktrees are clean.
 
 **Verification commands**
 
 ```sh
-# In the NIPs/spec coordination repository, discover the current Markdown, link, and registry validation commands.
-python3 scripts/check_kind_collisions.py  # expected category; use actual repository tool
-python3 scripts/validate_spec.py          # expected category; use actual repository tool
-# Re-run the latest Rust and TypeScript conformance reports when this step changes a claim.
+# Run all jobs in both tracked local-runner manifests through ignored act workflows.
+# Run the complete requirement-matrix, fuzz, mutation, coverage, resource,
+# optimization, package, and differential commands introduced by this step.
+act -W .act/workflows/<rust-local-suite>.yml
+act -W .act/workflows/<typescript-local-suite>.yml
+act -W .act/workflows/<rust-interop>.yml
+act -W .act/workflows/<typescript-interop>.yml
 git diff --check
 ```
 
@@ -8850,7 +8905,7 @@ The stated scope is complete, the specified tests pass, the full applicable veri
 **Commit message**
 
 ```text
-docs(nip): complete readiness review
+perf(readiness): complete local implementation program
 ```
 
 **Required completion report**
