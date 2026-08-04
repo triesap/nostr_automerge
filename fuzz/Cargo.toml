@@ -1,5 +1,5 @@
 [package]
-name = "nostr_automerge_fuzz"
+name = "nostr_automerge-fuzz"
 version = "0.0.0"
 publish = false
 edition = "2024"
@@ -8,29 +8,15 @@ edition = "2024"
 cargo-fuzz = true
 
 [dependencies]
-libfuzzer-sys = "=0.4.13"
+libfuzzer-sys = "=0.4.10"
 nostr_automerge = { path = "../crates/nostr_automerge" }
-
-[[bin]]
-name = "automerge_framing"
-path = "fuzz_targets/automerge_framing.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
-name = "automerge_decode"
-path = "fuzz_targets/automerge_decode.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
-name = "automerge_reencode"
-path = "fuzz_targets/automerge_reencode.rs"
-test = false
-doc = false
-bench = false
 
 [workspace]
 members = ["."]
+
+[[bin]]
+name = "smoke"
+path = "fuzz_targets/smoke.rs"
+test = false
+doc = false
+bench = false
