@@ -3,3 +3,4 @@
 // No upstream type may leave this module tree.
 
 pub(crate) mod framing;
+pub(crate) mod leb128;
