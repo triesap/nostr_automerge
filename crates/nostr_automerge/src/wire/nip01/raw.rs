@@ -1,6 +1,7 @@
 use serde_json::{Map, Value};
 
 use crate::RawEventBytes;
+use crate::wire::nip01::tags::{Nip01Tags, TagShapeError};
 use crate::wire::strict_json::{StrictJsonError, scan_top_level_members};
 
 const SAFE_INTEGER_MAX: u64 = 9_007_199_254_740_991;
@@ -21,7 +22,7 @@ pub(crate) struct RawNip01Event {
     pub(crate) pubkey: String,
     pub(crate) created_at: u64,
     pub(crate) kind: u16,
-    pub(crate) tags: Value,
+    pub(crate) tags: Nip01Tags,
     pub(crate) content: String,
     pub(crate) signature: String,
 }
@@ -45,7 +46,7 @@ pub(crate) fn parse(raw: &RawEventBytes) -> Result<RawNip01Event, RawNip01Error>
         pubkey: string(object, "pubkey")?.to_owned(),
         created_at,
         kind,
-        tags: member(object, "tags")?.clone(),
+        tags: Nip01Tags::parse(member(object, "tags")?).map_err(RawNip01Error::Tags)?,
         content: string(object, "content")?.to_owned(),
         signature: string(object, "sig")?.to_owned(),
     })
@@ -73,6 +74,7 @@ fn member<'a>(object: &'a Map<String, Value>, name: &str) -> Result<&'a Value, R
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum RawNip01Error {
     Json(StrictJsonError),
+    Tags(TagShapeError),
     Shape,
 }
 
