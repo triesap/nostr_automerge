@@ -1,4 +1,6 @@
 use crate::ByteLimit;
+use crate::{ChangeHash, ProtocolRevision};
+use sha2::{Digest, Sha256};
 
 use super::leb128::{Leb128Error, decode_u64};
 
@@ -69,6 +71,33 @@ pub(crate) fn validate_length(
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct ValidatedChangeBytes<'a> {
+    pub(crate) raw: &'a [u8],
+    pub(crate) contents: &'a [u8],
+    pub(crate) change_hash: ChangeHash,
+}
+
+pub(crate) fn validate_change_frame(
+    raw: &[u8],
+    revision: ProtocolRevision,
+) -> Result<ValidatedChangeBytes<'_>, FramingError> {
+    let frame = validate_length(raw, revision.limits().change_bytes)?;
+    let mut hasher = Sha256::new();
+    hasher.update([CHANGE_TYPE]);
+    hasher.update(frame.length_encoding);
+    hasher.update(frame.contents);
+    let digest: [u8; 32] = hasher.finalize().into();
+    if digest.get(..4) != Some(frame.checksum.as_slice()) {
+        return Err(FramingError::Checksum);
+    }
+    Ok(ValidatedChangeBytes {
+        raw,
+        contents: frame.contents,
+        change_hash: ChangeHash::from_bytes(digest),
+    })
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum FramingError {
     Magic,
     ChunkType,
@@ -76,11 +105,12 @@ pub(crate) enum FramingError {
     Leb128(Leb128Error),
     TooLarge,
     Length,
+    Checksum,
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{FramingError, validate_length, validate_prefix};
+    use super::{FramingError, validate_change_frame, validate_length, validate_prefix};
     use crate::ProtocolRevision;
 
     #[test]
@@ -109,5 +139,23 @@ mod tests {
         assert_eq!(validate_length(&trailing, limit), Err(FramingError::Length));
         let truncated = &raw[..raw.len() - 1];
         assert_eq!(validate_length(truncated, limit), Err(FramingError::Length));
+    }
+
+    #[test]
+    fn verifies_checksum_and_exposes_full_change_hash() {
+        let raw = [
+            0x85, 0x6f, 0x4a, 0x83, 0xba, 0xd8, 0x33, 0x7d, 1, 2, 0xaa, 0xbb,
+        ];
+        let validated = validate_change_frame(&raw, ProtocolRevision::draft_v1());
+        assert_eq!(
+            validated.as_ref().map(|value| value.change_hash.to_hex()),
+            Ok("bad8337d5fada35339390c02f393619f37dcbb05120cdf3b5e7fc6a7982343b8".to_owned())
+        );
+        let mut corrupt = raw;
+        corrupt[4] ^= 1;
+        assert_eq!(
+            validate_change_frame(&corrupt, ProtocolRevision::draft_v1()),
+            Err(FramingError::Checksum)
+        );
     }
 }
