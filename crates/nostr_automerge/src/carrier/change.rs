@@ -1,0 +1,151 @@
+use crate::automerge_adapter::encode::{ReencodeError, qualify_canonical_reencoding};
+use crate::automerge_adapter::types::DecodedChange;
+use crate::wire::{base64, tags};
+use crate::{
+    ActorId, ChangeHash, DevicePublicKey, DocumentCoordinate, EventId, ProtocolRevision,
+    VerifiedNip01Event,
+};
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct ChangeCarrier {
+    pub(crate) event_id: EventId,
+    pub(crate) author_device: DevicePublicKey,
+    pub(crate) coordinate: DocumentCoordinate,
+    pub(crate) control_id: EventId,
+    pub(crate) declared_change_hash: ChangeHash,
+    pub(crate) canonical_raw_change_bytes: Vec<u8>,
+    pub(crate) decoded: DecodedChange,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ChangeCarrierError {
+    Kind,
+    Tags,
+    Base64,
+    Automerge(ReencodeError),
+    Hash,
+    Actor,
+}
+
+pub(crate) fn validate(event: &VerifiedNip01Event) -> Result<ChangeCarrier, ChangeCarrierError> {
+    if event.kind() != 1_624 {
+        return Err(ChangeCarrierError::Kind);
+    }
+    validate_parts(
+        event.event_id(),
+        *event.author_bytes(),
+        event.tags(),
+        event.content(),
+    )
+}
+
+fn validate_parts(
+    event_id: EventId,
+    author: [u8; 32],
+    event_tags: &[Vec<String>],
+    content: &str,
+) -> Result<ChangeCarrier, ChangeCarrierError> {
+    let coordinate: DocumentCoordinate = tag_value(event_tags, "a")?
+        .parse()
+        .map_err(|_| ChangeCarrierError::Tags)?;
+    let control_id: EventId = tag_value(event_tags, "e")?
+        .parse()
+        .map_err(|_| ChangeCarrierError::Tags)?;
+    let declared_change_hash: ChangeHash = tag_value(event_tags, "x")?
+        .parse()
+        .map_err(|_| ChangeCarrierError::Tags)?;
+    tags::require_absent(event_tags, "d").map_err(|_| ChangeCarrierError::Tags)?;
+    tags::require_durable_tags(event_tags).map_err(|_| ChangeCarrierError::Tags)?;
+
+    let raw = base64::decode_padded(content, ProtocolRevision::draft_v1().limits().change_bytes)
+        .map_err(|_| ChangeCarrierError::Base64)?;
+    let decoded = qualify_canonical_reencoding(&raw, ProtocolRevision::draft_v1())
+        .map_err(ChangeCarrierError::Automerge)?;
+    if decoded.hash.as_bytes() != declared_change_hash.as_bytes() {
+        return Err(ChangeCarrierError::Hash);
+    }
+    let author_device = DevicePublicKey::from_bytes(author);
+    let expected_actor = ActorId::derive(coordinate, author_device);
+    if decoded.actor.as_bytes() != expected_actor.as_bytes() {
+        return Err(ChangeCarrierError::Actor);
+    }
+    Ok(ChangeCarrier {
+        event_id,
+        author_device,
+        coordinate,
+        control_id,
+        declared_change_hash,
+        canonical_raw_change_bytes: raw,
+        decoded,
+    })
+}
+
+fn tag_value<'a>(event_tags: &'a [Vec<String>], name: &str) -> Result<&'a str, ChangeCarrierError> {
+    tags::required_tag(event_tags, name, 2)
+        .map_err(|_| ChangeCarrierError::Tags)?
+        .get(1)
+        .map(String::as_str)
+        .ok_or(ChangeCarrierError::Tags)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ChangeCarrierError, validate_parts};
+    use crate::automerge_adapter::fixture::generate_change;
+    use crate::wire::base64;
+    use crate::{ActorId, DevicePublicKey, DocumentCoordinate, EventId, ProtocolRevision};
+
+    #[test]
+    fn parse_and_validate_change_carriers() {
+        let coordinate: Result<DocumentCoordinate, _> =
+            format!("31624:{}:{}", "11".repeat(32), "22".repeat(32)).parse();
+        assert!(coordinate.is_ok());
+        let coordinate = match coordinate {
+            Ok(value) => value,
+            Err(_) => return,
+        };
+        let author = [0x33; 32];
+        let actor = ActorId::derive(coordinate, DevicePublicKey::from_bytes(author));
+        let raw = generate_change(*actor.as_bytes());
+        assert!(raw.is_some());
+        let raw = match raw {
+            Some(value) => value,
+            None => return,
+        };
+        let decoded = crate::automerge_adapter::encode::qualify_canonical_reencoding(
+            &raw,
+            ProtocolRevision::draft_v1(),
+        );
+        assert!(decoded.is_ok());
+        let hash = match decoded {
+            Ok(value) => value.hash,
+            Err(_) => return,
+        };
+        let tags = vec![
+            vec!["a".to_owned(), coordinate.to_address()],
+            vec!["e".to_owned(), "44".repeat(32)],
+            vec![
+                "x".to_owned(),
+                crate::wire::hex::encode_bytes(hash.as_bytes()),
+            ],
+        ];
+        let content = base64::encode_padded(&raw);
+        let valid = validate_parts(EventId::from_bytes([0x55; 32]), author, &tags, &content);
+        assert!(valid.is_ok());
+
+        let mut wrong_hash = tags.clone();
+        wrong_hash[2][1] = "00".repeat(32);
+        assert_eq!(
+            validate_parts(EventId::from_bytes([0; 32]), author, &wrong_hash, &content),
+            Err(ChangeCarrierError::Hash)
+        );
+        assert_eq!(
+            validate_parts(EventId::from_bytes([0; 32]), [0x34; 32], &tags, &content),
+            Err(ChangeCarrierError::Actor)
+        );
+        assert_eq!(
+            validate_parts(EventId::from_bytes([0; 32]), author, &tags, "not-base64"),
+            Err(ChangeCarrierError::Base64)
+        );
+    }
+}

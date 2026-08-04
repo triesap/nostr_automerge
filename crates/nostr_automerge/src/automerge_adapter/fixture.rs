@@ -11,8 +11,12 @@ enum FixtureError {
     MissingChange,
 }
 
-fn generate_basic_change() -> Result<Vec<u8>, FixtureError> {
-    let actor = ActorId::from([0x42; 32]);
+pub(crate) fn generate_change(actor_bytes: [u8; 32]) -> Option<Vec<u8>> {
+    generate_change_inner(actor_bytes).ok()
+}
+
+fn generate_change_inner(actor_bytes: [u8; 32]) -> Result<Vec<u8>, FixtureError> {
+    let actor = ActorId::from(actor_bytes);
     let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
     document.set_actor(actor);
     {
@@ -45,7 +49,7 @@ fn decode_hex(value: &str) -> Option<Vec<u8>> {
 
 #[test]
 fn generate_one_canonical_uncompressed_change() {
-    let generated = generate_basic_change();
+    let generated = generate_change_inner([0x42; 32]);
     let committed = decode_hex(include_str!(
         "../../../../fixtures/v1_draft/automerge_changes/basic/change.hex"
     ));

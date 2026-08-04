@@ -1,3 +1,4 @@
+pub(crate) mod change;
 pub(crate) mod classify;
 pub(crate) mod control;
 pub(crate) mod manifest;

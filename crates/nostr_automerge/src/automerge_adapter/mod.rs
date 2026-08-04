@@ -7,7 +7,7 @@ pub(crate) mod decode;
 pub(crate) mod document;
 pub(crate) mod encode;
 #[cfg(test)]
-mod fixture;
+pub(crate) mod fixture;
 pub(crate) mod framing;
 pub(crate) mod leb128;
 #[cfg(test)]
