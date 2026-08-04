@@ -2,6 +2,7 @@
 
 // No upstream type may leave this module tree.
 
+pub(crate) mod counters;
 pub(crate) mod decode;
 pub(crate) mod document;
 #[cfg(test)]
