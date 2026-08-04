@@ -39,6 +39,24 @@ pub(crate) fn validate_canonical_collections(
     Ok(())
 }
 
+pub(crate) fn validate_base_frontier(
+    content: &ValidatedControlContent,
+    genesis: bool,
+) -> Result<(), ControlValidationError> {
+    let limit = crate::ProtocolRevision::draft_v1()
+        .limits()
+        .control_heads
+        .try_usize()
+        .map_err(|_| ControlValidationError::BaseHeads)?;
+    if content.base_heads.len() > limit
+        || genesis && !content.base_heads.is_empty()
+        || !content.base_heads.windows(2).all(|pair| pair[0] < pair[1])
+    {
+        return Err(ControlValidationError::BaseHeads);
+    }
+    Ok(())
+}
+
 pub(crate) fn validate_genesis(control: &ControlEnvelope) -> Result<(), ControlValidationError> {
     if control.author != control.coordinate.controller() {
         return Err(ControlValidationError::Author);
@@ -59,13 +77,15 @@ pub(crate) fn validate_genesis(control: &ControlEnvelope) -> Result<(), ControlV
         return Err(ControlValidationError::Terminal);
     }
     validate_canonical_collections(&control.content)?;
+    validate_base_frontier(&control.content, true)?;
     Ok(())
 }
 
 #[cfg(test)]
 pub(crate) mod tests {
     use super::{
-        ControlEnvelope, ControlValidationError, validate_canonical_collections, validate_genesis,
+        ControlEnvelope, ControlValidationError, validate_base_frontier,
+        validate_canonical_collections, validate_genesis,
     };
     use crate::carrier::control::{DeviceGrant, ValidatedControlContent};
     use crate::types::role::Role;
@@ -176,5 +196,38 @@ pub(crate) mod tests {
         );
         control.content.members = vec![grant(4, vec![Role::Checkpoint, Role::Write])];
         assert_eq!(validate_canonical_collections(&control.content), Ok(()));
+    }
+
+    #[test]
+    fn validate_base_frontier_shape() {
+        let mut content = genesis().content;
+        content.base_heads = (0_u8..64)
+            .map(|byte| ChangeHash::from_bytes([byte; 32]))
+            .collect();
+        assert_eq!(validate_base_frontier(&content, false), Ok(()));
+        assert_eq!(
+            validate_base_frontier(&content, true),
+            Err(ControlValidationError::BaseHeads)
+        );
+        content.base_heads.push(ChangeHash::from_bytes([64; 32]));
+        assert_eq!(
+            validate_base_frontier(&content, false),
+            Err(ControlValidationError::BaseHeads)
+        );
+        content.base_heads = vec![
+            ChangeHash::from_bytes([2; 32]),
+            ChangeHash::from_bytes([1; 32]),
+        ];
+        assert_eq!(
+            validate_base_frontier(&content, false),
+            Err(ControlValidationError::BaseHeads)
+        );
+        content.base_heads = vec![ChangeHash::from_bytes([1; 32]); 2];
+        assert_eq!(
+            validate_base_frontier(&content, false),
+            Err(ControlValidationError::BaseHeads)
+        );
+        content.base_heads.clear();
+        assert_eq!(validate_base_frontier(&content, false), Ok(()));
     }
 }
