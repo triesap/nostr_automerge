@@ -1,12 +1,12 @@
 # nostr_automerge Draft V1 Full Implementation Multi-RCLD
 
-Status: approved; RCLD 00 through RCLD 11 complete; RCLD 12 active
+Status: approved; RCLD 00 through RCLD 12 complete
 Created: 2026-08-04
 Updated: 2026-08-04
 Mode: rcl-durable
 Coordination and Rust implementation repository: `triesap/nostr_automerge`
 Cargo workspace root: repository root
-Current base commit: `d9d7b04`
+Current base commit: `b97eece`
 
 ## Purpose
 
@@ -635,14 +635,15 @@ authority is granted.
 
 ## Current State
 
-- RCLDs 00 through 11 and steps `step_000` through `step_176` are complete.
+- RCLDs 00 through 12 and steps `step_000` through `step_188` are complete.
 - The Rust core, conformance tooling, authoring API, verified-history
   checkpoints, hardening policy, and local alpha package evidence are green.
-- Publication remains held because independent interoperability, NIP readiness,
-  sustained fuzzing, mutation completion, and external review are not claimed.
-- RCLD 12 is active at `step_177`.
+- Independent TypeScript core, checkpoint, malformed, and property reports are
+  byte-identical locally; hosted execution is not claimed.
+- Publication remains held because NIP readiness, sustained fuzzing, mutation
+  completion, and external review are not claimed.
+- RCLD 13 is the only remaining child and is eligible for activation.
 
 ## Remaining Child RCLDs
 
-1. `nostr_automerge_v1_12_independent_typescript_interop_rcld` — active
-2. `nostr_automerge_v1_13_nip_readiness_rcld` — dependency-blocked on RCLD 12
+1. `nostr_automerge_v1_13_nip_readiness_rcld` — eligible

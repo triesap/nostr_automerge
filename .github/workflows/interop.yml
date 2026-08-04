@@ -1,0 +1,60 @@
+name: independent interop
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  differential:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: triesap/nostr_automerge_typescript
+          ref: 387fb5800450666e0ecf7f9b83b7821f83e0d242
+          path: typescript
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26.5.1
+          cache: pnpm
+          cache-dependency-path: typescript/pnpm-lock.yaml
+      - run: cargo run -p nostr_automerge_xtask --locked -- validate
+      - run: pnpm --dir typescript install --frozen-lockfile
+      - run: pnpm --dir typescript build
+      - run: pnpm --dir typescript check
+        env:
+          NOSTR_AUTOMERGE_FIXTURES: ${{ github.workspace }}/fixtures
+      - name: Compare every canonical report
+        run: |
+          mkdir -p reports/interop-rust reports/interop-typescript
+          for fixture in fixtures/examples/*.fixture.json fixtures/interop/*.fixture.json; do
+            name="$(basename "$fixture" .fixture.json)"
+            cargo run --quiet -p nostr_automerge_conformance --locked -- run_fixture "$fixture" > "reports/interop-rust/$name.json"
+            node typescript/dist/src/cli.js run_fixture "$fixture" > "reports/interop-typescript/$name.json"
+            node typescript/scripts/compare_reports.mjs "reports/interop-rust/$name.json" "reports/interop-typescript/$name.json"
+          done
+      - name: Prove a deliberate mismatch fails
+        run: |
+          cp reports/interop-typescript/interop_core_001.json reports/interop-typescript/deliberate.json
+          node -e 'require("node:fs").appendFileSync("reports/interop-typescript/deliberate.json", " ")'
+          if node typescript/scripts/compare_reports.mjs reports/interop-rust/interop_core_001.json reports/interop-typescript/deliberate.json; then
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: independent-interop-reports
+          path: |
+            reports/interop-rust
+            reports/interop-typescript
+          if-no-files-found: error

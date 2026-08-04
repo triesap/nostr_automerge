@@ -12,6 +12,8 @@ fn record_independent_typescript_differential_agreement() {
     assert_eq!(report["status"], "local_differential_pass");
     assert_eq!(report["fixture_count"], 5);
     assert_eq!(report["canonical_report_bytes"], "identical");
+    assert_eq!(report["deliberate_mismatch"], "detected");
+    assert_eq!(report["ci_policy"], "configured_not_hosted");
     assert_eq!(report["mismatches"].as_array().map(Vec::len), Some(0));
     assert_eq!(
         report["corpus_sha256"],

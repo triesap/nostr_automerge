@@ -1,12 +1,12 @@
 # nostr_automerge Draft V1 RCLD 12: Independent TypeScript Interop
 
-Status: active
+Status: complete
 Created: 2026-08-04
 Updated: 2026-08-04
 Mode: rcl-durable
 Coordination repository: `triesap/nostr_automerge`
 Implementation repository: `triesap/nostr_automerge_typescript`
-Current checkpoint: `step_188`
+Current checkpoint: none
 
 ## Purpose
 
@@ -80,3 +80,11 @@ RCLD 12 is complete only when:
 - a deliberate mismatch makes the committed interop CI lane fail;
 - the result does not claim hosted execution, publication, or production
   qualification that did not occur.
+
+## Completion
+
+Steps `step_177` through `step_188` created the versioned neutral distribution,
+expanded Rust conformance execution, established the independent TypeScript
+repository, implemented the sealed protocol layers, proved all five required
+fixture reports byte-identical, classified zero mismatches, and committed CI
+policy that detects a deliberate mismatch. Hosted execution is not claimed.

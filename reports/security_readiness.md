@@ -7,8 +7,12 @@ conformance commands, compiled sanitizer targets, deterministic properties,
 checkpoint/full-replay agreement, and package verification pass. Resource,
 coverage, mutation, dependency, SBOM, and provenance policies are checked in.
 
+Independent TypeScript core, checkpoint, malformed, and property differential
+profiles pass locally with byte-identical canonical reports. Cross-repository CI
+policy and deliberate-mismatch detection are committed but have not run on
+hosted infrastructure.
+
 No sustained fuzz campaign, complete mutation campaign, hosted coverage run,
-independent security review, or cross-language interoperability result is yet
-claimed. RCLD 12 and 13 remain responsible for independent TypeScript agreement
-and NIP-readiness governance. Provisional event kinds and alpha API status remain
+or independent security review is claimed. RCLD 13 remains responsible for
+NIP-readiness governance. Provisional event kinds and alpha API status remain
 approved limits; no crate, tag, release, or NIP is published by this decision.

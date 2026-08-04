@@ -8,12 +8,13 @@ Automerge document protocol carried by signed Nostr events.
 The repository contains an implemented draft-v1 Rust core, deterministic
 conformance tooling, pure authoring primitives, and optional verified-history
 checkpoint validation. The API remains alpha and the event kinds provisional.
-The independent cross-language and NIP-readiness program is not complete yet.
+Independent TypeScript differential profiles pass locally with byte-identical
+canonical reports. Hosted interop CI has not yet been observed, and the
+NIP-readiness program is not complete yet.
 
 This repository does not currently claim:
 
 - an adopted NIP or allocated event kinds;
-- cross-language conformance;
 - a published or production-certified crate;
 - relay, mobile, private-transport, or application readiness.
 
