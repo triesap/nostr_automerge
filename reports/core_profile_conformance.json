@@ -1,0 +1,50 @@
+{
+  "claim": "rust_core_profile",
+  "dependencies": {
+    "automerge": "0.10.0",
+    "base64": "0.22.1",
+    "cargo_lock_sha256": "685bfbf1dd8a7b8d07af2d342a117964f93aadfd4f4ca20b4725ab55120ad472",
+    "secp256k1": "0.31.1",
+    "serde": "1.0.219",
+    "serde_json": "1.0.142",
+    "sha2": "0.10.9",
+    "url": "2.5.4"
+  },
+  "evaluated_commit": "d9dfa258dd00cce116b56bd5460d47403cf16306",
+  "fixture_manifest": [
+    {
+      "expected_sha256": "ac038980bab5d7f9847c86e6ade659e644056f44b0838b65f663465d3d95ee58",
+      "fixture_id": "actor_derivation_001",
+      "input_sha256": "850a14c1264b682952f9588fe61e1bc9b5d295d0f895c5763bfaa1cf6ed2a114",
+      "metadata_sha256": "1c9a905bb52c43fdb9ec05f75ca8a1d045d42e2af8da7cffcc6a5591bb8cc0bf",
+      "status": "passed"
+    }
+  ],
+  "gates": {
+    "cargo_check_workspace_all_targets_locked": "passed",
+    "cargo_clippy_workspace_all_targets_all_features_locked_deny_warnings": "passed",
+    "cargo_fmt_all_check": "passed",
+    "cargo_test_workspace_all_targets_locked": "passed",
+    "conformance_corpus_byte_reproduction": "passed",
+    "repository_xtask_validate": "passed"
+  },
+  "generated_at": "2026-08-04",
+  "result": "passed",
+  "revision": "draft_2026_08",
+  "schema": "nostr_automerge.core_profile_conformance.v1",
+  "toolchain": "rustc 1.97.1",
+  "unimplemented_checkpoint_requirements": [
+    "NCRDT-CHECKPOINT-001",
+    "NCRDT-CPCHUNK-001",
+    "NCRDT-CPCHUNK-002",
+    "NCRDT-CPCHUNK-003",
+    "NCRDT-CPDESC-001",
+    "NCRDT-CPDESC-002",
+    "NCRDT-CPDESC-003",
+    "NCRDT-CPDESC-004",
+    "NCRDT-CPDESC-005",
+    "NCRDT-CPDESC-006",
+    "NCRDT-CPTRUST-001",
+    "NCRDT-CPTRUST-002"
+  ]
+}
