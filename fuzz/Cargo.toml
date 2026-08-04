@@ -20,3 +20,10 @@ path = "fuzz_targets/smoke.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "raw_nip01"
+path = "fuzz_targets/raw_nip01.rs"
+test = false
+doc = false
+bench = false
