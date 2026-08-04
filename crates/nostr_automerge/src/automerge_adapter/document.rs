@@ -259,6 +259,36 @@ impl Document {
         })
     }
 
+    pub(crate) fn author_empty_change(
+        &mut self,
+    ) -> Result<AdapterAuthoredChange, AdapterAuthoringError> {
+        use automerge::{ReadDoc, transaction::CommitOptions};
+
+        let limits = crate::ProtocolRevision::draft_v1().limits();
+        if u64::try_from(self.inner.get_heads().len()).map_err(|_| AdapterAuthoringError::Limit)?
+            > limits.change_dependencies.get()
+        {
+            return Err(AdapterAuthoringError::Limit);
+        }
+        let mut staged = self.inner.clone();
+        let hash = staged.empty_commit(CommitOptions::default().with_time(0));
+        let change = staged
+            .get_change_by_hash(&hash)
+            .ok_or(AdapterAuthoringError::Missing)?;
+        let raw = change.raw_bytes().to_vec();
+        if u64::try_from(raw.len()).map_err(|_| AdapterAuthoringError::Limit)?
+            > limits.change_bytes.get()
+        {
+            return Err(AdapterAuthoringError::Limit);
+        }
+        let bytes = hash.0;
+        self.inner = staged;
+        Ok(AdapterAuthoredChange {
+            raw,
+            hash: ChangeHash::from_bytes(bytes),
+        })
+    }
+
     #[cfg(test)]
     pub(crate) fn author_test_change(&mut self) -> Option<Vec<u8>> {
         use automerge::{ROOT, ReadDoc, transaction::CommitOptions, transaction::Transactable};

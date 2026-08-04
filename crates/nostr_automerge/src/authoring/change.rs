@@ -46,6 +46,14 @@ pub struct AuthoredChange {
 }
 
 impl AuthoredChange {
+    pub(crate) fn from_adapter(
+        change: crate::automerge_adapter::document::AdapterAuthoredChange,
+    ) -> Self {
+        Self {
+            raw: change.raw,
+            change_hash: change.hash,
+        }
+    }
     /// Returns the canonical uncompressed change bytes.
     #[must_use]
     pub fn raw(&self) -> &[u8] {
@@ -82,10 +90,7 @@ impl AuthoringDocument {
             .collect::<Vec<_>>();
         self.document
             .author_operations(&operations)
-            .map(|change| AuthoredChange {
-                raw: change.raw,
-                change_hash: change.hash,
-            })
+            .map(AuthoredChange::from_adapter)
             .map_err(|error| match error {
                 AdapterAuthoringError::Empty => AuthoringError::Empty,
                 AdapterAuthoringError::Limit => AuthoringError::Limit,
