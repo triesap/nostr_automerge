@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use crate::carrier::VerifiedCarrier;
 use crate::carrier::classify::classify;
 use crate::evidence::event::{EventEvidence, RawChecksum};
+use crate::evidence::source::AcquiredRawEvent;
 use crate::{DiagnosticCode, EventId, Nip01VerificationError, RawEventBytes, VerifiedNip01Event};
 
 #[derive(Default)]
@@ -20,6 +21,10 @@ pub(crate) struct BuiltCorpus {
 }
 
 impl CorpusBuilder {
+    pub(crate) fn ingest_acquired(&mut self, acquired: AcquiredRawEvent) {
+        self.ingest(acquired.into_raw());
+    }
+
     pub(crate) fn ingest(&mut self, raw: RawEventBytes) {
         let checksum = RawChecksum::of(&raw);
         match VerifiedNip01Event::verify(raw.clone()) {
