@@ -18,6 +18,25 @@ pub(crate) enum ControlValidationError {
     BaseHeads,
     Grants,
     Terminal,
+    CanonicalCollections,
+}
+
+pub(crate) fn validate_canonical_collections(
+    content: &ValidatedControlContent,
+) -> Result<(), ControlValidationError> {
+    if !content.base_heads.windows(2).all(|pair| pair[0] < pair[1])
+        || !content
+            .members
+            .windows(2)
+            .all(|pair| pair[0].device < pair[1].device)
+        || content
+            .members
+            .iter()
+            .any(|grant| grant.roles.is_empty() || !grant.roles.windows(2).all(|p| p[0] < p[1]))
+    {
+        return Err(ControlValidationError::CanonicalCollections);
+    }
+    Ok(())
 }
 
 pub(crate) fn validate_genesis(control: &ControlEnvelope) -> Result<(), ControlValidationError> {
@@ -39,12 +58,15 @@ pub(crate) fn validate_genesis(control: &ControlEnvelope) -> Result<(), ControlV
     if control.content.successor.is_some() && !control.content.terminal {
         return Err(ControlValidationError::Terminal);
     }
+    validate_canonical_collections(&control.content)?;
     Ok(())
 }
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use super::{ControlEnvelope, ControlValidationError, validate_genesis};
+    use super::{
+        ControlEnvelope, ControlValidationError, validate_canonical_collections, validate_genesis,
+    };
     use crate::carrier::control::{DeviceGrant, ValidatedControlContent};
     use crate::types::role::Role;
     use crate::{
@@ -123,5 +145,36 @@ pub(crate) mod tests {
             validate_genesis(&successor),
             Err(ControlValidationError::Terminal)
         );
+    }
+
+    #[test]
+    fn validate_canonical_ordering_and_uniqueness_fields() {
+        let mut control = genesis();
+        control.content.base_heads = vec![
+            ChangeHash::from_bytes([2; 32]),
+            ChangeHash::from_bytes([1; 32]),
+        ];
+        assert_eq!(
+            validate_canonical_collections(&control.content),
+            Err(ControlValidationError::CanonicalCollections)
+        );
+        control.content.base_heads = vec![ChangeHash::from_bytes([1; 32]); 2];
+        assert_eq!(
+            validate_canonical_collections(&control.content),
+            Err(ControlValidationError::CanonicalCollections)
+        );
+        control.content.base_heads.clear();
+        control.content.members = vec![grant(5, vec![Role::Write]), grant(4, vec![Role::Write])];
+        assert_eq!(
+            validate_canonical_collections(&control.content),
+            Err(ControlValidationError::CanonicalCollections)
+        );
+        control.content.members = vec![grant(4, vec![Role::Write, Role::Checkpoint])];
+        assert_eq!(
+            validate_canonical_collections(&control.content),
+            Err(ControlValidationError::CanonicalCollections)
+        );
+        control.content.members = vec![grant(4, vec![Role::Checkpoint, Role::Write])];
+        assert_eq!(validate_canonical_collections(&control.content), Ok(()));
     }
 }
