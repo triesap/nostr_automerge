@@ -6,6 +6,24 @@ pub struct ProofStep {
     pub(crate) hash: [u8; 32],
     pub(crate) side: Side,
 }
+impl ProofStep {
+    /// Constructs a left sibling step.
+    #[must_use]
+    pub const fn left(hash: [u8; 32]) -> Self {
+        Self {
+            hash,
+            side: Side::Left,
+        }
+    }
+    /// Constructs a right sibling step.
+    #[must_use]
+    pub const fn right(hash: [u8; 32]) -> Self {
+        Self {
+            hash,
+            side: Side::Right,
+        }
+    }
+}
 /// Side occupied by the proof sibling.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Side {
@@ -63,10 +81,38 @@ pub fn merkle_root(leaves: &[[u8; 32]]) -> Result<[u8; 32], MerkleError> {
 
 /// Verifies a caller-provided ordered proof.
 pub fn verify_proof(
+    index: u32,
+    count: u32,
     leaf: [u8; 32],
     proof: &[ProofStep],
     root: [u8; 32],
 ) -> Result<(), MerkleError> {
+    fn sides(index: usize, count: usize, output: &mut Vec<Side>) {
+        if count == 1 {
+            return;
+        }
+        let split = count.next_power_of_two() / 2;
+        if index < split {
+            sides(index, split, output);
+            output.push(Side::Right);
+        } else {
+            sides(index - split, count - split, output);
+            output.push(Side::Left);
+        }
+    }
+    if count == 0 || count > super::MAX_CHUNK_COUNT || index >= count {
+        return Err(MerkleError::Proof);
+    }
+    let mut expected = Vec::new();
+    sides(index as usize, count as usize, &mut expected);
+    if expected.len() != proof.len()
+        || expected
+            .iter()
+            .zip(proof)
+            .any(|(side, step)| *side != step.side)
+    {
+        return Err(MerkleError::Proof);
+    }
     let actual = proof.iter().fold(leaf, |value, step| match step.side {
         Side::Left => node(step.hash, value),
         Side::Right => node(value, step.hash),
@@ -105,5 +151,32 @@ mod tests {
             assert_eq!(root, super::merkle_root(&leaves));
         }
         assert_eq!(super::merkle_root(&[]), Err(super::MerkleError::Count));
+    }
+    #[test]
+    fn verify_ordered_merkle_proofs() {
+        let leaves = [[1; 32], [2; 32], [3; 32]];
+        let root = super::merkle_root(&leaves).unwrap_or([0; 32]);
+        let left_pair = super::node(leaves[0], leaves[1]);
+        assert_eq!(
+            super::verify_proof(
+                0,
+                3,
+                leaves[0],
+                &[
+                    super::ProofStep::right(leaves[1]),
+                    super::ProofStep::right(leaves[2])
+                ],
+                root
+            ),
+            Ok(())
+        );
+        assert_eq!(
+            super::verify_proof(2, 3, leaves[2], &[super::ProofStep::left(left_pair)], root),
+            Ok(())
+        );
+        assert_eq!(
+            super::verify_proof(0, 3, leaves[0], &[super::ProofStep::left(leaves[1])], root),
+            Err(super::MerkleError::Proof)
+        );
     }
 }
