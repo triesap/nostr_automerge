@@ -11,6 +11,7 @@ mod commit;
 mod control;
 mod document;
 mod fan_in;
+mod manifest;
 
 pub use actor_state::{ActorState, ActorStateError};
 pub use change::{AuthoredChange, AuthoringError, Operation};
@@ -19,6 +20,7 @@ pub use commit::{CommitMetadata, CommitMetadataError};
 pub use control::{ControlDraft, ControlDraftError, ControlGrant, ControlPredecessor, ControlRole};
 pub use document::{AuthoringDocument, AuthoringDocumentError};
 pub use fan_in::{FanInError, FanInPlan};
+pub use manifest::{ApplicationMetadata, ManifestDraft, ManifestDraftError, ManifestStatus};
 
 #[cfg(test)]
 mod tests {
