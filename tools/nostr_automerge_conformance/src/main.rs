@@ -13,7 +13,7 @@ mod fixture;
 mod report_json;
 mod runner;
 
-const HELP: &str = "nostr_automerge_conformance\n\nUSAGE:\n    nostr_automerge_conformance run_fixture <path>\n    nostr_automerge_conformance --help";
+const HELP: &str = "nostr_automerge_conformance\n\nUSAGE:\n    nostr_automerge_conformance run_fixture <path>\n    nostr_automerge_conformance run_corpus <directory> [--family <name>] [--requirement <id>]\n    nostr_automerge_conformance --help";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct CliOutput {
@@ -42,12 +42,55 @@ fn run(args: impl IntoIterator<Item = String>) -> CliOutput {
                 code: error.exit_code(),
             },
         },
+        [command, root, rest @ ..] if command == "run_corpus" => {
+            let filters = parse_filters(rest);
+            match filters.and_then(|(family, requirement)| {
+                let paths = runner::discover_fixtures(Path::new(root)).map_err(|_| ())?;
+                let summary = runner::run_corpus(paths, family.as_deref(), requirement.as_deref());
+                let code = u8::from(summary.failed != 0);
+                runner::write_corpus_summary(&summary)
+                    .map(|bytes| (bytes, code))
+                    .map_err(|_| ())
+            }) {
+                Ok((bytes, code)) => CliOutput {
+                    stdout: String::from_utf8(bytes).unwrap_or_default(),
+                    stderr: String::new(),
+                    code,
+                },
+                Err(()) => CliOutput {
+                    stdout: String::new(),
+                    stderr: "corpus command failed\n".to_owned(),
+                    code: 2,
+                },
+            }
+        }
         _ => CliOutput {
             stdout: String::new(),
             stderr: format!("usage error\n{HELP}\n"),
             code: 2,
         },
     }
+}
+
+fn parse_filters(args: &[String]) -> Result<(Option<String>, Option<String>), ()> {
+    let mut family = None;
+    let mut requirement = None;
+    let mut index = 0;
+    while index < args.len() {
+        let target = match args[index].as_str() {
+            "--family" => &mut family,
+            "--requirement" => &mut requirement,
+            _ => return Err(()),
+        };
+        let Some(value) = args.get(index + 1) else {
+            return Err(());
+        };
+        if target.replace(value.clone()).is_some() {
+            return Err(());
+        }
+        index += 2;
+    }
+    Ok((family, requirement))
 }
 
 fn main() -> ExitCode {
