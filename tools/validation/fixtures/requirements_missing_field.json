@@ -1,0 +1,11 @@
+{
+  "expected_error": "missing_requirement_field",
+  "registry": {
+    "schema": "nostr_automerge.requirements.v1",
+    "project": "nostr_automerge_v1_spec",
+    "requirement_count": 1,
+    "requirements": [
+      {"id": "NCRDT-TEST-001", "section": "Test", "source": "spec/NIP_DRAFT.md"}
+    ]
+  }
+}

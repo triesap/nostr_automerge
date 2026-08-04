@@ -1,0 +1,12 @@
+{
+  "expected_error": "duplicate_requirement_id",
+  "registry": {
+    "schema": "nostr_automerge.requirements.v1",
+    "project": "nostr_automerge_v1_spec",
+    "requirement_count": 2,
+    "requirements": [
+      {"id": "NCRDT-TEST-001", "section": "Test", "text": "First.", "source": "spec/NIP_DRAFT.md"},
+      {"id": "NCRDT-TEST-001", "section": "Test", "text": "Second.", "source": "spec/NIP_DRAFT.md"}
+    ]
+  }
+}

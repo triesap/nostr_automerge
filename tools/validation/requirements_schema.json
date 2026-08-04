@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/spec/requirements.schema.json",
+  "title": "nostr_automerge normative requirements registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "project", "requirement_count", "requirements"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.requirements.v1"},
+    "project": {"const": "nostr_automerge_v1_spec"},
+    "requirement_count": {"type": "integer", "minimum": 1},
+    "requirements": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "section", "text", "source"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^NCRDT-[A-Z0-9]+(?:-[A-Z0-9]+)*$"},
+          "section": {"type": "string", "minLength": 1},
+          "text": {"type": "string", "minLength": 1},
+          "source": {"type": "string", "pattern": "^(spec|implementation)/[A-Za-z0-9_./-]+$"}
+        }
+      }
+    }
+  }
+}
