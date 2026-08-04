@@ -2,12 +2,50 @@ use std::collections::BTreeSet;
 
 use crate::DevicePublicKey;
 use crate::carrier::control::ValidatedControlContent;
+use crate::control::validate::ControlEnvelope;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum TransitionError {
     AccountChanged,
     RoleEscalation,
     DeviceReintroduced,
+    TerminalChild,
+    SuccessorContinuity,
+}
+
+pub(crate) fn validate_terminal_child(
+    parent: &ValidatedControlContent,
+    child: &ValidatedControlContent,
+) -> Result<(), TransitionError> {
+    if parent.terminal {
+        return Err(TransitionError::TerminalChild);
+    }
+    if child.predecessor.is_some() || child.successor.is_some() && !child.terminal {
+        return Err(TransitionError::SuccessorContinuity);
+    }
+    Ok(())
+}
+
+pub(crate) fn validate_successor_continuity(
+    terminal: &ControlEnvelope,
+    successor_genesis: &ControlEnvelope,
+) -> Result<(), TransitionError> {
+    let Some(successor_coordinate) = terminal.content.successor else {
+        return Err(TransitionError::SuccessorContinuity);
+    };
+    let Some(predecessor) = &successor_genesis.content.predecessor else {
+        return Err(TransitionError::SuccessorContinuity);
+    };
+    if !terminal.content.terminal
+        || successor_genesis.parent.is_some()
+        || successor_genesis.content.sequence != 0
+        || successor_coordinate != successor_genesis.coordinate
+        || predecessor.coordinate != terminal.coordinate
+        || predecessor.terminal_control != terminal.event_id
+    {
+        return Err(TransitionError::SuccessorContinuity);
+    }
+    Ok(())
 }
 
 pub(crate) fn validate_no_reintroduction(
@@ -75,10 +113,12 @@ pub(crate) fn validate_monotonic_roles(
 mod tests {
     use super::{
         TransitionError, validate_account_mapping, validate_monotonic_roles,
-        validate_no_reintroduction,
+        validate_no_reintroduction, validate_successor_continuity, validate_terminal_child,
     };
+    use crate::carrier::control::Predecessor;
     use crate::control::validate::tests::{genesis, grant};
     use crate::types::role::Role;
+    use crate::{ControllerPublicKey, DocumentCoordinate, DocumentId};
 
     #[test]
     fn enforce_immutable_account_mapping() {
@@ -145,6 +185,46 @@ mod tests {
         assert_eq!(
             validate_no_reintroduction(&[&first, &removed], &later),
             Ok(())
+        );
+    }
+
+    #[test]
+    fn validate_terminal_and_successor_continuity() {
+        let mut terminal = genesis();
+        terminal.content.members[0].roles = vec![Role::Checkpoint];
+        terminal.content.terminal = true;
+        let mut ordinary_child = genesis();
+        ordinary_child.parent = Some(terminal.event_id);
+        ordinary_child.content.sequence = 1;
+        assert_eq!(
+            validate_terminal_child(&terminal.content, &ordinary_child.content),
+            Err(TransitionError::TerminalChild)
+        );
+
+        let successor_coordinate = DocumentCoordinate::new(
+            ControllerPublicKey::from_bytes([8; 32]),
+            DocumentId::from_bytes([9; 32]),
+        );
+        terminal.content.successor = Some(successor_coordinate);
+        let mut successor = genesis();
+        successor.coordinate = successor_coordinate;
+        successor.author = successor_coordinate.controller();
+        successor.content.predecessor = Some(Predecessor {
+            coordinate: terminal.coordinate,
+            terminal_control: terminal.event_id,
+        });
+        assert_eq!(validate_successor_continuity(&terminal, &successor), Ok(()));
+
+        successor.content.predecessor = None;
+        assert_eq!(
+            validate_successor_continuity(&terminal, &successor),
+            Err(TransitionError::SuccessorContinuity)
+        );
+        let mut nonterminal = genesis().content;
+        nonterminal.successor = Some(successor_coordinate);
+        assert_eq!(
+            validate_terminal_child(&genesis().content, &nonterminal),
+            Err(TransitionError::SuccessorContinuity)
         );
     }
 }
