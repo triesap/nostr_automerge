@@ -24,6 +24,8 @@ mod graph;
 mod integrity;
 mod limits;
 mod profile;
+#[allow(dead_code)]
+mod reference;
 mod report;
 mod types;
 mod wire;

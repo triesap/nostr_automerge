@@ -1,12 +1,89 @@
 use automerge::{
-    ActorId, Automerge, LoadOptions, OnPartialLoad, StringMigration, TextEncoding, VerificationMode,
+    ActorId, Automerge, Change, LoadOptions, OnPartialLoad, StringMigration, TextEncoding,
+    VerificationMode,
 };
+use std::collections::{BTreeMap, BTreeSet};
+
+use crate::ChangeHash;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct DocumentLoadError;
 
 pub(crate) struct Document {
     inner: Automerge,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct AppliedDocument {
+    pub(crate) heads: BTreeSet<ChangeHash>,
+    pub(crate) canonical_bytes: Vec<u8>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ExactApplyError {
+    ClosureMismatch,
+    Decode,
+    HashMismatch,
+    Application,
+    Heads,
+}
+
+pub(crate) fn apply_exact_closure(
+    closure: &BTreeMap<ChangeHash, Vec<u8>>,
+    ordered: &[ChangeHash],
+    candidate_hash: ChangeHash,
+    candidate_raw: &[u8],
+    candidate_dependencies: &BTreeSet<ChangeHash>,
+) -> Result<AppliedDocument, ExactApplyError> {
+    if ordered.iter().copied().collect::<BTreeSet<_>>() != closure.keys().copied().collect() {
+        return Err(ExactApplyError::ClosureMismatch);
+    }
+    let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+    for hash in ordered {
+        let raw = closure.get(hash).ok_or(ExactApplyError::ClosureMismatch)?;
+        let change = Change::try_from(raw.as_slice()).map_err(|_| ExactApplyError::Decode)?;
+        if change.hash().as_ref() != hash.as_bytes() {
+            return Err(ExactApplyError::HashMismatch);
+        }
+        document
+            .apply_changes([change])
+            .map_err(|_| ExactApplyError::Application)?;
+    }
+    let before = heads(&document)?;
+    let candidate = Change::try_from(candidate_raw).map_err(|_| ExactApplyError::Decode)?;
+    if candidate.hash().as_ref() != candidate_hash.as_bytes() {
+        return Err(ExactApplyError::HashMismatch);
+    }
+    document
+        .apply_changes([candidate])
+        .map_err(|_| ExactApplyError::Application)?;
+    let actual = heads(&document)?;
+    let mut expected = before;
+    for dependency in candidate_dependencies {
+        expected.remove(dependency);
+    }
+    expected.insert(candidate_hash);
+    if actual != expected {
+        return Err(ExactApplyError::Heads);
+    }
+    Ok(AppliedDocument {
+        heads: actual,
+        canonical_bytes: document.save_nocompress(),
+    })
+}
+
+fn heads(document: &Automerge) -> Result<BTreeSet<ChangeHash>, ExactApplyError> {
+    document
+        .get_heads()
+        .into_iter()
+        .map(|hash| {
+            let bytes: [u8; 32] = hash
+                .as_ref()
+                .try_into()
+                .map_err(|_| ExactApplyError::HashMismatch)?;
+            Ok(ChangeHash::from_bytes(bytes))
+        })
+        .collect()
 }
 
 impl Document {
