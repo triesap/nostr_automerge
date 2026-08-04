@@ -1,0 +1,27 @@
+{
+  "schema": "nostr_automerge.draft_limits.v1",
+  "revision": "draft_2026_08",
+  "status": "normative_for_draft_provisional_for_production",
+  "limits": [
+    {"name":"raw_event_bytes","value":262144,"unit":"bytes","requirement":"NCRDT-LIMIT-001","scope":"ingress"},
+    {"name":"manifest_content_bytes","value":16384,"unit":"bytes","requirement":"NCRDT-LIMIT-001","scope":"manifest"},
+    {"name":"manifest_relays","value":16,"unit":"items","requirement":"NCRDT-MANIFEST-001","scope":"manifest"},
+    {"name":"manifest_name_bytes","value":256,"unit":"bytes","requirement":"NCRDT-MANIFEST-001","scope":"manifest"},
+    {"name":"manifest_description_bytes","value":2048,"unit":"bytes","requirement":"NCRDT-MANIFEST-001","scope":"manifest"},
+    {"name":"application_id_bytes","value":128,"unit":"bytes","requirement":"NCRDT-MANIFEST-001","scope":"manifest"},
+    {"name":"application_schema_version_bytes","value":64,"unit":"bytes","requirement":"NCRDT-MANIFEST-001","scope":"manifest"},
+    {"name":"control_content_bytes","value":32768,"unit":"bytes","requirement":"NCRDT-LIMIT-001","scope":"control"},
+    {"name":"control_members","value":256,"unit":"items","requirement":"NCRDT-LIMIT-001","scope":"control"},
+    {"name":"control_heads","value":64,"unit":"items","requirement":"NCRDT-LIMIT-001","scope":"control"},
+    {"name":"change_decoded_bytes","value":32768,"unit":"bytes","requirement":"NCRDT-LIMIT-001","scope":"change"},
+    {"name":"change_operations","value":16384,"unit":"items","requirement":"NCRDT-LIMIT-001","scope":"change"},
+    {"name":"change_dependencies","value":256,"unit":"items","requirement":"NCRDT-LIMIT-001","scope":"change"},
+    {"name":"checkpoint_raw_bytes","value":67108864,"unit":"bytes","requirement":"NCRDT-LIMIT-001","scope":"checkpoint"},
+    {"name":"checkpoint_chunks","value":4096,"unit":"items","requirement":"NCRDT-LIMIT-001","scope":"checkpoint"},
+    {"name":"checkpoint_chunk_raw_bytes","value":32768,"unit":"bytes","requirement":"NCRDT-LIMIT-001","scope":"checkpoint"},
+    {"name":"checkpoint_heads","value":256,"unit":"items","requirement":"NCRDT-LIMIT-001","scope":"checkpoint"},
+    {"name":"checkpoint_changes","value":1000000,"unit":"items","requirement":"NCRDT-LIMIT-001","scope":"checkpoint"},
+    {"name":"checkpoint_operations","value":10000000,"unit":"items","requirement":"NCRDT-LIMIT-001","scope":"checkpoint"},
+    {"name":"checkpoint_dependency_edges","value":20000000,"unit":"items","requirement":"NCRDT-LIMIT-001","scope":"checkpoint"}
+  ]
+}
