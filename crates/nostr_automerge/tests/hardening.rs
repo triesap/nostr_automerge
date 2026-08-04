@@ -24,3 +24,10 @@ fn fuzz_control_objects_and_transitions() {
             .contains("qualification_probe_control")
     );
 }
+#[test]
+fn fuzz_dependency_graph_and_evaluator() {
+    assert!(
+        include_str!("../../../fuzz/fuzz_targets/reference_evaluator.rs")
+            .contains("qualification_probe_reference")
+    );
+}

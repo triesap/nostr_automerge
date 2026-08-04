@@ -48,3 +48,9 @@ path = "fuzz_targets/control_transition.rs"
 test = false
 doc = false
 bench = false
+[[bin]]
+name = "reference_evaluator"
+path = "fuzz_targets/reference_evaluator.rs"
+test = false
+doc = false
+bench = false
