@@ -18,6 +18,41 @@ pub(crate) enum ActorStateError {
     MissingPredecessor,
     ParallelPredecessor,
     SequenceRollback,
+    EmptyChange,
+}
+
+pub(crate) fn apply_nonempty_counter(
+    states: &mut BTreeMap<ActorId, EpochActorState>,
+    candidate: &ChangeCandidate,
+) -> Result<(), ActorStateError> {
+    if candidate.operation_count == 0 {
+        return Err(ActorStateError::EmptyChange);
+    }
+    let (last_sequence, next_op) = states
+        .get(&candidate.actor)
+        .map_or((0, 1), |state| (state.last_sequence, state.next_op));
+    if candidate.sequence
+        != last_sequence
+            .checked_add(1)
+            .ok_or(ActorStateError::SequenceGap)?
+    {
+        return Err(ActorStateError::SequenceGap);
+    }
+    if candidate.start_op != next_op {
+        return Err(ActorStateError::OperationCounter);
+    }
+    let next_op = next_op
+        .checked_add(candidate.operation_count)
+        .ok_or(ActorStateError::OperationCounter)?;
+    states.insert(
+        candidate.actor,
+        EpochActorState {
+            last_sequence: candidate.sequence,
+            next_op,
+            highest_change: candidate.change_hash,
+        },
+    );
+    Ok(())
 }
 
 pub(crate) fn validate_actor_predecessor(
@@ -107,7 +142,10 @@ pub(crate) fn initialize_actor_states(
 pub(crate) mod tests {
     use std::collections::BTreeSet;
 
-    use super::{ActorStateError, initialize_actor_states, validate_actor_predecessor};
+    use super::{
+        ActorStateError, EpochActorState, apply_nonempty_counter, initialize_actor_states,
+        validate_actor_predecessor,
+    };
     use crate::graph::change_candidate::ChangeCandidate;
     use crate::{ActorId, ChangeHash, DevicePublicKey, EventId};
     use std::collections::BTreeMap;
@@ -183,6 +221,45 @@ pub(crate) mod tests {
         assert_eq!(
             validate_actor_predecessor(&first, &BTreeSet::from([first.change_hash]), &accepted),
             Err(ActorStateError::SequenceRollback)
+        );
+    }
+
+    #[test]
+    fn validate_next_op_for_nonempty_changes() {
+        let actor = ActorId::from_bytes([1; 32]);
+        let mut states = BTreeMap::new();
+        let first = candidate(1, 1, 1, 2);
+        assert_eq!(apply_nonempty_counter(&mut states, &first), Ok(()));
+        assert_eq!(states[&actor].next_op, 3);
+        let second = candidate(1, 2, 3, 1);
+        assert_eq!(apply_nonempty_counter(&mut states, &second), Ok(()));
+
+        let mut gap = candidate(1, 3, 5, 1);
+        assert_eq!(
+            apply_nonempty_counter(&mut states.clone(), &gap),
+            Err(ActorStateError::OperationCounter)
+        );
+        gap.start_op = 2;
+        assert_eq!(
+            apply_nonempty_counter(&mut states.clone(), &gap),
+            Err(ActorStateError::OperationCounter)
+        );
+        let mut overflow_states = BTreeMap::from([(
+            actor,
+            EpochActorState {
+                last_sequence: 1,
+                next_op: u64::MAX,
+                highest_change: first.change_hash,
+            },
+        )]);
+        let overflow = candidate(1, 2, u64::MAX, 1);
+        assert_eq!(
+            apply_nonempty_counter(&mut overflow_states, &overflow),
+            Err(ActorStateError::OperationCounter)
+        );
+        assert_eq!(
+            apply_nonempty_counter(&mut states, &candidate(2, 1, 1, 1)),
+            Ok(())
         );
     }
 }
