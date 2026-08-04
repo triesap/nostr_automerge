@@ -80,6 +80,43 @@ pub fn qualification_probe_automerge_reencode(input: &[u8]) {
     );
 }
 
+/// Exercises canonical control content parsing for fuzzing.
+#[doc(hidden)]
+pub fn qualification_probe_control(input: &[u8]) {
+    if let Ok(content) = core::str::from_utf8(input) {
+        let coordinate = DocumentCoordinate::new(
+            ControllerPublicKey::from_bytes([1; 32]),
+            DocumentId::from_bytes([2; 32]),
+        );
+        let _ = carrier::control::validate_content(content, coordinate);
+    }
+}
+
+/// Exercises bounded reference control selection for fuzzing.
+#[doc(hidden)]
+pub fn qualification_probe_reference(input: &[u8]) {
+    let controls = input
+        .chunks(32)
+        .take(64)
+        .map(|chunk| {
+            let mut id = [0; 32];
+            id[..chunk.len()].copy_from_slice(chunk);
+            reference::evaluate::BatchControl {
+                event_id: EventId::from_bytes(id),
+                parent: None,
+                accepted_base: std::collections::BTreeSet::new(),
+                frozen: false,
+                changes: vec![],
+            }
+        })
+        .collect::<Vec<_>>();
+    let _ = reference::evaluate::evaluate_batch(
+        controls,
+        &mut WorkBudget::new(4_096, 4_096),
+        &NeverCancelled,
+    );
+}
+
 #[cfg(test)]
 mod tests {
     use super::IMPLEMENTATION_VERSION;

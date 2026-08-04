@@ -17,3 +17,10 @@ fn fuzz_automerge_framing_and_semantic_decode() {
     assert!(include_str!("../../../fuzz/fuzz_targets/automerge_framing.rs").contains("framing"));
     assert!(include_str!("../../../fuzz/fuzz_targets/automerge_semantics.rs").contains("reencode"));
 }
+#[test]
+fn fuzz_control_objects_and_transitions() {
+    assert!(
+        include_str!("../../../fuzz/fuzz_targets/control_transition.rs")
+            .contains("qualification_probe_control")
+    );
+}
