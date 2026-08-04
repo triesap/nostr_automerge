@@ -52,4 +52,60 @@ impl OpaqueDocumentView {
             ExpectedValue::Conflicts(expected) => actual == expected,
         }
     }
+
+    pub(crate) fn assert_all(&self, assertions: &[TypedAssertion]) -> bool {
+        assertions.iter().all(|assertion| self.assert(assertion))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ExpectedValue, OpaqueDocumentView, TypedAssertion, TypedValue};
+
+    #[test]
+    fn evaluate_primitive_state_assertions() {
+        let nan = f64::from_bits(0x7ff8_0000_0000_0042).to_bits();
+        let negative_zero = (-0.0_f64).to_bits();
+        let entries = vec![
+            ("null", TypedValue::Null),
+            ("bool", TypedValue::Bool(true)),
+            ("i64", TypedValue::I64(i64::MIN)),
+            ("u64", TypedValue::U64(u64::MAX)),
+            ("nan", TypedValue::F64Bits(nan)),
+            ("negative_zero", TypedValue::F64Bits(negative_zero)),
+            ("string", TypedValue::String("scalar".to_owned())),
+            ("text", TypedValue::Text("text".to_owned())),
+            ("bytes", TypedValue::Bytes(vec![0, 255])),
+            ("timestamp", TypedValue::Timestamp(-1)),
+            ("counter", TypedValue::Counter(7)),
+        ];
+        let view = OpaqueDocumentView::from_typed_values(
+            entries
+                .iter()
+                .map(|(path, value)| (vec![(*path).to_owned()], vec![value.clone()])),
+        );
+        let assertions = entries
+            .iter()
+            .map(|(path, value)| TypedAssertion {
+                path: vec![(*path).to_owned()],
+                expected: ExpectedValue::Value(value.clone()),
+            })
+            .collect::<Vec<_>>();
+        assert!(view.assert_all(&assertions));
+        for assertion in &assertions {
+            let mut negative = assertion.clone();
+            negative.expected = ExpectedValue::Value(TypedValue::Null);
+            if assertion.expected != negative.expected {
+                assert!(!view.assert(&negative));
+            }
+        }
+        assert!(!view.assert(&TypedAssertion {
+            path: vec!["nan".to_owned()],
+            expected: ExpectedValue::Value(TypedValue::F64Bits(f64::NAN.to_bits())),
+        }));
+        assert!(!view.assert(&TypedAssertion {
+            path: vec!["negative_zero".to_owned()],
+            expected: ExpectedValue::Value(TypedValue::F64Bits(0.0_f64.to_bits())),
+        }));
+    }
 }
