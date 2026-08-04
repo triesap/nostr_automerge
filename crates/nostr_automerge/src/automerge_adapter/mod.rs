@@ -10,4 +10,6 @@ pub(crate) mod encode;
 mod fixture;
 pub(crate) mod framing;
 pub(crate) mod leb128;
+#[cfg(test)]
+mod semantics;
 pub(crate) mod types;

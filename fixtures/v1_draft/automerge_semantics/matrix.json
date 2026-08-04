@@ -1,0 +1,22 @@
+[
+  "bool",
+  "bytes",
+  "counter",
+  "delete",
+  "empty_merge",
+  "f64_bits",
+  "increment",
+  "int",
+  "make_list",
+  "make_map",
+  "make_table",
+  "make_text",
+  "mark_begin",
+  "mark_end",
+  "null",
+  "other_actor",
+  "string",
+  "timestamp",
+  "uint",
+  "unicode"
+]
