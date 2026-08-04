@@ -10,6 +10,7 @@ mod change_builder;
 mod commit;
 mod control;
 mod document;
+mod event_draft;
 mod fan_in;
 mod manifest;
 
@@ -19,6 +20,7 @@ pub use change_builder::ChangeBuilder;
 pub use commit::{CommitMetadata, CommitMetadataError};
 pub use control::{ControlDraft, ControlDraftError, ControlGrant, ControlPredecessor, ControlRole};
 pub use document::{AuthoringDocument, AuthoringDocumentError};
+pub use event_draft::{PreparedEvent, UnsignedEventDraft, UnsignedEventDraftError};
 pub use fan_in::{FanInError, FanInPlan};
 pub use manifest::{ApplicationMetadata, ManifestDraft, ManifestDraftError, ManifestStatus};
 
