@@ -42,3 +42,8 @@ fn add_resource_and_performance_benchmarks() {
             .unwrap_or_default();
     assert_eq!(report["cases"].as_array().map(Vec::len), Some(7));
 }
+#[test]
+fn add_mutation_tests_for_critical_validators() {
+    let config = include_str!("../../../mutants.toml");
+    assert!(config.contains("wire,control,graph,checkpoint"));
+}

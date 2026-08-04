@@ -1,0 +1,4 @@
+timeout_multiplier = 3.0
+minimum_test_timeout = 20
+examine_globs = ["crates/nostr_automerge/src/{wire,control,graph,checkpoint}/**/*.rs"]
+exclude_re = ["Debug|Display|to_hex|as_bytes"]
