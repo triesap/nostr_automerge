@@ -28,6 +28,42 @@ pub(crate) enum ExactApplyError {
     Heads,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum AuthoringOperation {
+    PutString {
+        key: String,
+        value: String,
+    },
+    CreateList {
+        key: String,
+        values: Vec<String>,
+    },
+    CreateText {
+        key: String,
+        value: String,
+    },
+    CreateCounter {
+        key: String,
+        value: i64,
+        increment: i64,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct AdapterAuthoredChange {
+    pub(crate) raw: Vec<u8>,
+    pub(crate) hash: ChangeHash,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum AdapterAuthoringError {
+    Empty,
+    Operation,
+    Missing,
+    Hash,
+    Limit,
+}
+
 pub(crate) fn apply_exact_closure(
     closure: &BTreeMap<ChangeHash, Vec<u8>>,
     ordered: &[ChangeHash],
@@ -137,6 +173,90 @@ impl Document {
 
     pub(crate) fn canonical_bytes(&self) -> Vec<u8> {
         self.inner.save_nocompress()
+    }
+
+    pub(crate) fn author_operations(
+        &mut self,
+        operations: &[AuthoringOperation],
+    ) -> Result<AdapterAuthoredChange, AdapterAuthoringError> {
+        use automerge::{
+            ObjType, ROOT, ReadDoc, ScalarValue, transaction::CommitOptions,
+            transaction::Transactable,
+        };
+
+        if operations.is_empty() {
+            return Err(AdapterAuthoringError::Empty);
+        }
+        let limits = crate::ProtocolRevision::draft_v1().limits();
+        if u64::try_from(operations.len()).map_err(|_| AdapterAuthoringError::Limit)?
+            > limits.change_operations.get()
+        {
+            return Err(AdapterAuthoringError::Limit);
+        }
+        let mut staged = self.inner.clone();
+        let mut transaction = staged.transaction();
+        for operation in operations {
+            match operation {
+                AuthoringOperation::PutString { key, value } => {
+                    transaction
+                        .put(ROOT, key, value.as_str())
+                        .map_err(|_| AdapterAuthoringError::Operation)?;
+                }
+                AuthoringOperation::CreateList { key, values } => {
+                    let list = transaction
+                        .put_object(ROOT, key, ObjType::List)
+                        .map_err(|_| AdapterAuthoringError::Operation)?;
+                    for (index, value) in values.iter().enumerate() {
+                        transaction
+                            .insert(&list, index, value.as_str())
+                            .map_err(|_| AdapterAuthoringError::Operation)?;
+                    }
+                }
+                AuthoringOperation::CreateText { key, value } => {
+                    let text = transaction
+                        .put_object(ROOT, key, ObjType::Text)
+                        .map_err(|_| AdapterAuthoringError::Operation)?;
+                    transaction
+                        .splice_text(&text, 0, 0, value)
+                        .map_err(|_| AdapterAuthoringError::Operation)?;
+                }
+                AuthoringOperation::CreateCounter {
+                    key,
+                    value,
+                    increment,
+                } => {
+                    transaction
+                        .put(ROOT, key, ScalarValue::counter(*value))
+                        .map_err(|_| AdapterAuthoringError::Operation)?;
+                    if *increment != 0 {
+                        transaction
+                            .increment(ROOT, key, *increment)
+                            .map_err(|_| AdapterAuthoringError::Operation)?;
+                    }
+                }
+            }
+        }
+        let (hash, _) = transaction.commit_with(CommitOptions::default().with_time(0));
+        let hash = hash.ok_or(AdapterAuthoringError::Empty)?;
+        let change = staged
+            .get_change_by_hash(&hash)
+            .ok_or(AdapterAuthoringError::Missing)?;
+        let raw = change.raw_bytes().to_vec();
+        if u64::try_from(raw.len()).map_err(|_| AdapterAuthoringError::Limit)?
+            > limits.change_bytes.get()
+            || u64::try_from(change.len()).map_err(|_| AdapterAuthoringError::Limit)?
+                > limits.change_operations.get()
+            || u64::try_from(change.deps().len()).map_err(|_| AdapterAuthoringError::Limit)?
+                > limits.change_dependencies.get()
+        {
+            return Err(AdapterAuthoringError::Limit);
+        }
+        let bytes: [u8; 32] = hash.0;
+        self.inner = staged;
+        Ok(AdapterAuthoredChange {
+            raw,
+            hash: ChangeHash::from_bytes(bytes),
+        })
     }
 
     #[cfg(test)]

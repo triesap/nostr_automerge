@@ -5,10 +5,12 @@
 //! network clients, signing services, outboxes, or background work.
 
 mod actor_state;
+mod change;
 mod commit;
 mod document;
 
 pub use actor_state::{ActorState, ActorStateError};
+pub use change::{AuthoredChange, AuthoringError, Operation};
 pub use commit::{CommitMetadata, CommitMetadataError};
 pub use document::{AuthoringDocument, AuthoringDocumentError};
 
