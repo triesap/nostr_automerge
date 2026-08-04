@@ -8,12 +8,12 @@ fn record_independent_typescript_differential_agreement() {
         serde_json::from_str(include_str!("../../../reports/interop_differential.json"));
     assert!(report.is_ok());
     let Ok(report) = report else { return };
-    assert_eq!(report["schema"], "nostr_automerge.interop_differential.v1");
+    assert_eq!(report["schema"], "nostr_automerge.local_interop.v1");
     assert_eq!(report["status"], "local_differential_pass");
     assert_eq!(report["fixture_count"], 5);
     assert_eq!(report["canonical_report_bytes"], "identical");
     assert_eq!(report["deliberate_mismatch"], "detected");
-    assert_eq!(report["ci_policy"], "local_act_required_pending_execution");
+    assert_eq!(report["ci_policy"], "local_act_pass");
     assert_eq!(report["mismatches"].as_array().map(Vec::len), Some(0));
     assert_eq!(
         report["corpus_sha256"],
@@ -23,8 +23,7 @@ fn record_independent_typescript_differential_agreement() {
         report["evaluated_typescript_commit"].as_str().map(str::len),
         Some(40)
     );
-    assert!(
-        include_str!("../../../reports/interop_differential.md")
-            .contains("ignored, untracked `.act/workflows/**` runners")
-    );
+    let narrative = include_str!("../../../reports/interop_differential.md");
+    assert!(narrative.contains("No workflow definition"));
+    assert!(narrative.contains("is tracked"));
 }
