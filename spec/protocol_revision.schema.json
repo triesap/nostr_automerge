@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/spec/protocol_revision.schema.json",
+  "title": "nostr_automerge sealed protocol revision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "project", "revision", "status", "sealed", "nip",
+    "repository", "cargo_package", "rust_crate", "format", "text_encoding",
+    "actor_domain", "kinds", "checkpoints", "limits_status", "conformance"
+  ],
+  "properties": {
+    "schema": {"const": "nostr_automerge.protocol_revision.v1"},
+    "project": {"const": "nostr_automerge_v1_spec"},
+    "revision": {"const": "draft_2026_08"},
+    "status": {"const": "approved_implementation_baseline"},
+    "sealed": {"const": true},
+    "repository": {"const": "triesap/nostr_automerge"},
+    "cargo_package": {"const": "nostr_automerge"},
+    "rust_crate": {"const": "nostr_automerge"},
+    "format": {"const": "automerge-change-v1"},
+    "text_encoding": {"const": "utf16"},
+    "actor_domain": {"const": "nostr-crdt/automerge/actor/v1"},
+    "nip": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["current_identifier", "preferred_identifier", "title"]
+    },
+    "kinds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["change", "control", "checkpoint_descriptor", "checkpoint_chunk", "manifest"]
+    },
+    "checkpoints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "v1_provenance", "missing_history_recovery"]
+    },
+    "limits_status": {"const": "normative_for_draft_provisional_for_production"},
+    "conformance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["normative_save_bytes_digest", "history_digest", "dispositions_digest", "typed_state_assertions"]
+    }
+  }
+}
