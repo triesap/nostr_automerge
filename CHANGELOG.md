@@ -1,10 +1,7 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+## 0.1.0-alpha.0
 
-The format is based on Keep a Changelog and this project adheres to
-Semantic Versioning.
-
-## [Unreleased]
-
-- Initial nostr_automerge bootstrap.
+Initial draft-v1 alpha: strict NIP-01 ingress, deterministic control/change
+evaluation, conformance tooling, pure authoring, and verified-history
+checkpoints. Event kinds and API remain provisional; no crate has been published.

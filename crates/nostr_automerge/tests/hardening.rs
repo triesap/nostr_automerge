@@ -72,3 +72,10 @@ fn review_public_api_and_semver_surface() {
     }
     assert!(include_str!("../../../reports/public_api.txt").contains("third_party_types: none"));
 }
+#[test]
+fn prepare_alpha_package_and_clean_checkout_verificat() {
+    let manifest = include_str!("../Cargo.toml");
+    assert!(manifest.contains("version.workspace = true"));
+    assert!(manifest.contains("include = ["));
+    assert!(include_str!("../../../CHANGELOG.md").contains("0.1.0-alpha.0"));
+}

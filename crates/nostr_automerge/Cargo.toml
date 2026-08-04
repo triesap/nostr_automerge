@@ -6,9 +6,9 @@ rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
-readme = "../../README.md"
+readme = "README.md"
 description = "Deterministic draft-v1 Automerge document validation over Nostr"
-publish = false
+include = ["src/**", "examples/**", "README.md", "Cargo.toml"]
 
 [dependencies]
 automerge.workspace = true
