@@ -15,6 +15,44 @@ pub(crate) enum ActorStateError {
     SequenceGap,
     Equivocation,
     OperationCounter,
+    MissingPredecessor,
+    ParallelPredecessor,
+    SequenceRollback,
+}
+
+pub(crate) fn validate_actor_predecessor(
+    candidate: &ChangeCandidate,
+    closure: &std::collections::BTreeSet<ChangeHash>,
+    accepted: &BTreeMap<ChangeHash, ChangeCandidate>,
+) -> Result<(), ActorStateError> {
+    let same_actor = closure
+        .iter()
+        .filter_map(|hash| accepted.get(hash))
+        .filter(|change| change.actor == candidate.actor)
+        .collect::<Vec<_>>();
+    if same_actor
+        .iter()
+        .any(|change| change.sequence >= candidate.sequence)
+    {
+        return Err(ActorStateError::SequenceRollback);
+    }
+    if candidate.sequence == 1 {
+        return if same_actor.is_empty() {
+            Ok(())
+        } else {
+            Err(ActorStateError::SequenceRollback)
+        };
+    }
+    let expected = candidate.sequence - 1;
+    let predecessors = same_actor
+        .iter()
+        .filter(|change| change.sequence == expected)
+        .count();
+    match predecessors {
+        1 => Ok(()),
+        0 => Err(ActorStateError::MissingPredecessor),
+        _ => Err(ActorStateError::ParallelPredecessor),
+    }
 }
 
 pub(crate) fn initialize_actor_states(
@@ -69,9 +107,10 @@ pub(crate) fn initialize_actor_states(
 pub(crate) mod tests {
     use std::collections::BTreeSet;
 
-    use super::{ActorStateError, initialize_actor_states};
+    use super::{ActorStateError, initialize_actor_states, validate_actor_predecessor};
     use crate::graph::change_candidate::ChangeCandidate;
     use crate::{ActorId, ChangeHash, DevicePublicKey, EventId};
+    use std::collections::BTreeMap;
 
     pub(crate) fn candidate(actor: u8, sequence: u64, start: u64, count: u64) -> ChangeCandidate {
         ChangeCandidate {
@@ -110,6 +149,40 @@ pub(crate) mod tests {
         assert_eq!(
             initialize_actor_states([candidate(1, 1, 1, 1), conflict]),
             Err(ActorStateError::Equivocation)
+        );
+    }
+
+    #[test]
+    fn validate_actor_predecessor_sequence() {
+        let first = candidate(1, 1, 1, 1);
+        let mut second = candidate(1, 2, 2, 1);
+        second.change_hash = ChangeHash::from_bytes([2; 32]);
+        let accepted = BTreeMap::from([(first.change_hash, first.clone())]);
+        assert_eq!(
+            validate_actor_predecessor(&second, &BTreeSet::from([first.change_hash]), &accepted),
+            Ok(())
+        );
+        assert_eq!(
+            validate_actor_predecessor(&second, &BTreeSet::new(), &accepted),
+            Err(ActorStateError::MissingPredecessor)
+        );
+        let mut conflict = first.clone();
+        conflict.change_hash = ChangeHash::from_bytes([8; 32]);
+        let conflicts = BTreeMap::from([
+            (first.change_hash, first.clone()),
+            (conflict.change_hash, conflict),
+        ]);
+        assert_eq!(
+            validate_actor_predecessor(
+                &second,
+                &BTreeSet::from([first.change_hash, ChangeHash::from_bytes([8; 32])]),
+                &conflicts,
+            ),
+            Err(ActorStateError::ParallelPredecessor)
+        );
+        assert_eq!(
+            validate_actor_predecessor(&first, &BTreeSet::from([first.change_hash]), &accepted),
+            Err(ActorStateError::SequenceRollback)
         );
     }
 }
