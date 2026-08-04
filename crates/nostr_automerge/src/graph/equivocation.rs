@@ -1,6 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::change_candidate::ChangeCandidate;
+use super::dependency_graph::DependencyGraph;
+use crate::integrity::{AlertError, DeviceEquivocationAlert, IntegrityAlert};
 use crate::{ActorId, ChangeHash, EventId};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -9,6 +11,12 @@ pub(crate) struct EquivocationGroup {
     pub(crate) first_sequence: u64,
     pub(crate) conflicting_changes: BTreeSet<ChangeHash>,
     pub(crate) carrier_event_ids: BTreeSet<EventId>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct QuarantineResult {
+    pub(crate) quarantined: BTreeSet<ChangeHash>,
+    pub(crate) alerts: Vec<IntegrityAlert>,
 }
 
 pub(crate) fn detect_equivocations(
@@ -41,10 +49,76 @@ pub(crate) fn detect_equivocations(
     first_by_actor.into_values().collect()
 }
 
+pub(crate) fn quarantine_equivocation_descendants(
+    candidates: impl IntoIterator<Item = ChangeCandidate>,
+    graph: &DependencyGraph,
+) -> Result<QuarantineResult, AlertError> {
+    let candidates = candidates
+        .into_iter()
+        .map(|candidate| (candidate.change_hash, candidate))
+        .collect::<BTreeMap<_, _>>();
+    let groups = detect_equivocations(candidates.values().cloned());
+    let mut quarantined = BTreeSet::new();
+    let mut alerts = Vec::with_capacity(groups.len());
+
+    for group in groups {
+        let mut affected = group.conflicting_changes.clone();
+        affected.extend(
+            candidates
+                .values()
+                .filter(|candidate| {
+                    candidate.actor == group.actor && candidate.sequence > group.first_sequence
+                })
+                .map(|candidate| candidate.change_hash),
+        );
+        loop {
+            let dependants = graph
+                .nodes
+                .iter()
+                .filter(|(hash, dependencies)| {
+                    !affected.contains(hash)
+                        && dependencies
+                            .iter()
+                            .any(|dependency| affected.contains(dependency))
+                })
+                .map(|(hash, _)| *hash)
+                .collect::<Vec<_>>();
+            if dependants.is_empty() {
+                break;
+            }
+            affected.extend(dependants);
+        }
+        let descendants = affected
+            .difference(&group.conflicting_changes)
+            .copied()
+            .collect::<Vec<_>>();
+        alerts.push(IntegrityAlert::DeviceEquivocation(
+            DeviceEquivocationAlert::new(
+                group.actor,
+                group.first_sequence,
+                group.conflicting_changes.iter().copied().collect(),
+                descendants,
+            )?,
+        ));
+        quarantined.extend(affected);
+    }
+
+    Ok(QuarantineResult {
+        quarantined,
+        alerts,
+    })
+}
+
 #[cfg(test)]
 mod tests {
-    use super::detect_equivocations;
+    use std::collections::BTreeSet;
+
+    use super::{
+        detect_equivocations, quarantine_equivocation_descendants as quarantine_descendants,
+    };
     use crate::graph::actor_state::tests::candidate;
+    use crate::graph::dependency_graph::build_graph;
+    use crate::integrity::IntegrityAlert;
     use crate::{ChangeHash, EventId};
 
     #[test]
@@ -70,5 +144,60 @@ mod tests {
                 .carrier_event_ids
                 .contains(&EventId::from_bytes([8; 32]))
         );
+    }
+
+    #[test]
+    fn quarantine_equivocation_descendants() {
+        let first = candidate(1, 1, 1, 1);
+        let mut conflict = first.clone();
+        conflict.change_hash = ChangeHash::from_bytes([2; 32]);
+        let mut later_same_actor = candidate(1, 2, 2, 1);
+        later_same_actor.change_hash = ChangeHash::from_bytes([3; 32]);
+        later_same_actor.dependencies = vec![first.change_hash];
+        let mut cross_actor = candidate(2, 1, 1, 1);
+        cross_actor.change_hash = ChangeHash::from_bytes([4; 32]);
+        cross_actor.dependencies = vec![later_same_actor.change_hash];
+        let mut independent = candidate(3, 1, 1, 1);
+        independent.change_hash = ChangeHash::from_bytes([5; 32]);
+        let input = vec![
+            independent.clone(),
+            cross_actor.clone(),
+            later_same_actor.clone(),
+            conflict.clone(),
+            first.clone(),
+        ];
+        let graph = build_graph(input.clone(), BTreeSet::new());
+        assert!(graph.is_ok());
+        let Ok(graph) = graph else { return };
+        let result = quarantine_descendants(input.clone(), &graph);
+        assert!(result.is_ok());
+        let Ok(result) = result else { return };
+        assert_eq!(
+            result.quarantined,
+            BTreeSet::from([
+                first.change_hash,
+                conflict.change_hash,
+                later_same_actor.change_hash,
+                cross_actor.change_hash,
+            ])
+        );
+        assert!(!result.quarantined.contains(&independent.change_hash));
+        assert_eq!(result.alerts.len(), 1);
+        assert!(matches!(
+            result.alerts[0],
+            IntegrityAlert::DeviceEquivocation(_)
+        ));
+        let IntegrityAlert::DeviceEquivocation(alert) = &result.alerts[0] else {
+            return;
+        };
+        assert_eq!(alert.first_sequence(), 1);
+        assert_eq!(
+            alert.affected_descendants(),
+            &[later_same_actor.change_hash, cross_actor.change_hash]
+        );
+
+        let mut reversed = input;
+        reversed.reverse();
+        assert_eq!(quarantine_descendants(reversed, &graph), Ok(result));
     }
 }
