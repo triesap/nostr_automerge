@@ -19,6 +19,8 @@ mod disposition;
 mod error;
 #[allow(dead_code)]
 mod evidence;
+#[allow(dead_code)]
+mod graph;
 mod integrity;
 mod limits;
 mod profile;
