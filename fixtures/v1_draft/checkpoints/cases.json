@@ -1,0 +1,1 @@
+{"schema":"nostr-automerge-checkpoint-cases-v1","transfer_orders":["forward","reverse","seeded"],"valid":["single_chunk","irregular_three_chunk"],"invalid":["bad_descriptor_arithmetic","bad_chunk_hash","bad_proof_side","duplicate_part","missing_part","snapshot_hash_mismatch","heads_mismatch","disconnected_history","missing_carrier","later_authorized_change"]}

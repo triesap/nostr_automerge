@@ -98,7 +98,7 @@ mod tests {
     fn parse_checkpoint_chunks() {
         let bytes = b"chunk";
         let hash: [u8; 32] = Sha256::digest(bytes).into();
-        let content = format!(r#"{{"data":"Y2h1bms=","proof":[],"v":1}}"#);
+        let content = r#"{"data":"Y2h1bms=","proof":[],"v":1}"#.to_owned();
         assert!(CheckpointChunk::parse_content(&content, 0, 1, hash).is_ok());
         assert!(CheckpointChunk::parse_content(&content, 1, 1, hash).is_err());
         assert!(CheckpointChunk::parse_content(&content, 0, 1, [0; 32]).is_err());
