@@ -1,4 +1,5 @@
 pub(crate) mod classify;
+pub(crate) mod control;
 pub(crate) mod manifest;
 
 use crate::VerifiedNip01Event;
