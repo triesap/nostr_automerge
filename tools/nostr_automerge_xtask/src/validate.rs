@@ -9,6 +9,7 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "fixture_schema_checksum_snake_case",
         "scripts/validate_fixtures.py",
     ),
+    ("fixture_distribution", "scripts/validate_distribution.py"),
     ("sealed_constants", "scripts/validate_protocol_revision.py"),
     ("automerge_boundary", "scripts/validate_architecture.py"),
     ("diagnostic_registry", "scripts/validate_diagnostics.py"),
@@ -69,6 +70,7 @@ mod tests {
             .map(|(name, _)| *name)
             .collect::<Vec<_>>();
         assert!(names.contains(&"fixture_schema_checksum_snake_case"));
+        assert!(names.contains(&"fixture_distribution"));
         assert!(names.contains(&"sealed_constants"));
         assert!(names.contains(&"automerge_boundary"));
         assert!(names.contains(&"diagnostic_registry"));

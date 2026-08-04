@@ -11,3 +11,9 @@ parsed JSON.
 
 Every fixture input and expected report is covered by its fixture metadata
 SHA-256 values and repository validation.
+
+`distribution/manifest.json` is the immutable cross-language consumption
+boundary. It assigns each distributed fixture to exactly one interop profile
+and pins every schema, input, expectation, and metadata file by SHA-256. A
+consumer must reject an unknown distribution schema, revision, file, or
+checksum rather than silently updating expectations.

@@ -1,0 +1,36 @@
+{
+  "distribution_schema": "nostr_automerge.fixture_distribution.v1",
+  "distribution_id": "draft_2026_08_seed_1",
+  "protocol_revision": "draft_2026_08",
+  "status": "seed",
+  "profiles": {
+    "core": [
+      "actor_derivation_001"
+    ],
+    "checkpoint": [],
+    "malformed": [],
+    "property": []
+  },
+  "files": [
+    {
+      "path": "fixtures/schema/fixture.schema.json",
+      "sha256": "fd5ff2cb4622820338c965fbebafac7d0f047253108f37ca5a67bc370825dcb7"
+    },
+    {
+      "path": "fixtures/schema/report.schema.json",
+      "sha256": "a1d369896aad41d179c7683fb12d1a368159b1d1f063b26a38b36f838ed82568"
+    },
+    {
+      "path": "fixtures/examples/actor_derivation_001.fixture.json",
+      "sha256": "1c9a905bb52c43fdb9ec05f75ca8a1d045d42e2af8da7cffcc6a5591bb8cc0bf"
+    },
+    {
+      "path": "fixtures/examples/actor_derivation_001.input.json",
+      "sha256": "850a14c1264b682952f9588fe61e1bc9b5d295d0f895c5763bfaa1cf6ed2a114"
+    },
+    {
+      "path": "fixtures/examples/actor_derivation_001.expected.json",
+      "sha256": "ac038980bab5d7f9847c86e6ade659e644056f44b0838b65f663465d3d95ee58"
+    }
+  ]
+}
