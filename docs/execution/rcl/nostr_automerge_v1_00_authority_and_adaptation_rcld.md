@@ -1,13 +1,13 @@
 # nostr_automerge V1 RCLD 00: Authority And Adaptation
 
-Status: active
+Status: complete
 Created: 2026-08-04
 Updated: 2026-08-04
 Mode: rcl-durable
 Repository: `triesap/nostr_automerge`
 Base commit: `a67d446`
 Governing plan: `docs/execution/rcl/nostr_automerge_v1_multi_rcld.md`
-Current checkpoint: `step_011`
+Current checkpoint: none
 
 ## Purpose
 
@@ -272,4 +272,4 @@ Commit: `test(conformance): define canonical report schema`
 | `step_008` | complete | this checkpoint | Approved ADR set indexed and validated |
 | `step_009` | complete | this checkpoint | Prior art and rejected alternatives validated |
 | `step_010` | complete | this checkpoint | Fixture schema and example validated |
-| `step_011` | active | — | Report schema |
+| `step_011` | complete | this checkpoint | Canonical report schema validated |

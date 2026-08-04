@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/fixtures/schema/report.schema.json",
+  "title": "nostr_automerge canonical conformance report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "report_schema",
+    "fixture_id",
+    "revision",
+    "coordinate",
+    "canonical_controls",
+    "accepted_changes",
+    "pending_changes",
+    "excluded_changes",
+    "invalid_events",
+    "unsupported_events",
+    "heads",
+    "history_digest",
+    "dispositions_digest",
+    "integrity_alerts",
+    "state_assertions",
+    "completion"
+  ],
+  "properties": {
+    "report_schema": {
+      "const": "nostr_automerge.report.v1"
+    },
+    "fixture_id": {
+      "type": "string"
+    },
+    "revision": {
+      "const": "draft_2026_08"
+    },
+    "coordinate": {
+      "type": "string",
+      "pattern": "^31624:[0-9a-f]{64}:[0-9a-f]{64}$"
+    },
+    "canonical_controls": {
+      "$ref": "#/$defs/id_list"
+    },
+    "accepted_changes": {
+      "$ref": "#/$defs/id_list"
+    },
+    "pending_changes": {
+      "$ref": "#/$defs/id_list"
+    },
+    "excluded_changes": {
+      "$ref": "#/$defs/id_list"
+    },
+    "invalid_events": {
+      "$ref": "#/$defs/id_list"
+    },
+    "unsupported_events": {
+      "$ref": "#/$defs/id_list"
+    },
+    "heads": {
+      "$ref": "#/$defs/id_list"
+    },
+    "history_digest": {
+      "$ref": "#/$defs/hex32"
+    },
+    "dispositions_digest": {
+      "$ref": "#/$defs/hex32"
+    },
+    "integrity_alerts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/integrity_alert"
+      }
+    },
+    "state_assertions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/assertion"
+      }
+    },
+    "completion": {
+      "enum": [
+        "complete",
+        "budget_exhausted",
+        "cancelled"
+      ]
+    }
+  },
+  "$defs": {
+    "hex32": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "id_list": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/hex32"
+      }
+    },
+    "assertion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "expected"
+      ],
+      "properties": {
+        "path": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "integer"
+            ]
+          }
+        },
+        "expected": {
+          "$ref": "#/$defs/expected_value"
+        }
+      }
+    },
+    "expected_value": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["type"], "properties": {"type": {"const": "null"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"const": "bool"}, "value": {"type": "boolean"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"enum": ["i64", "u64", "counter", "timestamp"]}, "value": {"type": "string", "pattern": "^-?[0-9]+$"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"const": "f64_bits"}, "value": {"type": "string", "pattern": "^[0-9a-f]{16}$"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"enum": ["bytes32", "change_hash", "event_id"]}, "value": {"$ref": "#/$defs/hex32"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"enum": ["string", "text", "bytes_base64"]}, "value": {"type": "string"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type"], "properties": {"type": {"enum": ["map", "list"]}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "name", "value", "start", "end"], "properties": {"type": {"const": "mark"}, "name": {"type": "string"}, "value": {"type": ["string", "boolean", "null"]}, "start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 0}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "values"], "properties": {"type": {"const": "conflicts"}, "values": {"type": "array", "minItems": 2, "items": {"type": "object"}}}}
+      ]
+    },
+    "integrity_alert": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["type", "parent_control", "candidate_controls", "selected_control"], "properties": {"type": {"const": "controller_equivocation"}, "parent_control": {"oneOf": [{"$ref": "#/$defs/hex32"}, {"type": "null"}]}, "candidate_controls": {"$ref": "#/$defs/id_list"}, "selected_control": {"$ref": "#/$defs/hex32"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "previous_tip", "new_tip", "affected_changes"], "properties": {"type": {"const": "canonical_control_reorganization"}, "previous_tip": {"$ref": "#/$defs/hex32"}, "new_tip": {"$ref": "#/$defs/hex32"}, "affected_changes": {"$ref": "#/$defs/id_list"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "actor_id", "first_sequence", "conflicting_changes", "affected_descendants"], "properties": {"type": {"const": "device_equivocation"}, "actor_id": {"$ref": "#/$defs/hex32"}, "first_sequence": {"type": "integer", "minimum": 1}, "conflicting_changes": {"$ref": "#/$defs/id_list"}, "affected_descendants": {"$ref": "#/$defs/id_list"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "actor_id", "first_sequence", "carrier_event_ids"], "properties": {"type": {"const": "potential_cloned_device_key"}, "actor_id": {"$ref": "#/$defs/hex32"}, "first_sequence": {"type": "integer", "minimum": 1}, "carrier_event_ids": {"$ref": "#/$defs/id_list"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "descriptor_event_id", "code"], "properties": {"type": {"const": "checkpoint_mismatch"}, "descriptor_event_id": {"$ref": "#/$defs/hex32"}, "code": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"}}}
+      ]
+    }
+  }
+}
