@@ -1,0 +1,24 @@
+{
+  "schema": "nostr_automerge.local_runner_manifest.v1",
+  "workflow": ".act/workflows/local_suite.yml",
+  "toolchain": {
+    "rust": "1.97.1",
+    "rust_nightly": "nightly-2026-07-16",
+    "act": "0.2.89",
+    "cargo_llvm_cov": "0.8.7",
+    "cargo_deny": "0.19.8",
+    "cargo_fuzz": "0.13.2"
+  },
+  "jobs": [
+    "policy",
+    "standard",
+    "conformance",
+    "coverage",
+    "supply_chain",
+    "robustness",
+    "resource",
+    "release_evidence"
+  ],
+  "entrypoint": "python3 scripts/local_gate.py",
+  "output_root": ".act/output"
+}
