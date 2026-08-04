@@ -2,6 +2,9 @@
 
 use std::process::{Command, ExitCode};
 
+#[allow(dead_code)]
+mod requirements;
+
 const HELP: &str = "nostr_automerge_xtask\n\nUSAGE:\n    nostr_automerge_xtask validate\n    nostr_automerge_xtask --help";
 
 fn validation_command(root: &std::path::Path) -> Command {

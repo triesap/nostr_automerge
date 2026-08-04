@@ -8,5 +8,9 @@ authors.workspace = true
 repository.workspace = true
 publish = false
 
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+
 [lints]
 workspace = true

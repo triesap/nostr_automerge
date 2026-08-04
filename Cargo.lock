@@ -517,6 +517,10 @@ dependencies = [
 [[package]]
 name = "nostr_automerge_xtask"
 version = "0.1.0-alpha.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "once_cell"
