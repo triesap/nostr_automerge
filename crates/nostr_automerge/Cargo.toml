@@ -21,3 +21,7 @@ url.workspace = true
 
 [lints]
 workspace = true
+
+[[bench]]
+name = "resource_smoke"
+harness = false

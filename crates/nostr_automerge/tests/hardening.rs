@@ -35,3 +35,10 @@ fn fuzz_dependency_graph_and_evaluator() {
 fn fuzz_checkpoint_parser_and_merkle_verification() {
     assert!(include_str!("../../../fuzz/fuzz_targets/checkpoint.rs").contains("merkle_root"));
 }
+#[test]
+fn add_resource_and_performance_benchmarks() {
+    let report: serde_json::Value =
+        serde_json::from_str(include_str!("../../../reports/resource_benchmarks.json"))
+            .unwrap_or_default();
+    assert_eq!(report["cases"].as_array().map(Vec::len), Some(7));
+}
