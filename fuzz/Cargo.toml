@@ -54,3 +54,9 @@ path = "fuzz_targets/reference_evaluator.rs"
 test = false
 doc = false
 bench = false
+[[bin]]
+name = "checkpoint"
+path = "fuzz_targets/checkpoint.rs"
+test = false
+doc = false
+bench = false

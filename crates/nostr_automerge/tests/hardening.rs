@@ -31,3 +31,7 @@ fn fuzz_dependency_graph_and_evaluator() {
             .contains("qualification_probe_reference")
     );
 }
+#[test]
+fn fuzz_checkpoint_parser_and_merkle_verification() {
+    assert!(include_str!("../../../fuzz/fuzz_targets/checkpoint.rs").contains("merkle_root"));
+}
