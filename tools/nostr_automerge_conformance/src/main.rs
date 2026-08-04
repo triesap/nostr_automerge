@@ -14,6 +14,8 @@ mod permutation;
 #[allow(dead_code)]
 mod report_json;
 mod runner;
+#[allow(dead_code)]
+mod scenario_variants;
 
 const HELP: &str = "nostr_automerge_conformance\n\nUSAGE:\n    nostr_automerge_conformance run_fixture <path>\n    nostr_automerge_conformance run_corpus <directory> [--family <name>] [--requirement <id>]\n    nostr_automerge_conformance --help";
 
