@@ -7,6 +7,7 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
+pub mod authoring;
 #[allow(dead_code)]
 mod automerge_adapter;
 #[allow(dead_code)]
