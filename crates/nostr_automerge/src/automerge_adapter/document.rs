@@ -1,5 +1,5 @@
 use automerge::{
-    Automerge, LoadOptions, OnPartialLoad, StringMigration, TextEncoding, VerificationMode,
+    ActorId, Automerge, LoadOptions, OnPartialLoad, StringMigration, TextEncoding, VerificationMode,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -20,6 +20,10 @@ impl Document {
         self.inner.text_encoding() == TextEncoding::Utf16CodeUnit
     }
 
+    pub(crate) fn replace_unused_actor(&mut self, actor: &[u8]) {
+        self.inner.set_actor(ActorId::from(actor));
+    }
+
     pub(crate) fn load_utf16(bytes: &[u8]) -> Result<Self, DocumentLoadError> {
         let options = LoadOptions::new()
             .text_encoding(TextEncoding::Utf16CodeUnit)
@@ -34,7 +38,7 @@ impl Document {
 
 #[cfg(test)]
 mod tests {
-    use automerge::{ROOT, ReadDoc, transaction::Transactable};
+    use automerge::{ActorId, ROOT, ReadDoc, transaction::Transactable};
 
     use super::Document;
 
@@ -70,5 +74,32 @@ mod tests {
 
         let truncated = &saved[..saved.len().saturating_sub(1)];
         assert!(Document::load_utf16(truncated).is_err());
+    }
+
+    fn fixed_change() -> (ActorId, ActorId, Vec<u8>) {
+        let mut document = Document::new_utf16();
+        let unused_actor = document.inner.get_actor().clone();
+        let derived_actor = ActorId::from([0x42; 32]);
+        document.replace_unused_actor(derived_actor.to_bytes());
+        {
+            let mut tx = document.inner.transaction();
+            assert!(tx.put(ROOT, "key", "value").is_ok());
+            tx.commit();
+        }
+        let changes = document.inner.get_changes(&[]);
+        assert_eq!(changes.len(), 1);
+        assert!(changes[0].actors().all(|actor| actor == &derived_actor));
+        (unused_actor, derived_actor, changes[0].raw_bytes().to_vec())
+    }
+
+    #[test]
+    fn prove_derived_actor_replaces_unused_random_actor() {
+        let (first_unused, derived_actor, first_bytes) = fixed_change();
+        let (second_unused, second_derived, second_bytes) = fixed_change();
+
+        assert_ne!(first_unused, derived_actor);
+        assert_ne!(second_unused, second_derived);
+        assert_eq!(derived_actor, second_derived);
+        assert_eq!(first_bytes, second_bytes);
     }
 }
