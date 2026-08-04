@@ -1,0 +1,36 @@
+[package]
+name = "nostr_automerge_fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "=0.4.13"
+nostr_automerge = { path = "../crates/nostr_automerge" }
+
+[[bin]]
+name = "automerge_framing"
+path = "fuzz_targets/automerge_framing.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "automerge_decode"
+path = "fuzz_targets/automerge_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "automerge_reencode"
+path = "fuzz_targets/automerge_reencode.rs"
+test = false
+doc = false
+bench = false
+
+[workspace]
+members = ["."]

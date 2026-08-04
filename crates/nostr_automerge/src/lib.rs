@@ -44,6 +44,27 @@ pub use work_budget::{BudgetExhausted, CancellationCheck, NeverCancelled, WorkBu
 /// The package version of this implementation.
 pub const IMPLEMENTATION_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+/// Exercises only the pre-parser Automerge framing gate for fuzzing.
+#[doc(hidden)]
+pub fn qualification_probe_automerge_framing(input: &[u8]) {
+    let _ = automerge_adapter::framing::validate_change_frame(input, ProtocolRevision::draft_v1());
+}
+
+/// Exercises framed Automerge semantic decoding for fuzzing.
+#[doc(hidden)]
+pub fn qualification_probe_automerge_decode(input: &[u8]) {
+    let _ = automerge_adapter::decode::decode_change(input, ProtocolRevision::draft_v1());
+}
+
+/// Exercises canonical non-compressing Automerge re-encoding for fuzzing.
+#[doc(hidden)]
+pub fn qualification_probe_automerge_reencode(input: &[u8]) {
+    let _ = automerge_adapter::encode::qualify_canonical_reencoding(
+        input,
+        ProtocolRevision::draft_v1(),
+    );
+}
+
 #[cfg(test)]
 mod tests {
     use super::IMPLEMENTATION_VERSION;

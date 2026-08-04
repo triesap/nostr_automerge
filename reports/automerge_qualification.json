@@ -1,0 +1,34 @@
+{
+  "automerge": {
+    "crate_checksum": "09b78abcbba93428b9465b26cb2816a5b4654cce507f099a84a8c1b311cb3633",
+    "source_revision": "a4f584c86358dd07f83f36708573e1c8d1bd8161",
+    "version": "0.10.0"
+  },
+  "artifacts": {
+    "canonical_change_sha256": "d241760ea71121e11bb4918e641189e6757a0cfbb34b34c8b54cfc47a81b543c",
+    "panic_audit_sha256": "354549e978ef01ff44a9f6b4f3a080975bcf5760c9fa76e33c0bcf87820ca820",
+    "semantic_matrix_sha256": "e7906e82b54e2bec38dff334724995f7706587464aa16692805e16ec91ca80fc"
+  },
+  "gates": {
+    "actor_replacement": true,
+    "canonical_reencode": true,
+    "checked_counters": true,
+    "explicit_utf16_load": true,
+    "framing_before_parse": true,
+    "mandatory_semantics": true,
+    "no_catch_unwind": true,
+    "no_compression": true
+  },
+  "limits": {
+    "change_bytes": 32768,
+    "dependencies": 256,
+    "operations": 16384
+  },
+  "report_schema": "nostr_automerge.automerge_qualification.v1",
+  "status": "qualified",
+  "vectors": {
+    "canonical_changes": 1,
+    "fuzz_targets": 3,
+    "semantic_labels": 20
+  }
+}
