@@ -7,6 +7,8 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
+mod types;
+
 /// The package version of this implementation.
 pub const IMPLEMENTATION_VERSION: &str = env!("CARGO_PKG_VERSION");
 
