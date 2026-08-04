@@ -1,2 +1,2 @@
 #[allow(dead_code)]
-mod fixed_32;
+pub(crate) mod fixed_32;

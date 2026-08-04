@@ -7,7 +7,11 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
+mod error;
 mod types;
+mod wire;
+
+pub use error::HexError;
 
 /// The package version of this implementation.
 pub const IMPLEMENTATION_VERSION: &str = env!("CARGO_PKG_VERSION");
