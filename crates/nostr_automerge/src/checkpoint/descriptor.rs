@@ -39,6 +39,32 @@ pub enum DescriptorError {
 }
 
 impl CheckpointDescriptor {
+    /// Validates all nonzero, limit, and checked ceiling-division commitments.
+    pub fn validate_arithmetic(&self) -> Result<(), DescriptorError> {
+        let limits = crate::ProtocolRevision::draft_v1().limits();
+        if self.raw_size == 0
+            || self.raw_size > limits.checkpoint_bytes.get()
+            || self.chunk_size == 0
+            || u64::from(self.chunk_size) > limits.checkpoint_chunk_bytes.get()
+            || self.chunk_count == 0
+            || u64::from(self.chunk_count) > limits.checkpoint_chunks.get()
+            || self.change_count == 0
+            || self.change_count > limits.checkpoint_changes.get()
+            || self.total_ops > limits.checkpoint_operations.get()
+            || self.dependency_edges > limits.checkpoint_dependency_edges.get()
+        {
+            return Err(DescriptorError::Range);
+        }
+        let expected = self
+            .raw_size
+            .checked_add(u64::from(self.chunk_size) - 1)
+            .ok_or(DescriptorError::Arithmetic)?
+            / u64::from(self.chunk_size);
+        if expected != u64::from(self.chunk_count) {
+            return Err(DescriptorError::Arithmetic);
+        }
+        Ok(())
+    }
     /// Parses exact canonical descriptor content and its separately signed snapshot hash tag.
     pub fn parse_content(
         content: &str,
@@ -139,6 +165,32 @@ mod tests {
                 SnapshotHash::from_bytes([4; 32])
             )
             .is_err()
+        );
+    }
+    #[test]
+    fn validate_descriptor_arithmetic() {
+        let mut value = CheckpointDescriptor {
+            snapshot_hash: SnapshotHash::from_bytes([0; 32]),
+            heads: std::collections::BTreeSet::from([crate::ChangeHash::from_bytes([1; 32])]),
+            raw_size: 32_769,
+            chunk_size: 32_768,
+            chunk_count: 2,
+            chunk_root: [2; 32],
+            change_count: 1,
+            change_set_hash: [3; 32],
+            dependency_edges: 0,
+            total_ops: 0,
+        };
+        assert_eq!(value.validate_arithmetic(), Ok(()));
+        value.chunk_count = 1;
+        assert_eq!(
+            value.validate_arithmetic(),
+            Err(super::DescriptorError::Arithmetic)
+        );
+        value.raw_size = 0;
+        assert_eq!(
+            value.validate_arithmetic(),
+            Err(super::DescriptorError::Range)
         );
     }
 }
