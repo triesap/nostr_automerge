@@ -2,7 +2,9 @@ use std::collections::BTreeSet;
 
 use crate::DevicePublicKey;
 use crate::carrier::control::ValidatedControlContent;
+use crate::control::parent_view::ParentEpochView;
 use crate::control::validate::ControlEnvelope;
+use crate::types::role::Role;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum TransitionError {
@@ -11,6 +13,41 @@ pub(crate) enum TransitionError {
     DeviceReintroduced,
     TerminalChild,
     SuccessorContinuity,
+    MissingBaseEvidence,
+    RetainedWriterFrontier,
+}
+
+pub(crate) fn validate_retained_writer_frontier(
+    parent: &ValidatedControlContent,
+    child: &ValidatedControlContent,
+    view: &ParentEpochView,
+) -> Result<(), TransitionError> {
+    let mut closure = BTreeSet::new();
+    let mut stack = child.base_heads.clone();
+    while let Some(hash) = stack.pop() {
+        if !view.contains(&hash) {
+            return Err(TransitionError::MissingBaseEvidence);
+        }
+        if closure.insert(hash)
+            && let Some(dependencies) = view.dependencies(&hash)
+        {
+            stack.extend(dependencies.iter().copied());
+        }
+    }
+    for grant in &parent.members {
+        let retained_writer = grant.roles.contains(&Role::Write)
+            && child
+                .members
+                .iter()
+                .any(|child_grant| child_grant.device == grant.device);
+        if retained_writer
+            && let Some(highest) = view.writer_contribution(&grant.actor)
+            && !closure.contains(&highest)
+        {
+            return Err(TransitionError::RetainedWriterFrontier);
+        }
+    }
+    Ok(())
 }
 
 pub(crate) fn validate_terminal_child(
@@ -113,12 +150,15 @@ pub(crate) fn validate_monotonic_roles(
 mod tests {
     use super::{
         TransitionError, validate_account_mapping, validate_monotonic_roles,
-        validate_no_reintroduction, validate_successor_continuity, validate_terminal_child,
+        validate_no_reintroduction, validate_retained_writer_frontier,
+        validate_successor_continuity, validate_terminal_child,
     };
     use crate::carrier::control::Predecessor;
+    use crate::control::parent_view::ParentEpochView;
     use crate::control::validate::tests::{genesis, grant};
     use crate::types::role::Role;
-    use crate::{ControllerPublicKey, DocumentCoordinate, DocumentId};
+    use crate::{ActorId, ChangeHash, ControllerPublicKey, DocumentCoordinate, DocumentId};
+    use std::collections::{BTreeMap, BTreeSet};
 
     #[test]
     fn enforce_immutable_account_mapping() {
@@ -226,5 +266,47 @@ mod tests {
             validate_terminal_child(&genesis().content, &nonterminal),
             Err(TransitionError::SuccessorContinuity)
         );
+    }
+
+    #[test]
+    fn enforce_retained_writer_frontier_rule() {
+        let mut parent = genesis().content;
+        parent.members.push(grant(5, vec![Role::Write]));
+        let first = ChangeHash::from_bytes([1; 32]);
+        let second = ChangeHash::from_bytes([2; 32]);
+        let head = ChangeHash::from_bytes([3; 32]);
+        let view = ParentEpochView::new(
+            BTreeSet::from([first, second, head]),
+            BTreeSet::from([head]),
+            BTreeMap::from([(head, BTreeSet::from([first, second]))]),
+            BTreeMap::new(),
+            BTreeMap::from([
+                (parent.members[0].actor, first),
+                (parent.members[1].actor, second),
+            ]),
+        );
+        let mut child = parent.clone();
+        child.base_heads = vec![head];
+        assert_eq!(
+            validate_retained_writer_frontier(&parent, &child, &view),
+            Ok(())
+        );
+
+        child.base_heads = vec![first];
+        assert_eq!(
+            validate_retained_writer_frontier(&parent, &child, &view),
+            Err(TransitionError::RetainedWriterFrontier)
+        );
+        child.members.remove(1);
+        assert_eq!(
+            validate_retained_writer_frontier(&parent, &child, &view),
+            Ok(())
+        );
+        child.base_heads = vec![ChangeHash::from_bytes([9; 32])];
+        assert_eq!(
+            validate_retained_writer_frontier(&parent, &child, &view),
+            Err(TransitionError::MissingBaseEvidence)
+        );
+        assert_eq!(parent.members[0].actor, ActorId::from_bytes([4; 32]));
     }
 }
