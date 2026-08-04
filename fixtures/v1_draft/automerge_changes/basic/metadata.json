@@ -1,0 +1,12 @@
+{
+  "actor_hex": "4242424242424242424242424242424242424242424242424242424242424242",
+  "change_hash": "692468c4bba75b52de637c5ea3917ae1a54cf77286670282b7eff070db4531c5",
+  "deps": [],
+  "extra_bytes_hex": "",
+  "message": null,
+  "operation_count": 1,
+  "seq": 1,
+  "sha256": "5fd4d9f24f784442abb8a90c550aeaf32a74b44fbd24e9566e348856e7a29ac2",
+  "start_op": 1,
+  "time": 0
+}
