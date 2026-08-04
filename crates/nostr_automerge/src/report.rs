@@ -120,7 +120,7 @@ mod tests {
 
     use super::canonical_report;
     use crate::conformance::assertions::{
-        ExpectedValue, OpaqueDocumentView, TypedAssertion, TypedValue,
+        ExpectedValue, OpaqueDocumentView, PathElement, TypedAssertion, TypedValue,
     };
     use crate::conformance::digest::{
         DispositionItem, DispositionNamespace, dispositions_digest, history_digest,
@@ -179,16 +179,19 @@ mod tests {
             Ok("ae39260c28bb68255ccd83b5f602187e48dc78c4a92df5264d17b5e8c827d080".to_owned())
         );
 
-        let path = vec!["value".to_owned()];
+        let path = vec![PathElement::Key("value".to_owned())];
         let view = OpaqueDocumentView::from_typed_values([
             (path.clone(), vec![TypedValue::F64Bits(1.5_f64.to_bits())]),
-            (vec!["u64".to_owned()], vec![TypedValue::U64(u64::MAX)]),
             (
-                vec!["bytes".to_owned()],
+                vec![PathElement::Key("u64".to_owned())],
+                vec![TypedValue::U64(u64::MAX)],
+            ),
+            (
+                vec![PathElement::Key("bytes".to_owned())],
                 vec![TypedValue::Bytes(vec![0, 255])],
             ),
             (
-                vec!["conflict".to_owned()],
+                vec![PathElement::Key("conflict".to_owned())],
                 vec![
                     TypedValue::String("a".to_owned()),
                     TypedValue::String("b".to_owned()),
@@ -200,15 +203,15 @@ mod tests {
             expected: ExpectedValue::Value(TypedValue::F64Bits(1.5_f64.to_bits()))
         }));
         assert!(view.assert(&TypedAssertion {
-            path: vec!["u64".to_owned()],
+            path: vec![PathElement::Key("u64".to_owned())],
             expected: ExpectedValue::Value(TypedValue::U64(u64::MAX))
         }));
         assert!(view.assert(&TypedAssertion {
-            path: vec!["bytes".to_owned()],
+            path: vec![PathElement::Key("bytes".to_owned())],
             expected: ExpectedValue::Value(TypedValue::Bytes(vec![0, 255]))
         }));
         assert!(view.assert(&TypedAssertion {
-            path: vec!["conflict".to_owned()],
+            path: vec![PathElement::Key("conflict".to_owned())],
             expected: ExpectedValue::Conflicts(vec![
                 TypedValue::String("a".to_owned()),
                 TypedValue::String("b".to_owned())
