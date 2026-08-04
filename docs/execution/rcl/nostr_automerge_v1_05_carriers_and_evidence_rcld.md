@@ -1,13 +1,13 @@
 # nostr_automerge Draft V1 RCLD 05: Carriers And Evidence
 
-Status: active
+Status: complete
 Created: 2026-08-04
 Updated: 2026-08-04
 Mode: rcl-durable
 Repository: `triesap/nostr_automerge`
 Base commit: `8aac235`
 Governing plan: `docs/execution/rcl/nostr_automerge_v1_multi_rcld.md`
-Current checkpoint: `step_065`
+Current checkpoint: none
 
 ## Purpose
 
