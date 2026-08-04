@@ -11,6 +11,7 @@ description = "Deterministic draft-v1 Automerge document validation over Nostr"
 publish = false
 
 [dependencies]
+base64.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 secp256k1.workspace = true

@@ -30,6 +30,7 @@ undocumented_unsafe_blocks = "deny"
 unwrap_used = "deny"
 
 [workspace.dependencies]
+base64 = { version = "=0.22.1" }
 nostr_automerge = { path = "crates/nostr_automerge", version = "=0.1.0-alpha.0" }
 serde = { version = "=1.0.219" }
 serde_json = { version = "=1.0.142" }
