@@ -27,3 +27,17 @@ path = "fuzz_targets/raw_nip01.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "automerge_framing"
+path = "fuzz_targets/automerge_framing.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "automerge_semantics"
+path = "fuzz_targets/automerge_semantics.rs"
+test = false
+doc = false
+bench = false
