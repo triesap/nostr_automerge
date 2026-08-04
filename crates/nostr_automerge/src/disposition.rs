@@ -32,6 +32,16 @@ impl ProtocolDisposition {
             Self::UnsupportedRevision => "unsupported_revision",
         }
     }
+
+    pub(crate) const fn for_revision(supported: bool, valid: bool) -> Self {
+        if !supported {
+            Self::UnsupportedRevision
+        } else if valid {
+            Self::Accepted
+        } else {
+            Self::Invalid
+        }
+    }
 }
 
 /// Local execution completion, which never changes protocol dispositions.
@@ -69,5 +79,9 @@ mod tests {
         assert_eq!(ProtocolDisposition::Invalid.code(), 4);
         assert_eq!(ProtocolDisposition::UnsupportedRevision.code(), 5);
         assert_eq!(Completion::BudgetExhausted.as_str(), "budget_exhausted");
+        assert_eq!(
+            ProtocolDisposition::for_revision(false, false),
+            ProtocolDisposition::UnsupportedRevision
+        );
     }
 }
