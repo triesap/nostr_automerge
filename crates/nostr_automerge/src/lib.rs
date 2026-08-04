@@ -7,6 +7,8 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
+#[allow(dead_code)]
+mod automerge_adapter;
 mod crypto;
 mod diagnostic;
 mod disposition;
