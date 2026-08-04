@@ -1,8 +1,10 @@
 //! Optional verified-history checkpoints that can only reproduce full replay.
 
+mod chunk;
 mod descriptor;
 mod merkle;
 
+pub use chunk::{CheckpointChunk, ChunkError};
 pub use descriptor::{CheckpointDescriptor, DescriptorError};
 pub use merkle::{MerkleError, ProofStep, Side, leaf_hash, merkle_root, verify_proof};
 
