@@ -3,12 +3,12 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use nostr_automerge::{ChangeHash, DispositionsDigest, DocumentCoordinate, EventId, HistoryDigest};
 
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct ExpectedReport {
     pub(crate) report_schema: String,
@@ -29,7 +29,7 @@ pub(crate) struct ExpectedReport {
     pub(crate) completion: String,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct StateAssertion {
     pub(crate) path: Vec<Value>,
@@ -53,7 +53,7 @@ pub(crate) fn load_expected(path: &Path) -> Result<ExpectedReport, ExpectedError
     Ok(report)
 }
 
-fn validate_expected(report: &ExpectedReport) -> Result<(), ExpectedError> {
+pub(crate) fn validate_expected(report: &ExpectedReport) -> Result<(), ExpectedError> {
     if report.report_schema != "nostr_automerge.report.v1"
         || report.revision != "draft_2026_08"
         || !matches!(

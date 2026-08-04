@@ -8,6 +8,8 @@ mod checksum;
 mod expected;
 #[allow(dead_code)]
 mod fixture;
+#[allow(dead_code)]
+mod report_json;
 
 const HELP: &str = "nostr_automerge_conformance\n\nUSAGE:\n    nostr_automerge_conformance --help\n\nThe conformance runner is reserved but not implemented yet.";
 
