@@ -33,6 +33,7 @@ unwrap_used = "deny"
 nostr_automerge = { path = "crates/nostr_automerge", version = "=0.1.0-alpha.0" }
 serde = { version = "=1.0.219" }
 serde_json = { version = "=1.0.142" }
+secp256k1 = { version = "=0.31.1", default-features = false, features = ["std"] }
 sha2 = { version = "=0.10.9" }
 
 [profile.release]
