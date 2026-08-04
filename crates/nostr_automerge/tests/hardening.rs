@@ -47,3 +47,8 @@ fn add_mutation_tests_for_critical_validators() {
     let config = include_str!("../../../mutants.toml");
     assert!(config.contains("wire,control,graph,checkpoint"));
 }
+#[test]
+fn add_coverage_reporting() {
+    let workflow = include_str!("../../../.github/workflows/coverage.yml");
+    assert!(workflow.contains("cargo llvm-cov --workspace --all-targets --locked"));
+}
