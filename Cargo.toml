@@ -1,11 +1,13 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = [
-    "crates/*"
+    "crates/nostr_automerge",
+    "tools/nostr_automerge_conformance",
+    "tools/nostr_automerge_xtask",
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.0-alpha.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 authors = ["Tyson Lupul <tyson@radroots.org>"]
@@ -17,6 +19,7 @@ rust-version = "1.92.0"
 unsafe_code = "forbid"
 
 [workspace.dependencies]
+nostr_automerge = { path = "crates/nostr_automerge", version = "=0.1.0-alpha.0" }
 
 [profile.release]
 codegen-units = 1
