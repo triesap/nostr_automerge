@@ -1,0 +1,28 @@
+{
+  "schema": "nostr_automerge.history_digest_vectors.v1",
+  "domain": "nostr-crdt/automerge/history/v1",
+  "revision": "draft_2026_08",
+  "coordinate": "31624:1111111111111111111111111111111111111111111111111111111111111111:2222222222222222222222222222222222222222222222222222222222222222",
+  "canonical_controls": [
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  ],
+  "accepted_changes": [
+    "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  ],
+  "heads": [
+    "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  ],
+  "preimage_hex": "6e6f7374722d637264742f6175746f6d657267652f686973746f72792f763100000d64726166745f323032365f303800007b881111111111111111111111111111111111111111111111111111111111111111222222222222222222222222222222222222222222222222222222222222222200000002aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0000000000000002ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd00000001dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "sha256": "796bd40b8e9912a14b0b464133c80d5fafd552c2caa870cf3b7eaa9af0bcdb2e",
+  "malformed": [
+    "reversed_controls",
+    "unsorted_changes",
+    "duplicate_changes",
+    "unsorted_heads",
+    "duplicate_heads",
+    "incorrect_count",
+    "invalid_identifier"
+  ]
+}
