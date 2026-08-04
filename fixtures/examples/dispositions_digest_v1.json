@@ -1,0 +1,15 @@
+{
+  "schema": "nostr_automerge.dispositions_digest_vectors.v1",
+  "domain": "nostr-crdt/automerge/dispositions/v1",
+  "revision": "draft_2026_08",
+  "coordinate": "31624:1111111111111111111111111111111111111111111111111111111111111111:2222222222222222222222222222222222222222222222222222222222222222",
+  "items": [
+    {"namespace": "control_event", "identifier": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "disposition": "accepted"},
+    {"namespace": "change_hash", "identifier": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "disposition": "excluded"},
+    {"namespace": "event", "identifier": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "disposition": "invalid"}
+  ],
+  "preimage_hex": "6e6f7374722d637264742f6175746f6d657267652f646973706f736974696f6e732f763100000d64726166745f323032365f303800007b8811111111111111111111111111111111111111111111111111111111111111112222222222222222222222222222222222222222222222222222222222222222000000000000000301aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0102bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0303cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc04",
+  "sha256": "ae39260c28bb68255ccd83b5f602187e48dc78c4a92df5264d17b5e8c827d080",
+  "malformed": ["unknown_namespace", "unknown_disposition", "duplicate_item", "unsorted_items", "invalid_identifier"],
+  "completion_invariance": ["complete", "budget_exhausted", "cancelled"]
+}

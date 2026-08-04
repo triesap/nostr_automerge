@@ -7,7 +7,7 @@ Mode: rcl-durable
 Repository: `triesap/nostr_automerge`
 Base commit: `9a7b082`
 Governing plan: `docs/execution/rcl/nostr_automerge_v1_multi_rcld.md`
-Current checkpoint: `step_013`
+Current checkpoint: `step_014`
 
 ## Purpose
 
@@ -44,9 +44,9 @@ baseline validators and `git diff --check`.
 
 | Step | State | Commit | Completion proof |
 | --- | --- | --- | --- |
-| `step_012` | complete | pending commit | history digest vectors and malformed cases |
-| `step_013` | active | pending | dispositions digest vectors and malformed cases |
-| `step_014` | pending | pending | closed diagnostic registry validation |
+| `step_012` | complete | `dcc69a9` | history digest vectors and malformed cases |
+| `step_013` | complete | pending commit | dispositions digest vectors and malformed cases |
+| `step_014` | active | pending | closed diagnostic registry validation |
 | `step_015` | pending | pending | typed provisional limits validation |
 | `step_016` | pending | pending | byte-identical complete baseline report |
 
