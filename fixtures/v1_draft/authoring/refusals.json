@@ -1,0 +1,13 @@
+{
+  "schema": "nostr-automerge-authoring-refusals-v1",
+  "cases": [
+    { "name": "over_limit_operations", "diagnostic": "authoring.limit" },
+    { "name": "over_limit_dependencies", "diagnostic": "authoring.dependency_limit" },
+    { "name": "over_limit_bytes", "diagnostic": "authoring.limit" },
+    { "name": "wrong_commit_metadata", "diagnostic": "authoring.commit_metadata" },
+    { "name": "unsorted_grants", "diagnostic": "authoring.canonicalized" },
+    { "name": "unsorted_frontier", "diagnostic": "authoring.canonicalized" },
+    { "name": "invalid_successor", "diagnostic": "authoring.control_transition" },
+    { "name": "stale_actor_state", "diagnostic": "authoring.stale" }
+  ]
+}
