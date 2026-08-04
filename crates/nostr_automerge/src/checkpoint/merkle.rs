@@ -94,4 +94,16 @@ mod tests {
         manual.update(chunk_hash);
         assert_eq!(actual, <[u8; 32]>::from(manual.finalize()));
     }
+    #[test]
+    fn implement_ordered_unpadded_merkle_root() {
+        for count in [1_usize, 2, 3, 5, 8] {
+            let leaves = (0..count)
+                .map(|i| super::leaf_hash(i as u32, count as u32, [i as u8; 32]))
+                .collect::<Vec<_>>();
+            let root = super::merkle_root(&leaves);
+            assert!(root.is_ok());
+            assert_eq!(root, super::merkle_root(&leaves));
+        }
+        assert_eq!(super::merkle_root(&[]), Err(super::MerkleError::Count));
+    }
 }
