@@ -18,11 +18,15 @@ VALIDATORS = [
 
 
 def controlled_files() -> list[pathlib.Path]:
-    roots = ("AGENTS.md", "README.md", "CONTRIBUTING.md", "SECURITY.md", "CODEOWNERS", "spec", "fixtures", "docs/adr", "docs/provenance", "implementation", "scripts")
+    roots = ("AGENTS.md", "README.md", "CONTRIBUTING.md", "SECURITY.md", "CODEOWNERS", "spec", "fixtures/README.md", "fixtures/examples", "fixtures/schema", "docs/provenance")
     files = []
     for name in roots:
         path = ROOT / name
         files.extend([path] if path.is_file() else (item for item in path.rglob("*") if item.is_file()))
+    files.extend(ROOT / "scripts" / name for name in (*VALIDATORS, "validate_spec.py"))
+    files.extend(path for path in (ROOT / "docs/adr").glob("adr_[0-9][0-9][0-9][0-9]_*.md"))
+    files.append(ROOT / "docs/adr/README.md")
+    files.extend(ROOT / "implementation" / name for name in ("COMMIT_SEQUENCE.md", "TYPESCRIPT_INTEROP_PLAN.md", "commit_sequence.json", "deviations/step_001.md"))
     return sorted(files, key=lambda item: item.relative_to(ROOT).as_posix().encode())
 
 
