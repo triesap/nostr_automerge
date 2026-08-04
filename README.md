@@ -1,18 +1,19 @@
 # nostr_automerge
 
-`nostr_automerge` is a planned pure-Rust reference implementation of an
+`nostr_automerge` is a pure-Rust reference implementation of an
 Automerge document protocol carried by signed Nostr events.
 
 ## Status
 
-The repository contains an approved draft-v1 specification baseline and an
-incremental implementation program. The Rust protocol implementation and
-conformance suite are not complete yet.
+The repository contains an implemented draft-v1 Rust core, deterministic
+conformance tooling, pure authoring primitives, and optional verified-history
+checkpoint validation. The API remains alpha and the event kinds provisional.
+The independent cross-language and NIP-readiness program is not complete yet.
 
 This repository does not currently claim:
 
 - an adopted NIP or allocated event kinds;
-- Rust or cross-language conformance;
+- cross-language conformance;
 - a published or production-certified crate;
 - relay, mobile, private-transport, or application readiness.
 
@@ -25,7 +26,7 @@ This repository does not currently claim:
 
 ## Architecture Boundary
 
-The public crate will be deterministic, batch-oriented, storage-independent,
+The public crate is deterministic, batch-oriented, storage-independent,
 transport-independent, and network-free. It will not own relay connections,
 databases, async runtimes, key custody, signing services, mobile bindings, or
 application schemas.
@@ -44,6 +45,17 @@ explicit inputs. See
 The example deliberately keeps key custody, signing, durable outbox writes,
 relay publication, and evidence collection in caller code. Signed bytes are
 reingested through the strict public NIP-01 boundary before they are trusted.
+
+## Validation and checkpoints
+
+`RawEventBytes` and `VerifiedNip01Event` form the strict signed ingress boundary.
+The reference core applies sealed control, graph, equivocation, counter, and
+Automerge rules with explicit work budgets and cancellation. Checkpoints are
+optional verified-history accelerators: failure invalidates only the checkpoint,
+and ordinary full replay remains required.
+
+See [`docs/alpha_api.md`](docs/alpha_api.md) for claim levels, API orientation,
+security limits, and integration boundaries.
 
 ## Development
 

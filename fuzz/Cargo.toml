@@ -36,13 +36,6 @@ doc = false
 bench = false
 
 [[bin]]
-name = "automerge_semantics"
-path = "fuzz_targets/automerge_semantics.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
 name = "control_transition"
 path = "fuzz_targets/control_transition.rs"
 test = false

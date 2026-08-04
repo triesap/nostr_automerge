@@ -15,7 +15,7 @@ fn fuzz_strict_raw_json_and_nip_01() {
 #[test]
 fn fuzz_automerge_framing_and_semantic_decode() {
     assert!(include_str!("../../../fuzz/fuzz_targets/automerge_framing.rs").contains("framing"));
-    assert!(include_str!("../../../fuzz/fuzz_targets/automerge_semantics.rs").contains("reencode"));
+    assert!(include_str!("../../../fuzz/fuzz_targets/automerge_reencode.rs").contains("reencode"));
 }
 #[test]
 fn fuzz_control_objects_and_transitions() {
@@ -57,4 +57,10 @@ fn add_dependency_advisory_and_license_policy() {
     let policy = include_str!("../../../deny.toml");
     assert!(policy.contains("unknown-git = \"deny\""));
     assert!(include_str!("../../../Cargo.toml").contains("automerge = { version = \"=0.10.0\""));
+}
+#[test]
+fn complete_public_documentation_and_examples() {
+    let readme = include_str!("../../../README.md");
+    assert!(readme.contains("Validation and checkpoints"));
+    assert!(readme.contains("full replay remains required"));
 }

@@ -1,3 +1,5 @@
+//! Sealed-limit resource benchmark smoke.
+
 use nostr_automerge::checkpoint::{leaf_hash, merkle_root};
 fn main() {
     let leaves = (0..4096)
