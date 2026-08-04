@@ -4,6 +4,10 @@
 //! caller to persist, sign, and publish. It owns no keys, clocks, storage,
 //! network clients, signing services, outboxes, or background work.
 
+mod actor_state;
+
+pub use actor_state::{ActorState, ActorStateError};
+
 #[cfg(test)]
 mod tests {
     #[test]
