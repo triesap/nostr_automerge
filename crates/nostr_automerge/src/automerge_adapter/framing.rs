@@ -27,7 +27,9 @@ pub(crate) fn validate_prefix(raw: &[u8]) -> Result<Prefix, FramingError> {
             checksum,
             length_offset: 9,
         }),
-        Some(_) => Err(FramingError::ChunkType),
+        Some(value) => Err(FramingError::ForbiddenChunk(ForbiddenChunkType::from_byte(
+            value,
+        ))),
         None => Err(FramingError::Truncated),
     }
 }
@@ -100,7 +102,7 @@ pub(crate) fn validate_change_frame(
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum FramingError {
     Magic,
-    ChunkType,
+    ForbiddenChunk(ForbiddenChunkType),
     Truncated,
     Leb128(Leb128Error),
     TooLarge,
@@ -108,9 +110,30 @@ pub(crate) enum FramingError {
     Checksum,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ForbiddenChunkType {
+    Document,
+    CompressedChange,
+    Bundle,
+    Unknown(u8),
+}
+
+impl ForbiddenChunkType {
+    const fn from_byte(value: u8) -> Self {
+        match value {
+            0 => Self::Document,
+            2 => Self::CompressedChange,
+            3 => Self::Bundle,
+            other => Self::Unknown(other),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{FramingError, validate_change_frame, validate_length, validate_prefix};
+    use super::{
+        ForbiddenChunkType, FramingError, validate_change_frame, validate_length, validate_prefix,
+    };
     use crate::ProtocolRevision;
 
     #[test]
@@ -121,7 +144,12 @@ mod tests {
         assert_eq!(validate_prefix(&raw), Err(FramingError::Magic));
         raw[0] = 0x85;
         raw[8] = 2;
-        assert_eq!(validate_prefix(&raw), Err(FramingError::ChunkType));
+        assert_eq!(
+            validate_prefix(&raw),
+            Err(FramingError::ForbiddenChunk(
+                ForbiddenChunkType::CompressedChange
+            ))
+        );
         assert_eq!(validate_prefix(&raw[..8]), Err(FramingError::Truncated));
     }
 
@@ -157,5 +185,45 @@ mod tests {
             validate_change_frame(&corrupt, ProtocolRevision::draft_v1()),
             Err(FramingError::Checksum)
         );
+    }
+
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn rejects_committed_forbidden_chunk_corpus() {
+        let fixtures = [
+            (
+                include_str!("../../../../fixtures/v1_draft/automerge_framing/document_chunk.hex"),
+                ForbiddenChunkType::Document,
+            ),
+            (
+                include_str!(
+                    "../../../../fixtures/v1_draft/automerge_framing/compressed_change_chunk.hex"
+                ),
+                ForbiddenChunkType::CompressedChange,
+            ),
+            (
+                include_str!("../../../../fixtures/v1_draft/automerge_framing/bundle_chunk.hex"),
+                ForbiddenChunkType::Bundle,
+            ),
+            (
+                include_str!("../../../../fixtures/v1_draft/automerge_framing/unknown_chunk.hex"),
+                ForbiddenChunkType::Unknown(0xff),
+            ),
+        ];
+        for (encoded, expected) in fixtures {
+            let bytes: Vec<u8> = encoded
+                .trim()
+                .as_bytes()
+                .chunks_exact(2)
+                .map(|pair| {
+                    u8::from_str_radix(core::str::from_utf8(pair).expect("ASCII fixture"), 16)
+                        .expect("hex fixture")
+                })
+                .collect();
+            assert_eq!(
+                validate_prefix(&bytes),
+                Err(FramingError::ForbiddenChunk(expected))
+            );
+        }
     }
 }
