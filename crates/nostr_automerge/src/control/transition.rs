@@ -1,9 +1,37 @@
+use std::collections::BTreeSet;
+
+use crate::DevicePublicKey;
 use crate::carrier::control::ValidatedControlContent;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum TransitionError {
     AccountChanged,
     RoleEscalation,
+    DeviceReintroduced,
+}
+
+pub(crate) fn validate_no_reintroduction(
+    ancestry: &[&ValidatedControlContent],
+    child: &ValidatedControlContent,
+) -> Result<(), TransitionError> {
+    let mut active = BTreeSet::<DevicePublicKey>::new();
+    let mut removed = BTreeSet::<DevicePublicKey>::new();
+    for control in ancestry {
+        let next: BTreeSet<_> = control.members.iter().map(|grant| grant.device).collect();
+        removed.extend(active.difference(&next).copied());
+        if next.iter().any(|device| removed.contains(device)) {
+            return Err(TransitionError::DeviceReintroduced);
+        }
+        active = next;
+    }
+    if child
+        .members
+        .iter()
+        .any(|grant| removed.contains(&grant.device))
+    {
+        return Err(TransitionError::DeviceReintroduced);
+    }
+    Ok(())
 }
 
 pub(crate) fn validate_account_mapping(
@@ -45,7 +73,10 @@ pub(crate) fn validate_monotonic_roles(
 
 #[cfg(test)]
 mod tests {
-    use super::{TransitionError, validate_account_mapping, validate_monotonic_roles};
+    use super::{
+        TransitionError, validate_account_mapping, validate_monotonic_roles,
+        validate_no_reintroduction,
+    };
     use crate::control::validate::tests::{genesis, grant};
     use crate::types::role::Role;
 
@@ -96,5 +127,24 @@ mod tests {
         let mut fresh = checkpoint_parent.clone();
         fresh.members.push(grant(9, vec![Role::Write]));
         assert_eq!(validate_monotonic_roles(&checkpoint_parent, &fresh), Ok(()));
+    }
+
+    #[test]
+    fn forbid_removed_device_reintroduction() {
+        let first = genesis().content;
+        let mut removed = first.clone();
+        removed.members.clear();
+        let mut later = removed.clone();
+        later.members.push(grant(9, vec![Role::Write]));
+        let mut reintroduced = later.clone();
+        reintroduced.members.insert(0, first.members[0].clone());
+        assert_eq!(
+            validate_no_reintroduction(&[&first, &removed, &later], &reintroduced),
+            Err(TransitionError::DeviceReintroduced)
+        );
+        assert_eq!(
+            validate_no_reintroduction(&[&first, &removed], &later),
+            Ok(())
+        );
     }
 }
