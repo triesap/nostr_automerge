@@ -37,6 +37,7 @@ macro_rules! semantic_id {
 mod actor_id;
 mod change_hash;
 mod digest;
+mod document_coordinate;
 mod document_id;
 mod event_id;
 pub(crate) mod fixed_32;
@@ -45,6 +46,7 @@ pub(crate) mod public_key;
 pub use actor_id::ActorId;
 pub use change_hash::{ChangeHash, ChunkHash, SnapshotHash};
 pub use digest::{DispositionsDigest, HistoryDigest};
+pub use document_coordinate::{CoordinateError, DocumentCoordinate};
 pub use document_id::DocumentId;
 pub use event_id::EventId;
 pub use public_key::{AccountPublicKey, ControllerPublicKey, DevicePublicKey};

@@ -13,8 +13,9 @@ mod wire;
 
 pub use error::HexError;
 pub use types::{
-    AccountPublicKey, ActorId, ChangeHash, ChunkHash, ControllerPublicKey, DevicePublicKey,
-    DispositionsDigest, DocumentId, EventId, HistoryDigest, SnapshotHash,
+    AccountPublicKey, ActorId, ChangeHash, ChunkHash, ControllerPublicKey, CoordinateError,
+    DevicePublicKey, DispositionsDigest, DocumentCoordinate, DocumentId, EventId, HistoryDigest,
+    SnapshotHash,
 };
 
 /// The package version of this implementation.
