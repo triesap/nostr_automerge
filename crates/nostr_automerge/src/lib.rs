@@ -12,6 +12,7 @@ mod types;
 mod wire;
 
 pub use error::HexError;
+pub use types::{AccountPublicKey, ControllerPublicKey, DevicePublicKey, EventId};
 
 /// The package version of this implementation.
 pub const IMPLEMENTATION_VERSION: &str = env!("CARGO_PKG_VERSION");

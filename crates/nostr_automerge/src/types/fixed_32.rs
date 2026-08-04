@@ -13,10 +13,6 @@ impl Fixed32 {
     pub(crate) const fn as_bytes(&self) -> &[u8; FIXED_32_LENGTH] {
         &self.0
     }
-
-    pub(crate) const fn into_bytes(self) -> [u8; FIXED_32_LENGTH] {
-        self.0
-    }
 }
 
 impl fmt::Debug for Fixed32 {
@@ -36,7 +32,7 @@ mod tests {
         high_bytes[31] = 1;
         let high = Fixed32::new(high_bytes);
         assert!(low < high);
-        assert_eq!(high.into_bytes(), high_bytes);
+        assert_eq!(high.as_bytes(), &high_bytes);
     }
 
     #[test]
