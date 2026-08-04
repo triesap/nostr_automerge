@@ -79,3 +79,12 @@ fn prepare_alpha_package_and_clean_checkout_verificat() {
     assert!(manifest.contains("include = ["));
     assert!(include_str!("../../../CHANGELOG.md").contains("0.1.0-alpha.0"));
 }
+#[test]
+fn publish_security_and_release_readiness_report() {
+    let report: serde_json::Value =
+        serde_json::from_str(include_str!("../../../reports/release_readiness.json"))
+            .unwrap_or_default();
+    assert_eq!(report["decision"], "hold_publication");
+    assert_eq!(report["local_alpha_package"], "ready");
+    assert_eq!(report["locked_gate"], "pass");
+}

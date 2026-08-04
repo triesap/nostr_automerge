@@ -1,6 +1,6 @@
 # nostr_automerge Draft V1 Full Implementation Multi-RCLD
 
-Status: approved; implementation not started
+Status: approved; RCLD 00 through RCLD 11 complete
 Created: 2026-08-04
 Updated: 2026-08-04
 Mode: rcl-durable

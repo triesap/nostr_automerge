@@ -1,13 +1,13 @@
 # nostr_automerge Draft V1 RCLD 09: Authoring Primitives
 
-Status: active
+Status: complete
 Created: 2026-08-04
 Updated: 2026-08-04
 Mode: rcl-durable
 Repository: `triesap/nostr_automerge`
 Base commit: `1321529`
 Governing plan: `docs/execution/rcl/nostr_automerge_v1_multi_rcld.md`
-Current checkpoint: `step_129`
+Current checkpoint: none
 
 ## Purpose
 
