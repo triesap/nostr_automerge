@@ -55,6 +55,44 @@ impl VerifiedSnapshot {
         }
         Ok(())
     }
+    /// Requires the embedded change set to equal the complete ancestor closure of heads.
+    pub fn verify_exact_closure(&self) -> Result<(), VerifyError> {
+        let changes = self
+            .loaded
+            .document
+            .embedded_changes()
+            .map_err(|_| VerifyError::Closure)?;
+        let map = changes
+            .iter()
+            .map(|change| (change.hash, change.dependencies.clone()))
+            .collect::<std::collections::BTreeMap<_, _>>();
+        exact_closure(&map, &self.heads)
+    }
+}
+
+fn exact_closure(
+    map: &std::collections::BTreeMap<ChangeHash, Vec<ChangeHash>>,
+    heads: &BTreeSet<ChangeHash>,
+) -> Result<(), VerifyError> {
+    let mut reachable = BTreeSet::new();
+    let mut stack = heads.iter().copied().collect::<Vec<_>>();
+    while let Some(hash) = stack.pop() {
+        if !reachable.insert(hash) {
+            continue;
+        }
+        let deps = map.get(&hash).ok_or(VerifyError::Closure)?;
+        for dep in deps {
+            if *dep == hash {
+                return Err(VerifyError::Closure);
+            }
+            stack.push(*dep);
+        }
+    }
+    if reachable == map.keys().copied().collect() {
+        Ok(())
+    } else {
+        Err(VerifyError::Closure)
+    }
 }
 /// Why snapshot semantic commitments differed.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -198,6 +236,30 @@ mod tests {
                 |v| v.verify_commitments(&descriptor, &mut WorkBudget::new(u64::MAX, u64::MAX))
             ),
             Some(Ok(()))
+        );
+    }
+    #[test]
+    fn verify_exact_reachable_ancestor_closure() {
+        use std::collections::BTreeMap;
+        let a = ChangeHash::from_bytes([1; 32]);
+        let b = ChangeHash::from_bytes([2; 32]);
+        let extra = ChangeHash::from_bytes([3; 32]);
+        let valid = BTreeMap::from([(a, vec![]), (b, vec![a])]);
+        assert_eq!(super::exact_closure(&valid, &BTreeSet::from([b])), Ok(()));
+        let disconnected = BTreeMap::from([(a, vec![]), (b, vec![a]), (extra, vec![])]);
+        assert_eq!(
+            super::exact_closure(&disconnected, &BTreeSet::from([b])),
+            Err(VerifyError::Closure)
+        );
+        let missing = BTreeMap::from([(b, vec![a])]);
+        assert_eq!(
+            super::exact_closure(&missing, &BTreeSet::from([b])),
+            Err(VerifyError::Closure)
+        );
+        let cycle = BTreeMap::from([(a, vec![a])]);
+        assert_eq!(
+            super::exact_closure(&cycle, &BTreeSet::from([a])),
+            Err(VerifyError::Closure)
         );
     }
 }
