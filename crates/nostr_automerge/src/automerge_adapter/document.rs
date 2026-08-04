@@ -127,6 +127,18 @@ impl Document {
         self.inner.set_actor(ActorId::from(actor));
     }
 
+    pub(crate) fn actor_bytes(&self) -> Vec<u8> {
+        self.inner.get_actor().to_bytes().to_vec()
+    }
+
+    pub(crate) fn semantic_heads(&self) -> Result<BTreeSet<ChangeHash>, ExactApplyError> {
+        heads(&self.inner)
+    }
+
+    pub(crate) fn canonical_bytes(&self) -> Vec<u8> {
+        self.inner.save_nocompress()
+    }
+
     pub(crate) fn load_utf16(bytes: &[u8]) -> Result<Self, DocumentLoadError> {
         let options = LoadOptions::new()
             .text_encoding(TextEncoding::Utf16CodeUnit)

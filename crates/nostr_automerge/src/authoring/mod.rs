@@ -5,8 +5,10 @@
 //! network clients, signing services, outboxes, or background work.
 
 mod actor_state;
+mod document;
 
 pub use actor_state::{ActorState, ActorStateError};
+pub use document::{AuthoringDocument, AuthoringDocumentError};
 
 #[cfg(test)]
 mod tests {
