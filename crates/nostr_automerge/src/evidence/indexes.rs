@@ -68,6 +68,7 @@ pub(crate) struct ChangeIndexRecord {
 pub(crate) struct ChangeIndexes {
     pub(crate) valid_carriers_by_hash: BTreeMap<ChangeHash, BTreeSet<EventId>>,
     pub(crate) invalid_carriers_by_hash: BTreeMap<ChangeHash, BTreeSet<EventId>>,
+    pub(crate) preferred_valid_carrier: BTreeMap<ChangeHash, EventId>,
     pub(crate) hashes_by_control: BTreeMap<EventId, BTreeSet<ChangeHash>>,
     pub(crate) hashes_by_actor: BTreeMap<ActorId, BTreeSet<ChangeHash>>,
     pub(crate) dependencies_by_hash: BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
@@ -84,6 +85,11 @@ pub(crate) fn index_changes(records: impl IntoIterator<Item = ChangeIndexRecord>
                     .entry(record.change_hash)
                     .or_default()
                     .insert(record.event_id);
+                indexes
+                    .preferred_valid_carrier
+                    .entry(record.change_hash)
+                    .and_modify(|current| *current = (*current).min(record.event_id))
+                    .or_insert(record.event_id);
                 indexes
                     .hashes_by_control
                     .entry(record.control_id)
@@ -231,6 +237,51 @@ mod tests {
         assert_eq!(
             indexes.hashes_by_actor.get(&actor),
             Some(&BTreeSet::from([hash]))
+        );
+    }
+
+    #[test]
+    fn handle_duplicate_carriers_correctly() {
+        let hash = ChangeHash::from_bytes([1; 32]);
+        let control = EventId::from_bytes([2; 32]);
+        let valid_low = EventId::from_bytes([3; 32]);
+        let valid_high = EventId::from_bytes([4; 32]);
+        let invalid = EventId::from_bytes([0; 32]);
+        let records = vec![
+            ChangeIndexRecord {
+                event_id: invalid,
+                change_hash: hash,
+                control_id: control,
+                actor: ActorId::from_bytes([8; 32]),
+                dependencies: Vec::new(),
+                validity: IndexValidity::Invalid,
+            },
+            ChangeIndexRecord {
+                event_id: valid_high,
+                change_hash: hash,
+                control_id: control,
+                actor: ActorId::from_bytes([7; 32]),
+                dependencies: Vec::new(),
+                validity: IndexValidity::Valid,
+            },
+            ChangeIndexRecord {
+                event_id: valid_low,
+                change_hash: hash,
+                control_id: control,
+                actor: ActorId::from_bytes([6; 32]),
+                dependencies: Vec::new(),
+                validity: IndexValidity::Valid,
+            },
+        ];
+        let mut reversed = records.clone();
+        reversed.reverse();
+        let indexes = index_changes(records);
+        assert_eq!(indexes, index_changes(reversed));
+        assert_eq!(indexes.valid_carriers_by_hash.len(), 1);
+        assert_eq!(indexes.preferred_valid_carrier.get(&hash), Some(&valid_low));
+        assert_eq!(
+            indexes.invalid_carriers_by_hash.get(&hash),
+            Some(&BTreeSet::from([invalid]))
         );
     }
 }
