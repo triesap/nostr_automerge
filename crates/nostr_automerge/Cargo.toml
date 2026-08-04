@@ -10,5 +10,9 @@ readme = "../../README.md"
 description = "Deterministic draft-v1 Automerge document validation over Nostr"
 publish = false
 
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+
 [lints]
 workspace = true

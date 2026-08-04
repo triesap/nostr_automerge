@@ -31,6 +31,8 @@ unwrap_used = "deny"
 
 [workspace.dependencies]
 nostr_automerge = { path = "crates/nostr_automerge", version = "=0.1.0-alpha.0" }
+serde = { version = "=1.0.219" }
+serde_json = { version = "=1.0.142" }
 
 [profile.release]
 codegen-units = 1
