@@ -55,7 +55,7 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def validate(metadata: dict[str, Any], *, resolve_files: bool) -> None:
+def validate(metadata: dict[str, Any], *, base: Path, resolve_files: bool) -> None:
     """Validate one fixture metadata object."""
 
     if set(metadata) != REQUIRED_TOP_LEVEL:
@@ -97,7 +97,6 @@ def validate(metadata: dict[str, Any], *, resolve_files: bool) -> None:
         raise FixtureError("invalid_inputs")
     names: set[str] = set()
     paths: set[str] = set()
-    base = FIXTURE_ROOT / "examples"
     for item in inputs:
         if not isinstance(item, dict) or not {"name", "path", "sha256"} <= set(item):
             raise FixtureError("invalid_input")
@@ -136,16 +135,16 @@ def main() -> int:
     if schema.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
         raise AssertionError("fixture schema must use JSON Schema 2020-12")
 
-    paths = sorted((FIXTURE_ROOT / "examples").glob("*.fixture.json"))
+    paths = sorted(FIXTURE_ROOT.rglob("*.fixture.json"))
     if not paths:
         raise AssertionError("fixture corpus is empty")
     for path in paths:
-        validate(load_json(path), resolve_files=True)
+        validate(load_json(path), base=path.parent, resolve_files=True)
 
     candidate = load_json(paths[0])
     candidate["inputs"][0]["path"] = "../escape.json"
     try:
-        validate(candidate, resolve_files=False)
+        validate(candidate, base=paths[0].parent, resolve_files=False)
     except FixtureError as error:
         if str(error) != "path_traversal":
             raise

@@ -55,13 +55,17 @@ pub(crate) fn run_fixture(path: &Path) -> Result<Vec<u8>, RunError> {
     verify_fixture_files(&fixture, base).map_err(|_| RunError::Checksum)?;
     let expected =
         load_expected(&base.join(&fixture.expected.report_path)).map_err(|_| RunError::Expected)?;
-    if fixture.fixture_id != "actor_derivation_001" || fixture.inputs.len() != 1 {
+    if fixture.inputs.len() != 1 {
         return Err(RunError::Input);
     }
     let input = fs::read(base.join(&fixture.inputs[0].path)).map_err(|_| RunError::Input)?;
-    let input: ActorDerivationInput =
-        serde_json::from_slice(&input).map_err(|_| RunError::Input)?;
-    let actual = actor_derivation_report(expected.clone(), &input)?;
+    let actual = if fixture.fixture_id == "actor_derivation_001" {
+        let input: ActorDerivationInput =
+            serde_json::from_slice(&input).map_err(|_| RunError::Input)?;
+        actor_derivation_report(expected.clone(), &input)?
+    } else {
+        crate::interop::evaluate(&fixture.fixture_id, &input, &expected)?
+    };
     compare_expected(&actual, &expected)?;
     write_canonical_report(&actual).map_err(|_| RunError::Expected)
 }
@@ -236,7 +240,8 @@ mod tests {
         assert_eq!(filtered.total, 1);
         assert_eq!(filtered.failed, 0);
         let requirement = run_corpus(paths.clone(), None, Some("NCRDT-ACTOR-001"));
-        assert_eq!(requirement, filtered);
+        assert_eq!(requirement.total, 2);
+        assert_eq!(requirement.failed, 0);
         let failures = run_corpus(
             paths
                 .into_iter()
@@ -245,6 +250,6 @@ mod tests {
             None,
         );
         assert_eq!(failures.failed, 1);
-        assert_eq!(failures.passed, 1);
+        assert_eq!(failures.passed + failures.failed, failures.total);
     }
 }

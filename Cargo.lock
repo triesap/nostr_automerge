@@ -508,6 +508,7 @@ dependencies = [
 name = "nostr_automerge_conformance"
 version = "0.1.0-alpha.0"
 dependencies = [
+ "base64",
  "nostr_automerge",
  "serde",
  "serde_json",

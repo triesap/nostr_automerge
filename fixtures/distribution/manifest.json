@@ -1,15 +1,22 @@
 {
   "distribution_schema": "nostr_automerge.fixture_distribution.v1",
-  "distribution_id": "draft_2026_08_seed_1",
+  "distribution_id": "draft_2026_08_interop_1",
   "protocol_revision": "draft_2026_08",
-  "status": "seed",
+  "status": "interop_candidate",
   "profiles": {
     "core": [
-      "actor_derivation_001"
+      "actor_derivation_001",
+      "interop_core_001"
     ],
-    "checkpoint": [],
-    "malformed": [],
-    "property": []
+    "checkpoint": [
+      "interop_checkpoint_001"
+    ],
+    "malformed": [
+      "interop_malformed_001"
+    ],
+    "property": [
+      "interop_property_001"
+    ]
   },
   "files": [
     {
@@ -31,6 +38,54 @@
     {
       "path": "fixtures/examples/actor_derivation_001.expected.json",
       "sha256": "ac038980bab5d7f9847c86e6ade659e644056f44b0838b65f663465d3d95ee58"
+    },
+    {
+      "path": "fixtures/interop/interop_checkpoint_001.expected.json",
+      "sha256": "39f3535a67fe1a3235519916a502c5a7e83503d4e3de16dc3e566735435c41b4"
+    },
+    {
+      "path": "fixtures/interop/interop_checkpoint_001.fixture.json",
+      "sha256": "468f60ef8f6b335d12b3c580da52da393a4cf72cb0b6cf18e144a07b837f4b0d"
+    },
+    {
+      "path": "fixtures/interop/interop_checkpoint_001.input.json",
+      "sha256": "f94cfd07964f1f3200ec931fd4c82d936d7e4695ebace11d267281182b465d45"
+    },
+    {
+      "path": "fixtures/interop/interop_core_001.expected.json",
+      "sha256": "8153b59911a4ee456536d6125830d4ce3b7b7a555857ce676c350ab9bc2c3f46"
+    },
+    {
+      "path": "fixtures/interop/interop_core_001.fixture.json",
+      "sha256": "e712271fef0af371a6f8fa8d656289da90601528e2d7c713192b4a5359284326"
+    },
+    {
+      "path": "fixtures/interop/interop_core_001.input.json",
+      "sha256": "67be74916ba37e591be5ed7dec0171d16863d7c81165cb1cc2563db655f17e1f"
+    },
+    {
+      "path": "fixtures/interop/interop_malformed_001.expected.json",
+      "sha256": "8580aa6d11154cca90efbbdce4efc5df52892ce22cbafc004738ad6bb5e76da8"
+    },
+    {
+      "path": "fixtures/interop/interop_malformed_001.fixture.json",
+      "sha256": "52d6dbfcba969a7bee27732b947862ecdc0c84ea639c856f4bfa6f86b4bc94cd"
+    },
+    {
+      "path": "fixtures/interop/interop_malformed_001.input.json",
+      "sha256": "1f751b9c7ffef4be73eff0710c9a34a239fa777e7dd194990d8dab5a7aeea66c"
+    },
+    {
+      "path": "fixtures/interop/interop_property_001.expected.json",
+      "sha256": "e642a1b0a9aa5d2cfbef1102730c83c184ec3fa05ff702f5a0eecb04fc7e169e"
+    },
+    {
+      "path": "fixtures/interop/interop_property_001.fixture.json",
+      "sha256": "fa4b903d5b3257900773145c9b6ee63bdbb599c222155bdf53569b712a5e0f4e"
+    },
+    {
+      "path": "fixtures/interop/interop_property_001.input.json",
+      "sha256": "201404c1d00abeef22843de752d89f57ca43ff9710066fd74764e4210036e220"
     }
   ]
 }

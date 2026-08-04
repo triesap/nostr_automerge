@@ -9,6 +9,7 @@ mod checksum;
 mod expected;
 #[allow(dead_code)]
 mod fixture;
+mod interop;
 #[allow(dead_code)]
 mod permutation;
 #[allow(dead_code)]

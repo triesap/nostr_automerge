@@ -49,7 +49,7 @@ fn publish_the_rust_core_profile_conformance_report() {
     let report_sha = sha256(&report_bytes);
     assert_eq!(
         report_sha,
-        "38825820b594339547f63ddf498181a2da9398d339a71941ca943b154d0ee3da"
+        "ea2e0367a19fc402e0e4aa05c3f0a6171ed2a8bf65fd3bc8a52f18e009ae5a26"
     );
     assert!(narrative.contains(&report_sha));
 

@@ -1,0 +1,15 @@
+{
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "fixture_id": "interop_core_001",
+  "revision": "draft_2026_08",
+  "requirements": ["NCRDT-ACTOR-001", "NCRDT-CONTROL-001", "NCRDT-STATE-002", "NCRDT-CONF-002"],
+  "seed": null,
+  "provenance": {
+    "generator": "neutral_interop_review",
+    "generator_revision": "draft_2026_08_seed_1",
+    "created_at": "2026-08-04",
+    "source_versions": {"sha256": "standard", "bip340": "bip-0340"}
+  },
+  "inputs": [{"name":"core_scenario","path":"interop_core_001.input.json","sha256":"67be74916ba37e591be5ed7dec0171d16863d7c81165cb1cc2563db655f17e1f","media_type":"application/json"}],
+  "expected": {"report_path":"interop_core_001.expected.json","sha256":"8153b59911a4ee456536d6125830d4ce3b7b7a555857ce676c350ab9bc2c3f46"}
+}
