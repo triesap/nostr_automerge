@@ -5,12 +5,14 @@ mod chunk;
 mod descriptor;
 mod merkle;
 mod verify;
+mod verify_history;
 
 pub use assemble::{AssemblyError, assemble_chunks};
 pub use chunk::{CheckpointChunk, ChunkError};
 pub use descriptor::{CheckpointDescriptor, DescriptorError};
 pub use merkle::{MerkleError, ProofStep, Side, leaf_hash, merkle_root, verify_proof};
 pub use verify::{VerifiedSnapshot, VerifyError, verify_snapshot_heads};
+pub use verify_history::{HistoryVerificationError, verify_full_history};
 
 /// Provisional regular checkpoint descriptor event kind.
 pub const DESCRIPTOR_KIND: u16 = 1_626;
