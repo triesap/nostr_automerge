@@ -12,6 +12,8 @@ mod automerge_adapter;
 #[allow(dead_code)]
 mod carrier;
 #[allow(dead_code)]
+mod conformance;
+#[allow(dead_code)]
 mod control;
 mod crypto;
 mod diagnostic;
@@ -26,6 +28,7 @@ mod limits;
 mod profile;
 #[allow(dead_code)]
 mod reference;
+#[allow(dead_code)]
 mod report;
 mod types;
 mod wire;
