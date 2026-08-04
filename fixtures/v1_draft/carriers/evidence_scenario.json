@@ -1,0 +1,23 @@
+{
+  "events": [
+    {"category":"manifest","event":1},
+    {"category":"control","event":2,"parent":null,"validity":"valid"},
+    {"category":"control","event":3,"parent":2,"validity":"valid"},
+    {"category":"control","event":4,"parent":2,"validity":"invalid"},
+    {"category":"change","event":5,"hash":9,"control":2,"actor":7,"validity":"valid"},
+    {"category":"change","event":6,"hash":9,"control":2,"actor":7,"validity":"valid"},
+    {"category":"change","event":7,"hash":9,"control":4,"actor":8,"validity":"invalid"},
+    {"category":"unsupported","event":8,"revision":2,"profile":"automerge-change-v2"},
+    {"category":"invalid_event","event":9},
+    {"category":"duplicate","event":5}
+  ],
+  "expected": {
+    "categories": 10,
+    "valid_controls": 2,
+    "invalid_controls": 1,
+    "state_changes": 1,
+    "valid_change_carriers": 2,
+    "invalid_change_carriers": 1,
+    "preferred_change_event": 5
+  }
+}
