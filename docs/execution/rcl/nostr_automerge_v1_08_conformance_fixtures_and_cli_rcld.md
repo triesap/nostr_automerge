@@ -1,13 +1,13 @@
 # nostr_automerge Draft V1 RCLD 08: Conformance Fixtures And CLI
 
-Status: active
+Status: complete
 Created: 2026-08-04
 Updated: 2026-08-04
 Mode: rcl-durable
 Repository: `triesap/nostr_automerge`
 Base commit: `47583ca`
 Governing plan: `docs/execution/rcl/nostr_automerge_v1_multi_rcld.md`
-Current checkpoint: `step_113`
+Current checkpoint: none
 
 ## Purpose
 
