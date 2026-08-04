@@ -19,6 +19,49 @@ pub(crate) enum ActorStateError {
     ParallelPredecessor,
     SequenceRollback,
     EmptyChange,
+    NonEmptyChange,
+    DependencyFrontier,
+}
+
+pub(crate) fn apply_empty_counter(
+    states: &mut BTreeMap<ActorId, EpochActorState>,
+    candidate: &ChangeCandidate,
+    current_heads: &std::collections::BTreeSet<ChangeHash>,
+) -> Result<(), ActorStateError> {
+    if candidate.operation_count != 0 {
+        return Err(ActorStateError::NonEmptyChange);
+    }
+    if candidate
+        .dependencies
+        .iter()
+        .copied()
+        .collect::<std::collections::BTreeSet<_>>()
+        != *current_heads
+    {
+        return Err(ActorStateError::DependencyFrontier);
+    }
+    let (last_sequence, next_op) = states
+        .get(&candidate.actor)
+        .map_or((0, 1), |state| (state.last_sequence, state.next_op));
+    if candidate.sequence
+        != last_sequence
+            .checked_add(1)
+            .ok_or(ActorStateError::SequenceGap)?
+    {
+        return Err(ActorStateError::SequenceGap);
+    }
+    if candidate.start_op != next_op {
+        return Err(ActorStateError::OperationCounter);
+    }
+    states.insert(
+        candidate.actor,
+        EpochActorState {
+            last_sequence: candidate.sequence,
+            next_op,
+            highest_change: candidate.change_hash,
+        },
+    );
+    Ok(())
 }
 
 pub(crate) fn apply_nonempty_counter(
@@ -143,8 +186,8 @@ pub(crate) mod tests {
     use std::collections::BTreeSet;
 
     use super::{
-        ActorStateError, EpochActorState, apply_nonempty_counter, initialize_actor_states,
-        validate_actor_predecessor,
+        ActorStateError, EpochActorState, apply_empty_counter, apply_nonempty_counter,
+        initialize_actor_states, validate_actor_predecessor,
     };
     use crate::graph::change_candidate::ChangeCandidate;
     use crate::{ActorId, ChangeHash, DevicePublicKey, EventId};
@@ -260,6 +303,48 @@ pub(crate) mod tests {
         assert_eq!(
             apply_nonempty_counter(&mut states, &candidate(2, 1, 1, 1)),
             Ok(())
+        );
+    }
+
+    #[test]
+    fn validate_empty_merge_change_counters() {
+        let mut states = BTreeMap::new();
+        let first = candidate(1, 1, 1, 2);
+        assert_eq!(apply_nonempty_counter(&mut states, &first), Ok(()));
+        let first_head = ChangeHash::from_bytes([7; 32]);
+        let mut empty = candidate(1, 2, 3, 0);
+        empty.change_hash = ChangeHash::from_bytes([2; 32]);
+        empty.dependencies = vec![first_head];
+        assert_eq!(
+            apply_empty_counter(&mut states, &empty, &BTreeSet::from([first_head])),
+            Ok(())
+        );
+        assert_eq!(states[&ActorId::from_bytes([1; 32])].next_op, 3);
+
+        let mut second_empty = candidate(1, 3, 3, 0);
+        second_empty.change_hash = ChangeHash::from_bytes([3; 32]);
+        second_empty.dependencies = vec![empty.change_hash];
+        assert_eq!(
+            apply_empty_counter(
+                &mut states,
+                &second_empty,
+                &BTreeSet::from([empty.change_hash])
+            ),
+            Ok(())
+        );
+        let mut wrong_start = candidate(1, 4, 4, 0);
+        wrong_start.dependencies = vec![second_empty.change_hash];
+        assert_eq!(
+            apply_empty_counter(
+                &mut states.clone(),
+                &wrong_start,
+                &BTreeSet::from([second_empty.change_hash])
+            ),
+            Err(ActorStateError::OperationCounter)
+        );
+        assert_eq!(
+            apply_empty_counter(&mut states, &wrong_start, &BTreeSet::new()),
+            Err(ActorStateError::DependencyFrontier)
         );
     }
 }
