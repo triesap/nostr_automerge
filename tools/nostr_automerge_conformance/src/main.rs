@@ -10,6 +10,8 @@ mod expected;
 #[allow(dead_code)]
 mod fixture;
 #[allow(dead_code)]
+mod permutation;
+#[allow(dead_code)]
 mod report_json;
 mod runner;
 
