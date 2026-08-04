@@ -12,6 +12,7 @@ pub mod authoring;
 mod automerge_adapter;
 #[allow(dead_code)]
 mod carrier;
+pub mod checkpoint;
 #[allow(dead_code)]
 mod conformance;
 #[allow(dead_code)]
