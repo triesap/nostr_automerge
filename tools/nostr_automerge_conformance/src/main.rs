@@ -1,3 +1,5 @@
+//! Private language-neutral conformance runner.
+
 use std::process::ExitCode;
 
 const HELP: &str = "nostr_automerge_conformance\n\nUSAGE:\n    nostr_automerge_conformance --help\n\nThe conformance runner is reserved but not implemented yet.";

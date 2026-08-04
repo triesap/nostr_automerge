@@ -1,3 +1,5 @@
+//! Private repository automation entry point.
+
 use std::process::{Command, ExitCode};
 
 const HELP: &str = "nostr_automerge_xtask\n\nUSAGE:\n    nostr_automerge_xtask validate\n    nostr_automerge_xtask --help";
