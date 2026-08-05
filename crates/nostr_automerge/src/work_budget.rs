@@ -1,5 +1,61 @@
 use core::fmt;
 
+/// A deterministic unit of evaluator work.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum WorkCounter {
+    /// One retained raw-event observation inspected by evaluation.
+    Event,
+    /// One kind-specific carrier classification or validation operation.
+    Carrier,
+    /// One control candidate or transition operation.
+    Control,
+    /// One dependency-graph node operation.
+    GraphNode,
+    /// One dependency-graph edge operation.
+    GraphEdge,
+    /// One raw or decoded Automerge byte inspected.
+    DecodeByte,
+    /// One Automerge change application or materialization operation.
+    ApplyChange,
+    /// One checkpoint carrier, snapshot, or proof byte inspected.
+    CheckpointByte,
+    /// One typed state assertion or projected value operation.
+    Assertion,
+}
+
+/// Exact deterministic work consumed by an evaluation.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct WorkCounters {
+    event: u64,
+    carrier: u64,
+    control: u64,
+    graph_node: u64,
+    graph_edge: u64,
+    decode_byte: u64,
+    apply_change: u64,
+    checkpoint_byte: u64,
+    assertion: u64,
+}
+
+impl WorkCounters {
+    /// Returns the consumed amount for one deterministic work dimension.
+    #[must_use]
+    pub const fn get(self, counter: WorkCounter) -> u64 {
+        match counter {
+            WorkCounter::Event => self.event,
+            WorkCounter::Carrier => self.carrier,
+            WorkCounter::Control => self.control,
+            WorkCounter::GraphNode => self.graph_node,
+            WorkCounter::GraphEdge => self.graph_edge,
+            WorkCounter::DecodeByte => self.decode_byte,
+            WorkCounter::ApplyChange => self.apply_change,
+            WorkCounter::CheckpointByte => self.checkpoint_byte,
+            WorkCounter::Assertion => self.assertion,
+        }
+    }
+}
+
 /// Deterministic local capacity counters, separate from protocol validity.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct WorkBudget {
@@ -88,7 +144,25 @@ impl CancellationCheck for NeverCancelled {
 
 #[cfg(test)]
 mod tests {
-    use super::{CancellationCheck, NeverCancelled, WorkBudget};
+    use super::{CancellationCheck, NeverCancelled, WorkBudget, WorkCounter, WorkCounters};
+
+    #[test]
+    fn deterministic_work_dimensions_are_independent() {
+        let counters = WorkCounters::default();
+        for counter in [
+            WorkCounter::Event,
+            WorkCounter::Carrier,
+            WorkCounter::Control,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphEdge,
+            WorkCounter::DecodeByte,
+            WorkCounter::ApplyChange,
+            WorkCounter::CheckpointByte,
+            WorkCounter::Assertion,
+        ] {
+            assert_eq!(counters.get(counter), 0);
+        }
+    }
 
     #[test]
     fn failed_charge_does_not_mutate_budget() {
