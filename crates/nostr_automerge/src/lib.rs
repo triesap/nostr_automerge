@@ -93,6 +93,14 @@ pub fn qualification_probe_automerge_reencode(input: &[u8]) {
     );
 }
 
+/// Exercises exact Automerge materialization and projection for fuzzing.
+#[doc(hidden)]
+pub fn qualification_probe_projection(input: &[u8]) {
+    let _ = automerge_adapter::materialized_view::MaterializedDocumentView::from_canonical_bytes(
+        input.to_vec(),
+    );
+}
+
 /// Exercises canonical control content parsing for fuzzing.
 #[doc(hidden)]
 pub fn qualification_probe_control(input: &[u8]) {

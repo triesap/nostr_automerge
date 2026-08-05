@@ -15,7 +15,15 @@ fn fuzz_strict_raw_json_and_nip_01() {
 #[test]
 fn fuzz_automerge_framing_and_semantic_decode() {
     assert!(include_str!("../../../fuzz/fuzz_targets/automerge_framing.rs").contains("framing"));
+    assert!(include_str!("../../../fuzz/fuzz_targets/automerge_decode.rs").contains("decode"));
     assert!(include_str!("../../../fuzz/fuzz_targets/automerge_reencode.rs").contains("reencode"));
+}
+#[test]
+fn fuzz_materialized_projection() {
+    assert!(
+        include_str!("../../../fuzz/fuzz_targets/projection.rs")
+            .contains("qualification_probe_projection")
+    );
 }
 #[test]
 fn fuzz_control_objects_and_transitions() {

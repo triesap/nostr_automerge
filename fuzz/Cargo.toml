@@ -36,6 +36,20 @@ doc = false
 bench = false
 
 [[bin]]
+name = "automerge_decode"
+path = "fuzz_targets/automerge_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "automerge_reencode"
+path = "fuzz_targets/automerge_reencode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "control_transition"
 path = "fuzz_targets/control_transition.rs"
 test = false
@@ -50,6 +64,13 @@ bench = false
 [[bin]]
 name = "checkpoint"
 path = "fuzz_targets/checkpoint.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "projection"
+path = "fuzz_targets/projection.rs"
 test = false
 doc = false
 bench = false
