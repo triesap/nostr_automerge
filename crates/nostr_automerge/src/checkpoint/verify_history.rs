@@ -13,6 +13,8 @@ pub enum HistoryVerificationError {
     Snapshot,
     /// Descriptor referenced a control outside the canonical chain.
     UnknownControl,
+    /// Caller-selected checkpoint work budget was exhausted.
+    Budget,
 }
 
 /// Derives qualifying validated carrier coverage through one canonical control.
@@ -46,6 +48,27 @@ pub fn verify_full_history(
         .map_err(|_| HistoryVerificationError::Snapshot)?;
     verify_sets(
         &changes.iter().map(|c| c.hash).collect(),
+        valid_carriers,
+        accepted_at_control,
+    )
+}
+
+pub(crate) fn verify_full_history_metered(
+    snapshot: &VerifiedSnapshot,
+    valid_carriers: &BTreeSet<ChangeHash>,
+    accepted_at_control: &BTreeSet<ChangeHash>,
+    budget: &mut crate::WorkBudget,
+) -> Result<(), HistoryVerificationError> {
+    let changes = snapshot
+        .loaded
+        .document
+        .embedded_changes()
+        .map_err(|_| HistoryVerificationError::Snapshot)?;
+    budget
+        .charge_checkpoint_items(u64::try_from(changes.len()).unwrap_or(u64::MAX))
+        .map_err(|_| HistoryVerificationError::Budget)?;
+    verify_sets(
+        &changes.iter().map(|change| change.hash).collect(),
         valid_carriers,
         accepted_at_control,
     )

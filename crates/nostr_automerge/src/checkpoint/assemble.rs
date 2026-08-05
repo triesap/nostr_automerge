@@ -46,9 +46,13 @@ pub fn assemble_chunks<C: CancellationCheck>(
         {
             return Err(AssemblyError::Chunks);
         }
-        budget.charge_items(1).map_err(|_| AssemblyError::Budget)?;
         budget
-            .charge_bytes(chunk.data.len() as u64)
+            .charge_checkpoint_items(
+                1_u64.saturating_add(u64::try_from(chunk.proof.len()).unwrap_or(u64::MAX)),
+            )
+            .map_err(|_| AssemblyError::Budget)?;
+        budget
+            .charge_checkpoint_bytes(chunk.data.len() as u64)
             .map_err(|_| AssemblyError::Budget)?;
         let raw_hash: [u8; 32] = Sha256::digest(&chunk.data).into();
         let leaf = leaf_hash(chunk.index, chunk.count, raw_hash);
@@ -108,11 +112,15 @@ mod tests {
                 proof: vec![super::super::ProofStep::right(l1)],
             },
         ];
-        let mut budget = WorkBudget::new(2, 2);
+        let mut budget = WorkBudget::new(2, 4);
         assert_eq!(
             assemble_chunks(&descriptor(root), &mut chunks, &mut budget, &NeverCancelled),
             Ok(b"ab".to_vec())
         );
+        assert_eq!(budget.consumed().get(crate::WorkCounter::CheckpointByte), 2);
+        assert_eq!(budget.consumed().get(crate::WorkCounter::CheckpointItem), 4);
+        assert_eq!(budget.consumed().get(crate::WorkCounter::DecodeByte), 0);
+        assert_eq!(budget.consumed().get(crate::WorkCounter::GraphNode), 0);
         let mut budget = WorkBudget::new(1, 2);
         assert_eq!(
             assemble_chunks(&descriptor(root), &mut chunks, &mut budget, &NeverCancelled),

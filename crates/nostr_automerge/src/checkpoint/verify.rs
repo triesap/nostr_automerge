@@ -26,8 +26,8 @@ impl VerifiedSnapshot {
             .embedded_changes()
             .map_err(|_| VerifyError::Commitments)?;
         budget
-            .charge_items(changes.len() as u64)
-            .map_err(|_| VerifyError::Load)?;
+            .charge_checkpoint_items(changes.len() as u64)
+            .map_err(|_| VerifyError::Budget)?;
         let change_count = changes.len() as u64;
         let total_ops = changes
             .iter()
@@ -71,6 +71,33 @@ impl VerifiedSnapshot {
             .collect::<std::collections::BTreeMap<_, _>>();
         exact_closure(&map, &self.heads)
     }
+
+    pub(crate) fn verify_exact_closure_metered(
+        &self,
+        budget: &mut WorkBudget,
+    ) -> Result<(), VerifyError> {
+        let changes = self
+            .loaded
+            .document
+            .embedded_changes()
+            .map_err(|_| VerifyError::Closure)?;
+        let work = changes
+            .iter()
+            .try_fold(0_u64, |total, change| {
+                total
+                    .checked_add(1)?
+                    .checked_add(u64::try_from(change.dependencies.len()).unwrap_or(u64::MAX))
+            })
+            .ok_or(VerifyError::Budget)?;
+        budget
+            .charge_checkpoint_items(work)
+            .map_err(|_| VerifyError::Budget)?;
+        let map = changes
+            .iter()
+            .map(|change| (change.hash, change.dependencies.clone()))
+            .collect::<std::collections::BTreeMap<_, _>>();
+        exact_closure(&map, &self.heads)
+    }
 }
 
 fn within_checkpoint_limits(change_count: u64, operations: u64, dependency_edges: u64) -> bool {
@@ -107,6 +134,10 @@ fn exact_closure(
 /// Why snapshot semantic commitments differed.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum VerifyError {
+    /// Caller-selected checkpoint work budget was exhausted.
+    Budget,
+    /// Caller requested cooperative cancellation.
+    Cancelled,
     /// Hardened load or local work policy failed.
     Load,
     /// Loaded heads differed from the signed descriptor.
@@ -124,8 +155,17 @@ pub fn verify_snapshot_heads<C: CancellationCheck>(
     budget: &mut WorkBudget,
     cancellation: &C,
 ) -> Result<VerifiedSnapshot, VerifyError> {
-    let loaded = crate::automerge_adapter::checkpoint::load(bytes, budget, cancellation)
-        .map_err(|_| VerifyError::Load)?;
+    let loaded = crate::automerge_adapter::checkpoint::load(bytes, budget, cancellation).map_err(
+        |error| match error {
+            crate::automerge_adapter::checkpoint::CheckpointLoadError::Budget => {
+                VerifyError::Budget
+            }
+            crate::automerge_adapter::checkpoint::CheckpointLoadError::Cancelled => {
+                VerifyError::Cancelled
+            }
+            crate::automerge_adapter::checkpoint::CheckpointLoadError::Invalid => VerifyError::Load,
+        },
+    )?;
     let heads = loaded
         .document
         .semantic_heads()

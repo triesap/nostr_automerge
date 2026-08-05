@@ -230,6 +230,9 @@ fn verify_one_checkpoint(
             return CheckpointVerificationStatus::Unauthorized;
         }
     }
+    if budget.charge_checkpoint_items(1).is_err() {
+        return CheckpointVerificationStatus::BudgetExhausted;
+    }
     let mut chunks = match chunks {
         Some(Ok(chunks)) => chunks.clone(),
         Some(Err(error)) => return join_status(*error),
@@ -255,6 +258,8 @@ fn verify_one_checkpoint(
         cancellation,
     ) {
         Ok(snapshot) => snapshot,
+        Err(VerifyError::Budget) => return CheckpointVerificationStatus::BudgetExhausted,
+        Err(VerifyError::Cancelled) => return CheckpointVerificationStatus::Cancelled,
         Err(VerifyError::Load) => return CheckpointVerificationStatus::SnapshotLoad,
         Err(VerifyError::Heads) => return CheckpointVerificationStatus::HeadMismatch,
         Err(VerifyError::Commitments) => return CheckpointVerificationStatus::CommitmentMismatch,
@@ -262,16 +267,22 @@ fn verify_one_checkpoint(
     };
     if let Err(error) = snapshot.verify_commitments(descriptor.descriptor(), budget) {
         return match error {
-            VerifyError::Load => CheckpointVerificationStatus::BudgetExhausted,
+            VerifyError::Budget => CheckpointVerificationStatus::BudgetExhausted,
+            VerifyError::Cancelled => CheckpointVerificationStatus::Cancelled,
+            VerifyError::Load => CheckpointVerificationStatus::SnapshotLoad,
             VerifyError::Commitments => CheckpointVerificationStatus::CommitmentMismatch,
             VerifyError::Heads => CheckpointVerificationStatus::HeadMismatch,
             VerifyError::Closure => CheckpointVerificationStatus::ClosureMismatch,
         };
     }
-    if snapshot.verify_exact_closure().is_err() {
-        return CheckpointVerificationStatus::ClosureMismatch;
+    if let Err(error) = snapshot.verify_exact_closure_metered(budget) {
+        return match error {
+            VerifyError::Budget => CheckpointVerificationStatus::BudgetExhausted,
+            VerifyError::Cancelled => CheckpointVerificationStatus::Cancelled,
+            _ => CheckpointVerificationStatus::ClosureMismatch,
+        };
     }
-    match crate::checkpoint::verify_full_history(&snapshot, coverage, accepted) {
+    match crate::checkpoint::verify_full_history_metered(&snapshot, coverage, accepted, budget) {
         Ok(()) => CheckpointVerificationStatus::Verified,
         Err(HistoryVerificationError::MissingCarrier) => {
             CheckpointVerificationStatus::MissingHistoricalCarrier
@@ -283,6 +294,7 @@ fn verify_one_checkpoint(
         Err(HistoryVerificationError::UnknownControl) => {
             CheckpointVerificationStatus::PendingControl
         }
+        Err(HistoryVerificationError::Budget) => CheckpointVerificationStatus::BudgetExhausted,
     }
 }
 

@@ -20,7 +20,10 @@ pub(crate) fn load<C: CancellationCheck>(
         return Err(CheckpointLoadError::Cancelled);
     }
     budget
-        .charge_bytes(bytes.len() as u64)
+        .charge_checkpoint_bytes(bytes.len() as u64)
+        .map_err(|_| CheckpointLoadError::Budget)?;
+    budget
+        .charge_checkpoint_items(1)
         .map_err(|_| CheckpointLoadError::Budget)?;
     let document = Document::load_utf16(bytes).map_err(|_| CheckpointLoadError::Invalid)?;
     Ok(LoadedCheckpoint { document })
@@ -45,13 +48,15 @@ mod tests {
         let bytes = document
             .map(|value| value.accepted_state_bytes())
             .unwrap_or_default();
-        assert!(
-            load(
-                &bytes,
-                &mut WorkBudget::new(bytes.len() as u64, 1),
-                &NeverCancelled
-            )
-            .is_ok()
+        let mut measured = WorkBudget::new(bytes.len() as u64, 1);
+        assert!(load(&bytes, &mut measured, &NeverCancelled).is_ok());
+        assert_eq!(
+            measured.consumed().get(crate::WorkCounter::CheckpointByte),
+            bytes.len() as u64
+        );
+        assert_eq!(
+            measured.consumed().get(crate::WorkCounter::CheckpointItem),
+            1
         );
         assert!(matches!(
             load(&bytes, &mut WorkBudget::new(0, 1), &NeverCancelled),

@@ -499,6 +499,7 @@ fn every_work_counter_has_exact_before_and_after_boundaries() {
         WorkCounter::DecodeByte,
         WorkCounter::ApplyChange,
         WorkCounter::CheckpointByte,
+        WorkCounter::CheckpointItem,
         WorkCounter::Assertion,
     ] {
         let byte_counter = matches!(

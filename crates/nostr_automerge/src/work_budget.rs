@@ -20,6 +20,8 @@ pub enum WorkCounter {
     ApplyChange,
     /// One checkpoint carrier, snapshot, or proof byte inspected.
     CheckpointByte,
+    /// One checkpoint carrier, chunk, proof, graph, history, or projection item inspected.
+    CheckpointItem,
     /// One typed state assertion or projected value operation.
     Assertion,
 }
@@ -37,6 +39,7 @@ impl WorkCounter {
             Self::DecodeByte => "decode_byte",
             Self::ApplyChange => "apply_change",
             Self::CheckpointByte => "checkpoint_byte",
+            Self::CheckpointItem => "checkpoint_item",
             Self::Assertion => "assertion",
         }
     }
@@ -53,6 +56,7 @@ pub struct WorkCounters {
     decode_byte: u64,
     apply_change: u64,
     checkpoint_byte: u64,
+    checkpoint_item: u64,
     assertion: u64,
 }
 
@@ -69,6 +73,7 @@ impl WorkCounters {
             WorkCounter::DecodeByte => self.decode_byte,
             WorkCounter::ApplyChange => self.apply_change,
             WorkCounter::CheckpointByte => self.checkpoint_byte,
+            WorkCounter::CheckpointItem => self.checkpoint_item,
             WorkCounter::Assertion => self.assertion,
         }
     }
@@ -83,6 +88,7 @@ impl WorkCounters {
             WorkCounter::DecodeByte => self.decode_byte = value,
             WorkCounter::ApplyChange => self.apply_change = value,
             WorkCounter::CheckpointByte => self.checkpoint_byte = value,
+            WorkCounter::CheckpointItem => self.checkpoint_item = value,
             WorkCounter::Assertion => self.assertion = value,
         }
     }
@@ -112,6 +118,7 @@ impl WorkBudget {
                 decode_byte: 0,
                 apply_change: 0,
                 checkpoint_byte: 0,
+                checkpoint_item: 0,
                 assertion: 0,
             },
         }
@@ -157,6 +164,14 @@ impl WorkBudget {
     /// Charges deterministic item work, failing without changing the budget.
     pub fn charge_items(&mut self, amount: u64) -> Result<(), BudgetExhausted> {
         self.charge(WorkCounter::GraphNode, amount)
+    }
+
+    pub(crate) fn charge_checkpoint_bytes(&mut self, amount: u64) -> Result<(), BudgetExhausted> {
+        self.charge(WorkCounter::CheckpointByte, amount)
+    }
+
+    pub(crate) fn charge_checkpoint_items(&mut self, amount: u64) -> Result<(), BudgetExhausted> {
+        self.charge(WorkCounter::CheckpointItem, amount)
     }
 
     /// Returns the remaining byte and item counters.
@@ -244,6 +259,7 @@ mod tests {
             WorkCounter::DecodeByte,
             WorkCounter::ApplyChange,
             WorkCounter::CheckpointByte,
+            WorkCounter::CheckpointItem,
             WorkCounter::Assertion,
         ] {
             assert_eq!(counters.get(counter), 0);
