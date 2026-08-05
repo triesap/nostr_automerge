@@ -7,8 +7,8 @@ use std::collections::BTreeSet;
 use base64::Engine as _;
 use nostr_automerge::authoring::{ActorState, AuthoringDocument, Operation, UnsignedEventDraft};
 use nostr_automerge::{
-    ActorId, ChangeHash, Completion, CorpusBuilder, DocumentCoordinate, EventId, EvidenceCorpus,
-    EvidenceStatus, IngestOutcome, NeverCancelled, ProtocolRevision, RawEventBytes,
+    ActorId, ChangeHash, Completion, CorpusBuilder, DocumentCoordinate, EvaluationFailure, EventId,
+    EvidenceCorpus, EvidenceStatus, IngestOutcome, NeverCancelled, ProtocolRevision, RawEventBytes,
     ReferenceEvaluator, VerifiedNip01Event, WorkBudget, WorkCounter,
 };
 use support::test_signer::TestSigner;
@@ -181,6 +181,7 @@ fn event_and_carrier_work_exhaustion_precedes_state() {
     );
 
     assert_eq!(report.completion(), Completion::BudgetExhausted);
+    assert_eq!(report.failure(), Some(EvaluationFailure::BudgetExhausted));
     assert!(report.canonical_controls().is_empty());
     assert!(report.accepted_changes().is_empty());
     assert_eq!(budget.consumed().get(WorkCounter::Event), 2);
@@ -207,6 +208,7 @@ fn cancellation_before_control_evaluation_fabricates_no_state() {
     );
 
     assert_eq!(report.completion(), Completion::Cancelled);
+    assert_eq!(report.failure(), Some(EvaluationFailure::Cancelled));
     assert!(report.canonical_controls().is_empty());
     assert!(report.dispositions().is_empty());
     assert!(report.accepted_changes().is_empty());

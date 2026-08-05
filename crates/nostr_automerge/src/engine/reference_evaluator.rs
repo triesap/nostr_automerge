@@ -12,7 +12,9 @@ use crate::{
     ProtocolDisposition, ProtocolRevision, WorkBudget, WorkCounter,
 };
 
-use super::evaluation_report::{EvaluationReport, EvaluationReportParts, MaterializedDocumentView};
+use super::evaluation_report::{
+    EvaluationFailure, EvaluationReport, EvaluationReportParts, MaterializedDocumentView,
+};
 
 /// Stateless deterministic batch evaluator for immutable signed evidence.
 ///
@@ -105,6 +107,12 @@ impl ReferenceEvaluator {
             dispositions_digest,
             integrity_alerts: batch.integrity_alerts,
             completion: batch.completion,
+            failure: match batch.completion {
+                Completion::Complete => None,
+                Completion::BudgetExhausted => Some(EvaluationFailure::BudgetExhausted),
+                Completion::Cancelled => Some(EvaluationFailure::Cancelled),
+                Completion::Failed => Some(EvaluationFailure::InvariantViolation),
+            },
             document: batch
                 .materialized_document
                 .map(MaterializedDocumentView::from_canonical_bytes),

@@ -6,6 +6,26 @@ use crate::{
     HistoryDigest, IntegrityAlert, ProtocolDisposition,
 };
 
+/// Stable category explaining why an evaluation did not complete.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum EvaluationFailure {
+    /// Retained evidence violated a known-revision semantic rule.
+    InvalidEvidence,
+    /// Dependency-graph construction, closure, or scheduling failed.
+    Graph,
+    /// Automerge change decoding or qualification failed.
+    Decode,
+    /// Automerge application or document loading failed.
+    Apply,
+    /// A typed caller-selected work counter was exhausted.
+    BudgetExhausted,
+    /// The caller requested cooperative cancellation.
+    Cancelled,
+    /// A repository-owned report or state invariant failed.
+    InvariantViolation,
+}
+
 /// Immutable materialized document state owned by the reference engine.
 #[derive(Clone, PartialEq, Eq)]
 pub struct MaterializedDocumentView {
@@ -54,6 +74,7 @@ pub struct EvaluationReport {
     dispositions_digest: DispositionsDigest,
     integrity_alerts: Vec<IntegrityAlert>,
     completion: Completion,
+    failure: Option<EvaluationFailure>,
     document: Option<MaterializedDocumentView>,
 }
 
@@ -70,6 +91,7 @@ pub(crate) struct EvaluationReportParts {
     pub(crate) dispositions_digest: DispositionsDigest,
     pub(crate) integrity_alerts: Vec<IntegrityAlert>,
     pub(crate) completion: Completion,
+    pub(crate) failure: Option<EvaluationFailure>,
     pub(crate) document: Option<MaterializedDocumentView>,
 }
 
@@ -119,6 +141,28 @@ impl EvaluationReport {
         {
             return Err(EvaluationReportInvariant);
         }
+        let completion_matches_failure = matches!(
+            (parts.completion, parts.failure),
+            (Completion::Complete, None)
+                | (
+                    Completion::BudgetExhausted,
+                    Some(EvaluationFailure::BudgetExhausted)
+                )
+                | (Completion::Cancelled, Some(EvaluationFailure::Cancelled))
+                | (
+                    Completion::Failed,
+                    Some(
+                        EvaluationFailure::InvalidEvidence
+                            | EvaluationFailure::Graph
+                            | EvaluationFailure::Decode
+                            | EvaluationFailure::Apply
+                            | EvaluationFailure::InvariantViolation
+                    )
+                )
+        );
+        if !completion_matches_failure {
+            return Err(EvaluationReportInvariant);
+        }
         Ok(Self {
             coordinate: parts.coordinate,
             canonical_controls: parts.canonical_controls,
@@ -132,6 +176,7 @@ impl EvaluationReport {
             dispositions_digest: parts.dispositions_digest,
             integrity_alerts: parts.integrity_alerts,
             completion: parts.completion,
+            failure: parts.failure,
             document: parts.document,
         })
     }
@@ -215,6 +260,12 @@ impl EvaluationReport {
         self.completion
     }
 
+    /// Returns the typed reason evaluation did not complete.
+    #[must_use]
+    pub const fn failure(&self) -> Option<EvaluationFailure> {
+        self.failure
+    }
+
     /// Returns the immutable materialized document when evaluation produced one.
     #[must_use]
     pub const fn document(&self) -> Option<&MaterializedDocumentView> {
@@ -234,6 +285,7 @@ impl fmt::Debug for EvaluationReport {
             .field("evidence_count", &self.evidence.len())
             .field("alert_count", &self.integrity_alerts.len())
             .field("completion", &self.completion)
+            .field("failure", &self.failure)
             .field("has_document", &self.document.is_some())
             .finish()
     }
@@ -269,6 +321,7 @@ mod tests {
             dispositions_digest: DispositionsDigest::from_bytes([4; 32]),
             integrity_alerts: vec![],
             completion: Completion::Complete,
+            failure: None,
             document: Some(MaterializedDocumentView::from_canonical_bytes(vec![
                 9, 8, 7,
             ])),

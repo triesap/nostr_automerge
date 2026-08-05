@@ -53,6 +53,8 @@ pub enum Completion {
     BudgetExhausted,
     /// The caller requested cooperative cancellation.
     Cancelled,
+    /// Evaluation stopped because a typed non-capacity failure occurred.
+    Failed,
 }
 
 impl Completion {
@@ -63,6 +65,7 @@ impl Completion {
             Self::Complete => "complete",
             Self::BudgetExhausted => "budget_exhausted",
             Self::Cancelled => "cancelled",
+            Self::Failed => "failed",
         }
     }
 }
@@ -79,6 +82,7 @@ mod tests {
         assert_eq!(ProtocolDisposition::Invalid.code(), 4);
         assert_eq!(ProtocolDisposition::UnsupportedRevision.code(), 5);
         assert_eq!(Completion::BudgetExhausted.as_str(), "budget_exhausted");
+        assert_eq!(Completion::Failed.as_str(), "failed");
         assert_eq!(
             ProtocolDisposition::for_revision(false, false),
             ProtocolDisposition::UnsupportedRevision
