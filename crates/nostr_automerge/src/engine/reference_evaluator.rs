@@ -153,6 +153,7 @@ fn controls_for_coordinate(
                     .controls
                     .pending
                     .contains(&control.event_id())
+                && genesis_link_is_valid(corpus, control)
                 && !has_terminal_parent(corpus, control)
                 && !violates_retained_writer_frontier(corpus, control) =>
             {
@@ -167,6 +168,30 @@ fn controls_for_coordinate(
             _ => None,
         })
         .collect()
+}
+
+fn genesis_link_is_valid(
+    corpus: &EvidenceCorpus,
+    control: &crate::carrier::control::ValidatedControlCarrier,
+) -> bool {
+    if control.parent().is_some() {
+        return control.predecessor().is_none();
+    }
+    let Some(predecessor) = control.predecessor() else {
+        return control.sequence() == 0;
+    };
+    if control.sequence() != 0 {
+        return false;
+    }
+    matches!(
+        corpus.events.get(&predecessor.terminal_control),
+        Some(EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::Control(terminal),
+            ..
+        }) if terminal.coordinate() == predecessor.coordinate
+            && terminal.terminal()
+            && terminal.successor() == Some(control.coordinate())
+    )
 }
 
 fn violates_retained_writer_frontier(

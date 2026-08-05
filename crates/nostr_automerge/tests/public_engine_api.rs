@@ -1147,6 +1147,95 @@ fn late_lower_control_id_reorganizes_and_replays_signed_state() {
 
 #[test]
 #[allow(clippy::expect_used)]
+fn signed_successor_genesis_requires_reciprocal_terminal_continuity() {
+    let predecessor_controller = TestSigner::from_byte(35);
+    let successor_controller = TestSigner::from_byte(36);
+    let device = TestSigner::from_byte(37);
+    let predecessor_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        predecessor_controller.public_key().to_hex(),
+        "52".repeat(32)
+    )
+    .parse()
+    .expect("fixed predecessor coordinate");
+    let successor_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        successor_controller.public_key().to_hex(),
+        "53".repeat(32)
+    )
+    .parse()
+    .expect("fixed successor coordinate");
+    let terminal_content = format!(
+        r#"{{"base_heads":[],"format":"automerge-change-v1","members":[],"policy":"controller-acl-v1","predecessor":null,"seq":0,"successor":"{}","text_encoding":"utf16","v":1}}"#,
+        successor_coordinate.to_address()
+    );
+    let terminal = predecessor_controller.sign(
+        &UnsignedEventDraft::new(
+            1,
+            1_625,
+            vec![vec!["a".to_owned(), predecessor_coordinate.to_address()]],
+            terminal_content,
+        )
+        .expect("terminal draft")
+        .prepare(predecessor_controller.public_key())
+        .expect("terminal preimage"),
+    );
+    let terminal_id = VerifiedNip01Event::verify(terminal.clone())
+        .expect("signed terminal")
+        .event_id();
+    let successor_content = |terminal_control: EventId| {
+        format!(
+            r#"{{"base_heads":[],"format":"automerge-change-v1","members":[{{"account":null,"pubkey":"{}","roles":["checkpoint","write"]}}],"policy":"controller-acl-v1","predecessor":{{"coordinate":"{}","terminal_control":"{}"}},"seq":0,"successor":null,"text_encoding":"utf16","v":1}}"#,
+            device.public_key().to_hex(),
+            predecessor_coordinate.to_address(),
+            terminal_control.to_hex()
+        )
+    };
+    let sign_successor = |created_at: u64, terminal_control: EventId| {
+        successor_controller.sign(
+            &UnsignedEventDraft::new(
+                created_at,
+                1_625,
+                vec![vec!["a".to_owned(), successor_coordinate.to_address()]],
+                successor_content(terminal_control),
+            )
+            .expect("successor draft")
+            .prepare(successor_controller.public_key())
+            .expect("successor preimage"),
+        )
+    };
+    let valid = sign_successor(2, terminal_id);
+    let valid_id = VerifiedNip01Event::verify(valid.clone())
+        .expect("signed successor")
+        .event_id();
+    let invalid = sign_successor(3, EventId::from_bytes([99; 32]));
+    let invalid_id = VerifiedNip01Event::verify(invalid.clone())
+        .expect("signed invalid successor")
+        .event_id();
+    let mut builder = CorpusBuilder::new();
+    for event in [invalid, valid, terminal] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let corpus = builder.finish();
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &corpus,
+        successor_coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(report.completion(), Completion::Complete);
+    assert_eq!(report.canonical_controls(), [valid_id]);
+    assert!(!report.canonical_controls().contains(&invalid_id));
+    assert!(report.accepted_changes().is_empty());
+    assert!(report.heads().is_empty());
+    assert!(report.document().is_some_and(|view| !view.is_empty()));
+}
+
+#[test]
+#[allow(clippy::expect_used)]
 fn signed_change_ingest_requires_canonical_actor_hash_control_and_bytes() {
     let controller = TestSigner::from_byte(8);
     let device = TestSigner::from_byte(9);

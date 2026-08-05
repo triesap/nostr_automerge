@@ -1,8 +1,8 @@
 # Draft V1 Remediation Execution Ledger
 
 Status: active
-Current checkpoint: `step_252`
-Completed checkpoints: `step_193` through `step_251`
+Current checkpoint: `step_253`
+Completed checkpoints: `step_193` through `step_252`
 Governing RCLD: `docs/execution/rcl/nostr_automerge_v1_14_engine_remediation_rcld.md`
 
 | Phase | Checkpoints | State |
@@ -11,8 +11,8 @@ Governing RCLD: `docs/execution/rcl/nostr_automerge_v1_14_engine_remediation_rcl
 | Public engine API | `step_201`–`step_217` | complete |
 | Evaluator correctness | `step_218`–`step_234` | complete |
 | Graph hardening | `step_235`–`step_244` | complete |
-| Control alignment | `step_245`–`step_252` | active |
-| Checkpoint carrier integration | `step_253`–`step_269` | pending |
+| Control alignment | `step_245`–`step_252` | complete |
+| Checkpoint carrier integration | `step_253`–`step_269` | active |
 | State projection and conformance | `step_270`–`step_287` | pending |
 | Coverage, interop, and closure | `step_288`–`step_307` | pending |
 

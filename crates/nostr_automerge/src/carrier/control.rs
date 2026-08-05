@@ -94,6 +94,14 @@ impl ValidatedControlCarrier {
         self.content.terminal
     }
 
+    pub(crate) const fn predecessor(&self) -> Option<&Predecessor> {
+        self.content.predecessor.as_ref()
+    }
+
+    pub(crate) const fn successor(&self) -> Option<DocumentCoordinate> {
+        self.content.successor
+    }
+
     pub(crate) fn members(&self) -> &[DeviceGrant] {
         &self.content.members
     }
