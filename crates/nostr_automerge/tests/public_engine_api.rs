@@ -1029,6 +1029,124 @@ fn signed_child_cannot_discard_retained_writer_contributions() {
 
 #[test]
 #[allow(clippy::expect_used)]
+fn late_lower_control_id_reorganizes_and_replays_signed_state() {
+    let controller = TestSigner::from_byte(33);
+    let device = TestSigner::from_byte(34);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "51".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let content = |sequence: u64| {
+        format!(
+            r#"{{"base_heads":[],"format":"automerge-change-v1","members":[{{"account":null,"pubkey":"{}","roles":["checkpoint","write"]}}],"policy":"controller-acl-v1","predecessor":null,"seq":{sequence},"successor":null,"text_encoding":"utf16","v":1}}"#,
+            device.public_key().to_hex()
+        )
+    };
+    let sign_control = |created_at: u64, parent: Option<EventId>| {
+        let mut tags = vec![vec!["a".to_owned(), coordinate.to_address()]];
+        if let Some(parent) = parent {
+            tags.push(vec!["e".to_owned(), parent.to_hex()]);
+        }
+        controller.sign(
+            &UnsignedEventDraft::new(
+                created_at,
+                1_625,
+                tags,
+                content(u64::from(parent.is_some())),
+            )
+            .expect("control draft")
+            .prepare(controller.public_key())
+            .expect("control preimage"),
+        )
+    };
+    let parent = sign_control(1, None);
+    let parent_id = VerifiedNip01Event::verify(parent.clone())
+        .expect("signed parent")
+        .event_id();
+    let first = sign_control(2, Some(parent_id));
+    let second = sign_control(3, Some(parent_id));
+    let first_id = VerifiedNip01Event::verify(first.clone())
+        .expect("signed first child")
+        .event_id();
+    let second_id = VerifiedNip01Event::verify(second.clone())
+        .expect("signed second child")
+        .event_id();
+    let ((lower, lower_id), (higher, higher_id)) = if first_id < second_id {
+        ((first, first_id), (second, second_id))
+    } else {
+        ((second, second_id), (first, first_id))
+    };
+    let sign_change = |control_id: EventId, value: &str, created_at: u64| {
+        let actor = ActorId::derive(coordinate, device.public_key());
+        let mut document = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
+            .expect("empty authoring document");
+        let authored = document
+            .author_change(&[Operation::PutString {
+                key: "winner".to_owned(),
+                value: value.to_owned(),
+            }])
+            .expect("canonical authored change");
+        let hash = authored.change_hash();
+        let event = device.sign(
+            &UnsignedEventDraft::new(
+                created_at,
+                1_624,
+                vec![
+                    vec!["a".to_owned(), coordinate.to_address()],
+                    vec!["e".to_owned(), control_id.to_hex()],
+                    vec!["x".to_owned(), hash.to_hex()],
+                ],
+                base64::engine::general_purpose::STANDARD.encode(authored.raw()),
+            )
+            .expect("change draft")
+            .prepare(device.public_key())
+            .expect("change preimage"),
+        );
+        (event, hash)
+    };
+    let (lower_change, lower_hash) = sign_change(lower_id, "lower", 4);
+    let (higher_change, higher_hash) = sign_change(higher_id, "higher", 5);
+    let evaluate = |events: &[RawEventBytes]| {
+        let mut builder = CorpusBuilder::new();
+        for event in events {
+            assert!(matches!(
+                builder.ingest(event.clone()),
+                IngestOutcome::Accepted { .. }
+            ));
+        }
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+            &builder.finish(),
+            coordinate,
+            &mut WorkBudget::new(1_000_000, 1_000),
+            &NeverCancelled,
+        )
+    };
+    let before = evaluate(&[parent.clone(), higher.clone(), higher_change.clone()]);
+    assert_eq!(before.canonical_controls(), [parent_id, higher_id]);
+    assert_eq!(before.accepted_changes(), [higher_hash]);
+    assert_eq!(before.heads(), [higher_hash]);
+    let after = evaluate(&[parent, higher, higher_change, lower, lower_change]);
+    assert_eq!(after.completion(), Completion::Complete);
+    assert_eq!(after.canonical_controls(), [parent_id, lower_id]);
+    assert_eq!(after.accepted_changes(), [lower_hash]);
+    assert_eq!(after.heads(), [lower_hash]);
+    assert!(
+        after
+            .dispositions()
+            .contains(&(higher_hash, ProtocolDisposition::Excluded))
+    );
+    assert!(after.integrity_alerts().iter().any(|alert| matches!(
+        alert,
+        nostr_automerge::IntegrityAlert::ControllerEquivocation { .. }
+    )));
+    assert!(after.document().is_some_and(|view| !view.is_empty()));
+}
+
+#[test]
+#[allow(clippy::expect_used)]
 fn signed_change_ingest_requires_canonical_actor_hash_control_and_bytes() {
     let controller = TestSigner::from_byte(8);
     let device = TestSigner::from_byte(9);
