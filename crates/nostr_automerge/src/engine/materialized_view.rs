@@ -351,7 +351,7 @@ fn scalar(value: &ScalarValue) -> Result<MaterializedScalar, ProjectionError> {
 #[cfg(test)]
 mod tests {
     use automerge::transaction::Transactable;
-    use automerge::{ActorId, Automerge, ROOT, ScalarValue, TextEncoding};
+    use automerge::{ActorId, Automerge, ObjType, ROOT, ScalarValue, TextEncoding};
 
     use super::{
         MaterializedDocumentView, MaterializedPathElement, MaterializedScalar, MaterializedValue,
@@ -415,5 +415,64 @@ mod tests {
                 "{key}"
             );
         }
+    }
+
+    #[test]
+    fn project_structured_objects_and_indexes_deterministically() {
+        let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+        document.set_actor(ActorId::from([2; 32]));
+        {
+            let mut tx = document.transaction();
+            let map = tx.put_object(ROOT, "map", ObjType::Map);
+            let list = tx.put_object(ROOT, "list", ObjType::List);
+            let table = tx.put_object(ROOT, "table", ObjType::Table);
+            assert!(map.is_ok() && list.is_ok() && table.is_ok());
+            let (Ok(map), Ok(list), Ok(table)) = (map, list, table) else {
+                return;
+            };
+            assert!(tx.put(&map, "nested", "value").is_ok());
+            assert!(tx.insert(&list, 0, "zero").is_ok());
+            assert!(tx.insert(&list, 1, "one").is_ok());
+            let _ = table;
+            tx.commit();
+        }
+        let first = MaterializedDocumentView::from_canonical_bytes(document.save_nocompress());
+        let second = MaterializedDocumentView::from_canonical_bytes(document.save_nocompress());
+        assert!(first.is_ok() && second.is_ok());
+        let (Ok(first), Ok(second)) = (first, second) else {
+            return;
+        };
+        assert_eq!(first.entries(), second.entries());
+        for path in [
+            vec![MaterializedPathElement::Key("map".to_owned())],
+            vec![
+                MaterializedPathElement::Key("map".to_owned()),
+                MaterializedPathElement::Key("nested".to_owned()),
+            ],
+            vec![MaterializedPathElement::Key("list".to_owned())],
+            vec![
+                MaterializedPathElement::Key("list".to_owned()),
+                MaterializedPathElement::Index(0),
+            ],
+            vec![
+                MaterializedPathElement::Key("list".to_owned()),
+                MaterializedPathElement::Index(1),
+            ],
+            vec![MaterializedPathElement::Key("table".to_owned())],
+        ] {
+            assert!(first.entries().iter().any(|entry| entry.path() == path));
+        }
+        let object_ids = first
+            .entries()
+            .iter()
+            .flat_map(|entry| entry.conflicts())
+            .filter_map(|conflict| match conflict.value() {
+                MaterializedValue::Object { object_id, .. }
+                | MaterializedValue::Text { object_id, .. } => Some(object_id),
+                MaterializedValue::Scalar(_) => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(object_ids.len(), 3);
+        assert!(object_ids.iter().all(|identity| !identity.is_empty()));
     }
 }
