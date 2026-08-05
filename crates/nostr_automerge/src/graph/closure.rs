@@ -73,6 +73,7 @@ mod tests {
         let graph = DependencyGraph {
             nodes,
             dependants: BTreeMap::new(),
+            indegrees: BTreeMap::new(),
             accepted_base: BTreeSet::from([hash(1)]),
             edge_count: 999,
         };

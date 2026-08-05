@@ -7,6 +7,7 @@ use crate::{ChangeHash, ProtocolRevision};
 pub(crate) struct DependencyGraph {
     pub(crate) nodes: BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
     pub(crate) dependants: BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
+    pub(crate) indegrees: BTreeMap<ChangeHash, u64>,
     pub(crate) accepted_base: BTreeSet<ChangeHash>,
     pub(crate) edge_count: u64,
 }
@@ -70,9 +71,22 @@ fn build_with_limits(
             dependants.entry(*dependency).or_default().insert(*hash);
         }
     }
+    let indegrees = nodes
+        .iter()
+        .map(|(hash, dependencies)| {
+            let count = dependencies
+                .iter()
+                .filter(|dependency| nodes.contains_key(*dependency))
+                .count();
+            u64::try_from(count)
+                .map(|count| (*hash, count))
+                .map_err(|_| GraphBuildError::Limit)
+        })
+        .collect::<Result<BTreeMap<_, _>, _>>()?;
     Ok(DependencyGraph {
         nodes,
         dependants,
+        indegrees,
         accepted_base,
         edge_count: edges,
     })
@@ -80,7 +94,7 @@ fn build_with_limits(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeSet;
+    use std::collections::{BTreeMap, BTreeSet};
 
     use super::{GraphBuildError, build_graph, build_with_limits};
     use crate::graph::change_candidate::ChangeCandidate;
@@ -125,6 +139,15 @@ mod tests {
         };
         assert_eq!(graph.nodes[&ChangeHash::from_bytes([4; 32])].len(), 2);
         assert_eq!(graph.edge_count, 4);
+        assert_eq!(
+            graph.indegrees,
+            BTreeMap::from([
+                (ChangeHash::from_bytes([1; 32]), 0),
+                (ChangeHash::from_bytes([2; 32]), 1),
+                (ChangeHash::from_bytes([3; 32]), 1),
+                (ChangeHash::from_bytes([4; 32]), 2),
+            ])
+        );
         assert_eq!(
             graph.dependants[&ChangeHash::from_bytes([1; 32])],
             BTreeSet::from([

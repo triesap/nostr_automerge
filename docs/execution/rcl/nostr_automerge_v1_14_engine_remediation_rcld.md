@@ -7,7 +7,7 @@ Mode: rcl-durable
 Coordination repository: `triesap/nostr_automerge`
 Implementation repositories: `triesap/nostr_automerge` and
 `triesap/nostr_automerge_typescript`
-Current checkpoint: step_236
+Current checkpoint: step_237
 
 ## Purpose
 

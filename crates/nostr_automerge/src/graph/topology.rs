@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 use super::dependency_graph::DependencyGraph;
 use crate::ChangeHash;
@@ -28,20 +28,7 @@ pub(crate) fn validate_topology(graph: &DependencyGraph) -> Result<Topology, Top
         return Err(TopologyError::PendingMissing(missing.into_iter().collect()));
     }
 
-    let mut indegree = BTreeMap::new();
-    let mut dependants = BTreeMap::<ChangeHash, BTreeSet<ChangeHash>>::new();
-    for (hash, dependencies) in &graph.nodes {
-        let count = dependencies
-            .iter()
-            .filter(|dependency| graph.nodes.contains_key(*dependency))
-            .count();
-        indegree.insert(*hash, count);
-        for dependency in dependencies {
-            if graph.nodes.contains_key(dependency) {
-                dependants.entry(*dependency).or_default().insert(*hash);
-            }
-        }
-    }
+    let mut indegree = graph.indegrees.clone();
     let mut ready = indegree
         .iter()
         .filter_map(|(hash, degree)| (*degree == 0).then_some(*hash))
@@ -49,7 +36,7 @@ pub(crate) fn validate_topology(graph: &DependencyGraph) -> Result<Topology, Top
     let mut order = Vec::with_capacity(graph.nodes.len());
     while let Some(hash) = ready.pop_first() {
         order.push(hash);
-        if let Some(children) = dependants.get(&hash) {
+        if let Some(children) = graph.dependants.get(&hash) {
             for child in children {
                 if let Some(degree) = indegree.get_mut(child) {
                     *degree -= 1;
@@ -92,7 +79,11 @@ mod tests {
                 (hash(1), BTreeSet::new()),
                 (hash(2), BTreeSet::from([hash(1)])),
             ]),
-            dependants: BTreeMap::new(),
+            dependants: BTreeMap::from([
+                (hash(1), BTreeSet::from([hash(2)])),
+                (hash(2), BTreeSet::new()),
+            ]),
+            indegrees: BTreeMap::from([(hash(1), 0), (hash(2), 1)]),
             accepted_base: BTreeSet::new(),
             edge_count: 1,
         };
@@ -102,7 +93,8 @@ mod tests {
         );
         let missing = DependencyGraph {
             nodes: BTreeMap::from([(hash(2), BTreeSet::from([hash(9)]))]),
-            dependants: BTreeMap::new(),
+            dependants: BTreeMap::from([(hash(9), BTreeSet::from([hash(2)]))]),
+            indegrees: BTreeMap::from([(hash(2), 0)]),
             accepted_base: BTreeSet::new(),
             edge_count: 1,
         };
@@ -115,7 +107,11 @@ mod tests {
                 (hash(1), BTreeSet::from([hash(2)])),
                 (hash(2), BTreeSet::from([hash(1)])),
             ]),
-            dependants: BTreeMap::new(),
+            dependants: BTreeMap::from([
+                (hash(1), BTreeSet::from([hash(2)])),
+                (hash(2), BTreeSet::from([hash(1)])),
+            ]),
+            indegrees: BTreeMap::from([(hash(1), 1), (hash(2), 1)]),
             accepted_base: BTreeSet::new(),
             edge_count: 2,
         };
@@ -125,7 +121,8 @@ mod tests {
         );
         let self_cycle = DependencyGraph {
             nodes: BTreeMap::from([(hash(3), BTreeSet::from([hash(3)]))]),
-            dependants: BTreeMap::new(),
+            dependants: BTreeMap::from([(hash(3), BTreeSet::from([hash(3)]))]),
+            indegrees: BTreeMap::from([(hash(3), 1)]),
             accepted_base: BTreeSet::new(),
             edge_count: 1,
         };
