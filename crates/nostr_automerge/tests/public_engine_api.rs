@@ -819,9 +819,17 @@ fn validated_checkpoint_descriptor_carrier_enters_corpus() {
     ));
     let corpus = builder.finish();
     assert_eq!(corpus.event_count(), 1);
+    assert_eq!(
+        corpus.checkpoint_descriptor_ids().collect::<Vec<_>>(),
+        vec![event_id]
+    );
+    assert_eq!(
+        corpus.pending_checkpoint_ids().collect::<Vec<_>>(),
+        vec![event_id]
+    );
     assert!(matches!(
         corpus.records().next(),
-        Some(record) if record.status() == EvidenceStatus::Valid
+        Some(record) if record.status() == EvidenceStatus::Pending
     ));
 
     let sign = |created_at: u64, tags: Vec<Vec<String>>, content: String| {
@@ -918,13 +926,29 @@ fn validated_checkpoint_chunk_carrier_enters_corpus() {
         .event_id();
     let mut builder = CorpusBuilder::new();
     assert!(matches!(
-        builder.ingest(event),
+        builder.ingest(event.clone()),
         IngestOutcome::Accepted { event_id: accepted } if accepted == event_id
     ));
     assert!(matches!(
-        builder.finish().records().next(),
-        Some(record) if record.status() == EvidenceStatus::Valid
+        builder.ingest(event),
+        IngestOutcome::Duplicate { .. }
     ));
+    let corpus = builder.finish();
+    assert_eq!(
+        corpus.checkpoint_chunk_ids().collect::<Vec<_>>(),
+        vec![event_id]
+    );
+    assert_eq!(
+        corpus.pending_checkpoint_ids().collect::<Vec<_>>(),
+        vec![event_id]
+    );
+    assert_eq!(
+        corpus
+            .records()
+            .map(|record| record.status())
+            .collect::<Vec<_>>(),
+        vec![EvidenceStatus::Pending, EvidenceStatus::Duplicate]
+    );
     let mut leading_zero = valid_tags();
     leading_zero[3][1] = "00".to_owned();
     let mut upper_hash = valid_tags();

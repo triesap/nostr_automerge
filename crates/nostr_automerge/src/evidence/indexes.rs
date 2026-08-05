@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::carrier::VerifiedCarrier;
 use crate::evidence::event::EventEvidence;
-use crate::{ActorId, ChangeHash, EventId};
+use crate::{ActorId, ChangeHash, DocumentCoordinate, EventId};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct ControlIndexRecord {
@@ -37,10 +37,35 @@ pub(crate) struct ChangeIndexes {
     pub(crate) dependencies_by_hash: BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct CheckpointDescriptorIndexRecord {
+    pub(crate) event_id: EventId,
+    pub(crate) coordinate: DocumentCoordinate,
+    pub(crate) control_id: EventId,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct CheckpointChunkIndexRecord {
+    pub(crate) event_id: EventId,
+    pub(crate) coordinate: DocumentCoordinate,
+    pub(crate) descriptor_id: EventId,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct CheckpointIndexes {
+    pub(crate) descriptors_by_id: BTreeMap<EventId, CheckpointDescriptorIndexRecord>,
+    pub(crate) descriptors_by_coordinate: BTreeMap<DocumentCoordinate, BTreeSet<EventId>>,
+    pub(crate) chunks_by_id: BTreeMap<EventId, CheckpointChunkIndexRecord>,
+    pub(crate) chunks_by_descriptor: BTreeMap<EventId, BTreeSet<EventId>>,
+    pub(crate) pending_descriptors: BTreeSet<EventId>,
+    pub(crate) pending_chunks: BTreeSet<EventId>,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct TrustedIndexes {
     pub(crate) controls: ControlIndexes,
     pub(crate) changes: ChangeIndexes,
+    pub(crate) checkpoints: CheckpointIndexes,
 }
 
 pub(crate) fn derive_trusted_indexes(events: &BTreeMap<EventId, EventEvidence>) -> TrustedIndexes {
@@ -52,14 +77,76 @@ pub(crate) fn derive_trusted_indexes(events: &BTreeMap<EventId, EventEvidence>) 
         match carrier {
             VerifiedCarrier::Control(control) => index_control(&mut indexes.controls, control),
             VerifiedCarrier::Change(change) => index_change(&mut indexes.changes, change),
-            VerifiedCarrier::Manifest(_)
-            | VerifiedCarrier::CheckpointDescriptor(_)
-            | VerifiedCarrier::CheckpointChunk(_)
-            | VerifiedCarrier::UnsupportedRevision { .. } => {}
+            VerifiedCarrier::CheckpointDescriptor(descriptor) => {
+                index_checkpoint_descriptor(&mut indexes.checkpoints, descriptor);
+            }
+            VerifiedCarrier::CheckpointChunk(chunk) => {
+                index_checkpoint_chunk(&mut indexes.checkpoints, chunk);
+            }
+            VerifiedCarrier::Manifest(_) | VerifiedCarrier::UnsupportedRevision { .. } => {}
         }
     }
     derive_pending_controls(&mut indexes);
+    derive_pending_checkpoints(&mut indexes);
     indexes
+}
+
+fn index_checkpoint_descriptor(
+    indexes: &mut CheckpointIndexes,
+    descriptor: &crate::carrier::checkpoint_descriptor::ValidatedCheckpointDescriptorCarrier,
+) {
+    let record = CheckpointDescriptorIndexRecord {
+        event_id: descriptor.event_id(),
+        coordinate: descriptor.coordinate(),
+        control_id: descriptor.control_id(),
+    };
+    indexes
+        .descriptors_by_coordinate
+        .entry(record.coordinate)
+        .or_default()
+        .insert(record.event_id);
+    indexes.descriptors_by_id.insert(record.event_id, record);
+}
+
+fn index_checkpoint_chunk(
+    indexes: &mut CheckpointIndexes,
+    chunk: &crate::carrier::checkpoint_chunk::ValidatedCheckpointChunkCarrier,
+) {
+    let record = CheckpointChunkIndexRecord {
+        event_id: chunk.event_id(),
+        coordinate: chunk.coordinate(),
+        descriptor_id: chunk.descriptor_id(),
+    };
+    indexes
+        .chunks_by_descriptor
+        .entry(record.descriptor_id)
+        .or_default()
+        .insert(record.event_id);
+    indexes.chunks_by_id.insert(record.event_id, record);
+}
+
+fn derive_pending_checkpoints(indexes: &mut TrustedIndexes) {
+    for descriptor in indexes.checkpoints.descriptors_by_id.values() {
+        if !indexes
+            .controls
+            .controls_by_id
+            .contains_key(&descriptor.control_id)
+        {
+            indexes
+                .checkpoints
+                .pending_descriptors
+                .insert(descriptor.event_id);
+        }
+    }
+    for chunk in indexes.checkpoints.chunks_by_id.values() {
+        if !indexes
+            .checkpoints
+            .descriptors_by_id
+            .contains_key(&chunk.descriptor_id)
+        {
+            indexes.checkpoints.pending_chunks.insert(chunk.event_id);
+        }
+    }
 }
 
 fn index_control(

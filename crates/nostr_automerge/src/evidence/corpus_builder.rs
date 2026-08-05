@@ -392,6 +392,26 @@ impl EvidenceCorpus {
         self.indexes.changes.carriers_by_hash.keys().copied()
     }
 
+    /// Iterates over event IDs of fully validated checkpoint descriptors.
+    pub fn checkpoint_descriptor_ids(&self) -> impl Iterator<Item = EventId> + '_ {
+        self.indexes.checkpoints.descriptors_by_id.keys().copied()
+    }
+
+    /// Iterates over event IDs of fully validated checkpoint chunks.
+    pub fn checkpoint_chunk_ids(&self) -> impl Iterator<Item = EventId> + '_ {
+        self.indexes.checkpoints.chunks_by_id.keys().copied()
+    }
+
+    /// Iterates over validated checkpoint evidence awaiting a referenced carrier.
+    pub fn pending_checkpoint_ids(&self) -> impl Iterator<Item = EventId> + '_ {
+        self.indexes
+            .checkpoints
+            .pending_descriptors
+            .iter()
+            .chain(&self.indexes.checkpoints.pending_chunks)
+            .copied()
+    }
+
     /// Iterates over every retained evidence record in deterministic order.
     pub fn records(&self) -> impl Iterator<Item = EvidenceRecord> + '_ {
         self.events
@@ -501,6 +521,18 @@ fn event_record(
             carrier: VerifiedCarrier::Control(_),
             ..
         } if indexes.controls.pending.contains(event_id) => (EvidenceStatus::Pending, None),
+        EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::CheckpointDescriptor(_),
+            ..
+        } if indexes.checkpoints.pending_descriptors.contains(event_id) => {
+            (EvidenceStatus::Pending, None)
+        }
+        EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::CheckpointChunk(_),
+            ..
+        } if indexes.checkpoints.pending_chunks.contains(event_id) => {
+            (EvidenceStatus::Pending, None)
+        }
         EventEvidence::VerifiedCarrier { .. } => (EvidenceStatus::Valid, None),
         EventEvidence::InvalidCarrier { diagnostic, .. } => {
             (EvidenceStatus::Invalid, Some(*diagnostic))
