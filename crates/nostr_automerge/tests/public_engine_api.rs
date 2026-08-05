@@ -921,6 +921,114 @@ fn pending_controls_converge_after_signed_parent_delivery() {
 
 #[test]
 #[allow(clippy::expect_used)]
+fn signed_child_cannot_discard_retained_writer_contributions() {
+    let controller = TestSigner::from_byte(30);
+    let retained = TestSigner::from_byte(31);
+    let removed = TestSigner::from_byte(32);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "50".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let mut members = [retained.public_key(), removed.public_key()]
+        .into_iter()
+        .map(|key| {
+            format!(
+                r#"{{"account":null,"pubkey":"{}","roles":["checkpoint","write"]}}"#,
+                key.to_hex()
+            )
+        })
+        .collect::<Vec<_>>();
+    members.sort();
+    let parent_content = format!(
+        r#"{{"base_heads":[],"format":"automerge-change-v1","members":[{}],"policy":"controller-acl-v1","predecessor":null,"seq":0,"successor":null,"text_encoding":"utf16","v":1}}"#,
+        members.join(",")
+    );
+    let child_content = format!(
+        r#"{{"base_heads":[],"format":"automerge-change-v1","members":[{{"account":null,"pubkey":"{}","roles":["checkpoint","write"]}}],"policy":"controller-acl-v1","predecessor":null,"seq":1,"successor":null,"text_encoding":"utf16","v":1}}"#,
+        retained.public_key().to_hex()
+    );
+    let parent = controller.sign(
+        &UnsignedEventDraft::new(
+            1,
+            1_625,
+            vec![vec!["a".to_owned(), coordinate.to_address()]],
+            parent_content,
+        )
+        .expect("parent draft")
+        .prepare(controller.public_key())
+        .expect("parent preimage"),
+    );
+    let parent_id = VerifiedNip01Event::verify(parent.clone())
+        .expect("signed parent")
+        .event_id();
+    let actor = ActorId::derive(coordinate, retained.public_key());
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
+        .expect("empty authoring document");
+    let authored = document
+        .author_change(&[Operation::PutString {
+            key: "retained".to_owned(),
+            value: "required".to_owned(),
+        }])
+        .expect("canonical authored change");
+    let change_hash = authored.change_hash();
+    let change = retained.sign(
+        &UnsignedEventDraft::new(
+            2,
+            1_624,
+            vec![
+                vec!["a".to_owned(), coordinate.to_address()],
+                vec!["e".to_owned(), parent_id.to_hex()],
+                vec!["x".to_owned(), change_hash.to_hex()],
+            ],
+            base64::engine::general_purpose::STANDARD.encode(authored.raw()),
+        )
+        .expect("change draft")
+        .prepare(retained.public_key())
+        .expect("change preimage"),
+    );
+    let child = controller.sign(
+        &UnsignedEventDraft::new(
+            3,
+            1_625,
+            vec![
+                vec!["a".to_owned(), coordinate.to_address()],
+                vec!["e".to_owned(), parent_id.to_hex()],
+            ],
+            child_content,
+        )
+        .expect("child draft")
+        .prepare(controller.public_key())
+        .expect("child preimage"),
+    );
+    let child_id = VerifiedNip01Event::verify(child.clone())
+        .expect("signed child")
+        .event_id();
+    let mut builder = CorpusBuilder::new();
+    for event in [child, change, parent] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(report.completion(), Completion::Complete);
+    assert_eq!(report.canonical_controls(), [parent_id]);
+    assert!(!report.canonical_controls().contains(&child_id));
+    assert_eq!(report.accepted_changes(), [change_hash]);
+    assert_eq!(report.heads(), [change_hash]);
+    assert!(report.document().is_some_and(|view| !view.is_empty()));
+}
+
+#[test]
+#[allow(clippy::expect_used)]
 fn signed_change_ingest_requires_canonical_actor_hash_control_and_bytes() {
     let controller = TestSigner::from_byte(8);
     let device = TestSigner::from_byte(9);

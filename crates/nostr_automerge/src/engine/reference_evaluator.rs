@@ -153,7 +153,8 @@ fn controls_for_coordinate(
                     .controls
                     .pending
                     .contains(&control.event_id())
-                && !has_terminal_parent(corpus, control) =>
+                && !has_terminal_parent(corpus, control)
+                && !violates_retained_writer_frontier(corpus, control) =>
             {
                 Some(BatchControl {
                     event_id: control.event_id(),
@@ -166,6 +167,66 @@ fn controls_for_coordinate(
             _ => None,
         })
         .collect()
+}
+
+fn violates_retained_writer_frontier(
+    corpus: &EvidenceCorpus,
+    child: &crate::carrier::control::ValidatedControlCarrier,
+) -> bool {
+    let Some(parent_id) = child.parent() else {
+        return false;
+    };
+    let Some(EventEvidence::VerifiedCarrier {
+        carrier: VerifiedCarrier::Control(parent),
+        ..
+    }) = corpus.events.get(&parent_id)
+    else {
+        return false;
+    };
+    let mut closure = child
+        .base_heads()
+        .collect::<std::collections::BTreeSet<_>>();
+    let mut stack = closure.iter().copied().collect::<Vec<_>>();
+    while let Some(hash) = stack.pop() {
+        if let Some(dependencies) = corpus.indexes.changes.dependencies_by_hash.get(&hash) {
+            for dependency in dependencies {
+                if closure.insert(*dependency) {
+                    stack.push(*dependency);
+                }
+            }
+        }
+    }
+    parent.members().iter().any(|grant| {
+        let retained = grant.roles.contains(&Role::Write)
+            && child
+                .members()
+                .iter()
+                .any(|child_grant| child_grant.device == grant.device);
+        retained
+            && highest_writer_contribution(corpus, parent_id, grant.actor)
+                .is_some_and(|hash| !closure.contains(&hash))
+    })
+}
+
+fn highest_writer_contribution(
+    corpus: &EvidenceCorpus,
+    control_id: crate::EventId,
+    actor: crate::ActorId,
+) -> Option<ChangeHash> {
+    corpus
+        .events
+        .values()
+        .filter_map(|evidence| match evidence {
+            EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::Change(change),
+                ..
+            } if change.control_id() == control_id && change.actor() == actor => {
+                Some((change.sequence(), change.change_hash()))
+            }
+            _ => None,
+        })
+        .max()
+        .map(|(_, hash)| hash)
 }
 
 fn has_terminal_parent(
