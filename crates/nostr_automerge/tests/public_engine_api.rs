@@ -105,6 +105,54 @@ fn signed_events_reach_materialized_state_through_public_engine() {
 }
 
 #[test]
+#[allow(clippy::expect_used)]
+fn signed_empty_terminal_genesis_materializes_empty_state() {
+    let controller = TestSigner::from_byte(22);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "24".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let content = r#"{"base_heads":[],"format":"automerge-change-v1","members":[],"policy":"controller-acl-v1","predecessor":null,"seq":0,"successor":null,"text_encoding":"utf16","v":1}"#;
+    let control = controller.sign(
+        &UnsignedEventDraft::new(
+            1,
+            1_625,
+            vec![vec!["a".to_owned(), coordinate.to_address()]],
+            content.to_owned(),
+        )
+        .expect("control draft")
+        .prepare(controller.public_key())
+        .expect("control preimage"),
+    );
+    let control_id = VerifiedNip01Event::verify(control.clone())
+        .expect("signed control")
+        .event_id();
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(control),
+        IngestOutcome::Accepted { event_id } if event_id == control_id
+    ));
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(report.completion(), Completion::Complete);
+    assert_eq!(report.canonical_controls(), [control_id]);
+    assert!(report.accepted_changes().is_empty());
+    assert!(report.heads().is_empty());
+    assert!(
+        report
+            .document()
+            .is_some_and(|document| !document.is_empty())
+    );
+}
+
+#[test]
 fn duplicate_delayed_and_invalid_evidence_converges() {
     let scenario = signed_engine_scenario();
     let evaluate = |events: &[RawEventBytes]| {
