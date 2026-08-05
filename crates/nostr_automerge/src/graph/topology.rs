@@ -92,7 +92,9 @@ mod tests {
                 (hash(1), BTreeSet::new()),
                 (hash(2), BTreeSet::from([hash(1)])),
             ]),
+            dependants: BTreeMap::new(),
             accepted_base: BTreeSet::new(),
+            edge_count: 1,
         };
         assert_eq!(
             validate_topology(&valid).map(|topology| topology.order),
@@ -100,7 +102,9 @@ mod tests {
         );
         let missing = DependencyGraph {
             nodes: BTreeMap::from([(hash(2), BTreeSet::from([hash(9)]))]),
+            dependants: BTreeMap::new(),
             accepted_base: BTreeSet::new(),
+            edge_count: 1,
         };
         assert_eq!(
             validate_topology(&missing),
@@ -111,7 +115,9 @@ mod tests {
                 (hash(1), BTreeSet::from([hash(2)])),
                 (hash(2), BTreeSet::from([hash(1)])),
             ]),
+            dependants: BTreeMap::new(),
             accepted_base: BTreeSet::new(),
+            edge_count: 2,
         };
         assert_eq!(
             validate_topology(&cycle),
@@ -119,7 +125,9 @@ mod tests {
         );
         let self_cycle = DependencyGraph {
             nodes: BTreeMap::from([(hash(3), BTreeSet::from([hash(3)]))]),
+            dependants: BTreeMap::new(),
             accepted_base: BTreeSet::new(),
+            edge_count: 1,
         };
         assert_eq!(
             validate_topology(&self_cycle),

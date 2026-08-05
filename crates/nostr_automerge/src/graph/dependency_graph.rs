@@ -6,7 +6,9 @@ use crate::{ChangeHash, ProtocolRevision};
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct DependencyGraph {
     pub(crate) nodes: BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
+    pub(crate) dependants: BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
     pub(crate) accepted_base: BTreeSet<ChangeHash>,
+    pub(crate) edge_count: u64,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -58,9 +60,21 @@ fn build_with_limits(
             return Err(GraphBuildError::DuplicateNode);
         }
     }
+    let mut dependants = nodes
+        .keys()
+        .copied()
+        .map(|hash| (hash, BTreeSet::new()))
+        .collect::<BTreeMap<_, _>>();
+    for (hash, dependencies) in &nodes {
+        for dependency in dependencies {
+            dependants.entry(*dependency).or_default().insert(*hash);
+        }
+    }
     Ok(DependencyGraph {
         nodes,
+        dependants,
         accepted_base,
+        edge_count: edges,
     })
 }
 
@@ -110,6 +124,18 @@ mod tests {
             Err(_) => return,
         };
         assert_eq!(graph.nodes[&ChangeHash::from_bytes([4; 32])].len(), 2);
+        assert_eq!(graph.edge_count, 4);
+        assert_eq!(
+            graph.dependants[&ChangeHash::from_bytes([1; 32])],
+            BTreeSet::from([
+                ChangeHash::from_bytes([2; 32]),
+                ChangeHash::from_bytes([3; 32]),
+            ])
+        );
+        assert_eq!(
+            graph.dependants[&ChangeHash::from_bytes([2; 32])],
+            BTreeSet::from([ChangeHash::from_bytes([4; 32])])
+        );
         assert_eq!(
             build_graph([candidate(1, vec![1])], BTreeSet::new()),
             Err(GraphBuildError::SelfDependency)

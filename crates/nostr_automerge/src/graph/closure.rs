@@ -72,7 +72,9 @@ mod tests {
         }
         let graph = DependencyGraph {
             nodes,
+            dependants: BTreeMap::new(),
             accepted_base: BTreeSet::from([hash(1)]),
+            edge_count: 999,
         };
         let mut budget = WorkBudget::new(0, 2_000);
         let closure = ancestor_closure(&graph, [hash(999)], &mut budget, &NeverCancelled);
