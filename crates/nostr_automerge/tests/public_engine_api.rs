@@ -240,6 +240,40 @@ fn control_selection_and_transition_have_distinct_charges() {
     assert_eq!(budget.consumed().get(WorkCounter::Control), 1);
 }
 
+#[test]
+fn automerge_decode_work_is_bounded_before_state() {
+    let scenario = signed_engine_scenario();
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(scenario.change),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert!(matches!(
+        builder.ingest(scenario.control),
+        IngestOutcome::Accepted { .. }
+    ));
+    let corpus = builder.finish();
+    let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
+    let mut measured = WorkBudget::new(1_000_000, 1_000);
+    let measured_report =
+        evaluator.evaluate(&corpus, scenario.coordinate, &mut measured, &NeverCancelled);
+    assert_eq!(measured_report.completion(), Completion::Complete);
+    let decode_bytes = measured.consumed().get(WorkCounter::DecodeByte);
+    assert!(decode_bytes > 0);
+
+    let mut exhausted = WorkBudget::new(decode_bytes - 1, 1_000);
+    let report = evaluator.evaluate(
+        &corpus,
+        scenario.coordinate,
+        &mut exhausted,
+        &NeverCancelled,
+    );
+    assert_eq!(report.completion(), Completion::BudgetExhausted);
+    assert!(report.canonical_controls().is_empty());
+    assert!(report.accepted_changes().is_empty());
+    assert_eq!(exhausted.consumed().get(WorkCounter::DecodeByte), 0);
+}
+
 struct SignedEngineScenario {
     coordinate: DocumentCoordinate,
     control: RawEventBytes,

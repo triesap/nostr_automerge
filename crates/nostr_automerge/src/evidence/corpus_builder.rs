@@ -286,6 +286,23 @@ impl EvidenceCorpus {
             .count()
     }
 
+    pub(crate) fn decode_work_bytes(&self) -> Option<u64> {
+        self.indexes
+            .changes
+            .preferred_carrier
+            .values()
+            .try_fold(0_u64, |total, event_id| {
+                let work = match self.events.get(event_id) {
+                    Some(EventEvidence::VerifiedCarrier {
+                        carrier: VerifiedCarrier::Change(change),
+                        ..
+                    }) => change.decode_work_bytes()?,
+                    _ => return None,
+                };
+                total.checked_add(work)
+            })
+    }
+
     /// Returns the number of uniquely identified verified signed events.
     #[must_use]
     pub fn event_count(&self) -> usize {

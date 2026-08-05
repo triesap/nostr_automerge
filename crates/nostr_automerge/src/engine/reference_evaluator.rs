@@ -115,8 +115,10 @@ impl ReferenceEvaluator {
 fn charge_ingress(corpus: &EvidenceCorpus, budget: &mut WorkBudget) -> bool {
     let event_count = u64::try_from(corpus.evaluation_event_count()).unwrap_or(u64::MAX);
     let carrier_count = u64::try_from(corpus.carrier_evidence_count()).unwrap_or(u64::MAX);
+    let decode_bytes = corpus.decode_work_bytes().unwrap_or(u64::MAX);
     budget.charge(WorkCounter::Event, event_count).is_ok()
         && budget.charge(WorkCounter::Carrier, carrier_count).is_ok()
+        && budget.charge(WorkCounter::DecodeByte, decode_bytes).is_ok()
 }
 
 fn disposition_hashes(

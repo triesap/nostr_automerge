@@ -64,6 +64,15 @@ impl ChangeCarrier {
     pub(crate) fn canonical_raw_bytes(&self) -> &[u8] {
         &self.canonical_raw_change_bytes
     }
+
+    pub(crate) fn decode_work_bytes(&self) -> Option<u64> {
+        let raw = u64::try_from(self.canonical_raw_change_bytes.len()).ok()?;
+        let dependencies = u64::try_from(self.decoded.dependencies.len())
+            .ok()?
+            .checked_mul(32)?;
+        let operations = u64::try_from(self.decoded.operations.len()).ok()?;
+        raw.checked_add(dependencies)?.checked_add(operations)
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
