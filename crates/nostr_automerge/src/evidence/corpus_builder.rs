@@ -6,6 +6,38 @@ use crate::evidence::event::{EventEvidence, RawChecksum};
 use crate::evidence::source::AcquiredRawEvent;
 use crate::{DiagnosticCode, EventId, Nip01VerificationError, RawEventBytes, VerifiedNip01Event};
 
+/// The stable result of ingesting one raw event into an evidence corpus.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum IngestOutcome {
+    /// A supported, verified protocol carrier was retained.
+    Accepted {
+        /// The verified carrier event identifier.
+        event_id: EventId,
+    },
+    /// The event identifier was already represented in the corpus.
+    Duplicate {
+        /// The already-retained event identifier.
+        event_id: EventId,
+    },
+    /// The raw event failed strict NIP-01 verification.
+    Invalid {
+        /// The stable strict-verification failure code.
+        diagnostic: DiagnosticCode,
+    },
+    /// The signed event is valid but is not a draft-v1 carrier kind.
+    Irrelevant {
+        /// The valid non-carrier event identifier.
+        event_id: EventId,
+    },
+    /// The carrier declares an unsupported protocol revision.
+    UnsupportedRevision {
+        /// The verified carrier event identifier.
+        event_id: EventId,
+        /// The stable unsupported-revision code.
+        diagnostic: DiagnosticCode,
+    },
+}
+
 #[derive(Default)]
 pub(crate) struct CorpusBuilder {
     events: BTreeMap<EventId, EventEvidence>,
@@ -21,27 +53,33 @@ pub(crate) struct BuiltCorpus {
 }
 
 impl CorpusBuilder {
-    pub(crate) fn ingest_acquired(&mut self, acquired: AcquiredRawEvent) {
-        self.ingest(acquired.into_raw());
+    pub(crate) fn ingest_acquired(&mut self, acquired: AcquiredRawEvent) -> IngestOutcome {
+        self.ingest(acquired.into_raw())
     }
 
-    pub(crate) fn ingest(&mut self, raw: RawEventBytes) {
+    pub(crate) fn ingest(&mut self, raw: RawEventBytes) -> IngestOutcome {
         let checksum = RawChecksum::of(&raw);
         match VerifiedNip01Event::verify(raw.clone()) {
             Ok(event) => self.ingest_verified(event, checksum),
             Err(error) => {
+                let diagnostic = verification_diagnostic(error);
                 self.invalid
                     .entry(checksum)
                     .or_insert_with(|| EventEvidence::InvalidEvent {
                         raw,
                         raw_checksum: checksum,
-                        diagnostic: verification_diagnostic(error),
+                        diagnostic,
                     });
+                IngestOutcome::Invalid { diagnostic }
             }
         }
     }
 
-    fn ingest_verified(&mut self, event: VerifiedNip01Event, checksum: RawChecksum) {
+    fn ingest_verified(
+        &mut self,
+        event: VerifiedNip01Event,
+        checksum: RawChecksum,
+    ) -> IngestOutcome {
         let event_id = event.event_id();
         if let Some(existing) = self.events.get(&event_id) {
             let existing_checksum = evidence_checksum(existing);
@@ -52,26 +90,40 @@ impl CorpusBuilder {
             if existing_checksum != checksum {
                 self.duplicates.sort_by_key(evidence_checksum);
             }
-            return;
+            return IngestOutcome::Duplicate { event_id };
         }
-        let evidence = match classify(event.clone()) {
+        let (evidence, outcome) = match classify(event.clone()) {
             Some(carrier @ VerifiedCarrier::UnsupportedRevision { .. }) => {
-                EventEvidence::UnsupportedRevision {
+                let diagnostic = DiagnosticCode::registered("carrier.revision");
+                (
+                    EventEvidence::UnsupportedRevision {
+                        carrier,
+                        raw_checksum: checksum,
+                        diagnostic,
+                    },
+                    IngestOutcome::UnsupportedRevision {
+                        event_id,
+                        diagnostic,
+                    },
+                )
+            }
+            Some(carrier) => (
+                EventEvidence::VerifiedCarrier {
                     carrier,
                     raw_checksum: checksum,
-                    diagnostic: DiagnosticCode::registered("carrier.revision"),
-                }
-            }
-            Some(carrier) => EventEvidence::VerifiedCarrier {
-                carrier,
-                raw_checksum: checksum,
-            },
-            None => EventEvidence::IrrelevantEvent {
-                event,
-                raw_checksum: checksum,
-            },
+                },
+                IngestOutcome::Accepted { event_id },
+            ),
+            None => (
+                EventEvidence::IrrelevantEvent {
+                    event,
+                    raw_checksum: checksum,
+                },
+                IngestOutcome::Irrelevant { event_id },
+            ),
         };
         self.events.insert(event_id, evidence);
+        outcome
     }
 
     pub(crate) fn finish(self) -> BuiltCorpus {
@@ -112,7 +164,7 @@ const fn verification_diagnostic(error: Nip01VerificationError) -> DiagnosticCod
 
 #[cfg(test)]
 mod tests {
-    use super::CorpusBuilder;
+    use super::{CorpusBuilder, IngestOutcome};
     use crate::{ProtocolRevision, RawEventBytes};
 
     fn raw(value: &[u8]) -> Option<RawEventBytes> {
@@ -132,10 +184,22 @@ mod tests {
         };
 
         let mut first = CorpusBuilder::default();
-        first.ingest(second_invalid.clone());
-        first.ingest(valid.clone());
-        first.ingest(first_invalid.clone());
-        first.ingest(valid.clone());
+        assert!(matches!(
+            first.ingest(second_invalid.clone()),
+            IngestOutcome::Invalid { .. }
+        ));
+        assert!(matches!(
+            first.ingest(valid.clone()),
+            IngestOutcome::Irrelevant { .. }
+        ));
+        assert!(matches!(
+            first.ingest(first_invalid.clone()),
+            IngestOutcome::Invalid { .. }
+        ));
+        assert!(matches!(
+            first.ingest(valid.clone()),
+            IngestOutcome::Duplicate { .. }
+        ));
         let first = first.finish();
         assert_eq!(first.events.len(), 1);
         assert_eq!(first.invalid.len(), 2);
