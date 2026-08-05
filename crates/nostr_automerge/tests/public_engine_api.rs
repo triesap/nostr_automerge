@@ -334,6 +334,39 @@ fn accepted_empty_history_has_a_real_document_view() {
     assert_eq!(budget.consumed().get(WorkCounter::ApplyChange), 1);
 }
 
+#[test]
+fn every_work_counter_has_exact_before_and_after_boundaries() {
+    for counter in [
+        WorkCounter::Event,
+        WorkCounter::Carrier,
+        WorkCounter::Control,
+        WorkCounter::GraphNode,
+        WorkCounter::GraphEdge,
+        WorkCounter::DecodeByte,
+        WorkCounter::ApplyChange,
+        WorkCounter::CheckpointByte,
+        WorkCounter::Assertion,
+    ] {
+        let byte_counter = matches!(
+            counter,
+            WorkCounter::DecodeByte | WorkCounter::CheckpointByte
+        );
+        let mut budget = if byte_counter {
+            WorkBudget::new(2, 0)
+        } else {
+            WorkBudget::new(0, 2)
+        };
+        assert!(budget.charge(counter, 2).is_ok(), "{}", counter.as_str());
+        let before_failure = budget;
+        assert!(matches!(
+            budget.charge(counter, 1),
+            Err(error) if error.counter() == counter
+        ));
+        assert_eq!(budget, before_failure);
+        assert_eq!(budget.consumed().get(counter), 2);
+    }
+}
+
 struct SignedEngineScenario {
     coordinate: DocumentCoordinate,
     control: RawEventBytes,
