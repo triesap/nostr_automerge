@@ -8,11 +8,12 @@ use std::collections::BTreeSet;
 use base64::Engine as _;
 use nostr_automerge::authoring::{ActorState, AuthoringDocument, Operation, UnsignedEventDraft};
 use nostr_automerge::{
-    ActorId, ChangeHash, Completion, CorpusBuilder, DocumentCoordinate, EvaluationFailure, EventId,
-    EvidenceCorpus, EvidenceStatus, IngestOutcome, NeverCancelled, ProtocolDisposition,
-    ProtocolRevision, RawEventBytes, ReferenceEvaluator, VerifiedNip01Event, WorkBudget,
-    WorkCounter,
+    ActorId, ChangeHash, ChunkHash, Completion, CorpusBuilder, DocumentCoordinate,
+    EvaluationFailure, EventId, EvidenceCorpus, EvidenceStatus, IngestOutcome, NeverCancelled,
+    ProtocolDisposition, ProtocolRevision, RawEventBytes, ReferenceEvaluator, VerifiedNip01Event,
+    WorkBudget, WorkCounter,
 };
+use sha2::{Digest as _, Sha256};
 use support::test_signer::TestSigner;
 
 #[test]
@@ -879,6 +880,49 @@ fn validated_checkpoint_descriptor_carrier_enters_corpus() {
                 if diagnostic.as_str() == expected
         ));
     }
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn validated_checkpoint_chunk_carrier_enters_corpus() {
+    let signer = TestSigner::from_byte(40);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        TestSigner::from_byte(41).public_key().to_hex(),
+        "55".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let data = b"a";
+    let hash: [u8; 32] = Sha256::digest(data).into();
+    let event = signer.sign(
+        &UnsignedEventDraft::new(
+            1,
+            1_627,
+            vec![
+                vec!["a".to_owned(), coordinate.to_address()],
+                vec!["e".to_owned(), "04".repeat(32)],
+                vec!["x".to_owned(), ChunkHash::from_bytes(hash).to_hex()],
+                vec!["part".to_owned(), "0".to_owned(), "1".to_owned()],
+            ],
+            r#"{"data":"YQ==","proof":[],"v":1}"#.to_owned(),
+        )
+        .expect("chunk draft")
+        .prepare(signer.public_key())
+        .expect("chunk preimage"),
+    );
+    let event_id = VerifiedNip01Event::verify(event.clone())
+        .expect("signed chunk")
+        .event_id();
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(event),
+        IngestOutcome::Accepted { event_id: accepted } if accepted == event_id
+    ));
+    assert!(matches!(
+        builder.finish().records().next(),
+        Some(record) if record.status() == EvidenceStatus::Valid
+    ));
 }
 
 #[test]

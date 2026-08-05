@@ -213,7 +213,19 @@ impl CorpusBuilder {
                 }
             }
             Some(CarrierCandidate::CheckpointChunk(event)) => {
-                accepted(VerifiedCarrier::CheckpointChunk(event), checksum, event_id)
+                match crate::carrier::checkpoint_chunk::validate(&event) {
+                    Ok(chunk) => accepted(
+                        VerifiedCarrier::CheckpointChunk(Box::new(chunk)),
+                        checksum,
+                        event_id,
+                    ),
+                    Err(error) => invalid_carrier(
+                        event,
+                        checksum,
+                        event_id,
+                        checkpoint_chunk_diagnostic(error),
+                    ),
+                }
             }
             None => (
                 EventEvidence::IrrelevantEvent {
@@ -237,6 +249,20 @@ impl CorpusBuilder {
             invalid: self.invalid,
             duplicates: self.duplicates,
             indexes,
+        }
+    }
+}
+
+fn checkpoint_chunk_diagnostic(
+    error: crate::carrier::checkpoint_chunk::CheckpointChunkCarrierError,
+) -> DiagnosticCode {
+    use crate::carrier::checkpoint_chunk::CheckpointChunkCarrierError as Error;
+    match error {
+        Error::Kind => DiagnosticCode::registered("carrier.kind"),
+        Error::Tags => DiagnosticCode::registered("tag.required"),
+        Error::Coordinate => DiagnosticCode::registered("carrier.coordinate"),
+        Error::Descriptor | Error::Hash | Error::Part | Error::Chunk(_) => {
+            DiagnosticCode::registered("checkpoint.chunk")
         }
     }
 }

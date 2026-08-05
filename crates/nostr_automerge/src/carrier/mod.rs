@@ -1,4 +1,5 @@
 pub(crate) mod change;
+pub(crate) mod checkpoint_chunk;
 pub(crate) mod checkpoint_descriptor;
 pub(crate) mod classify;
 pub(crate) mod control;
@@ -8,6 +9,7 @@ pub(crate) mod version;
 use crate::VerifiedNip01Event;
 
 use self::change::ChangeCarrier;
+use self::checkpoint_chunk::ValidatedCheckpointChunkCarrier;
 use self::checkpoint_descriptor::ValidatedCheckpointDescriptorCarrier;
 use self::control::ValidatedControlCarrier;
 use self::manifest::ValidatedManifest;
@@ -32,7 +34,7 @@ pub(crate) enum VerifiedCarrier {
     Control(Box<ValidatedControlCarrier>),
     Change(Box<ChangeCarrier>),
     CheckpointDescriptor(Box<ValidatedCheckpointDescriptorCarrier>),
-    CheckpointChunk(VerifiedNip01Event),
+    CheckpointChunk(Box<ValidatedCheckpointChunkCarrier>),
     UnsupportedRevision {
         event: VerifiedNip01Event,
         declared_version: Option<u64>,
