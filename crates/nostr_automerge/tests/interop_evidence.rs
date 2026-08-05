@@ -9,7 +9,11 @@ fn record_independent_typescript_differential_agreement() {
     assert!(report.is_ok());
     let Ok(report) = report else { return };
     assert_eq!(report["schema"], "nostr_automerge.local_interop.v1");
-    assert_eq!(report["status"], "local_differential_pass");
+    assert_eq!(report["status"], "limited_local_differential_pass");
+    assert_eq!(
+        report["claim_scope"],
+        "limited_simplified_five_fixture_corpus"
+    );
     assert_eq!(report["fixture_count"], 5);
     assert_eq!(report["canonical_report_bytes"], "identical");
     assert_eq!(report["deliberate_mismatch"], "detected");

@@ -86,6 +86,10 @@ fn publish_security_and_release_readiness_report() {
         serde_json::from_str(include_str!("../../../reports/release_readiness.json"))
             .unwrap_or_default();
     assert_eq!(report["decision"], "hold_publication");
-    assert_eq!(report["local_alpha_package"], "ready");
+    assert_eq!(
+        report["local_alpha_package"],
+        "artifact_verified_not_engine_ready"
+    );
+    assert_eq!(report["public_engine"], "not_completed");
     assert_eq!(report["locked_gate"], "pass");
 }

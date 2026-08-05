@@ -1,6 +1,6 @@
 # Rust Core-Profile Conformance Report
 
-Status: passed  
+Status: limited actor-derivation fixture passed
 Protocol revision: `draft_2026_08`  
 Evaluated commit: `d9dfa258dd00cce116b56bd5460d47403cf16306`  
 Report date: 2026-08-04
@@ -18,7 +18,11 @@ input and expected-output checksums, and every gate result.
 
 ## Claim boundary
 
-This is a Rust core-profile claim. Verified-history checkpoint parsing,
+This is not yet a complete Rust public-engine core-profile claim. The recorded
+corpus contains only the actor-derivation fixture and does not execute raw
+signed event scenarios through a supported corpus/evaluator API.
+
+Verified-history checkpoint parsing,
 assembly, trust validation, and checkpoint/full-replay agreement are explicitly
 unimplemented here; the machine report lists all 12 deferred checkpoint
 requirements. It is not a checkpoint-profile, independent-interoperability, or

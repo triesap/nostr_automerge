@@ -1,19 +1,21 @@
 # Security and alpha readiness
 
-Decision: local alpha package ready; publication held.
+Decision: local package artifact verified; implementation readiness and
+publication held.
 
-All locked Rust checks, tests, clippy, rustdoc, repository validators,
-conformance commands, compiled sanitizer targets, deterministic properties,
-checkpoint/full-replay agreement, and package verification pass. Resource,
-coverage, mutation, dependency, SBOM, and provenance policies are checked in.
+The recorded locked Rust checks, tests, Clippy, rustdoc, repository validators,
+limited conformance commands, deterministic properties, checkpoint primitive
+tests, and package verification passed at their recorded commits. These results
+do not establish a complete public engine or signed checkpoint carrier path.
 
 Independent TypeScript core, checkpoint, malformed, and property differential
-profiles pass locally with byte-identical canonical reports. Deliberate-mismatch
-detection passes locally. Complete reproduction through ignored local Act
-runners remains pending RCLD 13.
+profiles passed locally for the five-fixture corpus with byte-identical reports.
+Deliberate-mismatch detection and both ignored local Act entry points passed.
+The runners still compute a simplified model rather than exercising a complete
+public engine, so this is limited differential evidence only.
 
-No sustained fuzz campaign, complete mutation campaign, final local coverage
-run, or independent security review is claimed. RCLD 13 remains responsible
-for local implementation readiness. Provisional event kinds and alpha API
-status remain approved limits; no crate, tag, release, or NIP is published by
-this decision.
+No complete public engine, signed checkpoint-carrier conformance, real-state
+projection corpus, fail-closed coverage, sustained fuzz campaign, complete
+mutation campaign, final resource qualification, or independent security
+review is claimed. RCLD 14 owns those remediation gates. No crate, tag,
+release, or NIP is published by this decision.
