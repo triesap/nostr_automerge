@@ -4,5 +4,7 @@ pub(crate) mod closure;
 pub(crate) mod dependency_graph;
 pub(crate) mod epoch;
 pub(crate) mod equivocation;
+#[cfg(test)]
+mod scaling;
 pub(crate) mod schedule;
 pub(crate) mod topology;
