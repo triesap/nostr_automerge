@@ -82,6 +82,10 @@ impl ValidatedControlCarrier {
         self.parent
     }
 
+    pub(crate) fn base_heads(&self) -> impl Iterator<Item = ChangeHash> + '_ {
+        self.content.base_heads.iter().copied()
+    }
+
     pub(crate) fn into_parts(
         self,
     ) -> (

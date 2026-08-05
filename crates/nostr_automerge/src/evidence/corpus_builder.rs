@@ -288,6 +288,11 @@ impl EvidenceCorpus {
         self.indexes.controls.controls_by_id.keys().copied()
     }
 
+    /// Iterates over validated controls awaiting missing parent or frontier evidence.
+    pub fn pending_control_ids(&self) -> impl Iterator<Item = EventId> + '_ {
+        self.indexes.controls.pending.iter().copied()
+    }
+
     /// Iterates over canonical hashes represented by fully validated change carriers.
     pub fn change_hashes(&self) -> impl Iterator<Item = crate::ChangeHash> + '_ {
         self.indexes.changes.carriers_by_hash.keys().copied()
@@ -297,7 +302,7 @@ impl EvidenceCorpus {
     pub fn records(&self) -> impl Iterator<Item = EvidenceRecord> + '_ {
         self.events
             .iter()
-            .map(event_record)
+            .map(|entry| event_record(entry, &self.indexes))
             .chain(self.invalid.iter().map(invalid_record))
             .chain(self.duplicates.iter().filter_map(duplicate_record))
     }
@@ -376,8 +381,15 @@ impl EvidenceRecord {
     }
 }
 
-fn event_record((event_id, evidence): (&EventId, &EventEvidence)) -> EvidenceRecord {
+fn event_record(
+    (event_id, evidence): (&EventId, &EventEvidence),
+    indexes: &crate::evidence::indexes::TrustedIndexes,
+) -> EvidenceRecord {
     let (status, diagnostic) = match evidence {
+        EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::Control(_),
+            ..
+        } if indexes.controls.pending.contains(event_id) => (EvidenceStatus::Pending, None),
         EventEvidence::VerifiedCarrier { .. } => (EvidenceStatus::Valid, None),
         EventEvidence::InvalidCarrier { diagnostic, .. } => {
             (EvidenceStatus::Invalid, Some(*diagnostic))

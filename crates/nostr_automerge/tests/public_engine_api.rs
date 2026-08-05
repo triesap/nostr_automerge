@@ -8,6 +8,7 @@ use base64::Engine as _;
 use nostr_automerge::authoring::{ActorState, AuthoringDocument, Operation, UnsignedEventDraft};
 use nostr_automerge::{
     ActorId, CorpusBuilder, DocumentCoordinate, EvidenceCorpus, EvidenceStatus, IngestOutcome,
+    VerifiedNip01Event,
 };
 use support::test_signer::TestSigner;
 
@@ -130,7 +131,7 @@ fn signed_manifest_carrier_validation_exposes_only_advisory_hints() {
 
 #[test]
 #[allow(clippy::expect_used)]
-fn signed_control_carrier_tags_bind_controller_coordinate_and_parent() {
+fn pending_controls_converge_after_signed_parent_delivery() {
     let controller = TestSigner::from_byte(5);
     let other_controller = TestSigner::from_byte(6);
     let device = TestSigner::from_byte(7);
@@ -156,13 +157,36 @@ fn signed_control_carrier_tags_bind_controller_coordinate_and_parent() {
     let a = |value: &str| vec!["a".to_owned(), value.to_owned()];
     let e = || vec!["e".to_owned(), "44".repeat(32)];
 
+    let genesis = sign(1, vec![a(&coordinate)], content(0));
+    let genesis_id = VerifiedNip01Event::verify(genesis.clone())
+        .expect("signed genesis")
+        .event_id();
+    let child = sign(
+        2,
+        vec![a(&coordinate), vec!["e".to_owned(), genesis_id.to_hex()]],
+        content(1),
+    );
+    let child_id = VerifiedNip01Event::verify(child.clone())
+        .expect("signed child")
+        .event_id();
+
+    let mut pending = CorpusBuilder::new();
+    assert!(matches!(
+        pending.ingest(child.clone()),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert_eq!(
+        pending.finish().pending_control_ids().collect::<Vec<_>>(),
+        vec![child_id]
+    );
+
     let mut builder = CorpusBuilder::new();
     assert!(matches!(
-        builder.ingest(sign(1, vec![a(&coordinate)], content(0))),
+        builder.ingest(child),
         IngestOutcome::Accepted { .. }
     ));
     assert!(matches!(
-        builder.ingest(sign(2, vec![a(&coordinate), e()], content(1))),
+        builder.ingest(genesis),
         IngestOutcome::Accepted { .. }
     ));
     for (created_at, tags, sequence, expected) in [
@@ -209,6 +233,7 @@ fn signed_control_carrier_tags_bind_controller_coordinate_and_parent() {
         )),
         IngestOutcome::UnsupportedRevision { .. }
     ));
+    assert_eq!(builder.finish().pending_control_ids().count(), 0);
 }
 
 #[test]

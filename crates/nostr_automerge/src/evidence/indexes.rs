@@ -4,10 +4,11 @@ use crate::carrier::VerifiedCarrier;
 use crate::evidence::event::EventEvidence;
 use crate::{ActorId, ChangeHash, EventId};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct ControlIndexRecord {
     pub(crate) event_id: EventId,
     pub(crate) parent: Option<EventId>,
+    pub(crate) base_heads: BTreeSet<ChangeHash>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -15,6 +16,7 @@ pub(crate) struct ControlIndexes {
     pub(crate) controls_by_id: BTreeMap<EventId, ControlIndexRecord>,
     pub(crate) genesis: BTreeSet<EventId>,
     pub(crate) children_by_parent: BTreeMap<EventId, BTreeSet<EventId>>,
+    pub(crate) pending: BTreeSet<EventId>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -56,6 +58,7 @@ pub(crate) fn derive_trusted_indexes(events: &BTreeMap<EventId, EventEvidence>) 
             | VerifiedCarrier::UnsupportedRevision { .. } => {}
         }
     }
+    derive_pending_controls(&mut indexes);
     indexes
 }
 
@@ -66,6 +69,7 @@ fn index_control(
     let record = ControlIndexRecord {
         event_id: control.event_id(),
         parent: control.parent(),
+        base_heads: control.base_heads().collect(),
     };
     if let Some(parent) = record.parent {
         indexes
@@ -77,6 +81,21 @@ fn index_control(
         indexes.genesis.insert(record.event_id);
     }
     indexes.controls_by_id.insert(record.event_id, record);
+}
+
+fn derive_pending_controls(indexes: &mut TrustedIndexes) {
+    for record in indexes.controls.controls_by_id.values() {
+        let parent_missing = record
+            .parent
+            .is_some_and(|parent| !indexes.controls.controls_by_id.contains_key(&parent));
+        let frontier_missing = record
+            .base_heads
+            .iter()
+            .any(|head| !indexes.changes.carriers_by_hash.contains_key(head));
+        if parent_missing || frontier_missing {
+            indexes.controls.pending.insert(record.event_id);
+        }
+    }
 }
 
 fn index_change(indexes: &mut ChangeIndexes, change: &crate::carrier::change::ChangeCarrier) {
