@@ -1,4 +1,5 @@
 pub(crate) mod change;
+pub(crate) mod checkpoint_descriptor;
 pub(crate) mod classify;
 pub(crate) mod control;
 pub(crate) mod manifest;
@@ -7,6 +8,7 @@ pub(crate) mod version;
 use crate::VerifiedNip01Event;
 
 use self::change::ChangeCarrier;
+use self::checkpoint_descriptor::ValidatedCheckpointDescriptorCarrier;
 use self::control::ValidatedControlCarrier;
 use self::manifest::ValidatedManifest;
 
@@ -29,7 +31,7 @@ pub(crate) enum VerifiedCarrier {
     Manifest(Box<ValidatedManifest>),
     Control(Box<ValidatedControlCarrier>),
     Change(Box<ChangeCarrier>),
-    CheckpointDescriptor(VerifiedNip01Event),
+    CheckpointDescriptor(Box<ValidatedCheckpointDescriptorCarrier>),
     CheckpointChunk(VerifiedNip01Event),
     UnsupportedRevision {
         event: VerifiedNip01Event,

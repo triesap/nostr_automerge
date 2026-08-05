@@ -778,6 +778,54 @@ fn signed_manifest_selection_validates_latest_without_fallback_or_authority() {
 
 #[test]
 #[allow(clippy::expect_used)]
+fn validated_checkpoint_descriptor_carrier_enters_corpus() {
+    let signer = TestSigner::from_byte(38);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        TestSigner::from_byte(39).public_key().to_hex(),
+        "54".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let content = format!(
+        r#"{{"change_count":1,"change_set_hash":"{}","chunk_count":1,"chunk_root":"{}","chunk_size":1,"dependency_edges":0,"encoding":"automerge-save-v1","heads":["{}"],"raw_size":1,"total_ops":1,"v":1}}"#,
+        "01".repeat(32),
+        "02".repeat(32),
+        "03".repeat(32)
+    );
+    let event = signer.sign(
+        &UnsignedEventDraft::new(
+            1,
+            1_626,
+            vec![
+                vec!["a".to_owned(), coordinate.to_address()],
+                vec!["e".to_owned(), "04".repeat(32)],
+                vec!["x".to_owned(), "05".repeat(32)],
+            ],
+            content,
+        )
+        .expect("descriptor draft")
+        .prepare(signer.public_key())
+        .expect("descriptor preimage"),
+    );
+    let event_id = VerifiedNip01Event::verify(event.clone())
+        .expect("signed descriptor")
+        .event_id();
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(event),
+        IngestOutcome::Accepted { event_id: accepted } if accepted == event_id
+    ));
+    let corpus = builder.finish();
+    assert_eq!(corpus.event_count(), 1);
+    assert!(matches!(
+        corpus.records().next(),
+        Some(record) if record.status() == EvidenceStatus::Valid
+    ));
+}
+
+#[test]
+#[allow(clippy::expect_used)]
 fn pending_controls_converge_after_signed_parent_delivery() {
     let controller = TestSigner::from_byte(5);
     let other_controller = TestSigner::from_byte(6);

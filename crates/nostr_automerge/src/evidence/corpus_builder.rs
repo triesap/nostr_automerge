@@ -197,11 +197,21 @@ impl CorpusBuilder {
                 ),
                 Err(error) => invalid_carrier(event, checksum, event_id, change_diagnostic(error)),
             },
-            Some(CarrierCandidate::CheckpointDescriptor(event)) => accepted(
-                VerifiedCarrier::CheckpointDescriptor(event),
-                checksum,
-                event_id,
-            ),
+            Some(CarrierCandidate::CheckpointDescriptor(event)) => {
+                match crate::carrier::checkpoint_descriptor::validate(&event) {
+                    Ok(descriptor) => accepted(
+                        VerifiedCarrier::CheckpointDescriptor(Box::new(descriptor)),
+                        checksum,
+                        event_id,
+                    ),
+                    Err(error) => invalid_carrier(
+                        event,
+                        checksum,
+                        event_id,
+                        checkpoint_descriptor_diagnostic(error),
+                    ),
+                }
+            }
             Some(CarrierCandidate::CheckpointChunk(event)) => {
                 accepted(VerifiedCarrier::CheckpointChunk(event), checksum, event_id)
             }
@@ -227,6 +237,20 @@ impl CorpusBuilder {
             invalid: self.invalid,
             duplicates: self.duplicates,
             indexes,
+        }
+    }
+}
+
+fn checkpoint_descriptor_diagnostic(
+    error: crate::carrier::checkpoint_descriptor::CheckpointDescriptorCarrierError,
+) -> DiagnosticCode {
+    use crate::carrier::checkpoint_descriptor::CheckpointDescriptorCarrierError as Error;
+    match error {
+        Error::Kind => DiagnosticCode::registered("carrier.kind"),
+        Error::Tags => DiagnosticCode::registered("tag.required"),
+        Error::Coordinate => DiagnosticCode::registered("carrier.coordinate"),
+        Error::Control | Error::Snapshot | Error::Descriptor(_) => {
+            DiagnosticCode::registered("checkpoint.descriptor")
         }
     }
 }
