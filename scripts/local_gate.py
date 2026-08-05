@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 import sys
@@ -49,8 +50,25 @@ def conformance() -> None:
     second = run(*command, capture=True).stdout
     if first != second:
         raise AssertionError("Rust corpus output changed between local runs")
+    summary = json.loads(first)
+    if summary.get("failed") != 0 or summary.get("passed") != summary.get("total"):
+        raise AssertionError("Rust corpus did not pass in both independent processes")
     OUTPUT.mkdir(parents=True, exist_ok=True)
     (OUTPUT / "rust_corpus.json").write_text(first, encoding="utf-8")
+    (OUTPUT / "rust_corpus_process_evidence.json").write_text(
+        json.dumps(
+            {
+                "canonical_bytes": "identical",
+                "process_count": 2,
+                "sha256": hashlib.sha256(first.encode()).hexdigest(),
+                "status": "pass",
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
 
 def coverage() -> None:
