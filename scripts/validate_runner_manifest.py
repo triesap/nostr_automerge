@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_JOBS = [
-    "policy", "standard", "conformance", "coverage", "supply_chain",
+    "remediation", "policy", "standard", "conformance", "coverage", "supply_chain",
     "robustness", "resource", "release_evidence",
 ]
 EXPECTED_TOOLS = {
@@ -30,6 +30,8 @@ def main() -> int:
         raise AssertionError("unsupported local runner manifest schema")
     if manifest.get("workflow") != ".act/workflows/local_suite.yml":
         raise AssertionError("unexpected local workflow path")
+    if manifest.get("remediation_workflow") != ".act/workflows/remediation.yml":
+        raise AssertionError("unexpected remediation workflow path")
     if manifest.get("jobs") != EXPECTED_JOBS:
         raise AssertionError("local runner job set or order differs from policy")
     if manifest.get("toolchain") != EXPECTED_TOOLS:

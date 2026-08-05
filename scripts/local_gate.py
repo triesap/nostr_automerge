@@ -27,6 +27,10 @@ def policy() -> None:
     run("python3", "scripts/validate_runner_manifest.py")
 
 
+def remediation() -> None:
+    run("python3", "scripts/validate_remediation.py")
+
+
 def standard() -> None:
     run("cargo", "fmt", "--all", "--check")
     run("cargo", "check", "--workspace", "--all-targets", "--locked")
@@ -81,6 +85,7 @@ def release_evidence() -> None:
 
 
 JOBS = {
+    "remediation": remediation,
     "policy": policy,
     "standard": standard,
     "conformance": conformance,

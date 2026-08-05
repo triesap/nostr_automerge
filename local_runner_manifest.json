@@ -1,6 +1,7 @@
 {
   "schema": "nostr_automerge.local_runner_manifest.v1",
   "workflow": ".act/workflows/local_suite.yml",
+  "remediation_workflow": ".act/workflows/remediation.yml",
   "toolchain": {
     "rust": "1.97.1",
     "rust_nightly": "nightly-2026-07-16",
@@ -10,6 +11,7 @@
     "cargo_fuzz": "0.13.2"
   },
   "jobs": [
+    "remediation",
     "policy",
     "standard",
     "conformance",
