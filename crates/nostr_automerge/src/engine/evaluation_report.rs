@@ -26,7 +26,7 @@ pub enum EvaluationFailure {
     InvariantViolation,
 }
 
-use super::materialized_view::MaterializedDocumentView;
+use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 
 /// Canonical owned result of one deterministic reference evaluation.
 #[derive(Clone, PartialEq, Eq)]

@@ -17,7 +17,7 @@ use crate::{
 };
 
 use super::evaluation_report::{EvaluationFailure, EvaluationReport, EvaluationReportParts};
-use super::materialized_view::MaterializedDocumentView;
+use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 
 /// Stateless deterministic batch evaluator for immutable signed evidence.
 ///

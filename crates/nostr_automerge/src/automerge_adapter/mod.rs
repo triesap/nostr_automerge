@@ -11,6 +11,7 @@ pub(crate) mod encode;
 pub(crate) mod fixture;
 pub(crate) mod framing;
 pub(crate) mod leb128;
+pub(crate) mod materialized_view;
 #[cfg(test)]
 mod semantics;
 pub(crate) mod types;

@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = ROOT / "fixtures" / "distribution" / "manifest.json"
-SCHEMA = "nostr_automerge.fixture_distribution.v1"
+SCHEMA = "nostr_automerge.fixture_distribution.v2"
 PROFILES = {"core", "checkpoint", "malformed", "property"}
 
 
@@ -45,9 +45,8 @@ def main() -> None:
     ]
     if len(assigned) != len(set(assigned)):
         raise SystemExit("fixture is assigned to more than one interop profile")
-    unknown = set(assigned) - fixture_ids
-    if unknown:
-        raise SystemExit(f"profiles reference undistributed fixtures: {sorted(unknown)}")
+    if set(assigned) != fixture_ids:
+        raise SystemExit("profiles do not cover exactly the distributed fixtures")
 
 
 if __name__ == "__main__":
