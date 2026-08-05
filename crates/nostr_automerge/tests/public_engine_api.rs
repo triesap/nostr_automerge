@@ -646,6 +646,76 @@ fn signed_engine_scenario() -> SignedEngineScenario {
 
 #[test]
 #[allow(clippy::expect_used)]
+fn checkpoints_never_authorize_or_redefine_history() {
+    let scenario = signed_engine_scenario();
+    let evaluate = |corpus: &EvidenceCorpus| {
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+            corpus,
+            scenario.coordinate,
+            &mut WorkBudget::new(1_000_000, 1_000_000),
+            &NeverCancelled,
+        )
+    };
+    let mut baseline_builder = CorpusBuilder::new();
+    assert!(matches!(
+        baseline_builder.ingest(scenario.control.clone()),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert!(matches!(
+        baseline_builder.ingest(scenario.change.clone()),
+        IngestOutcome::Accepted { .. }
+    ));
+    let baseline_corpus = baseline_builder.finish();
+    let baseline = evaluate(&baseline_corpus);
+
+    let unauthorized = TestSigner::from_byte(44);
+    let content = format!(
+        r#"{{"change_count":1,"change_set_hash":"{}","chunk_count":1,"chunk_root":"{}","chunk_size":1,"dependency_edges":0,"encoding":"automerge-save-v1","heads":["{}"],"raw_size":1,"total_ops":1,"v":1}}"#,
+        "01".repeat(32),
+        "02".repeat(32),
+        scenario.change_hash.to_hex(),
+    );
+    let descriptor = unauthorized.sign(
+        &UnsignedEventDraft::new(
+            3,
+            1_626,
+            vec![
+                vec!["a".to_owned(), scenario.coordinate.to_address()],
+                vec!["e".to_owned(), scenario.control_id.to_hex()],
+                vec!["x".to_owned(), "03".repeat(32)],
+            ],
+            content,
+        )
+        .expect("checkpoint draft")
+        .prepare(unauthorized.public_key())
+        .expect("checkpoint preimage"),
+    );
+    let mut with_checkpoint = CorpusBuilder::new();
+    for event in [scenario.control, scenario.change, descriptor] {
+        assert!(matches!(
+            with_checkpoint.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = evaluate(&with_checkpoint.finish());
+    assert_eq!(
+        report.checkpoints()[0].status(),
+        CheckpointVerificationStatus::Unauthorized
+    );
+    assert_eq!(report.canonical_controls(), baseline.canonical_controls());
+    assert_eq!(report.dispositions(), baseline.dispositions());
+    assert_eq!(report.accepted_changes(), baseline.accepted_changes());
+    assert_eq!(report.heads(), baseline.heads());
+    assert_eq!(report.history_digest(), baseline.history_digest());
+    assert_eq!(report.dispositions_digest(), baseline.dispositions_digest());
+    assert_eq!(
+        report.document().map(|document| document.byte_len()),
+        baseline.document().map(|document| document.byte_len())
+    );
+}
+
+#[test]
+#[allow(clippy::expect_used)]
 fn signed_manifest_selection_validates_latest_without_fallback_or_authority() {
     let signer = TestSigner::from_byte(3);
     let document_id = "33".repeat(32);
