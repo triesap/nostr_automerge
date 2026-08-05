@@ -14,6 +14,7 @@ pub use chunk::{CheckpointChunk, ChunkError};
 pub use descriptor::{CheckpointDescriptor, DescriptorError};
 pub use merkle::{MerkleError, ProofStep, Side, leaf_hash, merkle_root, verify_proof};
 pub use verify::{VerifiedSnapshot, VerifyError, verify_snapshot_heads};
+pub(crate) use verify_history::historical_carrier_coverage;
 pub use verify_history::{HistoryVerificationError, verify_full_history};
 
 /// Provisional regular checkpoint descriptor event kind.

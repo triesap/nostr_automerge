@@ -1,6 +1,7 @@
 use crate::carrier::VerifiedCarrier;
 use crate::checkpoint::authorize::{DescriptorAuthorization, authorize_descriptor};
 use crate::checkpoint::join::{JoinError, join_chunks};
+use crate::checkpoint::{HistoryVerificationError, historical_carrier_coverage};
 use crate::conformance::dispositions_digest::{
     DispositionItem, DispositionNamespace, dispositions_digest,
 };
@@ -73,6 +74,8 @@ impl ReferenceEvaluator {
             &canonical_controls.iter().copied().collect(),
         );
         let _checkpoint_chunk_sets = checkpoint_chunk_sets(corpus, coordinate);
+        let _checkpoint_carrier_coverage =
+            checkpoint_carrier_coverage(corpus, coordinate, &canonical_controls);
         let dispositions = batch.dispositions.into_iter().collect::<Vec<_>>();
         let accepted_changes = batch.accepted_changes.into_iter().collect::<Vec<_>>();
         let heads = batch.heads.into_iter().collect::<Vec<_>>();
@@ -123,6 +126,30 @@ impl ReferenceEvaluator {
                 .map(MaterializedDocumentView::from_canonical_bytes),
         })
     }
+}
+
+fn checkpoint_carrier_coverage(
+    corpus: &EvidenceCorpus,
+    coordinate: DocumentCoordinate,
+    canonical_controls: &[crate::EventId],
+) -> std::collections::BTreeMap<
+    crate::EventId,
+    Result<std::collections::BTreeSet<ChangeHash>, HistoryVerificationError>,
+> {
+    corpus
+        .events
+        .values()
+        .filter_map(|evidence| match evidence {
+            EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
+                ..
+            } if descriptor.coordinate() == coordinate => Some((
+                descriptor.event_id(),
+                historical_carrier_coverage(corpus, canonical_controls, descriptor.control_id()),
+            )),
+            _ => None,
+        })
+        .collect()
 }
 
 fn checkpoint_chunk_sets(
