@@ -7,9 +7,9 @@ use std::collections::BTreeSet;
 use base64::Engine as _;
 use nostr_automerge::authoring::{ActorState, AuthoringDocument, Operation, UnsignedEventDraft};
 use nostr_automerge::{
-    ActorId, Completion, CorpusBuilder, DocumentCoordinate, EvidenceCorpus, EvidenceStatus,
-    IngestOutcome, NeverCancelled, ProtocolRevision, ReferenceEvaluator, VerifiedNip01Event,
-    WorkBudget,
+    ActorId, ChangeHash, Completion, CorpusBuilder, DocumentCoordinate, EventId, EvidenceCorpus,
+    EvidenceStatus, IngestOutcome, NeverCancelled, ProtocolRevision, RawEventBytes,
+    ReferenceEvaluator, VerifiedNip01Event, WorkBudget,
 };
 use support::test_signer::TestSigner;
 
@@ -73,6 +73,98 @@ fn reference_evaluator_api_is_sealed_and_repository_owned() {
 #[test]
 #[allow(clippy::expect_used)]
 fn signed_events_reach_materialized_state_through_public_engine() {
+    let scenario = signed_engine_scenario();
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(scenario.change.clone()),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert!(matches!(
+        builder.ingest(scenario.control.clone()),
+        IngestOutcome::Accepted { .. }
+    ));
+    let corpus = builder.finish();
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &corpus,
+        scenario.coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+
+    assert_eq!(report.completion(), Completion::Complete);
+    assert_eq!(report.canonical_controls(), [scenario.control_id]);
+    assert_eq!(report.accepted_changes(), [scenario.change_hash]);
+    assert_eq!(report.heads(), [scenario.change_hash]);
+    assert!(report.document().is_some_and(|view| !view.is_empty()));
+}
+
+#[test]
+fn duplicate_delayed_and_invalid_evidence_converges() {
+    let scenario = signed_engine_scenario();
+    let evaluate = |events: &[RawEventBytes]| {
+        let mut builder = CorpusBuilder::new();
+        for event in events {
+            let _ = builder.ingest(event.clone());
+        }
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+            &builder.finish(),
+            scenario.coordinate,
+            &mut WorkBudget::new(1_000_000, 1_000),
+            &NeverCancelled,
+        )
+    };
+    let ordered = evaluate(&[scenario.control.clone(), scenario.change.clone()]);
+    let delayed = evaluate(&[scenario.change.clone(), scenario.control.clone()]);
+    let duplicate = evaluate(&[
+        scenario.change.clone(),
+        scenario.change.clone(),
+        scenario.control.clone(),
+        scenario.control.clone(),
+    ]);
+    let mut invalid_first = CorpusBuilder::new();
+    assert!(matches!(
+        invalid_first.ingest_bytes(b"{}"),
+        IngestOutcome::Invalid { .. }
+    ));
+    assert!(matches!(
+        invalid_first.ingest(scenario.change.clone()),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert!(matches!(
+        invalid_first.ingest(scenario.control.clone()),
+        IngestOutcome::Accepted { .. }
+    ));
+    let invalid_first = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &invalid_first.finish(),
+        scenario.coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+
+    for report in [&delayed, &duplicate, &invalid_first] {
+        assert_eq!(report.canonical_controls(), ordered.canonical_controls());
+        assert_eq!(report.dispositions(), ordered.dispositions());
+        assert_eq!(report.accepted_changes(), ordered.accepted_changes());
+        assert_eq!(report.heads(), ordered.heads());
+        assert_eq!(report.history_digest(), ordered.history_digest());
+        assert_eq!(report.dispositions_digest(), ordered.dispositions_digest());
+        assert_eq!(
+            report.document().map(|view| view.byte_len()),
+            ordered.document().map(|view| view.byte_len())
+        );
+    }
+}
+
+struct SignedEngineScenario {
+    coordinate: DocumentCoordinate,
+    control: RawEventBytes,
+    change: RawEventBytes,
+    control_id: EventId,
+    change_hash: ChangeHash,
+}
+
+#[allow(clippy::expect_used)]
+fn signed_engine_scenario() -> SignedEngineScenario {
     let controller = TestSigner::from_byte(20);
     let device = TestSigner::from_byte(21);
     let coordinate: DocumentCoordinate = format!(
@@ -125,28 +217,13 @@ fn signed_events_reach_materialized_state_through_public_engine() {
         .expect("change preimage"),
     );
 
-    let mut builder = CorpusBuilder::new();
-    assert!(matches!(
-        builder.ingest(change_event),
-        IngestOutcome::Accepted { .. }
-    ));
-    assert!(matches!(
-        builder.ingest(control),
-        IngestOutcome::Accepted { .. }
-    ));
-    let corpus = builder.finish();
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
-        &corpus,
+    SignedEngineScenario {
         coordinate,
-        &mut WorkBudget::new(1_000_000, 1_000),
-        &NeverCancelled,
-    );
-
-    assert_eq!(report.completion(), Completion::Complete);
-    assert_eq!(report.canonical_controls(), [control_id]);
-    assert_eq!(report.accepted_changes(), [change.change_hash()]);
-    assert_eq!(report.heads(), [change.change_hash()]);
-    assert!(report.document().is_some_and(|view| !view.is_empty()));
+        control,
+        change: change_event,
+        control_id,
+        change_hash: change.change_hash(),
+    }
 }
 
 #[test]
@@ -386,7 +463,16 @@ fn pending_controls_converge_after_signed_parent_delivery() {
         )),
         IngestOutcome::UnsupportedRevision { .. }
     ));
-    assert_eq!(builder.finish().pending_control_ids().count(), 0);
+    let corpus = builder.finish();
+    assert_eq!(corpus.pending_control_ids().count(), 0);
+    let coordinate: DocumentCoordinate = coordinate.parse().expect("fixed coordinate");
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &corpus,
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(report.canonical_controls(), [genesis_id, child_id]);
 }
 
 #[test]
