@@ -14,7 +14,41 @@ pub(crate) enum TransitionError {
     TerminalChild,
     SuccessorContinuity,
     MissingBaseEvidence,
+    BaseFrontierAntichain,
     RetainedWriterFrontier,
+}
+
+pub(crate) fn validate_base_frontier_antichain(
+    child: &ValidatedControlContent,
+    view: &ParentEpochView,
+) -> Result<(), TransitionError> {
+    let frontier = child.base_heads.iter().copied().collect::<BTreeSet<_>>();
+    for head in &frontier {
+        if !view.contains(head) {
+            return Err(TransitionError::MissingBaseEvidence);
+        }
+        let mut visited = BTreeSet::new();
+        let mut stack = view
+            .dependencies(head)
+            .into_iter()
+            .flatten()
+            .copied()
+            .collect::<Vec<_>>();
+        while let Some(ancestor) = stack.pop() {
+            if !view.contains(&ancestor) {
+                return Err(TransitionError::MissingBaseEvidence);
+            }
+            if frontier.contains(&ancestor) {
+                return Err(TransitionError::BaseFrontierAntichain);
+            }
+            if visited.insert(ancestor)
+                && let Some(dependencies) = view.dependencies(&ancestor)
+            {
+                stack.extend(dependencies.iter().copied());
+            }
+        }
+    }
+    Ok(())
 }
 
 pub(crate) fn validate_retained_writer_frontier(
@@ -149,8 +183,8 @@ pub(crate) fn validate_monotonic_roles(
 #[cfg(test)]
 mod tests {
     use super::{
-        TransitionError, validate_account_mapping, validate_monotonic_roles,
-        validate_no_reintroduction, validate_retained_writer_frontier,
+        TransitionError, validate_account_mapping, validate_base_frontier_antichain,
+        validate_monotonic_roles, validate_no_reintroduction, validate_retained_writer_frontier,
         validate_successor_continuity, validate_terminal_child,
     };
     use crate::carrier::control::Predecessor;
@@ -308,5 +342,36 @@ mod tests {
             Err(TransitionError::MissingBaseEvidence)
         );
         assert_eq!(parent.members[0].actor, ActorId::from_bytes([4; 32]));
+    }
+
+    #[test]
+    fn require_an_exact_accepted_base_frontier_antichain() {
+        let parent = genesis().content;
+        let first = ChangeHash::from_bytes([1; 32]);
+        let second = ChangeHash::from_bytes([2; 32]);
+        let actor = parent.members[0].actor;
+        let view = ParentEpochView::new(
+            BTreeSet::from([first, second]),
+            BTreeSet::from([second]),
+            BTreeMap::from([(second, BTreeSet::from([first]))]),
+            BTreeMap::new(),
+            BTreeMap::from([(actor, second)]),
+        );
+
+        let mut child = parent.clone();
+        child.base_heads = vec![second];
+        assert_eq!(validate_base_frontier_antichain(&child, &view), Ok(()));
+
+        child.base_heads = vec![first, second];
+        assert_eq!(
+            validate_base_frontier_antichain(&child, &view),
+            Err(TransitionError::BaseFrontierAntichain)
+        );
+
+        child.base_heads = vec![ChangeHash::from_bytes([9; 32])];
+        assert_eq!(
+            validate_base_frontier_antichain(&child, &view),
+            Err(TransitionError::MissingBaseEvidence)
+        );
     }
 }

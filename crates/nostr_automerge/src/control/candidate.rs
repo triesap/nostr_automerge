@@ -1,8 +1,9 @@
 use crate::DiagnosticCode;
 use crate::control::parent_view::ParentEpochView;
 use crate::control::transition::{
-    TransitionError, validate_account_mapping, validate_monotonic_roles,
-    validate_no_reintroduction, validate_retained_writer_frontier, validate_terminal_child,
+    TransitionError, validate_account_mapping, validate_base_frontier_antichain,
+    validate_monotonic_roles, validate_no_reintroduction, validate_retained_writer_frontier,
+    validate_terminal_child,
 };
 use crate::control::validate::{
     ControlEnvelope, validate_base_frontier, validate_canonical_collections,
@@ -51,6 +52,15 @@ pub(crate) fn evaluate_child(
             TransitionError::TerminalChild => "control.terminal_child",
             _ => "control.structure",
         }));
+    }
+    match validate_base_frontier_antichain(&child.content, view) {
+        Ok(()) => {}
+        Err(TransitionError::MissingBaseEvidence) => {
+            return CandidateResult::Pending(DiagnosticCode::registered("control.frontier"));
+        }
+        Err(_) => {
+            return CandidateResult::Invalid(DiagnosticCode::registered("control.frontier"));
+        }
     }
     match validate_retained_writer_frontier(&parent.content, &child.content, view) {
         Ok(()) => CandidateResult::Valid,
