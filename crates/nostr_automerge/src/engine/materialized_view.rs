@@ -364,7 +364,10 @@ fn scalar(value: &ScalarValue) -> Result<MaterializedScalar, ProjectionError> {
 #[cfg(test)]
 mod tests {
     use automerge::transaction::Transactable;
-    use automerge::{ActorId, Automerge, ObjType, ROOT, ScalarValue, TextEncoding};
+    use automerge::{
+        ActorId, Automerge, ObjType, ROOT, ScalarValue, TextEncoding,
+        marks::{ExpandMark, Mark},
+    };
 
     use super::{
         MaterializedDocumentView, MaterializedPathElement, MaterializedScalar, MaterializedValue,
@@ -570,5 +573,47 @@ mod tests {
                 MaterializedValue::Scalar(MaterializedScalar::String("right".to_owned())),
             ])
         );
+    }
+
+    #[test]
+    fn project_real_marks_with_utf16_ranges() {
+        let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+        document.set_actor(ActorId::from([6; 32]));
+        let text;
+        {
+            let mut tx = document.transaction();
+            let created = tx.put_object(ROOT, "text", ObjType::Text);
+            assert!(created.is_ok());
+            let Ok(created) = created else { return };
+            text = created;
+            assert!(tx.splice_text(&text, 0, 0, "A😀e\u{301}").is_ok());
+            tx.commit();
+        }
+        document.set_actor(ActorId::from([7; 32]));
+        {
+            let mut tx = document.transaction();
+            assert!(
+                tx.mark(
+                    &text,
+                    Mark::new("bold".to_owned(), true, 1, 3),
+                    ExpandMark::Both,
+                )
+                .is_ok()
+            );
+            tx.commit();
+        }
+        let view = MaterializedDocumentView::from_canonical_bytes(document.save_nocompress());
+        assert!(view.is_ok());
+        let Ok(view) = view else { return };
+        assert_eq!(view.marks().len(), 1);
+        let mark = &view.marks()[0];
+        assert_eq!(
+            mark.path(),
+            [MaterializedPathElement::Key("text".to_owned())]
+        );
+        assert_eq!(mark.name(), "bold");
+        assert_eq!(mark.value(), &MaterializedScalar::Bool(true));
+        assert_eq!((mark.start(), mark.end()), (1, 3));
+        assert_eq!(view.text_utf16_len(mark.path()), Some(5));
     }
 }
