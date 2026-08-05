@@ -1,0 +1,12 @@
+{
+  "schema": "nostr-automerge-integrity-cases-v1",
+  "cases": [
+    "duplicate_carrier_is_non_authoritative",
+    "controller_equivocation",
+    "canonical_control_reorganization",
+    "device_equivocation",
+    "equivocation_descendant_quarantine",
+    "potential_cloned_device_key",
+    "deterministic_alert_order"
+  ]
+}

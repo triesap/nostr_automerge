@@ -272,6 +272,11 @@ fn signed_terminal_genesis_rejects_children() {
 
 #[test]
 fn duplicate_delayed_and_invalid_evidence_converges() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/integrity/cases.json"
+    ))
+    .expect("integrity fixture family");
+    assert_eq!(fixture["cases"].as_array().map(Vec::len), Some(7));
     let scenario = signed_engine_scenario();
     let evaluate = |events: &[RawEventBytes]| {
         let mut builder = CorpusBuilder::new();
