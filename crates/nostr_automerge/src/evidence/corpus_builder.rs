@@ -265,6 +265,27 @@ fn invalid_carrier(
 }
 
 impl EvidenceCorpus {
+    pub(crate) fn evaluation_event_count(&self) -> usize {
+        self.events
+            .len()
+            .saturating_add(self.invalid.len())
+            .saturating_add(self.duplicates.len())
+    }
+
+    pub(crate) fn carrier_evidence_count(&self) -> usize {
+        self.events
+            .values()
+            .filter(|evidence| {
+                matches!(
+                    evidence,
+                    EventEvidence::VerifiedCarrier { .. }
+                        | EventEvidence::InvalidCarrier { .. }
+                        | EventEvidence::UnsupportedRevision { .. }
+                )
+            })
+            .count()
+    }
+
     /// Returns the number of uniquely identified verified signed events.
     #[must_use]
     pub fn event_count(&self) -> usize {

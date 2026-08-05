@@ -9,7 +9,7 @@ use nostr_automerge::authoring::{ActorState, AuthoringDocument, Operation, Unsig
 use nostr_automerge::{
     ActorId, ChangeHash, Completion, CorpusBuilder, DocumentCoordinate, EventId, EvidenceCorpus,
     EvidenceStatus, IngestOutcome, NeverCancelled, ProtocolRevision, RawEventBytes,
-    ReferenceEvaluator, VerifiedNip01Event, WorkBudget,
+    ReferenceEvaluator, VerifiedNip01Event, WorkBudget, WorkCounter,
 };
 use support::test_signer::TestSigner;
 
@@ -158,6 +158,33 @@ fn duplicate_delayed_and_invalid_evidence_converges() {
             ordered.document().map(|view| view.byte_len())
         );
     }
+}
+
+#[test]
+fn event_and_carrier_work_exhaustion_precedes_state() {
+    let scenario = signed_engine_scenario();
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(scenario.change),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert!(matches!(
+        builder.ingest(scenario.control),
+        IngestOutcome::Accepted { .. }
+    ));
+    let mut budget = WorkBudget::new(1_000_000, 3);
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        scenario.coordinate,
+        &mut budget,
+        &NeverCancelled,
+    );
+
+    assert_eq!(report.completion(), Completion::BudgetExhausted);
+    assert!(report.canonical_controls().is_empty());
+    assert!(report.accepted_changes().is_empty());
+    assert_eq!(budget.consumed().get(WorkCounter::Event), 2);
+    assert_eq!(budget.consumed().get(WorkCounter::Carrier), 0);
 }
 
 struct SignedEngineScenario {

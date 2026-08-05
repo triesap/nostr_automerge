@@ -8,8 +8,8 @@ use crate::graph::change_candidate::{CandidateCarrier, ChangeCandidate};
 use crate::reference::evaluate::{BatchChange, BatchControl, evaluate_batch};
 use crate::types::role::Role;
 use crate::{
-    CancellationCheck, ChangeHash, DocumentCoordinate, EvidenceCorpus, ProtocolDisposition,
-    ProtocolRevision, WorkBudget,
+    CancellationCheck, ChangeHash, Completion, DocumentCoordinate, EvidenceCorpus,
+    ProtocolDisposition, ProtocolRevision, WorkBudget, WorkCounter,
 };
 
 use super::evaluation_report::{EvaluationReport, EvaluationReportParts, MaterializedDocumentView};
@@ -50,8 +50,16 @@ impl ReferenceEvaluator {
         budget: &mut WorkBudget,
         cancellation: &impl CancellationCheck,
     ) -> EvaluationReport {
-        let controls = controls_for_coordinate(corpus, coordinate);
-        let batch = evaluate_batch(controls, budget, cancellation);
+        let ingress_complete = charge_ingress(corpus, budget);
+        let controls = if ingress_complete {
+            controls_for_coordinate(corpus, coordinate)
+        } else {
+            Vec::new()
+        };
+        let mut batch = evaluate_batch(controls, budget, cancellation);
+        if !ingress_complete {
+            batch.completion = Completion::BudgetExhausted;
+        }
         let canonical_controls = batch.canonical_controls;
         let dispositions = batch.dispositions.into_iter().collect::<Vec<_>>();
         let accepted_changes = batch.accepted_changes.into_iter().collect::<Vec<_>>();
@@ -102,6 +110,13 @@ impl ReferenceEvaluator {
                 .map(MaterializedDocumentView::from_canonical_bytes),
         })
     }
+}
+
+fn charge_ingress(corpus: &EvidenceCorpus, budget: &mut WorkBudget) -> bool {
+    let event_count = u64::try_from(corpus.evaluation_event_count()).unwrap_or(u64::MAX);
+    let carrier_count = u64::try_from(corpus.carrier_evidence_count()).unwrap_or(u64::MAX);
+    budget.charge(WorkCounter::Event, event_count).is_ok()
+        && budget.charge(WorkCounter::Carrier, carrier_count).is_ok()
 }
 
 fn disposition_hashes(
