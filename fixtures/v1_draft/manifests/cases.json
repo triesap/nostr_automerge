@@ -1,0 +1,16 @@
+{
+  "schema": "nostr-automerge-manifest-cases-v1",
+  "document_id": "3333333333333333333333333333333333333333333333333333333333333333",
+  "control": "1111111111111111111111111111111111111111111111111111111111111111",
+  "relay": "wss://relay.example",
+  "cases": [
+    "valid_advisory_hint",
+    "invalid_status",
+    "missing_coordinate_tag",
+    "noncanonical_content",
+    "unsupported_revision",
+    "invalid_latest_no_fallback",
+    "replacement_tie_break",
+    "non_authoritative_hint"
+  ]
+}

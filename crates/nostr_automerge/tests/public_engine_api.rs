@@ -973,11 +973,27 @@ fn checkpoints_never_authorize_or_redefine_history() {
 #[test]
 #[allow(clippy::expect_used)]
 fn signed_manifest_selection_validates_latest_without_fallback_or_authority() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/manifests/cases.json"
+    ))
+    .expect("manifest fixture family");
+    assert_eq!(
+        fixture["cases"].as_array().map(Vec::len),
+        Some(8),
+        "every manifest selection and non-authority branch stays explicit"
+    );
     let signer = TestSigner::from_byte(3);
-    let document_id = "33".repeat(32);
-    let control = "11".repeat(32);
+    let document_id = fixture["document_id"]
+        .as_str()
+        .expect("fixture document id")
+        .to_owned();
+    let control = fixture["control"]
+        .as_str()
+        .expect("fixture control")
+        .to_owned();
+    let relay = fixture["relay"].as_str().expect("fixture relay");
     let content = format!(
-        r#"{{"application":null,"checkpoint":null,"control":"{control}","description":null,"format":"automerge-change-v1","name":null,"relays":["wss://relay.example"],"status":"active","successor":null,"text_encoding":"utf16","v":1}}"#
+        r#"{{"application":null,"checkpoint":null,"control":"{control}","description":null,"format":"automerge-change-v1","name":null,"relays":["{relay}"],"status":"active","successor":null,"text_encoding":"utf16","v":1}}"#
     );
     let sign = |created_at: u64, tags: Vec<Vec<String>>, content: String| {
         let prepared = UnsignedEventDraft::new(created_at, 31_624, tags, content)
@@ -1033,7 +1049,7 @@ fn signed_manifest_selection_validates_latest_without_fallback_or_authority() {
     let hints = corpus.manifest_hints().collect::<Vec<_>>();
     assert_eq!(hints.len(), 1);
     assert_eq!(hints[0].control().to_hex(), control);
-    assert_eq!(hints[0].relays(), ["wss://relay.example"]);
+    assert_eq!(hints[0].relays(), [relay]);
     assert!(hints[0].checkpoint().is_none());
     assert_eq!(
         hints[0].coordinate().controller().as_bytes(),
