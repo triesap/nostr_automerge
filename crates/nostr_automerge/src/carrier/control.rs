@@ -66,11 +66,48 @@ pub(crate) enum ControlCarrierError {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct ValidatedControlCarrier {
-    pub(crate) event_id: EventId,
-    pub(crate) author: ControllerPublicKey,
-    pub(crate) coordinate: DocumentCoordinate,
-    pub(crate) parent: Option<EventId>,
-    pub(crate) content: ValidatedControlContent,
+    event_id: EventId,
+    author: ControllerPublicKey,
+    coordinate: DocumentCoordinate,
+    parent: Option<EventId>,
+    content: ValidatedControlContent,
+}
+
+impl ValidatedControlCarrier {
+    pub(crate) fn into_parts(
+        self,
+    ) -> (
+        EventId,
+        ControllerPublicKey,
+        DocumentCoordinate,
+        Option<EventId>,
+        ValidatedControlContent,
+    ) {
+        (
+            self.event_id,
+            self.author,
+            self.coordinate,
+            self.parent,
+            self.content,
+        )
+    }
+
+    #[cfg(test)]
+    pub(crate) const fn synthetic(
+        event_id: EventId,
+        author: ControllerPublicKey,
+        coordinate: DocumentCoordinate,
+        parent: Option<EventId>,
+        content: ValidatedControlContent,
+    ) -> Self {
+        Self {
+            event_id,
+            author,
+            coordinate,
+            parent,
+            content,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

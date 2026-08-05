@@ -3,11 +3,26 @@ use crate::{ControllerPublicKey, DocumentCoordinate, EventId};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct ControlEnvelope {
-    pub(crate) event_id: EventId,
-    pub(crate) author: ControllerPublicKey,
-    pub(crate) coordinate: DocumentCoordinate,
-    pub(crate) parent: Option<EventId>,
-    pub(crate) content: ValidatedControlContent,
+    pub(super) event_id: EventId,
+    pub(super) author: ControllerPublicKey,
+    pub(super) coordinate: DocumentCoordinate,
+    pub(super) parent: Option<EventId>,
+    pub(super) content: ValidatedControlContent,
+}
+
+impl ControlEnvelope {
+    pub(crate) fn from_validated(
+        carrier: crate::carrier::control::ValidatedControlCarrier,
+    ) -> Self {
+        let (event_id, author, coordinate, parent, content) = carrier.into_parts();
+        Self {
+            event_id,
+            author,
+            coordinate,
+            parent,
+            content,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -165,6 +180,19 @@ pub(crate) mod tests {
             validate_genesis(&successor),
             Err(ControlValidationError::Terminal)
         );
+    }
+
+    #[test]
+    fn control_envelope_derives_every_field_from_validated_carrier() {
+        let expected = genesis();
+        let carrier = crate::carrier::control::ValidatedControlCarrier::synthetic(
+            expected.event_id,
+            expected.author,
+            expected.coordinate,
+            expected.parent,
+            expected.content.clone(),
+        );
+        assert_eq!(ControlEnvelope::from_validated(carrier), expected);
     }
 
     #[test]
