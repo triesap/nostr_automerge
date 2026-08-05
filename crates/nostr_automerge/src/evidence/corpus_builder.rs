@@ -39,25 +39,38 @@ pub enum IngestOutcome {
 }
 
 #[derive(Default)]
-pub(crate) struct CorpusBuilder {
+/// A deterministic single-use builder for retained raw-event evidence.
+pub struct CorpusBuilder {
     events: BTreeMap<EventId, EventEvidence>,
     invalid: BTreeMap<RawChecksum, EventEvidence>,
     duplicates: Vec<EventEvidence>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) struct BuiltCorpus {
+/// Immutable retained ingress evidence produced by [`CorpusBuilder`].
+pub struct IngressCorpus {
     pub(crate) events: BTreeMap<EventId, EventEvidence>,
     pub(crate) invalid: BTreeMap<RawChecksum, EventEvidence>,
     pub(crate) duplicates: Vec<EventEvidence>,
 }
 
 impl CorpusBuilder {
+    /// Creates an empty deterministic evidence-corpus builder.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            events: BTreeMap::new(),
+            invalid: BTreeMap::new(),
+            duplicates: Vec::new(),
+        }
+    }
+
     pub(crate) fn ingest_acquired(&mut self, acquired: AcquiredRawEvent) -> IngestOutcome {
         self.ingest(acquired.into_raw())
     }
 
-    pub(crate) fn ingest(&mut self, raw: RawEventBytes) -> IngestOutcome {
+    /// Strictly verifies and deterministically retains one bounded raw event.
+    pub fn ingest(&mut self, raw: RawEventBytes) -> IngestOutcome {
         let checksum = RawChecksum::of(&raw);
         match VerifiedNip01Event::verify(raw.clone()) {
             Ok(event) => self.ingest_verified(event, checksum),
@@ -126,12 +139,40 @@ impl CorpusBuilder {
         outcome
     }
 
-    pub(crate) fn finish(self) -> BuiltCorpus {
-        BuiltCorpus {
+    /// Consumes the builder and returns immutable retained ingress evidence.
+    #[must_use]
+    pub fn finish(self) -> IngressCorpus {
+        IngressCorpus {
             events: self.events,
             invalid: self.invalid,
             duplicates: self.duplicates,
         }
+    }
+}
+
+impl IngressCorpus {
+    /// Returns the number of uniquely identified verified signed events.
+    #[must_use]
+    pub fn event_count(&self) -> usize {
+        self.events.len()
+    }
+
+    /// Returns the number of unique invalid raw-event byte strings.
+    #[must_use]
+    pub fn invalid_count(&self) -> usize {
+        self.invalid.len()
+    }
+
+    /// Returns the number of duplicate event observations.
+    #[must_use]
+    pub fn duplicate_count(&self) -> usize {
+        self.duplicates.len()
+    }
+
+    /// Returns true when no evidence of any class was retained.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.events.is_empty() && self.invalid.is_empty() && self.duplicates.is_empty()
     }
 }
 

@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::evidence::corpus_builder::BuiltCorpus;
+use crate::evidence::corpus_builder::IngressCorpus;
 use crate::evidence::event::EventEvidence;
 use crate::evidence::indexes::{
     ChangeIndexRecord, ChangeIndexes, ControlIndexRecord, ControlIndexes, IndexValidity,
@@ -24,7 +24,7 @@ pub(crate) struct UnsupportedRevisionEvidence {
 
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct EvidenceCorpus {
-    pub(crate) ingress: BuiltCorpus,
+    pub(crate) ingress: IngressCorpus,
     pub(crate) controls: ControlIndexes,
     pub(crate) changes: ChangeIndexes,
     pub(crate) invalid_carriers: BTreeMap<EventId, InvalidCarrierEvidence>,
@@ -33,7 +33,7 @@ pub(crate) struct EvidenceCorpus {
 
 impl EvidenceCorpus {
     pub(crate) fn build(
-        ingress: BuiltCorpus,
+        ingress: IngressCorpus,
         controls: impl IntoIterator<Item = ControlIndexRecord>,
         changes: impl IntoIterator<Item = ChangeIndexRecord>,
         invalid_carriers: impl IntoIterator<Item = InvalidCarrierEvidence>,
@@ -88,7 +88,9 @@ impl EvidenceCorpus {
     }
 }
 
-fn unsupported_revisions(ingress: &BuiltCorpus) -> BTreeMap<EventId, UnsupportedRevisionEvidence> {
+fn unsupported_revisions(
+    ingress: &IngressCorpus,
+) -> BTreeMap<EventId, UnsupportedRevisionEvidence> {
     ingress
         .events
         .iter()
@@ -122,7 +124,7 @@ mod tests {
 
     use super::{EvidenceCorpus, InvalidCarrierEvidence};
     use crate::carrier::VerifiedCarrier;
-    use crate::evidence::corpus_builder::BuiltCorpus;
+    use crate::evidence::corpus_builder::IngressCorpus;
     use crate::evidence::event::{EventEvidence, RawChecksum};
     use crate::evidence::indexes::{ChangeIndexRecord, ControlIndexRecord, IndexValidity};
     use crate::{
@@ -137,7 +139,7 @@ mod tests {
         let valid_change = EventId::from_bytes([3; 32]);
         let invalid_change = EventId::from_bytes([4; 32]);
         let hash = ChangeHash::from_bytes([5; 32]);
-        let ingress = BuiltCorpus {
+        let ingress = IngressCorpus {
             events: BTreeMap::new(),
             invalid: BTreeMap::new(),
             duplicates: Vec::new(),
@@ -238,7 +240,7 @@ mod tests {
             raw_checksum: checksum,
             diagnostic: DiagnosticCode::registered("carrier.revision"),
         };
-        let ingress = BuiltCorpus {
+        let ingress = IngressCorpus {
             events: BTreeMap::from([(event_id, evidence)]),
             invalid: BTreeMap::new(),
             duplicates: Vec::new(),

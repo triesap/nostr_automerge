@@ -39,7 +39,7 @@ mod work_budget;
 pub use diagnostic::DiagnosticCode;
 pub use disposition::{Completion, ProtocolDisposition};
 pub use error::HexError;
-pub use evidence::corpus_builder::IngestOutcome;
+pub use evidence::corpus_builder::{CorpusBuilder, IngestOutcome, IngressCorpus};
 pub use integrity::{
     AlertError, CanonicalControlReorganizationAlert, CheckpointMismatchAlert,
     ControllerEquivocationAlert, DeviceEquivocationAlert, IntegrityAlert,
