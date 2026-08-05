@@ -7,13 +7,13 @@ use serde_json::{Map, Value};
 use sha2::{Digest, Sha256};
 
 use nostr_automerge::{
-    Completion, ControllerPublicKey, CorpusBuilder, DevicePublicKey, DocumentId,
-    EvidenceIdentifier, EvidenceStatus, NeverCancelled, ProtocolRevision, ReferenceEvaluator,
-    WorkBudget,
+    CheckpointVerificationStatus, Completion, ControllerPublicKey, CorpusBuilder, DevicePublicKey,
+    DocumentId, EvidenceIdentifier, EvidenceStatus, NeverCancelled, ProtocolRevision,
+    ReferenceEvaluator, WorkBudget,
 };
 
 use crate::checksum::verify_fixture_files;
-use crate::expected::{ExpectedReport, load_expected};
+use crate::expected::{CheckpointResult, ExpectedReport, load_expected};
 use crate::fixture::load_fixture;
 use crate::report_json::write_canonical_report;
 use crate::scenario::ScenarioInput;
@@ -153,7 +153,75 @@ fn generic_report(
         return Err(RunError::Input);
     }
     output.integrity_alerts.clear();
+    output.checkpoints = report
+        .checkpoints()
+        .iter()
+        .map(|checkpoint| CheckpointResult {
+            descriptor_event: checkpoint.descriptor_event().to_hex(),
+            chunk_events: checkpoint
+                .chunk_events()
+                .iter()
+                .map(|event_id| (*event_id).to_hex())
+                .collect(),
+            snapshot_hash: checkpoint.snapshot_hash().to_hex(),
+            heads: checkpoint
+                .heads()
+                .iter()
+                .map(|hash| (*hash).to_hex())
+                .collect(),
+            change_count: checkpoint.change_count(),
+            change_set_hash: hex_bytes(checkpoint.change_set_hash()),
+            historical_carriers: checkpoint
+                .historical_carriers()
+                .iter()
+                .map(|hash| (*hash).to_hex())
+                .collect(),
+            accepted_at_control: checkpoint
+                .accepted_at_control()
+                .iter()
+                .map(|hash| (*hash).to_hex())
+                .collect(),
+            status: checkpoint_status(checkpoint.status()).to_owned(),
+        })
+        .collect();
     Ok(output)
+}
+
+fn checkpoint_status(status: CheckpointVerificationStatus) -> &'static str {
+    match status {
+        CheckpointVerificationStatus::Verified => "verified",
+        CheckpointVerificationStatus::PendingControl => "pending_control",
+        CheckpointVerificationStatus::Unauthorized => "unauthorized",
+        CheckpointVerificationStatus::ChunkAuthorMismatch => "chunk_author_mismatch",
+        CheckpointVerificationStatus::ChunkCoordinateMismatch => "chunk_coordinate_mismatch",
+        CheckpointVerificationStatus::ChunkDescriptorMismatch => "chunk_descriptor_mismatch",
+        CheckpointVerificationStatus::ChunkCountMismatch => "chunk_count_mismatch",
+        CheckpointVerificationStatus::DuplicateChunk => "duplicate_chunk",
+        CheckpointVerificationStatus::MissingChunk => "missing_chunk",
+        CheckpointVerificationStatus::ChunkSizeMismatch => "chunk_size_mismatch",
+        CheckpointVerificationStatus::ChunkAssemblyMismatch => "chunk_assembly_mismatch",
+        CheckpointVerificationStatus::MerkleMismatch => "merkle_mismatch",
+        CheckpointVerificationStatus::SnapshotSizeMismatch => "snapshot_size_mismatch",
+        CheckpointVerificationStatus::SnapshotHashMismatch => "snapshot_hash_mismatch",
+        CheckpointVerificationStatus::SnapshotLoad => "snapshot_load",
+        CheckpointVerificationStatus::HeadMismatch => "head_mismatch",
+        CheckpointVerificationStatus::CommitmentMismatch => "commitment_mismatch",
+        CheckpointVerificationStatus::ClosureMismatch => "closure_mismatch",
+        CheckpointVerificationStatus::MissingHistoricalCarrier => "missing_historical_carrier",
+        CheckpointVerificationStatus::NotAcceptedAtControl => "not_accepted_at_control",
+        CheckpointVerificationStatus::BudgetExhausted => "budget_exhausted",
+        CheckpointVerificationStatus::Cancelled => "cancelled",
+        _ => "unsupported_status",
+    }
+}
+
+fn hex_bytes(bytes: [u8; 32]) -> String {
+    let mut value = String::with_capacity(64);
+    for byte in bytes {
+        use core::fmt::Write as _;
+        let _ = write!(value, "{byte:02x}");
+    }
+    value
 }
 
 fn evidence_ids(report: &nostr_automerge::EvaluationReport, status: EvidenceStatus) -> Vec<String> {

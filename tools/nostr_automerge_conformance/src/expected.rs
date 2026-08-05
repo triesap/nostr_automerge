@@ -6,7 +6,9 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use nostr_automerge::{ChangeHash, DispositionsDigest, DocumentCoordinate, EventId, HistoryDigest};
+use nostr_automerge::{
+    ChangeHash, DispositionsDigest, DocumentCoordinate, EventId, HistoryDigest, SnapshotHash,
+};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -25,8 +27,24 @@ pub(crate) struct ExpectedReport {
     pub(crate) history_digest: String,
     pub(crate) dispositions_digest: String,
     pub(crate) integrity_alerts: Vec<Value>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) checkpoints: Vec<CheckpointResult>,
     pub(crate) state_assertions: Vec<StateAssertion>,
     pub(crate) completion: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct CheckpointResult {
+    pub(crate) descriptor_event: String,
+    pub(crate) chunk_events: Vec<String>,
+    pub(crate) snapshot_hash: String,
+    pub(crate) heads: Vec<String>,
+    pub(crate) change_count: u64,
+    pub(crate) change_set_hash: String,
+    pub(crate) historical_carriers: Vec<String>,
+    pub(crate) accepted_at_control: Vec<String>,
+    pub(crate) status: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -68,6 +86,47 @@ pub(crate) fn validate_expected(report: &ExpectedReport) -> Result<(), ExpectedE
     DispositionsDigest::from_str(&report.dispositions_digest)
         .map_err(|_| ExpectedError::Identifier)?;
     unique_ids::<EventId>(&report.canonical_controls)?;
+    for checkpoint in &report.checkpoints {
+        EventId::from_str(&checkpoint.descriptor_event).map_err(|_| ExpectedError::Identifier)?;
+        SnapshotHash::from_str(&checkpoint.snapshot_hash).map_err(|_| ExpectedError::Identifier)?;
+        canonical_ids::<EventId>(&checkpoint.chunk_events)?;
+        canonical_ids::<ChangeHash>(&checkpoint.heads)?;
+        canonical_ids::<ChangeHash>(&checkpoint.historical_carriers)?;
+        canonical_ids::<ChangeHash>(&checkpoint.accepted_at_control)?;
+        if checkpoint.change_set_hash.len() != 64
+            || !checkpoint
+                .change_set_hash
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+            || !matches!(
+                checkpoint.status.as_str(),
+                "verified"
+                    | "pending_control"
+                    | "unauthorized"
+                    | "chunk_author_mismatch"
+                    | "chunk_coordinate_mismatch"
+                    | "chunk_descriptor_mismatch"
+                    | "chunk_count_mismatch"
+                    | "duplicate_chunk"
+                    | "missing_chunk"
+                    | "chunk_size_mismatch"
+                    | "chunk_assembly_mismatch"
+                    | "merkle_mismatch"
+                    | "snapshot_size_mismatch"
+                    | "snapshot_hash_mismatch"
+                    | "snapshot_load"
+                    | "head_mismatch"
+                    | "commitment_mismatch"
+                    | "closure_mismatch"
+                    | "missing_historical_carrier"
+                    | "not_accepted_at_control"
+                    | "budget_exhausted"
+                    | "cancelled"
+            )
+        {
+            return Err(ExpectedError::Schema);
+        }
+    }
     canonical_ids::<ChangeHash>(&report.accepted_changes)?;
     canonical_ids::<ChangeHash>(&report.pending_changes)?;
     canonical_ids::<ChangeHash>(&report.excluded_changes)?;

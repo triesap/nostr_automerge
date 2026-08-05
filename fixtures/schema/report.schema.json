@@ -69,6 +69,10 @@
         "$ref": "#/$defs/integrity_alert"
       }
     },
+    "checkpoints": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/checkpoint_result"}
+    },
     "state_assertions": {
       "type": "array",
       "items": {
@@ -138,6 +142,22 @@
         {"type": "object", "additionalProperties": false, "required": ["type", "actor_id", "first_sequence", "carrier_event_ids"], "properties": {"type": {"const": "potential_cloned_device_key"}, "actor_id": {"$ref": "#/$defs/hex32"}, "first_sequence": {"type": "integer", "minimum": 1}, "carrier_event_ids": {"$ref": "#/$defs/id_list"}}},
         {"type": "object", "additionalProperties": false, "required": ["type", "descriptor_event_id", "code"], "properties": {"type": {"const": "checkpoint_mismatch"}, "descriptor_event_id": {"$ref": "#/$defs/hex32"}, "code": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"}}}
       ]
+    },
+    "checkpoint_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["descriptor_event", "chunk_events", "snapshot_hash", "heads", "change_count", "change_set_hash", "historical_carriers", "accepted_at_control", "status"],
+      "properties": {
+        "descriptor_event": {"$ref": "#/$defs/hex32"},
+        "chunk_events": {"$ref": "#/$defs/id_list"},
+        "snapshot_hash": {"$ref": "#/$defs/hex32"},
+        "heads": {"$ref": "#/$defs/id_list"},
+        "change_count": {"type": "integer", "minimum": 0},
+        "change_set_hash": {"$ref": "#/$defs/hex32"},
+        "historical_carriers": {"$ref": "#/$defs/id_list"},
+        "accepted_at_control": {"$ref": "#/$defs/id_list"},
+        "status": {"type": "string"}
+      }
     }
   }
 }
