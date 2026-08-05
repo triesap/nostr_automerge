@@ -226,6 +226,7 @@ mod tests {
             materialized_document: Some(vec![9, 8, 7]),
             integrity_alerts: vec![],
             completion: Completion::Complete,
+            failure: None,
         };
         let first = canonical_report(
             ProtocolRevision::draft_v1(),

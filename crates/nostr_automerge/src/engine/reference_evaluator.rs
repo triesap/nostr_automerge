@@ -61,6 +61,7 @@ impl ReferenceEvaluator {
         let mut batch = evaluate_batch(controls, budget, cancellation);
         if !ingress_complete {
             batch.completion = Completion::BudgetExhausted;
+            batch.failure = Some(EvaluationFailure::BudgetExhausted);
         }
         let canonical_controls = batch.canonical_controls;
         let dispositions = batch.dispositions.into_iter().collect::<Vec<_>>();
@@ -107,12 +108,7 @@ impl ReferenceEvaluator {
             dispositions_digest,
             integrity_alerts: batch.integrity_alerts,
             completion: batch.completion,
-            failure: match batch.completion {
-                Completion::Complete => None,
-                Completion::BudgetExhausted => Some(EvaluationFailure::BudgetExhausted),
-                Completion::Cancelled => Some(EvaluationFailure::Cancelled),
-                Completion::Failed => Some(EvaluationFailure::InvariantViolation),
-            },
+            failure: batch.failure,
             document: batch
                 .materialized_document
                 .map(MaterializedDocumentView::from_canonical_bytes),

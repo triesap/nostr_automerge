@@ -8,8 +8,8 @@ use crate::graph::equivocation::quarantine_equivocation_descendants;
 use crate::graph::schedule::{ScheduleError, schedule_candidates};
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
 use crate::{
-    CancellationCheck, ChangeHash, Completion, EventId, IntegrityAlert, ProtocolDisposition,
-    WorkBudget, WorkCounter,
+    CancellationCheck, ChangeHash, Completion, EvaluationFailure, EventId, IntegrityAlert,
+    ProtocolDisposition, WorkBudget, WorkCounter,
 };
 
 #[derive(Clone, Debug)]
@@ -37,6 +37,7 @@ pub(crate) struct BatchEvaluationReport {
     pub(crate) materialized_document: Option<Vec<u8>>,
     pub(crate) integrity_alerts: Vec<IntegrityAlert>,
     pub(crate) completion: Completion,
+    pub(crate) failure: Option<EvaluationFailure>,
 }
 
 pub(crate) fn evaluate_batch(
@@ -233,9 +234,25 @@ pub(crate) fn evaluate_batch(
         )
         .with_heads(heads);
     }
-    let materialized = can_materialize
-        .then(|| materialize_history(&raw_changes, &ordered).ok())
-        .flatten();
+    let materialized = if can_materialize {
+        match materialize_history(&raw_changes, &ordered) {
+            Ok(document) => Some(document),
+            Err(_) => {
+                let heads = derive_heads(&accepted_changes, &controls);
+                return incomplete_report(
+                    canonical_controls,
+                    dispositions,
+                    accepted_changes,
+                    integrity_alerts,
+                    Completion::Failed,
+                )
+                .with_failure(EvaluationFailure::Apply)
+                .with_heads(heads);
+            }
+        }
+    } else {
+        None
+    };
     let (heads, materialized_document) = materialized.map_or_else(
         || (derive_heads(&accepted_changes, &controls), None),
         |AppliedDocument {
@@ -251,6 +268,7 @@ pub(crate) fn evaluate_batch(
         materialized_document,
         integrity_alerts,
         completion,
+        failure: None,
     }
 }
 
@@ -280,6 +298,11 @@ impl BatchEvaluationReport {
         self.heads = heads;
         self
     }
+
+    fn with_failure(mut self, failure: EvaluationFailure) -> Self {
+        self.failure = Some(failure);
+        self
+    }
 }
 
 fn incomplete_report(
@@ -297,6 +320,12 @@ fn incomplete_report(
         materialized_document: None,
         integrity_alerts,
         completion,
+        failure: match completion {
+            Completion::Complete => None,
+            Completion::BudgetExhausted => Some(EvaluationFailure::BudgetExhausted),
+            Completion::Cancelled => Some(EvaluationFailure::Cancelled),
+            Completion::Failed => Some(EvaluationFailure::InvariantViolation),
+        },
     }
 }
 
@@ -321,8 +350,8 @@ mod tests {
     use crate::automerge_adapter::decode::decode_change;
     use crate::graph::actor_state::tests::candidate;
     use crate::{
-        ChangeHash, Completion, EventId, NeverCancelled, ProtocolDisposition, ProtocolRevision,
-        WorkBudget,
+        ChangeHash, Completion, EvaluationFailure, EventId, NeverCancelled, ProtocolDisposition,
+        ProtocolRevision, WorkBudget,
     };
 
     fn control(id: u8, parent: Option<u8>, changes: Vec<BatchChange>) -> BatchControl {
@@ -385,6 +414,20 @@ mod tests {
         );
         assert_eq!(final_schedule_exhausted.accepted_changes.len(), 1);
         assert!(final_schedule_exhausted.materialized_document.is_none());
+
+        let mut malformed = basic.clone();
+        malformed.raw_change = Some(vec![0xff]);
+        let materialization_failed = evaluate_batch(
+            [control(1, None, vec![malformed])],
+            &mut WorkBudget::new(0, 20),
+            &NeverCancelled,
+        );
+        assert_eq!(materialization_failed.completion, Completion::Failed);
+        assert_eq!(
+            materialization_failed.failure,
+            Some(EvaluationFailure::Apply)
+        );
+        assert!(materialization_failed.materialized_document.is_none());
 
         let concurrent = evaluate_batch(
             [control(1, None, vec![change(1, 1, 1), change(2, 2, 1)])],
