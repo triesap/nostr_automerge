@@ -829,11 +829,11 @@ fn pending_controls_converge_after_signed_parent_delivery() {
 
     let mut builder = CorpusBuilder::new();
     assert!(matches!(
-        builder.ingest(child),
+        builder.ingest(child.clone()),
         IngestOutcome::Accepted { .. }
     ));
     assert!(matches!(
-        builder.ingest(genesis),
+        builder.ingest(genesis.clone()),
         IngestOutcome::Accepted { .. }
     ));
     for (created_at, tags, sequence, expected) in [
@@ -883,13 +883,40 @@ fn pending_controls_converge_after_signed_parent_delivery() {
     let corpus = builder.finish();
     assert_eq!(corpus.pending_control_ids().count(), 0);
     let coordinate: DocumentCoordinate = coordinate.parse().expect("fixed coordinate");
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
+    let report = evaluator.evaluate(
         &corpus,
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
         &NeverCancelled,
     );
+    let mut ordered = CorpusBuilder::new();
+    assert!(matches!(
+        ordered.ingest(genesis),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert!(matches!(
+        ordered.ingest(child),
+        IngestOutcome::Accepted { .. }
+    ));
+    let ordered = evaluator.evaluate(
+        &ordered.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(report.completion(), Completion::Complete);
     assert_eq!(report.canonical_controls(), [genesis_id, child_id]);
+    assert_eq!(report.canonical_controls(), ordered.canonical_controls());
+    assert_eq!(report.dispositions(), ordered.dispositions());
+    assert_eq!(report.accepted_changes(), ordered.accepted_changes());
+    assert_eq!(report.heads(), ordered.heads());
+    assert_eq!(report.history_digest(), ordered.history_digest());
+    assert_eq!(report.dispositions_digest(), ordered.dispositions_digest());
+    assert_eq!(
+        report.document().map(|document| document.byte_len()),
+        ordered.document().map(|document| document.byte_len())
+    );
 }
 
 #[test]
