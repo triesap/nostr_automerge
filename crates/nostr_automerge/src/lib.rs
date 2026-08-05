@@ -41,7 +41,9 @@ pub use diagnostic::DiagnosticCode;
 pub use disposition::{Completion, ProtocolDisposition};
 pub use engine::{
     CheckpointVerificationResult, CheckpointVerificationStatus, EvaluationFailure,
-    EvaluationReport, MaterializedDocumentView, ReferenceEvaluator,
+    EvaluationReport, MaterializedConflict, MaterializedDocumentView, MaterializedEntry,
+    MaterializedMark, MaterializedObjectType, MaterializedPathElement, MaterializedScalar,
+    MaterializedValue, ReferenceEvaluator,
 };
 pub use error::HexError;
 pub use evidence::corpus_builder::{

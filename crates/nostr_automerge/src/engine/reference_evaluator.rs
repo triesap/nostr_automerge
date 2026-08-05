@@ -16,9 +16,8 @@ use crate::{
     WorkBudget, WorkCounter,
 };
 
-use super::evaluation_report::{
-    EvaluationFailure, EvaluationReport, EvaluationReportParts, MaterializedDocumentView,
-};
+use super::evaluation_report::{EvaluationFailure, EvaluationReport, EvaluationReportParts};
+use super::materialized_view::MaterializedDocumentView;
 
 /// Stateless deterministic batch evaluator for immutable signed evidence.
 ///
@@ -123,9 +122,10 @@ impl ReferenceEvaluator {
             integrity_alerts: batch.integrity_alerts,
             completion: batch.completion,
             failure: batch.failure,
-            document: batch
-                .materialized_document
-                .map(MaterializedDocumentView::from_canonical_bytes),
+            document: batch.materialized_document.map(|bytes| {
+                MaterializedDocumentView::from_canonical_bytes(bytes)
+                    .unwrap_or_else(|_| unreachable!("applied state must project"))
+            }),
         })
     }
 }

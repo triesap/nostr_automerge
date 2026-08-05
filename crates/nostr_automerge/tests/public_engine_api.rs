@@ -10,8 +10,9 @@ use nostr_automerge::authoring::{ActorState, AuthoringDocument, Operation, Unsig
 use nostr_automerge::{
     ActorId, ChangeHash, CheckpointVerificationStatus, ChunkHash, Completion, CorpusBuilder,
     DocumentCoordinate, EvaluationFailure, EventId, EvidenceCorpus, EvidenceStatus, IngestOutcome,
-    NeverCancelled, ProtocolDisposition, ProtocolRevision, RawEventBytes, ReferenceEvaluator,
-    VerifiedNip01Event, WorkBudget, WorkCounter,
+    MaterializedPathElement, MaterializedScalar, MaterializedValue, NeverCancelled,
+    ProtocolDisposition, ProtocolRevision, RawEventBytes, ReferenceEvaluator, VerifiedNip01Event,
+    WorkBudget, WorkCounter,
 };
 use sha2::{Digest as _, Sha256};
 use support::test_signer::TestSigner;
@@ -104,6 +105,18 @@ fn signed_events_reach_materialized_state_through_public_engine() {
     assert_eq!(report.accepted_changes(), [scenario.change_hash]);
     assert_eq!(report.heads(), [scenario.change_hash]);
     assert!(report.document().is_some_and(|view| !view.is_empty()));
+    let document = report.document().expect("materialized view");
+    assert!(document.entries().iter().any(|entry| {
+        entry.path() == [MaterializedPathElement::Key("title".to_owned())]
+            && matches!(
+                entry.conflicts(),
+                [conflict]
+                    if conflict.value()
+                        == &MaterializedValue::Scalar(MaterializedScalar::String(
+                            "trusted".to_owned()
+                        ))
+            )
+    }));
 }
 
 #[test]

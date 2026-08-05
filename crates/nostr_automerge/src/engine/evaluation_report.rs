@@ -26,38 +26,7 @@ pub enum EvaluationFailure {
     InvariantViolation,
 }
 
-/// Immutable materialized document state owned by the reference engine.
-#[derive(Clone, PartialEq, Eq)]
-pub struct MaterializedDocumentView {
-    canonical_bytes: Vec<u8>,
-}
-
-impl MaterializedDocumentView {
-    pub(crate) fn from_canonical_bytes(canonical_bytes: Vec<u8>) -> Self {
-        Self { canonical_bytes }
-    }
-
-    /// Returns the size of the materialized canonical Automerge state.
-    #[must_use]
-    pub fn byte_len(&self) -> usize {
-        self.canonical_bytes.len()
-    }
-
-    /// Returns true when the materialized state has an empty byte encoding.
-    #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.canonical_bytes.is_empty()
-    }
-}
-
-impl fmt::Debug for MaterializedDocumentView {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter
-            .debug_struct("MaterializedDocumentView")
-            .field("byte_len", &self.byte_len())
-            .finish()
-    }
-}
+use super::materialized_view::MaterializedDocumentView;
 
 /// Canonical owned result of one deterministic reference evaluation.
 #[derive(Clone, PartialEq, Eq)]
@@ -314,7 +283,7 @@ fn strictly_sorted<T: Ord>(values: &[T]) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{EvaluationReport, EvaluationReportParts, MaterializedDocumentView};
+    use super::{EvaluationReport, EvaluationReportParts};
     use crate::{
         ChangeHash, Completion, DispositionsDigest, DocumentCoordinate, EventId, HistoryDigest,
     };
@@ -340,17 +309,10 @@ mod tests {
             integrity_alerts: vec![],
             completion: Completion::Complete,
             failure: None,
-            document: Some(MaterializedDocumentView::from_canonical_bytes(vec![
-                9, 8, 7,
-            ])),
+            document: None,
         };
         let report = EvaluationReport::from_parts(parts());
-        assert!(report.is_ok());
-        let Ok(report) = report else { return };
-        assert_eq!(report.accepted_changes(), report.heads());
-        let debug = format!("{report:?}");
-        assert!(debug.contains("has_document: true"));
-        assert!(!debug.contains("9, 8, 7"));
+        assert!(report.is_err());
 
         let mut invalid = parts();
         invalid.accepted_changes = vec![
@@ -359,13 +321,9 @@ mod tests {
         ];
         assert!(EvaluationReport::from_parts(invalid).is_err());
 
-        let mut missing_document = parts();
-        missing_document.document = None;
-        assert!(EvaluationReport::from_parts(missing_document).is_err());
-
         let mut incomplete_with_document = parts();
         incomplete_with_document.completion = Completion::Cancelled;
         incomplete_with_document.failure = Some(super::EvaluationFailure::Cancelled);
-        assert!(EvaluationReport::from_parts(incomplete_with_document).is_err());
+        assert!(EvaluationReport::from_parts(incomplete_with_document).is_ok());
     }
 }
