@@ -1,0 +1,19 @@
+{
+  "baseline": "5133a3ab8ff3b8385007ba744b850f97dd2aaa8d",
+  "findings": [
+    {"evidence_paths":["crates/nostr_automerge/src/lib.rs","spec/API_CONTRACTS.md"],"id":"FINDING_001","phase":"phase_01_public_engine_api","severity":"blocker","status":"open","title":"The approved public corpus and evaluator API is not exported"},
+    {"evidence_paths":["crates/nostr_automerge/src/evidence/indexes.rs","crates/nostr_automerge/src/reference/evaluate.rs"],"id":"FINDING_002","phase":"phase_01_public_engine_api","severity":"blocker","status":"open","title":"No complete raw signed event to canonical document pipeline exists"},
+    {"evidence_paths":["crates/nostr_automerge/src/reference/evaluate.rs"],"id":"FINDING_003","phase":"phase_02_evaluator_correctness","severity":"critical","status":"open","title":"Reference evaluation bypasses caller budget and cancellation"},
+    {"evidence_paths":["crates/nostr_automerge/src/graph/schedule.rs","crates/nostr_automerge/src/graph/equivocation.rs"],"id":"FINDING_004","phase":"phase_03_graph_algorithm_hardening","severity":"high","status":"open","title":"Graph traversal is not proportionally budgeted"},
+    {"evidence_paths":["crates/nostr_automerge/src/graph/dependency_graph.rs"],"id":"FINDING_005","phase":"phase_03_graph_algorithm_hardening","severity":"high","status":"open","title":"Ordinary history uses checkpoint-specific limits"},
+    {"evidence_paths":["crates/nostr_automerge/src/carrier/mod.rs","crates/nostr_automerge/src/checkpoint"],"id":"FINDING_006","phase":"phase_05_checkpoint_carrier_integration","severity":"blocker","status":"open","title":"Checkpoint primitives lack signed carrier authorization integration"},
+    {"evidence_paths":["tools/nostr_automerge_conformance/src/interop.rs","tools/nostr_automerge_conformance/src/runner.rs"],"id":"FINDING_007","phase":"phase_06_state_projection_and_conformance","severity":"blocker","status":"open","title":"The conformance runner computes a simplified model instead of executing the engine"},
+    {"evidence_paths":["tools/nostr_automerge_xtask/src/requirements.rs","tools/nostr_automerge_xtask/src/validate.rs"],"id":"FINDING_008","phase":"phase_07_coverage_interop_and_release","severity":"high","status":"open","title":"Requirement coverage can pass with mandatory requirements missing"},
+    {"evidence_paths":["crates/nostr_automerge/tests/checkpoint_conformance.rs","crates/nostr_automerge/tests/checkpoint_replay_agreement.rs"],"id":"FINDING_009","phase":"phase_05_checkpoint_carrier_integration","severity":"high","status":"open","title":"Checkpoint reports do not execute all claimed histories"},
+    {"evidence_paths":["crates/nostr_automerge/src/conformance/assertions.rs","crates/nostr_automerge/src/report.rs"],"id":"FINDING_010","phase":"phase_06_state_projection_and_conformance","severity":"blocker","status":"open","title":"Typed state is not projected from the actual Automerge document"},
+    {"evidence_paths":["crates/nostr_automerge/src/control/validate.rs"],"id":"FINDING_011","phase":"phase_04_control_and_spec_alignment","severity":"medium","status":"open","title":"Genesis validation has an implementation-only nonempty ACL rule"},
+    {"evidence_paths":["reports/release_readiness.json","reports/security_readiness.md"],"id":"FINDING_012","phase":"phase_07_coverage_interop_and_release","severity":"high","status":"open","title":"Production assurance gates remain incomplete"},
+    {"evidence_paths":["reports/interop_differential.json","reports/release_readiness.json"],"id":"FINDING_013","phase":"phase_07_coverage_interop_and_release","severity":"high","status":"open","title":"Existing local interop evidence is not complete public-engine attestation"}
+  ],
+  "schema": "nostr_automerge.remediation_findings.v1"
+}
