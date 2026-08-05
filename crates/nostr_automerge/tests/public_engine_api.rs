@@ -6,11 +6,13 @@ use std::collections::BTreeSet;
 
 use base64::Engine as _;
 use nostr_automerge::authoring::{ActorState, AuthoringDocument, Operation, UnsignedEventDraft};
-use nostr_automerge::{ActorId, CorpusBuilder, DocumentCoordinate, IngestOutcome};
+use nostr_automerge::{
+    ActorId, CorpusBuilder, DocumentCoordinate, EvidenceCorpus, EvidenceStatus, IngestOutcome,
+};
 use support::test_signer::TestSigner;
 
 #[test]
-fn build_immutable_ingress_corpus_through_public_api() {
+fn build_immutable_evidence_corpus_through_public_api() {
     let valid = include_bytes!("../../../fixtures/v1_draft/nip01/valid_event.json");
 
     let mut builder = CorpusBuilder::new();
@@ -38,11 +40,23 @@ fn build_immutable_ingress_corpus_through_public_api() {
         IngestOutcome::Invalid { diagnostic }
             if diagnostic.as_str() == "raw.too_large"
     ));
-    let corpus = builder.finish();
+    let corpus: EvidenceCorpus = builder.finish();
     assert_eq!(corpus.event_count(), 1);
     assert_eq!(corpus.invalid_count(), 1);
     assert_eq!(corpus.duplicate_count(), 1);
     assert!(!corpus.is_empty());
+    assert_eq!(
+        corpus
+            .records()
+            .map(|record| record.status())
+            .collect::<Vec<_>>(),
+        vec![
+            EvidenceStatus::Irrelevant,
+            EvidenceStatus::Invalid,
+            EvidenceStatus::Duplicate,
+        ]
+    );
+    assert!(!include_str!("../src/lib.rs").contains("IndexValidity"));
 }
 
 #[test]

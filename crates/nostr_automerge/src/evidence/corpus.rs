@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::evidence::corpus_builder::IngressCorpus;
+use crate::evidence::corpus_builder::EvidenceCorpus as IngressCorpus;
 use crate::evidence::event::EventEvidence;
 use crate::evidence::indexes::{
     ChangeIndexRecord, ChangeIndexes, ControlIndexRecord, ControlIndexes, IndexValidity,
@@ -124,7 +124,7 @@ mod tests {
 
     use super::{EvidenceCorpus, InvalidCarrierEvidence};
     use crate::carrier::VerifiedCarrier;
-    use crate::evidence::corpus_builder::IngressCorpus;
+    use crate::evidence::corpus_builder::EvidenceCorpus as IngressCorpus;
     use crate::evidence::event::{EventEvidence, RawChecksum};
     use crate::evidence::indexes::{ChangeIndexRecord, ControlIndexRecord, IndexValidity};
     use crate::{

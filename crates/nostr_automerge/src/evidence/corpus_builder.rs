@@ -59,7 +59,7 @@ pub struct CorpusBuilder {
 
 #[derive(Clone, Debug, PartialEq)]
 /// Immutable retained ingress evidence produced by [`CorpusBuilder`].
-pub struct IngressCorpus {
+pub struct EvidenceCorpus {
     pub(crate) events: BTreeMap<EventId, EventEvidence>,
     pub(crate) invalid: BTreeMap<RawChecksum, EventEvidence>,
     pub(crate) duplicates: Vec<EventEvidence>,
@@ -218,8 +218,9 @@ impl CorpusBuilder {
 
     /// Consumes the builder and returns immutable retained ingress evidence.
     #[must_use]
-    pub fn finish(self) -> IngressCorpus {
-        IngressCorpus {
+    pub fn finish(mut self) -> EvidenceCorpus {
+        self.duplicates.sort_by_key(evidence_checksum);
+        EvidenceCorpus {
             events: self.events,
             invalid: self.invalid,
             duplicates: self.duplicates,
@@ -260,7 +261,7 @@ fn invalid_carrier(
     )
 }
 
-impl IngressCorpus {
+impl EvidenceCorpus {
     /// Returns the number of uniquely identified verified signed events.
     #[must_use]
     pub fn event_count(&self) -> usize {
@@ -277,6 +278,15 @@ impl IngressCorpus {
     #[must_use]
     pub fn duplicate_count(&self) -> usize {
         self.duplicates.len()
+    }
+
+    /// Iterates over every retained evidence record in deterministic order.
+    pub fn records(&self) -> impl Iterator<Item = EvidenceRecord> + '_ {
+        self.events
+            .iter()
+            .map(event_record)
+            .chain(self.invalid.iter().map(invalid_record))
+            .chain(self.duplicates.iter().filter_map(duplicate_record))
     }
 
     /// Iterates over advisory acquisition hints from fully validated manifests.
@@ -297,6 +307,105 @@ impl IngressCorpus {
     pub fn is_empty(&self) -> bool {
         self.events.is_empty() && self.invalid.is_empty() && self.duplicates.is_empty()
     }
+}
+
+/// A safe public identifier for retained evidence.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum EvidenceIdentifier {
+    /// A strictly verified signed event identifier.
+    Event(EventId),
+    /// The SHA-256 checksum of invalid raw bytes that had no trusted event ID.
+    InvalidRawSha256([u8; 32]),
+}
+
+/// The immutable trust disposition of retained ingress evidence.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum EvidenceStatus {
+    /// A fully validated protocol carrier.
+    Valid,
+    /// Valid signed evidence awaiting dependency reevaluation.
+    Pending,
+    /// Invalid raw event or signed carrier evidence.
+    Invalid,
+    /// A valid signed carrier declaring an unsupported revision.
+    Unsupported,
+    /// A valid signed event outside the sealed carrier kinds.
+    Irrelevant,
+    /// A repeated observation of an already retained event.
+    Duplicate,
+}
+
+/// One immutable content-free public evidence summary.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct EvidenceRecord {
+    identifier: EvidenceIdentifier,
+    status: EvidenceStatus,
+    diagnostic: Option<DiagnosticCode>,
+}
+
+impl EvidenceRecord {
+    /// Returns the trusted event ID or invalid-raw checksum identifier.
+    #[must_use]
+    pub const fn identifier(&self) -> EvidenceIdentifier {
+        self.identifier
+    }
+
+    /// Returns the retained trust disposition.
+    #[must_use]
+    pub const fn status(&self) -> EvidenceStatus {
+        self.status
+    }
+
+    /// Returns the stable failure diagnostic when applicable.
+    #[must_use]
+    pub const fn diagnostic(&self) -> Option<DiagnosticCode> {
+        self.diagnostic
+    }
+}
+
+fn event_record((event_id, evidence): (&EventId, &EventEvidence)) -> EvidenceRecord {
+    let (status, diagnostic) = match evidence {
+        EventEvidence::VerifiedCarrier { .. } => (EvidenceStatus::Valid, None),
+        EventEvidence::InvalidCarrier { diagnostic, .. } => {
+            (EvidenceStatus::Invalid, Some(*diagnostic))
+        }
+        EventEvidence::UnsupportedRevision { diagnostic, .. } => {
+            (EvidenceStatus::Unsupported, Some(*diagnostic))
+        }
+        EventEvidence::IrrelevantEvent { .. } => (EvidenceStatus::Irrelevant, None),
+        EventEvidence::InvalidEvent { diagnostic, .. } => {
+            (EvidenceStatus::Invalid, Some(*diagnostic))
+        }
+        EventEvidence::DuplicateEvent { .. } => (EvidenceStatus::Duplicate, None),
+    };
+    EvidenceRecord {
+        identifier: EvidenceIdentifier::Event(*event_id),
+        status,
+        diagnostic,
+    }
+}
+
+fn invalid_record((checksum, evidence): (&RawChecksum, &EventEvidence)) -> EvidenceRecord {
+    let diagnostic = match evidence {
+        EventEvidence::InvalidEvent { diagnostic, .. } => Some(*diagnostic),
+        _ => None,
+    };
+    EvidenceRecord {
+        identifier: EvidenceIdentifier::InvalidRawSha256(*checksum.as_bytes()),
+        status: EvidenceStatus::Invalid,
+        diagnostic,
+    }
+}
+
+fn duplicate_record(evidence: &EventEvidence) -> Option<EvidenceRecord> {
+    let EventEvidence::DuplicateEvent { event_id, .. } = evidence else {
+        return None;
+    };
+    Some(EvidenceRecord {
+        identifier: EvidenceIdentifier::Event(*event_id),
+        status: EvidenceStatus::Duplicate,
+        diagnostic: None,
+    })
 }
 
 /// Advisory acquisition hints from one fully validated signed manifest.
