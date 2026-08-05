@@ -274,6 +274,40 @@ fn automerge_decode_work_is_bounded_before_state() {
     assert_eq!(exhausted.consumed().get(WorkCounter::DecodeByte), 0);
 }
 
+#[test]
+fn automerge_application_and_materialization_are_charged() {
+    let scenario = signed_engine_scenario();
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(scenario.change),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert!(matches!(
+        builder.ingest(scenario.control),
+        IngestOutcome::Accepted { .. }
+    ));
+    let corpus = builder.finish();
+    let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
+    let mut measured = WorkBudget::new(1_000_000, 1_000);
+    let measured_report =
+        evaluator.evaluate(&corpus, scenario.coordinate, &mut measured, &NeverCancelled);
+    assert_eq!(measured_report.completion(), Completion::Complete);
+    assert_eq!(measured.consumed().get(WorkCounter::ApplyChange), 2);
+    let consumed_items = 1_000 - measured.remaining().1;
+
+    let mut exhausted = WorkBudget::new(1_000_000, consumed_items - 1);
+    let report = evaluator.evaluate(
+        &corpus,
+        scenario.coordinate,
+        &mut exhausted,
+        &NeverCancelled,
+    );
+    assert_eq!(report.completion(), Completion::BudgetExhausted);
+    assert_eq!(report.accepted_changes(), [scenario.change_hash]);
+    assert!(report.document().is_none());
+    assert_eq!(exhausted.consumed().get(WorkCounter::ApplyChange), 1);
+}
+
 struct SignedEngineScenario {
     coordinate: DocumentCoordinate,
     control: RawEventBytes,

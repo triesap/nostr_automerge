@@ -207,10 +207,24 @@ pub(crate) fn evaluate_batch(
                 .flatten()
         })
         .collect::<BTreeMap<_, _>>();
-    let materialized = (!accepted_changes.is_empty()
-        && raw_changes.len() == accepted_changes.len())
-    .then(|| materialize_history(&raw_changes, &ordered).ok())
-    .flatten();
+    let can_materialize =
+        !accepted_changes.is_empty() && raw_changes.len() == accepted_changes.len();
+    if can_materialize
+        && let Err(completion) = charge_application_work(&ordered, budget, cancellation)
+    {
+        let heads = derive_heads(&accepted_changes, &controls);
+        return incomplete_report(
+            canonical_controls,
+            dispositions,
+            accepted_changes,
+            integrity_alerts,
+            completion,
+        )
+        .with_heads(heads);
+    }
+    let materialized = can_materialize
+        .then(|| materialize_history(&raw_changes, &ordered).ok())
+        .flatten();
     let (heads, materialized_document) = materialized.map_or_else(
         || (derive_heads(&accepted_changes, &controls), None),
         |AppliedDocument {
@@ -227,6 +241,27 @@ pub(crate) fn evaluate_batch(
         integrity_alerts,
         completion,
     }
+}
+
+fn charge_application_work(
+    ordered: &[ChangeHash],
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<(), Completion> {
+    for _ in ordered {
+        if cancellation.is_cancelled() {
+            return Err(Completion::Cancelled);
+        }
+        budget
+            .charge(WorkCounter::ApplyChange, 1)
+            .map_err(|_| Completion::BudgetExhausted)?;
+    }
+    if cancellation.is_cancelled() {
+        return Err(Completion::Cancelled);
+    }
+    budget
+        .charge(WorkCounter::ApplyChange, 1)
+        .map_err(|_| Completion::BudgetExhausted)
 }
 
 impl BatchEvaluationReport {
