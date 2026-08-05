@@ -25,7 +25,26 @@ pub(crate) fn schedule_candidates(
         .into_iter()
         .map(|candidate| (candidate.change_hash, candidate))
         .collect::<BTreeMap<_, _>>();
-    let mut accepted = accepted_base;
+    let candidate_hashes = remaining.keys().copied().collect::<BTreeSet<_>>();
+    let mut unresolved = BTreeMap::new();
+    let mut dependants = BTreeMap::<ChangeHash, BTreeSet<ChangeHash>>::new();
+    for (hash, candidate) in &remaining {
+        let count = candidate
+            .dependencies
+            .iter()
+            .filter(|dependency| !accepted_base.contains(dependency))
+            .count();
+        unresolved.insert(*hash, count);
+        for dependency in &candidate.dependencies {
+            if candidate_hashes.contains(dependency) {
+                dependants.entry(*dependency).or_default().insert(*hash);
+            }
+        }
+    }
+    let mut ready = unresolved
+        .iter()
+        .filter_map(|(hash, count)| (*count == 0).then_some(*hash))
+        .collect::<BTreeSet<_>>();
     let mut ordered = Vec::new();
     loop {
         if cancellation.is_cancelled() {
@@ -34,21 +53,21 @@ pub(crate) fn schedule_candidates(
         budget
             .charge_items(1)
             .map_err(|_| ScheduleError::BudgetExhausted)?;
-        let ready = remaining
-            .iter()
-            .find(|(_, candidate)| {
-                candidate
-                    .dependencies
-                    .iter()
-                    .all(|dependency| accepted.contains(dependency))
-            })
-            .map(|(hash, _)| *hash);
-        let Some(hash) = ready else {
+        let Some(hash) = ready.pop_first() else {
             break;
         };
         remaining.remove(&hash);
-        accepted.insert(hash);
         ordered.push(hash);
+        if let Some(children) = dependants.get(&hash) {
+            for child in children {
+                if let Some(count) = unresolved.get_mut(child) {
+                    *count -= 1;
+                    if *count == 0 {
+                        ready.insert(*child);
+                    }
+                }
+            }
+        }
     }
     Ok(Schedule {
         ordered,
@@ -90,6 +109,29 @@ mod tests {
                 low.change_hash,
                 high.change_hash,
                 dependant.change_hash
+            ])
+        );
+        let mut fan_out = candidate(3, 1, 1, 1);
+        fan_out.change_hash = ChangeHash::from_bytes([4; 32]);
+        fan_out.dependencies = vec![low.change_hash];
+        let mut fan_in = candidate(4, 1, 1, 1);
+        fan_in.change_hash = ChangeHash::from_bytes([5; 32]);
+        fan_in.dependencies = vec![dependant.change_hash, fan_out.change_hash];
+        assert_eq!(
+            evaluate(vec![
+                fan_in.clone(),
+                fan_out.clone(),
+                dependant.clone(),
+                high.clone(),
+                low.clone(),
+            ])
+            .map(|schedule| schedule.ordered),
+            Ok(vec![
+                ChangeHash::from_bytes([1; 32]),
+                ChangeHash::from_bytes([2; 32]),
+                ChangeHash::from_bytes([3; 32]),
+                ChangeHash::from_bytes([4; 32]),
+                ChangeHash::from_bytes([5; 32]),
             ])
         );
         assert_eq!(
