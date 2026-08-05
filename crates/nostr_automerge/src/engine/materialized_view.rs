@@ -518,4 +518,57 @@ mod tests {
                 )
         }));
     }
+
+    #[test]
+    fn project_all_conflicts_with_stable_operation_identity() {
+        let change = |actor: u8, value: &str| {
+            let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+            document.set_actor(ActorId::from([actor; 32]));
+            {
+                let mut tx = document.transaction();
+                assert!(tx.put(ROOT, "conflict", value).is_ok());
+                tx.commit();
+            }
+            document.get_changes(&[])[0].clone()
+        };
+        let left = change(4, "left");
+        let right = change(5, "right");
+        let project = |changes| {
+            let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+            assert!(document.apply_changes(changes).is_ok());
+            MaterializedDocumentView::from_canonical_bytes(document.save_nocompress())
+        };
+        let first = project([left.clone(), right.clone()]);
+        let second = project([right, left]);
+        assert!(first.is_ok() && second.is_ok());
+        let (Ok(first), Ok(second)) = (first, second) else {
+            return;
+        };
+        assert_eq!(first.entries(), second.entries());
+        let entry = first
+            .entries()
+            .iter()
+            .find(|entry| entry.path() == [MaterializedPathElement::Key("conflict".to_owned())]);
+        assert!(entry.is_some());
+        let Some(entry) = entry else { return };
+        assert_eq!(entry.conflicts().len(), 2);
+        assert!(
+            entry
+                .conflicts()
+                .windows(2)
+                .all(|pair| pair[0].operation_id() < pair[1].operation_id())
+        );
+        let values = entry
+            .conflicts()
+            .iter()
+            .map(|conflict| conflict.value().clone())
+            .collect::<std::collections::BTreeSet<_>>();
+        assert_eq!(
+            values,
+            std::collections::BTreeSet::from([
+                MaterializedValue::Scalar(MaterializedScalar::String("left".to_owned())),
+                MaterializedValue::Scalar(MaterializedScalar::String("right".to_owned())),
+            ])
+        );
+    }
 }
