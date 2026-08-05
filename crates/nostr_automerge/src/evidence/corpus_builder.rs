@@ -1,10 +1,12 @@
 use std::collections::BTreeMap;
 
 use crate::carrier::classify::classify;
+use crate::carrier::control::{ControlCarrierError, ControlContentError};
 use crate::carrier::manifest::ManifestContentError;
 use crate::carrier::{CarrierCandidate, VerifiedCarrier};
 use crate::evidence::event::{EventEvidence, RawChecksum};
 use crate::evidence::source::AcquiredRawEvent;
+use crate::wire::tags::TagError;
 use crate::{DiagnosticCode, EventId, Nip01VerificationError, RawEventBytes, VerifiedNip01Event};
 
 /// The stable result of ingesting one raw event into an evidence corpus.
@@ -173,7 +175,16 @@ impl CorpusBuilder {
                 }
             }
             Some(CarrierCandidate::Control(event)) => {
-                accepted(VerifiedCarrier::Control(event), checksum, event_id)
+                match crate::carrier::control::validate(&event) {
+                    Ok(control) => accepted(
+                        VerifiedCarrier::Control(Box::new(control)),
+                        checksum,
+                        event_id,
+                    ),
+                    Err(error) => {
+                        invalid_carrier(event, checksum, event_id, control_diagnostic(error))
+                    }
+                }
             }
             Some(CarrierCandidate::Change(event)) => {
                 accepted(VerifiedCarrier::Change(event), checksum, event_id)
@@ -220,6 +231,25 @@ fn accepted(
             raw_checksum,
         },
         IngestOutcome::Accepted { event_id },
+    )
+}
+
+fn invalid_carrier(
+    event: VerifiedNip01Event,
+    raw_checksum: RawChecksum,
+    event_id: EventId,
+    diagnostic: DiagnosticCode,
+) -> (EventEvidence, IngestOutcome) {
+    (
+        EventEvidence::InvalidCarrier {
+            event,
+            raw_checksum,
+            diagnostic,
+        },
+        IngestOutcome::InvalidCarrier {
+            event_id,
+            diagnostic,
+        },
     )
 }
 
@@ -337,6 +367,28 @@ const fn manifest_diagnostic(error: ManifestContentError) -> DiagnosticCode {
         ManifestContentError::Tags => DiagnosticCode::registered("tag.required"),
         ManifestContentError::Shape => DiagnosticCode::registered("manifest.structure"),
         ManifestContentError::Semantics => DiagnosticCode::registered("manifest.semantics"),
+    }
+}
+
+const fn control_diagnostic(error: ControlCarrierError) -> DiagnosticCode {
+    match error {
+        ControlCarrierError::Kind => DiagnosticCode::registered("carrier.kind"),
+        ControlCarrierError::Tags(
+            TagError::Missing | TagError::Repeated | TagError::ElementCount,
+        ) => DiagnosticCode::registered("tag.required"),
+        ControlCarrierError::Tags(TagError::Forbidden | TagError::NonCanonicalOrder) => {
+            DiagnosticCode::registered("tag.forbidden")
+        }
+        ControlCarrierError::Coordinate => DiagnosticCode::registered("carrier.coordinate"),
+        ControlCarrierError::Content(ControlContentError::Canonical(_)) => {
+            DiagnosticCode::registered("jcs.noncanonical")
+        }
+        ControlCarrierError::Content(ControlContentError::Shape) => {
+            DiagnosticCode::registered("control.structure")
+        }
+        ControlCarrierError::Content(ControlContentError::Semantics) => {
+            DiagnosticCode::registered("control.structure")
+        }
     }
 }
 

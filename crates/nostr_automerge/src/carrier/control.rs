@@ -3,8 +3,11 @@ use serde_json::{Map, Value};
 use crate::ProtocolRevision;
 use crate::types::role::Role;
 use crate::wire::canonical_json::parse::{CanonicalJsonError, parse_canonical};
-use crate::wire::tags;
-use crate::{AccountPublicKey, ActorId, ChangeHash, DevicePublicKey, DocumentCoordinate, EventId};
+use crate::wire::tags::{self, TagError};
+use crate::{
+    AccountPublicKey, ActorId, ChangeHash, ControllerPublicKey, DevicePublicKey,
+    DocumentCoordinate, EventId, VerifiedNip01Event,
+};
 
 const CONTROL_FIELDS: &[&str] = &[
     "base_heads",
@@ -53,6 +56,23 @@ pub(crate) enum ControlContentError {
     Semantics,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ControlCarrierError {
+    Kind,
+    Tags(TagError),
+    Coordinate,
+    Content(ControlContentError),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct ValidatedControlCarrier {
+    pub(crate) event_id: EventId,
+    pub(crate) author: ControllerPublicKey,
+    pub(crate) coordinate: DocumentCoordinate,
+    pub(crate) parent: Option<EventId>,
+    pub(crate) content: ValidatedControlContent,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct ValidatedControlContent {
     pub(crate) base_heads: Vec<ChangeHash>,
@@ -75,6 +95,56 @@ pub(crate) struct DeviceGrant {
 pub(crate) struct Predecessor {
     pub(crate) coordinate: DocumentCoordinate,
     pub(crate) terminal_control: EventId,
+}
+
+pub(crate) fn validate(
+    event: &VerifiedNip01Event,
+) -> Result<ValidatedControlCarrier, ControlCarrierError> {
+    if event.kind() != 1_625 {
+        return Err(ControlCarrierError::Kind);
+    }
+    let coordinate_tag =
+        tags::required_tag(event.tags(), "a", 2).map_err(ControlCarrierError::Tags)?;
+    let coordinate: DocumentCoordinate = coordinate_tag[1]
+        .parse()
+        .map_err(|_| ControlCarrierError::Coordinate)?;
+    let author = ControllerPublicKey::from_bytes(*event.author_bytes());
+    if author != coordinate.controller() {
+        return Err(ControlCarrierError::Coordinate);
+    }
+    for forbidden in ["d", "expiration", "-"] {
+        tags::require_absent(event.tags(), forbidden).map_err(ControlCarrierError::Tags)?;
+    }
+    if event
+        .tags()
+        .iter()
+        .any(|tag| tag.first().is_none_or(|name| name != "a" && name != "e"))
+    {
+        return Err(ControlCarrierError::Tags(TagError::Forbidden));
+    }
+    let content =
+        validate_content(event.content(), coordinate).map_err(ControlCarrierError::Content)?;
+    let parent = if content.sequence == 0 {
+        tags::require_absent(event.tags(), "e").map_err(ControlCarrierError::Tags)?;
+        None
+    } else {
+        let parent = tags::required_tag(event.tags(), "e", 2).map_err(ControlCarrierError::Tags)?;
+        Some(
+            parent[1]
+                .parse()
+                .map_err(|_| ControlCarrierError::Tags(TagError::ElementCount))?,
+        )
+    };
+    if event.tags().len() != usize::from(parent.is_some()) + 1 {
+        return Err(ControlCarrierError::Tags(TagError::Repeated));
+    }
+    Ok(ValidatedControlCarrier {
+        event_id: event.event_id(),
+        author,
+        coordinate,
+        parent,
+        content,
+    })
 }
 
 pub(crate) fn validate_content(

@@ -6,6 +6,7 @@ pub(crate) mod version;
 
 use crate::VerifiedNip01Event;
 
+use self::control::ValidatedControlCarrier;
 use self::manifest::ValidatedManifest;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -25,7 +26,7 @@ pub(crate) enum CarrierCandidate {
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum VerifiedCarrier {
     Manifest(Box<ValidatedManifest>),
-    Control(VerifiedNip01Event),
+    Control(Box<ValidatedControlCarrier>),
     Change(VerifiedNip01Event),
     CheckpointDescriptor(VerifiedNip01Event),
     CheckpointChunk(VerifiedNip01Event),
