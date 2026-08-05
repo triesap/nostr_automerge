@@ -9,7 +9,7 @@ use crate::graph::schedule::{ScheduleError, schedule_candidates};
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
 use crate::{
     CancellationCheck, ChangeHash, Completion, EventId, IntegrityAlert, ProtocolDisposition,
-    WorkBudget,
+    WorkBudget, WorkCounter,
 };
 
 #[derive(Clone, Debug)]
@@ -77,6 +77,19 @@ pub(crate) fn evaluate_batch(
                 Completion::Cancelled,
             );
         }
+        let candidate_count = u64::try_from(children.len()).unwrap_or(u64::MAX);
+        if budget
+            .charge(WorkCounter::Control, candidate_count)
+            .is_err()
+        {
+            return incomplete_report(
+                canonical_controls,
+                BTreeMap::new(),
+                BTreeSet::new(),
+                integrity_alerts,
+                Completion::BudgetExhausted,
+            );
+        }
         let (selection, alert) = select_with_alert(parent, children.iter().copied());
         let Some(selected) = selection.selected else {
             break;
@@ -105,6 +118,10 @@ pub(crate) fn evaluate_batch(
         };
         if cancellation.is_cancelled() {
             completion = Completion::Cancelled;
+            break;
+        }
+        if budget.charge(WorkCounter::Control, 1).is_err() {
+            completion = Completion::BudgetExhausted;
             break;
         }
         for hash in accepted_changes.difference(&control.accepted_base) {

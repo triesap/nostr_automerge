@@ -213,6 +213,33 @@ fn cancellation_before_control_evaluation_fabricates_no_state() {
     assert!(report.document().is_none());
 }
 
+#[test]
+fn control_selection_and_transition_have_distinct_charges() {
+    let scenario = signed_engine_scenario();
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(scenario.change),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert!(matches!(
+        builder.ingest(scenario.control),
+        IngestOutcome::Accepted { .. }
+    ));
+    let mut budget = WorkBudget::new(1_000_000, 5);
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        scenario.coordinate,
+        &mut budget,
+        &NeverCancelled,
+    );
+
+    assert_eq!(report.completion(), Completion::BudgetExhausted);
+    assert_eq!(report.canonical_controls(), [scenario.control_id]);
+    assert!(report.dispositions().is_empty());
+    assert!(report.accepted_changes().is_empty());
+    assert_eq!(budget.consumed().get(WorkCounter::Control), 1);
+}
+
 struct SignedEngineScenario {
     coordinate: DocumentCoordinate,
     control: RawEventBytes,
