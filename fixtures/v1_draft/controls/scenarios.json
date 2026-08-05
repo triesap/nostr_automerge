@@ -6,6 +6,9 @@
     {"name":"terminal","valid_candidates":[],"pending":[],"selected":null},
     {"name":"retained_frontier","valid_candidates":[8],"pending":[],"selected":8},
     {"name":"missing_evidence","valid_candidates":[],"pending":[9],"selected":null},
-    {"name":"reorganization","valid_candidates":[3,2],"pending":[],"selected":2,"previous":3}
+    {"name":"reorganization","valid_candidates":[3,2],"pending":[],"selected":2,"previous":3},
+    {"name":"acl_transition","valid_candidates":[10],"pending":[],"selected":10},
+    {"name":"successor_continuity","valid_candidates":[11],"pending":[],"selected":11},
+    {"name":"unauthorized_child","valid_candidates":[],"pending":[],"selected":null}
   ]
 }

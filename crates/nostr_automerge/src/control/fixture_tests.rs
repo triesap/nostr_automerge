@@ -20,7 +20,7 @@ fn add_complete_control_scenario_permutation_suite() {
         .and_then(Value::as_array)
         .cloned()
         .unwrap_or_default();
-    assert_eq!(scenarios.len(), 7);
+    assert_eq!(scenarios.len(), 10);
     let names = scenarios
         .iter()
         .filter_map(|scenario| scenario.get("name").and_then(Value::as_str))
@@ -28,13 +28,16 @@ fn add_complete_control_scenario_permutation_suite() {
     assert_eq!(
         names,
         BTreeSet::from([
+            "acl_transition",
             "freeze",
             "genesis_fork",
             "missing_evidence",
             "reorganization",
             "retained_frontier",
+            "successor_continuity",
             "terminal",
             "transition_matrix",
+            "unauthorized_child",
         ])
     );
 
