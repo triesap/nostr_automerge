@@ -1,0 +1,15 @@
+{
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "fixture_id": "scenario_nip01_boundaries",
+  "revision": "draft_2026_08",
+  "requirements": ["NCRDT-NIP01-001", "NCRDT-NIP01-002"],
+  "seed": null,
+  "provenance": {
+    "generator": "checked_in_strict_nip01_vectors",
+    "generator_revision": "draft_2026_08",
+    "created_at": "2026-08-05",
+    "source_versions": {"bip340": "BIP-0340", "sha256": "standard"}
+  },
+  "inputs": [{"name":"raw_event_scenario","path":"scenario_nip01_boundaries.input.json","sha256":"9a5ceeffae2f130463a60e15187dcbf70965ccc195705c158dd573fe0701c633","media_type":"application/json"}],
+  "expected": {"report_path":"scenario_nip01_boundaries.expected.json","sha256":"fa144f3bd9306dcce08308f55aa2e5ec5b57923e7b848f97675b295e1c8fd35e"}
+}

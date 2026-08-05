@@ -1,3 +1,4 @@
+use base64::Engine as _;
 use serde::Deserialize;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
@@ -5,9 +6,40 @@ use serde::Deserialize;
 pub(crate) struct ScenarioInput {
     pub(crate) scenario_schema: String,
     pub(crate) coordinate: String,
-    pub(crate) raw_events: Vec<String>,
+    pub(crate) raw_events: Vec<RawScenarioEvent>,
     pub(crate) budget: ScenarioBudget,
     pub(crate) cancel_after: Option<u64>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[serde(untagged)]
+pub(crate) enum RawScenarioEvent {
+    Utf8(String),
+    Encoded(EncodedRawEvent),
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct EncodedRawEvent {
+    encoding: RawEncoding,
+    data: String,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+enum RawEncoding {
+    Base64,
+}
+
+impl RawScenarioEvent {
+    pub(crate) fn decode(self) -> Result<Vec<u8>, ScenarioError> {
+        match self {
+            Self::Utf8(value) => Ok(value.into_bytes()),
+            Self::Encoded(value) => base64::engine::general_purpose::STANDARD
+                .decode(value.data)
+                .map_err(|_| ScenarioError),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]

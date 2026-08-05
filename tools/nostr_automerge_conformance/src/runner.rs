@@ -87,7 +87,8 @@ fn generic_report(
     let coordinate = scenario.coordinate.parse().map_err(|_| RunError::Input)?;
     let mut builder = CorpusBuilder::new();
     for raw in scenario.raw_events {
-        let _ = builder.ingest_bytes(raw.as_bytes());
+        let raw = raw.decode().map_err(|_| RunError::Input)?;
+        let _ = builder.ingest_bytes(&raw);
     }
     let corpus = builder.finish();
     let mut budget = WorkBudget::new(scenario.budget.max_bytes, scenario.budget.max_items);
