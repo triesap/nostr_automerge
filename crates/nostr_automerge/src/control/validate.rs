@@ -85,7 +85,7 @@ pub(crate) fn validate_genesis(control: &ControlEnvelope) -> Result<(), ControlV
     if !control.content.base_heads.is_empty() {
         return Err(ControlValidationError::BaseHeads);
     }
-    if control.content.members.is_empty() {
+    if control.content.members.is_empty() && !control.content.terminal {
         return Err(ControlValidationError::Grants);
     }
     if control.content.successor.is_some() && !control.content.terminal {
@@ -171,6 +171,8 @@ pub(crate) mod tests {
             validate_genesis(&grants),
             Err(ControlValidationError::Grants)
         );
+        grants.content.terminal = true;
+        assert_eq!(validate_genesis(&grants), Ok(()));
         let mut successor = valid;
         successor.content.successor = Some(DocumentCoordinate::new(
             ControllerPublicKey::from_bytes([5; 32]),
