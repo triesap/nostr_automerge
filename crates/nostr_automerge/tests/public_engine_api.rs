@@ -57,6 +57,8 @@ fn build_immutable_evidence_corpus_through_public_api() {
         ]
     );
     assert!(!include_str!("../src/lib.rs").contains("IndexValidity"));
+    assert_eq!(corpus.control_ids().count(), 0);
+    assert_eq!(corpus.change_hashes().count(), 0);
 }
 
 #[test]

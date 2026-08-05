@@ -8,13 +8,38 @@ use crate::{
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct ChangeCarrier {
-    pub(crate) event_id: EventId,
-    pub(crate) author_device: DevicePublicKey,
-    pub(crate) coordinate: DocumentCoordinate,
-    pub(crate) control_id: EventId,
-    pub(crate) declared_change_hash: ChangeHash,
-    pub(crate) canonical_raw_change_bytes: Vec<u8>,
-    pub(crate) decoded: DecodedChange,
+    event_id: EventId,
+    author_device: DevicePublicKey,
+    coordinate: DocumentCoordinate,
+    control_id: EventId,
+    declared_change_hash: ChangeHash,
+    canonical_raw_change_bytes: Vec<u8>,
+    decoded: DecodedChange,
+}
+
+impl ChangeCarrier {
+    pub(crate) const fn event_id(&self) -> EventId {
+        self.event_id
+    }
+
+    pub(crate) const fn change_hash(&self) -> ChangeHash {
+        self.declared_change_hash
+    }
+
+    pub(crate) const fn control_id(&self) -> EventId {
+        self.control_id
+    }
+
+    pub(crate) fn actor(&self) -> ActorId {
+        ActorId::derive(self.coordinate, self.author_device)
+    }
+
+    pub(crate) fn dependencies(&self) -> impl Iterator<Item = ChangeHash> + '_ {
+        self.decoded
+            .dependencies
+            .iter()
+            .map(|dependency| ChangeHash::from_bytes(*dependency.as_bytes()))
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

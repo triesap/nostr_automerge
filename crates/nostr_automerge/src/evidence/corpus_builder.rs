@@ -63,6 +63,7 @@ pub struct EvidenceCorpus {
     pub(crate) events: BTreeMap<EventId, EventEvidence>,
     pub(crate) invalid: BTreeMap<RawChecksum, EventEvidence>,
     pub(crate) duplicates: Vec<EventEvidence>,
+    pub(crate) indexes: crate::evidence::indexes::TrustedIndexes,
 }
 
 impl CorpusBuilder {
@@ -220,10 +221,12 @@ impl CorpusBuilder {
     #[must_use]
     pub fn finish(mut self) -> EvidenceCorpus {
         self.duplicates.sort_by_key(evidence_checksum);
+        let indexes = crate::evidence::indexes::derive_trusted_indexes(&self.events);
         EvidenceCorpus {
             events: self.events,
             invalid: self.invalid,
             duplicates: self.duplicates,
+            indexes,
         }
     }
 }
@@ -278,6 +281,16 @@ impl EvidenceCorpus {
     #[must_use]
     pub fn duplicate_count(&self) -> usize {
         self.duplicates.len()
+    }
+
+    /// Iterates over event IDs of fully validated signed control carriers.
+    pub fn control_ids(&self) -> impl Iterator<Item = EventId> + '_ {
+        self.indexes.controls.controls_by_id.keys().copied()
+    }
+
+    /// Iterates over canonical hashes represented by fully validated change carriers.
+    pub fn change_hashes(&self) -> impl Iterator<Item = crate::ChangeHash> + '_ {
+        self.indexes.changes.carriers_by_hash.keys().copied()
     }
 
     /// Iterates over every retained evidence record in deterministic order.

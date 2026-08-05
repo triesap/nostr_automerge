@@ -74,6 +74,14 @@ pub(crate) struct ValidatedControlCarrier {
 }
 
 impl ValidatedControlCarrier {
+    pub(crate) const fn event_id(&self) -> EventId {
+        self.event_id
+    }
+
+    pub(crate) const fn parent(&self) -> Option<EventId> {
+        self.parent
+    }
+
     pub(crate) fn into_parts(
         self,
     ) -> (
