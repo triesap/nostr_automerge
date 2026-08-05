@@ -580,6 +580,7 @@ struct SignedEngineScenario {
     change: RawEventBytes,
     control_id: EventId,
     change_hash: ChangeHash,
+    snapshot: Vec<u8>,
 }
 
 #[allow(clippy::expect_used)]
@@ -642,7 +643,101 @@ fn signed_engine_scenario() -> SignedEngineScenario {
         change: change_event,
         control_id,
         change_hash: change.change_hash(),
+        snapshot: document.accepted_state_bytes(),
     }
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn signed_single_chunk_checkpoint_verifies_real_automerge_history() {
+    let scenario = signed_engine_scenario();
+    let checkpoint_signer = TestSigner::from_byte(21);
+    let snapshot_hash: [u8; 32] = Sha256::digest(&scenario.snapshot).into();
+    let chunk_hash: [u8; 32] = Sha256::digest(&scenario.snapshot).into();
+    let chunk_root = nostr_automerge::checkpoint::leaf_hash(0, 1, chunk_hash);
+    let mut change_set = Sha256::new();
+    change_set.update(b"nostr-crdt/automerge/change-set/v1");
+    change_set.update([0]);
+    change_set.update(1_u64.to_be_bytes());
+    change_set.update(scenario.change_hash.as_bytes());
+    let change_set_hash: [u8; 32] = change_set.finalize().into();
+    let hex = |bytes: &[u8; 32]| {
+        bytes
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>()
+    };
+    let content = format!(
+        r#"{{"change_count":1,"change_set_hash":"{}","chunk_count":1,"chunk_root":"{}","chunk_size":{},"dependency_edges":0,"encoding":"automerge-save-v1","heads":["{}"],"raw_size":{},"total_ops":1,"v":1}}"#,
+        hex(&change_set_hash),
+        hex(&chunk_root),
+        scenario.snapshot.len(),
+        scenario.change_hash.to_hex(),
+        scenario.snapshot.len(),
+    );
+    let descriptor = checkpoint_signer.sign(
+        &UnsignedEventDraft::new(
+            3,
+            1_626,
+            vec![
+                vec!["a".to_owned(), scenario.coordinate.to_address()],
+                vec!["e".to_owned(), scenario.control_id.to_hex()],
+                vec!["x".to_owned(), hex(&snapshot_hash)],
+            ],
+            content,
+        )
+        .expect("descriptor draft")
+        .prepare(checkpoint_signer.public_key())
+        .expect("descriptor preimage"),
+    );
+    let descriptor_id = VerifiedNip01Event::verify(descriptor.clone())
+        .expect("signed descriptor")
+        .event_id();
+    let chunk = checkpoint_signer.sign(
+        &UnsignedEventDraft::new(
+            4,
+            1_627,
+            vec![
+                vec!["a".to_owned(), scenario.coordinate.to_address()],
+                vec!["e".to_owned(), descriptor_id.to_hex()],
+                vec!["x".to_owned(), hex(&chunk_hash)],
+                vec!["part".to_owned(), "0".to_owned(), "1".to_owned()],
+            ],
+            format!(
+                r#"{{"data":"{}","proof":[],"v":1}}"#,
+                base64::engine::general_purpose::STANDARD.encode(&scenario.snapshot)
+            ),
+        )
+        .expect("chunk draft")
+        .prepare(checkpoint_signer.public_key())
+        .expect("chunk preimage"),
+    );
+    let chunk_id = VerifiedNip01Event::verify(chunk.clone())
+        .expect("signed chunk")
+        .event_id();
+    let mut builder = CorpusBuilder::new();
+    for event in [chunk, scenario.change, descriptor, scenario.control] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let mut budget = WorkBudget::new(1_000_000, 1_000_000);
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        scenario.coordinate,
+        &mut budget,
+        &NeverCancelled,
+    );
+    let checkpoint = report.checkpoints().first().expect("checkpoint result");
+    assert_eq!(checkpoint.descriptor_event(), descriptor_id);
+    assert_eq!(checkpoint.chunk_events(), [chunk_id]);
+    assert_eq!(checkpoint.status(), CheckpointVerificationStatus::Verified);
+    assert_eq!(checkpoint.completion(), Completion::Complete);
+    assert_eq!(checkpoint.historical_carriers(), [scenario.change_hash]);
+    assert_eq!(checkpoint.accepted_at_control(), [scenario.change_hash]);
+    assert!(budget.consumed().get(WorkCounter::CheckpointByte) > 0);
+    assert!(budget.consumed().get(WorkCounter::CheckpointItem) > 0);
 }
 
 #[test]
