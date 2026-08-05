@@ -15,7 +15,6 @@ mod permutation;
 #[allow(dead_code)]
 mod report_json;
 mod runner;
-#[allow(dead_code)]
 mod scenario;
 #[allow(dead_code)]
 mod scenario_variants;

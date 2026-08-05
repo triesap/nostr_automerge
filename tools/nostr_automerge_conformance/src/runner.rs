@@ -6,12 +6,17 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use sha2::{Digest, Sha256};
 
-use nostr_automerge::{ControllerPublicKey, DevicePublicKey, DocumentId};
+use nostr_automerge::{
+    Completion, ControllerPublicKey, CorpusBuilder, DevicePublicKey, DocumentId,
+    EvidenceIdentifier, EvidenceStatus, NeverCancelled, ProtocolRevision, ReferenceEvaluator,
+    WorkBudget,
+};
 
 use crate::checksum::verify_fixture_files;
 use crate::expected::{ExpectedReport, load_expected};
 use crate::fixture::load_fixture;
 use crate::report_json::write_canonical_report;
+use crate::scenario::ScenarioInput;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum RunError {
@@ -59,7 +64,12 @@ pub(crate) fn run_fixture(path: &Path) -> Result<Vec<u8>, RunError> {
         return Err(RunError::Input);
     }
     let input = fs::read(base.join(&fixture.inputs[0].path)).map_err(|_| RunError::Input)?;
-    let actual = if fixture.fixture_id == "actor_derivation_001" {
+    let actual = if fixture.fixture_id.starts_with("scenario_") {
+        generic_report(
+            ScenarioInput::parse(&input).map_err(|_| RunError::Input)?,
+            expected.clone(),
+        )?
+    } else if fixture.fixture_id == "actor_derivation_001" {
         let input: ActorDerivationInput =
             serde_json::from_slice(&input).map_err(|_| RunError::Input)?;
         actor_derivation_report(expected.clone(), &input)?
@@ -68,6 +78,100 @@ pub(crate) fn run_fixture(path: &Path) -> Result<Vec<u8>, RunError> {
     };
     compare_expected(&actual, &expected)?;
     write_canonical_report(&actual).map_err(|_| RunError::Expected)
+}
+
+fn generic_report(
+    scenario: ScenarioInput,
+    mut output: ExpectedReport,
+) -> Result<ExpectedReport, RunError> {
+    let coordinate = scenario.coordinate.parse().map_err(|_| RunError::Input)?;
+    let mut builder = CorpusBuilder::new();
+    for raw in scenario.raw_events {
+        let _ = builder.ingest_bytes(raw.as_bytes());
+    }
+    let corpus = builder.finish();
+    let mut budget = WorkBudget::new(scenario.budget.max_bytes, scenario.budget.max_items);
+    let report = if let Some(cancel_after) = scenario.cancel_after {
+        let calls = std::cell::Cell::new(0_u64);
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+            &corpus,
+            coordinate,
+            &mut budget,
+            &|| {
+                let current = calls.get();
+                calls.set(current.saturating_add(1));
+                current >= cancel_after
+            },
+        )
+    } else {
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+            &corpus,
+            coordinate,
+            &mut budget,
+            &NeverCancelled,
+        )
+    };
+    output.coordinate = report.coordinate().to_address();
+    output.canonical_controls = report
+        .canonical_controls()
+        .iter()
+        .map(|event_id| (*event_id).to_hex())
+        .collect();
+    output.accepted_changes = report
+        .accepted_changes()
+        .iter()
+        .map(|change_hash| (*change_hash).to_hex())
+        .collect();
+    output.pending_changes = report
+        .pending_changes()
+        .iter()
+        .map(|change_hash| (*change_hash).to_hex())
+        .collect();
+    output.excluded_changes = report
+        .excluded_changes()
+        .iter()
+        .map(|change_hash| (*change_hash).to_hex())
+        .collect();
+    output.heads = report
+        .heads()
+        .iter()
+        .map(|change_hash| (*change_hash).to_hex())
+        .collect();
+    output.history_digest = report.history_digest().to_hex();
+    output.dispositions_digest = report.dispositions_digest().to_hex();
+    output.invalid_events = evidence_ids(&report, EvidenceStatus::Invalid);
+    output.unsupported_events = evidence_ids(&report, EvidenceStatus::Unsupported);
+    output.completion = match report.completion() {
+        Completion::Complete => "complete",
+        Completion::BudgetExhausted => "budget_exhausted",
+        Completion::Cancelled => "cancelled",
+        Completion::Failed => return Err(RunError::Input),
+    }
+    .to_owned();
+    if !report.integrity_alerts().is_empty() || !output.state_assertions.is_empty() {
+        return Err(RunError::Input);
+    }
+    output.integrity_alerts.clear();
+    Ok(output)
+}
+
+fn evidence_ids(report: &nostr_automerge::EvaluationReport, status: EvidenceStatus) -> Vec<String> {
+    let mut values = report
+        .evidence()
+        .iter()
+        .filter_map(|record| {
+            if record.status() != status {
+                return None;
+            }
+            match record.identifier() {
+                EvidenceIdentifier::Event(event_id) => Some(event_id.to_hex()),
+                EvidenceIdentifier::InvalidRawSha256(_) => None,
+            }
+        })
+        .collect::<Vec<_>>();
+    values.sort();
+    values.dedup();
+    values
 }
 
 fn actor_derivation_report(
@@ -205,8 +309,9 @@ pub(crate) fn write_corpus_summary(summary: &CorpusSummary) -> Result<Vec<u8>, R
 mod tests {
     use std::path::Path;
 
-    use super::{RunError, compare_expected, discover_fixtures, run_corpus};
+    use super::{RunError, compare_expected, discover_fixtures, generic_report, run_corpus};
     use crate::expected::load_expected;
+    use crate::scenario::ScenarioInput;
 
     #[test]
     fn expected_mismatch_has_stable_exit_code() {
@@ -251,5 +356,35 @@ mod tests {
         );
         assert_eq!(failures.failed, 1);
         assert_eq!(failures.passed + failures.failed, failures.total);
+    }
+
+    #[test]
+    fn execute_generic_raw_event_through_public_engine() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let raw_event =
+            std::fs::read_to_string(root.join("fixtures/v1_draft/nip01/valid_event.json"));
+        assert!(raw_event.is_ok());
+        let Ok(raw_event) = raw_event else { return };
+        let scenario = serde_json::json!({
+            "budget": {"max_bytes": 100_000, "max_items": 10_000},
+            "cancel_after": null,
+            "coordinate": format!("31624:{}:{}", "11".repeat(32), "22".repeat(32)),
+            "raw_events": [raw_event],
+            "scenario_schema": "nostr_automerge.scenario.v1"
+        });
+        let parsed = ScenarioInput::parse(&serde_json::to_vec(&scenario).unwrap_or_default());
+        assert!(parsed.is_ok());
+        let Ok(parsed) = parsed else { return };
+        let expected =
+            load_expected(&root.join("fixtures/examples/actor_derivation_001.expected.json"));
+        assert!(expected.is_ok());
+        let Ok(mut expected) = expected else { return };
+        expected.state_assertions.clear();
+        let actual = generic_report(parsed, expected);
+        assert!(actual.is_ok());
+        let Ok(actual) = actual else { return };
+        assert_eq!(actual.completion, "complete");
+        assert!(actual.canonical_controls.is_empty());
+        assert!(actual.accepted_changes.is_empty());
     }
 }
