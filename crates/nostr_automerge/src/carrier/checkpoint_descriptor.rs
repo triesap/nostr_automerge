@@ -38,6 +38,24 @@ impl ValidatedCheckpointDescriptorCarrier {
     pub(crate) const fn descriptor(&self) -> &CheckpointDescriptor {
         &self.descriptor
     }
+
+    #[cfg(test)]
+    pub(crate) fn for_test(
+        event_id: EventId,
+        author: DevicePublicKey,
+        coordinate: DocumentCoordinate,
+        control_id: EventId,
+        descriptor: CheckpointDescriptor,
+    ) -> Self {
+        Self {
+            event_id,
+            author,
+            coordinate,
+            control_id,
+            snapshot_hash: descriptor.snapshot_hash,
+            descriptor,
+        }
+    }
 }
 
 impl fmt::Debug for ValidatedCheckpointDescriptorCarrier {

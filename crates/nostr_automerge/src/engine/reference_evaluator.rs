@@ -1,4 +1,5 @@
 use crate::carrier::VerifiedCarrier;
+use crate::checkpoint::authorize::{DescriptorAuthorization, authorize_descriptor};
 use crate::conformance::dispositions_digest::{
     DispositionItem, DispositionNamespace, dispositions_digest,
 };
@@ -65,6 +66,11 @@ impl ReferenceEvaluator {
             batch.materialized_document = None;
         }
         let canonical_controls = batch.canonical_controls;
+        let _checkpoint_authorizations = checkpoint_authorizations(
+            corpus,
+            coordinate,
+            &canonical_controls.iter().copied().collect(),
+        );
         let dispositions = batch.dispositions.into_iter().collect::<Vec<_>>();
         let accepted_changes = batch.accepted_changes.into_iter().collect::<Vec<_>>();
         let heads = batch.heads.into_iter().collect::<Vec<_>>();
@@ -115,6 +121,38 @@ impl ReferenceEvaluator {
                 .map(MaterializedDocumentView::from_canonical_bytes),
         })
     }
+}
+
+fn checkpoint_authorizations(
+    corpus: &EvidenceCorpus,
+    coordinate: DocumentCoordinate,
+    canonical_controls: &std::collections::BTreeSet<crate::EventId>,
+) -> std::collections::BTreeMap<crate::EventId, DescriptorAuthorization> {
+    let controls = corpus
+        .events
+        .values()
+        .filter_map(|evidence| match evidence {
+            EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::Control(control),
+                ..
+            } => Some((control.event_id(), control.as_ref())),
+            _ => None,
+        })
+        .collect();
+    corpus
+        .events
+        .values()
+        .filter_map(|evidence| match evidence {
+            EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
+                ..
+            } if descriptor.coordinate() == coordinate => Some((
+                descriptor.event_id(),
+                authorize_descriptor(descriptor, canonical_controls, &controls),
+            )),
+            _ => None,
+        })
+        .collect()
 }
 
 fn charge_ingress(corpus: &EvidenceCorpus, budget: &mut WorkBudget) -> bool {

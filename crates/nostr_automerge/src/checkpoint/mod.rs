@@ -1,6 +1,7 @@
 //! Optional verified-history checkpoints that can only reproduce full replay.
 
 mod assemble;
+pub(crate) mod authorize;
 mod chunk;
 mod descriptor;
 mod merkle;

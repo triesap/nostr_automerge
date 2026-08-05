@@ -144,6 +144,12 @@ impl ValidatedControlCarrier {
             content,
         }
     }
+
+    #[cfg(test)]
+    pub(crate) fn set_test_roles(&mut self, roles: Vec<Role>) {
+        self.content.members[0].roles = roles;
+        self.content.terminal = !self.content.members[0].roles.contains(&Role::Write);
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
