@@ -1,8 +1,8 @@
 # Draft V1 Remediation Execution Ledger
 
 Status: active
-Current checkpoint: `step_241`
-Completed checkpoints: `step_193` through `step_240`
+Current checkpoint: `step_242`
+Completed checkpoints: `step_193` through `step_241`
 Governing RCLD: `docs/execution/rcl/nostr_automerge_v1_14_engine_remediation_rcld.md`
 
 | Phase | Checkpoints | State |

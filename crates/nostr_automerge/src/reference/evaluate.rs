@@ -4,7 +4,7 @@ use crate::automerge_adapter::document::{AppliedDocument, materialize_history};
 use crate::control::select::select_with_alert;
 use crate::graph::change_candidate::ChangeCandidate;
 use crate::graph::dependency_graph::build_graph;
-use crate::graph::equivocation::quarantine_equivocation_descendants;
+use crate::graph::equivocation::{QuarantineError, quarantine_equivocation_descendants};
 use crate::graph::schedule::{ScheduleError, schedule_candidates};
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
 use crate::{
@@ -153,13 +153,27 @@ pub(crate) fn evaluate_batch(
             .filter(|change| change.semantically_valid && !control.frozen)
             .map(|change| change.candidate.clone())
             .collect::<Vec<_>>();
-        if let Ok(graph) = build_graph(eligible.clone(), accepted_changes.clone())
-            && let Ok(quarantine) = quarantine_equivocation_descendants(eligible, &graph)
-        {
-            for hash in &quarantine.quarantined {
-                dispositions.insert(*hash, ProtocolDisposition::Excluded);
+        if let Ok(graph) = build_graph(eligible.clone(), accepted_changes.clone()) {
+            match quarantine_equivocation_descendants(eligible, &graph, budget, cancellation) {
+                Ok(quarantine) => {
+                    for hash in &quarantine.quarantined {
+                        dispositions.insert(*hash, ProtocolDisposition::Excluded);
+                    }
+                    integrity_alerts.extend(quarantine.alerts);
+                }
+                Err(QuarantineError::BudgetExhausted) => {
+                    completion = Completion::BudgetExhausted;
+                    break;
+                }
+                Err(QuarantineError::Cancelled) => {
+                    completion = Completion::Cancelled;
+                    break;
+                }
+                Err(QuarantineError::Alert(_)) => {
+                    completion = Completion::Failed;
+                    break;
+                }
             }
-            integrity_alerts.extend(quarantine.alerts);
         }
         accepted_changes.extend(dispositions.iter().filter_map(|(hash, disposition)| {
             (*disposition == ProtocolDisposition::Accepted).then_some(*hash)
@@ -423,7 +437,7 @@ mod tests {
         assert!(basic_report.materialized_document.is_some());
         let final_schedule_exhausted = evaluate_batch(
             [control(1, None, vec![basic.clone()])],
-            &mut WorkBudget::new(0, 4),
+            &mut WorkBudget::new(0, 6),
             &NeverCancelled,
         );
         assert_eq!(

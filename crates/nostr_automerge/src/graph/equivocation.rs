@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use super::change_candidate::ChangeCandidate;
 use super::dependency_graph::DependencyGraph;
 use crate::integrity::{AlertError, DeviceEquivocationAlert, IntegrityAlert};
-use crate::{ActorId, ChangeHash, EventId};
+use crate::{ActorId, CancellationCheck, ChangeHash, EventId, WorkBudget, WorkCounter};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct EquivocationGroup {
@@ -17,6 +17,19 @@ pub(crate) struct EquivocationGroup {
 pub(crate) struct QuarantineResult {
     pub(crate) quarantined: BTreeSet<ChangeHash>,
     pub(crate) alerts: Vec<IntegrityAlert>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum QuarantineError {
+    Alert(AlertError),
+    BudgetExhausted,
+    Cancelled,
+}
+
+impl From<AlertError> for QuarantineError {
+    fn from(error: AlertError) -> Self {
+        Self::Alert(error)
+    }
 }
 
 pub(crate) fn detect_equivocations(
@@ -50,13 +63,21 @@ pub(crate) fn detect_equivocations(
 }
 
 pub(crate) fn quarantine_equivocation_descendants(
-    candidates: impl IntoIterator<Item = ChangeCandidate>,
+    inputs: impl IntoIterator<Item = ChangeCandidate>,
     graph: &DependencyGraph,
-) -> Result<QuarantineResult, AlertError> {
-    let candidates = candidates
-        .into_iter()
-        .map(|candidate| (candidate.change_hash, candidate))
-        .collect::<BTreeMap<_, _>>();
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<QuarantineResult, QuarantineError> {
+    let mut candidates = BTreeMap::new();
+    for candidate in inputs {
+        if cancellation.is_cancelled() {
+            return Err(QuarantineError::Cancelled);
+        }
+        budget
+            .charge(WorkCounter::GraphNode, 1)
+            .map_err(|_| QuarantineError::BudgetExhausted)?;
+        candidates.insert(candidate.change_hash, candidate);
+    }
     let groups = detect_equivocations(candidates.values().cloned());
     let mut quarantined = BTreeSet::new();
     let mut alerts = Vec::with_capacity(groups.len());
@@ -73,8 +94,20 @@ pub(crate) fn quarantine_equivocation_descendants(
         );
         let mut queue = affected.iter().copied().collect::<Vec<_>>();
         while let Some(hash) = queue.pop() {
+            if cancellation.is_cancelled() {
+                return Err(QuarantineError::Cancelled);
+            }
+            budget
+                .charge(WorkCounter::GraphNode, 1)
+                .map_err(|_| QuarantineError::BudgetExhausted)?;
             if let Some(dependants) = graph.dependants.get(&hash) {
                 for dependant in dependants.iter().rev() {
+                    if cancellation.is_cancelled() {
+                        return Err(QuarantineError::Cancelled);
+                    }
+                    budget
+                        .charge(WorkCounter::GraphEdge, 1)
+                        .map_err(|_| QuarantineError::BudgetExhausted)?;
                     if affected.insert(*dependant) {
                         queue.push(*dependant);
                     }
@@ -112,7 +145,7 @@ mod tests {
     use crate::graph::actor_state::tests::candidate;
     use crate::graph::dependency_graph::build_graph;
     use crate::integrity::IntegrityAlert;
-    use crate::{ChangeHash, EventId};
+    use crate::{ChangeHash, EventId, NeverCancelled, WorkBudget, WorkCounter};
 
     #[test]
     fn detect_device_equivocation_groups() {
@@ -162,7 +195,8 @@ mod tests {
         let graph = build_graph(input.clone(), BTreeSet::new());
         assert!(graph.is_ok());
         let Ok(graph) = graph else { return };
-        let result = quarantine_descendants(input.clone(), &graph);
+        let mut budget = WorkBudget::new(0, 100);
+        let result = quarantine_descendants(input.clone(), &graph, &mut budget, &NeverCancelled);
         assert!(result.is_ok());
         let Ok(result) = result else { return };
         assert_eq!(
@@ -176,6 +210,8 @@ mod tests {
         );
         assert!(!result.quarantined.contains(&independent.change_hash));
         assert_eq!(result.alerts.len(), 1);
+        assert_eq!(budget.consumed().get(WorkCounter::GraphNode), 9);
+        assert_eq!(budget.consumed().get(WorkCounter::GraphEdge), 2);
         assert!(matches!(
             result.alerts[0],
             IntegrityAlert::DeviceEquivocation(_)
@@ -191,7 +227,15 @@ mod tests {
 
         let mut reversed = input.clone();
         reversed.reverse();
-        assert_eq!(quarantine_descendants(reversed, &graph), Ok(result));
+        assert_eq!(
+            quarantine_descendants(
+                reversed,
+                &graph,
+                &mut WorkBudget::new(0, 100),
+                &NeverCancelled,
+            ),
+            Ok(result)
+        );
 
         let mut deep = independent;
         deep.change_hash = ChangeHash::from_bytes([6; 32]);
@@ -201,11 +245,29 @@ mod tests {
         let graph = build_graph(extended.clone(), BTreeSet::new());
         assert!(graph.is_ok());
         let Ok(graph) = graph else { return };
-        let extended_result = quarantine_descendants(extended, &graph);
+        let extended_result = quarantine_descendants(
+            extended.clone(),
+            &graph,
+            &mut WorkBudget::new(0, 100),
+            &NeverCancelled,
+        );
         assert!(
             extended_result
                 .as_ref()
                 .is_ok_and(|result| result.quarantined.contains(&deep.change_hash))
         );
+        assert!(matches!(
+            quarantine_descendants(
+                extended.clone(),
+                &graph,
+                &mut WorkBudget::new(0, 0),
+                &NeverCancelled,
+            ),
+            Err(super::QuarantineError::BudgetExhausted)
+        ));
+        assert!(matches!(
+            quarantine_descendants(extended, &graph, &mut WorkBudget::new(0, 100), &|| true,),
+            Err(super::QuarantineError::Cancelled)
+        ));
     }
 }
