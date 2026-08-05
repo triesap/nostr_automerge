@@ -54,6 +54,17 @@ def main() -> int:
     adrs = sorted((ROOT / "docs/adr").glob("adr_[0-9][0-9][0-9][0-9]_*.md"))
     if len(adrs) != 19 or any("## Decision" not in path.read_text() for path in adrs[12:]):
         raise AssertionError("remediation ADR is missing or invalid")
+    report_path = ROOT / "reports/remediation_phase_00.json"
+    if report_path.exists():
+        report = json.loads(report_path.read_text())
+        if set(report) != {"adaptations", "completed_steps", "finding_status", "next_step", "result", "schema", "through_commit", "verification"}:
+            raise AssertionError("phase 00 report fields are incomplete or unknown")
+        if report["completed_steps"] != [f"step_{number:03d}" for number in range(193, 200)]:
+            raise AssertionError("phase 00 completion range is invalid")
+        if report["result"] != "pass" or report["finding_status"] != "13_open" or report["next_step"] != "step_201":
+            raise AssertionError("phase 00 result is inconsistent")
+        if report["verification"].get("tracked_workflows") != 0:
+            raise AssertionError("tracked workflow claim is invalid")
     print("PASS: remediation authority and negative invariants")
     return 0
 

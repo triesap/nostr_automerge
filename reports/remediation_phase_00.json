@@ -1,0 +1,28 @@
+{
+  "adaptations": {
+    "coverage": "local_only",
+    "fuzz_execution": "defer_only_if_environment_rejects",
+    "nip_authoring": "out_of_scope",
+    "workflow": "ignored_act_only"
+  },
+  "completed_steps": [
+    "step_193",
+    "step_194",
+    "step_195",
+    "step_196",
+    "step_197",
+    "step_198",
+    "step_199"
+  ],
+  "finding_status": "13_open",
+  "next_step": "step_201",
+  "result": "pass",
+  "schema": "nostr_automerge.remediation_phase.v1",
+  "through_commit": "c0c56de7f82b20394cc57972e1fba1f183bf54cf",
+  "verification": {
+    "act_remediation": "pass_self_hosted",
+    "remediation_authority": "pass",
+    "repository_xtask": "pass",
+    "tracked_workflows": 0
+  }
+}
