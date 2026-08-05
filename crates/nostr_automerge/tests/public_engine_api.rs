@@ -8,7 +8,7 @@ use base64::Engine as _;
 use nostr_automerge::authoring::{ActorState, AuthoringDocument, Operation, UnsignedEventDraft};
 use nostr_automerge::{
     ActorId, CorpusBuilder, DocumentCoordinate, EvidenceCorpus, EvidenceStatus, IngestOutcome,
-    VerifiedNip01Event,
+    ProtocolRevision, ReferenceEvaluator, VerifiedNip01Event,
 };
 use support::test_signer::TestSigner;
 
@@ -60,6 +60,13 @@ fn build_immutable_evidence_corpus_through_public_api() {
     assert!(!include_str!("../src/lib.rs").contains("IndexValidity"));
     assert_eq!(corpus.control_ids().count(), 0);
     assert_eq!(corpus.change_hashes().count(), 0);
+}
+
+#[test]
+fn reference_evaluator_api_is_sealed_and_repository_owned() {
+    let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
+    assert_eq!(evaluator.revision(), ProtocolRevision::draft_v1());
+    assert!(std::any::type_name::<ReferenceEvaluator>().starts_with("nostr_automerge::"));
 }
 
 #[test]

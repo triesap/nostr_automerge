@@ -20,6 +20,7 @@ mod control;
 mod crypto;
 mod diagnostic;
 mod disposition;
+mod engine;
 mod error;
 #[allow(dead_code)]
 mod evidence;
@@ -38,6 +39,7 @@ mod work_budget;
 
 pub use diagnostic::DiagnosticCode;
 pub use disposition::{Completion, ProtocolDisposition};
+pub use engine::ReferenceEvaluator;
 pub use error::HexError;
 pub use evidence::corpus_builder::{
     CorpusBuilder, EvidenceCorpus, EvidenceIdentifier, EvidenceRecord, EvidenceStatus,
