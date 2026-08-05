@@ -76,6 +76,8 @@ impl ReferenceEvaluator {
         let _checkpoint_chunk_sets = checkpoint_chunk_sets(corpus, coordinate);
         let _checkpoint_carrier_coverage =
             checkpoint_carrier_coverage(corpus, coordinate, &canonical_controls);
+        let _checkpoint_accepted_history =
+            checkpoint_accepted_history(corpus, coordinate, &batch.accepted_at_control);
         let dispositions = batch.dispositions.into_iter().collect::<Vec<_>>();
         let accepted_changes = batch.accepted_changes.into_iter().collect::<Vec<_>>();
         let heads = batch.heads.into_iter().collect::<Vec<_>>();
@@ -126,6 +128,36 @@ impl ReferenceEvaluator {
                 .map(MaterializedDocumentView::from_canonical_bytes),
         })
     }
+}
+
+fn checkpoint_accepted_history(
+    corpus: &EvidenceCorpus,
+    coordinate: DocumentCoordinate,
+    accepted_at_control: &std::collections::BTreeMap<
+        crate::EventId,
+        std::collections::BTreeSet<ChangeHash>,
+    >,
+) -> std::collections::BTreeMap<
+    crate::EventId,
+    Result<std::collections::BTreeSet<ChangeHash>, HistoryVerificationError>,
+> {
+    corpus
+        .events
+        .values()
+        .filter_map(|evidence| match evidence {
+            EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
+                ..
+            } if descriptor.coordinate() == coordinate => Some((
+                descriptor.event_id(),
+                accepted_at_control
+                    .get(&descriptor.control_id())
+                    .cloned()
+                    .ok_or(HistoryVerificationError::UnknownControl),
+            )),
+            _ => None,
+        })
+        .collect()
 }
 
 fn checkpoint_carrier_coverage(

@@ -31,6 +31,7 @@ pub(crate) struct BatchControl {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct BatchEvaluationReport {
     pub(crate) canonical_controls: Vec<EventId>,
+    pub(crate) accepted_at_control: BTreeMap<EventId, BTreeSet<ChangeHash>>,
     pub(crate) dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
     pub(crate) accepted_changes: BTreeSet<ChangeHash>,
     pub(crate) heads: BTreeSet<ChangeHash>,
@@ -113,6 +114,7 @@ pub(crate) fn evaluate_batch(
     }
     let mut completion = Completion::Complete;
     let mut accepted_changes = BTreeSet::new();
+    let mut accepted_at_control = BTreeMap::new();
     for control_id in &canonical_controls {
         let Some(control) = controls.get(control_id) else {
             continue;
@@ -180,6 +182,7 @@ pub(crate) fn evaluate_batch(
         }));
         accepted_changes
             .retain(|hash| dispositions.get(hash) != Some(&ProtocolDisposition::Excluded));
+        accepted_at_control.insert(*control_id, accepted_changes.clone());
     }
 
     if completion != Completion::Complete {
@@ -287,6 +290,7 @@ pub(crate) fn evaluate_batch(
     };
     BatchEvaluationReport {
         canonical_controls,
+        accepted_at_control,
         dispositions,
         accepted_changes,
         heads,
@@ -346,6 +350,7 @@ fn incomplete_report(
 ) -> BatchEvaluationReport {
     BatchEvaluationReport {
         canonical_controls,
+        accepted_at_control: BTreeMap::new(),
         dispositions,
         accepted_changes,
         heads: BTreeSet::new(),
@@ -434,6 +439,12 @@ mod tests {
             &NeverCancelled,
         );
         assert_eq!(basic_report.completion, Completion::Complete);
+        assert_eq!(
+            basic_report
+                .accepted_at_control
+                .get(&EventId::from_bytes([1; 32])),
+            Some(&basic_report.accepted_changes)
+        );
         assert!(basic_report.materialized_document.is_some());
         let final_schedule_exhausted = evaluate_batch(
             [control(1, None, vec![basic.clone()])],

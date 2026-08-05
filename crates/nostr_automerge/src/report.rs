@@ -220,6 +220,7 @@ mod tests {
 
         let evaluation = BatchEvaluationReport {
             canonical_controls: vec![controls[0]],
+            accepted_at_control: BTreeMap::from([(controls[0], BTreeSet::from([accepted[0]]))]),
             dispositions: BTreeMap::from([(accepted[0], ProtocolDisposition::Accepted)]),
             accepted_changes: BTreeSet::from([accepted[0]]),
             heads: BTreeSet::from([accepted[0]]),
