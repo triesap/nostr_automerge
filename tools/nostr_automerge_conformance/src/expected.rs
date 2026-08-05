@@ -191,7 +191,7 @@ fn valid_expected_value(value: &Value) -> bool {
         return false;
     };
     match kind {
-        "null" | "map" | "list" => object.len() == 1,
+        "null" | "map" | "list" | "table" => object.len() == 1,
         "bool" => object.len() == 2 && object.get("value").is_some_and(Value::is_boolean),
         "i64" | "u64" | "counter" | "timestamp" | "f64_bits" | "bytes32" | "change_hash"
         | "event_id" | "string" | "text" | "bytes_base64" => {

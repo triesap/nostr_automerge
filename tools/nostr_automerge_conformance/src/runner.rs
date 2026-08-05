@@ -2,14 +2,16 @@ use core::str::FromStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use base64::Engine as _;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use sha2::{Digest, Sha256};
 
 use nostr_automerge::{
     CheckpointVerificationStatus, Completion, ControllerPublicKey, CorpusBuilder, DevicePublicKey,
-    DocumentId, EvidenceIdentifier, EvidenceStatus, NeverCancelled, ProtocolRevision,
-    ReferenceEvaluator, WorkBudget,
+    DocumentId, EvidenceIdentifier, EvidenceStatus, IntegrityAlert, MaterializedObjectType,
+    MaterializedPathElement, MaterializedScalar, MaterializedValue, NeverCancelled,
+    ProtocolRevision, ReferenceEvaluator, WorkBudget,
 };
 
 use crate::checksum::verify_fixture_files;
@@ -149,10 +151,21 @@ fn generic_report(
         Completion::Failed => return Err(RunError::Input),
     }
     .to_owned();
-    if !report.integrity_alerts().is_empty() || !output.state_assertions.is_empty() {
-        return Err(RunError::Input);
+    output.integrity_alerts = report
+        .integrity_alerts()
+        .iter()
+        .map(integrity_alert)
+        .collect();
+    for assertion in &mut output.state_assertions {
+        let path = materialized_path(&assertion.path)?;
+        let document = report.document().ok_or(RunError::Input)?;
+        let entry = document
+            .entries()
+            .iter()
+            .find(|entry| entry.path() == path)
+            .ok_or(RunError::Input)?;
+        assertion.expected = materialized_conflicts(entry.conflicts());
     }
-    output.integrity_alerts.clear();
     output.checkpoints = report
         .checkpoints()
         .iter()
@@ -222,6 +235,110 @@ fn hex_bytes(bytes: [u8; 32]) -> String {
         let _ = write!(value, "{byte:02x}");
     }
     value
+}
+
+fn materialized_path(path: &[Value]) -> Result<Vec<MaterializedPathElement>, RunError> {
+    path.iter()
+        .map(|part| {
+            if let Some(key) = part.as_str() {
+                Ok(MaterializedPathElement::Key(key.to_owned()))
+            } else if let Some(index) = part.as_u64() {
+                Ok(MaterializedPathElement::Index(index))
+            } else {
+                Err(RunError::Expected)
+            }
+        })
+        .collect()
+}
+
+fn materialized_conflicts(conflicts: &[nostr_automerge::MaterializedConflict]) -> Value {
+    if let [conflict] = conflicts {
+        return materialized_value(conflict.value());
+    }
+    serde_json::json!({
+        "type": "conflicts",
+        "values": conflicts.iter().map(|conflict| serde_json::json!({
+            "operation_id": conflict.operation_id(),
+            "value": materialized_value(conflict.value()),
+        })).collect::<Vec<_>>()
+    })
+}
+
+fn materialized_value(value: &MaterializedValue) -> Value {
+    match value {
+        MaterializedValue::Scalar(value) => materialized_scalar(value),
+        MaterializedValue::Object { object_type, .. } => serde_json::json!({
+            "type": match object_type {
+                MaterializedObjectType::Map => "map",
+                MaterializedObjectType::List => "list",
+                MaterializedObjectType::Table => "table",
+                MaterializedObjectType::Text => "text",
+            }
+        }),
+        MaterializedValue::Text { value, .. } => serde_json::json!({"type":"text", "value":value}),
+    }
+}
+
+fn materialized_scalar(value: &MaterializedScalar) -> Value {
+    match value {
+        MaterializedScalar::Null => serde_json::json!({"type":"null"}),
+        MaterializedScalar::Bool(value) => serde_json::json!({"type":"bool", "value":value}),
+        MaterializedScalar::I64(value) => {
+            serde_json::json!({"type":"i64", "value":value.to_string()})
+        }
+        MaterializedScalar::U64(value) => {
+            serde_json::json!({"type":"u64", "value":value.to_string()})
+        }
+        MaterializedScalar::F64Bits(value) => {
+            serde_json::json!({"type":"f64_bits", "value":format!("{value:016x}")})
+        }
+        MaterializedScalar::String(value) => serde_json::json!({"type":"string", "value":value}),
+        MaterializedScalar::Bytes(value) => serde_json::json!({
+            "type":"bytes_base64",
+            "value": base64::engine::general_purpose::STANDARD.encode(value)
+        }),
+        MaterializedScalar::Timestamp(value) => {
+            serde_json::json!({"type":"timestamp", "value":value.to_string()})
+        }
+        MaterializedScalar::Counter(value) => {
+            serde_json::json!({"type":"counter", "value":value.to_string()})
+        }
+    }
+}
+
+fn integrity_alert(alert: &IntegrityAlert) -> Value {
+    match alert {
+        IntegrityAlert::ControllerEquivocation(details) => serde_json::json!({
+            "type":"controller_equivocation",
+            "parent_control":details.parent_control().map(nostr_automerge::EventId::to_hex),
+            "candidate_controls":details.candidate_controls().iter().map(|id| (*id).to_hex()).collect::<Vec<_>>(),
+            "selected_control":details.selected_control().to_hex(),
+        }),
+        IntegrityAlert::CanonicalControlReorganization(details) => serde_json::json!({
+            "type":"canonical_control_reorganization",
+            "previous_tip":details.previous_tip().to_hex(),
+            "new_tip":details.new_tip().to_hex(),
+            "affected_changes":details.affected_changes().iter().map(|hash| (*hash).to_hex()).collect::<Vec<_>>(),
+        }),
+        IntegrityAlert::DeviceEquivocation(details) => serde_json::json!({
+            "type":"device_equivocation",
+            "actor_id":details.actor_id().to_hex(),
+            "first_sequence":details.first_sequence(),
+            "conflicting_changes":details.conflicting_changes().iter().map(|hash| (*hash).to_hex()).collect::<Vec<_>>(),
+            "affected_descendants":details.affected_descendants().iter().map(|hash| (*hash).to_hex()).collect::<Vec<_>>(),
+        }),
+        IntegrityAlert::PotentialClonedDeviceKey(details) => serde_json::json!({
+            "type":"potential_cloned_device_key",
+            "actor_id":details.actor_id().to_hex(),
+            "first_sequence":details.first_sequence(),
+            "carrier_event_ids":details.carrier_event_ids().iter().map(|id| (*id).to_hex()).collect::<Vec<_>>(),
+        }),
+        IntegrityAlert::CheckpointMismatch(details) => serde_json::json!({
+            "type":"checkpoint_mismatch",
+            "descriptor_event_id":details.descriptor_event_id().to_hex(),
+            "code":details.code().as_str(),
+        }),
+    }
 }
 
 fn evidence_ids(report: &nostr_automerge::EvaluationReport, status: EvidenceStatus) -> Vec<String> {
