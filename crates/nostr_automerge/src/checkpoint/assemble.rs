@@ -7,12 +7,16 @@ use sha2::{Digest, Sha256};
 pub enum AssemblyError {
     /// Chunk set, index, count, size, or proof differed.
     Chunks,
+    /// A chunk proof did not reconstruct the descriptor root.
+    Proof,
     /// Local deterministic budget was exhausted.
     Budget,
     /// Caller requested cancellation.
     Cancelled,
-    /// Complete snapshot size or identity differed.
-    Identity,
+    /// Complete snapshot size differed.
+    SnapshotSize,
+    /// Complete snapshot hash differed.
+    SnapshotHash,
 }
 
 /// Orders, verifies, and joins a complete bounded chunk set.
@@ -63,13 +67,14 @@ pub fn assemble_chunks<C: CancellationCheck>(
             &chunk.proof,
             descriptor.chunk_root,
         )
-        .map_err(|_| AssemblyError::Chunks)?;
+        .map_err(|_| AssemblyError::Proof)?;
         output.extend_from_slice(&chunk.data);
     }
-    if output.len() as u64 != descriptor.raw_size
-        || <[u8; 32]>::from(Sha256::digest(&output)) != *descriptor.snapshot_hash.as_bytes()
-    {
-        return Err(AssemblyError::Identity);
+    if output.len() as u64 != descriptor.raw_size {
+        return Err(AssemblyError::SnapshotSize);
+    }
+    if <[u8; 32]>::from(Sha256::digest(&output)) != *descriptor.snapshot_hash.as_bytes() {
+        return Err(AssemblyError::SnapshotHash);
     }
     Ok(output)
 }
@@ -143,7 +148,55 @@ mod tests {
         let mut budget = WorkBudget::new(1, 1);
         assert_eq!(
             assemble_chunks(&value, &mut chunk, &mut budget, &NeverCancelled),
-            Err(AssemblyError::Identity)
+            Err(AssemblyError::SnapshotHash)
+        );
+
+        let mut wrong_proof = vec![CheckpointChunk {
+            index: 0,
+            count: 1,
+            data: b"x".to_vec(),
+            proof: vec![],
+        }];
+        value.snapshot_hash = SnapshotHash::from_bytes(Sha256::digest(b"x").into());
+        value.chunk_root = [9; 32];
+        assert_eq!(
+            assemble_chunks(
+                &value,
+                &mut wrong_proof,
+                &mut WorkBudget::new(2, 2),
+                &NeverCancelled
+            ),
+            Err(AssemblyError::Proof)
+        );
+
+        let l0 = leaf_hash(0, 2, Sha256::digest(b"ab").into());
+        let l1 = leaf_hash(1, 2, Sha256::digest(b"cd").into());
+        let mut oversized_final = vec![
+            CheckpointChunk {
+                index: 0,
+                count: 2,
+                data: b"ab".to_vec(),
+                proof: vec![super::super::ProofStep::right(l1)],
+            },
+            CheckpointChunk {
+                index: 1,
+                count: 2,
+                data: b"cd".to_vec(),
+                proof: vec![super::super::ProofStep::left(l0)],
+            },
+        ];
+        value.raw_size = 3;
+        value.chunk_size = 2;
+        value.chunk_count = 2;
+        value.chunk_root = super::super::merkle_root(&[l0, l1]).unwrap_or([0; 32]);
+        assert_eq!(
+            assemble_chunks(
+                &value,
+                &mut oversized_final,
+                &mut WorkBudget::new(8, 8),
+                &NeverCancelled
+            ),
+            Err(AssemblyError::SnapshotSize)
         );
     }
 }

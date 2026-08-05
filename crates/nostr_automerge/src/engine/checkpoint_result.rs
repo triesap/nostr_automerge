@@ -24,8 +24,14 @@ pub enum CheckpointVerificationStatus {
     MissingChunk,
     /// A chunk length differed from the descriptor commitment.
     ChunkSizeMismatch,
-    /// Merkle proof, root, snapshot size, or snapshot hash verification failed.
-    AssemblyMismatch,
+    /// A post-binding chunk shape differed from the descriptor.
+    ChunkAssemblyMismatch,
+    /// A chunk proof did not reconstruct the descriptor Merkle root.
+    MerkleMismatch,
+    /// Reconstructed snapshot size differed from the descriptor.
+    SnapshotSizeMismatch,
+    /// Reconstructed snapshot hash differed from the descriptor.
+    SnapshotHashMismatch,
     /// The snapshot could not be loaded safely.
     SnapshotLoad,
     /// Loaded Automerge heads differed from the descriptor.

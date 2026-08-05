@@ -139,5 +139,76 @@ mod tests {
             join_chunks(&descriptor, [&first, &wrong_size]),
             Err(JoinError::Size)
         );
+        let wrong_author = ValidatedCheckpointChunkCarrier::for_test(
+            EventId::from_bytes([13; 32]),
+            DevicePublicKey::from_bytes([14; 32]),
+            coordinate,
+            descriptor_id,
+            ChunkHash::from_bytes([13; 32]),
+            CheckpointChunk {
+                index: 1,
+                count: 2,
+                data: vec![3],
+                proof: Vec::new(),
+            },
+        );
+        assert_eq!(
+            join_chunks(&descriptor, [&first, &wrong_author]),
+            Err(JoinError::Author)
+        );
+        let wrong_coordinate = ValidatedCheckpointChunkCarrier::for_test(
+            EventId::from_bytes([15; 32]),
+            author,
+            DocumentCoordinate::new(
+                ControllerPublicKey::from_bytes([2; 32]),
+                DocumentId::from_bytes([16; 32]),
+            ),
+            descriptor_id,
+            ChunkHash::from_bytes([15; 32]),
+            CheckpointChunk {
+                index: 1,
+                count: 2,
+                data: vec![3],
+                proof: Vec::new(),
+            },
+        );
+        assert_eq!(
+            join_chunks(&descriptor, [&first, &wrong_coordinate]),
+            Err(JoinError::Coordinate)
+        );
+        let wrong_descriptor = ValidatedCheckpointChunkCarrier::for_test(
+            EventId::from_bytes([17; 32]),
+            author,
+            coordinate,
+            EventId::from_bytes([18; 32]),
+            ChunkHash::from_bytes([17; 32]),
+            CheckpointChunk {
+                index: 1,
+                count: 2,
+                data: vec![3],
+                proof: Vec::new(),
+            },
+        );
+        assert_eq!(
+            join_chunks(&descriptor, [&first, &wrong_descriptor]),
+            Err(JoinError::Descriptor)
+        );
+        let wrong_count = ValidatedCheckpointChunkCarrier::for_test(
+            EventId::from_bytes([19; 32]),
+            author,
+            coordinate,
+            descriptor_id,
+            ChunkHash::from_bytes([19; 32]),
+            CheckpointChunk {
+                index: 1,
+                count: 3,
+                data: vec![3],
+                proof: Vec::new(),
+            },
+        );
+        assert_eq!(
+            join_chunks(&descriptor, [&first, &wrong_count]),
+            Err(JoinError::Count)
+        );
     }
 }

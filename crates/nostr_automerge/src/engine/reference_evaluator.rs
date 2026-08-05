@@ -220,7 +220,7 @@ fn verify_one_checkpoint(
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> CheckpointVerificationStatus {
-    use crate::checkpoint::{AssemblyError, HistoryVerificationError, VerifyError};
+    use crate::checkpoint::{HistoryVerificationError, VerifyError};
     match authorization {
         Some(DescriptorAuthorization::Authorized) => {}
         Some(DescriptorAuthorization::PendingControl) | None => {
@@ -245,11 +245,7 @@ fn verify_one_checkpoint(
         cancellation,
     ) {
         Ok(bytes) => bytes,
-        Err(AssemblyError::Budget) => return CheckpointVerificationStatus::BudgetExhausted,
-        Err(AssemblyError::Cancelled) => return CheckpointVerificationStatus::Cancelled,
-        Err(AssemblyError::Chunks | AssemblyError::Identity) => {
-            return CheckpointVerificationStatus::AssemblyMismatch;
-        }
+        Err(error) => return assembly_status(error),
     };
     let snapshot = match crate::checkpoint::verify_snapshot_heads(
         &bytes,
@@ -307,6 +303,23 @@ const fn join_status(error: JoinError) -> CheckpointVerificationStatus {
         JoinError::DuplicateIndex => CheckpointVerificationStatus::DuplicateChunk,
         JoinError::MissingIndex => CheckpointVerificationStatus::MissingChunk,
         JoinError::Size => CheckpointVerificationStatus::ChunkSizeMismatch,
+    }
+}
+
+const fn assembly_status(error: crate::checkpoint::AssemblyError) -> CheckpointVerificationStatus {
+    match error {
+        crate::checkpoint::AssemblyError::Chunks => {
+            CheckpointVerificationStatus::ChunkAssemblyMismatch
+        }
+        crate::checkpoint::AssemblyError::Proof => CheckpointVerificationStatus::MerkleMismatch,
+        crate::checkpoint::AssemblyError::Budget => CheckpointVerificationStatus::BudgetExhausted,
+        crate::checkpoint::AssemblyError::Cancelled => CheckpointVerificationStatus::Cancelled,
+        crate::checkpoint::AssemblyError::SnapshotSize => {
+            CheckpointVerificationStatus::SnapshotSizeMismatch
+        }
+        crate::checkpoint::AssemblyError::SnapshotHash => {
+            CheckpointVerificationStatus::SnapshotHashMismatch
+        }
     }
 }
 
@@ -640,4 +653,53 @@ fn change_for_hash(
         semantically_valid: authorized && !control.terminal(),
         raw_change: raw,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{assembly_status, join_status};
+    use crate::CheckpointVerificationStatus as Status;
+    use crate::checkpoint::AssemblyError;
+    use crate::checkpoint::join::JoinError;
+
+    #[test]
+    fn every_checkpoint_refusal_has_a_stable_public_status() {
+        assert_eq!(join_status(JoinError::Author), Status::ChunkAuthorMismatch);
+        assert_eq!(
+            join_status(JoinError::Coordinate),
+            Status::ChunkCoordinateMismatch
+        );
+        assert_eq!(
+            join_status(JoinError::Descriptor),
+            Status::ChunkDescriptorMismatch
+        );
+        assert_eq!(join_status(JoinError::Count), Status::ChunkCountMismatch);
+        assert_eq!(
+            join_status(JoinError::DuplicateIndex),
+            Status::DuplicateChunk
+        );
+        assert_eq!(join_status(JoinError::MissingIndex), Status::MissingChunk);
+        assert_eq!(join_status(JoinError::Size), Status::ChunkSizeMismatch);
+        assert_eq!(
+            assembly_status(AssemblyError::Chunks),
+            Status::ChunkAssemblyMismatch
+        );
+        assert_eq!(
+            assembly_status(AssemblyError::Proof),
+            Status::MerkleMismatch
+        );
+        assert_eq!(
+            assembly_status(AssemblyError::SnapshotSize),
+            Status::SnapshotSizeMismatch
+        );
+        assert_eq!(
+            assembly_status(AssemblyError::SnapshotHash),
+            Status::SnapshotHashMismatch
+        );
+        assert_eq!(
+            assembly_status(AssemblyError::Budget),
+            Status::BudgetExhausted
+        );
+        assert_eq!(assembly_status(AssemblyError::Cancelled), Status::Cancelled);
+    }
 }
