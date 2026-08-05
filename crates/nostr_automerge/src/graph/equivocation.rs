@@ -71,22 +71,15 @@ pub(crate) fn quarantine_equivocation_descendants(
                 })
                 .map(|candidate| candidate.change_hash),
         );
-        loop {
-            let dependants = graph
-                .nodes
-                .iter()
-                .filter(|(hash, dependencies)| {
-                    !affected.contains(hash)
-                        && dependencies
-                            .iter()
-                            .any(|dependency| affected.contains(dependency))
-                })
-                .map(|(hash, _)| *hash)
-                .collect::<Vec<_>>();
-            if dependants.is_empty() {
-                break;
+        let mut queue = affected.iter().copied().collect::<Vec<_>>();
+        while let Some(hash) = queue.pop() {
+            if let Some(dependants) = graph.dependants.get(&hash) {
+                for dependant in dependants.iter().rev() {
+                    if affected.insert(*dependant) {
+                        queue.push(*dependant);
+                    }
+                }
             }
-            affected.extend(dependants);
         }
         let descendants = affected
             .difference(&group.conflicting_changes)
@@ -196,8 +189,23 @@ mod tests {
             &[later_same_actor.change_hash, cross_actor.change_hash]
         );
 
-        let mut reversed = input;
+        let mut reversed = input.clone();
         reversed.reverse();
         assert_eq!(quarantine_descendants(reversed, &graph), Ok(result));
+
+        let mut deep = independent;
+        deep.change_hash = ChangeHash::from_bytes([6; 32]);
+        deep.dependencies = vec![cross_actor.change_hash];
+        let mut extended = input;
+        extended.push(deep.clone());
+        let graph = build_graph(extended.clone(), BTreeSet::new());
+        assert!(graph.is_ok());
+        let Ok(graph) = graph else { return };
+        let extended_result = quarantine_descendants(extended, &graph);
+        assert!(
+            extended_result
+                .as_ref()
+                .is_ok_and(|result| result.quarantined.contains(&deep.change_hash))
+        );
     }
 }
