@@ -253,13 +253,25 @@ pub(crate) fn evaluate_batch(
     } else {
         None
     };
-    let (heads, materialized_document) = materialized.map_or_else(
-        || (derive_heads(&accepted_changes, &controls), None),
-        |AppliedDocument {
-             heads,
-             canonical_bytes,
-         }| (heads, Some(canonical_bytes)),
-    );
+    let derived_heads = derive_heads(&accepted_changes, &controls);
+    let (heads, materialized_document) = match materialized {
+        Some(AppliedDocument {
+            heads,
+            canonical_bytes,
+        }) if applied_heads_agree(&derived_heads, &heads) => (heads, Some(canonical_bytes)),
+        Some(_) => {
+            return incomplete_report(
+                canonical_controls,
+                dispositions,
+                accepted_changes,
+                integrity_alerts,
+                Completion::Failed,
+            )
+            .with_failure(EvaluationFailure::InvariantViolation)
+            .with_heads(derived_heads);
+        }
+        None => (derived_heads, None),
+    };
     BatchEvaluationReport {
         canonical_controls,
         dispositions,
@@ -270,6 +282,13 @@ pub(crate) fn evaluate_batch(
         completion,
         failure: None,
     }
+}
+
+fn applied_heads_agree(
+    derived_heads: &BTreeSet<ChangeHash>,
+    applied_heads: &BTreeSet<ChangeHash>,
+) -> bool {
+    derived_heads == applied_heads
 }
 
 fn charge_application_work(
@@ -485,5 +504,20 @@ mod tests {
         reversed.reverse();
         let second = evaluate_batch(reversed, &mut WorkBudget::new(0, 20), &NeverCancelled);
         assert_eq!(first, second);
+    }
+
+    #[test]
+    fn applied_head_agreement_is_required() {
+        let accepted = BTreeSet::from([ChangeHash::from_bytes([1; 32])]);
+        let controls = std::collections::BTreeMap::from([(
+            EventId::from_bytes([2; 32]),
+            control(2, None, vec![change(1, 1, 1)]),
+        )]);
+        let derived = super::derive_heads(&accepted, &controls);
+        assert!(super::applied_heads_agree(&derived, &accepted));
+        assert!(!super::applied_heads_agree(
+            &derived,
+            &BTreeSet::from([ChangeHash::from_bytes([9; 32])])
+        ));
     }
 }
