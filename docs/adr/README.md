@@ -18,3 +18,10 @@ change-control process.
 | [0010](adr_0010_protocol_disposition_separate_from_local_completion.md) | Approved | `NCRDT-DISPOSITION-001`, `NCRDT-COMPLETION-001` |
 | [0011](adr_0011_verified_history_checkpoints_only.md) | Approved | `NCRDT-CHECKPOINT-001`, `NCRDT-CPRECOVERY-001` |
 | [0012](adr_0012_conformance_digest_and_typed_assertions.md) | Approved | `NCRDT-CONF-001`, `NCRDT-CONF-004` |
+| [0013](adr_0013_public_engine_api.md) | Approved | `NCRDT-CORE-001`, `NCRDT-EVALUATOR-001` |
+| [0014](adr_0014_budgeted_linear_graph_algorithms.md) | Approved | `NCRDT-LIMITS-001`, `NCRDT-EVALUATOR-001` |
+| [0015](adr_0015_checkpoint_carrier_authorization.md) | Approved | `NCRDT-CHECKPOINT-001`, `NCRDT-CPTRUST-001` |
+| [0016](adr_0016_executable_neutral_conformance.md) | Approved | `NCRDT-CONF-001`, `NCRDT-CONF-003` |
+| [0017](adr_0017_requirement_coverage_fails_closed.md) | Approved | `NCRDT-CONF-003` |
+| [0018](adr_0018_empty_terminal_genesis.md) | Approved | `NCRDT-CONTROL-001` |
+| [0019](adr_0019_independent_typescript_attestation.md) | Approved | `NCRDT-TS-001`, `NCRDT-CONF-003` |
