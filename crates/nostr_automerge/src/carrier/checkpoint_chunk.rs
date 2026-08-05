@@ -38,6 +38,25 @@ impl ValidatedCheckpointChunkCarrier {
     pub(crate) const fn chunk(&self) -> &CheckpointChunk {
         &self.chunk
     }
+
+    #[cfg(test)]
+    pub(crate) fn for_test(
+        event_id: EventId,
+        author: DevicePublicKey,
+        coordinate: DocumentCoordinate,
+        descriptor_id: EventId,
+        chunk_hash: ChunkHash,
+        chunk: CheckpointChunk,
+    ) -> Self {
+        Self {
+            event_id,
+            author,
+            coordinate,
+            descriptor_id,
+            chunk_hash,
+            chunk,
+        }
+    }
 }
 
 impl fmt::Debug for ValidatedCheckpointChunkCarrier {

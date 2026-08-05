@@ -1,5 +1,6 @@
 use crate::carrier::VerifiedCarrier;
 use crate::checkpoint::authorize::{DescriptorAuthorization, authorize_descriptor};
+use crate::checkpoint::join::{JoinError, join_chunks};
 use crate::conformance::dispositions_digest::{
     DispositionItem, DispositionNamespace, dispositions_digest,
 };
@@ -71,6 +72,7 @@ impl ReferenceEvaluator {
             coordinate,
             &canonical_controls.iter().copied().collect(),
         );
+        let _checkpoint_chunk_sets = checkpoint_chunk_sets(corpus, coordinate);
         let dispositions = batch.dispositions.into_iter().collect::<Vec<_>>();
         let accepted_changes = batch.accepted_changes.into_iter().collect::<Vec<_>>();
         let heads = batch.heads.into_iter().collect::<Vec<_>>();
@@ -121,6 +123,38 @@ impl ReferenceEvaluator {
                 .map(MaterializedDocumentView::from_canonical_bytes),
         })
     }
+}
+
+fn checkpoint_chunk_sets(
+    corpus: &EvidenceCorpus,
+    coordinate: DocumentCoordinate,
+) -> std::collections::BTreeMap<
+    crate::EventId,
+    Result<Vec<crate::checkpoint::CheckpointChunk>, JoinError>,
+> {
+    corpus
+        .events
+        .values()
+        .filter_map(|evidence| match evidence {
+            EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
+                ..
+            } if descriptor.coordinate() == coordinate => {
+                let chunks = corpus
+                    .events
+                    .values()
+                    .filter_map(|evidence| match evidence {
+                        EventEvidence::VerifiedCarrier {
+                            carrier: VerifiedCarrier::CheckpointChunk(chunk),
+                            ..
+                        } if chunk.descriptor_id() == descriptor.event_id() => Some(chunk.as_ref()),
+                        _ => None,
+                    });
+                Some((descriptor.event_id(), join_chunks(descriptor, chunks)))
+            }
+            _ => None,
+        })
+        .collect()
 }
 
 fn checkpoint_authorizations(

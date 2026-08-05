@@ -4,6 +4,7 @@ mod assemble;
 pub(crate) mod authorize;
 mod chunk;
 mod descriptor;
+pub(crate) mod join;
 mod merkle;
 mod verify;
 mod verify_history;
