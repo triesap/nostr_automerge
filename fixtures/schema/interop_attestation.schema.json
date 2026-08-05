@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/fixtures/schema/interop_attestation.schema.json",
+  "title": "Independent implementation interoperability attestation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "implementation", "commit", "toolchain", "dependency_lock_sha256", "fixture_manifest_sha256", "profile", "report_sha256", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.interop_attestation.v1"},
+    "implementation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "language", "runner"],
+      "properties": {
+        "repository": {"enum": ["triesap/nostr_automerge", "triesap/nostr_automerge_typescript"]},
+        "language": {"enum": ["rust", "typescript"]},
+        "runner": {"type": "string", "minLength": 1}
+      }
+    },
+    "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "toolchain": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string", "minLength": 1}},
+    "dependency_lock_sha256": {"$ref": "#/$defs/hex32"},
+    "fixture_manifest_sha256": {"$ref": "#/$defs/hex32"},
+    "profile": {"enum": ["core", "checkpoint"]},
+    "report_sha256": {"$ref": "#/$defs/hex32"},
+    "result": {"enum": ["pass", "fail"]}
+  },
+  "$defs": {
+    "hex32": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}
