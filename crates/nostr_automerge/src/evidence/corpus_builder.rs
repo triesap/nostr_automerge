@@ -65,6 +65,16 @@ impl CorpusBuilder {
         }
     }
 
+    /// Validates and ingests exact raw signed-event bytes under draft-v1.
+    pub fn ingest_bytes(&mut self, bytes: &[u8]) -> IngestOutcome {
+        match RawEventBytes::new(bytes, crate::ProtocolRevision::draft_v1()) {
+            Ok(raw) => self.ingest(raw),
+            Err(error) => IngestOutcome::Invalid {
+                diagnostic: error.diagnostic(),
+            },
+        }
+    }
+
     pub(crate) fn ingest_acquired(&mut self, acquired: AcquiredRawEvent) -> IngestOutcome {
         self.ingest(acquired.into_raw())
     }
