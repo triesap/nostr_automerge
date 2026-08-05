@@ -163,6 +163,9 @@ impl EvaluationReport {
         if !completion_matches_failure {
             return Err(EvaluationReportInvariant);
         }
+        if (parts.completion == Completion::Complete) != parts.document.is_some() {
+            return Err(EvaluationReportInvariant);
+        }
         Ok(Self {
             coordinate: parts.coordinate,
             canonical_controls: parts.canonical_controls,
@@ -340,5 +343,14 @@ mod tests {
             ChangeHash::from_bytes([1; 32]),
         ];
         assert!(EvaluationReport::from_parts(invalid).is_err());
+
+        let mut missing_document = parts();
+        missing_document.document = None;
+        assert!(EvaluationReport::from_parts(missing_document).is_err());
+
+        let mut incomplete_with_document = parts();
+        incomplete_with_document.completion = Completion::Cancelled;
+        incomplete_with_document.failure = Some(super::EvaluationFailure::Cancelled);
+        assert!(EvaluationReport::from_parts(incomplete_with_document).is_err());
     }
 }

@@ -62,6 +62,7 @@ impl ReferenceEvaluator {
         if !ingress_complete {
             batch.completion = Completion::BudgetExhausted;
             batch.failure = Some(EvaluationFailure::BudgetExhausted);
+            batch.materialized_document = None;
         }
         let canonical_controls = batch.canonical_controls;
         let dispositions = batch.dispositions.into_iter().collect::<Vec<_>>();
