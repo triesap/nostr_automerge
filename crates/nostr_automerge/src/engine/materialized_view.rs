@@ -347,3 +347,73 @@ fn scalar(value: &ScalarValue) -> Result<MaterializedScalar, ProjectionError> {
         ScalarValue::Unknown { .. } => Err(ProjectionError),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use automerge::transaction::Transactable;
+    use automerge::{ActorId, Automerge, ROOT, ScalarValue, TextEncoding};
+
+    use super::{
+        MaterializedDocumentView, MaterializedPathElement, MaterializedScalar, MaterializedValue,
+    };
+
+    #[test]
+    fn project_every_scalar_without_json_coercion() {
+        let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+        document.set_actor(ActorId::from([1; 32]));
+        let float_bits = 0x7ff8_0000_0000_0042_u64;
+        {
+            let mut tx = document.transaction();
+            assert!(tx.put(ROOT, "null", ()).is_ok());
+            assert!(tx.put(ROOT, "bool", true).is_ok());
+            assert!(tx.put(ROOT, "i64", i64::MIN).is_ok());
+            assert!(tx.put(ROOT, "u64", u64::MAX).is_ok());
+            assert!(
+                tx.put(ROOT, "float", ScalarValue::F64(f64::from_bits(float_bits)))
+                    .is_ok()
+            );
+            assert!(tx.put(ROOT, "negative_zero", -0.0_f64).is_ok());
+            assert!(tx.put(ROOT, "bytes", vec![0, 255]).is_ok());
+            assert!(tx.put(ROOT, "string", "exact").is_ok());
+            assert!(
+                tx.put(ROOT, "timestamp", ScalarValue::Timestamp(i64::MIN))
+                    .is_ok()
+            );
+            assert!(
+                tx.put(ROOT, "counter", ScalarValue::Counter((-7_i64).into()))
+                    .is_ok()
+            );
+            tx.commit();
+        }
+        let view = MaterializedDocumentView::from_canonical_bytes(document.save_nocompress());
+        assert!(view.is_ok());
+        let Ok(view) = view else { return };
+        for (key, expected) in [
+            ("null", MaterializedScalar::Null),
+            ("bool", MaterializedScalar::Bool(true)),
+            ("i64", MaterializedScalar::I64(i64::MIN)),
+            ("u64", MaterializedScalar::U64(u64::MAX)),
+            ("float", MaterializedScalar::F64Bits(float_bits)),
+            (
+                "negative_zero",
+                MaterializedScalar::F64Bits((-0.0_f64).to_bits()),
+            ),
+            ("bytes", MaterializedScalar::Bytes(vec![0, 255])),
+            ("string", MaterializedScalar::String("exact".to_owned())),
+            ("timestamp", MaterializedScalar::Timestamp(i64::MIN)),
+            ("counter", MaterializedScalar::Counter(-7)),
+        ] {
+            assert!(
+                view.entries().iter().any(|entry| {
+                    entry.path() == [MaterializedPathElement::Key(key.to_owned())]
+                        && matches!(
+                            entry.conflicts(),
+                            [conflict]
+                                if conflict.value() == &MaterializedValue::Scalar(expected.clone())
+                        )
+                }),
+                "{key}"
+            );
+        }
+    }
+}
