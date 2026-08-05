@@ -4,6 +4,7 @@ use std::process::Command;
 use crate::requirements::{discover_fixture_metadata, generate_coverage_report};
 
 const PYTHON_VALIDATORS: &[(&str, &str)] = &[
+    ("remediation_authority", "scripts/validate_remediation.py"),
     ("complete_specification", "scripts/validate_spec.py"),
     (
         "fixture_schema_checksum_snake_case",
@@ -74,6 +75,7 @@ mod tests {
         assert!(names.contains(&"sealed_constants"));
         assert!(names.contains(&"automerge_boundary"));
         assert!(names.contains(&"diagnostic_registry"));
+        assert!(names.contains(&"remediation_authority"));
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         let report = validate_repository(&root);
         assert!(report.is_ok());
