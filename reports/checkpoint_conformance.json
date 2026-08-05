@@ -1,1 +1,39 @@
-{"claim":"checkpoint_primitives_only","fixtures":12,"full_replay_required":true,"result":"limited_pass","signed_carrier_integration":"not_completed","transfer_orders":3}
+{
+  "schema": "nostr_automerge.checkpoint_conformance.v1",
+  "result": "passed",
+  "signed_carrier_integration": "passed",
+  "full_replay_required": true,
+  "evaluated_commit": "259301559765674b78680804320a5c8bc4d6f3b3",
+  "cargo_lock_sha256": "74aafde92cfcb35e7216dc847a75ca556ac9722a93147a9a6ccd61c3121a7e60",
+  "tools": {
+    "cargo": "cargo 1.97.1 (c980f4866 2026-06-30)",
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)"
+  },
+  "sources": {
+    "checkpoint_replay_agreement": "8e7a811d35934e80ad953c2fe5bb6d887e40446e48db7ad336a800f1b141e7ad",
+    "public_engine_api": "35f150da4796dfe820d45b273a06385b88432fde60b7f2d31da63484612e2be0",
+    "reference_evaluator": "56f5460c551c5c0471147de092f242322ef6e707a11120c65e9da30a146fa9b8"
+  },
+  "gates": [
+    {
+      "name": "signed_single_chunk",
+      "command": "cargo test -p nostr_automerge --test public_engine_api signed_single_chunk_checkpoint_verifies_real_automerge_history --locked",
+      "result": "passed"
+    },
+    {
+      "name": "signed_irregular_multichunk",
+      "command": "cargo test -p nostr_automerge --test public_engine_api signed_irregular_multichunk_checkpoint_reconstructs_exact_history --locked",
+      "result": "passed"
+    },
+    {
+      "name": "branched_replay_agreement",
+      "command": "cargo test -p nostr_automerge --test checkpoint_replay_agreement --locked",
+      "result": "passed"
+    },
+    {
+      "name": "refusal_statuses",
+      "command": "cargo test -p nostr_automerge --lib engine::reference_evaluator::tests::every_checkpoint_refusal_has_a_stable_public_status --locked",
+      "result": "passed"
+    }
+  ]
+}

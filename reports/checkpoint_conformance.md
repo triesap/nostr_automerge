@@ -1,12 +1,5 @@
 # Checkpoint conformance
 
-Result: limited pass for checkpoint primitives; the complete signed-carrier
-profile is not yet implemented.
+Result: passed. The signed descriptor/chunk pipeline, real single- and multi-chunk snapshots, distinct refusals, and concurrent/revoked/equivocated history agreement were executed locally.
 
-Descriptor arithmetic, strict chunks, ordered unpadded Merkle proofs, bounded
-assembly, snapshot identity, hardened Automerge loading, exact heads, embedded
-counts, ancestor closure, carrier history, and full-replay agreement are
-covered by focused tests. The current report does not prove signed descriptor
-and chunk authorization, role binding, evidence-corpus integration, or the
-claimed real concurrent/revoked/equivocated histories. Checkpoints remain
-optional and never authorize or redefine history.
+Evaluated commit: `259301559765674b78680804320a5c8bc4d6f3b3`. Rust toolchain: `rustc 1.97.1 (8bab26f4f 2026-07-14)`. Cargo toolchain: `cargo 1.97.1 (c980f4866 2026-06-30)`. The JSON companion binds every gate command, source checksum, and `Cargo.lock` checksum. Checkpoints remain optional reproduction evidence and never authorize or redefine history.
