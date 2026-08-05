@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use super::dependency_graph::DependencyGraph;
-use crate::{CancellationCheck, ChangeHash, WorkBudget};
+use crate::{CancellationCheck, ChangeHash, WorkBudget, WorkCounter};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum ClosureError {
@@ -23,14 +23,23 @@ pub(crate) fn ancestor_closure(
         if cancellation.is_cancelled() {
             return Err(ClosureError::Cancelled);
         }
-        budget
-            .charge_items(1)
-            .map_err(|_| ClosureError::BudgetExhausted)?;
-        if !closure.insert(hash) {
+        if closure.contains(&hash) {
             continue;
         }
+        budget
+            .charge(WorkCounter::GraphNode, 1)
+            .map_err(|_| ClosureError::BudgetExhausted)?;
+        closure.insert(hash);
         if let Some(dependencies) = graph.nodes.get(&hash) {
-            stack.extend(dependencies.iter().rev().copied());
+            for dependency in dependencies.iter().rev() {
+                if cancellation.is_cancelled() {
+                    return Err(ClosureError::Cancelled);
+                }
+                budget
+                    .charge(WorkCounter::GraphEdge, 1)
+                    .map_err(|_| ClosureError::BudgetExhausted)?;
+                stack.push(*dependency);
+            }
         } else if !graph.accepted_base.contains(&hash) {
             return Err(ClosureError::Missing(hash));
         }
@@ -44,7 +53,7 @@ mod tests {
 
     use super::{ClosureError, ancestor_closure};
     use crate::graph::dependency_graph::DependencyGraph;
-    use crate::{ChangeHash, NeverCancelled, WorkBudget};
+    use crate::{ChangeHash, NeverCancelled, WorkBudget, WorkCounter};
 
     fn hash(value: u16) -> ChangeHash {
         let mut bytes = [0; 32];
@@ -68,6 +77,8 @@ mod tests {
         let mut budget = WorkBudget::new(0, 2_000);
         let closure = ancestor_closure(&graph, [hash(999)], &mut budget, &NeverCancelled);
         assert_eq!(closure.as_ref().map(BTreeSet::len), Ok(999));
+        assert_eq!(budget.consumed().get(WorkCounter::GraphNode), 999);
+        assert_eq!(budget.consumed().get(WorkCounter::GraphEdge), 999);
         let mut missing_budget = WorkBudget::new(0, 10);
         assert_eq!(
             ancestor_closure(&graph, [hash(1_001)], &mut missing_budget, &NeverCancelled),
@@ -78,6 +89,8 @@ mod tests {
             ancestor_closure(&graph, [hash(2)], &mut exhausted, &NeverCancelled),
             Err(ClosureError::BudgetExhausted)
         );
+        assert_eq!(exhausted.consumed().get(WorkCounter::GraphNode), 1);
+        assert_eq!(exhausted.consumed().get(WorkCounter::GraphEdge), 0);
         let mut cancelled = WorkBudget::new(0, 10);
         assert_eq!(
             ancestor_closure(&graph, [hash(2)], &mut cancelled, &|| true),
