@@ -59,6 +59,10 @@ and ordinary full replay remains required.
 See [`docs/alpha_api.md`](docs/alpha_api.md) for claim levels, API orientation,
 security limits, and integration boundaries.
 
+For a complete raw signed-event evaluation flow, see the
+[`public_engine` example](crates/nostr_automerge/examples/public_engine.rs) and
+the [public engine API guide](docs/api/public_engine.md).
+
 ## Development
 
 Implementation follows the repository-owned rolling checkpoint sequence in

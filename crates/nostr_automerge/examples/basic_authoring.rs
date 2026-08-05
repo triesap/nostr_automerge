@@ -37,7 +37,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     .map_err(|error| format!("control draft: {error:?}"))?;
     let prepared = UnsignedEventDraft::new(
         1,
-        16_624,
+        1_625,
         vec![vec!["a".to_owned(), coordinate.to_address()]],
         control.content().to_owned(),
     )
