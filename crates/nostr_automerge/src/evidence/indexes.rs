@@ -143,7 +143,7 @@ mod tests {
         let controller = ControllerPublicKey::from_bytes([1; 32]);
         let coordinate = DocumentCoordinate::new(controller, DocumentId::from_bytes([2; 32]));
         let event_id = EventId::from_bytes([3; 32]);
-        let control = ValidatedControlCarrier::synthetic(
+        let control = ValidatedControlCarrier::for_test(
             event_id,
             controller,
             coordinate,

@@ -101,23 +101,16 @@ pub fn qualification_probe_control(input: &[u8]) {
 /// Exercises bounded reference control selection for fuzzing.
 #[doc(hidden)]
 pub fn qualification_probe_reference(input: &[u8]) {
-    let controls = input
-        .chunks(32)
-        .take(64)
-        .map(|chunk| {
-            let mut id = [0; 32];
-            id[..chunk.len()].copy_from_slice(chunk);
-            reference::evaluate::BatchControl {
-                event_id: EventId::from_bytes(id),
-                parent: None,
-                accepted_base: std::collections::BTreeSet::new(),
-                frozen: false,
-                changes: vec![],
-            }
-        })
-        .collect::<Vec<_>>();
-    let _ = reference::evaluate::evaluate_batch(
-        controls,
+    let mut builder = CorpusBuilder::new();
+    let _ = builder.ingest_bytes(input);
+    let corpus = builder.finish();
+    let coordinate = DocumentCoordinate::new(
+        ControllerPublicKey::from_bytes([1; 32]),
+        DocumentId::from_bytes([2; 32]),
+    );
+    let _ = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &corpus,
+        coordinate,
         &mut WorkBudget::new(4_096, 4_096),
         &NeverCancelled,
     );

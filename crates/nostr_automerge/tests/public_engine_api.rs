@@ -68,6 +68,11 @@ fn reference_evaluator_api_is_sealed_and_repository_owned() {
     let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
     assert_eq!(evaluator.revision(), ProtocolRevision::draft_v1());
     assert!(std::any::type_name::<ReferenceEvaluator>().starts_with("nostr_automerge::"));
+    let public_root = include_str!("../src/lib.rs");
+    assert!(!public_root.contains("BatchControl"));
+    assert!(!public_root.contains("BatchChange"));
+    assert!(!public_root.contains("OpaqueDocumentView"));
+    assert!(!public_root.contains("IndexValidity"));
 }
 
 #[test]

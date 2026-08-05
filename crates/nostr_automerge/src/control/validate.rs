@@ -185,7 +185,7 @@ pub(crate) mod tests {
     #[test]
     fn control_envelope_derives_every_field_from_validated_carrier() {
         let expected = genesis();
-        let carrier = crate::carrier::control::ValidatedControlCarrier::synthetic(
+        let carrier = crate::carrier::control::ValidatedControlCarrier::for_test(
             expected.event_id,
             expected.author,
             expected.coordinate,

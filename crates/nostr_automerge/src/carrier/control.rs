@@ -121,7 +121,7 @@ impl ValidatedControlCarrier {
     }
 
     #[cfg(test)]
-    pub(crate) const fn synthetic(
+    pub(crate) const fn for_test(
         event_id: EventId,
         author: ControllerPublicKey,
         coordinate: DocumentCoordinate,
