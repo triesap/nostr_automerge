@@ -310,6 +310,30 @@ fn automerge_application_and_materialization_are_charged() {
     assert_eq!(exhausted.consumed().get(WorkCounter::ApplyChange), 1);
 }
 
+#[test]
+fn accepted_empty_history_has_a_real_document_view() {
+    let scenario = signed_engine_scenario();
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(scenario.control),
+        IngestOutcome::Accepted { .. }
+    ));
+    let mut budget = WorkBudget::new(1_000_000, 1_000);
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        scenario.coordinate,
+        &mut budget,
+        &NeverCancelled,
+    );
+
+    assert_eq!(report.completion(), Completion::Complete);
+    assert_eq!(report.canonical_controls(), [scenario.control_id]);
+    assert!(report.accepted_changes().is_empty());
+    assert!(report.heads().is_empty());
+    assert!(report.document().is_some_and(|view| view.byte_len() > 0));
+    assert_eq!(budget.consumed().get(WorkCounter::ApplyChange), 1);
+}
+
 struct SignedEngineScenario {
     coordinate: DocumentCoordinate,
     control: RawEventBytes,

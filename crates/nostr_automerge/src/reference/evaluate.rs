@@ -219,8 +219,7 @@ pub(crate) fn evaluate_batch(
                 .flatten()
         })
         .collect::<BTreeMap<_, _>>();
-    let can_materialize =
-        !accepted_changes.is_empty() && raw_changes.len() == accepted_changes.len();
+    let can_materialize = raw_changes.len() == accepted_changes.len();
     if can_materialize
         && let Err(completion) = charge_application_work(&ordered, budget, cancellation)
     {
