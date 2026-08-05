@@ -57,7 +57,7 @@ impl fmt::Debug for ValidatedCheckpointChunkCarrier {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum CheckpointChunkCarrierError {
     Kind,
-    Tags,
+    Tags(tags::TagError),
     Coordinate,
     Descriptor,
     Hash,
@@ -71,26 +71,32 @@ pub(crate) fn validate(
     if event.kind() != crate::checkpoint::CHUNK_KIND {
         return Err(CheckpointChunkCarrierError::Kind);
     }
+    tags::require_absent(event.tags(), "d").map_err(CheckpointChunkCarrierError::Tags)?;
+    tags::require_durable_tags(event.tags()).map_err(CheckpointChunkCarrierError::Tags)?;
+    if event.tags().len() != 4
+        || event.tags().iter().any(|tag| {
+            tag.first()
+                .is_none_or(|name| name != "a" && name != "e" && name != "x" && name != "part")
+        })
+    {
+        return Err(CheckpointChunkCarrierError::Tags(tags::TagError::Forbidden));
+    }
     let coordinate: DocumentCoordinate = tags::required_tag(event.tags(), "a", 2)
-        .map_err(|_| CheckpointChunkCarrierError::Tags)?[1]
+        .map_err(CheckpointChunkCarrierError::Tags)?[1]
         .parse()
         .map_err(|_| CheckpointChunkCarrierError::Coordinate)?;
     let descriptor_id = tags::required_tag(event.tags(), "e", 2)
-        .map_err(|_| CheckpointChunkCarrierError::Tags)?[1]
+        .map_err(CheckpointChunkCarrierError::Tags)?[1]
         .parse()
         .map_err(|_| CheckpointChunkCarrierError::Descriptor)?;
     let chunk_hash: ChunkHash = tags::required_tag(event.tags(), "x", 2)
-        .map_err(|_| CheckpointChunkCarrierError::Tags)?[1]
+        .map_err(CheckpointChunkCarrierError::Tags)?[1]
         .parse()
         .map_err(|_| CheckpointChunkCarrierError::Hash)?;
-    let part = tags::required_tag(event.tags(), "part", 3)
-        .map_err(|_| CheckpointChunkCarrierError::Tags)?;
-    let index = part[1]
-        .parse()
-        .map_err(|_| CheckpointChunkCarrierError::Part)?;
-    let count = part[2]
-        .parse()
-        .map_err(|_| CheckpointChunkCarrierError::Part)?;
+    let part =
+        tags::required_tag(event.tags(), "part", 3).map_err(CheckpointChunkCarrierError::Tags)?;
+    let index = canonical_u32(&part[1])?;
+    let count = canonical_u32(&part[2])?;
     let chunk =
         CheckpointChunk::parse_content(event.content(), index, count, *chunk_hash.as_bytes())
             .map_err(CheckpointChunkCarrierError::Chunk)?;
@@ -102,4 +108,15 @@ pub(crate) fn validate(
         chunk_hash,
         chunk,
     })
+}
+
+fn canonical_u32(value: &str) -> Result<u32, CheckpointChunkCarrierError> {
+    let bytes = value.as_bytes();
+    if bytes.is_empty()
+        || bytes.len() > 1 && bytes[0] == b'0'
+        || !bytes.iter().all(u8::is_ascii_digit)
+    {
+        return Err(CheckpointChunkCarrierError::Part);
+    }
+    value.parse().map_err(|_| CheckpointChunkCarrierError::Part)
 }

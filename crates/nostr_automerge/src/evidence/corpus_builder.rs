@@ -259,7 +259,10 @@ fn checkpoint_chunk_diagnostic(
     use crate::carrier::checkpoint_chunk::CheckpointChunkCarrierError as Error;
     match error {
         Error::Kind => DiagnosticCode::registered("carrier.kind"),
-        Error::Tags => DiagnosticCode::registered("tag.required"),
+        Error::Tags(crate::wire::tags::TagError::Forbidden) => {
+            DiagnosticCode::registered("tag.forbidden")
+        }
+        Error::Tags(_) => DiagnosticCode::registered("tag.required"),
         Error::Coordinate => DiagnosticCode::registered("carrier.coordinate"),
         Error::Descriptor | Error::Hash | Error::Part | Error::Chunk(_) => {
             DiagnosticCode::registered("checkpoint.chunk")

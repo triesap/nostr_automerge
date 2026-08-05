@@ -895,22 +895,24 @@ fn validated_checkpoint_chunk_carrier_enters_corpus() {
     .expect("fixed coordinate");
     let data = b"a";
     let hash: [u8; 32] = Sha256::digest(data).into();
-    let event = signer.sign(
-        &UnsignedEventDraft::new(
-            1,
-            1_627,
-            vec![
-                vec!["a".to_owned(), coordinate.to_address()],
-                vec!["e".to_owned(), "04".repeat(32)],
-                vec!["x".to_owned(), ChunkHash::from_bytes(hash).to_hex()],
-                vec!["part".to_owned(), "0".to_owned(), "1".to_owned()],
-            ],
-            r#"{"data":"YQ==","proof":[],"v":1}"#.to_owned(),
+    let valid_tags = || {
+        vec![
+            vec!["a".to_owned(), coordinate.to_address()],
+            vec!["e".to_owned(), "04".repeat(32)],
+            vec!["x".to_owned(), ChunkHash::from_bytes(hash).to_hex()],
+            vec!["part".to_owned(), "0".to_owned(), "1".to_owned()],
+        ]
+    };
+    let sign = |created_at: u64, tags: Vec<Vec<String>>, content: &str| {
+        signer.sign(
+            &UnsignedEventDraft::new(created_at, 1_627, tags, content.to_owned())
+                .expect("chunk draft")
+                .prepare(signer.public_key())
+                .expect("chunk preimage"),
         )
-        .expect("chunk draft")
-        .prepare(signer.public_key())
-        .expect("chunk preimage"),
-    );
+    };
+    let canonical_content = r#"{"data":"YQ==","proof":[],"v":1}"#;
+    let event = sign(1, valid_tags(), canonical_content);
     let event_id = VerifiedNip01Event::verify(event.clone())
         .expect("signed chunk")
         .event_id();
@@ -923,6 +925,33 @@ fn validated_checkpoint_chunk_carrier_enters_corpus() {
         builder.finish().records().next(),
         Some(record) if record.status() == EvidenceStatus::Valid
     ));
+    let mut leading_zero = valid_tags();
+    leading_zero[3][1] = "00".to_owned();
+    let mut upper_hash = valid_tags();
+    upper_hash[2][1] = "AA".repeat(32);
+    for (created_at, tags, content, expected) in [
+        (
+            2,
+            [valid_tags(), vec![vec!["d".to_owned(), "x".to_owned()]]].concat(),
+            canonical_content,
+            "tag.forbidden",
+        ),
+        (3, leading_zero, canonical_content, "checkpoint.chunk"),
+        (4, upper_hash, canonical_content, "checkpoint.chunk"),
+        (
+            5,
+            valid_tags(),
+            r#"{"data":"YQ","proof":[],"v":1}"#,
+            "checkpoint.chunk",
+        ),
+    ] {
+        let mut invalid = CorpusBuilder::new();
+        assert!(matches!(
+            invalid.ingest(sign(created_at, tags, content)),
+            IngestOutcome::InvalidCarrier { diagnostic, .. }
+                if diagnostic.as_str() == expected
+        ));
+    }
 }
 
 #[test]
