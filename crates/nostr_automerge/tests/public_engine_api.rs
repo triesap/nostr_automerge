@@ -187,6 +187,32 @@ fn event_and_carrier_work_exhaustion_precedes_state() {
     assert_eq!(budget.consumed().get(WorkCounter::Carrier), 0);
 }
 
+#[test]
+fn cancellation_before_control_evaluation_fabricates_no_state() {
+    let scenario = signed_engine_scenario();
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(scenario.change),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert!(matches!(
+        builder.ingest(scenario.control),
+        IngestOutcome::Accepted { .. }
+    ));
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        scenario.coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &|| true,
+    );
+
+    assert_eq!(report.completion(), Completion::Cancelled);
+    assert!(report.canonical_controls().is_empty());
+    assert!(report.dispositions().is_empty());
+    assert!(report.accepted_changes().is_empty());
+    assert!(report.document().is_none());
+}
+
 struct SignedEngineScenario {
     coordinate: DocumentCoordinate,
     control: RawEventBytes,

@@ -44,6 +44,15 @@ pub(crate) fn evaluate_batch(
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> BatchEvaluationReport {
+    if cancellation.is_cancelled() {
+        return incomplete_report(
+            Vec::new(),
+            BTreeMap::new(),
+            BTreeSet::new(),
+            Vec::new(),
+            Completion::Cancelled,
+        );
+    }
     let controls = controls
         .into_iter()
         .map(|control| (control.event_id, control))
@@ -59,6 +68,15 @@ pub(crate) fn evaluate_batch(
     let mut integrity_alerts = Vec::new();
     let mut parent = None;
     while let Some(children) = by_parent.get(&parent) {
+        if cancellation.is_cancelled() {
+            return incomplete_report(
+                canonical_controls,
+                BTreeMap::new(),
+                BTreeSet::new(),
+                integrity_alerts,
+                Completion::Cancelled,
+            );
+        }
         let (selection, alert) = select_with_alert(parent, children.iter().copied());
         let Some(selected) = selection.selected else {
             break;
@@ -132,6 +150,18 @@ pub(crate) fn evaluate_batch(
             .retain(|hash| dispositions.get(hash) != Some(&ProtocolDisposition::Excluded));
     }
 
+    if completion != Completion::Complete {
+        let heads = derive_heads(&accepted_changes, &controls);
+        return incomplete_report(
+            canonical_controls,
+            dispositions,
+            accepted_changes,
+            integrity_alerts,
+            completion,
+        )
+        .with_heads(heads);
+    }
+
     let candidates = controls
         .values()
         .flat_map(|control| control.changes.iter())
@@ -177,6 +207,31 @@ pub(crate) fn evaluate_batch(
         accepted_changes,
         heads,
         materialized_document,
+        integrity_alerts,
+        completion,
+    }
+}
+
+impl BatchEvaluationReport {
+    fn with_heads(mut self, heads: BTreeSet<ChangeHash>) -> Self {
+        self.heads = heads;
+        self
+    }
+}
+
+fn incomplete_report(
+    canonical_controls: Vec<EventId>,
+    dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
+    accepted_changes: BTreeSet<ChangeHash>,
+    integrity_alerts: Vec<IntegrityAlert>,
+    completion: Completion,
+) -> BatchEvaluationReport {
+    BatchEvaluationReport {
+        canonical_controls,
+        dispositions,
+        accepted_changes,
+        heads: BTreeSet::new(),
+        materialized_document: None,
         integrity_alerts,
         completion,
     }
