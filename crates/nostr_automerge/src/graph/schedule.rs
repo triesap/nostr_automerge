@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::change_candidate::ChangeCandidate;
-use crate::{CancellationCheck, ChangeHash, WorkBudget};
+use crate::{CancellationCheck, ChangeHash, WorkBudget, WorkCounter};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct Schedule {
@@ -21,10 +21,16 @@ pub(crate) fn schedule_candidates(
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<Schedule, ScheduleError> {
-    let mut remaining = candidates
-        .into_iter()
-        .map(|candidate| (candidate.change_hash, candidate))
-        .collect::<BTreeMap<_, _>>();
+    let mut remaining = BTreeMap::new();
+    for candidate in candidates {
+        if cancellation.is_cancelled() {
+            return Err(ScheduleError::Cancelled);
+        }
+        budget
+            .charge(WorkCounter::GraphNode, 1)
+            .map_err(|_| ScheduleError::BudgetExhausted)?;
+        remaining.insert(candidate.change_hash, candidate);
+    }
     let candidate_hashes = remaining.keys().copied().collect::<BTreeSet<_>>();
     let mut unresolved = BTreeMap::new();
     let mut dependants = BTreeMap::<ChangeHash, BTreeSet<ChangeHash>>::new();
@@ -36,6 +42,12 @@ pub(crate) fn schedule_candidates(
             .count();
         unresolved.insert(*hash, count);
         for dependency in &candidate.dependencies {
+            if cancellation.is_cancelled() {
+                return Err(ScheduleError::Cancelled);
+            }
+            budget
+                .charge(WorkCounter::GraphEdge, 1)
+                .map_err(|_| ScheduleError::BudgetExhausted)?;
             if candidate_hashes.contains(dependency) {
                 dependants.entry(*dependency).or_default().insert(*hash);
             }
@@ -50,16 +62,22 @@ pub(crate) fn schedule_candidates(
         if cancellation.is_cancelled() {
             return Err(ScheduleError::Cancelled);
         }
-        budget
-            .charge_items(1)
-            .map_err(|_| ScheduleError::BudgetExhausted)?;
         let Some(hash) = ready.pop_first() else {
             break;
         };
+        budget
+            .charge(WorkCounter::GraphNode, 1)
+            .map_err(|_| ScheduleError::BudgetExhausted)?;
         remaining.remove(&hash);
         ordered.push(hash);
         if let Some(children) = dependants.get(&hash) {
             for child in children {
+                if cancellation.is_cancelled() {
+                    return Err(ScheduleError::Cancelled);
+                }
+                budget
+                    .charge(WorkCounter::GraphEdge, 1)
+                    .map_err(|_| ScheduleError::BudgetExhausted)?;
                 if let Some(count) = unresolved.get_mut(child) {
                     *count -= 1;
                     if *count == 0 {
@@ -81,7 +99,7 @@ mod tests {
 
     use super::{ScheduleError, schedule_candidates};
     use crate::graph::actor_state::tests::candidate;
-    use crate::{ChangeHash, NeverCancelled, WorkBudget};
+    use crate::{ChangeHash, NeverCancelled, WorkBudget, WorkCounter};
 
     #[test]
     fn implement_deterministic_candidate_scheduling() {
@@ -96,7 +114,7 @@ mod tests {
             schedule_candidates(
                 candidates,
                 BTreeSet::new(),
-                &mut WorkBudget::new(0, 10),
+                &mut WorkBudget::new(0, 30),
                 &NeverCancelled,
             )
         };
@@ -111,6 +129,16 @@ mod tests {
                 dependant.change_hash
             ])
         );
+        let mut measured = WorkBudget::new(0, 10);
+        let schedule = schedule_candidates(
+            [high.clone(), dependant.clone()],
+            BTreeSet::new(),
+            &mut measured,
+            &NeverCancelled,
+        );
+        assert!(schedule.is_ok());
+        assert_eq!(measured.consumed().get(WorkCounter::GraphNode), 4);
+        assert_eq!(measured.consumed().get(WorkCounter::GraphEdge), 2);
         let mut fan_out = candidate(3, 1, 1, 1);
         fan_out.change_hash = ChangeHash::from_bytes([4; 32]);
         fan_out.dependencies = vec![low.change_hash];
