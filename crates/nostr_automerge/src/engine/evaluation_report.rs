@@ -136,6 +136,13 @@ impl EvaluationReport {
         })
     }
 
+    pub(crate) fn from_canonical_parts(parts: EvaluationReportParts) -> Self {
+        match Self::from_parts(parts) {
+            Ok(report) => report,
+            Err(_) => unreachable!("reference evaluator produced a non-canonical report"),
+        }
+    }
+
     /// Returns the evaluated document coordinate.
     #[must_use]
     pub const fn coordinate(&self) -> DocumentCoordinate {

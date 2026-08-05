@@ -82,6 +82,22 @@ impl ValidatedControlCarrier {
         self.parent
     }
 
+    pub(crate) const fn coordinate(&self) -> DocumentCoordinate {
+        self.coordinate
+    }
+
+    pub(crate) const fn sequence(&self) -> u64 {
+        self.content.sequence
+    }
+
+    pub(crate) const fn terminal(&self) -> bool {
+        self.content.terminal
+    }
+
+    pub(crate) fn members(&self) -> &[DeviceGrant] {
+        &self.content.members
+    }
+
     pub(crate) fn base_heads(&self) -> impl Iterator<Item = ChangeHash> + '_ {
         self.content.base_heads.iter().copied()
     }

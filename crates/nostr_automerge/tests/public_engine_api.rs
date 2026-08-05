@@ -7,8 +7,9 @@ use std::collections::BTreeSet;
 use base64::Engine as _;
 use nostr_automerge::authoring::{ActorState, AuthoringDocument, Operation, UnsignedEventDraft};
 use nostr_automerge::{
-    ActorId, CorpusBuilder, DocumentCoordinate, EvidenceCorpus, EvidenceStatus, IngestOutcome,
-    ProtocolRevision, ReferenceEvaluator, VerifiedNip01Event,
+    ActorId, Completion, CorpusBuilder, DocumentCoordinate, EvidenceCorpus, EvidenceStatus,
+    IngestOutcome, NeverCancelled, ProtocolRevision, ReferenceEvaluator, VerifiedNip01Event,
+    WorkBudget,
 };
 use support::test_signer::TestSigner;
 
@@ -67,6 +68,85 @@ fn reference_evaluator_api_is_sealed_and_repository_owned() {
     let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
     assert_eq!(evaluator.revision(), ProtocolRevision::draft_v1());
     assert!(std::any::type_name::<ReferenceEvaluator>().starts_with("nostr_automerge::"));
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn signed_events_reach_materialized_state_through_public_engine() {
+    let controller = TestSigner::from_byte(20);
+    let device = TestSigner::from_byte(21);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "42".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let actor = ActorId::derive(coordinate, device.public_key());
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
+        .expect("empty authoring document");
+    let change = document
+        .author_change(&[Operation::PutString {
+            key: "title".to_owned(),
+            value: "trusted".to_owned(),
+        }])
+        .expect("canonical authored change");
+    let control_content = format!(
+        r#"{{"base_heads":[],"format":"automerge-change-v1","members":[{{"account":null,"pubkey":"{}","roles":["checkpoint","write"]}}],"policy":"controller-acl-v1","predecessor":null,"seq":0,"successor":null,"text_encoding":"utf16","v":1}}"#,
+        device.public_key().to_hex()
+    );
+    let control = controller.sign(
+        &UnsignedEventDraft::new(
+            1,
+            1_625,
+            vec![vec!["a".to_owned(), coordinate.to_address()]],
+            control_content,
+        )
+        .expect("control draft")
+        .prepare(controller.public_key())
+        .expect("control preimage"),
+    );
+    let control_id = VerifiedNip01Event::verify(control.clone())
+        .expect("signed control")
+        .event_id();
+    let change_event = device.sign(
+        &UnsignedEventDraft::new(
+            2,
+            1_624,
+            vec![
+                vec!["a".to_owned(), coordinate.to_address()],
+                vec!["e".to_owned(), control_id.to_hex()],
+                vec!["x".to_owned(), change.change_hash().to_hex()],
+            ],
+            base64::engine::general_purpose::STANDARD.encode(change.raw()),
+        )
+        .expect("change draft")
+        .prepare(device.public_key())
+        .expect("change preimage"),
+    );
+
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(change_event),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert!(matches!(
+        builder.ingest(control),
+        IngestOutcome::Accepted { .. }
+    ));
+    let corpus = builder.finish();
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &corpus,
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+
+    assert_eq!(report.completion(), Completion::Complete);
+    assert_eq!(report.canonical_controls(), [control_id]);
+    assert_eq!(report.accepted_changes(), [change.change_hash()]);
+    assert_eq!(report.heads(), [change.change_hash()]);
+    assert!(report.document().is_some_and(|view| !view.is_empty()));
 }
 
 #[test]

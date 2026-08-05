@@ -30,6 +30,14 @@ impl ChangeCarrier {
         self.control_id
     }
 
+    pub(crate) const fn coordinate(&self) -> DocumentCoordinate {
+        self.coordinate
+    }
+
+    pub(crate) const fn author_device(&self) -> DevicePublicKey {
+        self.author_device
+    }
+
     pub(crate) fn actor(&self) -> ActorId {
         ActorId::derive(self.coordinate, self.author_device)
     }
@@ -39,6 +47,22 @@ impl ChangeCarrier {
             .dependencies
             .iter()
             .map(|dependency| ChangeHash::from_bytes(*dependency.as_bytes()))
+    }
+
+    pub(crate) const fn sequence(&self) -> u64 {
+        self.decoded.sequence
+    }
+
+    pub(crate) const fn start_op(&self) -> u64 {
+        self.decoded.start_op
+    }
+
+    pub(crate) fn operation_count(&self) -> u64 {
+        u64::try_from(self.decoded.operations.len()).unwrap_or(u64::MAX)
+    }
+
+    pub(crate) fn canonical_raw_bytes(&self) -> &[u8] {
+        &self.canonical_raw_change_bytes
     }
 }
 
