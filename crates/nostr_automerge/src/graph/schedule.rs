@@ -7,6 +7,8 @@ use crate::{CancellationCheck, ChangeHash, WorkBudget, WorkCounter};
 pub(crate) struct Schedule {
     pub(crate) ordered: Vec<ChangeHash>,
     pub(crate) pending: BTreeSet<ChangeHash>,
+    pub(crate) missing_dependencies: BTreeSet<ChangeHash>,
+    pub(crate) cyclic: BTreeSet<ChangeHash>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -87,9 +89,69 @@ pub(crate) fn schedule_candidates(
             }
         }
     }
+    let mut missing_dependencies = BTreeSet::new();
+    for candidate in remaining.values() {
+        for dependency in &candidate.dependencies {
+            if cancellation.is_cancelled() {
+                return Err(ScheduleError::Cancelled);
+            }
+            budget
+                .charge(WorkCounter::GraphEdge, 1)
+                .map_err(|_| ScheduleError::BudgetExhausted)?;
+            if !candidate_hashes.contains(dependency) && !accepted_base.contains(dependency) {
+                missing_dependencies.insert(*dependency);
+            }
+        }
+    }
+    let mut pending = BTreeSet::new();
+    for (hash, candidate) in &remaining {
+        if cancellation.is_cancelled() {
+            return Err(ScheduleError::Cancelled);
+        }
+        budget
+            .charge(WorkCounter::GraphNode, 1)
+            .map_err(|_| ScheduleError::BudgetExhausted)?;
+        if candidate
+            .dependencies
+            .iter()
+            .any(|dependency| missing_dependencies.contains(dependency))
+        {
+            pending.insert(*hash);
+        }
+    }
+    let mut blocked = pending.iter().copied().collect::<Vec<_>>();
+    while let Some(hash) = blocked.pop() {
+        if let Some(children) = dependants.get(&hash) {
+            for child in children {
+                if cancellation.is_cancelled() {
+                    return Err(ScheduleError::Cancelled);
+                }
+                budget
+                    .charge(WorkCounter::GraphEdge, 1)
+                    .map_err(|_| ScheduleError::BudgetExhausted)?;
+                if remaining.contains_key(child) && pending.insert(*child) {
+                    blocked.push(*child);
+                }
+            }
+        }
+    }
+    let mut cyclic = BTreeSet::new();
+    for hash in remaining.keys() {
+        if cancellation.is_cancelled() {
+            return Err(ScheduleError::Cancelled);
+        }
+        budget
+            .charge(WorkCounter::GraphNode, 1)
+            .map_err(|_| ScheduleError::BudgetExhausted)?;
+        if !pending.contains(hash) {
+            cyclic.insert(*hash);
+        }
+    }
     Ok(Schedule {
         ordered,
-        pending: remaining.into_keys().collect(),
+        pending,
+        missing_dependencies,
+        cyclic,
     })
 }
 
@@ -139,6 +201,36 @@ mod tests {
         assert!(schedule.is_ok());
         assert_eq!(measured.consumed().get(WorkCounter::GraphNode), 4);
         assert_eq!(measured.consumed().get(WorkCounter::GraphEdge), 2);
+        let missing_hash = ChangeHash::from_bytes([9; 32]);
+        let mut missing = high.clone();
+        missing.dependencies = vec![missing_hash];
+        let missing_schedule = evaluate(vec![missing]).map(|schedule| {
+            (
+                schedule.pending,
+                schedule.missing_dependencies,
+                schedule.cyclic,
+            )
+        });
+        assert_eq!(
+            missing_schedule,
+            Ok((
+                BTreeSet::from([high.change_hash]),
+                BTreeSet::from([missing_hash]),
+                BTreeSet::new(),
+            ))
+        );
+        let mut cycle_low = low.clone();
+        cycle_low.dependencies = vec![high.change_hash];
+        let mut cycle_high = high.clone();
+        cycle_high.dependencies = vec![low.change_hash];
+        assert_eq!(
+            evaluate(vec![cycle_high, cycle_low])
+                .map(|schedule| (schedule.pending, schedule.cyclic)),
+            Ok((
+                BTreeSet::new(),
+                BTreeSet::from([low.change_hash, high.change_hash]),
+            ))
+        );
         let mut fan_out = candidate(3, 1, 1, 1);
         fan_out.change_hash = ChangeHash::from_bytes([4; 32]);
         fan_out.dependencies = vec![low.change_hash];

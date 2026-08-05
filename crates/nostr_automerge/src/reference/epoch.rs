@@ -30,11 +30,15 @@ pub(crate) fn resolve_epoch(
         }
     }
     let schedule = schedule_candidates(eligible, accepted_base, budget, cancellation)?;
+    let _missing_dependencies = schedule.missing_dependencies;
     for hash in schedule.ordered {
         dispositions.insert(hash, ProtocolDisposition::Accepted);
     }
     for hash in schedule.pending {
         dispositions.insert(hash, ProtocolDisposition::Pending);
+    }
+    for hash in schedule.cyclic {
+        dispositions.insert(hash, ProtocolDisposition::Invalid);
     }
     Ok(dispositions)
 }
