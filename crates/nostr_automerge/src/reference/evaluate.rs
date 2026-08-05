@@ -185,13 +185,24 @@ pub(crate) fn evaluate_batch(
         .filter(|change| accepted_changes.contains(&change.candidate.change_hash))
         .map(|change| change.candidate.clone())
         .collect::<Vec<_>>();
-    let ordered = schedule_candidates(
-        candidates,
-        BTreeSet::new(),
-        &mut WorkBudget::new(0, u64::MAX),
-        &|| false,
-    )
-    .map_or_else(|_| Vec::new(), |schedule| schedule.ordered);
+    let ordered = match schedule_candidates(candidates, BTreeSet::new(), budget, cancellation) {
+        Ok(schedule) => schedule.ordered,
+        Err(error) => {
+            let completion = match error {
+                ScheduleError::BudgetExhausted => Completion::BudgetExhausted,
+                ScheduleError::Cancelled => Completion::Cancelled,
+            };
+            let heads = derive_heads(&accepted_changes, &controls);
+            return incomplete_report(
+                canonical_controls,
+                dispositions,
+                accepted_changes,
+                integrity_alerts,
+                completion,
+            )
+            .with_heads(heads);
+        }
+    };
     let raw_changes = controls
         .values()
         .flat_map(|control| control.changes.iter())
@@ -363,6 +374,17 @@ mod tests {
         );
         assert_eq!(basic_report.completion, Completion::Complete);
         assert!(basic_report.materialized_document.is_some());
+        let final_schedule_exhausted = evaluate_batch(
+            [control(1, None, vec![basic.clone()])],
+            &mut WorkBudget::new(0, 4),
+            &NeverCancelled,
+        );
+        assert_eq!(
+            final_schedule_exhausted.completion,
+            Completion::BudgetExhausted
+        );
+        assert_eq!(final_schedule_exhausted.accepted_changes.len(), 1);
+        assert!(final_schedule_exhausted.materialized_document.is_none());
 
         let concurrent = evaluate_batch(
             [control(1, None, vec![change(1, 1, 1), change(2, 2, 1)])],
