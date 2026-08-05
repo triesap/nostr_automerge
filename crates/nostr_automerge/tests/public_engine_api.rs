@@ -2,6 +2,7 @@
 
 mod support;
 
+use std::cell::Cell;
 use std::collections::BTreeSet;
 
 use base64::Engine as _;
@@ -364,6 +365,58 @@ fn every_work_counter_has_exact_before_and_after_boundaries() {
         ));
         assert_eq!(budget, before_failure);
         assert_eq!(budget.consumed().get(counter), 2);
+    }
+}
+
+#[test]
+fn cancellation_is_safe_at_every_evaluator_boundary() {
+    let scenario = signed_engine_scenario();
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(scenario.change),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert!(matches!(
+        builder.ingest(scenario.control),
+        IngestOutcome::Accepted { .. }
+    ));
+    let corpus = builder.finish();
+    let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
+    let calls = Cell::new(0_usize);
+    let complete = evaluator.evaluate(
+        &corpus,
+        scenario.coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &|| {
+            calls.set(calls.get() + 1);
+            false
+        },
+    );
+    assert_eq!(complete.completion(), Completion::Complete);
+    let boundary_count = calls.get();
+    assert!(boundary_count > 0);
+
+    for cancel_at in 0..boundary_count {
+        let calls = Cell::new(0_usize);
+        let report = evaluator.evaluate(
+            &corpus,
+            scenario.coordinate,
+            &mut WorkBudget::new(1_000_000, 1_000),
+            &|| {
+                let boundary = calls.get();
+                calls.set(boundary + 1);
+                boundary == cancel_at
+            },
+        );
+        assert_eq!(report.completion(), Completion::Cancelled, "{cancel_at}");
+        assert_eq!(report.failure(), Some(EvaluationFailure::Cancelled));
+        assert!(report.document().is_none());
+        assert!(
+            report
+                .heads()
+                .iter()
+                .all(|head| report.accepted_changes().contains(head))
+        );
     }
 }
 
