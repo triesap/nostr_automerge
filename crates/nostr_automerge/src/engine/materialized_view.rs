@@ -214,6 +214,19 @@ impl MaterializedDocumentView {
     pub fn marks(&self) -> &[MaterializedMark] {
         &self.marks
     }
+
+    /// Returns the UTF-16 code-unit length for one unconflicted text path.
+    #[must_use]
+    pub fn text_utf16_len(&self, path: &[MaterializedPathElement]) -> Option<u64> {
+        let entry = self.entries.iter().find(|entry| entry.path == path)?;
+        let [conflict] = entry.conflicts.as_slice() else {
+            return None;
+        };
+        let MaterializedValue::Text { value, .. } = &conflict.value else {
+            return None;
+        };
+        u64::try_from(value.encode_utf16().count()).ok()
+    }
 }
 
 impl fmt::Debug for MaterializedDocumentView {
@@ -474,5 +487,35 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(object_ids.len(), 3);
         assert!(object_ids.iter().all(|identity| !identity.is_empty()));
+    }
+
+    #[test]
+    fn project_text_with_utf16_code_unit_semantics() {
+        let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+        document.set_actor(ActorId::from([3; 32]));
+        {
+            let mut tx = document.transaction();
+            let text = tx.put_object(ROOT, "text", ObjType::Text);
+            assert!(text.is_ok());
+            let Ok(text) = text else { return };
+            assert!(tx.splice_text(&text, 0, 0, "A😀e\u{301}").is_ok());
+            tx.commit();
+        }
+        let view = MaterializedDocumentView::from_canonical_bytes(document.save_nocompress());
+        assert!(view.is_ok());
+        let Ok(view) = view else { return };
+        let path = [MaterializedPathElement::Key("text".to_owned())];
+        assert_eq!(view.text_utf16_len(&path), Some(5));
+        assert!(view.entries().iter().any(|entry| {
+            entry.path() == path
+                && matches!(
+                    entry.conflicts(),
+                    [conflict]
+                        if matches!(
+                            conflict.value(),
+                            MaterializedValue::Text { value, .. } if value == "A😀e\u{301}"
+                        )
+                )
+        }));
     }
 }
