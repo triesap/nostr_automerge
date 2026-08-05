@@ -1,11 +1,10 @@
-use crate::conformance::assertions::OpaqueDocumentView;
 use crate::conformance::digest::{
     DigestError, DispositionItem, DispositionNamespace, dispositions_digest, history_digest,
 };
 use crate::reference::evaluate::BatchEvaluationReport;
 use crate::{
     ChangeHash, Completion, DispositionsDigest, DocumentCoordinate, EventId, HistoryDigest,
-    IntegrityAlert, ProtocolDisposition, ProtocolRevision,
+    IntegrityAlert, MaterializedDocumentView, ProtocolDisposition, ProtocolRevision,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -23,7 +22,7 @@ pub(crate) struct CanonicalReport {
     pub(crate) dispositions_digest: DispositionsDigest,
     pub(crate) integrity_alerts: Vec<IntegrityAlert>,
     pub(crate) completion: Completion,
-    pub(crate) document: OpaqueDocumentView,
+    pub(crate) document: Option<MaterializedDocumentView>,
 }
 
 pub(crate) fn canonical_report(
@@ -32,7 +31,6 @@ pub(crate) fn canonical_report(
     evaluation: BatchEvaluationReport,
     mut invalid_events: Vec<EventId>,
     mut unsupported_events: Vec<EventId>,
-    document: OpaqueDocumentView,
 ) -> Result<CanonicalReport, DigestError> {
     invalid_events.sort_unstable();
     invalid_events.dedup();
@@ -84,6 +82,12 @@ pub(crate) fn canonical_report(
         .collect::<Vec<_>>();
     items.sort_unstable();
     let dispositions_digest = dispositions_digest(revision, coordinate, &items)?;
+    let document = evaluation
+        .materialized_document
+        .clone()
+        .map(MaterializedDocumentView::from_canonical_bytes)
+        .transpose()
+        .map_err(|_| DigestError::NonCanonical)?;
     Ok(CanonicalReport {
         revision,
         coordinate,
@@ -218,13 +222,20 @@ mod tests {
             ])
         }));
 
+        let document =
+            crate::authoring::AuthoringDocument::empty(crate::authoring::ActorState::initial(
+                crate::ActorId::from_bytes([1; 32]),
+                BTreeSet::new(),
+            ));
+        assert!(document.is_ok());
+        let Ok(document) = document else { return };
         let evaluation = BatchEvaluationReport {
             canonical_controls: vec![controls[0]],
             accepted_at_control: BTreeMap::from([(controls[0], BTreeSet::from([accepted[0]]))]),
             dispositions: BTreeMap::from([(accepted[0], ProtocolDisposition::Accepted)]),
             accepted_changes: BTreeSet::from([accepted[0]]),
             heads: BTreeSet::from([accepted[0]]),
-            materialized_document: Some(vec![9, 8, 7]),
+            materialized_document: Some(document.accepted_state_bytes()),
             integrity_alerts: vec![],
             completion: Completion::Complete,
             failure: None,
@@ -232,22 +243,11 @@ mod tests {
         let first = canonical_report(
             ProtocolRevision::draft_v1(),
             coordinate,
-            evaluation.clone(),
+            evaluation,
             vec![],
             vec![],
-            view.clone(),
         );
-        let mut byte_distinct = evaluation;
-        byte_distinct.materialized_document = Some(vec![1, 2, 3, 4]);
-        let second = canonical_report(
-            ProtocolRevision::draft_v1(),
-            coordinate,
-            byte_distinct,
-            vec![],
-            vec![],
-            view,
-        );
-        assert_eq!(first, second);
         assert!(first.is_ok());
+        assert!(first.is_ok_and(|report| report.document.is_some()));
     }
 }
