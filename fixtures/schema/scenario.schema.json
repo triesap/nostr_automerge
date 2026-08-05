@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/fixtures/schema/scenario.schema.json",
+  "title": "nostr_automerge raw-event scenario",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["scenario_schema", "coordinate", "raw_events", "budget", "cancel_after"],
+  "properties": {
+    "scenario_schema": {"const": "nostr_automerge.scenario.v1"},
+    "coordinate": {"type": "string", "minLength": 136, "maxLength": 136},
+    "raw_events": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_bytes", "max_items"],
+      "properties": {
+        "max_bytes": {"type": "integer", "minimum": 0},
+        "max_items": {"type": "integer", "minimum": 0}
+      }
+    },
+    "cancel_after": {"type": ["integer", "null"], "minimum": 0}
+  }
+}
