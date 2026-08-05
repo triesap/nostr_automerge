@@ -1,0 +1,16 @@
+{
+  "schema": "nostr-automerge-change-graph-cases-v1",
+  "cases": [
+    "canonical_change_decode",
+    "writer_role_required",
+    "actor_binding",
+    "control_binding",
+    "carrier_hash_binding",
+    "actor_counter_continuity",
+    "missing_dependency_pending",
+    "dependency_cycle_excluded",
+    "graph_node_limit",
+    "graph_edge_limit",
+    "deterministic_topological_application"
+  ]
+}

@@ -1797,6 +1797,11 @@ fn signed_successor_genesis_requires_reciprocal_terminal_continuity() {
 #[test]
 #[allow(clippy::expect_used)]
 fn signed_change_ingest_requires_canonical_actor_hash_control_and_bytes() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/changes/cases.json"
+    ))
+    .expect("change and graph fixture family");
+    assert_eq!(fixture["cases"].as_array().map(Vec::len), Some(11));
     let controller = TestSigner::from_byte(8);
     let device = TestSigner::from_byte(9);
     let wrong_device = TestSigner::from_byte(10);
