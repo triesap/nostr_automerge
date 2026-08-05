@@ -152,7 +152,8 @@ fn controls_for_coordinate(
                     .indexes
                     .controls
                     .pending
-                    .contains(&control.event_id()) =>
+                    .contains(&control.event_id())
+                && !has_terminal_parent(corpus, control) =>
             {
                 Some(BatchControl {
                     event_id: control.event_id(),
@@ -165,6 +166,21 @@ fn controls_for_coordinate(
             _ => None,
         })
         .collect()
+}
+
+fn has_terminal_parent(
+    corpus: &EvidenceCorpus,
+    control: &crate::carrier::control::ValidatedControlCarrier,
+) -> bool {
+    control.parent().is_some_and(|parent_id| {
+        matches!(
+            corpus.events.get(&parent_id),
+            Some(EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::Control(parent),
+                ..
+            }) if parent.coordinate() == control.coordinate() && parent.terminal()
+        )
+    })
 }
 
 fn changes_for_control(

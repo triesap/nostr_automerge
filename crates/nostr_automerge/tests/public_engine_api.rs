@@ -9,8 +9,9 @@ use base64::Engine as _;
 use nostr_automerge::authoring::{ActorState, AuthoringDocument, Operation, UnsignedEventDraft};
 use nostr_automerge::{
     ActorId, ChangeHash, Completion, CorpusBuilder, DocumentCoordinate, EvaluationFailure, EventId,
-    EvidenceCorpus, EvidenceStatus, IngestOutcome, NeverCancelled, ProtocolRevision, RawEventBytes,
-    ReferenceEvaluator, VerifiedNip01Event, WorkBudget, WorkCounter,
+    EvidenceCorpus, EvidenceStatus, IngestOutcome, NeverCancelled, ProtocolDisposition,
+    ProtocolRevision, RawEventBytes, ReferenceEvaluator, VerifiedNip01Event, WorkBudget,
+    WorkCounter,
 };
 use support::test_signer::TestSigner;
 
@@ -149,6 +150,109 @@ fn signed_empty_terminal_genesis_materializes_empty_state() {
         report
             .document()
             .is_some_and(|document| !document.is_empty())
+    );
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn signed_terminal_genesis_rejects_children() {
+    let controller = TestSigner::from_byte(23);
+    let device = TestSigner::from_byte(24);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "25".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let content = |sequence: u64| {
+        format!(
+            r#"{{"base_heads":[],"format":"automerge-change-v1","members":[],"policy":"controller-acl-v1","predecessor":null,"seq":{sequence},"successor":null,"text_encoding":"utf16","v":1}}"#
+        )
+    };
+    let genesis = controller.sign(
+        &UnsignedEventDraft::new(
+            1,
+            1_625,
+            vec![vec!["a".to_owned(), coordinate.to_address()]],
+            content(0),
+        )
+        .expect("genesis draft")
+        .prepare(controller.public_key())
+        .expect("genesis preimage"),
+    );
+    let genesis_id = VerifiedNip01Event::verify(genesis.clone())
+        .expect("signed genesis")
+        .event_id();
+    let child = controller.sign(
+        &UnsignedEventDraft::new(
+            2,
+            1_625,
+            vec![
+                vec!["a".to_owned(), coordinate.to_address()],
+                vec!["e".to_owned(), genesis_id.to_hex()],
+            ],
+            content(1),
+        )
+        .expect("child draft")
+        .prepare(controller.public_key())
+        .expect("child preimage"),
+    );
+    let child_id = VerifiedNip01Event::verify(child.clone())
+        .expect("signed child")
+        .event_id();
+    let actor = ActorId::derive(coordinate, device.public_key());
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
+        .expect("empty authoring document");
+    let authored = document
+        .author_change(&[Operation::PutString {
+            key: "forbidden".to_owned(),
+            value: "extension".to_owned(),
+        }])
+        .expect("canonical authored change");
+    let change_hash = authored.change_hash();
+    let change = device.sign(
+        &UnsignedEventDraft::new(
+            3,
+            1_624,
+            vec![
+                vec!["a".to_owned(), coordinate.to_address()],
+                vec!["e".to_owned(), genesis_id.to_hex()],
+                vec!["x".to_owned(), change_hash.to_hex()],
+            ],
+            base64::engine::general_purpose::STANDARD.encode(authored.raw()),
+        )
+        .expect("change draft")
+        .prepare(device.public_key())
+        .expect("change preimage"),
+    );
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(child),
+        IngestOutcome::Accepted { event_id } if event_id == child_id
+    ));
+    assert!(matches!(
+        builder.ingest(genesis),
+        IngestOutcome::Accepted { event_id } if event_id == genesis_id
+    ));
+    assert!(matches!(
+        builder.ingest(change),
+        IngestOutcome::Accepted { .. }
+    ));
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(report.completion(), Completion::Complete);
+    assert_eq!(report.canonical_controls(), [genesis_id]);
+    assert!(!report.canonical_controls().contains(&child_id));
+    assert!(report.accepted_changes().is_empty());
+    assert!(report.heads().is_empty());
+    assert_eq!(
+        report.dispositions(),
+        [(change_hash, ProtocolDisposition::Excluded)]
     );
 }
 
