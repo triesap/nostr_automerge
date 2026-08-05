@@ -742,6 +742,153 @@ fn signed_single_chunk_checkpoint_verifies_real_automerge_history() {
 
 #[test]
 #[allow(clippy::expect_used)]
+fn signed_irregular_multichunk_checkpoint_reconstructs_exact_history() {
+    let scenario = signed_engine_scenario();
+    let signer = TestSigner::from_byte(21);
+    let chunk_size = (17_usize..=31)
+        .find(|size| {
+            scenario.snapshot.len() > *size && !scenario.snapshot.len().is_multiple_of(*size)
+        })
+        .expect("irregular chunk size");
+    let pieces = scenario.snapshot.chunks(chunk_size).collect::<Vec<_>>();
+    let count = u32::try_from(pieces.len()).expect("bounded chunk count");
+    assert!(count > 1);
+    assert!(pieces.last().is_some_and(|piece| piece.len() < chunk_size));
+    let hashes = pieces
+        .iter()
+        .map(|piece| <[u8; 32]>::from(Sha256::digest(piece)))
+        .collect::<Vec<_>>();
+    let leaves = hashes
+        .iter()
+        .enumerate()
+        .map(|(index, hash)| nostr_automerge::checkpoint::leaf_hash(index as u32, count, *hash))
+        .collect::<Vec<_>>();
+    let root = nostr_automerge::checkpoint::merkle_root(&leaves).expect("merkle root");
+    let snapshot_hash: [u8; 32] = Sha256::digest(&scenario.snapshot).into();
+    let mut change_set = Sha256::new();
+    change_set.update(b"nostr-crdt/automerge/change-set/v1");
+    change_set.update([0]);
+    change_set.update(1_u64.to_be_bytes());
+    change_set.update(scenario.change_hash.as_bytes());
+    let change_set_hash: [u8; 32] = change_set.finalize().into();
+    let descriptor = signer.sign(
+        &UnsignedEventDraft::new(
+            3,
+            1_626,
+            vec![
+                vec!["a".to_owned(), scenario.coordinate.to_address()],
+                vec!["e".to_owned(), scenario.control_id.to_hex()],
+                vec!["x".to_owned(), hex32(snapshot_hash)],
+            ],
+            format!(
+                r#"{{"change_count":1,"change_set_hash":"{}","chunk_count":{},"chunk_root":"{}","chunk_size":{},"dependency_edges":0,"encoding":"automerge-save-v1","heads":["{}"],"raw_size":{},"total_ops":1,"v":1}}"#,
+                hex32(change_set_hash),
+                count,
+                hex32(root),
+                chunk_size,
+                scenario.change_hash.to_hex(),
+                scenario.snapshot.len(),
+            ),
+        )
+        .expect("descriptor draft")
+        .prepare(signer.public_key())
+        .expect("descriptor preimage"),
+    );
+    let descriptor_id = VerifiedNip01Event::verify(descriptor.clone())
+        .expect("descriptor")
+        .event_id();
+    let mut chunks = pieces
+        .iter()
+        .enumerate()
+        .map(|(index, piece)| {
+            let proof = checkpoint_proof(&leaves, index)
+                .into_iter()
+                .map(|step| match step {
+                    ("left", hash) => {
+                        format!(r#"{{"hash":"{}","side":"left"}}"#, hex32(hash))
+                    }
+                    ("right", hash) => {
+                        format!(r#"{{"hash":"{}","side":"right"}}"#, hex32(hash))
+                    }
+                    _ => unreachable!("sealed proof side"),
+                })
+                .collect::<Vec<_>>()
+                .join(",");
+            signer.sign(
+                &UnsignedEventDraft::new(
+                    4 + index as u64,
+                    1_627,
+                    vec![
+                        vec!["a".to_owned(), scenario.coordinate.to_address()],
+                        vec!["e".to_owned(), descriptor_id.to_hex()],
+                        vec!["x".to_owned(), hex32(hashes[index])],
+                        vec!["part".to_owned(), index.to_string(), count.to_string()],
+                    ],
+                    format!(
+                        r#"{{"data":"{}","proof":[{}],"v":1}}"#,
+                        base64::engine::general_purpose::STANDARD.encode(piece),
+                        proof,
+                    ),
+                )
+                .expect("chunk draft")
+                .prepare(signer.public_key())
+                .expect("chunk preimage"),
+            )
+        })
+        .collect::<Vec<_>>();
+    chunks.reverse();
+    let mut builder = CorpusBuilder::new();
+    for event in chunks
+        .into_iter()
+        .chain([descriptor, scenario.change, scenario.control])
+    {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        scenario.coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000_000),
+        &NeverCancelled,
+    );
+    let checkpoint = report.checkpoints().first().expect("checkpoint result");
+    assert_eq!(checkpoint.status(), CheckpointVerificationStatus::Verified);
+    assert_eq!(checkpoint.chunk_events().len(), count as usize);
+    assert_eq!(checkpoint.snapshot_hash().as_bytes(), &snapshot_hash);
+    assert_eq!(checkpoint.heads(), [scenario.change_hash]);
+}
+
+fn hex32(bytes: [u8; 32]) -> String {
+    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+#[allow(clippy::expect_used)]
+fn checkpoint_proof(leaves: &[[u8; 32]], index: usize) -> Vec<(&'static str, [u8; 32])> {
+    if leaves.len() == 1 {
+        return Vec::new();
+    }
+    let split = leaves.len().next_power_of_two() / 2;
+    if index < split {
+        let mut proof = checkpoint_proof(&leaves[..split], index);
+        proof.push((
+            "right",
+            nostr_automerge::checkpoint::merkle_root(&leaves[split..]).expect("right root"),
+        ));
+        proof
+    } else {
+        let mut proof = checkpoint_proof(&leaves[split..], index - split);
+        proof.push((
+            "left",
+            nostr_automerge::checkpoint::merkle_root(&leaves[..split]).expect("left root"),
+        ));
+        proof
+    }
+}
+
+#[test]
+#[allow(clippy::expect_used)]
 fn checkpoints_never_authorize_or_redefine_history() {
     let scenario = signed_engine_scenario();
     let evaluate = |corpus: &EvidenceCorpus| {
