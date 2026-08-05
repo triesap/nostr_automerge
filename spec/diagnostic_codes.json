@@ -19,6 +19,8 @@
     {"code":"carrier.kind","category":"carrier","meaning":"The carrier kind is not in the sealed profile"},
     {"code":"carrier.coordinate","category":"carrier","meaning":"Carrier coordinate tags are inconsistent"},
     {"code":"carrier.revision","category":"carrier","meaning":"The declared revision or profile is unsupported"},
+    {"code":"change.actor","category":"carrier","meaning":"The signed device does not match the derived Automerge actor"},
+    {"code":"change.hash","category":"carrier","meaning":"The declared change hash does not match the canonical Automerge change"},
     {"code":"automerge.magic","category":"automerge","meaning":"Change framing magic is invalid"},
     {"code":"automerge.chunk_type","category":"automerge","meaning":"Chunk type is not uncompressed change type 0x01"},
     {"code":"automerge.leb128","category":"automerge","meaning":"Length is truncated, overflowing, or not shortest form"},

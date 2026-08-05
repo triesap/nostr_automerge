@@ -56,6 +56,14 @@ fn validate_parts(
         .map_err(|_| ChangeCarrierError::Tags)?;
     tags::require_absent(event_tags, "d").map_err(|_| ChangeCarrierError::Tags)?;
     tags::require_durable_tags(event_tags).map_err(|_| ChangeCarrierError::Tags)?;
+    if event_tags.len() != 3
+        || event_tags.iter().any(|tag| {
+            tag.first()
+                .is_none_or(|name| name != "a" && name != "e" && name != "x")
+        })
+    {
+        return Err(ChangeCarrierError::Tags);
+    }
 
     let raw = base64::decode_padded(content, ProtocolRevision::draft_v1().limits().change_bytes)
         .map_err(|_| ChangeCarrierError::Base64)?;

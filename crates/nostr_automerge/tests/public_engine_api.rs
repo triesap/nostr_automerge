@@ -2,8 +2,11 @@
 
 mod support;
 
-use nostr_automerge::authoring::UnsignedEventDraft;
-use nostr_automerge::{CorpusBuilder, IngestOutcome};
+use std::collections::BTreeSet;
+
+use base64::Engine as _;
+use nostr_automerge::authoring::{ActorState, AuthoringDocument, Operation, UnsignedEventDraft};
+use nostr_automerge::{ActorId, CorpusBuilder, DocumentCoordinate, IngestOutcome};
 use support::test_signer::TestSigner;
 
 #[test]
@@ -189,5 +192,103 @@ fn signed_control_carrier_tags_bind_controller_coordinate_and_parent() {
             content(0).replace("\"v\":1", "\"v\":2")
         )),
         IngestOutcome::UnsupportedRevision { .. }
+    ));
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn signed_change_ingest_requires_canonical_actor_hash_control_and_bytes() {
+    let controller = TestSigner::from_byte(8);
+    let device = TestSigner::from_byte(9);
+    let wrong_device = TestSigner::from_byte(10);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "22".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let actor = ActorId::derive(coordinate, device.public_key());
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
+        .expect("empty authoring document");
+    let change = document
+        .author_change(&[Operation::PutString {
+            key: "key".to_owned(),
+            value: "value".to_owned(),
+        }])
+        .expect("canonical authored change");
+    let content = base64::engine::general_purpose::STANDARD.encode(change.raw());
+    let tags = vec![
+        vec!["a".to_owned(), coordinate.to_address()],
+        vec!["e".to_owned(), "44".repeat(32)],
+        vec!["x".to_owned(), change.change_hash().to_hex()],
+    ];
+    let sign = |signer: &TestSigner, created_at: u64, tags: Vec<Vec<String>>, content: String| {
+        let prepared = UnsignedEventDraft::new(created_at, 1_624, tags, content)
+            .expect("valid draft")
+            .prepare(signer.public_key())
+            .expect("canonical preimage");
+        signer.sign(&prepared)
+    };
+
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(sign(&device, 1, tags.clone(), content.clone())),
+        IngestOutcome::Accepted { .. }
+    ));
+    let mut wrong_hash = tags.clone();
+    wrong_hash[2][1] = "00".repeat(32);
+    assert!(matches!(
+        builder.ingest(sign(&device, 2, wrong_hash, content.clone())),
+        IngestOutcome::InvalidCarrier { diagnostic, .. }
+            if diagnostic.as_str() == "change.hash"
+    ));
+    assert!(matches!(
+        builder.ingest(sign(&wrong_device, 3, tags.clone(), content.clone())),
+        IngestOutcome::InvalidCarrier { diagnostic, .. }
+            if diagnostic.as_str() == "change.actor"
+    ));
+    let mut wrong_control = tags.clone();
+    wrong_control[1][1] = "not-an-event-id".to_owned();
+    assert!(matches!(
+        builder.ingest(sign(&device, 4, wrong_control, content.clone())),
+        IngestOutcome::InvalidCarrier { diagnostic, .. }
+            if diagnostic.as_str() == "tag.required"
+    ));
+    let mut wrong_coordinate = tags.clone();
+    wrong_coordinate[0][1] = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "23".repeat(32)
+    );
+    assert!(matches!(
+        builder.ingest(sign(&device, 5, wrong_coordinate, content.clone())),
+        IngestOutcome::InvalidCarrier { diagnostic, .. }
+            if diagnostic.as_str() == "change.actor"
+    ));
+    assert!(matches!(
+        builder.ingest(sign(&device, 6, tags.clone(), "not-base64".to_owned())),
+        IngestOutcome::InvalidCarrier { diagnostic, .. }
+            if diagnostic.as_str() == "base64.noncanonical"
+    ));
+    let forbidden =
+        include_str!("../../../fixtures/v1_draft/automerge_framing/compressed_change_chunk.hex")
+            .trim()
+            .as_bytes()
+            .chunks_exact(2)
+            .map(|pair| {
+                u8::from_str_radix(std::str::from_utf8(pair).expect("hex pair"), 16)
+                    .expect("fixture hex")
+            })
+            .collect::<Vec<_>>();
+    assert!(matches!(
+        builder.ingest(sign(
+            &device,
+            7,
+            tags,
+            base64::engine::general_purpose::STANDARD.encode(forbidden)
+        )),
+        IngestOutcome::InvalidCarrier { diagnostic, .. }
+            if diagnostic.as_str() == "automerge.chunk_type"
     ));
 }

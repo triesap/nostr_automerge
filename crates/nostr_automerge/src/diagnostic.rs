@@ -16,6 +16,8 @@ const CODES: &[&str] = &[
     "carrier.coordinate",
     "carrier.kind",
     "carrier.revision",
+    "change.actor",
+    "change.hash",
     "checkpoint.arithmetic",
     "checkpoint.chunk",
     "checkpoint.descriptor",

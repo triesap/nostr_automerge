@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use crate::carrier::change::ChangeCarrierError;
 use crate::carrier::classify::classify;
 use crate::carrier::control::{ControlCarrierError, ControlContentError};
 use crate::carrier::manifest::ManifestContentError;
@@ -186,9 +187,15 @@ impl CorpusBuilder {
                     }
                 }
             }
-            Some(CarrierCandidate::Change(event)) => {
-                accepted(VerifiedCarrier::Change(event), checksum, event_id)
-            }
+            Some(CarrierCandidate::Change(event)) => match crate::carrier::change::validate(&event)
+            {
+                Ok(change) => accepted(
+                    VerifiedCarrier::Change(Box::new(change)),
+                    checksum,
+                    event_id,
+                ),
+                Err(error) => invalid_carrier(event, checksum, event_id, change_diagnostic(error)),
+            },
             Some(CarrierCandidate::CheckpointDescriptor(event)) => accepted(
                 VerifiedCarrier::CheckpointDescriptor(event),
                 checksum,
@@ -389,6 +396,38 @@ const fn control_diagnostic(error: ControlCarrierError) -> DiagnosticCode {
         ControlCarrierError::Content(ControlContentError::Semantics) => {
             DiagnosticCode::registered("control.structure")
         }
+    }
+}
+
+const fn change_diagnostic(error: ChangeCarrierError) -> DiagnosticCode {
+    use crate::automerge_adapter::encode::ReencodeError;
+    use crate::automerge_adapter::framing::FramingError;
+
+    match error {
+        ChangeCarrierError::Kind => DiagnosticCode::registered("carrier.kind"),
+        ChangeCarrierError::Tags => DiagnosticCode::registered("tag.required"),
+        ChangeCarrierError::Base64 => DiagnosticCode::registered("base64.noncanonical"),
+        ChangeCarrierError::Hash => DiagnosticCode::registered("change.hash"),
+        ChangeCarrierError::Actor => DiagnosticCode::registered("change.actor"),
+        ChangeCarrierError::Automerge(ReencodeError::Framing(FramingError::Magic)) => {
+            DiagnosticCode::registered("automerge.magic")
+        }
+        ChangeCarrierError::Automerge(ReencodeError::Framing(FramingError::ForbiddenChunk(_))) => {
+            DiagnosticCode::registered("automerge.chunk_type")
+        }
+        ChangeCarrierError::Automerge(ReencodeError::Framing(FramingError::Leb128(_))) => {
+            DiagnosticCode::registered("automerge.leb128")
+        }
+        ChangeCarrierError::Automerge(ReencodeError::Framing(FramingError::Checksum)) => {
+            DiagnosticCode::registered("automerge.checksum")
+        }
+        ChangeCarrierError::Automerge(ReencodeError::Framing(
+            FramingError::Truncated | FramingError::TooLarge | FramingError::Length,
+        )) => DiagnosticCode::registered("automerge.length"),
+        ChangeCarrierError::Automerge(ReencodeError::NonCanonical) => {
+            DiagnosticCode::registered("automerge.canonical")
+        }
+        ChangeCarrierError::Automerge(_) => DiagnosticCode::registered("automerge.semantics"),
     }
 }
 
