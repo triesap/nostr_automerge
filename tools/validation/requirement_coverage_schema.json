@@ -18,8 +18,9 @@
     "proof": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["implementation", "test", "family", "runner_job"],
+      "required": ["implementation_identity", "implementation", "test", "family", "runner_job"],
       "properties": {
+        "implementation_identity": {"enum": ["triesap/nostr_automerge", "triesap/nostr_automerge_typescript"]},
         "implementation": {"type": "string", "minLength": 1},
         "test": {"type": "string", "minLength": 1},
         "family": {"type": "string", "minLength": 1},
