@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::change_candidate::ChangeCandidate;
-use crate::{ChangeHash, ProtocolRevision};
+use crate::ChangeHash;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct DependencyGraph {
@@ -24,20 +24,23 @@ pub(crate) fn build_graph(
     candidates: impl IntoIterator<Item = ChangeCandidate>,
     accepted_base: BTreeSet<ChangeHash>,
 ) -> Result<DependencyGraph, GraphBuildError> {
-    let limits = ProtocolRevision::draft_v1().limits();
-    build_with_limits(
-        candidates,
-        accepted_base,
-        limits.checkpoint_changes.get(),
-        limits.checkpoint_dependency_edges.get(),
-    )
+    build(candidates, accepted_base, None)
 }
 
+#[cfg(test)]
 fn build_with_limits(
     candidates: impl IntoIterator<Item = ChangeCandidate>,
     accepted_base: BTreeSet<ChangeHash>,
     node_limit: u64,
     edge_limit: u64,
+) -> Result<DependencyGraph, GraphBuildError> {
+    build(candidates, accepted_base, Some((node_limit, edge_limit)))
+}
+
+fn build(
+    candidates: impl IntoIterator<Item = ChangeCandidate>,
+    accepted_base: BTreeSet<ChangeHash>,
+    limits: Option<(u64, u64)>,
 ) -> Result<DependencyGraph, GraphBuildError> {
     let mut nodes = BTreeMap::new();
     let mut edges = 0_u64;
@@ -52,8 +55,12 @@ fn build_with_limits(
         edges = edges
             .checked_add(u64::try_from(dependencies.len()).map_err(|_| GraphBuildError::Limit)?)
             .ok_or(GraphBuildError::Limit)?;
-        if edges > edge_limit
-            || u64::try_from(nodes.len()).map_err(|_| GraphBuildError::Limit)? >= node_limit
+        let node_count = u64::try_from(nodes.len())
+            .map_err(|_| GraphBuildError::Limit)?
+            .checked_add(1)
+            .ok_or(GraphBuildError::Limit)?;
+        if let Some((node_limit, edge_limit)) = limits
+            && (edges > edge_limit || node_count > node_limit)
         {
             return Err(GraphBuildError::Limit);
         }
@@ -169,6 +176,24 @@ mod tests {
         );
         assert_eq!(
             build_with_limits([candidate(1, vec![])], BTreeSet::new(), 0, 0),
+            Err(GraphBuildError::Limit)
+        );
+    }
+
+    #[test]
+    fn ordinary_graph_limits_are_not_checkpoint_limits() {
+        let ordinary = build_graph(
+            [candidate(1, vec![]), candidate(2, vec![1])],
+            BTreeSet::new(),
+        );
+        assert!(ordinary.is_ok());
+        assert_eq!(
+            build_with_limits(
+                [candidate(1, vec![]), candidate(2, vec![1])],
+                BTreeSet::new(),
+                1,
+                1,
+            ),
             Err(GraphBuildError::Limit)
         );
     }

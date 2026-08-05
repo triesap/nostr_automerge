@@ -37,6 +37,9 @@ impl VerifiedSnapshot {
             .iter()
             .try_fold(0_u64, |sum, c| sum.checked_add(c.dependencies.len() as u64))
             .ok_or(VerifyError::Commitments)?;
+        if !within_checkpoint_limits(change_count, total_ops, dependency_edges) {
+            return Err(VerifyError::Commitments);
+        }
         let mut hashes = changes.iter().map(|c| c.hash).collect::<Vec<_>>();
         hashes.sort();
         let mut digest = Sha256::new();
@@ -68,6 +71,13 @@ impl VerifiedSnapshot {
             .collect::<std::collections::BTreeMap<_, _>>();
         exact_closure(&map, &self.heads)
     }
+}
+
+fn within_checkpoint_limits(change_count: u64, operations: u64, dependency_edges: u64) -> bool {
+    let limits = crate::ProtocolRevision::draft_v1().limits();
+    change_count <= limits.checkpoint_changes.get()
+        && operations <= limits.checkpoint_operations.get()
+        && dependency_edges <= limits.checkpoint_dependency_edges.get()
 }
 
 fn exact_closure(
@@ -261,5 +271,24 @@ mod tests {
             super::exact_closure(&cycle, &BTreeSet::from([a])),
             Err(VerifyError::Closure)
         );
+    }
+    #[test]
+    fn checkpoint_graph_limits_remain_checkpoint_specific() {
+        let limits = crate::ProtocolRevision::draft_v1().limits();
+        assert!(super::within_checkpoint_limits(
+            limits.checkpoint_changes.get(),
+            limits.checkpoint_operations.get(),
+            limits.checkpoint_dependency_edges.get(),
+        ));
+        assert!(!super::within_checkpoint_limits(
+            limits.checkpoint_changes.get() + 1,
+            limits.checkpoint_operations.get(),
+            limits.checkpoint_dependency_edges.get(),
+        ));
+        assert!(!super::within_checkpoint_limits(
+            limits.checkpoint_changes.get(),
+            limits.checkpoint_operations.get(),
+            limits.checkpoint_dependency_edges.get() + 1,
+        ));
     }
 }
