@@ -58,6 +58,18 @@ pub(crate) struct ValidatedManifest {
     pub(crate) successor: Option<DocumentCoordinate>,
 }
 
+impl ValidatedManifest {
+    pub(crate) fn acquisition_hints(&self) -> crate::ManifestHints {
+        crate::ManifestHints::new(
+            self.event_id,
+            self.coordinate,
+            self.control,
+            self.checkpoint,
+            self.relays.clone(),
+        )
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct ValidatedApplication {
     pub(crate) id: String,

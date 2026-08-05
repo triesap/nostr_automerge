@@ -3,24 +3,24 @@ use serde_json::Value;
 use crate::VerifiedNip01Event;
 use crate::profile::kinds::CarrierKind;
 
-use super::VerifiedCarrier;
+use super::CarrierCandidate;
 
-pub(crate) fn classify(event: VerifiedNip01Event) -> Option<VerifiedCarrier> {
+pub(crate) fn classify(event: VerifiedNip01Event) -> Option<CarrierCandidate> {
     let kind = crate::ProtocolRevision::draft_v1().classify_kind(event.kind())?;
     let declaration = declaration(kind, event.content());
     if declaration.unsupported {
-        return Some(VerifiedCarrier::UnsupportedRevision {
+        return Some(CarrierCandidate::UnsupportedRevision {
             event,
             declared_version: declaration.version,
             declared_profile: declaration.profile,
         });
     }
     Some(match kind {
-        CarrierKind::Manifest => VerifiedCarrier::Manifest(event),
-        CarrierKind::Control => VerifiedCarrier::Control(event),
-        CarrierKind::Change => VerifiedCarrier::Change(event),
-        CarrierKind::CheckpointDescriptor => VerifiedCarrier::CheckpointDescriptor(event),
-        CarrierKind::CheckpointChunk => VerifiedCarrier::CheckpointChunk(event),
+        CarrierKind::Manifest => CarrierCandidate::Manifest(event),
+        CarrierKind::Control => CarrierCandidate::Control(event),
+        CarrierKind::Change => CarrierCandidate::Change(event),
+        CarrierKind::CheckpointDescriptor => CarrierCandidate::CheckpointDescriptor(event),
+        CarrierKind::CheckpointChunk => CarrierCandidate::CheckpointChunk(event),
     })
 }
 

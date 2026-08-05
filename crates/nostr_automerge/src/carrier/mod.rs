@@ -6,9 +6,25 @@ pub(crate) mod version;
 
 use crate::VerifiedNip01Event;
 
+use self::manifest::ValidatedManifest;
+
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum CarrierCandidate {
+    Manifest(VerifiedNip01Event),
+    Control(VerifiedNip01Event),
+    Change(VerifiedNip01Event),
+    CheckpointDescriptor(VerifiedNip01Event),
+    CheckpointChunk(VerifiedNip01Event),
+    UnsupportedRevision {
+        event: VerifiedNip01Event,
+        declared_version: Option<u64>,
+        declared_profile: Option<String>,
+    },
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum VerifiedCarrier {
-    Manifest(VerifiedNip01Event),
+    Manifest(Box<ValidatedManifest>),
     Control(VerifiedNip01Event),
     Change(VerifiedNip01Event),
     CheckpointDescriptor(VerifiedNip01Event),

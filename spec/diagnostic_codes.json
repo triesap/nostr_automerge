@@ -14,6 +14,8 @@
     {"code":"tag.forbidden","category":"carrier","meaning":"A forbidden durable-event tag is present"},
     {"code":"base64.noncanonical","category":"carrier","meaning":"Binary content is not canonical padded RFC 4648 base64"},
     {"code":"jcs.noncanonical","category":"carrier","meaning":"Signed content is not its exact RFC 8785 serialization"},
+    {"code":"manifest.semantics","category":"carrier","meaning":"Manifest profile semantics are invalid"},
+    {"code":"manifest.structure","category":"carrier","meaning":"Manifest content shape is invalid"},
     {"code":"carrier.kind","category":"carrier","meaning":"The carrier kind is not in the sealed profile"},
     {"code":"carrier.coordinate","category":"carrier","meaning":"Carrier coordinate tags are inconsistent"},
     {"code":"carrier.revision","category":"carrier","meaning":"The declared revision or profile is unsupported"},

@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 
-use crate::carrier::VerifiedCarrier;
 use crate::carrier::classify::classify;
+use crate::carrier::manifest::ManifestContentError;
+use crate::carrier::{CarrierCandidate, VerifiedCarrier};
 use crate::evidence::event::{EventEvidence, RawChecksum};
 use crate::evidence::source::AcquiredRawEvent;
 use crate::{DiagnosticCode, EventId, Nip01VerificationError, RawEventBytes, VerifiedNip01Event};
@@ -34,6 +35,13 @@ pub enum IngestOutcome {
         /// The verified carrier event identifier.
         event_id: EventId,
         /// The stable unsupported-revision code.
+        diagnostic: DiagnosticCode,
+    },
+    /// The signed carrier failed its kind-specific validation.
+    InvalidCarrier {
+        /// The verified carrier event identifier.
+        event_id: EventId,
+        /// The stable carrier-validation failure code.
         diagnostic: DiagnosticCode,
     },
 }
@@ -116,8 +124,17 @@ impl CorpusBuilder {
             return IngestOutcome::Duplicate { event_id };
         }
         let (evidence, outcome) = match classify(event.clone()) {
-            Some(carrier @ VerifiedCarrier::UnsupportedRevision { .. }) => {
+            Some(CarrierCandidate::UnsupportedRevision {
+                event,
+                declared_version,
+                declared_profile,
+            }) => {
                 let diagnostic = DiagnosticCode::registered("carrier.revision");
+                let carrier = VerifiedCarrier::UnsupportedRevision {
+                    event,
+                    declared_version,
+                    declared_profile,
+                };
                 (
                     EventEvidence::UnsupportedRevision {
                         carrier,
@@ -130,13 +147,45 @@ impl CorpusBuilder {
                     },
                 )
             }
-            Some(carrier) => (
-                EventEvidence::VerifiedCarrier {
-                    carrier,
-                    raw_checksum: checksum,
-                },
-                IngestOutcome::Accepted { event_id },
+            Some(CarrierCandidate::Manifest(event)) => {
+                match crate::carrier::manifest::validate(&event) {
+                    Ok(manifest) => (
+                        EventEvidence::VerifiedCarrier {
+                            carrier: VerifiedCarrier::Manifest(Box::new(manifest)),
+                            raw_checksum: checksum,
+                        },
+                        IngestOutcome::Accepted { event_id },
+                    ),
+                    Err(error) => {
+                        let diagnostic = manifest_diagnostic(error);
+                        (
+                            EventEvidence::InvalidCarrier {
+                                event,
+                                raw_checksum: checksum,
+                                diagnostic,
+                            },
+                            IngestOutcome::InvalidCarrier {
+                                event_id,
+                                diagnostic,
+                            },
+                        )
+                    }
+                }
+            }
+            Some(CarrierCandidate::Control(event)) => {
+                accepted(VerifiedCarrier::Control(event), checksum, event_id)
+            }
+            Some(CarrierCandidate::Change(event)) => {
+                accepted(VerifiedCarrier::Change(event), checksum, event_id)
+            }
+            Some(CarrierCandidate::CheckpointDescriptor(event)) => accepted(
+                VerifiedCarrier::CheckpointDescriptor(event),
+                checksum,
+                event_id,
             ),
+            Some(CarrierCandidate::CheckpointChunk(event)) => {
+                accepted(VerifiedCarrier::CheckpointChunk(event), checksum, event_id)
+            }
             None => (
                 EventEvidence::IrrelevantEvent {
                     event,
@@ -160,6 +209,20 @@ impl CorpusBuilder {
     }
 }
 
+fn accepted(
+    carrier: VerifiedCarrier,
+    raw_checksum: RawChecksum,
+    event_id: EventId,
+) -> (EventEvidence, IngestOutcome) {
+    (
+        EventEvidence::VerifiedCarrier {
+            carrier,
+            raw_checksum,
+        },
+        IngestOutcome::Accepted { event_id },
+    )
+}
+
 impl IngressCorpus {
     /// Returns the number of uniquely identified verified signed events.
     #[must_use]
@@ -179,6 +242,19 @@ impl IngressCorpus {
         self.duplicates.len()
     }
 
+    /// Iterates over advisory acquisition hints from fully validated manifests.
+    ///
+    /// These hints never select canonical controls, changes, or checkpoints.
+    pub fn manifest_hints(&self) -> impl Iterator<Item = ManifestHints> + '_ {
+        self.events.values().filter_map(|evidence| match evidence {
+            EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::Manifest(manifest),
+                ..
+            } => Some(manifest.acquisition_hints()),
+            _ => None,
+        })
+    }
+
     /// Returns true when no evidence of any class was retained.
     #[must_use]
     pub fn is_empty(&self) -> bool {
@@ -186,13 +262,81 @@ impl IngressCorpus {
     }
 }
 
+/// Advisory acquisition hints from one fully validated signed manifest.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ManifestHints {
+    event_id: EventId,
+    coordinate: crate::DocumentCoordinate,
+    control: EventId,
+    checkpoint: Option<EventId>,
+    relays: Vec<String>,
+}
+
+impl ManifestHints {
+    pub(crate) fn new(
+        event_id: EventId,
+        coordinate: crate::DocumentCoordinate,
+        control: EventId,
+        checkpoint: Option<EventId>,
+        relays: Vec<String>,
+    ) -> Self {
+        Self {
+            event_id,
+            coordinate,
+            control,
+            checkpoint,
+            relays,
+        }
+    }
+
+    /// Returns the signed manifest event identifier.
+    #[must_use]
+    pub const fn event_id(&self) -> EventId {
+        self.event_id
+    }
+
+    /// Returns the document coordinate named by the manifest.
+    #[must_use]
+    pub const fn coordinate(&self) -> crate::DocumentCoordinate {
+        self.coordinate
+    }
+
+    /// Returns the manifest's non-authoritative control hint.
+    #[must_use]
+    pub const fn control(&self) -> EventId {
+        self.control
+    }
+
+    /// Returns the manifest's non-authoritative checkpoint hint.
+    #[must_use]
+    pub const fn checkpoint(&self) -> Option<EventId> {
+        self.checkpoint
+    }
+
+    /// Returns sorted relay acquisition hints.
+    #[must_use]
+    pub fn relays(&self) -> &[String] {
+        &self.relays
+    }
+}
+
 fn evidence_checksum(evidence: &EventEvidence) -> RawChecksum {
     match evidence {
         EventEvidence::VerifiedCarrier { raw_checksum, .. }
         | EventEvidence::InvalidEvent { raw_checksum, .. }
+        | EventEvidence::InvalidCarrier { raw_checksum, .. }
         | EventEvidence::UnsupportedRevision { raw_checksum, .. }
         | EventEvidence::IrrelevantEvent { raw_checksum, .. }
         | EventEvidence::DuplicateEvent { raw_checksum, .. } => *raw_checksum,
+    }
+}
+
+const fn manifest_diagnostic(error: ManifestContentError) -> DiagnosticCode {
+    match error {
+        ManifestContentError::Canonical(_) => DiagnosticCode::registered("jcs.noncanonical"),
+        ManifestContentError::Tags => DiagnosticCode::registered("tag.required"),
+        ManifestContentError::Shape => DiagnosticCode::registered("manifest.structure"),
+        ManifestContentError::Semantics => DiagnosticCode::registered("manifest.semantics"),
     }
 }
 

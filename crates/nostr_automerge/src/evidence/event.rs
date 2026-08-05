@@ -29,6 +29,11 @@ pub(crate) enum EventEvidence {
         raw_checksum: RawChecksum,
         diagnostic: DiagnosticCode,
     },
+    InvalidCarrier {
+        event: VerifiedNip01Event,
+        raw_checksum: RawChecksum,
+        diagnostic: DiagnosticCode,
+    },
     UnsupportedRevision {
         carrier: VerifiedCarrier,
         raw_checksum: RawChecksum,
@@ -53,6 +58,11 @@ impl fmt::Debug for EventEvidence {
                 diagnostic,
                 ..
             } => ("invalid_event", raw_checksum, Some(*diagnostic)),
+            Self::InvalidCarrier {
+                raw_checksum,
+                diagnostic,
+                ..
+            } => ("invalid_carrier", raw_checksum, Some(*diagnostic)),
             Self::UnsupportedRevision {
                 raw_checksum,
                 diagnostic,

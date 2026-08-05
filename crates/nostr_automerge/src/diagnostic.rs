@@ -41,6 +41,8 @@ const CODES: &[&str] = &[
     "jcs.noncanonical",
     "json.duplicate_member",
     "json.syntax",
+    "manifest.semantics",
+    "manifest.structure",
     "nip01.event_id",
     "nip01.identifier",
     "nip01.shape",
