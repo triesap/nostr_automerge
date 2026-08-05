@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/tools/validation/requirement_coverage_schema.json",
+  "title": "Closed normative requirement coverage",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "requirements_sha256", "requirement_count", "rows"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.requirement_coverage.v2"},
+    "requirements_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "requirement_count": {"type": "integer", "minimum": 1},
+    "rows": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/row"}
+    }
+  },
+  "$defs": {
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["implementation", "test", "family", "runner_job"],
+      "properties": {
+        "implementation": {"type": "string", "minLength": 1},
+        "test": {"type": "string", "minLength": 1},
+        "family": {"type": "string", "minLength": 1},
+        "runner_job": {"type": "string", "minLength": 1}
+      }
+    },
+    "row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "authority"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^NCRDT-[A-Z0-9-]+$"},
+        "status": {"enum": ["mandatory-pass", "applicable-local", "explicitly-deferred", "out-of-core"]},
+        "authority": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "section", "text_sha256"],
+          "properties": {
+            "source": {"type": "string", "minLength": 1},
+            "section": {"type": "string", "minLength": 1},
+            "text_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+          }
+        },
+        "proofs": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "rust": {"$ref": "#/$defs/proof"},
+            "typescript": {"$ref": "#/$defs/proof"}
+          }
+        },
+        "rationale": {"type": "string", "minLength": 1}
+      },
+      "allOf": [
+        {"if": {"properties": {"status": {"const": "mandatory-pass"}}}, "then": {"required": ["proofs"], "properties": {"proofs": {"required": ["rust", "typescript"]}}, "not": {"required": ["rationale"]}}},
+        {"if": {"properties": {"status": {"const": "applicable-local"}}}, "then": {"required": ["proofs"], "not": {"required": ["rationale"]}}},
+        {"if": {"properties": {"status": {"enum": ["explicitly-deferred", "out-of-core"]}}}, "then": {"required": ["rationale"], "not": {"required": ["proofs"]}}}
+      ]
+    }
+  }
+}
