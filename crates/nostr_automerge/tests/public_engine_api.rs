@@ -802,7 +802,7 @@ fn validated_checkpoint_descriptor_carrier_enters_corpus() {
                 vec!["e".to_owned(), "04".repeat(32)],
                 vec!["x".to_owned(), "05".repeat(32)],
             ],
-            content,
+            content.clone(),
         )
         .expect("descriptor draft")
         .prepare(signer.public_key())
@@ -822,6 +822,63 @@ fn validated_checkpoint_descriptor_carrier_enters_corpus() {
         corpus.records().next(),
         Some(record) if record.status() == EvidenceStatus::Valid
     ));
+
+    let sign = |created_at: u64, tags: Vec<Vec<String>>, content: String| {
+        signer.sign(
+            &UnsignedEventDraft::new(created_at, 1_626, tags, content)
+                .expect("descriptor draft")
+                .prepare(signer.public_key())
+                .expect("descriptor preimage"),
+        )
+    };
+    let valid_tags = || {
+        vec![
+            vec!["a".to_owned(), coordinate.to_address()],
+            vec!["e".to_owned(), "04".repeat(32)],
+            vec!["x".to_owned(), "05".repeat(32)],
+        ]
+    };
+    for (created_at, tags, expected) in [
+        (
+            2,
+            [valid_tags(), vec![vec!["d".to_owned(), "x".to_owned()]]].concat(),
+            "tag.forbidden",
+        ),
+        (
+            3,
+            [
+                valid_tags(),
+                vec![vec!["a".to_owned(), coordinate.to_address()]],
+            ]
+            .concat(),
+            "tag.forbidden",
+        ),
+        (
+            4,
+            vec![
+                vec!["a".to_owned(), "invalid".to_owned()],
+                vec!["e".to_owned(), "04".repeat(32)],
+                vec!["x".to_owned(), "05".repeat(32)],
+            ],
+            "carrier.coordinate",
+        ),
+        (
+            5,
+            vec![
+                vec!["a".to_owned(), coordinate.to_address()],
+                vec!["e".to_owned(), "04".repeat(32)],
+                vec!["x".to_owned(), "AA".repeat(32)],
+            ],
+            "checkpoint.descriptor",
+        ),
+    ] {
+        let mut invalid = CorpusBuilder::new();
+        assert!(matches!(
+            invalid.ingest(sign(created_at, tags, content.clone())),
+            IngestOutcome::InvalidCarrier { diagnostic, .. }
+                if diagnostic.as_str() == expected
+        ));
+    }
 }
 
 #[test]

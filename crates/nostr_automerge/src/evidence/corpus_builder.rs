@@ -247,7 +247,10 @@ fn checkpoint_descriptor_diagnostic(
     use crate::carrier::checkpoint_descriptor::CheckpointDescriptorCarrierError as Error;
     match error {
         Error::Kind => DiagnosticCode::registered("carrier.kind"),
-        Error::Tags => DiagnosticCode::registered("tag.required"),
+        Error::Tags(crate::wire::tags::TagError::Forbidden) => {
+            DiagnosticCode::registered("tag.forbidden")
+        }
+        Error::Tags(_) => DiagnosticCode::registered("tag.required"),
         Error::Coordinate => DiagnosticCode::registered("carrier.coordinate"),
         Error::Control | Error::Snapshot | Error::Descriptor(_) => {
             DiagnosticCode::registered("checkpoint.descriptor")

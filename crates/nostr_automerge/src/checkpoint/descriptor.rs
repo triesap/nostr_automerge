@@ -123,7 +123,15 @@ impl CheckpointDescriptor {
                     .map_err(|_| DescriptorError::Content)
             })
             .collect::<Result<Vec<ChangeHash>, _>>()?;
-        if heads.is_empty() || heads.windows(2).any(|pair| pair[0] >= pair[1]) {
+        let head_limit = crate::ProtocolRevision::draft_v1()
+            .limits()
+            .checkpoint_heads
+            .try_usize()
+            .map_err(|_| DescriptorError::Range)?;
+        if heads.is_empty()
+            || heads.len() > head_limit
+            || heads.windows(2).any(|pair| pair[0] >= pair[1])
+        {
             return Err(DescriptorError::Content);
         }
         Ok(Self {

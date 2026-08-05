@@ -57,7 +57,7 @@ impl fmt::Debug for ValidatedCheckpointDescriptorCarrier {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum CheckpointDescriptorCarrierError {
     Kind,
-    Tags,
+    Tags(tags::TagError),
     Coordinate,
     Control,
     Snapshot,
@@ -70,16 +70,28 @@ pub(crate) fn validate(
     if event.kind() != crate::checkpoint::DESCRIPTOR_KIND {
         return Err(CheckpointDescriptorCarrierError::Kind);
     }
+    tags::require_absent(event.tags(), "d").map_err(CheckpointDescriptorCarrierError::Tags)?;
+    tags::require_durable_tags(event.tags()).map_err(CheckpointDescriptorCarrierError::Tags)?;
+    if event.tags().len() != 3
+        || event.tags().iter().any(|tag| {
+            tag.first()
+                .is_none_or(|name| name != "a" && name != "e" && name != "x")
+        })
+    {
+        return Err(CheckpointDescriptorCarrierError::Tags(
+            tags::TagError::Forbidden,
+        ));
+    }
     let coordinate: DocumentCoordinate = tags::required_tag(event.tags(), "a", 2)
-        .map_err(|_| CheckpointDescriptorCarrierError::Tags)?[1]
+        .map_err(CheckpointDescriptorCarrierError::Tags)?[1]
         .parse()
         .map_err(|_| CheckpointDescriptorCarrierError::Coordinate)?;
     let control_id = tags::required_tag(event.tags(), "e", 2)
-        .map_err(|_| CheckpointDescriptorCarrierError::Tags)?[1]
+        .map_err(CheckpointDescriptorCarrierError::Tags)?[1]
         .parse()
         .map_err(|_| CheckpointDescriptorCarrierError::Control)?;
     let snapshot_hash = tags::required_tag(event.tags(), "x", 2)
-        .map_err(|_| CheckpointDescriptorCarrierError::Tags)?[1]
+        .map_err(CheckpointDescriptorCarrierError::Tags)?[1]
         .parse()
         .map_err(|_| CheckpointDescriptorCarrierError::Snapshot)?;
     let descriptor = CheckpointDescriptor::parse_content(event.content(), snapshot_hash)
