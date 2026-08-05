@@ -8,10 +8,10 @@ use std::collections::BTreeSet;
 use base64::Engine as _;
 use nostr_automerge::authoring::{ActorState, AuthoringDocument, Operation, UnsignedEventDraft};
 use nostr_automerge::{
-    ActorId, ChangeHash, ChunkHash, Completion, CorpusBuilder, DocumentCoordinate,
-    EvaluationFailure, EventId, EvidenceCorpus, EvidenceStatus, IngestOutcome, NeverCancelled,
-    ProtocolDisposition, ProtocolRevision, RawEventBytes, ReferenceEvaluator, VerifiedNip01Event,
-    WorkBudget, WorkCounter,
+    ActorId, ChangeHash, CheckpointVerificationStatus, ChunkHash, Completion, CorpusBuilder,
+    DocumentCoordinate, EvaluationFailure, EventId, EvidenceCorpus, EvidenceStatus, IngestOutcome,
+    NeverCancelled, ProtocolDisposition, ProtocolRevision, RawEventBytes, ReferenceEvaluator,
+    VerifiedNip01Event, WorkBudget, WorkCounter,
 };
 use sha2::{Digest as _, Sha256};
 use support::test_signer::TestSigner;
@@ -831,6 +831,22 @@ fn validated_checkpoint_descriptor_carrier_enters_corpus() {
         corpus.records().next(),
         Some(record) if record.status() == EvidenceStatus::Pending
     ));
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &corpus,
+        coordinate,
+        &mut WorkBudget::new(u64::MAX, u64::MAX),
+        &NeverCancelled,
+    );
+    let checkpoint = report.checkpoints().first().expect("descriptor result");
+    assert_eq!(checkpoint.descriptor_event(), event_id);
+    assert_eq!(checkpoint.chunk_events(), &[]);
+    assert_eq!(checkpoint.snapshot_hash().to_hex(), "05".repeat(32));
+    assert_eq!(checkpoint.change_count(), 1);
+    assert_eq!(
+        checkpoint.status(),
+        CheckpointVerificationStatus::PendingControl
+    );
+    assert_eq!(checkpoint.completion(), Completion::Failed);
 
     let sign = |created_at: u64, tags: Vec<Vec<String>>, content: String| {
         signer.sign(

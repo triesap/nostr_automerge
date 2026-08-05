@@ -40,7 +40,8 @@ mod work_budget;
 pub use diagnostic::DiagnosticCode;
 pub use disposition::{Completion, ProtocolDisposition};
 pub use engine::{
-    EvaluationFailure, EvaluationReport, MaterializedDocumentView, ReferenceEvaluator,
+    CheckpointVerificationResult, CheckpointVerificationStatus, EvaluationFailure,
+    EvaluationReport, MaterializedDocumentView, ReferenceEvaluator,
 };
 pub use error::HexError;
 pub use evidence::corpus_builder::{

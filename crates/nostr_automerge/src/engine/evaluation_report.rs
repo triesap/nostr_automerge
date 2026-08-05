@@ -2,8 +2,8 @@ use core::fmt;
 use std::collections::BTreeSet;
 
 use crate::{
-    ChangeHash, Completion, DispositionsDigest, DocumentCoordinate, EventId, EvidenceRecord,
-    HistoryDigest, IntegrityAlert, ProtocolDisposition,
+    ChangeHash, CheckpointVerificationResult, Completion, DispositionsDigest, DocumentCoordinate,
+    EventId, EvidenceRecord, HistoryDigest, IntegrityAlert, ProtocolDisposition,
 };
 
 /// Stable category explaining why an evaluation did not complete.
@@ -70,6 +70,7 @@ pub struct EvaluationReport {
     excluded_changes: Vec<ChangeHash>,
     heads: Vec<ChangeHash>,
     evidence: Vec<EvidenceRecord>,
+    checkpoints: Vec<CheckpointVerificationResult>,
     history_digest: HistoryDigest,
     dispositions_digest: DispositionsDigest,
     integrity_alerts: Vec<IntegrityAlert>,
@@ -87,6 +88,7 @@ pub(crate) struct EvaluationReportParts {
     pub(crate) excluded_changes: Vec<ChangeHash>,
     pub(crate) heads: Vec<ChangeHash>,
     pub(crate) evidence: Vec<EvidenceRecord>,
+    pub(crate) checkpoints: Vec<CheckpointVerificationResult>,
     pub(crate) history_digest: HistoryDigest,
     pub(crate) dispositions_digest: DispositionsDigest,
     pub(crate) integrity_alerts: Vec<IntegrityAlert>,
@@ -116,6 +118,10 @@ impl EvaluationReport {
                 .dispositions
                 .windows(2)
                 .all(|pair| pair[0].0 < pair[1].0)
+            || !parts
+                .checkpoints
+                .windows(2)
+                .all(|pair| pair[0].descriptor_event() < pair[1].descriptor_event())
         {
             return Err(EvaluationReportInvariant);
         }
@@ -175,6 +181,7 @@ impl EvaluationReport {
             excluded_changes: parts.excluded_changes,
             heads: parts.heads,
             evidence: parts.evidence,
+            checkpoints: parts.checkpoints,
             history_digest: parts.history_digest,
             dispositions_digest: parts.dispositions_digest,
             integrity_alerts: parts.integrity_alerts,
@@ -239,6 +246,12 @@ impl EvaluationReport {
         &self.evidence
     }
 
+    /// Returns checkpoint verification results ordered by descriptor event ID.
+    #[must_use]
+    pub fn checkpoints(&self) -> &[CheckpointVerificationResult] {
+        &self.checkpoints
+    }
+
     /// Returns the normative history digest.
     #[must_use]
     pub const fn history_digest(&self) -> HistoryDigest {
@@ -286,6 +299,7 @@ impl fmt::Debug for EvaluationReport {
             .field("excluded_change_count", &self.excluded_changes.len())
             .field("head_count", &self.heads.len())
             .field("evidence_count", &self.evidence.len())
+            .field("checkpoint_count", &self.checkpoints.len())
             .field("alert_count", &self.integrity_alerts.len())
             .field("completion", &self.completion)
             .field("failure", &self.failure)
@@ -320,6 +334,7 @@ mod tests {
             excluded_changes: vec![],
             heads: vec![ChangeHash::from_bytes([2; 32])],
             evidence: vec![],
+            checkpoints: vec![],
             history_digest: HistoryDigest::from_bytes([3; 32]),
             dispositions_digest: DispositionsDigest::from_bytes([4; 32]),
             integrity_alerts: vec![],

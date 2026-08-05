@@ -11,8 +11,9 @@ use crate::graph::change_candidate::{CandidateCarrier, ChangeCandidate};
 use crate::reference::evaluate::{BatchChange, BatchControl, evaluate_batch};
 use crate::types::role::Role;
 use crate::{
-    CancellationCheck, ChangeHash, Completion, DocumentCoordinate, EvidenceCorpus,
-    ProtocolDisposition, ProtocolRevision, WorkBudget, WorkCounter,
+    CancellationCheck, ChangeHash, CheckpointVerificationResult, CheckpointVerificationStatus,
+    Completion, DocumentCoordinate, EvidenceCorpus, ProtocolDisposition, ProtocolRevision,
+    WorkBudget, WorkCounter,
 };
 
 use super::evaluation_report::{
@@ -68,16 +69,14 @@ impl ReferenceEvaluator {
             batch.materialized_document = None;
         }
         let canonical_controls = batch.canonical_controls;
-        let _checkpoint_authorizations = checkpoint_authorizations(
+        let checkpoints = verify_checkpoints(
             corpus,
             coordinate,
-            &canonical_controls.iter().copied().collect(),
+            &canonical_controls,
+            &batch.accepted_at_control,
+            budget,
+            cancellation,
         );
-        let _checkpoint_chunk_sets = checkpoint_chunk_sets(corpus, coordinate);
-        let _checkpoint_carrier_coverage =
-            checkpoint_carrier_coverage(corpus, coordinate, &canonical_controls);
-        let _checkpoint_accepted_history =
-            checkpoint_accepted_history(corpus, coordinate, &batch.accepted_at_control);
         let dispositions = batch.dispositions.into_iter().collect::<Vec<_>>();
         let accepted_changes = batch.accepted_changes.into_iter().collect::<Vec<_>>();
         let heads = batch.heads.into_iter().collect::<Vec<_>>();
@@ -118,6 +117,7 @@ impl ReferenceEvaluator {
             excluded_changes,
             heads,
             evidence: corpus.records().collect(),
+            checkpoints,
             history_digest,
             dispositions_digest,
             integrity_alerts: batch.integrity_alerts,
@@ -127,6 +127,174 @@ impl ReferenceEvaluator {
                 .materialized_document
                 .map(MaterializedDocumentView::from_canonical_bytes),
         })
+    }
+}
+
+fn verify_checkpoints(
+    corpus: &EvidenceCorpus,
+    coordinate: DocumentCoordinate,
+    canonical_controls: &[crate::EventId],
+    accepted_at_control: &std::collections::BTreeMap<
+        crate::EventId,
+        std::collections::BTreeSet<ChangeHash>,
+    >,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Vec<CheckpointVerificationResult> {
+    let canonical_set = canonical_controls.iter().copied().collect();
+    let authorizations = checkpoint_authorizations(corpus, coordinate, &canonical_set);
+    let chunk_sets = checkpoint_chunk_sets(corpus, coordinate);
+    let carrier_coverage = checkpoint_carrier_coverage(corpus, coordinate, canonical_controls);
+    let accepted_history = checkpoint_accepted_history(corpus, coordinate, accepted_at_control);
+    corpus
+        .events
+        .values()
+        .filter_map(|evidence| match evidence {
+            EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
+                ..
+            } if descriptor.coordinate() == coordinate => Some(descriptor.as_ref()),
+            _ => None,
+        })
+        .map(|descriptor| {
+            let descriptor_id = descriptor.event_id();
+            let chunk_events = checkpoint_chunk_event_ids(corpus, descriptor_id);
+            let coverage = carrier_coverage
+                .get(&descriptor_id)
+                .and_then(|value| value.as_ref().ok())
+                .cloned()
+                .unwrap_or_default();
+            let accepted = accepted_history
+                .get(&descriptor_id)
+                .and_then(|value| value.as_ref().ok())
+                .cloned()
+                .unwrap_or_default();
+            let status = verify_one_checkpoint(
+                descriptor,
+                authorizations.get(&descriptor_id).copied(),
+                chunk_sets.get(&descriptor_id),
+                &coverage,
+                &accepted,
+                budget,
+                cancellation,
+            );
+            let commitments = descriptor.descriptor();
+            CheckpointVerificationResult::new(
+                descriptor_id,
+                chunk_events,
+                descriptor.snapshot_hash(),
+                commitments.heads.iter().copied().collect(),
+                commitments.change_count,
+                commitments.change_set_hash,
+                coverage.into_iter().collect(),
+                accepted.into_iter().collect(),
+                status,
+            )
+        })
+        .collect()
+}
+
+fn checkpoint_chunk_event_ids(
+    corpus: &EvidenceCorpus,
+    descriptor_id: crate::EventId,
+) -> Vec<crate::EventId> {
+    corpus
+        .events
+        .values()
+        .filter_map(|evidence| match evidence {
+            EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::CheckpointChunk(chunk),
+                ..
+            } if chunk.descriptor_id() == descriptor_id => Some(chunk.event_id()),
+            _ => None,
+        })
+        .collect()
+}
+
+fn verify_one_checkpoint(
+    descriptor: &crate::carrier::checkpoint_descriptor::ValidatedCheckpointDescriptorCarrier,
+    authorization: Option<DescriptorAuthorization>,
+    chunks: Option<&Result<Vec<crate::checkpoint::CheckpointChunk>, JoinError>>,
+    coverage: &std::collections::BTreeSet<ChangeHash>,
+    accepted: &std::collections::BTreeSet<ChangeHash>,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> CheckpointVerificationStatus {
+    use crate::checkpoint::{AssemblyError, HistoryVerificationError, VerifyError};
+    match authorization {
+        Some(DescriptorAuthorization::Authorized) => {}
+        Some(DescriptorAuthorization::PendingControl) | None => {
+            return CheckpointVerificationStatus::PendingControl;
+        }
+        Some(DescriptorAuthorization::Invalid) => {
+            return CheckpointVerificationStatus::Unauthorized;
+        }
+    }
+    let mut chunks = match chunks {
+        Some(Ok(chunks)) => chunks.clone(),
+        Some(Err(error)) => return join_status(*error),
+        None => return CheckpointVerificationStatus::MissingChunk,
+    };
+    let bytes = match crate::checkpoint::assemble_chunks(
+        descriptor.descriptor(),
+        &mut chunks,
+        budget,
+        cancellation,
+    ) {
+        Ok(bytes) => bytes,
+        Err(AssemblyError::Budget) => return CheckpointVerificationStatus::BudgetExhausted,
+        Err(AssemblyError::Cancelled) => return CheckpointVerificationStatus::Cancelled,
+        Err(AssemblyError::Chunks | AssemblyError::Identity) => {
+            return CheckpointVerificationStatus::AssemblyMismatch;
+        }
+    };
+    let snapshot = match crate::checkpoint::verify_snapshot_heads(
+        &bytes,
+        descriptor.descriptor(),
+        budget,
+        cancellation,
+    ) {
+        Ok(snapshot) => snapshot,
+        Err(VerifyError::Load) => return CheckpointVerificationStatus::SnapshotLoad,
+        Err(VerifyError::Heads) => return CheckpointVerificationStatus::HeadMismatch,
+        Err(VerifyError::Commitments) => return CheckpointVerificationStatus::CommitmentMismatch,
+        Err(VerifyError::Closure) => return CheckpointVerificationStatus::ClosureMismatch,
+    };
+    if let Err(error) = snapshot.verify_commitments(descriptor.descriptor(), budget) {
+        return match error {
+            VerifyError::Load => CheckpointVerificationStatus::BudgetExhausted,
+            VerifyError::Commitments => CheckpointVerificationStatus::CommitmentMismatch,
+            VerifyError::Heads => CheckpointVerificationStatus::HeadMismatch,
+            VerifyError::Closure => CheckpointVerificationStatus::ClosureMismatch,
+        };
+    }
+    if snapshot.verify_exact_closure().is_err() {
+        return CheckpointVerificationStatus::ClosureMismatch;
+    }
+    match crate::checkpoint::verify_full_history(&snapshot, coverage, accepted) {
+        Ok(()) => CheckpointVerificationStatus::Verified,
+        Err(HistoryVerificationError::MissingCarrier) => {
+            CheckpointVerificationStatus::MissingHistoricalCarrier
+        }
+        Err(HistoryVerificationError::NotAccepted) => {
+            CheckpointVerificationStatus::NotAcceptedAtControl
+        }
+        Err(HistoryVerificationError::Snapshot) => CheckpointVerificationStatus::SnapshotLoad,
+        Err(HistoryVerificationError::UnknownControl) => {
+            CheckpointVerificationStatus::PendingControl
+        }
+    }
+}
+
+const fn join_status(error: JoinError) -> CheckpointVerificationStatus {
+    match error {
+        JoinError::Author => CheckpointVerificationStatus::ChunkAuthorMismatch,
+        JoinError::Coordinate => CheckpointVerificationStatus::ChunkCoordinateMismatch,
+        JoinError::Descriptor => CheckpointVerificationStatus::ChunkDescriptorMismatch,
+        JoinError::Count => CheckpointVerificationStatus::ChunkCountMismatch,
+        JoinError::DuplicateIndex => CheckpointVerificationStatus::DuplicateChunk,
+        JoinError::MissingIndex => CheckpointVerificationStatus::MissingChunk,
+        JoinError::Size => CheckpointVerificationStatus::ChunkSizeMismatch,
     }
 }
 
