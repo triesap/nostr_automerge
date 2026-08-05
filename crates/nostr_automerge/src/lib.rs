@@ -41,7 +41,7 @@ pub use disposition::{Completion, ProtocolDisposition};
 pub use error::HexError;
 pub use evidence::corpus_builder::{
     CorpusBuilder, EvidenceCorpus, EvidenceIdentifier, EvidenceRecord, EvidenceStatus,
-    IngestOutcome, ManifestHints,
+    IngestOutcome, ManifestAvailability, ManifestHints,
 };
 pub use integrity::{
     AlertError, CanonicalControlReorganizationAlert, CheckpointMismatchAlert,

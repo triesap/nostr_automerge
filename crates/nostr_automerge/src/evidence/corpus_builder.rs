@@ -311,13 +311,30 @@ impl EvidenceCorpus {
     ///
     /// These hints never select canonical controls, changes, or checkpoints.
     pub fn manifest_hints(&self) -> impl Iterator<Item = ManifestHints> + '_ {
-        self.events.values().filter_map(|evidence| match evidence {
-            EventEvidence::VerifiedCarrier {
-                carrier: VerifiedCarrier::Manifest(manifest),
-                ..
-            } => Some(manifest.acquisition_hints()),
-            _ => None,
-        })
+        selected_manifests(&self.events)
+            .into_values()
+            .filter_map(|selection| match selection.state {
+                ManifestSelectionState::Available(hints) => Some(hints),
+                ManifestSelectionState::Unavailable(_) => None,
+            })
+    }
+
+    /// Returns NIP-01 replacement selection and validation for one coordinate.
+    ///
+    /// An invalid latest event is unavailable; this never falls back to an
+    /// older manifest and never grants control or checkpoint authority.
+    #[must_use]
+    pub fn selected_manifest(&self, coordinate: crate::DocumentCoordinate) -> ManifestAvailability {
+        let Some(selection) = selected_manifests(&self.events).remove(&coordinate) else {
+            return ManifestAvailability::Missing;
+        };
+        match selection.state {
+            ManifestSelectionState::Available(hints) => ManifestAvailability::Available(hints),
+            ManifestSelectionState::Unavailable(diagnostic) => ManifestAvailability::Unavailable {
+                event_id: selection.event_id,
+                diagnostic,
+            },
+        }
     }
 
     /// Returns true when no evidence of any class was retained.
@@ -443,6 +460,22 @@ pub struct ManifestHints {
     relays: Vec<String>,
 }
 
+/// Advisory manifest availability after NIP-01 replacement selection.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ManifestAvailability {
+    /// No signed addressable manifest was retained for the coordinate.
+    Missing,
+    /// The selected signed manifest passed complete profile validation.
+    Available(ManifestHints),
+    /// The selected signed manifest was invalid; older events are not used.
+    Unavailable {
+        /// The selected invalid signed event identifier.
+        event_id: EventId,
+        /// The stable manifest validation diagnostic.
+        diagnostic: DiagnosticCode,
+    },
+}
+
 impl ManifestHints {
     pub(crate) fn new(
         event_id: EventId,
@@ -489,6 +522,94 @@ impl ManifestHints {
     pub fn relays(&self) -> &[String] {
         &self.relays
     }
+}
+
+#[derive(Clone)]
+struct ManifestSelection {
+    created_at: u64,
+    event_id: EventId,
+    state: ManifestSelectionState,
+}
+
+#[derive(Clone)]
+enum ManifestSelectionState {
+    Available(ManifestHints),
+    Unavailable(DiagnosticCode),
+}
+
+fn selected_manifests(
+    events: &BTreeMap<EventId, EventEvidence>,
+) -> BTreeMap<crate::DocumentCoordinate, ManifestSelection> {
+    let mut selected = BTreeMap::new();
+    for evidence in events.values() {
+        let candidate = match evidence {
+            EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::Manifest(manifest),
+                ..
+            } => Some((
+                manifest.coordinate(),
+                ManifestSelection {
+                    created_at: manifest.created_at(),
+                    event_id: manifest.event_id,
+                    state: ManifestSelectionState::Available(manifest.acquisition_hints()),
+                },
+            )),
+            EventEvidence::InvalidCarrier {
+                event, diagnostic, ..
+            } => manifest_coordinate(event).map(|coordinate| {
+                (
+                    coordinate,
+                    ManifestSelection {
+                        created_at: event.created_at(),
+                        event_id: event.event_id(),
+                        state: ManifestSelectionState::Unavailable(*diagnostic),
+                    },
+                )
+            }),
+            EventEvidence::UnsupportedRevision {
+                carrier: VerifiedCarrier::UnsupportedRevision { event, .. },
+                diagnostic,
+                ..
+            } => manifest_coordinate(event).map(|coordinate| {
+                (
+                    coordinate,
+                    ManifestSelection {
+                        created_at: event.created_at(),
+                        event_id: event.event_id(),
+                        state: ManifestSelectionState::Unavailable(*diagnostic),
+                    },
+                )
+            }),
+            _ => None,
+        };
+        let Some((coordinate, candidate)) = candidate else {
+            continue;
+        };
+        selected
+            .entry(coordinate)
+            .and_modify(|current: &mut ManifestSelection| {
+                if candidate.created_at > current.created_at
+                    || candidate.created_at == current.created_at
+                        && candidate.event_id < current.event_id
+                {
+                    *current = candidate.clone();
+                }
+            })
+            .or_insert(candidate);
+    }
+    selected
+}
+
+fn manifest_coordinate(event: &VerifiedNip01Event) -> Option<crate::DocumentCoordinate> {
+    if event.kind() != 31_624 {
+        return None;
+    }
+    let tag = crate::wire::tags::required_tag(event.tags(), "d", 2).ok()?;
+    let document_id = tag.get(1)?.parse().ok()?;
+    Some(crate::DocumentCoordinate::new(
+        crate::ControllerPublicKey::from_bytes(*event.author_bytes()),
+        document_id,
+    ))
 }
 
 fn evidence_checksum(evidence: &EventEvidence) -> RawChecksum {

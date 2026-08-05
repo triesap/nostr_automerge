@@ -64,15 +64,15 @@ fn build_immutable_evidence_corpus_through_public_api() {
 
 #[test]
 #[allow(clippy::expect_used)]
-fn signed_manifest_carrier_validation_exposes_only_advisory_hints() {
+fn signed_manifest_selection_validates_latest_without_fallback_or_authority() {
     let signer = TestSigner::from_byte(3);
     let document_id = "33".repeat(32);
     let control = "11".repeat(32);
     let content = format!(
         r#"{{"application":null,"checkpoint":null,"control":"{control}","description":null,"format":"automerge-change-v1","name":null,"relays":["wss://relay.example"],"status":"active","successor":null,"text_encoding":"utf16","v":1}}"#
     );
-    let sign = |tags: Vec<Vec<String>>, content: String| {
-        let prepared = UnsignedEventDraft::new(1, 31_624, tags, content)
+    let sign = |created_at: u64, tags: Vec<Vec<String>>, content: String| {
+        let prepared = UnsignedEventDraft::new(created_at, 31_624, tags, content)
             .expect("valid draft")
             .prepare(signer.public_key())
             .expect("canonical preimage");
@@ -82,6 +82,7 @@ fn signed_manifest_carrier_validation_exposes_only_advisory_hints() {
     let mut builder = CorpusBuilder::new();
     assert!(matches!(
         builder.ingest(sign(
+            1,
             vec![vec!["d".to_owned(), document_id.clone()]],
             content.clone()
         )),
@@ -89,6 +90,7 @@ fn signed_manifest_carrier_validation_exposes_only_advisory_hints() {
     ));
     assert!(matches!(
         builder.ingest(sign(
+            0,
             vec![vec!["d".to_owned(), document_id.clone()]],
             content.replace("active", "paused")
         )),
@@ -96,12 +98,13 @@ fn signed_manifest_carrier_validation_exposes_only_advisory_hints() {
             if diagnostic.as_str() == "manifest.semantics"
     ));
     assert!(matches!(
-        builder.ingest(sign(vec![], content.clone())),
+        builder.ingest(sign(0, vec![], content.clone())),
         IngestOutcome::InvalidCarrier { diagnostic, .. }
             if diagnostic.as_str() == "tag.required"
     ));
     assert!(matches!(
         builder.ingest(sign(
+            0,
             vec![vec!["d".to_owned(), document_id.clone()]],
             content.replacen("{\"application\":null,\"checkpoint\":null", "{\"checkpoint\":null,\"application\":null", 1)
         )),
@@ -110,6 +113,7 @@ fn signed_manifest_carrier_validation_exposes_only_advisory_hints() {
     ));
     assert!(matches!(
         builder.ingest(sign(
+            0,
             vec![vec!["d".to_owned(), document_id]],
             content.replace("\"v\":1", "\"v\":2")
         )),
@@ -127,6 +131,68 @@ fn signed_manifest_carrier_validation_exposes_only_advisory_hints() {
         hints[0].coordinate().controller().as_bytes(),
         signer.public_key().as_bytes()
     );
+
+    let coordinate = hints[0].coordinate();
+    let mut invalid_latest = CorpusBuilder::new();
+    assert!(matches!(
+        invalid_latest.ingest(sign(
+            1,
+            vec![vec!["d".to_owned(), coordinate.document_id().to_hex()]],
+            content.clone()
+        )),
+        IngestOutcome::Accepted { .. }
+    ));
+    let invalid = sign(
+        2,
+        vec![vec!["d".to_owned(), coordinate.document_id().to_hex()]],
+        content.replace("active", "paused"),
+    );
+    let invalid_id = VerifiedNip01Event::verify(invalid.clone())
+        .expect("signed invalid latest")
+        .event_id();
+    assert!(matches!(
+        invalid_latest.ingest(invalid),
+        IngestOutcome::InvalidCarrier { .. }
+    ));
+    let invalid_latest = invalid_latest.finish();
+    assert!(matches!(
+        invalid_latest.selected_manifest(coordinate),
+        nostr_automerge::ManifestAvailability::Unavailable { event_id, diagnostic }
+            if event_id == invalid_id && diagnostic.as_str() == "manifest.semantics"
+    ));
+    assert_eq!(invalid_latest.manifest_hints().count(), 0);
+
+    let tie_left = sign(
+        3,
+        vec![vec!["d".to_owned(), coordinate.document_id().to_hex()]],
+        content.clone(),
+    );
+    let tie_right = sign(
+        3,
+        vec![vec!["d".to_owned(), coordinate.document_id().to_hex()]],
+        content.replace(&control, &"22".repeat(32)),
+    );
+    let tie_left_id = VerifiedNip01Event::verify(tie_left.clone())
+        .expect("signed tie left")
+        .event_id();
+    let tie_right_id = VerifiedNip01Event::verify(tie_right.clone())
+        .expect("signed tie right")
+        .event_id();
+    let expected = tie_left_id.min(tie_right_id);
+    let mut tied = CorpusBuilder::new();
+    assert!(matches!(
+        tied.ingest(tie_right),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert!(matches!(
+        tied.ingest(tie_left),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert!(matches!(
+        tied.finish().selected_manifest(coordinate),
+        nostr_automerge::ManifestAvailability::Available(hints)
+            if hints.event_id() == expected
+    ));
 }
 
 #[test]

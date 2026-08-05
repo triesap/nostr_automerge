@@ -47,6 +47,7 @@ pub(crate) struct Application {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct ValidatedManifest {
     pub(crate) event_id: EventId,
+    pub(crate) created_at: u64,
     pub(crate) coordinate: DocumentCoordinate,
     pub(crate) application: Option<ValidatedApplication>,
     pub(crate) checkpoint: Option<EventId>,
@@ -59,6 +60,14 @@ pub(crate) struct ValidatedManifest {
 }
 
 impl ValidatedManifest {
+    pub(crate) const fn created_at(&self) -> u64 {
+        self.created_at
+    }
+
+    pub(crate) const fn coordinate(&self) -> DocumentCoordinate {
+        self.coordinate
+    }
+
     pub(crate) fn acquisition_hints(&self) -> crate::ManifestHints {
         crate::ManifestHints::new(
             self.event_id,
@@ -100,6 +109,7 @@ pub(crate) fn validate(
     }
     validate_parts(
         event.event_id(),
+        event.created_at(),
         *event.author_bytes(),
         event.tags(),
         event.content(),
@@ -108,6 +118,7 @@ pub(crate) fn validate(
 
 fn validate_parts(
     event_id: EventId,
+    created_at: u64,
     author: [u8; 32],
     event_tags: &[Vec<String>],
     content: &str,
@@ -149,6 +160,7 @@ fn validate_parts(
     };
     Ok(ValidatedManifest {
         event_id,
+        created_at,
         coordinate,
         application: parsed.application.map(validate_application).transpose()?,
         checkpoint: parse_optional(&parsed.checkpoint)?,
@@ -310,7 +322,7 @@ mod tests {
     fn validate_manifests_and_addressable_selection_input() {
         let author = [0x22; 32];
         let tags = vec![vec!["d".to_owned(), "33".repeat(32)]];
-        let validated = validate_parts(EventId::from_bytes([0x44; 32]), author, &tags, CONTENT);
+        let validated = validate_parts(EventId::from_bytes([0x44; 32]), 0, author, &tags, CONTENT);
         assert!(validated.is_ok());
         let validated = match validated {
             Ok(value) => value,
@@ -325,17 +337,17 @@ mod tests {
             "[\"wss://z.example\",\"wss://a.example\"]",
         );
         assert_eq!(
-            validate_parts(EventId::from_bytes([0; 32]), author, &tags, &unsorted),
+            validate_parts(EventId::from_bytes([0; 32]), 0, author, &tags, &unsorted),
             Err(ManifestContentError::Semantics)
         );
         let bad_status = CONTENT.replace("\"active\"", "\"paused\"");
         assert_eq!(
-            validate_parts(EventId::from_bytes([0; 32]), author, &tags, &bad_status),
+            validate_parts(EventId::from_bytes([0; 32]), 0, author, &tags, &bad_status),
             Err(ManifestContentError::Semantics)
         );
         let forbidden = vec![tags[0].clone(), vec!["e".to_owned(), "00".repeat(32)]];
         assert_eq!(
-            validate_parts(EventId::from_bytes([0; 32]), author, &forbidden, CONTENT),
+            validate_parts(EventId::from_bytes([0; 32]), 0, author, &forbidden, CONTENT),
             Err(ManifestContentError::Tags)
         );
     }
