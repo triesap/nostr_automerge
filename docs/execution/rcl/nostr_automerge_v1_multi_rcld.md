@@ -1,8 +1,9 @@
 # nostr_automerge Draft V1 Full Implementation Multi-RCLD
 
-Status: approved; RCLD 00 through RCLD 12 protocol work complete; RCLD 13 eligible
+Status: approved; RCLD 00 through RCLD 12 complete; RCLD 13 step 192 paused;
+RCLD 14 remediation eligible
 Created: 2026-08-04
-Updated: 2026-08-04
+Updated: 2026-08-05
 Mode: rcl-durable
 Coordination and Rust implementation repository: `triesap/nostr_automerge`
 Cargo workspace root: repository root
@@ -642,7 +643,7 @@ The Rust program is complete only when RCLDs 00–11 are green and every origina
 checkpoint plus `step_000` has an accurate report and independently reviewable
 commit.
 
-The full implementation program is complete only when RCLDs 00–13 are green,
+The full implementation program is complete only when RCLDs 00–14 are green,
 including independent TypeScript differential agreement, complete
 code-applicable requirement coverage, and accurate local-only readiness
 evidence.
@@ -656,17 +657,25 @@ authority is granted.
 - RCLDs 00 through 12 and steps `step_000` through `step_188` completed their
   protocol work. RCLD 12's tracked-workflow policy is superseded and will be
   corrected by RCLD 13 `step_189`.
-- The Rust core, conformance tooling, authoring API, verified-history
-  checkpoints, hardening policy, and local alpha package evidence are green.
+- The Rust repository contains internal core, conformance, authoring, and
+  checkpoint components, but the trusted public-engine integration and its
+  executable closure evidence remain open under RCLD 14.
 - Independent TypeScript core, checkpoint, malformed, and property reports are
-  byte-identical locally. Complete ignored local-runner reproduction is still
-  pending.
-- Publication remains held because the revised local runner, requirement,
-  sustained fuzzing, mutation, optimization, and final readiness gates are not
-  complete. External review also remains a non-claim rather than a task in
-  this implementation sequence.
-- RCLD 13 is the only remaining child and is eligible for activation.
+  byte-identical locally for the existing limited corpus. Both ignored local
+  runner entry points have reproduced that limited result, but complete
+  public-engine corpus attestation remains open.
+- Publication remains held because trusted-engine remediation, fail-closed
+  coverage, sustained fuzzing, mutation, optimization, and final readiness
+  gates are not complete. External review remains an explicit release
+  disposition rather than an implementation claim.
+- RCLD 13 steps 189 through 191 are complete. Its step 192 readiness slice is
+  paused and preserved for reconciliation by RCLD 14.
+- RCLD 14 is the authoritative remaining implementation child. It closes the
+  public-engine, bounded-evaluator, graph, checkpoint-carrier, real-state,
+  conformance, fail-closed coverage, and independent-attestation findings
+  before RCLD 13 can make final readiness claims.
 
 ## Remaining Child RCLDs
 
-1. `nostr_automerge_v1_13_local_implementation_readiness_rcld` — approved and eligible
+1. `nostr_automerge_v1_13_local_implementation_readiness_rcld` — steps 189-191 complete; step 192 paused
+2. `nostr_automerge_v1_14_engine_remediation_rcld` — approved and eligible at step 193

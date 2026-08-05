@@ -1,0 +1,20 @@
+{
+  "branch": "master",
+  "cargo_lock_sha256": "5ef9cc2dfdb02fcf36a6e912b2e93b47935735ab200facde4f7c5e28739d5211",
+  "finding_count": 13,
+  "head": "5133a3ab8ff3b8385007ba744b850f97dd2aaa8d",
+  "next_step": "step_194",
+  "recorded": "2026-08-05",
+  "reviewed_head": "d9d7b04557ad21e46d555c51df3821af83f7797e",
+  "schema": "nostr_automerge.remediation_baseline.v1",
+  "status": "recorded_with_preserved_work",
+  "toolchains": {
+    "act": "0.2.89",
+    "cargo": "1.97.1",
+    "node": "26.5.1",
+    "pnpm": "10.30.3",
+    "rust": "1.97.1"
+  },
+  "typescript_branch": "master",
+  "typescript_head": "fde74430432da5bfc6a5d99725f9dfdfca25ac29"
+}

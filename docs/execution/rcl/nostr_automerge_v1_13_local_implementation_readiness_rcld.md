@@ -1,13 +1,13 @@
 # nostr_automerge Draft V1 RCLD 13: Local Implementation Readiness
 
-Status: approved; eligible
+Status: steps 189-191 complete; step 192 paused for RCLD 14 reconciliation
 Created: 2026-08-04
-Updated: 2026-08-04
+Updated: 2026-08-05
 Mode: rcl-durable
 Coordination repository: `triesap/nostr_automerge`
 Implementation repositories: `triesap/nostr_automerge` and
 `triesap/nostr_automerge_typescript`
-Current checkpoint: none
+Current checkpoint: step_192 paused
 
 ## Purpose
 
@@ -386,3 +386,18 @@ RCLD 13 is complete only after steps `step_189` through `step_192` have their
 required independently reviewable commits in the correct repositories and all
 final green conditions above pass. Until then, publication remains held and
 the multi-RCLD program remains incomplete.
+
+## Remediation Reconciliation
+
+A complete follow-up review found trusted-engine, evaluator, graph,
+checkpoint-carrier, state-projection, conformance, coverage, and attestation
+gaps that must be closed before the broad readiness claims in `step_192` can be
+made. RCLD 14 is therefore authoritative for the remaining implementation
+sequence.
+
+The existing uncommitted `step_192` requirement-matrix, mutation, generative,
+Merkle, Base64, and campaign work is preserved. RCLD 14 `step_193` assigns each
+change to an adoption or revision checkpoint; it must not be discarded or
+committed as final readiness evidence before that reconciliation. RCLD 13
+becomes complete only when RCLD 14 closes and its final evidence satisfies the
+green conditions above.
