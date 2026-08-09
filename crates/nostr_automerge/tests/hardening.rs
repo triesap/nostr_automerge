@@ -48,11 +48,11 @@ fn add_resource_and_performance_benchmarks() {
     let report: serde_json::Value =
         serde_json::from_str(include_str!("../../../reports/resource_benchmarks.json"))
             .unwrap_or_default();
-    assert_eq!(report["cases"].as_array().map(Vec::len), Some(7));
-    assert_eq!(report["warm_runs"], 3);
+    assert_eq!(report["schema"], "nostr_automerge.resource_benchmarks.v3");
+    assert_eq!(report["ceilings"]["checkpoint_smoke_leaves"], 4096);
     assert_eq!(report["graph_models"]["chain_128"]["graph_nodes"], 256);
     assert_eq!(report["graph_models"]["fan_in_128"]["graph_edges"], 254);
-    assert_eq!(report["canonical_digest_status"], "unchanged");
+    assert_eq!(report["rust"]["work_counter_boundary_status"], "pass");
     assert_eq!(report["result"], "pass");
 }
 #[test]

@@ -1,0 +1,30 @@
+{
+  "execution": "root_private_local_runner",
+  "rust": {
+    "advisories": "pass",
+    "cargo_deny": "pass_with_duplicate_and_unused_allowance_warnings",
+    "forbidden_sources": "pass",
+    "license_policy": "pass",
+    "lock_sha256": "74aafde92cfcb35e7216dc847a75ca556ac9722a93147a9a6ccd61c3121a7e60",
+    "package": {
+      "file_count": 124,
+      "repeated_sha256": "d42e86116d96ac4e36477a57f0be4ff7de6c4d4f235c559c32e8fe9d1c92a9ca",
+      "reproducible_runs": 2,
+      "status": "pass"
+    },
+    "sbom": {
+      "component_count": 110,
+      "format": "CycloneDX 1.5",
+      "sha256": "dc9dd554bff8950d8f527ac3931b39241d69e8467d69146ba08aa97b17e6edfe",
+      "status": "pass"
+    }
+  },
+  "schema": "nostr_automerge.supply_chain.v1",
+  "source_base": "f21e030",
+  "typescript": {
+    "audit": "no_known_high_or_critical_vulnerabilities",
+    "lock_sha256": "d881757529b805b8ae4da935127730fe901b8b13a71382023be161016cd35a7d",
+    "package_dry_run": "pass",
+    "production_dependency_tree": "pass"
+  }
+}
