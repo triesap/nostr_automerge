@@ -141,3 +141,20 @@ fn publish_finding_by_finding_remediation_closure() {
                 .any(|claim| claim == "no independent external security or protocol review")
     }));
 }
+
+#[test]
+fn close_local_implementation_scope_without_release_overclaim() {
+    let report: serde_json::Value =
+        serde_json::from_str(include_str!("../../../reports/implementation_scope.json"))
+            .unwrap_or_default();
+    assert_eq!(report["checkpoint_range"], "step_000_through_step_307");
+    assert_eq!(report["code_scope"]["requirements_classified"], 87);
+    assert_eq!(report["code_scope"]["findings_closed"], 12);
+    assert_eq!(report["code_scope"]["findings_closed_with_release_hold"], 1);
+    assert_eq!(report["nip_document"], "out_of_scope_not_modified");
+    assert_eq!(
+        report["status"],
+        "local_implementation_complete_publication_held"
+    );
+    assert_eq!(report["release_holds"].as_array().map(Vec::len), Some(3));
+}

@@ -1,13 +1,13 @@
 # nostr_automerge Draft V1 RCLD 14: Trusted Engine Remediation
 
-Status: approved; eligible
+Status: complete with declared publication holds
 Created: 2026-08-05
 Updated: 2026-08-05
 Mode: rcl-durable
 Coordination repository: `triesap/nostr_automerge`
 Implementation repositories: `triesap/nostr_automerge` and
 `triesap/nostr_automerge_typescript`
-Current checkpoint: step_307
+Current checkpoint: step_307 completed
 
 ## Purpose
 

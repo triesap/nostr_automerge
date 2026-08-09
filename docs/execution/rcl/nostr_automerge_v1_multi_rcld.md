@@ -1,7 +1,6 @@
 # nostr_automerge Draft V1 Full Implementation Multi-RCLD
 
-Status: approved; RCLD 00 through RCLD 12 complete; RCLD 13 step 192 paused;
-RCLD 14 remediation eligible
+Status: complete; RCLDs 00 through 14 closed with declared publication holds
 Created: 2026-08-04
 Updated: 2026-08-05
 Mode: rcl-durable
@@ -654,28 +653,18 @@ authority is granted.
 
 ## Current State
 
-- RCLDs 00 through 12 and steps `step_000` through `step_188` completed their
-  protocol work. RCLD 12's tracked-workflow policy is superseded and will be
-  corrected by RCLD 13 `step_189`.
-- The Rust repository contains internal core, conformance, authoring, and
-  checkpoint components, but the trusted public-engine integration and its
-  executable closure evidence remain open under RCLD 14.
-- Independent TypeScript core, checkpoint, malformed, and property reports are
-  byte-identical locally for the existing limited corpus. Both ignored local
-  runner entry points have reproduced that limited result, but complete
-  public-engine corpus attestation remains open.
-- Publication remains held because trusted-engine remediation, fail-closed
-  coverage, sustained fuzzing, mutation, optimization, and final readiness
-  gates are not complete. External review remains an explicit release
-  disposition rather than an implementation claim.
-- RCLD 13 steps 189 through 191 are complete. Its step 192 readiness slice is
-  paused and preserved for reconciliation by RCLD 14.
-- RCLD 14 is the authoritative remaining implementation child. It closes the
-  public-engine, bounded-evaluator, graph, checkpoint-carrier, real-state,
-  conformance, fail-closed coverage, and independent-attestation findings
-  before RCLD 13 can make final readiness claims.
+- RCLDs 00 through 14 and steps `step_000` through `step_307` are complete.
+- The Rust public engine, bounded evaluator, graph, checkpoint carrier,
+  real-state projection, and conformance paths have executable closure evidence.
+- Rust and independent TypeScript core and checkpoint reports agree locally,
+  and deliberate mismatch detection passes.
+- All 87 requirements are classified with fail-closed evidence; mutation,
+  coverage, resource, package, API, and supply-chain gates pass locally.
+- Publication is not authorized, and readiness remains held because sustained
+  native Rust fuzz execution was environment-deferred and independent external
+  review was not performed.
+- The NIP document remained outside scope and was not inspected or changed.
 
 ## Remaining Child RCLDs
 
-1. `nostr_automerge_v1_13_local_implementation_readiness_rcld` — steps 189-191 complete; step 192 paused
-2. `nostr_automerge_v1_14_engine_remediation_rcld` — approved and eligible at step 193
+None.

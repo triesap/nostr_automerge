@@ -73,13 +73,13 @@
     {
       "path": "implementation/COMMIT_SEQUENCE.md",
       "source_sha256": "be1cef373a12b79bc291f087de41972c7440f661a521b2cbc8f4cff563cfa7be",
-      "target_sha256": "7b243353bafca86899ca4f98beb0f15cb42e53de53c258441e44d08866c3ad73",
+      "target_sha256": "8cbb87ffbeb90ba15a1c808c5d4eab5e74dc107358813aa00c4c23b1c5892cc2",
       "adapted": true
     },
     {
       "path": "implementation/commit_sequence.json",
       "source_sha256": "6df796933737b7d662b5735782ba98d14fc2cbe7912db3b079c572dc46012167",
-      "target_sha256": "5e6cc8ff8f939bf76ff8835a4ef87b03541fb27223deba4ea6239ef456b11291",
+      "target_sha256": "9764c9052649edef66f77863c213d48a75ea08b8fa699274aad4be01a8cec63f",
       "adapted": true
     },
     {

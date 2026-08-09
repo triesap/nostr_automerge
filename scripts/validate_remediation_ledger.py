@@ -19,7 +19,7 @@ def main() -> int:
     current = re.search(r"Current checkpoint: `step_(\d{3})`", ledger)
     if current is None or f"Current checkpoint: step_{current.group(1)}" not in rcld:
         raise AssertionError("ledger and governing RCLD current checkpoint disagree")
-    for phrase in ("Only one checkpoint is active", "cannot bypass", "deviation"):
+    for phrase in ("only one checkpoint was active", "cannot bypass", "deviation"):
         if phrase.lower() not in ledger.lower():
             raise AssertionError(f"missing ledger policy: {phrase}")
     print("PASS: remediation ledger covers 115 ordered checkpoints")

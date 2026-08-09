@@ -275,7 +275,7 @@ fn duplicate_delayed_and_invalid_evidence_converges() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!(
         "../../../fixtures/v1_draft/integrity/cases.json"
     ))
-    .expect("integrity fixture family");
+    .unwrap_or_default();
     assert_eq!(fixture["cases"].as_array().map(Vec::len), Some(7));
     let scenario = signed_engine_scenario();
     let evaluate = |events: &[RawEventBytes]| {

@@ -1,8 +1,8 @@
 # Draft V1 Remediation Execution Ledger
 
-Status: active
-Current checkpoint: `step_307`
-Completed checkpoints: `step_193` through `step_306`
+Status: complete with declared publication holds
+Current checkpoint: `step_307` completed
+Completed checkpoints: `step_193` through `step_307`
 Governing RCLD: `docs/execution/rcl/nostr_automerge_v1_14_engine_remediation_rcld.md`
 
 | Phase | Checkpoints | State |
@@ -14,10 +14,11 @@ Governing RCLD: `docs/execution/rcl/nostr_automerge_v1_14_engine_remediation_rcl
 | Control alignment | `step_245`–`step_252` | complete |
 | Checkpoint carrier integration | `step_253`–`step_269` | complete |
 | State projection and conformance | `step_270`–`step_287` | complete |
-| Coverage, interop, and closure | `step_288`–`step_307` | active |
+| Coverage, interop, and closure | `step_288`–`step_307` | complete |
 
-Only one checkpoint is active. Each checkpoint is committed only after its
-declared proof is green. A failure cannot be converted into a passing report.
+While execution was active, only one checkpoint was active. Each checkpoint
+was committed only after its declared proof was green. A failure cannot be
+converted into a passing report.
 Readiness and publication cannot bypass an open remediation finding.
 
 ## Deviations
