@@ -1,31 +1,35 @@
 {
-  "schema": "nostr_automerge.resource_benchmarks.v2",
-  "source_head": "afea111",
-  "toolchain": "rustc 1.97.1",
-  "platform": "aarch64-apple-darwin",
-  "command": "cargo test -p nostr_automerge --lib graph_scaling_regression_models --locked",
-  "warm_runs": 3,
-  "warm_real_seconds": [0.29, 0.06, 0.06],
-  "warm_median_real_seconds": 0.06,
-  "peak_rss_bytes": [56459264, 56459264, 56000512],
-  "median_peak_rss_bytes": 56459264,
-  "cases": [
-    "raw_parse",
-    "signature",
-    "graph_closure",
-    "full_replay",
-    "duplicates",
-    "forks",
-    "checkpoint_merkle"
-  ],
-  "graph_models": {
-    "chain_128": {"graph_nodes": 256, "graph_edges": 254},
-    "fan_out_128": {"graph_nodes": 256, "graph_edges": 254},
-    "fan_in_128": {"graph_nodes": 256, "graph_edges": 254},
-    "missing_1": {"graph_nodes": 3, "graph_edges": 2},
-    "cycle_2": {"graph_nodes": 6, "graph_edges": 4}
-  },
   "canonical_report_sha256": "ea2e0367a19fc402e0e4aa05c3f0a6171ed2a8bf65fd3bc8a52f18e009ae5a26",
-  "canonical_digest_status": "unchanged",
-  "result": "pass"
+  "ceilings": {
+    "checkpoint_chunks": 4096,
+    "checkpoint_smoke_leaves": 4096,
+    "ordinary_graph_model_nodes": 256
+  },
+  "commands": [
+    "cargo bench -p nostr_automerge --bench resource_smoke --locked",
+    "cargo test -p nostr_automerge --lib graph_scaling_regression_models --locked",
+    "cargo test -p nostr_automerge --test public_engine_api every_work_counter_has_exact_before_and_after_boundaries --locked"
+  ],
+  "execution": "root_private_local_runner",
+  "graph_models": {
+    "chain_128": {"graph_edges": 254, "graph_nodes": 256},
+    "cycle_2": {"graph_edges": 4, "graph_nodes": 6},
+    "fan_in_128": {"graph_edges": 254, "graph_nodes": 256},
+    "fan_out_128": {"graph_edges": 254, "graph_nodes": 256},
+    "missing_1": {"graph_edges": 2, "graph_nodes": 3}
+  },
+  "platform": "aarch64-apple-darwin",
+  "result": "pass",
+  "rust": {
+    "elapsed_ns": "23497025500",
+    "maximum_resident_set_bytes": 56344576,
+    "work_counter_boundary_status": "pass"
+  },
+  "schema": "nostr_automerge.resource_benchmarks.v3",
+  "source_base": "96c64cb",
+  "toolchain": "rustc 1.97.1",
+  "typescript": {
+    "elapsed_ns": "2461437833",
+    "status": "pass"
+  }
 }

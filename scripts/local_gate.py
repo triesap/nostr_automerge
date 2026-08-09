@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import resource as resource_usage
 import subprocess
 import sys
 import time
@@ -101,10 +102,28 @@ def robustness() -> None:
 def resource() -> None:
     started = time.monotonic_ns()
     run("cargo", "bench", "-p", "nostr_automerge", "--bench", "resource_smoke", "--locked")
+    run(
+        "cargo", "test", "-p", "nostr_automerge", "--lib",
+        "graph_scaling_regression_models", "--locked",
+    )
+    run(
+        "cargo", "test", "-p", "nostr_automerge", "--test", "public_engine_api",
+        "every_work_counter_has_exact_before_and_after_boundaries", "--locked",
+    )
     elapsed = time.monotonic_ns() - started
+    maximum_resident_set_bytes = resource_usage.getrusage(
+        resource_usage.RUSAGE_CHILDREN
+    ).ru_maxrss
     OUTPUT.mkdir(parents=True, exist_ok=True)
     (OUTPUT / "rust_resource_smoke.json").write_text(
-        json.dumps({"elapsed_ns": str(elapsed), "status": "pass"}, separators=(",", ":")) + "\n",
+        json.dumps(
+            {
+                "elapsed_ns": str(elapsed),
+                "maximum_resident_set_bytes": maximum_resident_set_bytes,
+                "status": "pass",
+            },
+            separators=(",", ":"),
+        ) + "\n",
         encoding="utf-8",
     )
 
