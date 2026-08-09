@@ -1,5 +1,10 @@
 nostr_automerge@0.1.0-alpha.0
+tool: cargo-public-api 0.52.0
 modules: authoring,checkpoint
-boundaries: raw_event,verified_nip01,work_budget
+engine_path: RawEventBytes,CorpusBuilder,EvidenceCorpus,ReferenceEvaluator,EvaluationReport
+boundaries: verified_nip01,work_budget,materialized_document,checkpoint_verification
 third_party_types: none
+unvalidated_injection_hooks: none
+qualification_probes: doc_hidden_stateless_fuzz_only
+feature_variants: none
 semver: alpha
