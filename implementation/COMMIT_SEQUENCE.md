@@ -8694,11 +8694,11 @@ authority before adding final verification infrastructure.
 **Exact scope of code changes**
 
 In both implementation repositories, remove every tracked
-`.github/workflows/**` file, ignore `/.act/workflows/` and local runner state,
-and add a tracked validator with positive and negative policy tests. In the
+`.github/workflows/**` file and private runner state, and add a tracked
+validator with positive and negative policy tests. In the
 Rust coordination repository, correct RCLD 12, the multi-RCLD plan, interop
-evidence, security evidence, and release evidence so they require local `act`
-execution and make no committed-CI or hosted-runner claim.
+evidence, security evidence, and release evidence so they require external
+private orchestration and make no committed-CI or hosted-runner claim.
 
 **Files/modules likely involved**
 
@@ -8706,14 +8706,13 @@ execution and make no committed-CI or hosted-runner claim.
 
 **Tests required**
 
-No GitHub or local workflow is tracked; `.act/workflows/**` is ignored; policy
+No GitHub workflow or private runner state is tracked; policy
 negative fixtures fail; both complete repository gates pass.
 
 **Verification commands**
 
 ```sh
-git ls-files '.github/workflows/**' '.act/workflows/**'
-git check-ignore -q .act/workflows/policy_probe.yml
+git ls-files '.github/workflows/**' '.act/**'
 cargo fmt --all --check
 cargo check --workspace --all-targets --locked
 cargo test --workspace --all-targets --locked
@@ -8754,26 +8753,25 @@ Add or consolidate tracked repository-owned commands for standard checks,
 conformance, coverage, dependency/license/advisory policy, fuzzing, mutation,
 sanitizers, SBOM/provenance, package inspection, resource limits, and benchmark
 capture in Rust and TypeScript. Add a tracked runner manifest in each
-repository. Create ignored `.act/workflows/**` orchestration and ignored local
-configuration that invoke those commands without GitHub events, services,
+repository. Keep private orchestration and configuration outside both public
+repositories; they invoke those commands without GitHub events, services,
 tokens, checkout actions, or remote implementation clones.
 
 **Files/modules likely involved**
 
-`tracked local-gate scripts; package scripts; runner manifests; ignored local act workflows`
+`tracked local-gate scripts; package scripts; portable runner manifests`
 
 **Tests required**
 
-Every required manifest job exists and passes with local `act`; missing-job and
+Every required manifest job exists and passes through private local orchestration; missing-job and
 policy negative tests fail; repeatable summaries are byte-identical; neither
 worktree is dirtied by generated output.
 
 **Verification commands**
 
 ```sh
-# Run every job declared by each repository's tracked local-runner manifest.
-act -W .act/workflows/<rust-local-suite>.yml
-act -W .act/workflows/<typescript-local-suite>.yml
+# Run every job declared by each repository's tracked runner manifest through
+# the operator-private orchestration outside both repositories.
 # Re-run both repository standard gates and confirm generated output is ignored.
 git diff --check
 ```
@@ -8824,8 +8822,7 @@ both full repository gates pass and worktrees remain clean.
 **Verification commands**
 
 ```sh
-act -W .act/workflows/<rust-interop>.yml
-act -W .act/workflows/<typescript-interop>.yml
+# Run both interop entry points through operator-private orchestration.
 cmp <rust-canonical-summary> <typescript-canonical-summary>
 # Run each entry point twice, run the deliberate-mismatch job, and run both
 # complete repository checks.
@@ -8886,13 +8883,9 @@ passes; both worktrees are clean.
 **Verification commands**
 
 ```sh
-# Run all jobs in both tracked local-runner manifests through ignored act workflows.
+# Run all jobs in both tracked runner manifests through private external orchestration.
 # Run the complete requirement-matrix, fuzz, mutation, coverage, resource,
 # optimization, package, and differential commands introduced by this step.
-act -W .act/workflows/<rust-local-suite>.yml
-act -W .act/workflows/<typescript-local-suite>.yml
-act -W .act/workflows/<rust-interop>.yml
-act -W .act/workflows/<typescript-interop>.yml
 git diff --check
 ```
 

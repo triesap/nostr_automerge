@@ -64,7 +64,7 @@ fn add_mutation_tests_for_critical_validators() {
 fn add_coverage_reporting() {
     let policy = include_str!("../../../docs/coverage.md");
     assert!(policy.contains("cargo llvm-cov --workspace --all-targets --locked"));
-    assert!(policy.contains("local Act"));
+    assert!(policy.contains("external local runner"));
 }
 #[test]
 fn add_dependency_advisory_and_license_policy() {

@@ -11,8 +11,9 @@ fn require_local_only_conformance_runner() {
         !hosted_workflows.exists()
             || fs::read_dir(hosted_workflows).is_ok_and(|mut entries| entries.next().is_none())
     );
+    assert!(!root.join(".act").exists());
     let ignore = fs::read_to_string(root.join(".gitignore"));
-    assert!(ignore.is_ok_and(|text| text.contains("/.act/workflows/")));
+    assert!(ignore.is_ok_and(|text| !text.contains("/.act/")));
     let contributing = fs::read_to_string(root.join("CONTRIBUTING.md"));
     assert!(contributing.is_ok());
     assert!(contributing.is_ok_and(|text| text.contains("local conformance-CI equivalent")));

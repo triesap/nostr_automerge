@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish the combined report from successful ignored local Act evidence."""
+"""Publish the combined report from successful operator-supplied evidence."""
 
 from __future__ import annotations
 
@@ -14,11 +14,13 @@ ROOT = Path(__file__).resolve().parents[1]
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--typescript-root", required=True, type=Path)
+    parser.add_argument("--interop-evidence", required=True, type=Path)
     args = parser.parse_args()
     typescript = args.typescript_root.resolve(strict=True)
-    act_evidence = json.loads((typescript / ".act/output/interop_summary.json").read_text())
+    interop_evidence = args.interop_evidence.resolve(strict=True)
+    act_evidence = json.loads(interop_evidence.read_text())
     if act_evidence["status"] != "local_differential_pass" or act_evidence["mismatches"]:
-        raise AssertionError("local Act interop evidence did not pass")
+        raise AssertionError("local interop evidence did not pass")
     rust_core = json.loads((ROOT / "reports/interop_rust_core.attestation.json").read_text())
     typescript_core = json.loads(
         (typescript / "reports/interop_typescript_core.attestation.json").read_text()

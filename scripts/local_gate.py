@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import subprocess
 import sys
 import time
@@ -12,7 +13,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / ".act/output"
+OUTPUT = Path(os.environ.get("NOSTR_AUTOMERGE_OUTPUT_ROOT", ROOT / ".local/evidence"))
 
 
 def run(*command: str, capture: bool = False) -> subprocess.CompletedProcess[str]:

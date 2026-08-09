@@ -53,10 +53,3 @@ node_modules/
 
 # Local tooling
 /tmp/
-
-# Local-only Act runners and runtime state
-/.act/workflows/
-/.act/output/
-/.act/tmp/
-/.act/*.env
-/.act/*.secrets

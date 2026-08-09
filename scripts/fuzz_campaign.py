@@ -4,12 +4,13 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / ".act/output/rust_fuzz_summary.json"
+OUTPUT = Path(os.environ.get("NOSTR_AUTOMERGE_OUTPUT_ROOT", ROOT / ".local/evidence")) / "rust_fuzz_summary.json"
 TARGETS = [
     "raw_nip01",
     "automerge_framing",

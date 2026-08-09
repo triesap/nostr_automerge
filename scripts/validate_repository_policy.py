@@ -28,21 +28,23 @@ REQUIRED_PHRASES = (
     "Do not push, publish, release, tag, deploy",
     "Next-step safety",
     "GitHub-hosted workflows are prohibited",
-    ".act/workflows/**",
+    "external to this public repository",
 )
 
 
-def workflow_violations(tracked_files: list[str], workflow_ignored: bool) -> list[str]:
-    """Return stable violations of the local-only workflow policy."""
+def workflow_violations(
+    tracked_files: list[str], repository_local_private_state: bool = False
+) -> list[str]:
+    """Return stable violations of the source-only workflow policy."""
 
     violations = []
     for relative in tracked_files:
         if relative.startswith(".github/workflows/"):
             violations.append(f"tracked GitHub workflow: {relative}")
-        if relative.startswith(".act/workflows/"):
-            violations.append(f"tracked local Act workflow: {relative}")
-    if not workflow_ignored:
-        violations.append(".act/workflows is not ignored")
+        if relative.startswith(".act/"):
+            violations.append(f"tracked private runner state: {relative}")
+    if repository_local_private_state:
+        violations.append("repository-local .act state exists")
     return violations
 
 
@@ -66,22 +68,19 @@ def main() -> int:
         if phrase not in text:
             raise AssertionError(f"AGENTS.md missing policy: {phrase}")
 
-    ignored = subprocess.run(
-        ["git", "check-ignore", "-q", ".act/workflows/policy_probe.yml"],
-        cwd=ROOT,
-        check=False,
-    ).returncode == 0
-    actual_violations = workflow_violations(git_lines("ls-files"), ignored)
+    actual_violations = workflow_violations(
+        git_lines("ls-files"), repository_local_private_state=(ROOT / ".act").exists()
+    )
     if actual_violations:
         raise AssertionError(actual_violations[0])
 
     negative_cases = (
-        ([".github/workflows/ci.yml"], True, "tracked GitHub workflow"),
-        ([".act/workflows/ci.yml"], True, "tracked local Act workflow"),
-        ([], False, ".act/workflows is not ignored"),
+        ([".github/workflows/ci.yml"], False, "tracked GitHub workflow"),
+        ([".act/workflows/ci.yml"], False, "tracked private runner state"),
+        ([], True, "repository-local .act state exists"),
     )
-    for tracked, is_ignored, expected in negative_cases:
-        violations = workflow_violations(tracked, is_ignored)
+    for tracked, private_state, expected in negative_cases:
+        violations = workflow_violations(tracked, private_state)
         if not violations or expected not in violations[0]:
             raise AssertionError(f"workflow policy negative case failed: {expected}")
 
@@ -91,7 +90,7 @@ def main() -> int:
     print("- repository_identity=pass")
     print("- normative_actor_domain=pass")
     print(f"- workflow_negative_cases={len(negative_cases)}")
-    print("- local_act_policy=pass")
+    print("- external_orchestration_policy=pass")
     return 0
 
 

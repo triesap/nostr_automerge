@@ -9,7 +9,7 @@ The repository contains an implemented draft-v1 Rust core, deterministic
 conformance tooling, pure authoring primitives, and optional verified-history
 checkpoint validation. The API remains alpha and the event kinds provisional.
 Independent TypeScript differential profiles pass locally with byte-identical
-canonical reports. Complete local Act reproduction, robustness campaigns,
+canonical reports. Complete local command reproduction, robustness campaigns,
 optimization evidence, and final requirement coverage remain pending RCLD 13;
 the implementation-readiness program is not complete yet.
 

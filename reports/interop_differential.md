@@ -11,7 +11,7 @@ core, checkpoint, malformed, and property reports were byte-identical. Both
 corpus summaries have
 SHA-256 `e1c96aa1046df5108c713d6484857d2030cb73ab1ac668f3aac28821f71779d4`.
 
-The Rust-owned and TypeScript-owned ignored local Act workflows both passed
+The Rust-owned and TypeScript-owned external private local workflows both passed
 with Act 0.2.89, Rust 1.97.1, Node 26.5.1, and pnpm 10.30.3. Their canonical
 summaries were byte-identical and stable on repetition. The comparison lane
 also detected a deliberate one-byte mismatch. No workflow definition used by

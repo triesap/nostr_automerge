@@ -10,7 +10,7 @@ do not establish a complete public engine or signed checkpoint carrier path.
 
 Independent TypeScript core, checkpoint, malformed, and property differential
 profiles passed locally for the five-fixture corpus with byte-identical reports.
-Deliberate-mismatch detection and both ignored local Act entry points passed.
+Deliberate-mismatch detection and both external private local entry points passed.
 The runners still compute a simplified model rather than exercising a complete
 public engine, so this is limited differential evidence only.
 

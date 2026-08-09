@@ -38,3 +38,11 @@ summaries. The native Rust execution command remains available in
 `scripts/fuzz_campaign.py`, but it was not run. `reports/fuzz_campaign.json`
 therefore records a partial pass and release hold rather than fabricating a
 crash-free sustained result.
+
+### Private runner boundary
+
+Local workflow orchestration and raw evidence are owned by the private
+operator workspace, not either public implementation repository. Both
+repositories retain portable gate commands and accept
+`NOSTR_AUTOMERGE_OUTPUT_ROOT`; their standalone ignored default is
+`.local/evidence`. No repository-local `.act` directory is authorized.

@@ -24,7 +24,7 @@ contains source from the other implementation.
 
 No step authorizes a push, package publication, release, tag, or pull request.
 GitHub-hosted workflows are prohibited. The approved ongoing runner policy is
-ignored, untracked `.act/workflows/**` execution on the local machine. The
+private external orchestration of portable repository commands. The
 tracked GitHub workflow files created under the superseded policy are removed
 and the readiness wording is reconciled by RCLD 13 `step_189`.
 

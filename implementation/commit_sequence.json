@@ -4329,14 +4329,13 @@
       "phase_step": 13,
       "title": "Reconcile local runner authority",
       "purpose": "Remove the prohibited hosted-workflow surface and establish local-only runner authority.",
-      "scope": "Remove tracked GitHub workflows in both implementations, ignore local act workflows and state, add policy validators and negative tests, and correct planning and readiness claims.",
+      "scope": "Remove tracked GitHub workflows and private runner state from both implementations, add policy validators and negative tests, and correct planning and readiness claims.",
       "files": "both .gitignore files; policy validators/tests; RCLD 12; interop, security, and release reports",
-      "tests": "No GitHub or local workflow is tracked; local workflows are ignored; negative policy fixtures fail; both repository gates pass.",
+      "tests": "No GitHub workflow or private runner state is tracked; negative policy fixtures fail; both repository gates pass.",
       "commit": "ci(policy): reconcile local runner authority",
       "extra": [],
       "verification_commands": [
-        "git ls-files '.github/workflows/**' '.act/workflows/**'",
-        "git check-ignore -q .act/workflows/policy_probe.yml",
+        "git ls-files '.github/workflows/**' '.act/**'",
         "cargo run -p nostr_automerge_xtask --locked -- validate",
         "pnpm check",
         "git diff --check"
@@ -4349,15 +4348,14 @@
       "phase": "phase_11_typescript_interop_and_local_readiness",
       "phase_step": 14,
       "title": "Establish complete local runner suites",
-      "purpose": "Execute every implementation, quality, security, robustness, resource, optimization, and package gate through ignored local act workflows.",
-      "scope": "Add tracked gate commands and runner manifests for Rust and TypeScript; create ignored local act workflows for standard, conformance, coverage, supply-chain, robustness, resource, optimization, and release-evidence jobs.",
-      "files": "tracked local-gate scripts; package scripts; runner manifests; ignored local act workflows",
+      "purpose": "Execute every implementation, quality, security, robustness, resource, optimization, and package gate through private external orchestration.",
+      "scope": "Add tracked gate commands and portable runner manifests for Rust and TypeScript; keep workflow definitions and raw evidence outside both public repositories.",
+      "files": "tracked local-gate scripts; package scripts; portable runner manifests",
       "tests": "Every manifest job passes locally; missing-job and policy negative tests fail; repeatable summaries are identical; generated output stays ignored.",
       "commit": "ci(local): define complete repository gates",
       "extra": [],
       "verification_commands": [
-        "act -W .act/workflows/<rust-local-suite>.yml",
-        "act -W .act/workflows/<typescript-local-suite>.yml",
+        "# Run both manifests through private external orchestration.",
         "# Run both repository standard gates and confirm generated output is ignored.",
         "git diff --check"
       ],
@@ -4370,14 +4368,13 @@
       "phase_step": 15,
       "title": "Prove local independent interoperability",
       "purpose": "Prove exact agreement through two local entry points without shared implementation logic.",
-      "scope": "Add tracked interop commands and ignored local workflows in both repositories; verify identities, pins, fixture checksum, every family, canonical bytes, mismatch classification, deliberate mismatch failure, and deterministic summaries.",
-      "files": "interop commands in both repositories; ignored local interop workflows; reports/interop_*",
+      "scope": "Add tracked interop commands in both repositories and private external orchestration; verify identities, pins, fixture checksum, every family, canonical bytes, mismatch classification, deliberate mismatch failure, and deterministic summaries.",
+      "files": "interop commands in both repositories; reports/interop_*",
       "tests": "Both entry points and repeated runs agree byte-for-byte; deliberate mismatch returns nonzero; full repository gates pass; worktrees remain clean.",
       "commit": "test(interop): record local runner agreement",
       "extra": [],
       "verification_commands": [
-        "act -W .act/workflows/<rust-interop>.yml",
-        "act -W .act/workflows/<typescript-interop>.yml",
+        "# Run both interop entry points through private external orchestration.",
         "cmp <rust-canonical-summary> <typescript-canonical-summary>",
         "git diff --check"
       ],
@@ -4396,10 +4393,7 @@
       "commit": "perf(readiness): complete local implementation program",
       "extra": [],
       "verification_commands": [
-        "act -W .act/workflows/<rust-local-suite>.yml",
-        "act -W .act/workflows/<typescript-local-suite>.yml",
-        "act -W .act/workflows/<rust-interop>.yml",
-        "act -W .act/workflows/<typescript-interop>.yml",
+        "# Run all manifest jobs and both interop entry points through private external orchestration.",
         "git diff --check"
       ],
       "expected_result": "Scope complete; required tests and applicable verification pass; repository remains known-good; no unrelated behavior."

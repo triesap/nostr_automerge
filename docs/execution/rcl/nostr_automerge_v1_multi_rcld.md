@@ -578,10 +578,10 @@ Green:
 
 Scope:
 
-- remove every tracked GitHub workflow and enforce ignored, untracked
-  `.act/workflows/**` local runner policy in both implementation repositories;
-- establish complete tracked gate commands and ignored local `act` runner
-  suites for Rust and TypeScript;
+- remove every tracked GitHub workflow and enforce external private
+  orchestration for both implementation repositories;
+- establish complete tracked gate commands for Rust and TypeScript while
+  keeping workflow definitions and raw evidence outside both repositories;
 - reproduce independent differential agreement and deliberate mismatch
   detection from both repository entry points on the local machine;
 - classify all 87 registered requirements and provide direct implementation
@@ -593,8 +593,8 @@ Scope:
 
 Green:
 
-- no `.github/workflows/**` or `.act/workflows/**` file is tracked;
-- every required ignored `act` job passes locally in both repositories;
+- no `.github/workflows/**` file or private runner state is tracked;
+- every required private local job passes for both repositories;
 - every code-applicable requirement has direct implementation and executable
   evidence in each applicable implementation;
 - no unexplained material mutation, crash, timeout, nondeterminism, or

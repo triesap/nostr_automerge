@@ -30,9 +30,9 @@ author the NIP document.
   bounded graph algorithms, checkpoint carrier authorization, executable
   conformance, fail-closed coverage, empty terminal genesis, and independent
   TypeScript attestation.
-- No tracked GitHub workflow may be added. Any workflow orchestration required
-  by a checkpoint lives only below ignored `.act/workflows/**` and is proven on
-  the local machine. Tracked scripts and package commands remain the reviewable
+- No tracked GitHub workflow may be added. Workflow orchestration and raw
+  evidence are operator-private and external to both public repositories.
+  Tracked scripts and package commands remain the portable reviewable
   automation surface.
 - The NIP document, NIP allocation, submission, adoption, and publication are
   outside scope. The final checkpoint records implementation completion and
@@ -121,12 +121,12 @@ authority before behavior changes.
 | `step_196` | Add the remediation execution ledger | Add the repository-owned phase/step ledger, deviation route, and rule that readiness cannot bypass remediation. |
 | `step_197` | Clarify readiness vocabulary | Remove premature implementation-complete, conformance-complete, checkpoint-complete, and interop-complete claims. |
 | `step_198` | Validate remediation authority | Extend xtask to validate findings, ADRs, step ranges, report schemas, and open/closed consistency. |
-| `step_199` | Add the local remediation gate | Add tracked gate commands and an ignored `.act/workflows/**` orchestration file; do not add `.github/workflows/**`. |
+| `step_199` | Add the local remediation gate | Add tracked portable gate commands; keep workflow orchestration outside the public repositories and do not add `.github/workflows/**`. |
 | `step_200` | Publish the phase report | Produce a generated phase report proving authority and baseline gates from the current checkout. |
 
 Green proof: authority validators reject a missing finding, duplicate step,
 invalid ADR, false closure, tracked workflow, and stale baseline digest. The
-standard Rust gate and the named local Act job pass. Existing uncommitted work
+standard Rust gate and the named external local runner job pass. Existing uncommitted work
 has an explicit adopt/revise destination and no unrelated change is staged.
 
 ## Phase 01: Public Trusted Engine

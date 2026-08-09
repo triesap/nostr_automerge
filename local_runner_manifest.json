@@ -1,11 +1,9 @@
 {
-  "schema": "nostr_automerge.local_runner_manifest.v1",
-  "workflow": ".act/workflows/local_suite.yml",
-  "remediation_workflow": ".act/workflows/remediation.yml",
+  "schema": "nostr_automerge.local_runner_manifest.v2",
+  "orchestration": "external_operator",
   "toolchain": {
     "rust": "1.97.1",
     "rust_nightly": "nightly-2026-07-16",
-    "act": "0.2.89",
     "cargo_llvm_cov": "0.8.7",
     "cargo_deny": "0.19.8",
     "cargo_fuzz": "0.13.2"
@@ -22,5 +20,8 @@
     "release_evidence"
   ],
   "entrypoint": "python3 scripts/local_gate.py",
-  "output_root": ".act/output"
+  "output": {
+    "environment": "NOSTR_AUTOMERGE_OUTPUT_ROOT",
+    "standalone_default": ".local/evidence"
+  }
 }

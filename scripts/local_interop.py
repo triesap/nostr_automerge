@@ -101,7 +101,7 @@ def main() -> int:
     profiles = {str(name): "pass" for name in manifest["profiles"]}
     summary = {
         "canonical_report_bytes": "identical",
-        "ci_policy": "local_act_pass",
+        "execution_policy": "operator_local_pass",
         "corpus_sha256": hashlib.sha256(rust_first).hexdigest(),
         "deliberate_mismatch": "detected",
         "distribution_id": manifest["distribution_id"],
@@ -113,7 +113,6 @@ def main() -> int:
         "mismatches": [],
         "profiles": profiles,
         "runner_versions": {
-            "act": rust_tools["act"],
             "node": typescript_tools["node"],
             "pnpm": typescript_tools["pnpm"],
             "rust": rust_tools["rust"],

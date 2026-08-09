@@ -15,8 +15,8 @@ ongoing interoperability policy.
 The NIP document, identifier allocation, event-kind allocation, upstream
 issues, pull requests, and NIPs repository are outside this implementation
 program. GitHub-hosted workflows are prohibited. Both implementation
-repositories must instead use ignored, untracked `.act/workflows/**` runners
-and prove all gates on the local machine.
+repositories expose portable local gate commands, while workflow orchestration
+and raw evidence remain private and external to the repositories.
 
 RCLD 13 is therefore redefined as local implementation readiness. Its four
 checkpoints will reconcile the runner policy, establish complete local lanes

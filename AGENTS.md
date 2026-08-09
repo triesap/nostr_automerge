@@ -81,10 +81,12 @@ policy permits them.
 
 ## Verification
 
-GitHub-hosted workflows are prohibited. Repository automation is executed on
-the local machine through ignored, untracked `.act/workflows/**` definitions.
-Tracked repository-owned commands contain the reviewable gate logic. Never
-stage or commit a local Act workflow or its runtime state.
+GitHub-hosted workflows are prohibited. Tracked repository-owned commands
+contain the portable, reviewable gate logic. Any workflow orchestration is
+operator-owned, private, and external to this public repository; do not create
+or retain a repository-local `.act` directory. Local evidence writes to the
+configured `NOSTR_AUTOMERGE_OUTPUT_ROOT`, with `.local/evidence` as the ignored
+standalone default.
 
 Use repository-owned commands first. Once the workspace supports them, the
 standard local gate is:

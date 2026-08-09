@@ -18,9 +18,8 @@ remain byte-identical across the neutral conformance distribution.
 
 This RCLD also corrects the obsolete workflow policy introduced before local
 runner authority was clarified. GitHub-hosted workflows are prohibited. Every
-workflow definition used by this program must live below an ignored,
-untracked `.act/workflows/**` path and must be executed with `act` on the local
-machine.
+workflow definition used by this program is operator-private and external to
+the public repositories; repositories contain only portable gate commands.
 
 ## Scope Boundary
 
@@ -42,12 +41,11 @@ slice. Neither repository is staged or committed through a parent workspace.
 ## Local Runner Policy
 
 - No `.github/workflows/**` file may remain tracked in either repository.
-- Both tracked `.gitignore` files must ignore `/.act/workflows/` and local
-  runner configuration, environment, output, and scratch paths.
-- Workflow YAML beneath `.act/workflows/**` is local runtime state and must not
-  be staged or committed.
+- Neither repository may contain a local `.act` directory or workflow path.
+- Operator-private workflow YAML and raw output remain in the external private
+  workspace and must not be copied into either repository.
 - Tracked repository-owned scripts and package commands contain the reviewable
-  gate logic. Ignored workflow YAML is a thin local orchestration layer.
+  gate logic. External workflow YAML is a thin private orchestration layer.
 - Local workflows use the two existing checkouts directly. They do not clone
   either implementation, calculate expectations through the other
   implementation, or download a generated implementation artifact.
@@ -87,11 +85,11 @@ runner policy authoritative before new verification infrastructure is added.
 In both implementation repositories:
 
 - remove every tracked `.github/workflows/**` file;
-- add the ignored `.act/workflows/**` and local runner state contract;
+- add the external-operator orchestration and portable output contract;
 - add a repository-owned policy validator that inspects tracked paths rather
   than ignored runtime contents;
 - add positive and negative policy tests, including a synthetic tracked
-  GitHub-workflow violation and a missing-ignore violation;
+  GitHub-workflow violation and a private-runner-state violation;
 - document that local runner files are operator-local and are not a portable
   repository contract.
 
@@ -107,8 +105,7 @@ In the Rust coordination repository:
 ### Required verification
 
 ```sh
-git ls-files '.github/workflows/**' '.act/workflows/**'
-git check-ignore -q .act/workflows/policy_probe.yml
+git ls-files '.github/workflows/**' '.act/**'
 cargo fmt --all --check
 cargo check --workspace --all-targets --locked
 cargo test --workspace --all-targets --locked
@@ -173,21 +170,20 @@ Add or consolidate tracked commands for these TypeScript lanes:
   SBOM, provenance, and resource-limit checks;
 - benchmark capture for the matching protocol hot paths.
 
-Create the corresponding ignored `.act/workflows/**` files and ignored local
-runner configuration in each checkout. The workflows must invoke the tracked
+Create corresponding private workflows outside both checkouts. They must invoke the tracked
 commands, use pinned tool versions, retain outputs only in ignored locations,
 and require no GitHub event, token, artifact service, cache service, checkout
 action, or remote implementation clone.
 
 Add a tracked machine-readable runner manifest in each repository. It records
-the required local job names, tracked command entry points, expected ignored
-workflow name, toolchain pins, and evidence outputs without embedding local
+the required local job names, tracked command entry points, external
+orchestration policy, toolchain pins, and portable evidence outputs without embedding local
 absolute paths or the untracked YAML contents.
 
 ### Required verification
 
-Run every job named by each runner manifest with `act -W` against the ignored
-workflow file. Run policy, standard, conformance, coverage, supply-chain,
+Run every job named by each runner manifest through the private external
+orchestration. Run policy, standard, conformance, coverage, supply-chain,
 robustness, resource, optimization, and release-evidence jobs for Rust and
 TypeScript. Verify that:
 
@@ -238,8 +234,8 @@ In both repositories, add a tracked interop command that:
 - writes raw outputs only below ignored runner-output paths;
 - emits a canonical summary containing no local absolute path.
 
-Create an ignored local interop workflow beneath `.act/workflows/**` in each
-repository. Run both entry points on the same local machine. The Rust entry
+Create private local interop orchestration outside both repositories. Run both
+entry points on the same local machine. The Rust entry
 point must not calculate TypeScript expectations, and the TypeScript entry
 point must not calculate expectations by executing Rust outside the explicit
 differential comparison.
@@ -250,14 +246,13 @@ count, family results, deliberate-mismatch result, and corpus digest.
 
 ### Required verification
 
-- Run the Rust-owned ignored interop workflow with `act -W`.
-- Run the TypeScript-owned ignored interop workflow with `act -W`.
+- Run the private Rust-owned interop job locally.
+- Run the private TypeScript-owned interop job locally.
 - Compare the two canonical summary files byte-for-byte.
 - Run each entry point twice and compare repeated output bytes.
 - Run the deliberate-mismatch job and prove the comparator returns nonzero.
 - Run both complete repository checks after the interop lane.
-- Confirm both Git worktrees are clean and no `.act/workflows/**` file is
-  tracked.
+- Confirm both Git worktrees are clean and neither contains a `.act` directory.
 
 ### Commit intent
 
@@ -349,8 +344,8 @@ unchanged path for which no evidence justified modification.
 Rerun every required local workflow from both runner manifests, then rerun both
 interop entry points. RCLD 13 is green only when:
 
-- no tracked `.github/workflows/**` or `.act/workflows/**` file exists;
-- every required ignored `act` job passes on the local machine;
+- no tracked `.github/workflows/**` file or private runner state exists;
+- every required private local job passes on the local machine;
 - all 87 requirements have valid classifications and every code-applicable row
   has direct implementation and test evidence in each applicable repository;
 - no unresolved crash, timeout, nondeterminism, critical/high dependency
