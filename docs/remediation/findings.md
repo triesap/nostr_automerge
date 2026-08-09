@@ -1,7 +1,10 @@
 # Draft V1 Remediation Findings
 
-All findings are open at the `step_193` baseline. Closure requires executable
-regression evidence and the owning phase's end-to-end green proof.
+All findings were open at the `step_193` baseline. Findings 001 through 011 and
+013 are closed by executable regression evidence and their owning phase's
+end-to-end proof. Finding 012 is closed by a fail-closed publication hold:
+sustained Rust fuzz execution and independent external review remain expressly
+unproven, so no production or publication readiness is claimed.
 
 | Finding | Severity | Owning phase |
 | --- | --- | --- |

@@ -1,0 +1,116 @@
+{
+  "commit_bounds": {
+    "rust_base": "79a288814f0c3efd084faa4a3141ff07e1e49ee5",
+    "rust_readiness": "d1e2f5026b9bff7593d6918f3aa26c5b136d86db",
+    "typescript": "ceb113507336a7425c95bb5993c01f81309e3df2"
+  },
+  "deviations": [
+    "sustained native Rust fuzz execution is deferred as an explicit release hold; all nine pinned harnesses compile and TypeScript completed two deterministic 60000-execution campaigns",
+    "private Act orchestration and raw evidence are external to both public repositories and live only in the operator workspace",
+    "the contaminated parallel cargo-mutants diagnostic is excluded; the serial repository mutator caught all 13 selected Rust mutations",
+    "independent external security and protocol review is an explicit publication hold"
+  ],
+  "findings": [
+    {
+      "commits": ["361da8c", "39860d0"],
+      "evidence": ["crates/nostr_automerge/tests/public_engine_api.rs", "reports/api_review.md"],
+      "id": "FINDING_001",
+      "result": "closed"
+    },
+    {
+      "commits": ["ac255e4", "ac3b168"],
+      "evidence": ["crates/nostr_automerge/tests/public_engine_api.rs", "reports/rust_conformance.json"],
+      "id": "FINDING_002",
+      "result": "closed"
+    },
+    {
+      "commits": ["9d7de0d", "085377c"],
+      "evidence": ["crates/nostr_automerge/tests/public_engine_api.rs", "crates/nostr_automerge/src/work_budget.rs"],
+      "id": "FINDING_003",
+      "result": "closed"
+    },
+    {
+      "commits": ["ea99201", "f3dc028"],
+      "evidence": ["reports/resource_benchmarks.json", "crates/nostr_automerge/src/graph/scaling.rs"],
+      "id": "FINDING_004",
+      "result": "closed"
+    },
+    {
+      "commits": ["bccaafa"],
+      "evidence": ["crates/nostr_automerge/tests/public_engine_api.rs", "reports/resource_benchmarks.json"],
+      "id": "FINDING_005",
+      "result": "closed"
+    },
+    {
+      "commits": ["b18c1ec", "a9d5c4e"],
+      "evidence": ["crates/nostr_automerge/tests/checkpoint_conformance.rs", "reports/checkpoint_conformance.json"],
+      "id": "FINDING_006",
+      "result": "closed"
+    },
+    {
+      "commits": ["b29a26c", "0b3b121"],
+      "evidence": ["reports/rust_conformance.json", "scripts/local_gate.py"],
+      "id": "FINDING_007",
+      "result": "closed"
+    },
+    {
+      "commits": ["8a0bb39", "858c27d", "f1fe2cb"],
+      "evidence": ["reports/requirements_coverage.json", "scripts/validate_requirement_matrix.py"],
+      "id": "FINDING_008",
+      "result": "closed"
+    },
+    {
+      "commits": ["063fc9f", "2593015"],
+      "evidence": ["crates/nostr_automerge/tests/checkpoint_conformance.rs", "reports/checkpoint_conformance.json"],
+      "id": "FINDING_009",
+      "result": "closed"
+    },
+    {
+      "commits": ["0e5490f", "6de0c21"],
+      "evidence": ["crates/nostr_automerge/src/automerge_adapter/materialized_view.rs", "crates/nostr_automerge/tests/public_engine_api.rs"],
+      "id": "FINDING_010",
+      "result": "closed"
+    },
+    {
+      "commits": ["e1c4a0c", "a0e53f6"],
+      "evidence": ["crates/nostr_automerge/src/control/transition.rs", "crates/nostr_automerge/tests/public_engine_api.rs"],
+      "id": "FINDING_011",
+      "result": "closed"
+    },
+    {
+      "commits": ["64f591e", "edcca04", "96c64cb", "69bf087", "f21e030", "727bb1f", "d1e2f50"],
+      "evidence": ["reports/fuzz_campaign.json", "reports/mutation_campaign.json", "reports/local_coverage.json", "reports/resource_benchmarks.json", "reports/supply_chain.json", "reports/external_review.json", "reports/release_readiness.json"],
+      "id": "FINDING_012",
+      "result": "closed_locally_with_release_holds"
+    },
+    {
+      "commits": ["6af6078", "cff9f83", "b47c077"],
+      "evidence": ["reports/interop_combined.json", "fixtures/distribution/manifest.json"],
+      "id": "FINDING_013",
+      "result": "closed"
+    }
+  ],
+  "non_claims": [
+    "no sustained native Rust fuzz execution",
+    "no independent external security or protocol review",
+    "no hosted or repository-local workflow",
+    "no package publication, tag, release, deployment, or push",
+    "no NIP inspection, authorship, adoption, or publication"
+  ],
+  "reproduced_commands": [
+    "python3 scripts/local_gate.py standard",
+    "python3 scripts/local_gate.py conformance",
+    "python3 scripts/local_gate.py coverage",
+    "python3 scripts/mutation_campaign.py",
+    "python3 scripts/local_gate.py resource",
+    "python3 scripts/local_gate.py supply_chain",
+    "python3 scripts/local_gate.py release_evidence",
+    "pnpm local:gate standard",
+    "pnpm local:gate conformance",
+    "pnpm local:gate coverage",
+    "pnpm local:gate supply_chain",
+    "pnpm local:gate release_evidence"
+  ],
+  "schema": "nostr_automerge.remediation_closure.v1",
+  "status": "local_implementation_complete_publication_held"
+}

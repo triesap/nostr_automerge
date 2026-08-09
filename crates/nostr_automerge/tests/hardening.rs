@@ -109,3 +109,35 @@ fn publish_security_and_release_readiness_report() {
     assert_eq!(report["external_review"], "not_completed_release_hold");
     assert_eq!(report["locked_gate"], "pass");
 }
+
+#[test]
+fn publish_finding_by_finding_remediation_closure() {
+    let report: serde_json::Value =
+        serde_json::from_str(include_str!("../../../reports/remediation_closure.json"))
+            .unwrap_or_default();
+    assert_eq!(report["findings"].as_array().map(Vec::len), Some(13));
+    let results = report["findings"]
+        .as_array()
+        .map(|findings| {
+            findings
+                .iter()
+                .map(|finding| finding["result"].as_str().unwrap_or_default())
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    assert_eq!(results[..11], ["closed"; 11]);
+    assert_eq!(results[11], "closed_locally_with_release_holds");
+    assert_eq!(results[12], "closed");
+    assert_eq!(
+        report["status"],
+        "local_implementation_complete_publication_held"
+    );
+    assert!(report["non_claims"].as_array().is_some_and(|claims| {
+        claims
+            .iter()
+            .any(|claim| claim == "no sustained native Rust fuzz execution")
+            && claims
+                .iter()
+                .any(|claim| claim == "no independent external security or protocol review")
+    }));
+}

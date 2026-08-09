@@ -12,19 +12,20 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-def reject_findings(value: dict[str, object]) -> None:
+def validate_findings(value: dict[str, object]) -> None:
     findings = value.get("findings")
     if not isinstance(findings, list) or len(findings) != 13:
         raise AssertionError("missing remediation finding")
     ids = [item.get("id") for item in findings if isinstance(item, dict)]
     if ids != [f"FINDING_{index:03d}" for index in range(1, 14)] or len(ids) != len(set(ids)):
         raise AssertionError("missing, duplicate, or reordered remediation finding")
-    if any(not isinstance(item, dict) or item.get("status") != "open" for item in findings):
-        raise AssertionError("false remediation closure")
+    statuses = [item.get("status") for item in findings if isinstance(item, dict)]
+    if statuses != ["closed"] * 11 + ["closed_with_release_hold", "closed"]:
+        raise AssertionError("invalid remediation disposition")
 
 def expect_rejected(value: dict[str, object], message: str) -> None:
     try:
-        reject_findings(value)
+        validate_findings(value)
     except AssertionError:
         return
     raise AssertionError(message)
@@ -37,16 +38,35 @@ def main() -> int:
     ):
         subprocess.run([sys.executable, str(ROOT / "scripts" / script)], cwd=ROOT, check=True)
     value = json.loads((ROOT / "spec/remediation_findings.json").read_text())
-    reject_findings(value)
+    validate_findings(value)
     missing = copy.deepcopy(value)
     missing["findings"].pop()
     expect_rejected(missing, "missing finding passed")
     duplicate = copy.deepcopy(value)
     duplicate["findings"][1]["id"] = "FINDING_001"
     expect_rejected(duplicate, "duplicate finding passed")
-    closed = copy.deepcopy(value)
-    closed["findings"][0]["status"] = "closed"
-    expect_rejected(closed, "false closure passed")
+    invalid_status = copy.deepcopy(value)
+    invalid_status["findings"][11]["status"] = "closed"
+    expect_rejected(invalid_status, "release hold was erased")
+    misplaced_hold = copy.deepcopy(value)
+    misplaced_hold["findings"][10]["status"] = "closed_with_release_hold"
+    expect_rejected(misplaced_hold, "release hold was assigned to the wrong finding")
+    closure = json.loads((ROOT / "reports/remediation_closure.json").read_text())
+    closure_findings = closure.get("findings", [])
+    closure_ids = [item.get("id") for item in closure_findings]
+    closure_results = [item.get("result") for item in closure_findings]
+    if closure.get("schema") != "nostr_automerge.remediation_closure.v1":
+        raise AssertionError("remediation closure schema is invalid")
+    if closure_ids != [f"FINDING_{index:03d}" for index in range(1, 14)]:
+        raise AssertionError("remediation closure findings are incomplete or reordered")
+    if closure_results != ["closed"] * 11 + ["closed_locally_with_release_holds", "closed"]:
+        raise AssertionError("remediation closure dispositions are invalid")
+    for finding in closure_findings:
+        if not finding.get("commits") or not finding.get("evidence"):
+            raise AssertionError(f"closure evidence is missing: {finding.get('id')}")
+        for path in finding["evidence"]:
+            if not (ROOT / path).exists():
+                raise AssertionError(f"stale closure evidence: {finding['id']}:{path}")
     rcld = (ROOT / "docs/execution/rcl/nostr_automerge_v1_14_engine_remediation_rcld.md").read_text()
     steps = [int(item) for item in re.findall(r"^\| `step_(\d{3})` \|", rcld, re.MULTILINE)]
     if steps != list(range(193, 308)):
