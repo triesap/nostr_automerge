@@ -1,8 +1,8 @@
 # Draft V1 Remediation Execution Ledger
 
 Status: active
-Current checkpoint: `step_300`
-Completed checkpoints: `step_193` through `step_299`
+Current checkpoint: `step_301`
+Completed checkpoints: `step_193` through `step_300`
 Governing RCLD: `docs/execution/rcl/nostr_automerge_v1_14_engine_remediation_rcld.md`
 
 | Phase | Checkpoints | State |
@@ -57,3 +57,11 @@ case and caught all 13 selected material Rust mutations across limits,
 canonicalization, checkpointing, consensus, graph handling, and projection.
 The independent TypeScript campaign caught all five generated mutations. No
 material survivor or timeout remains in either closed campaign.
+
+### `step_300` local coverage adaptation
+
+Rust branch coverage uses the pinned nightly because LLVM branch coverage is
+unstable on the pinned stable compiler. The xtask package is excluded from the
+instrumented workspace because its tests recursively run repository validators
+and Cargo; that operator orchestration remains covered by the standard local
+gate. Raw Rust and TypeScript reports stay in the private operator output.

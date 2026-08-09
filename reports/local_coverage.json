@@ -1,0 +1,24 @@
+{
+  "execution": "external_operator_local",
+  "raw_evidence": "operator_private",
+  "rust": {
+    "branch_percent": 67.91,
+    "command": "cargo +nightly-2026-07-16 llvm-cov --branch --workspace --all-targets --exclude nostr_automerge_xtask --locked --summary-only",
+    "excluded": {
+      "package": "nostr_automerge_xtask",
+      "reason": "recursively invokes repository validators and Cargo; covered by the standard local gate"
+    },
+    "function_percent": 90.57,
+    "line_percent": 91.62,
+    "status": "pass"
+  },
+  "schema": "nostr_automerge.local_coverage.v1",
+  "typescript": {
+    "branch_percent": 75.22,
+    "command": "node --experimental-test-coverage --test dist/test/**/*.test.js",
+    "excluded": {},
+    "function_percent": 97.42,
+    "line_percent": 92.73,
+    "status": "pass"
+  }
+}

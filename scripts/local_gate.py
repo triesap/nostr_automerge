@@ -19,9 +19,15 @@ OUTPUT = Path(os.environ.get("NOSTR_AUTOMERGE_OUTPUT_ROOT", ROOT / ".local/evide
 def run(*command: str, capture: bool = False) -> subprocess.CompletedProcess[str]:
     """Run one command from the repository root and fail closed."""
 
-    return subprocess.run(
-        command, cwd=ROOT, check=True, text=True, capture_output=capture
-    )
+    try:
+        return subprocess.run(
+            command, cwd=ROOT, check=True, text=True, capture_output=capture
+        )
+    except subprocess.CalledProcessError as error:
+        if capture:
+            print(error.stdout or "", end="")
+            print(error.stderr or "", end="", file=sys.stderr)
+        raise
 
 
 def policy() -> None:
@@ -73,7 +79,14 @@ def conformance() -> None:
 
 
 def coverage() -> None:
-    run("cargo", "llvm-cov", "--workspace", "--all-targets", "--locked", "--summary-only")
+    result = run(
+        "cargo", "+nightly-2026-07-16", "llvm-cov", "--branch", "--workspace", "--all-targets",
+        "--exclude", "nostr_automerge_xtask", "--locked", "--summary-only",
+        capture=True,
+    )
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    (OUTPUT / "rust_coverage.txt").write_text(result.stdout, encoding="utf-8")
+    print(result.stdout, end="")
 
 
 def supply_chain() -> None:

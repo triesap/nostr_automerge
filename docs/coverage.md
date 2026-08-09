@@ -1,8 +1,14 @@
 # Coverage
 
-An external local runner can generate LCOV for every workspace target with
-`cargo llvm-cov --workspace --all-targets --locked --lcov --output-path
-lcov.info`. Coverage locates untested normative branches; it is not a
+The portable baseline is `cargo llvm-cov --workspace --all-targets --locked`.
+An external local runner can generate branch-aware LCOV for every executable
+implementation target with `cargo +nightly-2026-07-16 llvm-cov --branch
+--workspace --all-targets --exclude nostr_automerge_xtask --locked --lcov
+--output-path lcov.info`.
+The xtask package is deliberately excluded because its tests recursively invoke
+repository validators and Cargo; the standard local gate tests that operator
+orchestration outside the instrumented process. Coverage locates untested
+normative branches; it is not a
 correctness claim or a substitute for fixtures, properties, mutation testing,
 or independent interop. Wire, control, graph, reference, authoring, and
 checkpoint modules must not be wholly uncovered. Workflow definitions and raw
