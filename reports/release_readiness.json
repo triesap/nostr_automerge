@@ -1,1 +1,18 @@
-{"decision":"hold_publication","external_review":"not_completed_release_hold","interop":"limited_five_fixture_local_pass","local_alpha_package":"artifact_verified_not_engine_ready","local_implementation_readiness":"remediation_open_step_197","locked_gate":"pass","mutation_campaign":"not_completed","public_engine":"not_completed","sustained_fuzzing":"not_completed"}
+{
+  "code_completion": "complete",
+  "coverage": "local_line_and_branch_pass",
+  "decision": "hold_publication",
+  "external_review": "not_completed_release_hold",
+  "interop": "complete_core_and_checkpoint_local_pass",
+  "local_alpha_package": "artifact_and_reproducibility_verified",
+  "local_implementation_readiness": "complete_with_declared_release_holds",
+  "locked_gate": "pass",
+  "mutation_campaign": "pass_no_material_survivors",
+  "nip_document": "out_of_scope",
+  "public_engine": "complete",
+  "requirements": "87_closed_rows_pass",
+  "resource_qualification": "pass",
+  "schema": "nostr_automerge.release_readiness.v2",
+  "sustained_fuzzing": "rust_execution_deferred_release_hold_typescript_pass",
+  "supply_chain": "pass"
+}

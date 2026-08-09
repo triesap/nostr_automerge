@@ -102,8 +102,10 @@ fn publish_security_and_release_readiness_report() {
     assert_eq!(report["decision"], "hold_publication");
     assert_eq!(
         report["local_alpha_package"],
-        "artifact_verified_not_engine_ready"
+        "artifact_and_reproducibility_verified"
     );
-    assert_eq!(report["public_engine"], "not_completed");
+    assert_eq!(report["public_engine"], "complete");
+    assert_eq!(report["code_completion"], "complete");
+    assert_eq!(report["external_review"], "not_completed_release_hold");
     assert_eq!(report["locked_gate"], "pass");
 }

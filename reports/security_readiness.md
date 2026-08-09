@@ -1,21 +1,17 @@
 # Security and alpha readiness
 
-Decision: local package artifact verified; implementation readiness and
-publication held.
+The local implementation and deterministic assurance program are complete.
+The locked Rust and TypeScript suites, fail-closed 87-requirement audit,
+public-engine conformance, core and checkpoint interoperability, material
+mutation campaigns, line and branch coverage, resource envelopes, public API,
+packages, advisories, licenses, SBOM, and reproducibility gates passed at their
+recorded commits.
 
-The recorded locked Rust checks, tests, Clippy, rustdoc, repository validators,
-limited conformance commands, deterministic properties, checkpoint primitive
-tests, and package verification passed at their recorded commits. These results
-do not establish a complete public engine or signed checkpoint carrier path.
+Publication remains held. Sustained native Rust fuzz execution was explicitly
+deferred because the Codex environment blocked that operation, although all
+nine pinned harnesses compile and the independent TypeScript deterministic
+generative campaigns passed. No independent external security or protocol
+review was performed. Neither hold is represented as completed evidence.
 
-Independent TypeScript core, checkpoint, malformed, and property differential
-profiles passed locally for the five-fixture corpus with byte-identical reports.
-Deliberate-mismatch detection and both external private local entry points passed.
-The runners still compute a simplified model rather than exercising a complete
-public engine, so this is limited differential evidence only.
-
-No complete public engine, signed checkpoint-carrier conformance, real-state
-projection corpus, fail-closed coverage, sustained fuzz campaign, complete
-mutation campaign, final resource qualification, or independent security
-review is claimed. RCLD 14 owns those remediation gates. No crate, tag,
-release, or NIP is published by this decision.
+The NIP document is separately authored and was not inspected or changed. This
+decision publishes no crate, package, tag, release, workflow, or NIP.
