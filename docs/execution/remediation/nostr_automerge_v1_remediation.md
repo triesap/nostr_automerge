@@ -1,8 +1,8 @@
 # Draft V1 Remediation Execution Ledger
 
 Status: active
-Current checkpoint: `step_302`
-Completed checkpoints: `step_193` through `step_301`
+Current checkpoint: `step_303`
+Completed checkpoints: `step_193` through `step_302`
 Governing RCLD: `docs/execution/rcl/nostr_automerge_v1_14_engine_remediation_rcld.md`
 
 | Phase | Checkpoints | State |
@@ -65,3 +65,11 @@ unstable on the pinned stable compiler. The xtask package is excluded from the
 instrumented workspace because its tests recursively run repository validators
 and Cargo; that operator orchestration remains covered by the standard local
 gate. Raw Rust and TypeScript reports stay in the private operator output.
+
+### `step_302` external review disposition
+
+No independent external security or protocol review evidence was supplied or
+performed in this local implementation sequence. Publication remains held on
+that basis. This disposition does not reduce the completed local code,
+conformance, interop, mutation, coverage, or resource evidence and does not
+fabricate external approval.

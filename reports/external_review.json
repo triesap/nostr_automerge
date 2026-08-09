@@ -1,0 +1,8 @@
+{
+  "code_completion_effect": "none",
+  "decision": "hold_publication",
+  "evidence": [],
+  "reason": "independent external security and protocol review not completed",
+  "schema": "nostr_automerge.external_review.v1",
+  "status": "not_completed_release_hold"
+}
