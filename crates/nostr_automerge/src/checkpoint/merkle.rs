@@ -100,16 +100,24 @@ pub fn verify_proof(
             output.push(Side::Left);
         }
     }
-    if count == 0 || count > super::MAX_CHUNK_COUNT || index >= count {
+    if count == 0 {
+        return Err(MerkleError::Proof);
+    }
+    if count > super::MAX_CHUNK_COUNT {
+        return Err(MerkleError::Proof);
+    }
+    if index >= count {
         return Err(MerkleError::Proof);
     }
     let mut expected = Vec::new();
     sides(index as usize, count as usize, &mut expected);
-    if expected.len() != proof.len()
-        || expected
-            .iter()
-            .zip(proof)
-            .any(|(side, step)| *side != step.side)
+    if expected.len() != proof.len() {
+        return Err(MerkleError::Proof);
+    }
+    if expected
+        .iter()
+        .zip(proof)
+        .any(|(side, step)| *side != step.side)
     {
         return Err(MerkleError::Proof);
     }
@@ -151,6 +159,26 @@ mod tests {
             assert_eq!(root, super::merkle_root(&leaves));
         }
         assert_eq!(super::merkle_root(&[]), Err(super::MerkleError::Count));
+
+        let maximum = vec![[7_u8; 32]; super::super::MAX_CHUNK_COUNT as usize];
+        assert!(super::merkle_root(&maximum).is_ok());
+        let over_limit = vec![[7_u8; 32]; super::super::MAX_CHUNK_COUNT as usize + 1];
+        assert_eq!(
+            super::merkle_root(&over_limit),
+            Err(super::MerkleError::Count)
+        );
+
+        let leaves = [[1_u8; 32], [2_u8; 32]];
+        let mut expected = Sha256::new();
+        expected.update([1]);
+        expected.update(super::super::MERKLE_DOMAIN);
+        expected.update([0]);
+        expected.update(leaves[0]);
+        expected.update(leaves[1]);
+        assert_eq!(
+            super::merkle_root(&leaves),
+            Ok(<[u8; 32]>::from(expected.finalize()))
+        );
     }
     #[test]
     fn verify_ordered_merkle_proofs() {
@@ -177,6 +205,82 @@ mod tests {
         assert_eq!(
             super::verify_proof(0, 3, leaves[0], &[super::ProofStep::left(leaves[1])], root),
             Err(super::MerkleError::Proof)
+        );
+
+        assert_eq!(
+            super::verify_proof(0, 3, leaves[0], &[super::ProofStep::right(leaves[1])], root),
+            Err(super::MerkleError::Proof)
+        );
+        assert_eq!(
+            super::verify_proof(
+                0,
+                3,
+                leaves[0],
+                &[
+                    super::ProofStep::left(leaves[1]),
+                    super::ProofStep::right(leaves[2]),
+                ],
+                root,
+            ),
+            Err(super::MerkleError::Proof)
+        );
+
+        for (index, count) in [(0, 0), (3, 3), (0, super::super::MAX_CHUNK_COUNT + 1)] {
+            assert_eq!(
+                super::verify_proof(index, count, [0; 32], &[], [0; 32]),
+                Err(super::MerkleError::Proof)
+            );
+        }
+
+        let six = [[1_u8; 32], [2; 32], [3; 32], [4; 32], [5; 32], [6; 32]];
+        let first_pair = super::node(six[0], six[1]);
+        let second_pair = super::node(six[2], six[3]);
+        let first_four = super::node(first_pair, second_pair);
+        let last_pair = super::node(six[4], six[5]);
+        let six_root = super::node(first_four, last_pair);
+        assert_eq!(
+            super::verify_proof(
+                4,
+                6,
+                six[4],
+                &[
+                    super::ProofStep::right(six[5]),
+                    super::ProofStep::left(first_four),
+                ],
+                six_root,
+            ),
+            Ok(())
+        );
+        assert_eq!(
+            super::verify_proof(
+                5,
+                6,
+                six[5],
+                &[
+                    super::ProofStep::left(six[4]),
+                    super::ProofStep::left(first_four),
+                ],
+                six_root,
+            ),
+            Ok(())
+        );
+
+        let maximum_leaf = [9_u8; 32];
+        let maximum_proof = (0_u8..12)
+            .map(|value| super::ProofStep::right([value; 32]))
+            .collect::<Vec<_>>();
+        let maximum_root = maximum_proof
+            .iter()
+            .fold(maximum_leaf, |value, step| super::node(value, step.hash));
+        assert_eq!(
+            super::verify_proof(
+                0,
+                super::super::MAX_CHUNK_COUNT,
+                maximum_leaf,
+                &maximum_proof,
+                maximum_root,
+            ),
+            Ok(())
         );
     }
 }

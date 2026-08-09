@@ -1,8 +1,8 @@
 # Draft V1 Remediation Execution Ledger
 
 Status: active
-Current checkpoint: `step_299`
-Completed checkpoints: `step_193` through `step_298`
+Current checkpoint: `step_300`
+Completed checkpoints: `step_193` through `step_299`
 Governing RCLD: `docs/execution/rcl/nostr_automerge_v1_14_engine_remediation_rcld.md`
 
 | Phase | Checkpoints | State |
@@ -46,3 +46,14 @@ operator workspace, not either public implementation repository. Both
 repositories retain portable gate commands and accept
 `NOSTR_AUTOMERGE_OUTPUT_ROOT`; their standalone ignored default is
 `.local/evidence`. No repository-local `.act` directory is authorized.
+
+### `step_299` mutation-runner adaptation
+
+The native cargo-mutants diagnostic was interrupted repeatedly by the execution
+environment and its earlier parallel form shared a target directory, so neither
+result is release evidence. The approved replacement is the repository-owned,
+single-process deterministic source mutator. It restored the source after every
+case and caught all 13 selected material Rust mutations across limits,
+canonicalization, checkpointing, consensus, graph handling, and projection.
+The independent TypeScript campaign caught all five generated mutations. No
+material survivor or timeout remains in either closed campaign.

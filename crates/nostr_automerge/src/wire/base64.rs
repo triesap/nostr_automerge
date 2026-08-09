@@ -10,7 +10,13 @@ pub(crate) fn decode_padded(input: &str, maximum: ByteLimit) -> Result<Vec<u8>, 
         .and_then(|value| value.checked_div(3))
         .and_then(|value| value.checked_mul(4))
         .ok_or(Base64Error::TooLarge)?;
-    if input.len() > encoded_maximum || !input.len().is_multiple_of(4) || !input.is_ascii() {
+    if input.len() > encoded_maximum {
+        return Err(Base64Error::NonCanonical);
+    }
+    if !input.len().is_multiple_of(4) {
+        return Err(Base64Error::NonCanonical);
+    }
+    if !input.is_ascii() {
         return Err(Base64Error::NonCanonical);
     }
     let decoded = STANDARD
@@ -51,5 +57,21 @@ mod tests {
                 Err(Base64Error::NonCanonical)
             );
         }
+    }
+
+    #[test]
+    fn enforces_encoded_and_decoded_boundaries_exactly() {
+        let limit = ProtocolRevision::draft_v1().limits().manifest_content;
+        let exact = vec![0_u8; limit.try_usize().unwrap_or(0)];
+        let encoded = encode_padded(&exact);
+        assert_eq!(decode_padded(&encoded, limit), Ok(exact));
+
+        let oversized_canonical_shape = "AAAA".repeat(encoded.len() / 4 + 1);
+        assert_eq!(
+            decode_padded(&oversized_canonical_shape, limit),
+            Err(Base64Error::NonCanonical)
+        );
+        assert_eq!(decode_padded("A", limit), Err(Base64Error::NonCanonical));
+        assert_eq!(decode_padded("éé", limit), Err(Base64Error::NonCanonical));
     }
 }

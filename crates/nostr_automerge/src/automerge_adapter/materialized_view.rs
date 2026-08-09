@@ -401,9 +401,21 @@ mod tests {
             );
             tx.commit();
         }
-        let view = MaterializedDocumentView::from_canonical_bytes(document.save_nocompress());
+        let canonical = document.save_nocompress();
+        let view = MaterializedDocumentView::from_canonical_bytes(canonical.clone());
         assert!(view.is_ok());
         let Ok(view) = view else { return };
+        assert_eq!(view.byte_len(), canonical.len());
+        assert!(!view.is_empty());
+        assert_eq!(view.entries().len(), 10);
+        assert!(view.marks().is_empty());
+        assert_eq!(
+            format!("{view:?}"),
+            format!(
+                "MaterializedDocumentView {{ byte_len: {}, entry_count: 10, mark_count: 0 }}",
+                canonical.len()
+            )
+        );
         for (key, expected) in [
             ("null", MaterializedScalar::Null),
             ("bool", MaterializedScalar::Bool(true)),

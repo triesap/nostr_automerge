@@ -1,0 +1,28 @@
+{
+  "decision": "pass",
+  "rust": {
+    "caught": 13,
+    "completed_material_survivors": 0,
+    "execution": "repository_deterministic_source_mutator_v1",
+    "generated": 13,
+    "status": "pass",
+    "timeouts": 0,
+    "unviable": 0
+  },
+  "parallel_rust_diagnostic": {
+    "caught": 76,
+    "disposition": "not_release_evidence_shared_target_interference",
+    "generated": 99,
+    "missed": 12,
+    "unviable": 11
+  },
+  "schema": "nostr_automerge.mutation_campaign.v1",
+  "typescript": {
+    "caught": 5,
+    "generated": 5,
+    "source_commit": "376420fe0e46bd24a6387063dd493728801799a9",
+    "status": "pass",
+    "survived": 0,
+    "timeouts": 0
+  }
+}
