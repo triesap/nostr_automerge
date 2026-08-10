@@ -15,7 +15,9 @@ use crate::graph::dependency_graph::build_graph;
 use crate::graph::equivocation::{QuarantineError, quarantine_equivocation_descendants};
 use crate::graph::schedule::{ScheduleError, schedule_candidates};
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
-use crate::reference::epoch_engine::{EpochEvaluationError, EpochEvaluationInput, evaluate_epoch};
+use crate::reference::epoch_engine::{
+    EpochEvaluationError, EpochEvaluationInput, EpochEvaluationResult, evaluate_epoch,
+};
 use crate::{
     CancellationCheck, ChangeHash, Completion, EvaluationFailure, EventId, IntegrityAlert,
     ProtocolDisposition, WorkBudget, WorkCounter,
@@ -92,6 +94,7 @@ pub(crate) fn evaluate_batch(
     let mut completion = Completion::Complete;
     let mut accepted_changes = BTreeSet::new();
     let mut accepted_at_control = BTreeMap::new();
+    let mut parent_epoch_result: Option<EpochEvaluationResult> = None;
     let mut parent_id = None;
     while let Some(children) = by_parent.get(&parent_id) {
         if cancellation.is_cancelled() {
@@ -106,17 +109,9 @@ pub(crate) fn evaluate_batch(
             completion = Completion::BudgetExhausted;
             break;
         }
-        let parent_view = if parent_id.is_some() {
-            match parent_epoch_view(&accepted_changes, &controls) {
-                Some(view) => Some(view),
-                None => {
-                    completion = Completion::Failed;
-                    break;
-                }
-            }
-        } else {
-            None
-        };
+        let parent_view = parent_epoch_result
+            .as_ref()
+            .map(|result| ParentEpochView::from_accepted_state(result.accepted_state()));
         let ancestry = canonical_controls
             .iter()
             .filter_map(|event_id| {
@@ -293,6 +288,16 @@ pub(crate) fn evaluate_batch(
         accepted_changes
             .retain(|hash| dispositions.get(hash) != Some(&ProtocolDisposition::Excluded));
         accepted_at_control.insert(selected, accepted_changes.clone());
+        let Some(epoch_result) = epoch_result_from_accepted(
+            &accepted_changes,
+            &controls,
+            dispositions.clone(),
+            Vec::new(),
+        ) else {
+            completion = Completion::Failed;
+            break;
+        };
+        parent_epoch_result = Some(epoch_result);
         parent_id = Some(selected);
     }
 
@@ -461,10 +466,12 @@ fn resolve_genesis_epoch(
         })
 }
 
-fn parent_epoch_view(
+fn epoch_result_from_accepted(
     accepted: &BTreeSet<ChangeHash>,
     controls: &BTreeMap<EventId, BatchControl>,
-) -> Option<ParentEpochView> {
+    dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
+    integrity_alerts: Vec<IntegrityAlert>,
+) -> Option<EpochEvaluationResult> {
     let candidates = controls
         .values()
         .flat_map(|control| control.changes.iter())
@@ -485,16 +492,17 @@ fn parent_epoch_view(
         .filter(|hash| accepted.contains(hash))
         .collect::<BTreeSet<_>>();
     let heads = accepted.difference(&depended_on).copied().collect();
-    let state = AcceptedEpochState::new(
+    EpochEvaluationResult::new(
         accepted.clone(),
         heads,
         candidates,
         actor_states,
         writer_contributions,
+        dispositions,
+        integrity_alerts,
         None,
     )
-    .ok()?;
-    Some(ParentEpochView::from_accepted_state(&state))
+    .ok()
 }
 
 fn applied_heads_agree(

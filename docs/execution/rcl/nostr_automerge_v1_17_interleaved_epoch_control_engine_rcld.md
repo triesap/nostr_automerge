@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 17: Interleaved Epoch And Control Engine
 
 Status: active
-Current checkpoint: `step_343`
+Current checkpoint: `step_344`
 Steps: `step_337` through `step_355`
 Primary findings: `FINDING_014`, `FINDING_015`, `FINDING_016`, `FINDING_018`, `FINDING_025`
 
@@ -38,4 +38,5 @@ normative conformance path may call a parallel static control-chain selector.
 - `step_339`: `287a147` — genesis candidates are classified before selection.
 - `step_340`: `66832f5` — valid-only genesis selection resists lower invalid IDs.
 - `step_341`: `6ac2279` — selected genesis epochs start from authoritative empty state.
-- `step_342`: this commit — direct children are collected only after their parent epoch.
+- `step_342`: `708b45c` — direct children are collected only after their parent epoch.
+- `step_343`: this commit — every direct child is classified from the epoch result.
