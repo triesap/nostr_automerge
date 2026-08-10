@@ -584,6 +584,100 @@ fn interleaved_child_selection() {
 
 #[test]
 #[allow(clippy::expect_used)]
+fn child_epoch_uses_exact_base_closure() {
+    children_are_evaluated_one_epoch_at_a_time();
+
+    let controller = TestSigner::from_byte(52);
+    let retained = TestSigner::from_byte(53);
+    let removed = TestSigner::from_byte(54);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "60".repeat(32)
+    )
+    .parse()
+    .expect("fixed branch-pruning coordinate");
+    let genesis = signed_acl_control(
+        &controller,
+        coordinate,
+        1,
+        None,
+        0,
+        vec![
+            (retained.public_key().to_hex(), vec!["write"]),
+            (removed.public_key().to_hex(), vec!["write"]),
+        ],
+    );
+    let genesis_id = VerifiedNip01Event::verify(genesis.clone())
+        .expect("signed genesis")
+        .event_id();
+    let author = |writer: &TestSigner, key: &str, created_at: u64| {
+        let actor = ActorId::derive(coordinate, writer.public_key());
+        let mut document = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
+            .expect("empty branch document");
+        let authored = document
+            .author_change(&[Operation::PutString {
+                key: key.to_owned(),
+                value: "branch".to_owned(),
+            }])
+            .expect("branch change");
+        let hash = authored.change_hash();
+        let event = writer.sign(
+            &UnsignedEventDraft::new(
+                created_at,
+                1_624,
+                vec![
+                    vec!["a".to_owned(), coordinate.to_address()],
+                    vec!["e".to_owned(), genesis_id.to_hex()],
+                    vec!["x".to_owned(), hash.to_hex()],
+                ],
+                base64::engine::general_purpose::STANDARD.encode(authored.raw()),
+            )
+            .expect("branch draft")
+            .prepare(writer.public_key())
+            .expect("branch preimage"),
+        );
+        (event, hash)
+    };
+    let (retained_event, retained_hash) = author(&retained, "retained", 2);
+    let (removed_event, removed_hash) = author(&removed, "removed", 3);
+    let child = signed_acl_control_with_base(
+        &controller,
+        coordinate,
+        4,
+        Some(genesis_id),
+        1,
+        vec![(retained.public_key().to_hex(), vec!["write"])],
+        &[retained_hash],
+    );
+    let child_id = VerifiedNip01Event::verify(child.clone())
+        .expect("signed pruning child")
+        .event_id();
+    let mut builder = CorpusBuilder::new();
+    for event in [child, removed_event, genesis, retained_event] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(report.canonical_controls(), [genesis_id, child_id]);
+    assert_eq!(report.accepted_changes(), [retained_hash]);
+    assert_eq!(report.heads(), [retained_hash]);
+    assert!(
+        report
+            .dispositions()
+            .contains(&(removed_hash, ProtocolDisposition::Excluded))
+    );
+}
+
+#[test]
+#[allow(clippy::expect_used)]
 fn signed_empty_terminal_genesis_materializes_empty_state() {
     let controller = TestSigner::from_byte(22);
     let coordinate: DocumentCoordinate = format!(

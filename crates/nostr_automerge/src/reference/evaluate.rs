@@ -210,6 +210,12 @@ pub(crate) fn evaluate_batch(
             completion = Completion::Failed;
             break;
         };
+        let Some(selected_state) =
+            accepted_state_for_closure(&selected_base, &controls, parent_epoch_result.as_ref())
+        else {
+            completion = Completion::Failed;
+            break;
+        };
         canonical_controls.push(selected);
         control_dispositions.insert(selected, ProtocolDisposition::Accepted);
         if let Some(alert) = alert {
@@ -227,8 +233,15 @@ pub(crate) fn evaluate_batch(
         }
         accepted_changes = selected_base;
         let control_index = canonical_controls.len() - 1;
-        let epoch = if control_index == 0 {
-            resolve_genesis_epoch(control, budget, cancellation)
+        let epoch = if control.envelope.is_some() {
+            resolve_authoritative_epoch(
+                control,
+                selected_state,
+                &canonical_controls[..control_index],
+                &controls,
+                budget,
+                cancellation,
+            )
         } else {
             let epoch_inputs = control.changes.iter().map(|change| EpochCandidate {
                 candidate: change.candidate.clone(),
@@ -423,8 +436,11 @@ enum EpochResolutionError {
     InvalidState,
 }
 
-fn resolve_genesis_epoch(
+fn resolve_authoritative_epoch(
     control: &BatchControl,
+    accepted_base: AcceptedEpochState,
+    ancestry: &[EventId],
+    controls: &BTreeMap<EventId, BatchControl>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<BTreeMap<ChangeHash, ProtocolDisposition>, EpochResolutionError> {
@@ -434,26 +450,30 @@ fn resolve_genesis_epoch(
             semantically_valid: change.semantically_valid,
             canonical_control: !control.frozen,
         });
-        return resolve_epoch(epoch_inputs, BTreeSet::new(), budget, cancellation)
-            .map_err(EpochResolutionError::Schedule);
+        return resolve_epoch(
+            epoch_inputs,
+            accepted_base.accepted_closure().clone(),
+            budget,
+            cancellation,
+        )
+        .map_err(EpochResolutionError::Schedule);
     };
-    let empty = AcceptedEpochState::new(
-        BTreeSet::new(),
-        BTreeSet::new(),
-        BTreeMap::new(),
-        BTreeMap::new(),
-        BTreeMap::new(),
-        MaterializedDocumentView::empty().ok(),
-    )
-    .map_err(|_| EpochResolutionError::InvalidState)?;
+    let canonical_ancestry = ancestry
+        .iter()
+        .filter_map(|event_id| {
+            controls
+                .get(event_id)
+                .and_then(|control| control.envelope.clone())
+        })
+        .collect();
     let input = EpochEvaluationInput::new(
         selected,
-        empty,
+        accepted_base,
         control
             .changes
             .iter()
             .map(|change| change.candidate.clone()),
-        Vec::new(),
+        canonical_ancestry,
     )
     .map_err(|_| EpochResolutionError::InvalidState)?;
     evaluate_epoch(&input, budget, cancellation)
@@ -464,6 +484,52 @@ fn resolve_genesis_epoch(
                 EpochResolutionError::InvalidState
             }
         })
+}
+
+fn accepted_state_for_closure(
+    accepted: &BTreeSet<ChangeHash>,
+    controls: &BTreeMap<EventId, BatchControl>,
+    parent: Option<&EpochEvaluationResult>,
+) -> Option<AcceptedEpochState> {
+    let candidates = controls
+        .values()
+        .flat_map(|control| control.changes.iter())
+        .filter(|change| accepted.contains(&change.candidate.change_hash))
+        .map(|change| (change.candidate.change_hash, change.candidate.clone()))
+        .collect::<BTreeMap<_, _>>();
+    if candidates.len() != accepted.len() {
+        return None;
+    }
+    let actor_states = initialize_actor_states(candidates.values().cloned()).ok()?;
+    let writer_contributions = actor_states
+        .iter()
+        .map(|(actor, state)| (*actor, state.highest_change))
+        .collect();
+    let depended_on = candidates
+        .values()
+        .flat_map(|candidate| candidate.dependencies.iter().copied())
+        .filter(|hash| accepted.contains(hash))
+        .collect::<BTreeSet<_>>();
+    let heads = accepted.difference(&depended_on).copied().collect();
+    let materialized = parent.and_then(|result| {
+        (result.accepted_state().accepted_closure() == accepted)
+            .then(|| result.accepted_state().materialized().cloned())
+            .flatten()
+    });
+    let materialized = if accepted.is_empty() && materialized.is_none() {
+        MaterializedDocumentView::empty().ok()
+    } else {
+        materialized
+    };
+    AcceptedEpochState::new(
+        accepted.clone(),
+        heads,
+        candidates,
+        actor_states,
+        writer_contributions,
+        materialized,
+    )
+    .ok()
 }
 
 fn epoch_result_from_accepted(
