@@ -10,7 +10,7 @@ evidence.
 | ingress summary | `EvidenceCorpus` event, carrier, and decode summaries | `event`, `carrier`, `decode_byte` | evaluator entry | metered |
 | control collection | `reference::evaluate::evaluate_batch` | `control` | each retained batch control before indexing | metered |
 | child transition | `reference::evaluate::charge_control_transitions` and `control::candidate` | `control` before any candidate transition; graph counters for closures | epoch cancellation boundary | metered |
-| control ancestry | `engine::reference_evaluator::control_ancestry` | `control` | ancestry walk | remediation required |
+| control ancestry | `reference::evaluate::collect_control_ancestry` and checkpoint ancestry lookup | `control` per canonical ancestor | before every lookup | metered for evaluation; checkpoint path pending |
 | frontier closure | `reference::evaluate::charge_control_closures` and `control::frontier` | conservative `graph_node` and `graph_edge` precharge for every closure pass | before nodes and before edges | metered |
 | actor reconstruction | `graph::actor_state` | `graph_node`, `graph_edge` | topology walk | remediation required |
 | dependency scheduling | `graph::schedule` | `graph_node`, `graph_edge` | every queue and adjacency loop | metered |

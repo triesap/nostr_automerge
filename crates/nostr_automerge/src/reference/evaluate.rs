@@ -138,15 +138,14 @@ pub(crate) fn evaluate_batch(
             completion = interruption;
             break;
         }
-        let ancestry = canonical_controls
-            .iter()
-            .filter_map(|event_id| {
-                controls
-                    .get(event_id)
-                    .and_then(|control| control.envelope.as_ref())
-                    .map(ControlEnvelope::content)
-            })
-            .collect::<Vec<_>>();
+        let ancestry =
+            match collect_control_ancestry(&canonical_controls, &controls, budget, cancellation) {
+                Ok(ancestry) => ancestry,
+                Err(interruption) => {
+                    completion = interruption;
+                    break;
+                }
+            };
         let parent_envelope = parent_id.and_then(|event_id| {
             controls
                 .get(&event_id)
@@ -529,6 +528,31 @@ fn charge_control_closures(
     budget
         .charge(WorkCounter::GraphEdge, edges)
         .map_err(|_| Completion::BudgetExhausted)
+}
+
+fn collect_control_ancestry<'a>(
+    canonical_controls: &[EventId],
+    controls: &'a BTreeMap<EventId, BatchControl>,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<Vec<&'a crate::carrier::control::ValidatedControlContent>, Completion> {
+    let mut ancestry = Vec::new();
+    for event_id in canonical_controls {
+        if cancellation.is_cancelled() {
+            return Err(Completion::Cancelled);
+        }
+        budget
+            .charge(WorkCounter::Control, 1)
+            .map_err(|_| Completion::BudgetExhausted)?;
+        if let Some(content) = controls
+            .get(event_id)
+            .and_then(|control| control.envelope.as_ref())
+            .map(ControlEnvelope::content)
+        {
+            ancestry.push(content);
+        }
+    }
+    Ok(ancestry)
 }
 
 enum EpochResolutionError {
