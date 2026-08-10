@@ -28,6 +28,18 @@ impl ControlEnvelope {
         self.content.sequence
     }
 
+    pub(crate) const fn event_id(&self) -> EventId {
+        self.event_id
+    }
+
+    pub(crate) const fn parent(&self) -> Option<EventId> {
+        self.parent
+    }
+
+    pub(crate) fn base_heads(&self) -> impl Iterator<Item = crate::ChangeHash> + '_ {
+        self.content.base_heads.iter().copied()
+    }
+
     pub(crate) const fn content(&self) -> &ValidatedControlContent {
         &self.content
     }
