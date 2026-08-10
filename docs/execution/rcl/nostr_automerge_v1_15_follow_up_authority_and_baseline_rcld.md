@@ -4,7 +4,7 @@ Status: active
 Created: 2026-08-10
 Mode: rcl-durable
 Coordination repository: `triesap/nostr_automerge`
-Current checkpoint: `step_308`
+Current checkpoint: `step_310`
 
 ## Purpose
 
@@ -51,3 +51,8 @@ is committed.
 RCLD 15 is green only when the repository truthfully reports the follow-up
 work as open, the expanded sequence is machine validated, and `step_318` is the
 only eligible next checkpoint.
+
+## Completed Checkpoints
+
+- `step_308`: `041e527` — follow-up baseline and RCLD sequence recorded.
+- `step_309`: `612b26c` — findings and remediation requirements registered.
