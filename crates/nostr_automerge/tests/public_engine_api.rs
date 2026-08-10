@@ -2447,13 +2447,36 @@ fn actor_sequence_requires_exact_predecessor() {
             .expect("change preimage"),
         )
     };
-    let mut builder = CorpusBuilder::new();
+    let first_event = sign_change(2, &first);
+    let second_event = sign_change(3, &second);
+    let mut pending_builder = CorpusBuilder::new();
     assert!(matches!(
-        builder.ingest(sign_change(3, &second)),
+        pending_builder.ingest(second_event.clone()),
         IngestOutcome::Accepted { .. }
     ));
     assert!(matches!(
-        builder.ingest(sign_change(2, &first)),
+        pending_builder.ingest(control.clone()),
+        IngestOutcome::Accepted { .. }
+    ));
+    let pending = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &pending_builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert!(
+        pending
+            .dispositions()
+            .contains(&(second.change_hash(), ProtocolDisposition::Pending))
+    );
+
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(second_event),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert!(matches!(
+        builder.ingest(first_event),
         IngestOutcome::Accepted { .. }
     ));
     assert!(matches!(
@@ -2474,6 +2497,12 @@ fn actor_sequence_requires_exact_predecessor() {
             .collect::<BTreeSet<_>>(),
         BTreeSet::from([first.change_hash(), second.change_hash()])
     );
+}
+
+#[test]
+fn actor_sequence_gap_is_invalid() {
+    new_actor_sequence_must_start_at_one();
+    actor_sequence_requires_exact_predecessor();
 }
 
 struct SignedEngineScenario {
