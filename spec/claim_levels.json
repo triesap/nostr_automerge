@@ -1,0 +1,44 @@
+{
+  "schema": "nostr_automerge.claim_levels.v1",
+  "default_state": "held",
+  "levels": [
+    {
+      "id": "implementation",
+      "passing_state": "complete",
+      "prerequisites": ["findings_014_through_026_closed_with_executed_evidence"]
+    },
+    {
+      "id": "signed_conformance",
+      "passing_state": "pass",
+      "prerequisites": ["implementation.complete", "rust_signed_public_engine_distribution_pass"]
+    },
+    {
+      "id": "interop",
+      "passing_state": "pass",
+      "prerequisites": ["signed_conformance.pass", "typescript_actual_engine_pass", "byte_identical_reports"]
+    },
+    {
+      "id": "release",
+      "passing_state": "ready",
+      "prerequisites": ["interop.pass", "sustained_fuzz_pass", "resource_qualification_pass", "independent_review_pass", "zero_unresolved_critical_or_high"]
+    },
+    {
+      "id": "publication",
+      "passing_state": "authorized",
+      "prerequisites": ["release.ready", "explicit_human_authority"]
+    }
+  ],
+  "current": {
+    "implementation": "incomplete",
+    "signed_conformance": "unproven",
+    "interop": "unproven",
+    "release": "held",
+    "publication": "unauthorized"
+  },
+  "non_implications": [
+    "implementation.complete!=signed_conformance.pass",
+    "signed_conformance.pass!=interop.pass",
+    "interop.pass!=release.ready",
+    "release.ready!=publication.authorized"
+  ]
+}

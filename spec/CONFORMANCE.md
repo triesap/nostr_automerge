@@ -107,11 +107,16 @@ TypeScript:
 
 ## Claim levels
 
-- parser/profile qualification;
-- core-profile conformance;
-- checkpoint-profile conformance;
-- full draft-v1 conformance;
-- independently interoperable;
-- production-qualified.
+The repository tracks five independent, fail-closed claim levels in
+`claim_levels.json`:
 
-These claims are distinct.
+- implementation completion;
+- signed public-engine conformance;
+- independent interoperability;
+- release readiness;
+- publication authorization.
+
+Passing one level does not silently pass another. In particular, local
+implementation completion is not a conformance, interoperability, release, or
+publication claim. Publication remains a separate human-authority decision
+even after every technical release gate is green.
