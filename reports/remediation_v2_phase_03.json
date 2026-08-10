@@ -1,0 +1,65 @@
+{
+  "schema": "nostr_automerge.remediation_phase.v2",
+  "phase": "phase_03_causal_change_acceptance",
+  "status": "pass",
+  "recorded": "2026-08-10",
+  "phase_input_head": "ff4804f8eecc28aa53b5454678b501eb5a01e05a",
+  "findings": ["FINDING_016", "FINDING_018"],
+  "requirements": ["R2_CHANGE_001", "R2_CHANGE_002", "R2_CHANGE_003", "R2_CHANGE_004", "R2_CHANGE_005", "R2_CHANGE_006", "R2_CHANGE_007", "R2_CHANGE_008", "R2_CHANGE_009", "R2_CHANGE_010", "R2_CHANGE_011", "R2_CHANGE_012", "R2_CHANGE_013"],
+  "completed_steps": [
+    "step_356", "step_357", "step_358", "step_359", "step_360", "step_361",
+    "step_362", "step_363", "step_364", "step_365", "step_366", "step_367",
+    "step_368", "step_369", "step_370", "step_371", "step_372", "step_373",
+    "step_374", "step_375", "step_376", "step_377", "step_378", "step_379",
+    "step_380", "step_381"
+  ],
+  "commits": {
+    "step_356": "81684ff", "step_357": "09e30fd", "step_358": "3a200ea",
+    "step_359": "6af293a", "step_360": "e6e789a", "step_361": "3171736",
+    "step_362": "e699a09", "step_363": "b6e40d5", "step_364": "5bf2d22",
+    "step_365": "1414bec", "step_366": "1b0edab", "step_367": "5fa7661",
+    "step_368": "baacf83", "step_369": "c3fe821", "step_370": "b987550",
+    "step_371": "c3963d2", "step_372": "b1b8b5f", "step_373": "addc723",
+    "step_374": "52f0fb7", "step_375": "9983da0", "step_376": "fa47aa2",
+    "step_377": "ac795f3", "step_378": "311af7a", "step_379": "7ff32b2",
+    "step_380": "ff4804f", "step_381": "self"
+  },
+  "toolchain": {
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "cargo": "cargo 1.97.1 (c980f4866 2026-06-30)"
+  },
+  "tests": {
+    "R2_CHANGE_001": ["public_engine_api::signed_causal_change_matrix"],
+    "R2_CHANGE_002": ["public_engine_api::new_actor_sequence_must_start_at_one"],
+    "R2_CHANGE_003": ["public_engine_api::actor_sequence_requires_exact_predecessor"],
+    "R2_CHANGE_004": ["public_engine_api::change_start_op_must_equal_actor_next_op"],
+    "R2_CHANGE_005": ["public_engine_api::empty_change_consumes_only_sequence"],
+    "R2_CHANGE_006": ["public_engine_api::empty_change_requires_exact_current_heads"],
+    "R2_CHANGE_007": ["public_engine_api::change_must_descend_from_every_base_head"],
+    "R2_CHANGE_008": ["public_engine_api::missing_dependency_promotes_after_delivery"],
+    "R2_CHANGE_009": ["graph::schedule::tests::dependency_cycle_is_invalid"],
+    "R2_CHANGE_010": ["public_engine_api::candidate_applies_to_exact_dependency_closure"],
+    "R2_CHANGE_011": ["public_engine_api::apply_failure_invalidates_only_candidate"],
+    "R2_CHANGE_012": ["public_engine_api::equivocation_preserves_prior_actor_history"],
+    "R2_CHANGE_013": ["public_engine_api::duplicate_valid_carriers_are_not_equivocation"]
+  },
+  "commands": [
+    {"command": "cargo extbuild run -- python3 scripts/local_gate.py standard", "result": "pass"},
+    {"command": "cargo extbuild run -- cargo test -p nostr_automerge --test public_engine_api signed_causal_change_matrix --locked", "result": "pass"},
+    {"command": "cargo extbuild run -- cargo clippy --workspace --all-targets --all-features --locked -- -D warnings", "result": "pass"},
+    {"command": "python3 scripts/validate_fixture_manifest.py", "result": "pass"},
+    {"command": "python3 scripts/validate_remediation_v2_ledger.py", "result": "pass"},
+    {"command": "git diff --check", "result": "pass"}
+  ],
+  "artifact_sha256": {
+    "crates/nostr_automerge/src/reference/epoch_engine.rs": "1984de5d345eddabcce9fd625579e7457a039602cbba570442e67c174f8d5ca5",
+    "crates/nostr_automerge/src/reference/evaluate.rs": "9c1b69d3efc9e8e4b46d3cfbeced59586f4e007f4c346956afd13ce8de18b0ce",
+    "crates/nostr_automerge/src/graph/equivocation.rs": "916087a7e035b2a17d6c3791e951d5cbf2e70a1733219f6bc22ec325b928a930",
+    "crates/nostr_automerge/tests/public_engine_api.rs": "9319605b1a76fa8deafd419b9d942f1a9c12f8686fc913493b0089b4bbbe8b79",
+    "fixtures/v1_draft/changes/signed_causal_matrix.json": "90681b3801257591b9172ed64eb3fb5db52c5738d163a5b57d36d84ca51f1389",
+    "fixtures/v1_draft/integrity/duplicate_valid_carriers.json": "7ac66b6744e1bbc9d20a447c0b590469aeaf0b91f86a13ca5bfa2e6bef2e355e",
+    "fixtures/distribution/manifest.json": "24db8d823510c0d1e45af920a37017853a02e8b8e8b4e82e59e845ee938cc77c"
+  },
+  "next": {"rcld": 19, "checkpoint": "step_382"},
+  "publication_authorized": false
+}

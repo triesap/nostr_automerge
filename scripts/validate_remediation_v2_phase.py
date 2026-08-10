@@ -135,7 +135,39 @@ def main() -> int:
         raise AssertionError("interleaved report does not activate step_356")
     if interleaved.get("publication_authorized") is not False:
         raise AssertionError("interleaved phase report cannot authorize publication")
-    print("PASS: phase reports activate interleaved controls then step_356")
+
+    causal = json.loads((ROOT / "reports/remediation_v2_phase_03.json").read_text())
+    if causal.get("phase") != "phase_03_causal_change_acceptance" or causal.get("status") != "pass":
+        raise AssertionError("causal change acceptance phase is not passing")
+    causal_steps = [f"step_{step:03d}" for step in range(356, 382)]
+    if causal.get("completed_steps") != causal_steps:
+        raise AssertionError("causal phase checkpoint coverage is incomplete")
+    if set(causal.get("commits", {})) != set(causal_steps):
+        raise AssertionError("causal phase commit binding is incomplete")
+    requirements = [f"R2_CHANGE_{number:03d}" for number in range(1, 14)]
+    if causal.get("requirements") != requirements:
+        raise AssertionError("causal phase requirements are incomplete")
+    tests = causal.get("tests", {})
+    if set(tests) != set(requirements) or any(not tests[requirement] for requirement in requirements):
+        raise AssertionError("causal phase lacks direct test evidence")
+    if any(command.get("result") != "pass" for command in causal.get("commands", [])):
+        raise AssertionError("causal phase contains a nonpassing command")
+    for relative, expected in causal.get("artifact_sha256", {}).items():
+        if not artifact_matches(causal, "reports/remediation_v2_phase_03.json", relative, expected):
+            raise AssertionError(f"causal phase artifact hash mismatch: {relative}")
+    for commit_hash in causal["commits"].values():
+        if commit_hash == "self":
+            continue
+        commit = subprocess.run(
+            ["git", "cat-file", "-e", f"{commit_hash}^{{commit}}"], cwd=ROOT, check=False
+        )
+        if commit.returncode:
+            raise AssertionError(f"causal phase commit does not exist: {commit_hash}")
+    if causal.get("next") != {"rcld": 19, "checkpoint": "step_382"}:
+        raise AssertionError("causal phase does not activate step_382")
+    if causal.get("publication_authorized") is not False:
+        raise AssertionError("causal phase report cannot authorize publication")
+    print("PASS: phase reports activate causal acceptance then step_382")
     return 0
 
 
