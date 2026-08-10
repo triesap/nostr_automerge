@@ -173,6 +173,25 @@ mod tests {
     }
 
     #[test]
+    fn first_conflicting_sequence_wins() {
+        let first = candidate(1, 1, 1, 1);
+        let mut first_conflict = first.clone();
+        first_conflict.change_hash = ChangeHash::from_bytes([2; 32]);
+        let mut later = candidate(1, 2, 2, 1);
+        later.change_hash = ChangeHash::from_bytes([3; 32]);
+        let mut later_conflict = later.clone();
+        later_conflict.change_hash = ChangeHash::from_bytes([4; 32]);
+        let groups =
+            detect_equivocations([later_conflict, first_conflict.clone(), later, first.clone()]);
+        assert_eq!(groups.len(), 1);
+        assert_eq!(groups[0].first_sequence, 1);
+        assert_eq!(
+            groups[0].conflicting_changes,
+            BTreeSet::from([first.change_hash, first_conflict.change_hash])
+        );
+    }
+
+    #[test]
     fn quarantine_equivocation_descendants() {
         let first = candidate(1, 1, 1, 1);
         let mut conflict = first.clone();
