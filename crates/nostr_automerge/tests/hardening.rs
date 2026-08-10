@@ -104,7 +104,10 @@ fn publish_security_and_release_readiness_report() {
         report["local_alpha_package"],
         "artifact_and_reproducibility_verified"
     );
-    assert_eq!(report["public_engine"], "substantial_alpha_remediation_required");
+    assert_eq!(
+        report["public_engine"],
+        "substantial_alpha_remediation_required"
+    );
     assert_eq!(report["code_completion"], "follow_up_remediation_required");
     assert_eq!(report["external_review"], "not_completed_release_hold");
     assert_eq!(report["locked_gate"], "pass");
