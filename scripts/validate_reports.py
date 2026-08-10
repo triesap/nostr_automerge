@@ -9,6 +9,9 @@ import re
 from pathlib import Path
 from typing import Any
 
+from validate_dispositions_digest import encode as encode_dispositions
+from validate_history_digest import encode as encode_history
+
 
 ROOT = Path(__file__).resolve().parents[1]
 HEX32 = re.compile(r"^[0-9a-f]{64}$")
@@ -18,7 +21,7 @@ REPORT_FIELDS = {
     "canonical_controls", "disposition_records", "accepted_changes", "pending_changes",
     "excluded_changes", "invalid_changes", "invalid_events", "unsupported_events", "heads",
     "history_digest", "dispositions_digest", "integrity_alerts",
-    "state_assertions", "completion",
+    "state_assertions", "completion", "checkpoints",
 }
 ID_LIST_FIELDS = (
     "accepted_changes", "pending_changes", "excluded_changes", "invalid_changes",
@@ -71,7 +74,7 @@ def validate_id_list(value: object) -> None:
 def validate(report: dict[str, Any]) -> None:
     """Validate report structure and canonical collection semantics."""
 
-    if set(report) != REPORT_FIELDS:
+    if set(report) - REPORT_FIELDS or REPORT_FIELDS - {"checkpoints"} - set(report):
         raise ReportError("invalid_report_fields")
     if report["report_schema"] != "nostr_automerge.report.v1":
         raise ReportError("invalid_report_schema")
@@ -113,6 +116,23 @@ def validate(report: dict[str, Any]) -> None:
     for field in ("history_digest", "dispositions_digest"):
         if not isinstance(report[field], str) or HEX32.fullmatch(report[field]) is None:
             raise ReportError("invalid_digest")
+    history_vector = {
+        "revision": report["revision"],
+        "coordinate": report["coordinate"],
+        "canonical_controls": report["canonical_controls"],
+        "accepted_changes": report["accepted_changes"],
+        "heads": report["heads"],
+    }
+    disposition_vector = {
+        "revision": report["revision"],
+        "coordinate": report["coordinate"],
+        "items": report["disposition_records"],
+    }
+    import hashlib
+    if hashlib.sha256(encode_history(history_vector)).hexdigest() != report["history_digest"]:
+        raise ReportError("history_digest_mismatch")
+    if hashlib.sha256(encode_dispositions(disposition_vector)).hexdigest() != report["dispositions_digest"]:
+        raise ReportError("dispositions_digest_mismatch")
 
     alerts = report["integrity_alerts"]
     if not isinstance(alerts, list):
@@ -160,8 +180,10 @@ def main() -> int:
     schema = load_json(ROOT / "fixtures/schema/report.schema.json")
     if schema.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
         raise AssertionError("report schema must use JSON Schema 2020-12")
+    report_paths = sorted((ROOT / "fixtures").rglob("*.expected.json"))
+    for path in report_paths:
+        validate(load_json(path))
     report = load_json(ROOT / "fixtures/examples/actor_derivation_001.expected.json")
-    validate(report)
 
     unknown_field = copy.deepcopy(report)
     unknown_field["extra"] = None
@@ -199,10 +221,16 @@ def main() -> int:
     conflated["excluded_changes"] = ["0" * 64]
     conflated["invalid_changes"] = ["0" * 64]
     expect_failure(conflated, "conflated_change_collections")
+    wrong_history = copy.deepcopy(report)
+    wrong_history["history_digest"] = "0" * 64
+    expect_failure(wrong_history, "history_digest_mismatch")
+    wrong_dispositions = copy.deepcopy(report)
+    wrong_dispositions["dispositions_digest"] = "0" * 64
+    expect_failure(wrong_dispositions, "dispositions_digest_mismatch")
 
     print("PASS: canonical conformance report")
-    print("- examples=1")
-    print("- negative_cases=9")
+    print(f"- examples={len(report_paths)}")
+    print("- negative_cases=11")
     print(f"- assertion_variants={len(EXPECTED_KEYS)}")
     print(f"- alert_variants={len(ALERT_KEYS)}")
     return 0
