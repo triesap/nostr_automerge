@@ -20,8 +20,8 @@ use crate::reference::evaluate::{BatchChange, BatchControl, evaluate_batch};
 use crate::types::role::Role;
 use crate::{
     CancellationCheck, ChangeHash, CheckpointVerificationResult, CheckpointVerificationStatus,
-    Completion, DocumentCoordinate, EvidenceCorpus, ProtocolDisposition, ProtocolRevision,
-    WorkBudget, WorkCounter,
+    Completion, DocumentCoordinate, EvidenceCorpus, EvidenceIdentifier, EvidenceStatus,
+    ProtocolDisposition, ProtocolRevision, WorkBudget, WorkCounter,
 };
 
 use super::evaluation_report::{
@@ -104,6 +104,7 @@ impl ReferenceEvaluator {
         disposition_records.extend(dispositions.iter().map(|(hash, disposition)| {
             DispositionRecord::new(ProtocolItemIdentifier::from(*hash), *disposition, None)
         }));
+        disposition_records.extend(event_disposition_records(corpus));
         let accepted_changes = disposition_hashes(&dispositions, ProtocolDisposition::Accepted);
         let heads = batch.heads.into_iter().collect::<Vec<_>>();
         let pending_changes = disposition_hashes(&dispositions, ProtocolDisposition::Pending);
@@ -183,6 +184,43 @@ impl ReferenceEvaluator {
         }
         current
     }
+}
+
+fn event_disposition_records(corpus: &EvidenceCorpus) -> Vec<DispositionRecord> {
+    let represented_events = corpus
+        .control_ids()
+        .chain(
+            corpus
+                .indexes
+                .changes
+                .carriers_by_hash
+                .values()
+                .flat_map(|event_ids| event_ids.iter().copied()),
+        )
+        .collect::<std::collections::BTreeSet<_>>();
+    corpus
+        .records()
+        .filter_map(|record| {
+            let EvidenceIdentifier::Event(event_id) = record.identifier() else {
+                return None;
+            };
+            if represented_events.contains(&event_id) {
+                return None;
+            }
+            let disposition = match record.status() {
+                EvidenceStatus::Valid => ProtocolDisposition::Accepted,
+                EvidenceStatus::Pending => ProtocolDisposition::Pending,
+                EvidenceStatus::Invalid => ProtocolDisposition::Invalid,
+                EvidenceStatus::Unsupported => ProtocolDisposition::UnsupportedRevision,
+                EvidenceStatus::Irrelevant | EvidenceStatus::Duplicate => return None,
+            };
+            Some(DispositionRecord::new(
+                ProtocolItemIdentifier::event(event_id),
+                disposition,
+                record.diagnostic(),
+            ))
+        })
+        .collect()
 }
 
 fn verify_checkpoints(

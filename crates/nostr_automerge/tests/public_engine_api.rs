@@ -2041,6 +2041,77 @@ fn change_disposition_collections_are_disjoint() {
 }
 
 #[test]
+#[allow(clippy::expect_used)]
+fn signed_event_disposition_records() {
+    let signer = TestSigner::from_byte(107);
+    let document_id = "b0".repeat(32);
+    let coordinate: DocumentCoordinate =
+        format!("31624:{}:{document_id}", signer.public_key().to_hex())
+            .parse()
+            .expect("manifest coordinate");
+    let content = format!(
+        r#"{{"application":null,"checkpoint":null,"control":"{}","description":null,"format":"automerge-change-v1","name":null,"relays":["wss://relay.example"],"status":"active","successor":null,"text_encoding":"utf16","v":1}}"#,
+        "b1".repeat(32)
+    );
+    let sign = |created_at: u64, content: String| {
+        signer.sign(
+            &UnsignedEventDraft::new(
+                created_at,
+                31_624,
+                vec![vec!["d".to_owned(), document_id.clone()]],
+                content,
+            )
+            .expect("manifest draft")
+            .prepare(signer.public_key())
+            .expect("manifest preimage"),
+        )
+    };
+    let valid = sign(1, content.clone());
+    let invalid = sign(2, content.replace("active", "paused"));
+    let unsupported = sign(3, content.replace("\"v\":1", "\"v\":2"));
+    let valid_id = VerifiedNip01Event::verify(valid.clone())
+        .expect("valid manifest")
+        .event_id();
+    let invalid_id = VerifiedNip01Event::verify(invalid.clone())
+        .expect("invalid manifest event")
+        .event_id();
+    let unsupported_id = VerifiedNip01Event::verify(unsupported.clone())
+        .expect("unsupported manifest event")
+        .event_id();
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(valid),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert!(matches!(
+        builder.ingest(invalid),
+        IngestOutcome::InvalidCarrier { .. }
+    ));
+    assert!(matches!(
+        builder.ingest(unsupported),
+        IngestOutcome::UnsupportedRevision { .. }
+    ));
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    for (event_id, disposition) in [
+        (valid_id, ProtocolDisposition::Accepted),
+        (invalid_id, ProtocolDisposition::Invalid),
+        (unsupported_id, ProtocolDisposition::UnsupportedRevision),
+    ] {
+        assert!(report.disposition_records().iter().any(|record| {
+            record.identifier() == ProtocolItemIdentifier::event(event_id)
+                && record.disposition() == disposition
+        }));
+    }
+    validated_checkpoint_descriptor_carrier_enters_corpus();
+    validated_checkpoint_chunk_carrier_enters_corpus();
+}
+
+#[test]
 fn duplicate_delayed_and_invalid_evidence_converges() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!(
         "../../../fixtures/v1_draft/integrity/cases.json"
