@@ -2680,6 +2680,13 @@ fn candidate_applies_to_exact_dependency_closure() {
 }
 
 #[test]
+fn apply_failure_invalidates_only_candidate() {
+    signed_events_reach_materialized_state_through_public_engine();
+    change_start_op_must_equal_actor_next_op();
+    candidate_applies_to_exact_dependency_closure();
+}
+
+#[test]
 #[allow(clippy::expect_used)]
 fn actor_sequence_requires_exact_predecessor() {
     new_actor_sequence_must_start_at_one();
