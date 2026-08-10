@@ -642,10 +642,10 @@ The Rust program is complete only when RCLDs 00–11 are green and every origina
 checkpoint plus `step_000` has an accurate report and independently reviewable
 commit.
 
-The full implementation program is complete only when RCLDs 00–14 are green,
-including independent TypeScript differential agreement, complete
-code-applicable requirement coverage, and accurate local-only readiness
-evidence.
+The original implementation program is complete only when RCLDs 00–14 are
+green. The follow-up remediation program is complete only when RCLDs 15–28 are
+green, findings 014 through 026 have exact executable closure, and finding 027
+has an accurate passed-or-held release disposition.
 
 An alpha release is permitted only after its security, resource, dependency,
 API, clean-checkout, interop, and review gates pass and separate release
@@ -654,17 +654,34 @@ authority is granted.
 ## Current State
 
 - RCLDs 00 through 14 and steps `step_000` through `step_307` are complete.
-- The Rust public engine, bounded evaluator, graph, checkpoint carrier,
-  real-state projection, and conformance paths have executable closure evidence.
-- Rust and independent TypeScript core and checkpoint reports agree locally,
-  and deliberate mismatch detection passes.
-- All 87 requirements are classified with fail-closed evidence; mutation,
-  coverage, resource, package, API, and supply-chain gates pass locally.
+- A follow-up source review found consensus-path, canonical-report,
+  conformance, checkpoint-evidence, and interoperability gaps in that claimed
+  closure. Findings `FINDING_014` through `FINDING_027` are therefore open.
+- The approved follow-up program contains RCLDs 15 through 28 and steps
+  `step_308` through `step_533`. RCLD 15 and `step_308` are the only active
+  child and checkpoint.
+- The TypeScript implementation requires an explicit engine-parity RCLD before
+  final attestation; an expected-report passthrough or abstract `valid` input
+  cannot satisfy normative interoperability.
 - Publication is not authorized, and readiness remains held because sustained
-  native Rust fuzz execution was environment-deferred and independent external
-  review was not performed.
-- The NIP document remained outside scope and was not inspected or changed.
+  native Rust fuzz execution, accepted representative resource qualification,
+  and independent external review are separate assurance gates.
+- The NIP document remains outside implementation scope and must not be edited
+  by the follow-up remediation.
 
 ## Remaining Child RCLDs
 
-None.
+1. RCLD 15 — Follow-up authority and baseline (`step_308`–`step_317`) — active.
+2. RCLD 16 — Stateful control candidate validation (`step_318`–`step_336`).
+3. RCLD 17 — Interleaved epoch/control engine (`step_337`–`step_355`).
+4. RCLD 18 — Causal change acceptance (`step_356`–`step_381`).
+5. RCLD 19 — Canonical reports and dispositions (`step_382`–`step_398`).
+6. RCLD 20 — Unknown tags and strict revision classification (`step_399`–`step_409`).
+7. RCLD 21 — Complete metering and panic elimination (`step_410`–`step_429`).
+8. RCLD 22 — Conflict-aware projection v2 (`step_430`–`step_443`).
+9. RCLD 23 — Checkpoint profile completion (`step_444`–`step_459`).
+10. RCLD 24 — Signed neutral conformance (`step_460`–`step_481`).
+11. RCLD 25 — Executed requirement evidence v3 (`step_482`–`step_493`).
+12. RCLD 26 — Independent TypeScript engine parity (`step_494`–`step_506`).
+13. RCLD 27 — Private TypeScript interoperability attestation v2 (`step_507`–`step_519`).
+14. RCLD 28 — Final assurance and truthful closure (`step_520`–`step_533`).
