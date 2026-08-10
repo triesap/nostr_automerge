@@ -13,6 +13,12 @@ Read and follow, in order:
 5. the active child RCLD under `docs/execution/rcl/`;
 6. `implementation/COMMIT_SEQUENCE.md`.
 
+For the active follow-up remediation, also read
+`spec/remediation_v2_authority.json`, `spec/remediation_v2_findings.json`,
+`spec/remediation_v2_requirements.json`, and
+`docs/execution/remediation_v2/ledger.md`. RCLD 15 through RCLD 28 supersede
+earlier completion claims where the follow-up findings disagree.
+
 Code does not silently redefine the specification. When normative prose and a
 fixture disagree, the NIP controls until the consensus change process updates
 all affected authority and implementations.
@@ -29,6 +35,10 @@ all affected authority and implementations.
 - Preserve unrelated work and inspect the complete diff before committing.
 - Do not push, publish, release, tag, deploy, or mutate another repository
   without separate authority.
+- Cross-repository checkpoints preserve independent histories. Commit an
+  authorized TypeScript source slice in its own repository before committing
+  the corresponding Rust coordination or attestation slice.
+- Do not edit the NIP document during RCLDs 15 through 28.
 
 ## Naming
 
