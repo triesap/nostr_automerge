@@ -2212,6 +2212,79 @@ fn invalid_and_excluded_changes_are_distinct() {
 }
 
 #[test]
+#[allow(clippy::expect_used)]
+fn control_outcomes_change_dispositions_digest() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/conformance/disposition_digest_controls.json"
+    ))
+    .expect("control digest fixture");
+    assert_eq!(fixture["requirements"][0], "R2_REPORT_006");
+    let controller = TestSigner::from_byte(111);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "b4".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let member = controller.public_key().to_hex();
+    let genesis = signed_acl_control(
+        &controller,
+        coordinate,
+        1,
+        None,
+        0,
+        vec![(member.clone(), vec!["write"])],
+    );
+    let genesis_id = VerifiedNip01Event::verify(genesis.clone())
+        .expect("signed genesis")
+        .event_id();
+    let left = signed_acl_control(
+        &controller,
+        coordinate,
+        2,
+        Some(genesis_id),
+        1,
+        vec![(member.clone(), vec!["write"])],
+    );
+    let right = signed_acl_control(
+        &controller,
+        coordinate,
+        3,
+        Some(genesis_id),
+        1,
+        vec![(member, vec!["write"])],
+    );
+    let evaluate = |events: Vec<RawEventBytes>| {
+        let mut builder = CorpusBuilder::new();
+        for event in events {
+            assert!(matches!(
+                builder.ingest(event),
+                IngestOutcome::Accepted { .. }
+            ));
+        }
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+            &builder.finish(),
+            coordinate,
+            &mut WorkBudget::new(1_000_000, 1_000),
+            &NeverCancelled,
+        )
+    };
+    let canonical = evaluate(vec![genesis.clone(), left.clone(), right.clone()]);
+    let reversed = evaluate(vec![right, left, genesis.clone()]);
+    let genesis_only = evaluate(vec![genesis]);
+    assert_eq!(
+        canonical.dispositions_digest(),
+        reversed.dispositions_digest()
+    );
+    assert_ne!(
+        canonical.dispositions_digest(),
+        genesis_only.dispositions_digest()
+    );
+    assert_eq!(canonical.control_dispositions().len(), 3);
+}
+
+#[test]
 fn duplicate_delayed_and_invalid_evidence_converges() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!(
         "../../../fixtures/v1_draft/integrity/cases.json"

@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 19: Canonical Reports And Dispositions
 
 Status: active
-Current checkpoint: `step_389`
+Current checkpoint: `step_390`
 Steps: `step_382` through `step_398`
 Primary findings: `FINDING_017`, `FINDING_018`, `FINDING_022`
 
@@ -39,4 +39,5 @@ invalid evidence with valid noncanonical evidence.
 - `step_385`: `3ca6c8a` — change records and convenience collections derive from one canonical disposition map.
 - `step_386`: `4c87e7c` — applicable manifest, checkpoint, invalid, and unsupported carriers receive event records.
 - `step_387`: `d419c0e` — invalid changes have a public collection distinct from excluded changes.
-- `step_388`: this commit — digest items derive exclusively from canonical namespaced disposition records.
+- `step_388`: `86b1c6a` — digest items derive exclusively from canonical namespaced disposition records.
+- `step_389`: this commit — dynamic control outcomes are cryptographically bound and order-independent.

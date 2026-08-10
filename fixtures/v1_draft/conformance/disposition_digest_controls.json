@@ -1,0 +1,10 @@
+{
+  "fixture_id": "v1_draft.conformance.disposition_digest_controls",
+  "requirements": ["R2_REPORT_006"],
+  "records": ["control_event:accepted", "control_event:excluded"],
+  "invariants": [
+    "event_ingestion_order_does_not_change_digest",
+    "adding_a_statefully_evaluated_child_outcome_changes_digest",
+    "acquisition_metadata_is_not_digest_input"
+  ]
+}
