@@ -3066,6 +3066,131 @@ fn equivocation_quarantines_transitive_dependants() {
     )));
 }
 
+#[test]
+#[allow(clippy::expect_used)]
+fn equivocation_preserves_prior_actor_history() {
+    let controller = TestSigner::from_byte(103);
+    let device = TestSigner::from_byte(104);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "a4".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let control = signed_acl_control(
+        &controller,
+        coordinate,
+        1,
+        None,
+        0,
+        vec![(device.public_key().to_hex(), vec!["write"])],
+    );
+    let control_id = VerifiedNip01Event::verify(control.clone())
+        .expect("signed control")
+        .event_id();
+    let actor = ActorId::derive(coordinate, device.public_key());
+    let mut history = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit)
+        .with_actor(automerge::ActorId::from(actor.as_bytes().to_vec()));
+    history
+        .put(ROOT, "prior", "retained")
+        .expect("prior operation");
+    let prior_hash = history.commit().expect("prior hash");
+    let prior_raw = history
+        .get_change_by_hash(&prior_hash)
+        .expect("prior change")
+        .raw_bytes()
+        .to_vec();
+    let mut left = history.fork();
+    let mut right = history.fork();
+    left.set_actor(automerge::ActorId::from(actor.as_bytes().to_vec()));
+    right.set_actor(automerge::ActorId::from(actor.as_bytes().to_vec()));
+    left.put(ROOT, "left", "excluded").expect("left operation");
+    right
+        .put(ROOT, "right", "excluded")
+        .expect("right operation");
+    let left_hash = left.commit().expect("left hash");
+    let right_hash = right.commit().expect("right hash");
+    let left_raw = left
+        .get_change_by_hash(&left_hash)
+        .expect("left change")
+        .raw_bytes()
+        .to_vec();
+    let right_raw = right
+        .get_change_by_hash(&right_hash)
+        .expect("right change")
+        .raw_bytes()
+        .to_vec();
+    let prior_hash = ChangeHash::from_bytes(prior_hash.0);
+    let left_hash = ChangeHash::from_bytes(left_hash.0);
+    let right_hash = ChangeHash::from_bytes(right_hash.0);
+    let sign_change = |created_at: u64, hash: ChangeHash, raw: &[u8]| {
+        device.sign(
+            &UnsignedEventDraft::new(
+                created_at,
+                1_624,
+                vec![
+                    vec!["a".to_owned(), coordinate.to_address()],
+                    vec!["e".to_owned(), control_id.to_hex()],
+                    vec!["x".to_owned(), hash.to_hex()],
+                ],
+                base64::engine::general_purpose::STANDARD.encode(raw),
+            )
+            .expect("change draft")
+            .prepare(device.public_key())
+            .expect("change preimage"),
+        )
+    };
+    let mut builder = CorpusBuilder::new();
+    for (index, event) in [
+        sign_change(2, prior_hash, &prior_raw),
+        sign_change(3, left_hash, &left_raw),
+        sign_change(4, right_hash, &right_raw),
+        control,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let outcome = builder.ingest(event);
+        assert!(
+            matches!(outcome, IngestOutcome::Accepted { .. }),
+            "unexpected ingest outcome at {index}: {outcome:?}"
+        );
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(report.completion(), Completion::Complete);
+    assert_eq!(report.accepted_changes(), [prior_hash]);
+    assert_eq!(report.heads(), [prior_hash]);
+    for hash in [left_hash, right_hash] {
+        assert!(
+            report
+                .dispositions()
+                .contains(&(hash, ProtocolDisposition::Excluded))
+        );
+    }
+    let document = report.document().expect("preserved document");
+    assert!(document.entries().iter().any(|entry| {
+        entry.path() == [MaterializedPathElement::Key("prior".to_owned())]
+            && matches!(
+                entry.conflicts(),
+                [conflict]
+                    if conflict.value()
+                        == &MaterializedValue::Scalar(MaterializedScalar::String(
+                            "retained".to_owned()
+                        ))
+            )
+    }));
+    assert!(report.integrity_alerts().iter().any(|alert| matches!(
+        alert,
+        nostr_automerge::IntegrityAlert::DeviceEquivocation(_)
+    )));
+}
+
 struct SignedEngineScenario {
     coordinate: DocumentCoordinate,
     control: RawEventBytes,
