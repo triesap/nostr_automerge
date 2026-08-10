@@ -187,6 +187,39 @@ pub(crate) fn evaluate_epoch(
 ) -> Result<EpochEvaluationResult, EpochEvaluationError> {
     let selected = input.selected_control();
     let terminal = selected.content().terminal;
+    let actor_has_origin = |candidate: &ChangeCandidate| {
+        if input
+            .accepted_base()
+            .actor_states()
+            .contains_key(&candidate.actor)
+            || candidate.sequence == 1
+        {
+            return true;
+        }
+        let mut pending = candidate.dependencies.clone();
+        let mut visited = BTreeSet::new();
+        while let Some(hash) = pending.pop() {
+            if !visited.insert(hash) {
+                continue;
+            }
+            if let Some(ancestor) = input.accepted_base().accepted_candidates().get(&hash) {
+                if ancestor.actor == candidate.actor && ancestor.sequence == 1 {
+                    return true;
+                }
+                pending.extend(ancestor.dependencies.iter().copied());
+            } else if let Some(ancestor) = input.candidate_changes().get(&hash) {
+                if ancestor.actor == candidate.actor && ancestor.sequence == 1 {
+                    return true;
+                }
+                pending.extend(ancestor.dependencies.iter().copied());
+            } else {
+                // An absent named dependency keeps the candidate pending. Its
+                // actor origin cannot be judged until that evidence arrives.
+                return true;
+            }
+        }
+        false
+    };
     let epoch_candidates = input
         .candidate_changes()
         .values()
@@ -197,9 +230,10 @@ pub(crate) fn evaluate_epoch(
                     && member.device == candidate.author
                     && member.roles.contains(&Role::Write)
             });
+            let semantically_valid = authorized && actor_has_origin(&candidate);
             EpochCandidate {
                 candidate,
-                semantically_valid: authorized,
+                semantically_valid,
                 canonical_control: !terminal,
             }
         });
