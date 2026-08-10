@@ -2,10 +2,13 @@ use std::collections::BTreeSet;
 
 use super::change_candidate::ChangeCandidate;
 use super::dependency_graph::{GraphBuildError, build_graph};
+use super::equivocation::quarantine_equivocation_descendants;
 use super::schedule::schedule_candidates;
+use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 use crate::{
     ActorId, ChangeHash, DevicePublicKey, EventId, NeverCancelled, WorkBudget, WorkCounter,
 };
+use automerge::{Automerge, ObjType, ROOT, TextEncoding, transaction::Transactable};
 
 fn hash(value: u16) -> ChangeHash {
     let mut bytes = [0; 32];
@@ -81,4 +84,81 @@ fn graph_scaling_regression_models_are_proportional() {
         ),
         Err(GraphBuildError::DuplicateNode)
     );
+}
+
+#[test]
+fn expanded_control_actor_conflict_and_projection_models_are_bounded() {
+    for size in [64_u16, 128] {
+        let chain = (1..=size)
+            .map(|value| {
+                candidate(
+                    value,
+                    (value > 1).then(|| hash(value - 1)).into_iter().collect(),
+                )
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            measured(chain),
+            (
+                usize::from(size),
+                0,
+                u64::from(size) * 2,
+                u64::from(size - 1) * 2,
+            )
+        );
+    }
+
+    let actor_work = |actors: u8, conflicts: bool| {
+        let mut candidates = Vec::new();
+        for actor in 1..=actors {
+            let mut first = candidate(u16::from(actor) * 2, Vec::new());
+            first.actor = ActorId::from_bytes([actor; 32]);
+            candidates.push(first.clone());
+            if conflicts {
+                let mut conflict = first;
+                conflict.change_hash = hash(u16::from(actor) * 2 + 1);
+                candidates.push(conflict);
+            }
+        }
+        let graph = build_graph(candidates.clone(), BTreeSet::new()).unwrap_or_default();
+        let mut budget = WorkBudget::new(0, 1_000_000);
+        let result =
+            quarantine_equivocation_descendants(candidates, &graph, &mut budget, &NeverCancelled);
+        assert!(result.is_ok());
+        (
+            budget.consumed().get(WorkCounter::GraphNode),
+            budget.consumed().get(WorkCounter::GraphEdge),
+        )
+    };
+    for conflicts in [false, true] {
+        let small = actor_work(32, conflicts);
+        let large = actor_work(64, conflicts);
+        assert!(large.0 <= small.0 * 2 + 64, "{small:?} {large:?}");
+        assert!(large.1 <= small.1 * 2 + 64, "{small:?} {large:?}");
+    }
+
+    let projection_work = |depth: usize| {
+        let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+        let mut transaction = document.transaction();
+        let root = transaction.put_object(ROOT, "root", ObjType::Map);
+        let Ok(mut parent) = root else { return 0 };
+        for _ in 0..depth {
+            let child = transaction.put_object(&parent, "child", ObjType::Map);
+            let Ok(child) = child else { return 0 };
+            parent = child;
+        }
+        transaction.commit();
+        let mut budget = WorkBudget::new(u64::MAX, u64::MAX);
+        let view = MaterializedDocumentView::from_canonical_bytes_metered(
+            document.save_nocompress(),
+            &mut budget,
+            &NeverCancelled,
+        );
+        assert!(view.is_ok());
+        budget.consumed().get(WorkCounter::Assertion)
+    };
+    let shallow = projection_work(32);
+    let deep = projection_work(64);
+    assert!(shallow > 0 && deep > shallow);
+    assert!(deep <= shallow * 5, "{shallow} {deep}");
 }

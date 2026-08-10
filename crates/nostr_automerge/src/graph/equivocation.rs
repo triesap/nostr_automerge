@@ -94,6 +94,7 @@ pub(crate) fn quarantine_equivocation_descendants(
     cancellation: &impl CancellationCheck,
 ) -> Result<QuarantineResult, QuarantineError> {
     let mut candidates = BTreeMap::new();
+    let mut candidates_by_actor = BTreeMap::<ActorId, Vec<(u64, ChangeHash)>>::new();
     for candidate in inputs {
         if cancellation.is_cancelled() {
             return Err(QuarantineError::Cancelled);
@@ -101,6 +102,10 @@ pub(crate) fn quarantine_equivocation_descendants(
         budget
             .charge(WorkCounter::GraphNode, 1)
             .map_err(|_| QuarantineError::BudgetExhausted)?;
+        candidates_by_actor
+            .entry(candidate.actor)
+            .or_default()
+            .push((candidate.sequence, candidate.change_hash));
         candidates.insert(candidate.change_hash, candidate);
     }
     let groups = detect_equivocations(candidates.values().cloned(), budget, cancellation)?;
@@ -113,10 +118,12 @@ pub(crate) fn quarantine_equivocation_descendants(
             charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
             affected.insert(*hash);
         }
-        for candidate in candidates.values() {
-            charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
-            if candidate.actor == group.actor && candidate.sequence > group.first_sequence {
-                affected.insert(candidate.change_hash);
+        if let Some(actor_candidates) = candidates_by_actor.get(&group.actor) {
+            for (sequence, hash) in actor_candidates {
+                charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
+                if *sequence > group.first_sequence {
+                    affected.insert(*hash);
+                }
             }
         }
         let mut queue = Vec::with_capacity(affected.len());
