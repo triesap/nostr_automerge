@@ -1,8 +1,8 @@
 # Draft V1 Follow-up Remediation Ledger
 
 Current RCLD: 17
-Current checkpoint: `step_352`
-Completed checkpoints: `step_308` through `step_351`
+Current checkpoint: `step_353`
+Completed checkpoints: `step_308` through `step_352`
 
 ## Execution Policy
 

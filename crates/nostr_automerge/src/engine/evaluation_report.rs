@@ -252,6 +252,12 @@ impl EvaluationReport {
         &self.integrity_alerts
     }
 
+    pub(crate) fn push_integrity_alert(&mut self, alert: IntegrityAlert) {
+        if !self.integrity_alerts.contains(&alert) {
+            self.integrity_alerts.push(alert);
+        }
+    }
+
     /// Returns local evaluation completion without changing protocol dispositions.
     #[must_use]
     pub const fn completion(&self) -> Completion {

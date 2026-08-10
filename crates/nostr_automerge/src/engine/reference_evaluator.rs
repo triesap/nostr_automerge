@@ -11,6 +11,7 @@ use crate::control::candidate::{
     evaluate_parent_continuity, evaluate_role_continuity, evaluate_terminal_continuity,
 };
 use crate::control::genesis::classify_genesis;
+use crate::control::reorganization::{ControlChainSummary, detect_reorganization};
 use crate::control::validate::ControlEnvelope;
 use crate::evidence::event::EventEvidence;
 use crate::graph::change_candidate::{CandidateCarrier, ChangeCandidate};
@@ -137,6 +138,37 @@ impl ReferenceEvaluator {
                     .unwrap_or_else(|_| unreachable!("applied state must project"))
             }),
         })
+    }
+
+    /// Replays the complete retained corpus and reports a canonical branch
+    /// change relative to a prior report for the same coordinate.
+    #[must_use]
+    pub fn reevaluate(
+        &self,
+        corpus: &EvidenceCorpus,
+        coordinate: DocumentCoordinate,
+        previous: &EvaluationReport,
+        budget: &mut WorkBudget,
+        cancellation: &impl CancellationCheck,
+    ) -> EvaluationReport {
+        let mut current = self.evaluate(corpus, coordinate, budget, cancellation);
+        if previous.coordinate() != coordinate {
+            return current;
+        }
+        let summarize = |report: &EvaluationReport| {
+            let mut changes_by_control = std::collections::BTreeMap::new();
+            if let Some(tip) = report.canonical_controls().last().copied() {
+                changes_by_control.insert(tip, report.accepted_changes().iter().copied().collect());
+            }
+            ControlChainSummary {
+                controls: report.canonical_controls().to_vec(),
+                changes_by_control,
+            }
+        };
+        if let Some(alert) = detect_reorganization(&summarize(previous), &summarize(&current)) {
+            current.push_integrity_alert(alert);
+        }
+        current
     }
 }
 

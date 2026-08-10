@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 17: Interleaved Epoch And Control Engine
 
 Status: active
-Current checkpoint: `step_352`
+Current checkpoint: `step_353`
 Steps: `step_337` through `step_355`
 Primary findings: `FINDING_014`, `FINDING_015`, `FINDING_016`, `FINDING_018`, `FINDING_025`
 
@@ -47,4 +47,5 @@ normative conformance path may call a parallel static control-chain selector.
 - `step_348`: `413a565` — child frontiers retain every accepted ancestor.
 - `step_349`: `038dde9` — transitions exclude only state outside selected closure.
 - `step_350`: `e061d95` — terminal controls stop further document extension.
-- `step_351`: this commit — successor genesis starts a new empty document boundary.
+- `step_351`: `26c4e74` — successor genesis starts a new empty document boundary.
+- `step_352`: this commit — replay reports late valid canonical reorganization.

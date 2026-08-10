@@ -3318,7 +3318,20 @@ fn late_lower_control_id_reorganizes_and_replays_signed_state() {
     assert_eq!(before.canonical_controls(), [parent_id, higher_id]);
     assert_eq!(before.accepted_changes(), [higher_hash]);
     assert_eq!(before.heads(), [higher_hash]);
-    let after = evaluate(&[parent, higher, higher_change, lower, lower_change]);
+    let mut after_builder = CorpusBuilder::new();
+    for event in [parent, higher, higher_change, lower, lower_change] {
+        assert!(matches!(
+            after_builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let after = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).reevaluate(
+        &after_builder.finish(),
+        coordinate,
+        &before,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
     assert_eq!(after.completion(), Completion::Complete);
     assert_eq!(after.canonical_controls(), [parent_id, lower_id]);
     assert_eq!(after.accepted_changes(), [lower_hash]);
@@ -3331,6 +3344,10 @@ fn late_lower_control_id_reorganizes_and_replays_signed_state() {
     assert!(after.integrity_alerts().iter().any(|alert| matches!(
         alert,
         nostr_automerge::IntegrityAlert::ControllerEquivocation { .. }
+    )));
+    assert!(after.integrity_alerts().iter().any(|alert| matches!(
+        alert,
+        nostr_automerge::IntegrityAlert::CanonicalControlReorganization(_)
     )));
     assert!(after.document().is_some_and(|view| !view.is_empty()));
 }
