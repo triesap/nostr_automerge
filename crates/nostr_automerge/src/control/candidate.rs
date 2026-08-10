@@ -36,6 +36,17 @@ pub(crate) fn evaluate_parent_continuity(
     }
 }
 
+pub(crate) fn evaluate_account_continuity(
+    parent: &ControlEnvelope,
+    child: &ControlEnvelope,
+) -> CandidateResult {
+    if validate_account_mapping(&parent.content, &child.content).is_err() {
+        CandidateResult::Invalid(DiagnosticCode::registered("control.account_changed"))
+    } else {
+        CandidateResult::Valid
+    }
+}
+
 pub(crate) fn evaluate_child(
     parent: &ControlEnvelope,
     child: &ControlEnvelope,
@@ -61,8 +72,8 @@ pub(crate) fn evaluate_child(
     if !base_closure.out_of_parent.is_empty() {
         return CandidateResult::Invalid(DiagnosticCode::registered("control.frontier"));
     }
-    if validate_account_mapping(&parent.content, &child.content).is_err() {
-        return CandidateResult::Invalid(DiagnosticCode::registered("control.account_changed"));
+    if let result @ CandidateResult::Invalid(_) = evaluate_account_continuity(parent, child) {
+        return result;
     }
     if validate_monotonic_roles(&parent.content, &child.content).is_err() {
         return CandidateResult::Invalid(DiagnosticCode::registered("control.role_escalation"));

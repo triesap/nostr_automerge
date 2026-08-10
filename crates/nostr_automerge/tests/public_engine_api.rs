@@ -351,6 +351,134 @@ fn signed_child_parent_sequence_rules() {
 }
 
 #[test]
+#[allow(clippy::expect_used)]
+fn signed_child_account_mapping_is_immutable() {
+    let controller = TestSigner::from_byte(33);
+    let changed_account = TestSigner::from_byte(34);
+    let fresh_device = TestSigner::from_byte(35);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "36".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let content = |sequence: u64, mut members: Vec<(String, Option<String>)>| {
+        members.sort_by(|left, right| left.0.cmp(&right.0));
+        let members = members
+            .into_iter()
+            .map(|(device, account)| {
+                let account =
+                    account.map_or_else(|| "null".to_owned(), |value| format!("\"{value}\""));
+                format!(r#"{{"account":{account},"pubkey":"{device}","roles":["write"]}}"#)
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        format!(
+            r#"{{"base_heads":[],"format":"automerge-change-v1","members":[{members}],"policy":"controller-acl-v1","predecessor":null,"seq":{sequence},"successor":null,"text_encoding":"utf16","v":1}}"#
+        )
+    };
+    let retained_device = controller.public_key().to_hex();
+    let original_account = controller.public_key().to_hex();
+    let genesis = controller.sign(
+        &UnsignedEventDraft::new(
+            1,
+            1_625,
+            vec![vec!["a".to_owned(), coordinate.to_address()]],
+            content(
+                0,
+                vec![(retained_device.clone(), Some(original_account.clone()))],
+            ),
+        )
+        .expect("genesis draft")
+        .prepare(controller.public_key())
+        .expect("genesis preimage"),
+    );
+    let genesis_id = VerifiedNip01Event::verify(genesis.clone())
+        .expect("signed genesis")
+        .event_id();
+    let child_tags = vec![
+        vec!["a".to_owned(), coordinate.to_address()],
+        vec!["e".to_owned(), genesis_id.to_hex()],
+    ];
+    let sign_child = |created_at, members| {
+        controller.sign(
+            &UnsignedEventDraft::new(created_at, 1_625, child_tags.clone(), content(1, members))
+                .expect("child draft")
+                .prepare(controller.public_key())
+                .expect("child preimage"),
+        )
+    };
+    let valid = sign_child(
+        2,
+        vec![(retained_device.clone(), Some(original_account.clone()))],
+    );
+    let valid_id = VerifiedNip01Event::verify(valid.clone())
+        .expect("signed valid child")
+        .event_id();
+    let changed = (3..=1_000)
+        .map(|created_at| {
+            sign_child(
+                created_at,
+                vec![(
+                    retained_device.clone(),
+                    Some(changed_account.public_key().to_hex()),
+                )],
+            )
+        })
+        .find(|candidate| {
+            VerifiedNip01Event::verify(candidate.clone())
+                .is_ok_and(|event| event.event_id() < valid_id)
+        })
+        .expect("find a lower-id changed-account child");
+    let changed_id = VerifiedNip01Event::verify(changed.clone())
+        .expect("signed changed-account child")
+        .event_id();
+    assert!(changed_id < valid_id);
+
+    let mut builder = CorpusBuilder::new();
+    for event in [changed, valid, genesis.clone()] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(report.canonical_controls(), [genesis_id, valid_id]);
+    assert!(!report.canonical_controls().contains(&changed_id));
+
+    let fresh = sign_child(
+        1_001,
+        vec![
+            (retained_device, Some(original_account)),
+            (fresh_device.public_key().to_hex(), None),
+        ],
+    );
+    let fresh_id = VerifiedNip01Event::verify(fresh.clone())
+        .expect("signed fresh-device child")
+        .event_id();
+    let mut fresh_builder = CorpusBuilder::new();
+    for event in [fresh, genesis] {
+        assert!(matches!(
+            fresh_builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let fresh_report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &fresh_builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(fresh_report.canonical_controls(), [genesis_id, fresh_id]);
+}
+
+#[test]
 fn duplicate_delayed_and_invalid_evidence_converges() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!(
         "../../../fixtures/v1_draft/integrity/cases.json"

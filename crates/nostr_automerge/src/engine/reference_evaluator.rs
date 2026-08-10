@@ -6,7 +6,9 @@ use crate::conformance::dispositions_digest::{
     DispositionItem, DispositionNamespace, dispositions_digest,
 };
 use crate::conformance::history_digest::history_digest;
-use crate::control::candidate::{CandidateResult, evaluate_parent_continuity};
+use crate::control::candidate::{
+    CandidateResult, evaluate_account_continuity, evaluate_parent_continuity,
+};
 use crate::control::validate::ControlEnvelope;
 use crate::evidence::event::EventEvidence;
 use crate::graph::change_candidate::{CandidateCarrier, ChangeCandidate};
@@ -481,6 +483,7 @@ fn controls_for_coordinate(
                     .contains(&control.event_id())
                 && genesis_link_is_valid(corpus, control)
                 && parent_continuity_is_valid(corpus, control)
+                && account_continuity_is_valid(corpus, control)
                 && !has_terminal_parent(corpus, control)
                 && !violates_retained_writer_frontier(corpus, control) =>
             {
@@ -495,6 +498,25 @@ fn controls_for_coordinate(
             _ => None,
         })
         .collect()
+}
+
+fn account_continuity_is_valid(
+    corpus: &EvidenceCorpus,
+    child: &crate::carrier::control::ValidatedControlCarrier,
+) -> bool {
+    let Some(parent_id) = child.parent() else {
+        return true;
+    };
+    let Some(EventEvidence::VerifiedCarrier {
+        carrier: VerifiedCarrier::Control(parent),
+        ..
+    }) = corpus.events.get(&parent_id)
+    else {
+        return false;
+    };
+    let parent = ControlEnvelope::from_validated(parent.as_ref().clone());
+    let child = ControlEnvelope::from_validated(child.clone());
+    evaluate_account_continuity(&parent, &child) == CandidateResult::Valid
 }
 
 fn parent_continuity_is_valid(
