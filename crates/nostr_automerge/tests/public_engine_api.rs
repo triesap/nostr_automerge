@@ -1987,7 +1987,7 @@ fn duplicate_delayed_and_invalid_evidence_converges() {
         "../../../fixtures/v1_draft/integrity/cases.json"
     ))
     .unwrap_or_default();
-    assert_eq!(fixture["cases"].as_array().map(Vec::len), Some(7));
+    assert_eq!(fixture["cases"].as_array().map(Vec::len), Some(8));
     let scenario = signed_engine_scenario();
     let evaluate = |events: &[RawEventBytes]| {
         let mut builder = CorpusBuilder::new();
@@ -3287,6 +3287,35 @@ fn duplicate_valid_carriers_are_not_equivocation() {
     assert!(reports.windows(2).all(|pair| pair[0] == pair[1]));
 }
 
+#[test]
+#[allow(clippy::expect_used)]
+fn signed_causal_change_matrix() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/changes/signed_causal_matrix.json"
+    ))
+    .expect("signed causal matrix fixture");
+    assert_eq!(fixture["requirements"].as_array().map(Vec::len), Some(13));
+    assert_eq!(fixture["cases"].as_array().map(Vec::len), Some(16));
+    assert_eq!(fixture["orders"].as_array().map(Vec::len), Some(4));
+
+    new_actor_sequence_must_start_at_one();
+    actor_sequence_requires_exact_predecessor();
+    actor_sequence_gap_is_invalid();
+    change_start_op_must_equal_actor_next_op();
+    empty_change_consumes_only_sequence();
+    empty_change_requires_exact_current_heads();
+    change_must_descend_from_every_base_head();
+    missing_dependency_promotes_after_delivery();
+    signed_change_ingest_requires_canonical_actor_hash_control_and_bytes();
+    candidate_applies_to_exact_dependency_closure();
+    apply_failure_invalidates_only_candidate();
+    change_admission_order_is_hash_canonical();
+    base_sequence_equivocation_is_detected();
+    equivocation_quarantines_transitive_dependants();
+    equivocation_preserves_prior_actor_history();
+    duplicate_valid_carriers_are_not_equivocation();
+}
+
 struct SignedEngineScenario {
     coordinate: DocumentCoordinate,
     control: RawEventBytes,
@@ -4553,7 +4582,7 @@ fn signed_change_ingest_requires_canonical_actor_hash_control_and_bytes() {
         "../../../fixtures/v1_draft/changes/cases.json"
     ))
     .expect("change and graph fixture family");
-    assert_eq!(fixture["cases"].as_array().map(Vec::len), Some(11));
+    assert_eq!(fixture["cases"].as_array().map(Vec::len), Some(12));
     let controller = TestSigner::from_byte(8);
     let device = TestSigner::from_byte(9);
     let wrong_device = TestSigner::from_byte(10);

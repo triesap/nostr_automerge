@@ -1,0 +1,24 @@
+{
+  "fixture_id": "v1_draft.changes.signed_causal_matrix",
+  "requirements": ["R2_CHANGE_001", "R2_CHANGE_002", "R2_CHANGE_003", "R2_CHANGE_004", "R2_CHANGE_005", "R2_CHANGE_006", "R2_CHANGE_007", "R2_CHANGE_008", "R2_CHANGE_009", "R2_CHANGE_010", "R2_CHANGE_011", "R2_CHANGE_012", "R2_CHANGE_013"],
+  "transport": "raw signed NIP-01 carriers through CorpusBuilder and ReferenceEvaluator",
+  "cases": [
+    "new_actor_sequence",
+    "exact_actor_predecessor",
+    "actor_gap_and_delayed_dependency",
+    "start_op_counter",
+    "nonempty_counter_advance",
+    "empty_change_counter_and_frontier",
+    "control_base_ancestry",
+    "missing_dependency_promotion",
+    "content_addressed_cycle_rejected_before_admission",
+    "exact_dependency_closure",
+    "candidate_local_application_failure",
+    "canonical_change_hash_order",
+    "base_aware_equivocation",
+    "equivocation_descendant_quarantine",
+    "pre_equivocation_history_preservation",
+    "duplicate_carrier_idempotence"
+  ],
+  "orders": ["canonical", "reverse", "dependency_late", "duplicate_heavy"]
+}
