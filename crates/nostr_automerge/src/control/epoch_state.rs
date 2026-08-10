@@ -26,7 +26,7 @@ pub(crate) struct AcceptedEpochState {
     dependencies: BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
     actor_states: BTreeMap<ActorId, EpochActorState>,
     writer_contributions: BTreeMap<ActorId, ChangeHash>,
-    materialized: MaterializedDocumentView,
+    materialized: Option<MaterializedDocumentView>,
 }
 
 impl AcceptedEpochState {
@@ -36,7 +36,7 @@ impl AcceptedEpochState {
         accepted_candidates: BTreeMap<ChangeHash, ChangeCandidate>,
         actor_states: BTreeMap<ActorId, EpochActorState>,
         writer_contributions: BTreeMap<ActorId, ChangeHash>,
-        materialized: MaterializedDocumentView,
+        materialized: Option<MaterializedDocumentView>,
     ) -> Result<Self, AcceptedEpochStateError> {
         if accepted_closure != accepted_candidates.keys().copied().collect() {
             return Err(AcceptedEpochStateError::ClosureMismatch);
@@ -119,8 +119,8 @@ impl AcceptedEpochState {
         &self.writer_contributions
     }
 
-    pub(crate) const fn materialized(&self) -> &MaterializedDocumentView {
-        &self.materialized
+    pub(crate) const fn materialized(&self) -> Option<&MaterializedDocumentView> {
+        self.materialized.as_ref()
     }
 }
 
@@ -197,7 +197,7 @@ mod tests {
             candidates.clone(),
             actors.clone(),
             writers.clone(),
-            materialized.clone(),
+            Some(materialized.clone()),
         );
         assert!(state.is_ok());
 
@@ -208,7 +208,7 @@ mod tests {
                 candidates.clone(),
                 actors.clone(),
                 writers.clone(),
-                materialized.clone(),
+                Some(materialized.clone()),
             ),
             Err(AcceptedEpochStateError::ClosureMismatch)
         ));
@@ -219,7 +219,7 @@ mod tests {
                 candidates.clone(),
                 actors.clone(),
                 writers.clone(),
-                materialized.clone(),
+                Some(materialized.clone()),
             ),
             Err(AcceptedEpochStateError::FrontierMismatch)
         ));
@@ -230,7 +230,7 @@ mod tests {
                 candidates,
                 BTreeMap::new(),
                 writers,
-                materialized,
+                Some(materialized),
             ),
             Err(AcceptedEpochStateError::ActorStateMismatch)
         ));

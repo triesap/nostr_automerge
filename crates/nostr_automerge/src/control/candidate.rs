@@ -97,6 +97,20 @@ pub(crate) fn evaluate_successor_genesis(
     }
 }
 
+pub(crate) fn evaluate_retained_writer_continuity(
+    parent: &ControlEnvelope,
+    child: &ControlEnvelope,
+    view: &ParentEpochView,
+) -> CandidateResult {
+    match validate_retained_writer_frontier(&parent.content, &child.content, view) {
+        Ok(()) => CandidateResult::Valid,
+        Err(TransitionError::MissingBaseEvidence) => {
+            CandidateResult::Pending(DiagnosticCode::registered("control.frontier"))
+        }
+        Err(_) => CandidateResult::Invalid(DiagnosticCode::registered("control.retained_writer")),
+    }
+}
+
 pub(crate) fn evaluate_child(
     parent: &ControlEnvelope,
     child: &ControlEnvelope,
@@ -146,13 +160,7 @@ pub(crate) fn evaluate_child(
             return CandidateResult::Invalid(DiagnosticCode::registered("control.frontier"));
         }
     }
-    match validate_retained_writer_frontier(&parent.content, &child.content, view) {
-        Ok(()) => CandidateResult::Valid,
-        Err(TransitionError::MissingBaseEvidence) => {
-            CandidateResult::Pending(DiagnosticCode::registered("control.frontier"))
-        }
-        Err(_) => CandidateResult::Invalid(DiagnosticCode::registered("control.retained_writer")),
-    }
+    evaluate_retained_writer_continuity(parent, child, view)
 }
 
 #[cfg(test)]

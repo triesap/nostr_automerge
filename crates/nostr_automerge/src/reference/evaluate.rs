@@ -1,7 +1,12 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::automerge_adapter::document::{AppliedDocument, materialize_history};
+use crate::control::candidate::{CandidateResult, evaluate_retained_writer_continuity};
+use crate::control::epoch_state::AcceptedEpochState;
+use crate::control::parent_view::ParentEpochView;
 use crate::control::select::select_with_alert;
+use crate::control::validate::ControlEnvelope;
+use crate::graph::actor_state::initialize_actor_states;
 use crate::graph::change_candidate::ChangeCandidate;
 use crate::graph::dependency_graph::build_graph;
 use crate::graph::equivocation::{QuarantineError, quarantine_equivocation_descendants};
@@ -26,6 +31,7 @@ pub(crate) struct BatchControl {
     pub(crate) accepted_base: BTreeSet<ChangeHash>,
     pub(crate) frozen: bool,
     pub(crate) changes: Vec<BatchChange>,
+    pub(crate) envelope: Option<ControlEnvelope>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -115,7 +121,7 @@ pub(crate) fn evaluate_batch(
     let mut completion = Completion::Complete;
     let mut accepted_changes = BTreeSet::new();
     let mut accepted_at_control = BTreeMap::new();
-    for control_id in &canonical_controls {
+    for (control_index, control_id) in canonical_controls.clone().iter().enumerate() {
         let Some(control) = controls.get(control_id) else {
             continue;
         };
@@ -126,6 +132,25 @@ pub(crate) fn evaluate_batch(
         if budget.charge(WorkCounter::Control, 1).is_err() {
             completion = Completion::BudgetExhausted;
             break;
+        }
+        if control_index > 0
+            && let Some(parent_id) = control.parent
+            && let (Some(parent), Some(child)) = (
+                controls
+                    .get(&parent_id)
+                    .and_then(|value| value.envelope.as_ref()),
+                control.envelope.as_ref(),
+            )
+        {
+            let Some(view) = parent_epoch_view(&accepted_changes, &controls) else {
+                completion = Completion::Failed;
+                canonical_controls.truncate(control_index);
+                break;
+            };
+            if evaluate_retained_writer_continuity(parent, child, &view) != CandidateResult::Valid {
+                canonical_controls.truncate(control_index);
+                break;
+            }
         }
         for hash in accepted_changes.difference(&control.accepted_base) {
             dispositions.insert(*hash, ProtocolDisposition::Excluded);
@@ -301,6 +326,42 @@ pub(crate) fn evaluate_batch(
     }
 }
 
+fn parent_epoch_view(
+    accepted: &BTreeSet<ChangeHash>,
+    controls: &BTreeMap<EventId, BatchControl>,
+) -> Option<ParentEpochView> {
+    let candidates = controls
+        .values()
+        .flat_map(|control| control.changes.iter())
+        .filter(|change| accepted.contains(&change.candidate.change_hash))
+        .map(|change| (change.candidate.change_hash, change.candidate.clone()))
+        .collect::<BTreeMap<_, _>>();
+    if candidates.len() != accepted.len() {
+        return None;
+    }
+    let actor_states = initialize_actor_states(candidates.values().cloned()).ok()?;
+    let writer_contributions = actor_states
+        .iter()
+        .map(|(actor, state)| (*actor, state.highest_change))
+        .collect();
+    let depended_on = candidates
+        .values()
+        .flat_map(|candidate| candidate.dependencies.iter().copied())
+        .filter(|hash| accepted.contains(hash))
+        .collect::<BTreeSet<_>>();
+    let heads = accepted.difference(&depended_on).copied().collect();
+    let state = AcceptedEpochState::new(
+        accepted.clone(),
+        heads,
+        candidates,
+        actor_states,
+        writer_contributions,
+        None,
+    )
+    .ok()?;
+    Some(ParentEpochView::from_accepted_state(&state))
+}
+
 fn applied_heads_agree(
     derived_heads: &BTreeSet<ChangeHash>,
     applied_heads: &BTreeSet<ChangeHash>,
@@ -398,6 +459,7 @@ mod tests {
             accepted_base: BTreeSet::new(),
             frozen: false,
             changes,
+            envelope: None,
         }
     }
 

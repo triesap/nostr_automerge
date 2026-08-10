@@ -2055,6 +2055,11 @@ fn signed_child_cannot_discard_retained_writer_contributions() {
 }
 
 #[test]
+fn signed_child_retained_writer_frontier_rules() {
+    signed_child_cannot_discard_retained_writer_contributions();
+}
+
+#[test]
 #[allow(clippy::expect_used)]
 fn late_lower_control_id_reorganizes_and_replays_signed_state() {
     let controller = TestSigner::from_byte(33);

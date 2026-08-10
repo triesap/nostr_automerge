@@ -137,7 +137,7 @@ mod tests {
             candidates,
             actors.clone(),
             BTreeMap::from([(first_actor, first_hash), (second_actor, second_hash)]),
-            materialized,
+            Some(materialized),
         );
         assert!(state.is_ok());
         let Ok(state) = state else {
