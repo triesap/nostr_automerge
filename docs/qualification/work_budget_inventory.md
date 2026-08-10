@@ -11,7 +11,7 @@ evidence.
 | control collection | `reference::evaluate::evaluate_batch` | `control` | each retained batch control before indexing | metered |
 | child transition | `reference::evaluate::charge_control_transitions` and `control::candidate` | `control` before any candidate transition; graph counters for closures | epoch cancellation boundary | metered |
 | control ancestry | `engine::reference_evaluator::control_ancestry` | `control` | ancestry walk | remediation required |
-| frontier closure | `control::frontier` | `graph_node`, `graph_edge` | closure walk | remediation required |
+| frontier closure | `reference::evaluate::charge_control_closures` and `control::frontier` | conservative `graph_node` and `graph_edge` precharge for every closure pass | before nodes and before edges | metered |
 | actor reconstruction | `graph::actor_state` | `graph_node`, `graph_edge` | topology walk | remediation required |
 | dependency scheduling | `graph::schedule` | `graph_node`, `graph_edge` | every queue and adjacency loop | metered |
 | ancestor closure | `graph::closure::ancestor_closure` | `graph_node`, `graph_edge` | every stack and dependency loop | metered |

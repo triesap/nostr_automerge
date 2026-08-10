@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 21: Complete Metering And Panic Elimination
 
 Status: active
-Current checkpoint: `step_414`
+Current checkpoint: `step_415`
 Steps: `step_410` through `step_429`
 Primary findings: `FINDING_022`, `FINDING_023`, `FINDING_027`
 
@@ -35,4 +35,5 @@ optional later work, and never be converted into a protocol invalidity.
 - `step_410`: `c7adb47` — the evidence-derived traversal inventory assigns every loop a counter and cancellation owner or marks the exact remediation gap.
 - `step_411`: `9e5718e` — every counter has a public frozen capacity dimension and failed charges remain atomic.
 - `step_412`: `48a74a4` — control collection checks cancellation and charges each retained control before indexing.
-- `step_413`: this commit — candidate transition charging is an explicit atomic boundary before stateful validation.
+- `step_413`: `5f0be91` — candidate transition charging is an explicit atomic boundary before stateful validation.
+- `step_414`: this commit — every control frontier and antichain closure pass receives conservative graph precharges and cancellation boundaries.

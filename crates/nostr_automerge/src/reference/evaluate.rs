@@ -131,6 +131,13 @@ pub(crate) fn evaluate_batch(
         let parent_view = parent_epoch_result
             .as_ref()
             .map(|result| ParentEpochView::from_accepted_state(result.accepted_state()));
+        if let Some(view) = parent_view.as_ref()
+            && let Err(interruption) =
+                charge_control_closures(children, &controls, view, budget, cancellation)
+        {
+            completion = interruption;
+            break;
+        }
         let ancestry = canonical_controls
             .iter()
             .filter_map(|event_id| {
@@ -480,6 +487,50 @@ fn charge_control_transitions(
     )
 }
 
+fn charge_control_closures(
+    children: &BTreeSet<EventId>,
+    controls: &BTreeMap<EventId, BatchControl>,
+    view: &ParentEpochView,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<(), Completion> {
+    if cancellation.is_cancelled() {
+        return Err(Completion::Cancelled);
+    }
+    let passes = children
+        .iter()
+        .filter_map(|event_id| controls.get(event_id)?.envelope.as_ref())
+        .try_fold(0_u64, |total, child| {
+            total.checked_add(
+                u64::try_from(child.content().base_heads.len())
+                    .unwrap_or(u64::MAX)
+                    .saturating_add(2),
+            )
+        })
+        .unwrap_or(u64::MAX);
+    let nodes = u64::try_from(view.accepted().len())
+        .unwrap_or(u64::MAX)
+        .saturating_add(1)
+        .saturating_mul(passes);
+    let edges = view
+        .dependency_index()
+        .values()
+        .try_fold(0_u64, |total, dependencies| {
+            total.checked_add(u64::try_from(dependencies.len()).unwrap_or(u64::MAX))
+        })
+        .unwrap_or(u64::MAX)
+        .saturating_mul(passes);
+    budget
+        .charge(WorkCounter::GraphNode, nodes)
+        .map_err(|_| Completion::BudgetExhausted)?;
+    if cancellation.is_cancelled() {
+        return Err(Completion::Cancelled);
+    }
+    budget
+        .charge(WorkCounter::GraphEdge, edges)
+        .map_err(|_| Completion::BudgetExhausted)
+}
+
 enum EpochResolutionError {
     Schedule(ScheduleError),
     InvalidState,
@@ -697,14 +748,16 @@ fn derive_heads(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeSet;
+    use std::collections::{BTreeMap, BTreeSet};
 
-    use super::{AcceptedAtControl, BatchChange, BatchControl, evaluate_batch};
+    use super::{
+        AcceptedAtControl, BatchChange, BatchControl, charge_control_closures, evaluate_batch,
+    };
     use crate::automerge_adapter::decode::decode_change;
     use crate::graph::actor_state::tests::candidate;
     use crate::{
         ChangeHash, Completion, EvaluationFailure, EventId, NeverCancelled, ProtocolDisposition,
-        ProtocolRevision, WorkBudget,
+        ProtocolRevision, WorkBudget, WorkCounter,
     };
 
     fn control(id: u8, parent: Option<u8>, changes: Vec<BatchChange>) -> BatchControl {
@@ -726,6 +779,43 @@ mod tests {
             semantically_valid: true,
             raw_change: None,
         }
+    }
+
+    #[test]
+    fn control_closure_precharge_exhaustion_is_atomic() {
+        let envelope = crate::control::validate::tests::genesis();
+        let event_id = envelope.event_id();
+        let controls = BTreeMap::from([(
+            event_id,
+            BatchControl {
+                event_id,
+                parent: None,
+                accepted_base: BTreeSet::new(),
+                frozen: false,
+                changes: Vec::new(),
+                envelope: Some(envelope),
+            },
+        )]);
+        let accepted = ChangeHash::from_bytes([9; 32]);
+        let view = crate::control::parent_view::ParentEpochView::from_parts_for_test(
+            BTreeSet::from([accepted]),
+            BTreeSet::from([accepted]),
+            BTreeMap::from([(accepted, BTreeSet::new())]),
+            BTreeMap::new(),
+            BTreeMap::new(),
+        );
+        let mut budget = WorkBudget::new(0, 3);
+        assert_eq!(
+            charge_control_closures(
+                &BTreeSet::from([event_id]),
+                &controls,
+                &view,
+                &mut budget,
+                &NeverCancelled
+            ),
+            Err(Completion::BudgetExhausted)
+        );
+        assert_eq!(budget.consumed().get(WorkCounter::GraphNode), 0);
     }
 
     #[test]
