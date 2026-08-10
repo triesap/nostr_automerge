@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 18: Causal Change Acceptance
 
 Status: active
-Current checkpoint: `step_361`
+Current checkpoint: `step_362`
 Steps: `step_356` through `step_381`
 Primary findings: `FINDING_016`, `FINDING_018`
 
@@ -38,4 +38,5 @@ active equivocation quarantine.
 - `step_357`: `09e30fd` — actor state initializes in exact topological closure order.
 - `step_358`: `3a200ea` — a new actor's first complete change must use sequence one.
 - `step_359`: `6af293a` — sequence advancement requires one causal actor predecessor.
-- `step_360`: this commit — complete actor gaps are invalid while missing evidence is pending.
+- `step_360`: `e6e789a` — complete actor gaps are invalid while missing evidence is pending.
+- `step_361`: this commit — rollback and distinct-hash replay are invalid; duplicates coalesce.

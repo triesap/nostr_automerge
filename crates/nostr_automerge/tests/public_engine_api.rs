@@ -2301,19 +2301,21 @@ fn cancellation_is_safe_at_every_evaluator_boundary() {
     }
 }
 
-fn rewrite_first_change_sequence(mut raw: Vec<u8>, sequence: u8) -> (Vec<u8>, ChangeHash) {
+fn rewrite_change_sequence(
+    mut raw: Vec<u8>,
+    expected_sequence: u8,
+    sequence: u8,
+) -> (Vec<u8>, ChangeHash) {
     let mut data_start = 9usize;
     while raw[data_start] & 0x80 != 0 {
         data_start += 1;
     }
     data_start += 1;
-    assert_eq!(
-        raw[data_start], 0,
-        "authored first change has no dependencies"
-    );
-    let actor_len = usize::from(raw[data_start + 1]);
-    let sequence_offset = data_start + 2 + actor_len;
-    assert_eq!(raw[sequence_offset], 1, "authored first sequence is one");
+    let dependency_count = usize::from(raw[data_start]);
+    let actor_len_offset = data_start + 1 + dependency_count * 32;
+    let actor_len = usize::from(raw[actor_len_offset]);
+    let sequence_offset = actor_len_offset + 1 + actor_len;
+    assert_eq!(raw[sequence_offset], expected_sequence);
     raw[sequence_offset] = sequence;
     let digest: [u8; 32] = Sha256::digest(&raw[8..]).into();
     raw[4..8].copy_from_slice(&digest[..4]);
@@ -2352,7 +2354,7 @@ fn new_actor_sequence_must_start_at_one() {
             value: "two".to_owned(),
         }])
         .expect("canonical authored change");
-    let (raw, change_hash) = rewrite_first_change_sequence(first.raw().to_vec(), 2);
+    let (raw, change_hash) = rewrite_change_sequence(first.raw().to_vec(), 1, 2);
     let change = device.sign(
         &UnsignedEventDraft::new(
             2,
@@ -2503,6 +2505,109 @@ fn actor_sequence_requires_exact_predecessor() {
 fn actor_sequence_gap_is_invalid() {
     new_actor_sequence_must_start_at_one();
     actor_sequence_requires_exact_predecessor();
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn actor_sequence_rollback_and_replay() {
+    let controller = TestSigner::from_byte(90);
+    let device = TestSigner::from_byte(91);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "90".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let control = signed_acl_control(
+        &controller,
+        coordinate,
+        1,
+        None,
+        0,
+        vec![(device.public_key().to_hex(), vec!["write"])],
+    );
+    let control_id = VerifiedNip01Event::verify(control.clone())
+        .expect("signed control")
+        .event_id();
+    let actor = ActorId::derive(coordinate, device.public_key());
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
+        .expect("empty authoring document");
+    let first = document
+        .author_change(&[Operation::PutString {
+            key: "first".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .expect("first change");
+    let second = document
+        .author_change(&[Operation::PutString {
+            key: "rollback".to_owned(),
+            value: "invalid".to_owned(),
+        }])
+        .expect("second change");
+    let (rollback_raw, rollback_hash) = rewrite_change_sequence(second.raw().to_vec(), 2, 1);
+    let child = signed_acl_control_with_base(
+        &controller,
+        coordinate,
+        5,
+        Some(control_id),
+        1,
+        vec![(device.public_key().to_hex(), vec!["write"])],
+        &[first.change_hash()],
+    );
+    let child_id = VerifiedNip01Event::verify(child.clone())
+        .expect("signed child")
+        .event_id();
+    let sign_change = |created_at: u64, selected: EventId, hash: ChangeHash, raw: &[u8]| {
+        device.sign(
+            &UnsignedEventDraft::new(
+                created_at,
+                1_624,
+                vec![
+                    vec!["a".to_owned(), coordinate.to_address()],
+                    vec!["e".to_owned(), selected.to_hex()],
+                    vec!["x".to_owned(), hash.to_hex()],
+                ],
+                base64::engine::general_purpose::STANDARD.encode(raw),
+            )
+            .expect("change draft")
+            .prepare(device.public_key())
+            .expect("change preimage"),
+        )
+    };
+    let mut builder = CorpusBuilder::new();
+    for event in [
+        sign_change(2, control_id, first.change_hash(), first.raw()),
+        sign_change(3, control_id, first.change_hash(), first.raw()),
+        sign_change(4, child_id, rollback_hash, &rollback_raw),
+        control,
+        child,
+    ] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(report.accepted_changes(), [first.change_hash()]);
+    assert!(
+        report
+            .dispositions()
+            .contains(&(rollback_hash, ProtocolDisposition::Invalid))
+    );
+    assert_eq!(
+        report
+            .dispositions()
+            .iter()
+            .filter(|(hash, _)| *hash == first.change_hash())
+            .count(),
+        1
+    );
 }
 
 struct SignedEngineScenario {
