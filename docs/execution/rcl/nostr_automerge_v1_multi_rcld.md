@@ -658,7 +658,7 @@ authority is granted.
   conformance, checkpoint-evidence, and interoperability gaps in that claimed
   closure. Findings `FINDING_014` through `FINDING_027` are therefore open.
 - The approved follow-up program contains RCLDs 15 through 28 and steps
-  `step_308` through `step_533`. RCLD 16 and `step_333` are the only active
+  `step_308` through `step_533`. RCLD 16 and `step_334` are the only active
   child and checkpoint.
 - The TypeScript implementation requires an explicit engine-parity RCLD before
   final attestation; an expected-report passthrough or abstract `valid` input
@@ -672,7 +672,7 @@ authority is granted.
 ## Remaining Child RCLDs
 
 1. RCLD 15 — Follow-up authority and baseline (`step_308`–`step_317`) — complete.
-2. RCLD 16 — Stateful control candidate validation (`step_318`–`step_336`) — active at `step_333`.
+2. RCLD 16 — Stateful control candidate validation (`step_318`–`step_336`) — active at `step_334`.
 3. RCLD 17 — Interleaved epoch/control engine (`step_337`–`step_355`).
 4. RCLD 18 — Causal change acceptance (`step_356`–`step_381`).
 5. RCLD 19 — Canonical reports and dispositions (`step_382`–`step_398`).

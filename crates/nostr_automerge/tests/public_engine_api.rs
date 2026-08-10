@@ -24,7 +24,28 @@ fn signed_acl_control(
     created_at: u64,
     parent: Option<EventId>,
     sequence: u64,
+    members: Vec<(String, Vec<&str>)>,
+) -> RawEventBytes {
+    signed_acl_control_with_base(
+        controller,
+        coordinate,
+        created_at,
+        parent,
+        sequence,
+        members,
+        &[],
+    )
+}
+
+#[allow(clippy::expect_used)]
+fn signed_acl_control_with_base(
+    controller: &TestSigner,
+    coordinate: DocumentCoordinate,
+    created_at: u64,
+    parent: Option<EventId>,
+    sequence: u64,
     mut members: Vec<(String, Vec<&str>)>,
+    base_heads: &[ChangeHash],
 ) -> RawEventBytes {
     members.sort_by(|left, right| left.0.cmp(&right.0));
     let members = members
@@ -40,8 +61,13 @@ fn signed_acl_control(
         })
         .collect::<Vec<_>>()
         .join(",");
+    let base_heads = base_heads
+        .iter()
+        .map(|head| format!("\"{}\"", head.to_hex()))
+        .collect::<Vec<_>>()
+        .join(",");
     let content = format!(
-        r#"{{"base_heads":[],"format":"automerge-change-v1","members":[{members}],"policy":"controller-acl-v1","predecessor":null,"seq":{sequence},"successor":null,"text_encoding":"utf16","v":1}}"#
+        r#"{{"base_heads":[{base_heads}],"format":"automerge-change-v1","members":[{members}],"policy":"controller-acl-v1","predecessor":null,"seq":{sequence},"successor":null,"text_encoding":"utf16","v":1}}"#
     );
     let mut tags = vec![vec!["a".to_owned(), coordinate.to_address()]];
     if let Some(parent) = parent {
@@ -53,6 +79,121 @@ fn signed_acl_control(
             .prepare(controller.public_key())
             .expect("control preimage"),
     )
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn pending_child_does_not_block_valid_sibling() {
+    let controller = TestSigner::from_byte(35);
+    let writer = TestSigner::from_byte(36);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "52".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let members = vec![(writer.public_key().to_hex(), vec!["checkpoint", "write"])];
+    let genesis = signed_acl_control(&controller, coordinate, 1, None, 0, members.clone());
+    let genesis_id = VerifiedNip01Event::verify(genesis.clone())
+        .expect("signed genesis")
+        .event_id();
+
+    let actor = ActorId::derive(coordinate, writer.public_key());
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
+        .expect("empty authoring document");
+    let authored = document
+        .author_change(&[Operation::PutString {
+            key: "late".to_owned(),
+            value: "dependency".to_owned(),
+        }])
+        .expect("canonical authored change");
+    let change_hash = authored.change_hash();
+    let dependency = writer.sign(
+        &UnsignedEventDraft::new(
+            2,
+            1_624,
+            vec![
+                vec!["a".to_owned(), coordinate.to_address()],
+                vec!["e".to_owned(), genesis_id.to_hex()],
+                vec!["x".to_owned(), change_hash.to_hex()],
+            ],
+            base64::engine::general_purpose::STANDARD.encode(authored.raw()),
+        )
+        .expect("change draft")
+        .prepare(writer.public_key())
+        .expect("change preimage"),
+    );
+    let pending = signed_acl_control_with_base(
+        &controller,
+        coordinate,
+        3,
+        Some(genesis_id),
+        1,
+        members.clone(),
+        &[change_hash],
+    );
+    let pending_id = VerifiedNip01Event::verify(pending.clone())
+        .expect("signed pending child")
+        .event_id();
+    let (sibling, sibling_id) = (4..10_000)
+        .find_map(|created_at| {
+            let sibling = signed_acl_control(
+                &controller,
+                coordinate,
+                created_at,
+                Some(genesis_id),
+                1,
+                members.clone(),
+            );
+            let sibling_id = VerifiedNip01Event::verify(sibling.clone())
+                .expect("signed sibling")
+                .event_id();
+            (sibling_id > pending_id).then_some((sibling, sibling_id))
+        })
+        .expect("deterministically find a higher sibling EventId");
+
+    let evaluate = |events: &[RawEventBytes]| {
+        let mut builder = CorpusBuilder::new();
+        for event in events {
+            assert!(matches!(
+                builder.ingest(event.clone()),
+                IngestOutcome::Accepted { .. }
+            ));
+        }
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+            &builder.finish(),
+            coordinate,
+            &mut WorkBudget::new(1_000_000, 1_000),
+            &NeverCancelled,
+        )
+    };
+    let before = evaluate(&[genesis.clone(), pending.clone(), sibling.clone()]);
+    assert_eq!(before.canonical_controls(), [genesis_id, sibling_id]);
+    assert!(
+        before
+            .control_dispositions()
+            .contains(&(pending_id, ProtocolDisposition::Pending))
+    );
+    assert!(
+        before
+            .control_dispositions()
+            .contains(&(sibling_id, ProtocolDisposition::Accepted))
+    );
+
+    let after = evaluate(&[genesis, pending, sibling, dependency]);
+    assert_eq!(after.canonical_controls(), [genesis_id, pending_id]);
+    assert_eq!(after.accepted_changes(), [change_hash]);
+    assert!(
+        after
+            .control_dispositions()
+            .contains(&(pending_id, ProtocolDisposition::Accepted))
+    );
+    assert!(
+        after
+            .control_dispositions()
+            .contains(&(sibling_id, ProtocolDisposition::Excluded))
+    );
 }
 
 #[test]
