@@ -610,6 +610,11 @@ fn child_frontier_preserves_ancestors() {
 }
 
 #[test]
+fn child_transition_excludes_only_outside_closure() {
+    child_epoch_uses_exact_base_closure();
+}
+
+#[test]
 fn interleaved_child_selection() {
     signed_events_reach_materialized_state_through_public_engine();
     pending_controls_converge_after_signed_parent_delivery();
