@@ -12,6 +12,7 @@ use crate::graph::change_candidate::ChangeCandidate;
 use crate::graph::closure::candidate_dependency_closure;
 use crate::graph::epoch::{EpochAncestry, validate_epoch_ancestry};
 use crate::graph::schedule::ScheduleError;
+use crate::reference::apply::apply_exact_closure;
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
 use crate::types::role::Role;
 use crate::{ActorId, IntegrityAlert, ProtocolDisposition};
@@ -40,6 +41,7 @@ pub(crate) struct EpochEvaluationInput {
     selected_control: ControlEnvelope,
     accepted_base: AcceptedEpochState,
     candidate_changes: BTreeMap<ChangeHash, ChangeCandidate>,
+    raw_changes: BTreeMap<ChangeHash, Vec<u8>>,
     canonical_ancestry: Vec<ControlEnvelope>,
 }
 
@@ -48,6 +50,24 @@ impl EpochEvaluationInput {
         selected_control: ControlEnvelope,
         accepted_base: AcceptedEpochState,
         candidate_changes: impl IntoIterator<Item = ChangeCandidate>,
+        canonical_ancestry: Vec<ControlEnvelope>,
+    ) -> Result<Self, EpochEvaluationInputError> {
+        Self::new_with_raw(
+            selected_control,
+            accepted_base,
+            candidate_changes
+                .into_iter()
+                .map(|candidate| (candidate, None)),
+            BTreeMap::new(),
+            canonical_ancestry,
+        )
+    }
+
+    pub(crate) fn new_with_raw(
+        selected_control: ControlEnvelope,
+        accepted_base: AcceptedEpochState,
+        candidate_changes: impl IntoIterator<Item = (ChangeCandidate, Option<Vec<u8>>)>,
+        mut raw_changes: BTreeMap<ChangeHash, Vec<u8>>,
         canonical_ancestry: Vec<ControlEnvelope>,
     ) -> Result<Self, EpochEvaluationInputError> {
         let declared_heads = selected_control.base_heads().collect::<BTreeSet<_>>();
@@ -68,21 +88,23 @@ impl EpochEvaluationInput {
         }
         let selected_id = selected_control.event_id();
         let mut candidates = BTreeMap::new();
-        for candidate in candidate_changes {
+        for (candidate, raw) in candidate_changes {
             if candidate.control_id != selected_id {
                 return Err(EpochEvaluationInputError::CandidateControlMismatch);
             }
-            if candidates
-                .insert(candidate.change_hash, candidate)
-                .is_some()
-            {
+            let hash = candidate.change_hash;
+            if candidates.insert(hash, candidate).is_some() {
                 return Err(EpochEvaluationInputError::DuplicateCandidate);
+            }
+            if let Some(raw) = raw {
+                raw_changes.insert(hash, raw);
             }
         }
         Ok(Self {
             selected_control,
             accepted_base,
             candidate_changes: candidates,
+            raw_changes,
             canonical_ancestry,
         })
     }
@@ -97,6 +119,10 @@ impl EpochEvaluationInput {
 
     pub(crate) const fn candidate_changes(&self) -> &BTreeMap<ChangeHash, ChangeCandidate> {
         &self.candidate_changes
+    }
+
+    pub(crate) const fn raw_changes(&self) -> &BTreeMap<ChangeHash, Vec<u8>> {
+        &self.raw_changes
     }
 
     pub(crate) fn canonical_ancestry(&self) -> &[ControlEnvelope] {
@@ -246,8 +272,42 @@ pub(crate) fn evaluate_epoch(
                 ),
                 EpochAncestry::InvalidOmission(_)
             );
-            let semantically_valid =
+            let prior_semantics_valid =
                 authorized && actor_sequence_valid && actor_counter_valid && ancestry_valid;
+            let application_valid = if !prior_semantics_valid {
+                false
+            } else if !closure.missing.is_empty() {
+                true
+            } else if !closure.cyclic.is_empty() {
+                false
+            } else {
+                input
+                    .raw_changes()
+                    .get(&candidate.change_hash)
+                    .is_some_and(|raw| {
+                        let closure_raw = closure
+                            .known
+                            .iter()
+                            .filter_map(|hash| {
+                                input
+                                    .raw_changes()
+                                    .get(hash)
+                                    .cloned()
+                                    .map(|raw| (*hash, raw))
+                            })
+                            .collect::<BTreeMap<_, _>>();
+                        closure_raw.len() == closure.known.len()
+                            && apply_exact_closure(
+                                &closure_raw,
+                                &closure.ordered,
+                                candidate.change_hash,
+                                raw,
+                                &candidate.dependencies.iter().copied().collect(),
+                            )
+                            .is_ok()
+                    })
+            };
+            let semantically_valid = prior_semantics_valid && application_valid;
             EpochCandidate {
                 candidate,
                 semantically_valid,

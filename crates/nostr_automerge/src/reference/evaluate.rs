@@ -469,13 +469,24 @@ fn resolve_authoritative_epoch(
                 .and_then(|control| control.envelope.clone())
         })
         .collect();
-    let input = EpochEvaluationInput::new(
+    let raw_changes = controls
+        .values()
+        .flat_map(|control| control.changes.iter())
+        .filter_map(|change| {
+            change
+                .raw_change
+                .clone()
+                .map(|raw| (change.candidate.change_hash, raw))
+        })
+        .collect();
+    let input = EpochEvaluationInput::new_with_raw(
         selected,
         accepted_base,
         control
             .changes
             .iter()
-            .map(|change| change.candidate.clone()),
+            .map(|change| (change.candidate.clone(), change.raw_change.clone())),
+        raw_changes,
         canonical_ancestry,
     )
     .map_err(|_| EpochResolutionError::InvalidState)?;

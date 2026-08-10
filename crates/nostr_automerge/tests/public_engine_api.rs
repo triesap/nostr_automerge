@@ -2673,6 +2673,13 @@ fn change_must_descend_from_every_base_head() {
 }
 
 #[test]
+fn candidate_applies_to_exact_dependency_closure() {
+    signed_events_reach_materialized_state_through_public_engine();
+    actor_sequence_requires_exact_predecessor();
+    change_must_descend_from_every_base_head();
+}
+
+#[test]
 #[allow(clippy::expect_used)]
 fn actor_sequence_requires_exact_predecessor() {
     new_actor_sequence_must_start_at_one();
