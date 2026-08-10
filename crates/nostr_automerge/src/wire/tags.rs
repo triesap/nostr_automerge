@@ -32,6 +32,24 @@ pub(crate) fn require_durable_tags(tags: &[Vec<String>]) -> Result<(), TagError>
     require_absent(tags, "-")
 }
 
+/// Validates the complete name-level contract for a carrier.
+///
+/// Required tags retain exact cardinality and element counts, explicitly
+/// forbidden names are rejected, and every other tag name is ignored.
+pub(crate) fn require_tag_contract(
+    tags: &[Vec<String>],
+    required: &[(&str, usize)],
+    forbidden: &[&str],
+) -> Result<(), TagError> {
+    for (name, exact_elements) in required {
+        required_tag(tags, name, *exact_elements)?;
+    }
+    for name in forbidden {
+        require_absent(tags, name)?;
+    }
+    Ok(())
+}
+
 pub(crate) fn require_sorted_unique<T: Ord>(values: &[T]) -> Result<(), TagError> {
     if values.windows(2).all(|pair| pair[0] < pair[1]) {
         Ok(())
@@ -52,7 +70,8 @@ pub(crate) enum TagError {
 #[cfg(test)]
 mod tests {
     use super::{
-        TagError, require_absent, require_durable_tags, require_sorted_unique, required_tag,
+        TagError, require_absent, require_durable_tags, require_sorted_unique,
+        require_tag_contract, required_tag,
     };
 
     #[test]
@@ -88,6 +107,27 @@ mod tests {
         assert_eq!(
             require_sorted_unique(&[1, 1]),
             Err(TagError::NonCanonicalOrder)
+        );
+    }
+
+    #[test]
+    fn contract_ignores_unknown_names_but_preserves_exact_requirements() {
+        let tags = vec![
+            vec!["a".into(), "coordinate".into()],
+            vec!["x-extra".into()],
+            vec!["x-extra".into(), "one".into(), "two".into()],
+        ];
+        assert_eq!(
+            require_tag_contract(&tags, &[("a", 2)], &["expiration", "-"]),
+            Ok(())
+        );
+        assert_eq!(
+            require_tag_contract(&tags, &[("e", 2)], &[]),
+            Err(TagError::Missing)
+        );
+        assert_eq!(
+            require_tag_contract(&[tags[0].clone(), vec!["-".into()]], &[("a", 2)], &["-"]),
+            Err(TagError::Forbidden)
         );
     }
 }

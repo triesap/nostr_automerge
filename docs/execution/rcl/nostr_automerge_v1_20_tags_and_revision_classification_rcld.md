@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 20: Tags And Revision Classification
 
 Status: active
-Current checkpoint: `step_399`
+Current checkpoint: `step_400`
 Steps: `step_399` through `step_409`
 Primary findings: `FINDING_020`, `FINDING_021`
 
@@ -29,3 +29,7 @@ properties, mutation tests, standard Rust checks, and `git diff --check`.
 
 Adding an unknown tag is semantically inert under draft v1, while malformed or
 ambiguous revision declarations remain invalid signed evidence.
+
+## Completed Checkpoints
+
+- `step_399`: this commit — one shared tag contract preserves exact required tags, rejects explicit forbidden names, and ignores every unknown name.
