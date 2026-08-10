@@ -380,6 +380,32 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn nonempty_change_advances_counter() {
+        let actor = ActorId::from_bytes([5; 32]);
+        let first = candidate(5, 1, 1, 2);
+        let second = candidate(5, 2, 3, 4);
+        let mut states = BTreeMap::new();
+        assert_eq!(apply_nonempty_counter(&mut states, &first), Ok(()));
+        assert_eq!(apply_nonempty_counter(&mut states, &second), Ok(()));
+        assert_eq!(states[&actor].last_sequence, 2);
+        assert_eq!(states[&actor].next_op, 7);
+        assert_eq!(states[&actor].highest_change, second.change_hash);
+
+        let mut overflow = BTreeMap::from([(
+            actor,
+            EpochActorState {
+                last_sequence: 2,
+                next_op: u64::MAX,
+                highest_change: second.change_hash,
+            },
+        )]);
+        assert_eq!(
+            apply_nonempty_counter(&mut overflow, &candidate(5, 3, u64::MAX, 1)),
+            Err(ActorStateError::OperationCounter)
+        );
+    }
+
+    #[test]
     fn validate_empty_merge_change_counters() {
         let mut states = BTreeMap::new();
         let first = candidate(1, 1, 1, 2);
