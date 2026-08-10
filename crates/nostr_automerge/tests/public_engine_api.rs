@@ -769,6 +769,12 @@ fn accepted_at_control_is_exact_closure() {
 fn child_epoch_uses_exact_base_closure() {
     children_are_evaluated_one_epoch_at_a_time();
 
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/controls/scenario_multi_epoch_exact_closure.json"
+    ))
+    .expect("multi-epoch signed fixture recipe");
+    assert_eq!(fixture["requirements"].as_array().map(Vec::len), Some(2));
+
     let controller = TestSigner::from_byte(52);
     let retained = TestSigner::from_byte(53);
     let removed = TestSigner::from_byte(54);
@@ -793,16 +799,30 @@ fn child_epoch_uses_exact_base_closure() {
     let genesis_id = VerifiedNip01Event::verify(genesis.clone())
         .expect("signed genesis")
         .event_id();
-    let author = |writer: &TestSigner, key: &str, created_at: u64| {
-        let actor = ActorId::derive(coordinate, writer.public_key());
-        let mut document = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
-            .expect("empty branch document");
-        let authored = document
-            .author_change(&[Operation::PutString {
-                key: key.to_owned(),
-                value: "branch".to_owned(),
-            }])
-            .expect("branch change");
+    let retained_actor = ActorId::derive(coordinate, retained.public_key());
+    let mut retained_document =
+        AuthoringDocument::empty(ActorState::initial(retained_actor, BTreeSet::new()))
+            .expect("empty retained document");
+    let retained_change = retained_document
+        .author_change(&[Operation::PutString {
+            key: "retained".to_owned(),
+            value: "ancestor".to_owned(),
+        }])
+        .expect("retained parent change");
+    let removed_actor = ActorId::derive(coordinate, removed.public_key());
+    let mut removed_document =
+        AuthoringDocument::empty(ActorState::initial(removed_actor, BTreeSet::new()))
+            .expect("empty removed document");
+    let removed_change = removed_document
+        .author_change(&[Operation::PutString {
+            key: "removed".to_owned(),
+            value: "pruned".to_owned(),
+        }])
+        .expect("removed parent change");
+    let sign_change = |writer: &TestSigner,
+                       control_id: EventId,
+                       authored: &nostr_automerge::authoring::AuthoredChange,
+                       created_at: u64| {
         let hash = authored.change_hash();
         let event = writer.sign(
             &UnsignedEventDraft::new(
@@ -810,7 +830,7 @@ fn child_epoch_uses_exact_base_closure() {
                 1_624,
                 vec![
                     vec!["a".to_owned(), coordinate.to_address()],
-                    vec!["e".to_owned(), genesis_id.to_hex()],
+                    vec!["e".to_owned(), control_id.to_hex()],
                     vec!["x".to_owned(), hash.to_hex()],
                 ],
                 base64::engine::general_purpose::STANDARD.encode(authored.raw()),
@@ -821,8 +841,8 @@ fn child_epoch_uses_exact_base_closure() {
         );
         (event, hash)
     };
-    let (retained_event, retained_hash) = author(&retained, "retained", 2);
-    let (removed_event, removed_hash) = author(&removed, "removed", 3);
+    let (retained_event, retained_hash) = sign_change(&retained, genesis_id, &retained_change, 2);
+    let (removed_event, removed_hash) = sign_change(&removed, genesis_id, &removed_change, 3);
     let child = signed_acl_control_with_base(
         &controller,
         coordinate,
@@ -835,8 +855,15 @@ fn child_epoch_uses_exact_base_closure() {
     let child_id = VerifiedNip01Event::verify(child.clone())
         .expect("signed pruning child")
         .event_id();
+    let child_change = retained_document
+        .author_change(&[Operation::PutString {
+            key: "child".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .expect("retained child-epoch change");
+    let (child_event, child_hash) = sign_change(&retained, child_id, &child_change, 5);
     let mut builder = CorpusBuilder::new();
-    for event in [child, removed_event, genesis, retained_event] {
+    for event in [child_event, child, removed_event, genesis, retained_event] {
         assert!(matches!(
             builder.ingest(event),
             IngestOutcome::Accepted { .. }
@@ -849,13 +876,37 @@ fn child_epoch_uses_exact_base_closure() {
         &NeverCancelled,
     );
     assert_eq!(report.canonical_controls(), [genesis_id, child_id]);
-    assert_eq!(report.accepted_changes(), [retained_hash]);
-    assert_eq!(report.heads(), [retained_hash]);
+    assert_eq!(
+        report
+            .accepted_changes()
+            .iter()
+            .copied()
+            .collect::<BTreeSet<_>>(),
+        BTreeSet::from([retained_hash, child_hash])
+    );
+    assert_eq!(report.heads(), [child_hash]);
     assert!(
         report
             .dispositions()
             .contains(&(removed_hash, ProtocolDisposition::Excluded))
     );
+    let document = report.document().expect("materialized exact closure");
+    let keys = document
+        .entries()
+        .iter()
+        .filter_map(|entry| match entry.path() {
+            [MaterializedPathElement::Key(key)] => Some(key.as_str()),
+            _ => None,
+        })
+        .collect::<BTreeSet<_>>();
+    assert!(keys.contains("retained"));
+    assert!(keys.contains("child"));
+    assert!(!keys.contains("removed"));
+}
+
+#[test]
+fn signed_multi_epoch_exact_closure() {
+    child_epoch_uses_exact_base_closure();
 }
 
 #[test]
