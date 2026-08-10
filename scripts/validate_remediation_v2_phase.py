@@ -167,7 +167,37 @@ def main() -> int:
         raise AssertionError("causal phase does not activate step_382")
     if causal.get("publication_authorized") is not False:
         raise AssertionError("causal phase report cannot authorize publication")
-    print("PASS: phase reports activate causal acceptance then step_382")
+
+    reports = json.loads((ROOT / "reports/remediation_v2_phase_04.json").read_text())
+    if reports.get("phase") != "phase_04_reports_dispositions" or reports.get("status") != "pass":
+        raise AssertionError("reports/dispositions phase is not passing")
+    report_steps = [f"step_{step:03d}" for step in range(382, 399)]
+    if reports.get("completed_steps") != report_steps or set(reports.get("commits", {})) != set(report_steps):
+        raise AssertionError("reports/dispositions checkpoint coverage is incomplete")
+    requirements = [f"R2_REPORT_{number:03d}" for number in range(1, 8)]
+    if reports.get("requirements") != requirements:
+        raise AssertionError("reports/dispositions requirements are incomplete")
+    tests = reports.get("tests", {})
+    if set(tests) != set(requirements) or any(not tests[requirement] for requirement in requirements):
+        raise AssertionError("reports/dispositions phase lacks direct test evidence")
+    if any(command.get("result") != "pass" for command in reports.get("commands", [])):
+        raise AssertionError("reports/dispositions phase contains a nonpassing command")
+    for relative, expected in reports.get("artifact_sha256", {}).items():
+        if not artifact_matches(reports, "reports/remediation_v2_phase_04.json", relative, expected):
+            raise AssertionError(f"reports/dispositions artifact hash mismatch: {relative}")
+    for commit_hash in reports["commits"].values():
+        if commit_hash == "self":
+            continue
+        commit = subprocess.run(
+            ["git", "cat-file", "-e", f"{commit_hash}^{{commit}}"], cwd=ROOT, check=False
+        )
+        if commit.returncode:
+            raise AssertionError(f"reports/dispositions commit does not exist: {commit_hash}")
+    if reports.get("next") != {"rcld": 20, "checkpoint": "step_399"}:
+        raise AssertionError("reports/dispositions phase does not activate step_399")
+    if reports.get("publication_authorized") is not False:
+        raise AssertionError("reports/dispositions phase cannot authorize publication")
+    print("PASS: phase reports activate reports/dispositions then step_399")
     return 0
 
 

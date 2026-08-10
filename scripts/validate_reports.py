@@ -6,9 +6,11 @@ from __future__ import annotations
 import copy
 import json
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
+sys.dont_write_bytecode = True
 from validate_dispositions_digest import encode as encode_dispositions
 from validate_history_digest import encode as encode_history
 

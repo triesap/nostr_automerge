@@ -1,6 +1,7 @@
 # nostr_automerge Draft V1 RCLD 20: Tags And Revision Classification
 
-Status: pending RCLD 19
+Status: active
+Current checkpoint: `step_399`
 Steps: `step_399` through `step_409`
 Primary findings: `FINDING_020`, `FINDING_021`
 

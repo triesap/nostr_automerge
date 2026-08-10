@@ -10,13 +10,13 @@
     "sha2": "0.10.9",
     "url": "2.5.4"
   },
-  "evaluated_commit": "d9dfa258dd00cce116b56bd5460d47403cf16306",
+  "evaluated_commit": "bda528f844986b1180e450f7b9558d7014e04690",
   "fixture_manifest": [
     {
-      "expected_sha256": "ac038980bab5d7f9847c86e6ade659e644056f44b0838b65f663465d3d95ee58",
+      "expected_sha256": "6b5791c2aa2bdabdf951048ed0fc2eaf8bb0cf6fd07faeb57fc43e13244beb54",
       "fixture_id": "actor_derivation_001",
       "input_sha256": "850a14c1264b682952f9588fe61e1bc9b5d295d0f895c5763bfaa1cf6ed2a114",
-      "metadata_sha256": "1c9a905bb52c43fdb9ec05f75ca8a1d045d42e2af8da7cffcc6a5591bb8cc0bf",
+      "metadata_sha256": "b24b4c240ba03d8c7ca77ff4f3c73b11a06c5db79bf10f870fd146a0aa3f77a1",
       "status": "passed"
     }
   ],

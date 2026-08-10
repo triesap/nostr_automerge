@@ -1,0 +1,42 @@
+{
+  "schema": "nostr_automerge.remediation_phase.v2",
+  "phase": "phase_04_reports_dispositions",
+  "status": "pass",
+  "recorded": "2026-08-10",
+  "phase_input_head": "bda528f844986b1180e450f7b9558d7014e04690",
+  "findings": ["FINDING_017", "FINDING_018", "FINDING_022"],
+  "requirements": ["R2_REPORT_001", "R2_REPORT_002", "R2_REPORT_003", "R2_REPORT_004", "R2_REPORT_005", "R2_REPORT_006", "R2_REPORT_007"],
+  "completed_steps": ["step_382", "step_383", "step_384", "step_385", "step_386", "step_387", "step_388", "step_389", "step_390", "step_391", "step_392", "step_393", "step_394", "step_395", "step_396", "step_397", "step_398"],
+  "commits": {
+    "step_382": "db5ec19", "step_383": "a37551e", "step_384": "e8f2929",
+    "step_385": "3ca6c8a", "step_386": "4c87e7c", "step_387": "d419c0e",
+    "step_388": "86b1c6a", "step_389": "c5c4dea", "step_390": "8331a6d",
+    "step_391": "71d1a57", "step_392": "f74954d", "step_393": "0db8318",
+    "step_394": "d82e51e", "step_395": "70db861", "step_396": "f000637",
+    "step_397": "bda528f", "step_398": "self"
+  },
+  "tests": {
+    "R2_REPORT_001": ["conformance::dispositions_digest::tests::canonical_records_generate_every_namespaced_digest_item"],
+    "R2_REPORT_002": ["public_engine_api::invalid_and_excluded_changes_are_distinct"],
+    "R2_REPORT_003": ["public_engine_api::control_disposition_records_are_complete"],
+    "R2_REPORT_004": ["scripts/validate_reports.py::invalid_completion"],
+    "R2_REPORT_005": ["public_engine_api::evaluation_errors_are_noncanonical"],
+    "R2_REPORT_006": ["interop::tests::normative_digests_have_one_implementation"],
+    "R2_REPORT_007": ["public_engine_api::event_dispositions_digest_boundary"]
+  },
+  "commands": [
+    {"command": "cargo extbuild run -- python3 scripts/local_gate.py standard", "result": "pass"},
+    {"command": "cargo extbuild run -- python3 scripts/validate_reports.py", "result": "pass"},
+    {"command": "cargo extbuild run -- python3 scripts/validate_fixture_manifest.py", "result": "pass"},
+    {"command": "git diff --check", "result": "pass"}
+  ],
+  "artifact_sha256": {
+    "crates/nostr_automerge/src/engine/evaluation_report.rs": "6c4f54211a52c18b971509e1de912e35feedb3789ffde867f1c857172782a6de",
+    "crates/nostr_automerge/src/reference/evaluate.rs": "5dba2c0e3ec398005e6f47a349aad72a23b67e29f6570935a67df37cdfb84dfe",
+    "tools/nostr_automerge_conformance/src/expected.rs": "7ad89a41b8a0d9d24c70afe8a98943096fd39032d4ddccaf11780f1980cdf49e",
+    "fixtures/schema/report.schema.json": "3c5dcae21f799fe9870a05e7982b06e463d7a813362220663217540c690d7462",
+    "scripts/validate_reports.py": "b8763980a661dc69d06c41b780857c7a92ebfbfcca6d0348db2fc22b668d1eea"
+  },
+  "next": {"rcld": 20, "checkpoint": "step_399"},
+  "publication_authorized": false
+}

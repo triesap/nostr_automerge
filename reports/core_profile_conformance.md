@@ -12,7 +12,7 @@ processes.
 
 The exact machine report is `reports/core_profile_conformance.json`, whose
 SHA-256 is
-`96ca5184433e85ee59741740e8e6fd14e6c2dfed85828f0effdaa76a554e3158`.
+`44dc4684415c6e4c25468144a95fdf7c4c4b5d84bbe3ebe120aa4fe99ba573c7`.
 It records the dependency versions, `Cargo.lock` checksum, fixture manifest,
 input and expected-output checksums, and every gate result.
 

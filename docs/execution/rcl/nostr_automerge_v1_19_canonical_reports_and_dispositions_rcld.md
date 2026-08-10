@@ -1,7 +1,6 @@
 # nostr_automerge Draft V1 RCLD 19: Canonical Reports And Dispositions
 
-Status: active
-Current checkpoint: `step_398`
+Status: complete
 Steps: `step_382` through `step_398`
 Primary findings: `FINDING_017`, `FINDING_018`, `FINDING_022`
 
@@ -49,3 +48,4 @@ invalid evidence with valid noncanonical evidence.
 - `step_395`: `70db861` — the library is the single normative history and dispositions digest implementation.
 - `step_396`: `f000637` — canonical reports expose ordered namespaced dispositions, distinct invalid changes, and typed evaluator failure.
 - `step_397`: this commit — every published expected report is independently validated against canonical history and disposition digest vectors.
+- `step_398`: this commit — the complete report/disposition phase gate passes and activates RCLD 20.
