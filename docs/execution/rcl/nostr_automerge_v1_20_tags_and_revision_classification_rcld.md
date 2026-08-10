@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 20: Tags And Revision Classification
 
 Status: active
-Current checkpoint: `step_402`
+Current checkpoint: `step_403`
 Steps: `step_399` through `step_409`
 Primary findings: `FINDING_020`, `FINDING_021`
 
@@ -34,4 +34,5 @@ ambiguous revision declarations remain invalid signed evidence.
 
 - `step_399`: `04b642b` — one shared tag contract preserves exact required tags, rejects explicit forbidden names, and ignores every unknown name.
 - `step_400`: `5923861` — change carriers use the shared contract and ignore harmless unknown tags.
-- `step_401`: this commit — control carriers preserve sequence-dependent parent rules while ignoring unknown tags.
+- `step_401`: `42c2033` — control carriers preserve sequence-dependent parent rules while ignoring unknown tags.
+- `step_402`: this commit — manifest carriers require only d and ignore all harmless extension tags.

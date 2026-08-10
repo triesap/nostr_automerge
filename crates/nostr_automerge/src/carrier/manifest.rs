@@ -123,11 +123,9 @@ fn validate_parts(
     event_tags: &[Vec<String>],
     content: &str,
 ) -> Result<ValidatedManifest, ManifestContentError> {
+    tags::require_tag_contract(event_tags, &[("d", 2)], &["expiration", "-"])
+        .map_err(|_| ManifestContentError::Tags)?;
     let d = tags::required_tag(event_tags, "d", 2).map_err(|_| ManifestContentError::Tags)?;
-    for forbidden in ["a", "e", "x"] {
-        tags::require_absent(event_tags, forbidden).map_err(|_| ManifestContentError::Tags)?;
-    }
-    tags::require_durable_tags(event_tags).map_err(|_| ManifestContentError::Tags)?;
     let document_id: DocumentId = d[1].parse().map_err(|_| ManifestContentError::Tags)?;
     let coordinate = DocumentCoordinate::new(ControllerPublicKey::from_bytes(author), document_id);
 
@@ -345,7 +343,17 @@ mod tests {
             validate_parts(EventId::from_bytes([0; 32]), 0, author, &tags, &bad_status),
             Err(ManifestContentError::Semantics)
         );
-        let forbidden = vec![tags[0].clone(), vec!["e".to_owned(), "00".repeat(32)]];
+        let extended = vec![
+            tags[0].clone(),
+            vec!["a".to_owned(), "ignored".to_owned()],
+            vec!["e".to_owned(), "ignored".to_owned()],
+            vec!["x".to_owned()],
+            vec!["future".to_owned(), "one".to_owned(), "two".to_owned()],
+        ];
+        assert!(
+            validate_parts(EventId::from_bytes([0; 32]), 0, author, &extended, CONTENT).is_ok()
+        );
+        let forbidden = vec![tags[0].clone(), vec!["-".to_owned()]];
         assert_eq!(
             validate_parts(EventId::from_bytes([0; 32]), 0, author, &forbidden, CONTENT),
             Err(ManifestContentError::Tags)
