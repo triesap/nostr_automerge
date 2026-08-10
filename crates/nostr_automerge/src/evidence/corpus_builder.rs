@@ -128,12 +128,6 @@ impl CorpusBuilder {
             return IngestOutcome::Duplicate { event_id };
         }
         let (evidence, outcome) = match classify(event.clone()) {
-            Some(CarrierCandidate::InvalidDeclaration(event)) => invalid_carrier(
-                event,
-                checksum,
-                event_id,
-                DiagnosticCode::registered("carrier.revision"),
-            ),
             Some(CarrierCandidate::UnsupportedRevision {
                 event,
                 declared_version,

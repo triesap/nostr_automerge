@@ -9,9 +9,6 @@ use super::CarrierCandidate;
 pub(crate) fn classify(event: VerifiedNip01Event) -> Option<CarrierCandidate> {
     let kind = crate::ProtocolRevision::draft_v1().classify_kind(event.kind())?;
     let declaration = declaration(kind, event.content());
-    if declaration.invalid {
-        return Some(CarrierCandidate::InvalidDeclaration(event));
-    }
     if declaration.unsupported {
         return Some(CarrierCandidate::UnsupportedRevision {
             event,
@@ -33,7 +30,6 @@ struct Declaration {
     version: Option<u64>,
     profile: Option<String>,
     unsupported: bool,
-    invalid: bool,
 }
 
 fn declaration(kind: CarrierKind, content: &str) -> Declaration {
@@ -48,10 +44,7 @@ fn declaration(kind: CarrierKind, content: &str) -> Declaration {
         CarrierKind::Change => return Declaration::default(),
     };
     let Ok(serde_json::Value::Object(object)) = parse_canonical(content, maximum) else {
-        return Declaration {
-            invalid: true,
-            ..Declaration::default()
-        };
+        return Declaration::default();
     };
     let version = object.get("v").and_then(Value::as_u64);
     let profile = object
@@ -66,7 +59,6 @@ fn declaration(kind: CarrierKind, content: &str) -> Declaration {
         version,
         profile,
         unsupported,
-        invalid: false,
     }
 }
 
@@ -89,14 +81,12 @@ mod tests {
                     version: Some(1),
                     profile: Some("automerge-change-v1".to_owned()),
                     unsupported: false,
-                    invalid: false,
                 }
             );
             assert!(declaration(kind, r#"{"v":2}"#).unsupported);
             assert!(declaration(kind, r#"{"format":"automerge-change-v2"}"#).unsupported);
-            assert!(declaration(kind, r#"{"v":2,"v":1}"#).invalid);
-            assert!(declaration(kind, r#"{ "v":2}"#).invalid);
-            assert!(!declaration(kind, r#"{"v":2}"#).invalid);
+            assert!(!declaration(kind, r#"{"v":2,"v":1}"#).unsupported);
+            assert!(!declaration(kind, r#"{ "v":2}"#).unsupported);
         }
         assert_eq!(
             declaration(CarrierKind::Change, "binary base64"),

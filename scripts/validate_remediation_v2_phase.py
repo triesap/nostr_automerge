@@ -197,7 +197,28 @@ def main() -> int:
         raise AssertionError("reports/dispositions phase does not activate step_399")
     if reports.get("publication_authorized") is not False:
         raise AssertionError("reports/dispositions phase cannot authorize publication")
-    print("PASS: phase reports activate reports/dispositions then step_399")
+
+    tags = json.loads((ROOT / "reports/remediation_v2_phase_05.json").read_text())
+    if tags.get("phase") != "phase_05_tags_revision" or tags.get("status") != "pass":
+        raise AssertionError("tags/revision phase is not passing")
+    tag_steps = [f"step_{step:03d}" for step in range(399, 410)]
+    if tags.get("completed_steps") != tag_steps or set(tags.get("commits", {})) != set(tag_steps):
+        raise AssertionError("tags/revision checkpoint coverage is incomplete")
+    requirements = ["R2_TAG_001", "R2_TAG_002", "R2_TAG_003", "R2_REV_001", "R2_REV_002"]
+    if tags.get("requirements") != requirements or set(tags.get("tests", {})) != set(requirements):
+        raise AssertionError("tags/revision requirement evidence is incomplete")
+    if any(not tags["tests"][requirement] for requirement in requirements):
+        raise AssertionError("tags/revision phase lacks direct tests")
+    if any(command.get("result") != "pass" for command in tags.get("commands", [])):
+        raise AssertionError("tags/revision phase contains a nonpassing command")
+    for relative, expected in tags.get("artifact_sha256", {}).items():
+        if not artifact_matches(tags, "reports/remediation_v2_phase_05.json", relative, expected):
+            raise AssertionError(f"tags/revision artifact hash mismatch: {relative}")
+    if tags.get("next") != {"rcld": 21, "checkpoint": "step_410"}:
+        raise AssertionError("tags/revision phase does not activate step_410")
+    if tags.get("publication_authorized") is not False:
+        raise AssertionError("tags/revision phase cannot authorize publication")
+    print("PASS: phase reports activate tags/revision then step_410")
     return 0
 
 

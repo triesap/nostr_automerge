@@ -21,7 +21,6 @@ pub(crate) enum CarrierCandidate {
     Change(VerifiedNip01Event),
     CheckpointDescriptor(VerifiedNip01Event),
     CheckpointChunk(VerifiedNip01Event),
-    InvalidDeclaration(VerifiedNip01Event),
     UnsupportedRevision {
         event: VerifiedNip01Event,
         declared_version: Option<u64>,

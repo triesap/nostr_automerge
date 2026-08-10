@@ -1,0 +1,16 @@
+{
+  "schema":"nostr_automerge.remediation_phase.v2",
+  "phase":"phase_05_tags_revision",
+  "status":"pass",
+  "recorded":"2026-08-10",
+  "phase_input_head":"92396315af2906f34618d33a9821cc3d9befb6b9",
+  "findings":["FINDING_020","FINDING_021"],
+  "requirements":["R2_TAG_001","R2_TAG_002","R2_TAG_003","R2_REV_001","R2_REV_002"],
+  "completed_steps":["step_399","step_400","step_401","step_402","step_403","step_404","step_405","step_406","step_407","step_408","step_409"],
+  "commits":{"step_399":"04b642b","step_400":"5923861","step_401":"42c2033","step_402":"59d83d5","step_403":"fdaffdf","step_404":"1335f6e","step_405":"39c15b6","step_406":"759559f","step_407":"567ece6","step_408":"9239631","step_409":"self"},
+  "tests":{"R2_TAG_001":["wire::tags::tests::contract_ignores_unknown_names_but_preserves_exact_requirements"],"R2_TAG_002":["public_engine_api::unknown_change_tags_leave_canonical_report_unchanged"],"R2_TAG_003":["carrier::change::tests::parse_and_validate_change_carriers"],"R2_REV_001":["public_engine_api::signed_revision_declarations_distinguish_invalid_from_unsupported"],"R2_REV_002":["carrier::classify::tests::add_carrier_classification"]},
+  "commands":[{"command":"cargo extbuild run -- python3 scripts/local_gate.py standard","result":"pass"},{"command":"cargo extbuild run -- cargo test -p nostr_automerge --test public_engine_api signed_revision_declarations_distinguish_invalid_from_unsupported --locked","result":"pass"},{"command":"cargo extbuild run -- cargo test -p nostr_automerge --test public_engine_api unknown_change_tags_leave_canonical_report_unchanged --locked","result":"pass"},{"command":"git diff --check","result":"pass"}],
+  "artifact_sha256":{"crates/nostr_automerge/src/wire/tags.rs":"c18a50132583899c37a21a5bfd4a31006a9eae0050b00ab9123d80b3fb9f9e2e","crates/nostr_automerge/src/carrier/classify.rs":"f9d46814e3b9716bed70ef07e123e38d058ef7f196512357175600a97e99c9bf","crates/nostr_automerge/src/evidence/corpus_builder.rs":"d7affd160a9d59111d04098ea2ad2f2c6a880427419581a8d76adfa01f847b73","crates/nostr_automerge/tests/public_engine_api.rs":"44bfb15a908bfb78a086f0af0e49457b32234b6f4cee39257925a4387d5119b6","fixtures/v1_draft/tags/unknown_tag_invariance.json":"d448152f759b8f30a335e451ae8cb28f6d881484ee660f32937f081ca45bfcf7","fixtures/v1_draft/tags/revision_classification.json":"6e9c43cb0fd972361c6c4377756db372e3470c82a19ed31cab7f27b289c28d06"},
+  "next":{"rcld":21,"checkpoint":"step_410"},
+  "publication_authorized":false
+}

@@ -4500,7 +4500,11 @@ fn validated_checkpoint_descriptor_carrier_enters_corpus() {
     for (created_at, tags, expected) in [
         (
             2,
-            [valid_tags(), vec![vec!["d".to_owned(), "x".to_owned()]]].concat(),
+            [
+                valid_tags(),
+                vec![vec!["expiration".to_owned(), "1".to_owned()]],
+            ]
+            .concat(),
             "tag.forbidden",
         ),
         (
@@ -4510,7 +4514,7 @@ fn validated_checkpoint_descriptor_carrier_enters_corpus() {
                 vec![vec!["a".to_owned(), coordinate.to_address()]],
             ]
             .concat(),
-            "tag.forbidden",
+            "tag.required",
         ),
         (
             4,
@@ -4606,7 +4610,7 @@ fn validated_checkpoint_chunk_carrier_enters_corpus() {
     for (created_at, tags, content, expected) in [
         (
             2,
-            [valid_tags(), vec![vec!["d".to_owned(), "x".to_owned()]]].concat(),
+            [valid_tags(), vec![vec!["-".to_owned()]]].concat(),
             canonical_content,
             "tag.forbidden",
         ),
@@ -4693,7 +4697,7 @@ fn pending_controls_converge_after_signed_parent_delivery() {
         (4, vec![a(&coordinate), a(&coordinate)], 0, "tag.required"),
         (
             5,
-            vec![a(&coordinate), vec!["p".to_owned(), "extra".to_owned()]],
+            vec![a(&coordinate), vec!["-".to_owned()]],
             0,
             "tag.forbidden",
         ),

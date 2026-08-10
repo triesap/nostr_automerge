@@ -1,7 +1,6 @@
 # nostr_automerge Draft V1 RCLD 20: Tags And Revision Classification
 
-Status: active
-Current checkpoint: `step_409`
+Status: complete
 Steps: `step_399` through `step_409`
 Primary findings: `FINDING_020`, `FINDING_021`
 
@@ -40,5 +39,6 @@ ambiguous revision declarations remain invalid signed evidence.
 - `step_404`: `1335f6e` — checkpoint chunks retain exact a/e/x/part requirements and ignore unknown tags.
 - `step_405`: `39c15b6` — signed change variants prove unknown order, repetition, and extra elements leave canonical report inputs unchanged.
 - `step_406`: `759559f` — revision probing uses the bounded canonical JSON parser before inspecting declarations.
-- `step_407`: `567ece6` — malformed, duplicate, and noncanonical declarations become invalid carriers rather than unsupported revisions.
-- `step_408`: this commit — signed raw-event fixtures execute the complete invalid-versus-unsupported declaration matrix.
+- `step_407`: `567ece6` — malformed, duplicate, and noncanonical declarations are excluded from unsupported classification and remain invalid carriers.
+- `step_408`: `9239631` — signed raw-event fixtures execute the complete invalid-versus-unsupported declaration matrix.
+- `step_409`: this commit — the complete tag and revision phase gate passes and activates RCLD 21.
