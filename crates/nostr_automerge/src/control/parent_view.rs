@@ -131,8 +131,6 @@ mod tests {
             BTreeSet::from([first_hash, second_hash]),
             BTreeSet::from([first_hash, second_hash]),
             candidates,
-            actors.clone(),
-            BTreeMap::from([(first_actor, first_hash), (second_actor, second_hash)]),
             Some(materialized),
         );
         assert!(state.is_ok());

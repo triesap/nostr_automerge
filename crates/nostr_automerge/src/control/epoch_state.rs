@@ -10,8 +10,6 @@ pub(crate) enum AcceptedEpochStateError {
     ClosureMismatch,
     FrontierMismatch,
     ActorState(ActorStateError),
-    ActorStateMismatch,
-    WriterContributionMismatch,
 }
 
 /// Complete accepted state at one canonical control.
@@ -34,8 +32,6 @@ impl AcceptedEpochState {
         accepted_closure: BTreeSet<ChangeHash>,
         frontier_heads: BTreeSet<ChangeHash>,
         accepted_candidates: BTreeMap<ChangeHash, ChangeCandidate>,
-        actor_states: BTreeMap<ActorId, EpochActorState>,
-        writer_contributions: BTreeMap<ActorId, ChangeHash>,
         materialized: Option<MaterializedDocumentView>,
     ) -> Result<Self, AcceptedEpochStateError> {
         if accepted_closure != accepted_candidates.keys().copied().collect() {
@@ -72,18 +68,12 @@ impl AcceptedEpochState {
         if frontier_heads != exact_heads {
             return Err(AcceptedEpochStateError::FrontierMismatch);
         }
-        let derived_actor_states = initialize_actor_states(accepted_candidates.values().cloned())
+        let actor_states = initialize_actor_states(accepted_candidates.values().cloned())
             .map_err(AcceptedEpochStateError::ActorState)?;
-        if actor_states != derived_actor_states {
-            return Err(AcceptedEpochStateError::ActorStateMismatch);
-        }
-        if writer_contributions.iter().any(|(actor, hash)| {
-            actor_states
-                .get(actor)
-                .is_none_or(|state| state.highest_change != *hash)
-        }) {
-            return Err(AcceptedEpochStateError::WriterContributionMismatch);
-        }
+        let writer_contributions = actor_states
+            .iter()
+            .map(|(actor, state)| (*actor, state.highest_change))
+            .collect();
         Ok(Self {
             accepted_closure,
             frontier_heads,
@@ -130,7 +120,6 @@ mod tests {
 
     use super::{AcceptedEpochState, AcceptedEpochStateError};
     use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
-    use crate::graph::actor_state::EpochActorState;
     use crate::graph::change_candidate::ChangeCandidate;
     use crate::{ActorId, ChangeHash, DevicePublicKey, EventId};
 
@@ -152,8 +141,6 @@ mod tests {
         BTreeSet<ChangeHash>,
         BTreeSet<ChangeHash>,
         BTreeMap<ChangeHash, ChangeCandidate>,
-        BTreeMap<ActorId, EpochActorState>,
-        BTreeMap<ActorId, ChangeHash>,
     );
 
     fn materialized() -> Option<MaterializedDocumentView> {
@@ -163,26 +150,16 @@ mod tests {
     fn parts() -> Parts {
         let change = candidate(5);
         let hash = change.change_hash;
-        let actor = change.actor;
         (
             BTreeSet::from([hash]),
             BTreeSet::from([hash]),
             BTreeMap::from([(hash, change)]),
-            BTreeMap::from([(
-                actor,
-                EpochActorState {
-                    last_sequence: 1,
-                    next_op: 2,
-                    highest_change: hash,
-                },
-            )]),
-            BTreeMap::from([(actor, hash)]),
         )
     }
 
     #[test]
-    fn rejects_inconsistent_heads_closure_and_actor_state() {
-        let (closure, heads, candidates, actors, writers) = parts();
+    fn rejects_inconsistent_heads_and_derives_actor_state() {
+        let (closure, heads, candidates) = parts();
         let materialized = materialized();
         assert!(materialized.is_some());
         let Some(materialized) = materialized else {
@@ -192,8 +169,6 @@ mod tests {
             closure.clone(),
             heads,
             candidates.clone(),
-            actors.clone(),
-            writers.clone(),
             Some(materialized.clone()),
         );
         assert!(state.is_ok());
@@ -203,8 +178,6 @@ mod tests {
                 BTreeSet::new(),
                 BTreeSet::new(),
                 candidates.clone(),
-                actors.clone(),
-                writers.clone(),
                 Some(materialized.clone()),
             ),
             Err(AcceptedEpochStateError::ClosureMismatch)
@@ -214,22 +187,22 @@ mod tests {
                 closure.clone(),
                 BTreeSet::new(),
                 candidates.clone(),
-                actors.clone(),
-                writers.clone(),
                 Some(materialized.clone()),
             ),
             Err(AcceptedEpochStateError::FrontierMismatch)
         ));
-        assert!(matches!(
-            AcceptedEpochState::new(
-                closure,
-                BTreeSet::from([ChangeHash::from_bytes([5; 32])]),
-                candidates,
-                BTreeMap::new(),
-                writers,
-                Some(materialized),
-            ),
-            Err(AcceptedEpochStateError::ActorStateMismatch)
-        ));
+        let derived = AcceptedEpochState::new(
+            closure,
+            BTreeSet::from([ChangeHash::from_bytes([5; 32])]),
+            candidates,
+            Some(materialized),
+        );
+        assert!(derived.is_ok_and(|state| {
+            state.actor_states().values().all(|actor| {
+                actor.last_sequence == 1
+                    && actor.next_op == 2
+                    && actor.highest_change == ChangeHash::from_bytes([5; 32])
+            })
+        }));
     }
 }

@@ -4,7 +4,7 @@ use crate::ChangeHash;
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 use crate::control::epoch_state::AcceptedEpochState;
 use crate::control::validate::ControlEnvelope;
-use crate::graph::actor_state::{ActorStateError, EpochActorState, initialize_actor_states};
+use crate::graph::actor_state::EpochActorState;
 use crate::graph::change_candidate::ChangeCandidate;
 use crate::graph::schedule::ScheduleError;
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
@@ -23,7 +23,6 @@ pub(crate) enum EpochEvaluationInputError {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum EpochEvaluationError {
     Schedule(ScheduleError),
-    ActorState(ActorStateError),
     State(crate::control::epoch_state::AcceptedEpochStateError),
 }
 
@@ -147,13 +146,10 @@ impl AcceptedAtControl {
 }
 
 impl EpochEvaluationResult {
-    #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
         accepted_closure: BTreeSet<ChangeHash>,
         frontier_heads: BTreeSet<ChangeHash>,
         accepted_candidates: BTreeMap<ChangeHash, ChangeCandidate>,
-        actor_states: BTreeMap<ActorId, EpochActorState>,
-        writer_contributions: BTreeMap<ActorId, ChangeHash>,
         dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
         integrity_alerts: Vec<IntegrityAlert>,
         materialized: Option<MaterializedDocumentView>,
@@ -162,8 +158,6 @@ impl EpochEvaluationResult {
             accepted_closure,
             frontier_heads,
             accepted_candidates,
-            actor_states,
-            writer_contributions,
             materialized,
         )?;
         Ok(Self {
@@ -227,12 +221,6 @@ pub(crate) fn evaluate_epoch(
             }),
     );
     let accepted_closure = accepted_candidates.keys().copied().collect::<BTreeSet<_>>();
-    let actor_states = initialize_actor_states(accepted_candidates.values().cloned())
-        .map_err(EpochEvaluationError::ActorState)?;
-    let writer_contributions = actor_states
-        .iter()
-        .map(|(actor, state)| (*actor, state.highest_change))
-        .collect();
     let depended_on = accepted_candidates
         .values()
         .flat_map(|candidate| candidate.dependencies.iter().copied())
@@ -248,8 +236,6 @@ pub(crate) fn evaluate_epoch(
         accepted_closure,
         frontier_heads,
         accepted_candidates,
-        actor_states,
-        writer_contributions,
         dispositions,
         Vec::new(),
         materialized,
@@ -301,8 +287,6 @@ mod tests {
             BTreeSet::new(),
             BTreeSet::new(),
             BTreeMap::new(),
-            BTreeMap::new(),
-            BTreeMap::new(),
             MaterializedDocumentView::empty_for_test().ok(),
         )
         .expect("consistent empty accepted state")
@@ -335,7 +319,7 @@ mod tests {
     }
 
     #[test]
-    fn rejects_inconsistent_actor_state_before_input_construction() {
+    fn derives_actor_state_before_input_construction() {
         let hash = ChangeHash::from_bytes([5; 32]);
         let actor = ActorId::from_bytes([6; 32]);
         let candidate = ChangeCandidate {
@@ -349,25 +333,19 @@ mod tests {
             author: DevicePublicKey::from_bytes([7; 32]),
             valid_carriers: BTreeSet::from([EventId::from_bytes([8; 32])]),
         };
-        let inconsistent = AcceptedEpochState::new(
+        let accepted = AcceptedEpochState::new(
             BTreeSet::from([hash]),
             BTreeSet::from([hash]),
             BTreeMap::from([(hash, candidate)]),
-            BTreeMap::from([(
-                actor,
-                EpochActorState {
-                    last_sequence: 2,
-                    next_op: 2,
-                    highest_change: hash,
-                },
-            )]),
-            BTreeMap::from([(actor, hash)]),
             MaterializedDocumentView::empty_for_test().ok(),
         );
-        assert!(matches!(
-            inconsistent,
-            Err(AcceptedEpochStateError::ActorStateMismatch)
-        ));
+        assert!(accepted.is_ok_and(|state| {
+            state.actor_states().get(&actor).is_some_and(|actor_state| {
+                actor_state.last_sequence == 1
+                    && actor_state.next_op == 2
+                    && actor_state.highest_change == hash
+            })
+        }));
     }
 
     #[test]
@@ -398,8 +376,6 @@ mod tests {
             BTreeSet::from([hash]),
             BTreeSet::from([hash]),
             BTreeMap::from([(hash, candidate.clone())]),
-            actors.clone(),
-            BTreeMap::from([(actor, hash)]),
             dispositions.clone(),
             Vec::new(),
             MaterializedDocumentView::empty_for_test().ok(),
@@ -424,8 +400,6 @@ mod tests {
             BTreeSet::from([hash]),
             BTreeSet::from([ChangeHash::from_bytes([13; 32])]),
             BTreeMap::from([(hash, candidate.clone())]),
-            actors.clone(),
-            BTreeMap::from([(actor, hash)]),
             dispositions.clone(),
             Vec::new(),
             None,
@@ -435,19 +409,14 @@ mod tests {
             Err(AcceptedEpochStateError::FrontierMismatch)
         ));
 
-        let bad_actor = EpochEvaluationResult::new(
+        let derived = EpochEvaluationResult::new(
             BTreeSet::from([hash]),
             BTreeSet::from([hash]),
             BTreeMap::from([(hash, candidate)]),
-            BTreeMap::new(),
-            BTreeMap::from([(actor, hash)]),
             dispositions,
             Vec::new(),
             None,
         );
-        assert!(matches!(
-            bad_actor,
-            Err(AcceptedEpochStateError::ActorStateMismatch)
-        ));
+        assert!(derived.is_ok_and(|result| result.accepted_state().actor_states() == &actors));
     }
 }

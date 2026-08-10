@@ -9,7 +9,6 @@ use crate::control::frontier::accepted_frontier_closure;
 use crate::control::parent_view::ParentEpochView;
 use crate::control::select::select_valid_outcomes_with_alert;
 use crate::control::validate::ControlEnvelope;
-use crate::graph::actor_state::initialize_actor_states;
 use crate::graph::change_candidate::ChangeCandidate;
 use crate::graph::dependency_graph::build_graph;
 use crate::graph::equivocation::{QuarantineError, quarantine_equivocation_descendants};
@@ -484,9 +483,7 @@ fn resolve_authoritative_epoch(
         .map(|result| result.dispositions().clone())
         .map_err(|error| match error {
             EpochEvaluationError::Schedule(error) => EpochResolutionError::Schedule(error),
-            EpochEvaluationError::ActorState(_) | EpochEvaluationError::State(_) => {
-                EpochResolutionError::InvalidState
-            }
+            EpochEvaluationError::State(_) => EpochResolutionError::InvalidState,
         })
 }
 
@@ -504,11 +501,6 @@ fn accepted_state_for_closure(
     if candidates.len() != accepted.len() {
         return None;
     }
-    let actor_states = initialize_actor_states(candidates.values().cloned()).ok()?;
-    let writer_contributions = actor_states
-        .iter()
-        .map(|(actor, state)| (*actor, state.highest_change))
-        .collect();
     let depended_on = candidates
         .values()
         .flat_map(|candidate| candidate.dependencies.iter().copied())
@@ -525,15 +517,7 @@ fn accepted_state_for_closure(
     } else {
         materialized
     };
-    AcceptedEpochState::new(
-        accepted.clone(),
-        heads,
-        candidates,
-        actor_states,
-        writer_contributions,
-        materialized,
-    )
-    .ok()
+    AcceptedEpochState::new(accepted.clone(), heads, candidates, materialized).ok()
 }
 
 fn epoch_result_from_accepted(
@@ -551,11 +535,6 @@ fn epoch_result_from_accepted(
     if candidates.len() != accepted.len() {
         return None;
     }
-    let actor_states = initialize_actor_states(candidates.values().cloned()).ok()?;
-    let writer_contributions = actor_states
-        .iter()
-        .map(|(actor, state)| (*actor, state.highest_change))
-        .collect();
     let depended_on = candidates
         .values()
         .flat_map(|candidate| candidate.dependencies.iter().copied())
@@ -566,8 +545,6 @@ fn epoch_result_from_accepted(
         accepted.clone(),
         heads,
         candidates,
-        actor_states,
-        writer_contributions,
         dispositions,
         integrity_alerts,
         None,
