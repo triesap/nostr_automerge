@@ -620,6 +620,124 @@ fn terminal_control_stops_document_extension() {
 }
 
 #[test]
+#[allow(clippy::expect_used)]
+fn successor_genesis_starts_new_document_state() {
+    let predecessor_controller = TestSigner::from_byte(55);
+    let predecessor_writer = TestSigner::from_byte(56);
+    let successor_controller = TestSigner::from_byte(57);
+    let successor_writer = TestSigner::from_byte(58);
+    let predecessor_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        predecessor_controller.public_key().to_hex(),
+        "61".repeat(32)
+    )
+    .parse()
+    .expect("fixed predecessor coordinate");
+    let successor_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        successor_controller.public_key().to_hex(),
+        "62".repeat(32)
+    )
+    .parse()
+    .expect("fixed successor coordinate");
+    let predecessor = signed_acl_control(
+        &predecessor_controller,
+        predecessor_coordinate,
+        1,
+        None,
+        0,
+        vec![(predecessor_writer.public_key().to_hex(), vec!["write"])],
+    );
+    let predecessor_id = VerifiedNip01Event::verify(predecessor.clone())
+        .expect("signed predecessor genesis")
+        .event_id();
+    let actor = ActorId::derive(predecessor_coordinate, predecessor_writer.public_key());
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
+        .expect("empty predecessor document");
+    let authored = document
+        .author_change(&[Operation::PutString {
+            key: "predecessor".to_owned(),
+            value: "must not cross".to_owned(),
+        }])
+        .expect("predecessor change");
+    let predecessor_change = predecessor_writer.sign(
+        &UnsignedEventDraft::new(
+            2,
+            1_624,
+            vec![
+                vec!["a".to_owned(), predecessor_coordinate.to_address()],
+                vec!["e".to_owned(), predecessor_id.to_hex()],
+                vec!["x".to_owned(), authored.change_hash().to_hex()],
+            ],
+            base64::engine::general_purpose::STANDARD.encode(authored.raw()),
+        )
+        .expect("predecessor change draft")
+        .prepare(predecessor_writer.public_key())
+        .expect("predecessor change preimage"),
+    );
+    let terminal_content = format!(
+        r#"{{"base_heads":["{}"],"format":"automerge-change-v1","members":[],"policy":"controller-acl-v1","predecessor":null,"seq":1,"successor":"{}","text_encoding":"utf16","v":1}}"#,
+        authored.change_hash().to_hex(),
+        successor_coordinate.to_address()
+    );
+    let terminal = predecessor_controller.sign(
+        &UnsignedEventDraft::new(
+            3,
+            1_625,
+            vec![
+                vec!["a".to_owned(), predecessor_coordinate.to_address()],
+                vec!["e".to_owned(), predecessor_id.to_hex()],
+            ],
+            terminal_content,
+        )
+        .expect("terminal draft")
+        .prepare(predecessor_controller.public_key())
+        .expect("terminal preimage"),
+    );
+    let terminal_id = VerifiedNip01Event::verify(terminal.clone())
+        .expect("signed terminal")
+        .event_id();
+    let successor_content = format!(
+        r#"{{"base_heads":[],"format":"automerge-change-v1","members":[{{"account":null,"pubkey":"{}","roles":["write"]}}],"policy":"controller-acl-v1","predecessor":{{"coordinate":"{}","terminal_control":"{}"}},"seq":0,"successor":null,"text_encoding":"utf16","v":1}}"#,
+        successor_writer.public_key().to_hex(),
+        predecessor_coordinate.to_address(),
+        terminal_id.to_hex()
+    );
+    let successor = successor_controller.sign(
+        &UnsignedEventDraft::new(
+            4,
+            1_625,
+            vec![vec!["a".to_owned(), successor_coordinate.to_address()]],
+            successor_content,
+        )
+        .expect("successor draft")
+        .prepare(successor_controller.public_key())
+        .expect("successor preimage"),
+    );
+    let successor_id = VerifiedNip01Event::verify(successor.clone())
+        .expect("signed successor genesis")
+        .event_id();
+    let mut builder = CorpusBuilder::new();
+    for event in [successor, predecessor_change, terminal, predecessor] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        successor_coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(report.canonical_controls(), [successor_id]);
+    assert!(report.accepted_changes().is_empty());
+    assert!(report.heads().is_empty());
+    assert!(report.dispositions().is_empty());
+    assert!(report.document().is_some());
+}
+
+#[test]
 fn interleaved_child_selection() {
     signed_events_reach_materialized_state_through_public_engine();
     pending_controls_converge_after_signed_parent_delivery();
