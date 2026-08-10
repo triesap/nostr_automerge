@@ -25,3 +25,16 @@ change-control process.
 | [0017](adr_0017_requirement_coverage_fails_closed.md) | Approved | `NCRDT-CONF-003` |
 | [0018](adr_0018_empty_terminal_genesis.md) | Approved | `NCRDT-CONTROL-001` |
 | [0019](adr_0019_independent_typescript_attestation.md) | Approved | `NCRDT-TS-001`, `NCRDT-CONF-003` |
+| [0020](adr_0020_interleaved_control_epoch_evaluation.md) | Approved | `NCRDT-CONTROL-001`, `NCRDT-STATE-001` |
+| [0021](adr_0021_exact_base_closure.md) | Approved | `NCRDT-CONTROL-001`, `NCRDT-STATE-002` |
+| [0022](adr_0022_actor_state_across_epochs.md) | Approved | `NCRDT-SEQ-001`, `NCRDT-SEQ-002` |
+| [0023](adr_0023_canonical_namespaced_dispositions.md) | Approved | `NCRDT-DISPOSITION-001`, `NCRDT-COMPLETION-001` |
+| [0024](adr_0024_unknown_tags_are_ignored.md) | Approved | `NCRDT-TAG-001`, `NCRDT-TAG-002`, `NCRDT-TAG-003` |
+| [0025](adr_0025_strict_revision_declaration.md) | Approved | `NCRDT-JSON-001`, `NCRDT-VERSION-001` |
+| [0026](adr_0026_fully_metered_panic_free_evaluation.md) | Approved | `NCRDT-LIMITS-001`, `NCRDT-EVALUATOR-001` |
+| [0027](adr_0027_conflict_aware_state_projection.md) | Approved | `NCRDT-STATE-002`, `NCRDT-SEM-001` |
+| [0028](adr_0028_empty_history_checkpoints.md) | Approved | `NCRDT-CHECKPOINT-001`, `NCRDT-CPDESC-001` |
+| [0029](adr_0029_signed_neutral_conformance_only.md) | Approved | `NCRDT-CONF-001`, `NCRDT-CONF-003` |
+| [0030](adr_0030_executed_requirement_evidence.md) | Approved | `NCRDT-CONF-003` |
+| [0031](adr_0031_private_typescript_attestation_v2.md) | Approved | `NCRDT-TS-001`, `NCRDT-CONF-003` |
+| [0032](adr_0032_release_assurance_remains_separate.md) | Approved | `NCRDT-RESOURCE-001`, `NCRDT-COMPLETION-001` |
