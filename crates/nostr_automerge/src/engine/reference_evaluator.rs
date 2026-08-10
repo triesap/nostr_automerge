@@ -138,7 +138,22 @@ impl ReferenceEvaluator {
         let dispositions_digest =
             dispositions_digest(self.revision, coordinate, &disposition_items)
                 .map_err(|_| EvaluationError::ReportInvariant)?;
-        let document = project_document(batch.materialized_document)?;
+        let document = match project_document(batch.materialized_document, budget, cancellation) {
+            Ok(document) => document,
+            Err(crate::automerge_adapter::materialized_view::ProjectionError::Budget) => {
+                batch.completion = Completion::BudgetExhausted;
+                batch.failure = Some(EvaluationFailure::BudgetExhausted);
+                None
+            }
+            Err(crate::automerge_adapter::materialized_view::ProjectionError::Cancelled) => {
+                batch.completion = Completion::Cancelled;
+                batch.failure = Some(EvaluationFailure::Cancelled);
+                None
+            }
+            Err(crate::automerge_adapter::materialized_view::ProjectionError::Invalid) => {
+                return Err(EvaluationError::Projection);
+            }
+        };
         EvaluationReport::from_parts(EvaluationReportParts {
             coordinate,
             canonical_controls,
@@ -196,11 +211,17 @@ impl ReferenceEvaluator {
 
 fn project_document(
     canonical_bytes: Option<Vec<u8>>,
-) -> Result<Option<MaterializedDocumentView>, EvaluationError> {
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<
+    Option<MaterializedDocumentView>,
+    crate::automerge_adapter::materialized_view::ProjectionError,
+> {
     canonical_bytes
-        .map(MaterializedDocumentView::from_canonical_bytes)
+        .map(|bytes| {
+            MaterializedDocumentView::from_canonical_bytes_metered(bytes, budget, cancellation)
+        })
         .transpose()
-        .map_err(|_| EvaluationError::Projection)
 }
 
 fn event_disposition_records(corpus: &EvidenceCorpus) -> Vec<DispositionRecord> {
@@ -1064,9 +1085,20 @@ mod tests {
     #[test]
     fn projection_failure_is_typed_error_internal() {
         assert_eq!(
-            super::project_document(Some(vec![0xff])),
-            Err(crate::EvaluationError::Projection)
+            super::project_document(
+                Some(vec![0xff]),
+                &mut crate::WorkBudget::new(10, 10),
+                &crate::NeverCancelled,
+            ),
+            Err(crate::automerge_adapter::materialized_view::ProjectionError::Invalid)
         );
-        assert_eq!(super::project_document(None), Ok(None));
+        assert_eq!(
+            super::project_document(
+                None,
+                &mut crate::WorkBudget::new(0, 0),
+                &crate::NeverCancelled,
+            ),
+            Ok(None)
+        );
     }
 }

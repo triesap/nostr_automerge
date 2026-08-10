@@ -1,5 +1,6 @@
 use core::fmt;
 
+use crate::{CancellationCheck, WorkBudget, WorkCounter};
 use automerge::{
     Automerge, LoadOptions, ObjId, ObjType, OnPartialLoad, ROOT, ReadDoc, ScalarValue,
     StringMigration, TextEncoding, Value, VerificationMode,
@@ -174,13 +175,38 @@ impl MaterializedDocumentView {
     }
 
     pub(crate) fn from_canonical_bytes(canonical_bytes: Vec<u8>) -> Result<Self, ProjectionError> {
+        Self::project_canonical_bytes(canonical_bytes)
+    }
+
+    pub(crate) fn from_canonical_bytes_metered(
+        canonical_bytes: Vec<u8>,
+        budget: &mut WorkBudget,
+        cancellation: &impl CancellationCheck,
+    ) -> Result<Self, ProjectionError> {
+        if cancellation.is_cancelled() {
+            return Err(ProjectionError::Cancelled);
+        }
+        let bytes = u64::try_from(canonical_bytes.len()).map_err(|_| ProjectionError::Budget)?;
+        budget
+            .charge(WorkCounter::DecodeByte, bytes)
+            .map_err(|_| ProjectionError::Budget)?;
+        if cancellation.is_cancelled() {
+            return Err(ProjectionError::Cancelled);
+        }
+        budget
+            .charge(WorkCounter::ApplyChange, 1)
+            .map_err(|_| ProjectionError::Budget)?;
+        Self::project_canonical_bytes(canonical_bytes)
+    }
+
+    fn project_canonical_bytes(canonical_bytes: Vec<u8>) -> Result<Self, ProjectionError> {
         let options = LoadOptions::new()
             .text_encoding(TextEncoding::Utf16CodeUnit)
             .migrate_strings(StringMigration::NoMigration)
             .on_partial_load(OnPartialLoad::Error)
             .verification_mode(VerificationMode::Check);
-        let document =
-            Automerge::load_with_options(&canonical_bytes, options).map_err(|_| ProjectionError)?;
+        let document = Automerge::load_with_options(&canonical_bytes, options)
+            .map_err(|_| ProjectionError::Invalid)?;
         let mut entries = Vec::new();
         let mut marks = Vec::new();
         project_document_iterative(&document, &mut entries, &mut marks)?;
@@ -243,7 +269,11 @@ impl fmt::Debug for MaterializedDocumentView {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct ProjectionError;
+pub(crate) enum ProjectionError {
+    Invalid,
+    Budget,
+    Cancelled,
+}
 
 struct ProjectionObject {
     object: ObjId,
@@ -277,7 +307,7 @@ fn project_document_iterative(
                 for index in 0..document.length(&current.object) {
                     let mut next = current.path.clone();
                     next.push(MaterializedPathElement::Index(
-                        u64::try_from(index).map_err(|_| ProjectionError)?,
+                        u64::try_from(index).map_err(|_| ProjectionError::Invalid)?,
                     ));
                     project_property(
                         document,
@@ -292,14 +322,14 @@ fn project_document_iterative(
             MaterializedObjectType::Text => {
                 for mark in document
                     .marks(&current.object)
-                    .map_err(|_| ProjectionError)?
+                    .map_err(|_| ProjectionError::Invalid)?
                 {
                     marks.push(MaterializedMark {
                         path: current.path.clone(),
                         name: mark.name.to_string(),
                         value: scalar(&mark.value)?,
-                        start: u64::try_from(mark.start).map_err(|_| ProjectionError)?,
-                        end: u64::try_from(mark.end).map_err(|_| ProjectionError)?,
+                        start: u64::try_from(mark.start).map_err(|_| ProjectionError::Invalid)?,
+                        end: u64::try_from(mark.end).map_err(|_| ProjectionError::Invalid)?,
                     });
                 }
             }
@@ -320,7 +350,7 @@ fn project_property(
     let mut objects = Vec::new();
     for (value, id) in document
         .get_all(object, property)
-        .map_err(|_| ProjectionError)?
+        .map_err(|_| ProjectionError::Invalid)?
     {
         if let Value::Object(kind) = &value {
             objects.push((object_type(*kind), id.clone()));
@@ -354,7 +384,7 @@ fn value_at(
         Value::Scalar(value) => Ok(MaterializedValue::Scalar(scalar(value.as_ref())?)),
         Value::Object(ObjType::Text) => Ok(MaterializedValue::Text {
             object_id: id.to_string(),
-            value: document.text(id).map_err(|_| ProjectionError)?,
+            value: document.text(id).map_err(|_| ProjectionError::Invalid)?,
         }),
         Value::Object(kind) => Ok(MaterializedValue::Object {
             object_type: object_type(kind),
@@ -383,7 +413,7 @@ fn scalar(value: &ScalarValue) -> Result<MaterializedScalar, ProjectionError> {
         ScalarValue::Timestamp(value) => Ok(MaterializedScalar::Timestamp(*value)),
         ScalarValue::Boolean(value) => Ok(MaterializedScalar::Bool(*value)),
         ScalarValue::Null => Ok(MaterializedScalar::Null),
-        ScalarValue::Unknown { .. } => Err(ProjectionError),
+        ScalarValue::Unknown { .. } => Err(ProjectionError::Invalid),
     }
 }
 
@@ -397,7 +427,30 @@ mod tests {
 
     use super::{
         MaterializedDocumentView, MaterializedPathElement, MaterializedScalar, MaterializedValue,
+        ProjectionError,
     };
+    use crate::{NeverCancelled, WorkBudget, WorkCounter};
+
+    #[test]
+    fn snapshot_projection_load_is_metered_before_decode() {
+        let bytes = Automerge::new().save_nocompress();
+        let mut exhausted = WorkBudget::new(0, 10);
+        assert_eq!(
+            MaterializedDocumentView::from_canonical_bytes_metered(
+                bytes.clone(),
+                &mut exhausted,
+                &NeverCancelled,
+            ),
+            Err(ProjectionError::Budget)
+        );
+        assert_eq!(exhausted.consumed().get(WorkCounter::DecodeByte), 0);
+        let mut cancelled = WorkBudget::new(u64::MAX, 10);
+        assert_eq!(
+            MaterializedDocumentView::from_canonical_bytes_metered(bytes, &mut cancelled, &|| true,),
+            Err(ProjectionError::Cancelled)
+        );
+        assert_eq!(cancelled.consumed().get(WorkCounter::DecodeByte), 0);
+    }
 
     #[test]
     fn project_every_scalar_without_json_coercion() {
