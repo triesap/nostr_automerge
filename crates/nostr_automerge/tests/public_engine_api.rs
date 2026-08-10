@@ -17,6 +17,44 @@ use nostr_automerge::{
 use sha2::{Digest as _, Sha256};
 use support::test_signer::TestSigner;
 
+#[allow(clippy::expect_used)]
+fn signed_acl_control(
+    controller: &TestSigner,
+    coordinate: DocumentCoordinate,
+    created_at: u64,
+    parent: Option<EventId>,
+    sequence: u64,
+    mut members: Vec<(String, Vec<&str>)>,
+) -> RawEventBytes {
+    members.sort_by(|left, right| left.0.cmp(&right.0));
+    let members = members
+        .into_iter()
+        .map(|(device, mut roles)| {
+            roles.sort_unstable();
+            let roles = roles
+                .into_iter()
+                .map(|role| format!("\"{role}\""))
+                .collect::<Vec<_>>()
+                .join(",");
+            format!(r#"{{"account":null,"pubkey":"{device}","roles":[{roles}]}}"#)
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    let content = format!(
+        r#"{{"base_heads":[],"format":"automerge-change-v1","members":[{members}],"policy":"controller-acl-v1","predecessor":null,"seq":{sequence},"successor":null,"text_encoding":"utf16","v":1}}"#
+    );
+    let mut tags = vec![vec!["a".to_owned(), coordinate.to_address()]];
+    if let Some(parent) = parent {
+        tags.push(vec!["e".to_owned(), parent.to_hex()]);
+    }
+    controller.sign(
+        &UnsignedEventDraft::new(created_at, 1_625, tags, content)
+            .expect("control draft")
+            .prepare(controller.public_key())
+            .expect("control preimage"),
+    )
+}
+
 #[test]
 fn build_immutable_evidence_corpus_through_public_api() {
     let valid = include_bytes!("../../../fixtures/v1_draft/nip01/valid_event.json");
@@ -476,6 +514,131 @@ fn signed_child_account_mapping_is_immutable() {
         &NeverCancelled,
     );
     assert_eq!(fresh_report.canonical_controls(), [genesis_id, fresh_id]);
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn signed_child_roles_are_monotonic() {
+    let controller = TestSigner::from_byte(37);
+    let fresh = TestSigner::from_byte(38);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "39".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let retained = controller.public_key().to_hex();
+    let genesis = signed_acl_control(
+        &controller,
+        coordinate,
+        1,
+        None,
+        0,
+        vec![(retained.clone(), vec!["write"])],
+    );
+    let genesis_id = VerifiedNip01Event::verify(genesis.clone())
+        .expect("signed genesis")
+        .event_id();
+    let escalated = signed_acl_control(
+        &controller,
+        coordinate,
+        2,
+        Some(genesis_id),
+        1,
+        vec![(retained.clone(), vec!["checkpoint", "write"])],
+    );
+    let fresh_grant = signed_acl_control(
+        &controller,
+        coordinate,
+        3,
+        Some(genesis_id),
+        1,
+        vec![
+            (retained.clone(), vec!["write"]),
+            (fresh.public_key().to_hex(), vec!["checkpoint"]),
+        ],
+    );
+    let fresh_id = VerifiedNip01Event::verify(fresh_grant.clone())
+        .expect("signed fresh grant")
+        .event_id();
+
+    let mut invalid_builder = CorpusBuilder::new();
+    for event in [escalated, genesis.clone()] {
+        assert!(matches!(
+            invalid_builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let invalid_report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &invalid_builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(invalid_report.canonical_controls(), [genesis_id]);
+
+    let mut fresh_builder = CorpusBuilder::new();
+    for event in [fresh_grant, genesis] {
+        assert!(matches!(
+            fresh_builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let fresh_report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &fresh_builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(fresh_report.canonical_controls(), [genesis_id, fresh_id]);
+
+    let reduction_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "40".repeat(32)
+    )
+    .parse()
+    .expect("fixed reduction coordinate");
+    let reduction_genesis = signed_acl_control(
+        &controller,
+        reduction_coordinate,
+        4,
+        None,
+        0,
+        vec![(retained.clone(), vec!["checkpoint", "write"])],
+    );
+    let reduction_genesis_id = VerifiedNip01Event::verify(reduction_genesis.clone())
+        .expect("signed reduction genesis")
+        .event_id();
+    let reduction = signed_acl_control(
+        &controller,
+        reduction_coordinate,
+        5,
+        Some(reduction_genesis_id),
+        1,
+        vec![(retained, vec!["write"])],
+    );
+    let reduction_id = VerifiedNip01Event::verify(reduction.clone())
+        .expect("signed reduction")
+        .event_id();
+    let mut reduction_builder = CorpusBuilder::new();
+    for event in [reduction, reduction_genesis] {
+        assert!(matches!(
+            reduction_builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let reduction_report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &reduction_builder.finish(),
+        reduction_coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(
+        reduction_report.canonical_controls(),
+        [reduction_genesis_id, reduction_id]
+    );
 }
 
 #[test]

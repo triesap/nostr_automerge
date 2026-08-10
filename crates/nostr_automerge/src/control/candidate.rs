@@ -47,6 +47,17 @@ pub(crate) fn evaluate_account_continuity(
     }
 }
 
+pub(crate) fn evaluate_role_continuity(
+    parent: &ControlEnvelope,
+    child: &ControlEnvelope,
+) -> CandidateResult {
+    if validate_monotonic_roles(&parent.content, &child.content).is_err() {
+        CandidateResult::Invalid(DiagnosticCode::registered("control.role_escalation"))
+    } else {
+        CandidateResult::Valid
+    }
+}
+
 pub(crate) fn evaluate_child(
     parent: &ControlEnvelope,
     child: &ControlEnvelope,
@@ -75,8 +86,8 @@ pub(crate) fn evaluate_child(
     if let result @ CandidateResult::Invalid(_) = evaluate_account_continuity(parent, child) {
         return result;
     }
-    if validate_monotonic_roles(&parent.content, &child.content).is_err() {
-        return CandidateResult::Invalid(DiagnosticCode::registered("control.role_escalation"));
+    if let result @ CandidateResult::Invalid(_) = evaluate_role_continuity(parent, child) {
+        return result;
     }
     if validate_no_reintroduction(ancestry, &child.content).is_err() {
         return CandidateResult::Invalid(DiagnosticCode::registered("control.device_reintroduced"));

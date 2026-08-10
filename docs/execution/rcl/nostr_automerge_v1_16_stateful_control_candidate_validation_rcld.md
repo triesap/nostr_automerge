@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 16: Stateful Control Candidate Validation
 
 Status: active
-Current checkpoint: `step_326`
+Current checkpoint: `step_327`
 Steps: `step_318` through `step_336`
 Primary findings: `FINDING_014`, `FINDING_015`, `FINDING_018`
 
@@ -41,4 +41,5 @@ outcome derived from accepted parent state.
 - `step_322`: `1c51a5d` — missing frontier evidence classified as pending. The focused Cargo filter was corrected to the single exact test path required by the installed Cargo CLI.
 - `step_323`: `eb8100f` — accepted dependency indexes now enforce exact base antichains.
 - `step_324`: `615fe4f` — public selection now enforces exact parent continuity.
-- `step_325`: this commit — retained account mappings are immutable on the public route.
+- `step_325`: `d85e09e` — retained account mappings are immutable on the public route.
+- `step_326`: this commit — retained roles are monotonic on the public route.
