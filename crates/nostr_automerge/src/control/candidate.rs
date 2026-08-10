@@ -4,7 +4,7 @@ use crate::control::parent_view::ParentEpochView;
 use crate::control::transition::{
     TransitionError, validate_account_mapping, validate_base_frontier_antichain,
     validate_monotonic_roles, validate_no_reintroduction, validate_retained_writer_frontier,
-    validate_terminal_child,
+    validate_successor_continuity, validate_terminal_child,
 };
 use crate::control::validate::{
     ControlEnvelope, validate_base_frontier, validate_canonical_collections,
@@ -77,8 +77,21 @@ pub(crate) fn evaluate_terminal_continuity(
     parent: &ControlEnvelope,
     child: &ControlEnvelope,
 ) -> CandidateResult {
-    if validate_terminal_child(&parent.content, &child.content).is_err() {
-        CandidateResult::Invalid(DiagnosticCode::registered("control.terminal_child"))
+    match validate_terminal_child(&parent.content, &child.content) {
+        Ok(()) => CandidateResult::Valid,
+        Err(TransitionError::TerminalChild) => {
+            CandidateResult::Invalid(DiagnosticCode::registered("control.terminal_child"))
+        }
+        Err(_) => CandidateResult::Invalid(DiagnosticCode::registered("control.structure")),
+    }
+}
+
+pub(crate) fn evaluate_successor_genesis(
+    terminal: &ControlEnvelope,
+    successor_genesis: &ControlEnvelope,
+) -> CandidateResult {
+    if validate_successor_continuity(terminal, successor_genesis).is_err() {
+        CandidateResult::Invalid(DiagnosticCode::registered("control.structure"))
     } else {
         CandidateResult::Valid
     }

@@ -8,7 +8,8 @@ use crate::conformance::dispositions_digest::{
 use crate::conformance::history_digest::history_digest;
 use crate::control::candidate::{
     CandidateResult, evaluate_account_continuity, evaluate_device_ancestry,
-    evaluate_parent_continuity, evaluate_role_continuity, evaluate_terminal_continuity,
+    evaluate_parent_continuity, evaluate_role_continuity, evaluate_successor_genesis,
+    evaluate_terminal_continuity,
 };
 use crate::control::validate::ControlEnvelope;
 use crate::evidence::event::EventEvidence;
@@ -599,15 +600,16 @@ fn genesis_link_is_valid(
     if control.sequence() != 0 {
         return false;
     }
-    matches!(
-        corpus.events.get(&predecessor.terminal_control),
-        Some(EventEvidence::VerifiedCarrier {
-            carrier: VerifiedCarrier::Control(terminal),
-            ..
-        }) if terminal.coordinate() == predecessor.coordinate
-            && terminal.terminal()
-            && terminal.successor() == Some(control.coordinate())
-    )
+    let Some(EventEvidence::VerifiedCarrier {
+        carrier: VerifiedCarrier::Control(terminal),
+        ..
+    }) = corpus.events.get(&predecessor.terminal_control)
+    else {
+        return false;
+    };
+    let terminal = ControlEnvelope::from_validated(terminal.as_ref().clone());
+    let successor = ControlEnvelope::from_validated(control.clone());
+    evaluate_successor_genesis(&terminal, &successor) == CandidateResult::Valid
 }
 
 fn violates_retained_writer_frontier(
