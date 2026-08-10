@@ -1,8 +1,8 @@
 # Draft V1 Follow-up Remediation Ledger
 
-Current RCLD: 16
-Current checkpoint: `step_336`
-Completed checkpoints: `step_308` through `step_335`
+Current RCLD: 17
+Current checkpoint: `step_337`
+Completed checkpoints: `step_308` through `step_336`
 
 ## Execution Policy
 
@@ -21,8 +21,8 @@ repositories.
 | RCLD | Range | Status | Primary outcome |
 | --- | --- | --- | --- |
 | 15 | `step_308`–`step_317` | complete | Authority and baseline |
-| 16 | `step_318`–`step_336` | active | Stateful child-control validation |
-| 17 | `step_337`–`step_355` | pending | Interleaved epoch/control engine |
+| 16 | `step_318`–`step_336` | complete | Stateful child-control validation |
+| 17 | `step_337`–`step_355` | active | Interleaved epoch/control engine |
 | 18 | `step_356`–`step_381` | pending | Complete causal change acceptance |
 | 19 | `step_382`–`step_398` | pending | Canonical reports and dispositions |
 | 20 | `step_399`–`step_409` | pending | Unknown tags and strict revisions |

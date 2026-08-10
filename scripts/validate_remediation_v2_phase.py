@@ -46,7 +46,38 @@ def main() -> int:
         raise AssertionError("phase report does not activate the exact next checkpoint")
     if report.get("publication_authorized") is not False:
         raise AssertionError("phase report cannot authorize publication")
-    print("PASS: authority and baseline phase report activates step_318")
+
+    control = json.loads((ROOT / "reports/remediation_v2_phase_01.json").read_text())
+    if control.get("phase") != "phase_01_stateful_control_candidates" or control.get("status") != "pass":
+        raise AssertionError("stateful control candidate phase is not passing")
+    control_steps = [f"step_{step:03d}" for step in range(318, 337)]
+    if control.get("completed_steps") != control_steps:
+        raise AssertionError("control candidate phase checkpoint coverage is incomplete")
+    if set(control.get("commits", {})) != set(control_steps):
+        raise AssertionError("control candidate phase commit binding is incomplete")
+    if control.get("findings") != ["FINDING_014", "FINDING_015"]:
+        raise AssertionError("control candidate phase findings are incomplete")
+    tests = control.get("tests", {})
+    if any(len(tests.get(finding, [])) < 4 for finding in control["findings"]):
+        raise AssertionError("control candidate phase lacks direct test evidence")
+    if any(command.get("result") != "pass" for command in control.get("commands", [])):
+        raise AssertionError("control candidate phase contains a nonpassing command")
+    for relative, expected in control.get("artifact_sha256", {}).items():
+        if sha256(ROOT / relative) != expected:
+            raise AssertionError(f"control candidate artifact hash mismatch: {relative}")
+    for commit_hash in control["commits"].values():
+        if commit_hash == "self":
+            continue
+        commit = subprocess.run(
+            ["git", "cat-file", "-e", f"{commit_hash}^{{commit}}"], cwd=ROOT, check=False
+        )
+        if commit.returncode:
+            raise AssertionError(f"control candidate commit does not exist: {commit_hash}")
+    if control.get("next") != {"rcld": 17, "checkpoint": "step_337"}:
+        raise AssertionError("control candidate report does not activate step_337")
+    if control.get("publication_authorized") is not False:
+        raise AssertionError("control candidate report cannot authorize publication")
+    print("PASS: phase reports activate stateful controls then step_337")
     return 0
 
 

@@ -164,6 +164,11 @@ pub struct MaterializedDocumentView {
 }
 
 impl MaterializedDocumentView {
+    #[cfg(test)]
+    pub(crate) fn empty_for_test() -> Result<Self, ProjectionError> {
+        Self::from_canonical_bytes(Automerge::new().save_nocompress())
+    }
+
     pub(crate) fn from_canonical_bytes(canonical_bytes: Vec<u8>) -> Result<Self, ProjectionError> {
         let options = LoadOptions::new()
             .text_encoding(TextEncoding::Utf16CodeUnit)

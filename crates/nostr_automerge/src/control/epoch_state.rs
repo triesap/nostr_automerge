@@ -128,8 +128,6 @@ impl AcceptedEpochState {
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
-    use automerge::Automerge;
-
     use super::{AcceptedEpochState, AcceptedEpochStateError};
     use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
     use crate::graph::actor_state::EpochActorState;
@@ -159,8 +157,7 @@ mod tests {
     );
 
     fn materialized() -> Option<MaterializedDocumentView> {
-        let document = Automerge::new();
-        MaterializedDocumentView::from_canonical_bytes(document.save_nocompress()).ok()
+        MaterializedDocumentView::empty_for_test().ok()
     }
 
     fn parts() -> Parts {

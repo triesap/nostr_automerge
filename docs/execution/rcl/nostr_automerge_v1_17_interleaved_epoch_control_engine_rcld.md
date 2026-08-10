@@ -1,6 +1,7 @@
 # nostr_automerge Draft V1 RCLD 17: Interleaved Epoch And Control Engine
 
-Status: pending RCLD 16
+Status: active
+Current checkpoint: `step_337`
 Steps: `step_337` through `step_355`
 Primary findings: `FINDING_014`, `FINDING_015`, `FINDING_016`, `FINDING_018`, `FINDING_025`
 
@@ -29,3 +30,7 @@ checks, remediation ledger validation, and `git diff --check`.
 
 Accepted parent state must always precede child validation. No production or
 normative conformance path may call a parallel static control-chain selector.
+
+## Completed Checkpoints
+
+None. `step_337` is active.

@@ -74,8 +74,6 @@ impl ParentEpochView {
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
-    use automerge::Automerge;
-
     use super::ParentEpochView;
     use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
     use crate::control::epoch_state::AcceptedEpochState;
@@ -124,9 +122,7 @@ mod tests {
                 },
             ),
         ]);
-        let document = Automerge::new();
-        let materialized =
-            MaterializedDocumentView::from_canonical_bytes(document.save_nocompress());
+        let materialized = MaterializedDocumentView::empty_for_test();
         assert!(materialized.is_ok());
         let Ok(materialized) = materialized else {
             return;

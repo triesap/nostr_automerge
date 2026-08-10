@@ -1,0 +1,74 @@
+{
+  "schema": "nostr_automerge.remediation_phase.v2",
+  "phase": "phase_01_stateful_control_candidates",
+  "status": "pass",
+  "recorded": "2026-08-10",
+  "phase_input_head": "ed3df94d82291160aa320ff90aad403d56e9b21e",
+  "findings": ["FINDING_014", "FINDING_015"],
+  "completed_steps": [
+    "step_318", "step_319", "step_320", "step_321", "step_322", "step_323",
+    "step_324", "step_325", "step_326", "step_327", "step_328", "step_329",
+    "step_330", "step_331", "step_332", "step_333", "step_334", "step_335",
+    "step_336"
+  ],
+  "commits": {
+    "step_318": "0ff62e1",
+    "step_319": "ad2724b",
+    "step_320": "648de6c",
+    "step_321": "1e09fa8",
+    "step_322": "1c51a5d",
+    "step_323": "eb8100f",
+    "step_324": "615fe4f",
+    "step_325": "d85e09e",
+    "step_326": "290fa15",
+    "step_327": "f7e6742",
+    "step_328": "0e2e684",
+    "step_329": "7a8596c",
+    "step_330": "b87c675",
+    "step_331": "cdd7dee",
+    "step_332": "783c43c",
+    "step_333": "d847dea",
+    "step_334": "2559a93",
+    "step_335": "ed3df94",
+    "step_336": "self"
+  },
+  "toolchain": {
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "cargo": "cargo 1.97.1 (c980f4866 2026-06-30)"
+  },
+  "tests": {
+    "FINDING_014": [
+      "control::candidate::tests::validate_child_candidates_against_parent_state",
+      "control::select::tests::select_only_valid_control_candidates",
+      "public_engine_api::signed_control_transition_matrix",
+      "public_engine_api::invalid_lower_id_child_cannot_win"
+    ],
+    "FINDING_015": [
+      "control::frontier::tests::resolves_chain_branch_and_fan_in_closures",
+      "control::transition::tests::require_an_exact_accepted_base_frontier_antichain",
+      "public_engine_api::pending_child_does_not_block_valid_sibling",
+      "public_engine_api::signed_child_retained_writer_frontier_rules"
+    ]
+  },
+  "commands": [
+    {"command": "cargo extbuild run -- python3 scripts/local_gate.py standard", "result": "pass"},
+    {"command": "cargo extbuild run -- cargo test -p nostr_automerge --test public_engine_api control --locked", "result": "pass"},
+    {"command": "cargo extbuild run -- cargo clippy --workspace --all-targets --all-features --locked -- -D warnings", "result": "pass"},
+    {"command": "python3 scripts/validate_repository_policy.py", "result": "pass"},
+    {"command": "python3 scripts/validate_remediation_v2_ledger.py", "result": "pass"},
+    {"command": "git diff --check", "result": "pass"}
+  ],
+  "artifact_sha256": {
+    "crates/nostr_automerge/src/automerge_adapter/materialized_view.rs": "d14b47d18edf0178b6fd36a9184dfe2c999d84633aac8379078b647872002e82",
+    "crates/nostr_automerge/src/control/epoch_state.rs": "fb2d9bfe133d9c616909d616dc538e2fc30f7b9a1c0113ed0f5e335c11536870",
+    "crates/nostr_automerge/src/control/parent_view.rs": "f44f5a8c7b49bcdef255cf013be3bb27964e424fa960f10edfd69b13a9f98086",
+    "crates/nostr_automerge/src/control/candidate.rs": "f1ca615d2221b2148e618e34d683a5b8d03dbc42ef5c3e0e26032eaeb87a6bc5",
+    "crates/nostr_automerge/src/reference/evaluate.rs": "e873eaa3585d2453b1cde1a688d708003fc20939e0248078aaf90b9b17b2e7c1",
+    "crates/nostr_automerge/tests/public_engine_api.rs": "09ba2dce8d9cae0f5fb3ebea18368ff9b03ef32fd6192b69f972cc19938a0167"
+  },
+  "repaired_gate_failures": [
+    "moved empty Automerge test-state construction behind the automerge_adapter boundary after the standard architecture gate rejected direct control-module imports"
+  ],
+  "next": {"rcld": 17, "checkpoint": "step_337"},
+  "publication_authorized": false
+}
