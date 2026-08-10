@@ -40,7 +40,7 @@ mod work_budget;
 pub use diagnostic::DiagnosticCode;
 pub use disposition::{Completion, ProtocolDisposition};
 pub use engine::{
-    CheckpointVerificationResult, CheckpointVerificationStatus, DispositionRecord,
+    CheckpointVerificationResult, CheckpointVerificationStatus, DispositionRecord, EvaluationError,
     EvaluationFailure, EvaluationReport, MaterializedConflict, MaterializedDocumentView,
     MaterializedEntry, MaterializedMark, MaterializedObjectType, MaterializedPathElement,
     MaterializedScalar, MaterializedValue, ProtocolItemIdentifier, ReferenceEvaluator,

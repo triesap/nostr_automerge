@@ -23,7 +23,7 @@ use crate::{
 };
 
 use super::evaluation_report::{
-    DispositionRecord, EvaluationFailure, EvaluationReport, EvaluationReportParts,
+    DispositionRecord, EvaluationError, EvaluationFailure, EvaluationReport, EvaluationReportParts,
     ProtocolItemIdentifier,
 };
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
@@ -56,14 +56,14 @@ impl ReferenceEvaluator {
     /// The operation performs no I/O and derives every control and change input
     /// from validated carriers in `corpus`. Local exhaustion or cancellation is
     /// represented by [`crate::Completion`] without changing dispositions.
-    #[must_use]
+    #[must_use = "evaluation reports and typed errors must be handled"]
     pub fn evaluate(
         &self,
         corpus: &EvidenceCorpus,
         coordinate: DocumentCoordinate,
         budget: &mut WorkBudget,
         cancellation: &impl CancellationCheck,
-    ) -> EvaluationReport {
+    ) -> Result<EvaluationReport, EvaluationError> {
         let ingress_complete = charge_ingress(corpus, budget);
         let (controls, preliminary_control_dispositions) = if ingress_complete {
             prepare_controls(corpus, coordinate)
@@ -75,6 +75,20 @@ impl ReferenceEvaluator {
             batch.completion = Completion::BudgetExhausted;
             batch.failure = Some(EvaluationFailure::BudgetExhausted);
             batch.materialized_document = None;
+        }
+        if batch.completion == Completion::Failed {
+            return Err(match batch.failure {
+                Some(EvaluationFailure::Graph) => EvaluationError::Graph,
+                Some(EvaluationFailure::Decode) => EvaluationError::Decode,
+                Some(EvaluationFailure::Apply) => EvaluationError::Apply,
+                Some(
+                    EvaluationFailure::InvalidEvidence
+                    | EvaluationFailure::InvariantViolation
+                    | EvaluationFailure::BudgetExhausted
+                    | EvaluationFailure::Cancelled,
+                )
+                | None => EvaluationError::ReportInvariant,
+            });
         }
         let canonical_controls = batch.canonical_controls;
         let mut control_dispositions = preliminary_control_dispositions;
@@ -115,13 +129,18 @@ impl ReferenceEvaluator {
             &accepted_changes,
             &heads,
         )
-        .unwrap_or_else(|_| unreachable!("engine report collections are canonical"));
+        .map_err(|_| EvaluationError::ReportInvariant)?;
         let disposition_items = disposition_items(&disposition_records)
-            .unwrap_or_else(|_| unreachable!("engine disposition records are canonical"));
+            .map_err(|_| EvaluationError::ReportInvariant)?;
         let dispositions_digest =
             dispositions_digest(self.revision, coordinate, &disposition_items)
-                .unwrap_or_else(|_| unreachable!("engine dispositions are canonical"));
-        EvaluationReport::from_canonical_parts(EvaluationReportParts {
+                .map_err(|_| EvaluationError::ReportInvariant)?;
+        let document = batch
+            .materialized_document
+            .map(MaterializedDocumentView::from_canonical_bytes)
+            .transpose()
+            .map_err(|_| EvaluationError::Projection)?;
+        EvaluationReport::from_parts(EvaluationReportParts {
             coordinate,
             canonical_controls,
             disposition_records,
@@ -139,16 +158,14 @@ impl ReferenceEvaluator {
             integrity_alerts: batch.integrity_alerts,
             completion: batch.completion,
             failure: batch.failure,
-            document: batch.materialized_document.map(|bytes| {
-                MaterializedDocumentView::from_canonical_bytes(bytes)
-                    .unwrap_or_else(|_| unreachable!("applied state must project"))
-            }),
+            document,
         })
+        .map_err(|_| EvaluationError::ReportInvariant)
     }
 
     /// Replays the complete retained corpus and reports a canonical branch
     /// change relative to a prior report for the same coordinate.
-    #[must_use]
+    #[must_use = "reevaluation reports and typed errors must be handled"]
     pub fn reevaluate(
         &self,
         corpus: &EvidenceCorpus,
@@ -156,10 +173,10 @@ impl ReferenceEvaluator {
         previous: &EvaluationReport,
         budget: &mut WorkBudget,
         cancellation: &impl CancellationCheck,
-    ) -> EvaluationReport {
-        let mut current = self.evaluate(corpus, coordinate, budget, cancellation);
+    ) -> Result<EvaluationReport, EvaluationError> {
+        let mut current = self.evaluate(corpus, coordinate, budget, cancellation)?;
         if previous.coordinate() != coordinate {
-            return current;
+            return Ok(current);
         }
         let summarize = |report: &EvaluationReport| {
             let mut changes_by_control = std::collections::BTreeMap::new();
@@ -174,7 +191,7 @@ impl ReferenceEvaluator {
         if let Some(alert) = detect_reorganization(&summarize(previous), &summarize(&current)) {
             current.push_integrity_alert(alert);
         }
-        current
+        Ok(current)
     }
 }
 

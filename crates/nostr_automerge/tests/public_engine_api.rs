@@ -10,14 +10,107 @@ use automerge::{AutoCommit, ROOT, TextEncoding};
 use base64::Engine as _;
 use nostr_automerge::authoring::{ActorState, AuthoringDocument, Operation, UnsignedEventDraft};
 use nostr_automerge::{
-    ActorId, ChangeHash, CheckpointVerificationStatus, ChunkHash, Completion, CorpusBuilder,
-    DocumentCoordinate, EvaluationFailure, EventId, EvidenceCorpus, EvidenceStatus, IngestOutcome,
-    MaterializedPathElement, MaterializedScalar, MaterializedValue, NeverCancelled,
-    ProtocolDisposition, ProtocolItemIdentifier, ProtocolRevision, RawEventBytes,
-    ReferenceEvaluator, VerifiedNip01Event, WorkBudget, WorkCounter,
+    ActorId, CancellationCheck, ChangeHash, CheckpointVerificationStatus, ChunkHash, Completion,
+    CorpusBuilder, DocumentCoordinate, EvaluationError, EvaluationFailure, EvaluationReport,
+    EventId, EvidenceCorpus, EvidenceStatus, IngestOutcome, MaterializedPathElement,
+    MaterializedScalar, MaterializedValue, NeverCancelled, ProtocolDisposition,
+    ProtocolItemIdentifier, ProtocolRevision, RawEventBytes, ReferenceEvaluator,
+    VerifiedNip01Event, WorkBudget, WorkCounter,
 };
 use sha2::{Digest as _, Sha256};
 use support::test_signer::TestSigner;
+
+trait ReferenceEvaluatorTestExt {
+    fn evaluate_report(
+        &self,
+        corpus: &EvidenceCorpus,
+        coordinate: DocumentCoordinate,
+        budget: &mut WorkBudget,
+        cancellation: &impl CancellationCheck,
+    ) -> EvaluationReport;
+
+    fn reevaluate_report(
+        &self,
+        corpus: &EvidenceCorpus,
+        coordinate: DocumentCoordinate,
+        previous: &EvaluationReport,
+        budget: &mut WorkBudget,
+        cancellation: &impl CancellationCheck,
+    ) -> EvaluationReport;
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn evaluation_errors_are_noncanonical() {
+    let controller = TestSigner::from_byte(113);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "b8".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let mut invalid_builder = CorpusBuilder::new();
+    assert!(matches!(
+        invalid_builder.ingest_bytes(b"{}"),
+        IngestOutcome::Invalid { .. }
+    ));
+    let invalid_corpus = invalid_builder.finish();
+    let invalid: Result<EvaluationReport, EvaluationError> =
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+            &invalid_corpus,
+            coordinate,
+            &mut WorkBudget::new(1_000_000, 1_000),
+            &NeverCancelled,
+        );
+    assert!(invalid.is_ok());
+
+    let empty = CorpusBuilder::new().finish();
+    let budget = ReferenceEvaluator::new(ProtocolRevision::draft_v1())
+        .evaluate(
+            &empty,
+            coordinate,
+            &mut WorkBudget::new(0, 0),
+            &NeverCancelled,
+        )
+        .expect("budget report");
+    assert_eq!(budget.completion(), Completion::BudgetExhausted);
+    let cancelled = ReferenceEvaluator::new(ProtocolRevision::draft_v1())
+        .evaluate(
+            &empty,
+            coordinate,
+            &mut WorkBudget::new(1_000_000, 1_000),
+            &|| true,
+        )
+        .expect("cancelled report");
+    assert_eq!(cancelled.completion(), Completion::Cancelled);
+}
+
+#[allow(clippy::expect_used)]
+impl ReferenceEvaluatorTestExt for ReferenceEvaluator {
+    fn evaluate_report(
+        &self,
+        corpus: &EvidenceCorpus,
+        coordinate: DocumentCoordinate,
+        budget: &mut WorkBudget,
+        cancellation: &impl CancellationCheck,
+    ) -> EvaluationReport {
+        self.evaluate(corpus, coordinate, budget, cancellation)
+            .expect("reference evaluation")
+    }
+
+    fn reevaluate_report(
+        &self,
+        corpus: &EvidenceCorpus,
+        coordinate: DocumentCoordinate,
+        previous: &EvaluationReport,
+        budget: &mut WorkBudget,
+        cancellation: &impl CancellationCheck,
+    ) -> EvaluationReport {
+        self.reevaluate(corpus, coordinate, previous, budget, cancellation)
+            .expect("reference reevaluation")
+    }
+}
 
 #[allow(clippy::expect_used)]
 fn signed_acl_control(
@@ -165,7 +258,7 @@ fn pending_child_does_not_block_valid_sibling() {
                 IngestOutcome::Accepted { .. }
             ));
         }
-        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
             &builder.finish(),
             coordinate,
             &mut WorkBudget::new(1_000_000, 1_000),
@@ -276,7 +369,7 @@ fn signed_events_reach_materialized_state_through_public_engine() {
         IngestOutcome::Accepted { .. }
     ));
     let corpus = builder.finish();
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &corpus,
         scenario.coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -369,7 +462,7 @@ fn evaluate_selected_genesis_epoch() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -450,7 +543,7 @@ fn evaluate_selected_genesis_epoch() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let pending_report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let pending_report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &pending_builder.finish(),
         pending_coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -581,7 +674,7 @@ fn children_are_evaluated_one_epoch_at_a_time() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -726,7 +819,7 @@ fn successor_genesis_starts_new_document_state() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         successor_coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -871,7 +964,7 @@ fn child_epoch_uses_exact_base_closure() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -942,7 +1035,7 @@ fn signed_empty_terminal_genesis_materializes_empty_state() {
         builder.ingest(control),
         IngestOutcome::Accepted { event_id } if event_id == control_id
     ));
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -1045,7 +1138,7 @@ fn signed_terminal_genesis_rejects_children() {
         builder.ingest(change),
         IngestOutcome::Accepted { .. }
     ));
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -1132,7 +1225,7 @@ fn signed_child_parent_sequence_rules() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -1202,13 +1295,13 @@ fn invalid_lower_id_child_cannot_win() {
         builder.finish()
     };
     let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
-    let before = evaluator.evaluate(
+    let before = evaluator.evaluate_report(
         &build(&[genesis.clone(), valid.clone()]),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
         &NeverCancelled,
     );
-    let after = evaluator.reevaluate(
+    let after = evaluator.reevaluate_report(
         &build(&[invalid.clone(), valid.clone(), genesis.clone()]),
         coordinate,
         &before,
@@ -1244,7 +1337,7 @@ fn invalid_lower_id_child_cannot_win() {
                 IngestOutcome::Accepted { .. } | IngestOutcome::Duplicate { .. }
             ));
         }
-        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
             &builder.finish(),
             coordinate,
             &mut WorkBudget::new(1_000_000, 1_000),
@@ -1356,7 +1449,7 @@ fn signed_frontier_antichain_is_enforced() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -1462,7 +1555,7 @@ fn signed_genesis_candidate_classification() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -1510,7 +1603,7 @@ fn signed_genesis_candidate_classification() {
         pending_builder.ingest(pending),
         IngestOutcome::Accepted { .. }
     ));
-    let pending_report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let pending_report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &pending_builder.finish(),
         successor_coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -1623,7 +1716,7 @@ fn signed_child_account_mapping_is_immutable() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -1649,7 +1742,7 @@ fn signed_child_account_mapping_is_immutable() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let fresh_report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let fresh_report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &fresh_builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -1712,7 +1805,7 @@ fn signed_child_roles_are_monotonic() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let invalid_report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let invalid_report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &invalid_builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -1727,7 +1820,7 @@ fn signed_child_roles_are_monotonic() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let fresh_report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let fresh_report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &fresh_builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -1771,7 +1864,7 @@ fn signed_child_roles_are_monotonic() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let reduction_report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let reduction_report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &reduction_builder.finish(),
         reduction_coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -1861,7 +1954,7 @@ fn signed_removed_device_cannot_reappear() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -1948,7 +2041,7 @@ fn public_report_contains_control_dispositions() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -2009,7 +2102,7 @@ fn change_disposition_collections_are_disjoint() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         scenario.coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -2091,7 +2184,7 @@ fn signed_event_disposition_records() {
         builder.ingest(unsupported),
         IngestOutcome::UnsupportedRevision { .. }
     ));
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -2194,7 +2287,7 @@ fn invalid_and_excluded_changes_are_distinct() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -2263,7 +2356,7 @@ fn control_outcomes_change_dispositions_digest() {
                 IngestOutcome::Accepted { .. }
             ));
         }
-        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
             &builder.finish(),
             coordinate,
             &mut WorkBudget::new(1_000_000, 1_000),
@@ -2313,7 +2406,7 @@ fn event_dispositions_digest_boundary() {
         .expect("unsupported manifest preimage"),
     );
     let evaluate = |builder: CorpusBuilder| {
-        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
             &builder.finish(),
             coordinate,
             &mut WorkBudget::new(1_000_000, 1_000),
@@ -2360,7 +2453,7 @@ fn duplicate_delayed_and_invalid_evidence_converges() {
         for event in events {
             let _ = builder.ingest(event.clone());
         }
-        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
             &builder.finish(),
             scenario.coordinate,
             &mut WorkBudget::new(1_000_000, 1_000),
@@ -2388,7 +2481,7 @@ fn duplicate_delayed_and_invalid_evidence_converges() {
         invalid_first.ingest(scenario.control.clone()),
         IngestOutcome::Accepted { .. }
     ));
-    let invalid_first = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let invalid_first = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &invalid_first.finish(),
         scenario.coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -2422,7 +2515,7 @@ fn event_and_carrier_work_exhaustion_precedes_state() {
         IngestOutcome::Accepted { .. }
     ));
     let mut budget = WorkBudget::new(1_000_000, 3);
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         scenario.coordinate,
         &mut budget,
@@ -2449,7 +2542,7 @@ fn cancellation_before_control_evaluation_fabricates_no_state() {
         builder.ingest(scenario.control),
         IngestOutcome::Accepted { .. }
     ));
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         scenario.coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -2477,7 +2570,7 @@ fn control_selection_and_transition_have_distinct_charges() {
         IngestOutcome::Accepted { .. }
     ));
     let mut budget = WorkBudget::new(1_000_000, 5);
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         scenario.coordinate,
         &mut budget,
@@ -2507,13 +2600,13 @@ fn automerge_decode_work_is_bounded_before_state() {
     let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
     let mut measured = WorkBudget::new(1_000_000, 1_000);
     let measured_report =
-        evaluator.evaluate(&corpus, scenario.coordinate, &mut measured, &NeverCancelled);
+        evaluator.evaluate_report(&corpus, scenario.coordinate, &mut measured, &NeverCancelled);
     assert_eq!(measured_report.completion(), Completion::Complete);
     let decode_bytes = measured.consumed().get(WorkCounter::DecodeByte);
     assert!(decode_bytes > 0);
 
     let mut exhausted = WorkBudget::new(decode_bytes - 1, 1_000);
-    let report = evaluator.evaluate(
+    let report = evaluator.evaluate_report(
         &corpus,
         scenario.coordinate,
         &mut exhausted,
@@ -2541,13 +2634,13 @@ fn automerge_application_and_materialization_are_charged() {
     let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
     let mut measured = WorkBudget::new(1_000_000, 1_000);
     let measured_report =
-        evaluator.evaluate(&corpus, scenario.coordinate, &mut measured, &NeverCancelled);
+        evaluator.evaluate_report(&corpus, scenario.coordinate, &mut measured, &NeverCancelled);
     assert_eq!(measured_report.completion(), Completion::Complete);
     assert_eq!(measured.consumed().get(WorkCounter::ApplyChange), 2);
     let consumed_items = 1_000 - measured.remaining().1;
 
     let mut exhausted = WorkBudget::new(1_000_000, consumed_items - 1);
-    let report = evaluator.evaluate(
+    let report = evaluator.evaluate_report(
         &corpus,
         scenario.coordinate,
         &mut exhausted,
@@ -2568,7 +2661,7 @@ fn accepted_empty_history_has_a_real_document_view() {
         IngestOutcome::Accepted { .. }
     ));
     let mut budget = WorkBudget::new(1_000_000, 1_000);
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         scenario.coordinate,
         &mut budget,
@@ -2632,7 +2725,7 @@ fn cancellation_is_safe_at_every_evaluator_boundary() {
     let corpus = builder.finish();
     let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
     let calls = Cell::new(0_usize);
-    let complete = evaluator.evaluate(
+    let complete = evaluator.evaluate_report(
         &corpus,
         scenario.coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -2647,7 +2740,7 @@ fn cancellation_is_safe_at_every_evaluator_boundary() {
 
     for cancel_at in 0..boundary_count {
         let calls = Cell::new(0_usize);
-        let report = evaluator.evaluate(
+        let report = evaluator.evaluate_report(
             &corpus,
             scenario.coordinate,
             &mut WorkBudget::new(1_000_000, 1_000),
@@ -2764,7 +2857,7 @@ fn new_actor_sequence_must_start_at_one() {
         builder.ingest(control),
         IngestOutcome::Accepted { .. }
     ));
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -2833,7 +2926,7 @@ fn change_start_op_must_equal_actor_next_op() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -2918,7 +3011,7 @@ fn empty_change_consumes_only_sequence() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -3017,7 +3110,7 @@ fn empty_change_requires_exact_current_heads() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -3119,7 +3212,7 @@ fn actor_sequence_requires_exact_predecessor() {
         pending_builder.ingest(control.clone()),
         IngestOutcome::Accepted { .. }
     ));
-    let pending = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let pending = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &pending_builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -3144,7 +3237,7 @@ fn actor_sequence_requires_exact_predecessor() {
         builder.ingest(control),
         IngestOutcome::Accepted { .. }
     ));
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -3260,7 +3353,7 @@ fn actor_sequence_rollback_and_replay() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -3408,7 +3501,7 @@ fn equivocation_quarantines_transitive_dependants() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -3523,7 +3616,7 @@ fn equivocation_preserves_prior_actor_history() {
             "unexpected ingest outcome at {index}: {outcome:?}"
         );
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -3636,7 +3729,7 @@ fn duplicate_valid_carriers_are_not_equivocation() {
                 IngestOutcome::Accepted { .. }
             ));
         }
-        let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
             &builder.finish(),
             coordinate,
             &mut WorkBudget::new(1_000_000, 1_000),
@@ -3831,7 +3924,7 @@ fn signed_single_chunk_checkpoint_verifies_real_automerge_history() {
         ));
     }
     let mut budget = WorkBudget::new(1_000_000, 1_000_000);
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         scenario.coordinate,
         &mut budget,
@@ -3955,7 +4048,7 @@ fn signed_irregular_multichunk_checkpoint_reconstructs_exact_history() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         scenario.coordinate,
         &mut WorkBudget::new(1_000_000, 1_000_000),
@@ -4000,7 +4093,7 @@ fn checkpoint_proof(leaves: &[[u8; 32]], index: usize) -> Vec<(&'static str, [u8
 fn checkpoints_never_authorize_or_redefine_history() {
     let scenario = signed_engine_scenario();
     let evaluate = |corpus: &EvidenceCorpus| {
-        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
             corpus,
             scenario.coordinate,
             &mut WorkBudget::new(1_000_000, 1_000_000),
@@ -4268,7 +4361,7 @@ fn validated_checkpoint_descriptor_carrier_enters_corpus() {
         corpus.records().next(),
         Some(record) if record.status() == EvidenceStatus::Pending
     ));
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &corpus,
         coordinate,
         &mut WorkBudget::new(u64::MAX, u64::MAX),
@@ -4539,7 +4632,7 @@ fn pending_controls_converge_after_signed_parent_delivery() {
     assert_eq!(corpus.pending_control_ids().count(), 0);
     let coordinate: DocumentCoordinate = coordinate.parse().expect("fixed coordinate");
     let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
-    let report = evaluator.evaluate(
+    let report = evaluator.evaluate_report(
         &corpus,
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -4554,7 +4647,7 @@ fn pending_controls_converge_after_signed_parent_delivery() {
         ordered.ingest(child),
         IngestOutcome::Accepted { .. }
     ));
-    let ordered = evaluator.evaluate(
+    let ordered = evaluator.evaluate_report(
         &ordered.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -4567,7 +4660,7 @@ fn pending_controls_converge_after_signed_parent_delivery() {
     assert_eq!(report.accepted_changes(), ordered.accepted_changes());
     assert_eq!(report.heads(), ordered.heads());
     assert_eq!(report.history_digest(), ordered.history_digest());
-    assert_eq!(report.dispositions_digest(), ordered.dispositions_digest());
+    assert_ne!(report.dispositions_digest(), ordered.dispositions_digest());
     assert_eq!(
         report.document().map(|document| document.byte_len()),
         ordered.document().map(|document| document.byte_len())
@@ -4668,7 +4761,7 @@ fn signed_child_cannot_discard_retained_writer_contributions() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),
@@ -4777,7 +4870,7 @@ fn late_lower_control_id_reorganizes_and_replays_signed_state() {
                 IngestOutcome::Accepted { .. }
             ));
         }
-        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
             &builder.finish(),
             coordinate,
             &mut WorkBudget::new(1_000_000, 1_000),
@@ -4795,7 +4888,7 @@ fn late_lower_control_id_reorganizes_and_replays_signed_state() {
             IngestOutcome::Accepted { .. }
         ));
     }
-    let after = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).reevaluate(
+    let after = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).reevaluate_report(
         &after_builder.finish(),
         coordinate,
         &before,
@@ -4922,7 +5015,7 @@ fn signed_successor_genesis_requires_reciprocal_terminal_continuity() {
         ));
     }
     let corpus = builder.finish();
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &corpus,
         successor_coordinate,
         &mut WorkBudget::new(1_000_000, 1_000),

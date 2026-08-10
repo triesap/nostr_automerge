@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 19: Canonical Reports And Dispositions
 
 Status: active
-Current checkpoint: `step_391`
+Current checkpoint: `step_392`
 Steps: `step_382` through `step_398`
 Primary findings: `FINDING_017`, `FINDING_018`, `FINDING_022`
 
@@ -41,4 +41,5 @@ invalid evidence with valid noncanonical evidence.
 - `step_387`: `d419c0e` — invalid changes have a public collection distinct from excluded changes.
 - `step_388`: `86b1c6a` — digest items derive exclusively from canonical namespaced disposition records.
 - `step_389`: `c5c4dea` — dynamic control outcomes are cryptographically bound and order-independent.
-- `step_390`: this commit — applicable signed-event outcomes are bound while untrusted raw bytes remain outside the digest.
+- `step_390`: `8331a6d` — applicable signed-event outcomes are bound while untrusted raw bytes remain outside the digest.
+- `step_391`: this commit — evaluation returns typed noncanonical errors while protocol-invalid evidence remains reportable.

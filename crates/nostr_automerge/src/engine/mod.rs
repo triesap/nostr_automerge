@@ -9,6 +9,6 @@ pub use crate::automerge_adapter::materialized_view::{
 };
 pub use checkpoint_result::{CheckpointVerificationResult, CheckpointVerificationStatus};
 pub use evaluation_report::{
-    DispositionRecord, EvaluationFailure, EvaluationReport, ProtocolItemIdentifier,
+    DispositionRecord, EvaluationError, EvaluationFailure, EvaluationReport, ProtocolItemIdentifier,
 };
 pub use reference_evaluator::ReferenceEvaluator;

@@ -113,7 +113,8 @@ fn generic_report(
             &mut budget,
             &NeverCancelled,
         )
-    };
+    }
+    .map_err(|_| RunError::Input)?;
     output.coordinate = report.coordinate().to_address();
     output.canonical_controls = report
         .canonical_controls()

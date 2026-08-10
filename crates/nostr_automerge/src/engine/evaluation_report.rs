@@ -26,6 +26,36 @@ pub enum EvaluationFailure {
     InvariantViolation,
 }
 
+/// A noncanonical implementation failure returned outside protocol reports.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum EvaluationError {
+    /// Dependency-graph construction, closure, or scheduling failed internally.
+    Graph,
+    /// Automerge change decoding failed after carrier qualification.
+    Decode,
+    /// Exact-state Automerge application failed unexpectedly.
+    Apply,
+    /// Canonical report or accepted-state invariants were inconsistent.
+    ReportInvariant,
+    /// Immutable materialized document projection failed.
+    Projection,
+}
+
+impl fmt::Display for EvaluationError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(match self {
+            Self::Graph => "internal dependency graph failure",
+            Self::Decode => "internal Automerge decode failure",
+            Self::Apply => "internal Automerge application failure",
+            Self::ReportInvariant => "internal canonical report invariant failure",
+            Self::Projection => "internal materialized projection failure",
+        })
+    }
+}
+
+impl std::error::Error for EvaluationError {}
+
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 
 /// A canonical identifier whose namespace prevents collisions between protocol item kinds.

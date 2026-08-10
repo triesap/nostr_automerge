@@ -6,6 +6,12 @@ in a `CorpusBuilder`, finish it into an immutable `EvidenceCorpus`, and pass tha
 corpus to `ReferenceEvaluator` with an explicit document coordinate, work
 budget, and cancellation policy.
 
+`ReferenceEvaluator::evaluate` and `reevaluate` return
+`Result<EvaluationReport, EvaluationError>`. Known invalid protocol evidence is
+represented by canonical dispositions in an `Ok` report. Repository invariant,
+adapter, application, and projection failures return typed noncanonical errors
+and cannot masquerade as protocol outcomes.
+
 `WorkBudget` has separate byte and item ceilings and records nine typed work
 dimensions: event observations, carrier evidence, controls, graph nodes, graph
 edges, decoded bytes, applied changes, checkpoint bytes, and assertions. Every

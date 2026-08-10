@@ -105,7 +105,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         coordinate,
         &mut WorkBudget::new(1_000_000, 10_000),
         &NeverCancelled,
-    );
+    )?;
 
     assert_eq!(report.completion(), Completion::Complete);
     assert_eq!(report.accepted_changes(), [change.change_hash()]);
