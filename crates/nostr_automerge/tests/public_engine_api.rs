@@ -523,6 +523,24 @@ fn children_are_evaluated_one_epoch_at_a_time() {
     let grandchild_id = VerifiedNip01Event::verify(grandchild.clone())
         .expect("signed grandchild")
         .event_id();
+    let third = document
+        .author_change(&[Operation::PutString {
+            key: "epoch2".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .expect("grandchild epoch change");
+    let great_grandchild = signed_acl_control_with_base(
+        &controller,
+        coordinate,
+        4,
+        Some(grandchild_id),
+        3,
+        vec![(writer.public_key().to_hex(), vec!["write"])],
+        &[third.change_hash()],
+    );
+    let great_grandchild_id = VerifiedNip01Event::verify(great_grandchild.clone())
+        .expect("signed great-grandchild")
+        .event_id();
     let sign_change =
         |created_at: u64,
          control_id: EventId,
@@ -545,8 +563,17 @@ fn children_are_evaluated_one_epoch_at_a_time() {
         };
     let first_event = sign_change(4, genesis_id, &first);
     let second_event = sign_change(5, child_id, &second);
+    let third_event = sign_change(6, grandchild_id, &third);
     let mut builder = CorpusBuilder::new();
-    for event in [grandchild, second_event, child, first_event, genesis] {
+    for event in [
+        great_grandchild,
+        third_event,
+        grandchild,
+        second_event,
+        child,
+        first_event,
+        genesis,
+    ] {
         assert!(matches!(
             builder.ingest(event),
             IngestOutcome::Accepted { .. }
@@ -560,7 +587,7 @@ fn children_are_evaluated_one_epoch_at_a_time() {
     );
     assert_eq!(
         report.canonical_controls(),
-        [genesis_id, child_id, grandchild_id]
+        [genesis_id, child_id, grandchild_id, great_grandchild_id]
     );
     assert_eq!(
         report
@@ -568,9 +595,18 @@ fn children_are_evaluated_one_epoch_at_a_time() {
             .iter()
             .copied()
             .collect::<BTreeSet<_>>(),
-        BTreeSet::from([first.change_hash(), second.change_hash()])
+        BTreeSet::from([
+            first.change_hash(),
+            second.change_hash(),
+            third.change_hash(),
+        ])
     );
-    assert_eq!(report.heads(), [second.change_hash()]);
+    assert_eq!(report.heads(), [third.change_hash()]);
+}
+
+#[test]
+fn child_frontier_preserves_ancestors() {
+    children_are_evaluated_one_epoch_at_a_time();
 }
 
 #[test]
