@@ -1,0 +1,1 @@
+{"fixture_id":"v1_draft.tags.unknown_tag_invariance","requirements":["R2_TAG_002"],"variants":["unknown_order","unknown_repetition","unknown_extra_elements"],"invariant":"canonical_report_fields_are_byte_inputs_identical"}

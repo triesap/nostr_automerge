@@ -3798,6 +3798,11 @@ struct SignedEngineScenario {
 
 #[allow(clippy::expect_used)]
 fn signed_engine_scenario() -> SignedEngineScenario {
+    signed_engine_scenario_with_change_tags(Vec::new())
+}
+
+#[allow(clippy::expect_used)]
+fn signed_engine_scenario_with_change_tags(extra_tags: Vec<Vec<String>>) -> SignedEngineScenario {
     let controller = TestSigner::from_byte(20);
     let device = TestSigner::from_byte(21);
     let coordinate: DocumentCoordinate = format!(
@@ -3834,15 +3839,17 @@ fn signed_engine_scenario() -> SignedEngineScenario {
     let control_id = VerifiedNip01Event::verify(control.clone())
         .expect("signed control")
         .event_id();
+    let mut change_tags = vec![
+        vec!["a".to_owned(), coordinate.to_address()],
+        vec!["e".to_owned(), control_id.to_hex()],
+        vec!["x".to_owned(), change.change_hash().to_hex()],
+    ];
+    change_tags.extend(extra_tags);
     let change_event = device.sign(
         &UnsignedEventDraft::new(
             2,
             1_624,
-            vec![
-                vec!["a".to_owned(), coordinate.to_address()],
-                vec!["e".to_owned(), control_id.to_hex()],
-                vec!["x".to_owned(), change.change_hash().to_hex()],
-            ],
+            change_tags,
             base64::engine::general_purpose::STANDARD.encode(change.raw()),
         )
         .expect("change draft")
@@ -3857,6 +3864,45 @@ fn signed_engine_scenario() -> SignedEngineScenario {
         control_id,
         change_hash: change.change_hash(),
         snapshot: document.accepted_state_bytes(),
+    }
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn unknown_change_tags_leave_canonical_report_unchanged() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/tags/unknown_tag_invariance.json"
+    ))
+    .expect("unknown tag fixture");
+    assert_eq!(fixture["variants"].as_array().map(Vec::len), Some(3));
+    let variants = [
+        vec![vec!["future".into()]],
+        vec![vec!["future".into()], vec!["future".into(), "again".into()]],
+        vec![vec!["z".into(), "one".into(), "two".into(), "three".into()]],
+    ];
+    let evaluate = |scenario: SignedEngineScenario| {
+        let mut builder = CorpusBuilder::new();
+        for event in [scenario.change, scenario.control] {
+            assert!(matches!(
+                builder.ingest(event),
+                IngestOutcome::Accepted { .. }
+            ));
+        }
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+            &builder.finish(),
+            scenario.coordinate,
+            &mut WorkBudget::new(1_000_000, 1_000),
+            &NeverCancelled,
+        )
+    };
+    let baseline = evaluate(signed_engine_scenario());
+    for extra in variants {
+        let report = evaluate(signed_engine_scenario_with_change_tags(extra));
+        assert_eq!(report.canonical_controls(), baseline.canonical_controls());
+        assert_eq!(report.disposition_records(), baseline.disposition_records());
+        assert_eq!(report.heads(), baseline.heads());
+        assert_eq!(report.history_digest(), baseline.history_digest());
+        assert_eq!(report.dispositions_digest(), baseline.dispositions_digest());
     }
 }
 
