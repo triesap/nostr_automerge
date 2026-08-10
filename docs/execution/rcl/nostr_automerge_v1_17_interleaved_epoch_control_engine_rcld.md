@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 17: Interleaved Epoch And Control Engine
 
 Status: active
-Current checkpoint: `step_350`
+Current checkpoint: `step_351`
 Steps: `step_337` through `step_355`
 Primary findings: `FINDING_014`, `FINDING_015`, `FINDING_016`, `FINDING_018`, `FINDING_025`
 
@@ -45,4 +45,5 @@ normative conformance path may call a parallel static control-chain selector.
 - `step_346`: `6ff9954` — no production path preselects a complete control chain.
 - `step_347`: `26c95eb` — exact closure, heads, and actor state are stored per control.
 - `step_348`: `413a565` — child frontiers retain every accepted ancestor.
-- `step_349`: this commit — transitions exclude only state outside selected closure.
+- `step_349`: `038dde9` — transitions exclude only state outside selected closure.
+- `step_350`: this commit — terminal controls stop further document extension.

@@ -615,6 +615,11 @@ fn child_transition_excludes_only_outside_closure() {
 }
 
 #[test]
+fn terminal_control_stops_document_extension() {
+    signed_terminal_genesis_rejects_children();
+}
+
+#[test]
 fn interleaved_child_selection() {
     signed_events_reach_materialized_state_through_public_engine();
     pending_controls_converge_after_signed_parent_delivery();

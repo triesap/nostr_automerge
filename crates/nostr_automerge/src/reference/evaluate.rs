@@ -312,6 +312,9 @@ pub(crate) fn evaluate_batch(
         };
         accepted_at_control.insert(selected, AcceptedAtControl::from_result(&epoch_result));
         parent_epoch_result = Some(epoch_result);
+        if control.frozen {
+            break;
+        }
         parent_id = Some(selected);
     }
 
