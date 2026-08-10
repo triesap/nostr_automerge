@@ -507,7 +507,15 @@ fn resolve_authoritative_epoch(
         .map(|result| result.dispositions().clone())
         .map_err(|error| match error {
             EpochEvaluationError::Schedule(error) => EpochResolutionError::Schedule(error),
-            EpochEvaluationError::State(_) => EpochResolutionError::InvalidState,
+            EpochEvaluationError::Quarantine(QuarantineError::BudgetExhausted) => {
+                EpochResolutionError::Schedule(ScheduleError::BudgetExhausted)
+            }
+            EpochEvaluationError::Quarantine(QuarantineError::Cancelled) => {
+                EpochResolutionError::Schedule(ScheduleError::Cancelled)
+            }
+            EpochEvaluationError::Quarantine(QuarantineError::Alert(_))
+            | EpochEvaluationError::Graph(_)
+            | EpochEvaluationError::State(_) => EpochResolutionError::InvalidState,
         })
 }
 

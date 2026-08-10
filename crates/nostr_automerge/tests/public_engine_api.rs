@@ -2930,6 +2930,142 @@ fn base_sequence_equivocation_is_detected() {
     actor_sequence_rollback_and_replay();
 }
 
+#[test]
+#[allow(clippy::expect_used)]
+fn equivocation_quarantines_transitive_dependants() {
+    let controller = TestSigner::from_byte(99);
+    let equivocated = TestSigner::from_byte(100);
+    let dependant = TestSigner::from_byte(101);
+    let independent = TestSigner::from_byte(102);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "99".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let control = signed_acl_control(
+        &controller,
+        coordinate,
+        1,
+        None,
+        0,
+        vec![
+            (equivocated.public_key().to_hex(), vec!["write"]),
+            (dependant.public_key().to_hex(), vec!["write"]),
+            (independent.public_key().to_hex(), vec!["write"]),
+        ],
+    );
+    let control_id = VerifiedNip01Event::verify(control.clone())
+        .expect("signed control")
+        .event_id();
+    let equivocated_actor = ActorId::derive(coordinate, equivocated.public_key());
+    let make_conflict = |key: &str| {
+        let mut document = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit).with_actor(
+            automerge::ActorId::from(equivocated_actor.as_bytes().to_vec()),
+        );
+        document.put(ROOT, key, "conflict").expect("conflict op");
+        let hash = document.commit().expect("conflict hash");
+        let raw = document
+            .get_change_by_hash(&hash)
+            .expect("conflict change")
+            .raw_bytes()
+            .to_vec();
+        (ChangeHash::from_bytes(hash.0), raw)
+    };
+    let (first_hash, first_raw) = make_conflict("first");
+    let (second_hash, second_raw) = make_conflict("second");
+
+    let mut dependant_document = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit);
+    dependant_document
+        .apply_changes(
+            [automerge::Change::from_bytes(first_raw.clone()).expect("decoded conflict")],
+        )
+        .expect("apply conflict branch");
+    let dependant_actor = ActorId::derive(coordinate, dependant.public_key());
+    dependant_document.set_actor(automerge::ActorId::from(
+        dependant_actor.as_bytes().to_vec(),
+    ));
+    dependant_document
+        .put(ROOT, "dependant", "quarantined")
+        .expect("dependant op");
+    let dependant_hash = dependant_document.commit().expect("dependant hash");
+    let dependant_raw = dependant_document
+        .get_change_by_hash(&dependant_hash)
+        .expect("dependant change")
+        .raw_bytes()
+        .to_vec();
+    let dependant_hash = ChangeHash::from_bytes(dependant_hash.0);
+
+    let independent_actor = ActorId::derive(coordinate, independent.public_key());
+    let mut independent_document =
+        AuthoringDocument::empty(ActorState::initial(independent_actor, BTreeSet::new()))
+            .expect("independent document");
+    let independent_change = independent_document
+        .author_change(&[Operation::PutString {
+            key: "independent".to_owned(),
+            value: "retained".to_owned(),
+        }])
+        .expect("independent change");
+    let sign_change = |signer: &TestSigner, created_at: u64, hash: ChangeHash, raw: &[u8]| {
+        signer.sign(
+            &UnsignedEventDraft::new(
+                created_at,
+                1_624,
+                vec![
+                    vec!["a".to_owned(), coordinate.to_address()],
+                    vec!["e".to_owned(), control_id.to_hex()],
+                    vec!["x".to_owned(), hash.to_hex()],
+                ],
+                base64::engine::general_purpose::STANDARD.encode(raw),
+            )
+            .expect("change draft")
+            .prepare(signer.public_key())
+            .expect("change preimage"),
+        )
+    };
+    let mut builder = CorpusBuilder::new();
+    for event in [
+        sign_change(&equivocated, 2, first_hash, &first_raw),
+        sign_change(&equivocated, 3, second_hash, &second_raw),
+        sign_change(&dependant, 4, dependant_hash, &dependant_raw),
+        sign_change(
+            &independent,
+            5,
+            independent_change.change_hash(),
+            independent_change.raw(),
+        ),
+        control,
+    ] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(report.completion(), Completion::Complete);
+    assert_eq!(
+        report.accepted_changes(),
+        [independent_change.change_hash()]
+    );
+    for hash in [first_hash, second_hash, dependant_hash] {
+        assert!(
+            report
+                .dispositions()
+                .contains(&(hash, ProtocolDisposition::Excluded))
+        );
+    }
+    assert!(report.integrity_alerts().iter().any(|alert| matches!(
+        alert,
+        nostr_automerge::IntegrityAlert::DeviceEquivocation(_)
+    )));
+}
+
 struct SignedEngineScenario {
     coordinate: DocumentCoordinate,
     control: RawEventBytes,

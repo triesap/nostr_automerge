@@ -10,7 +10,9 @@ use crate::graph::actor_state::{
 };
 use crate::graph::change_candidate::ChangeCandidate;
 use crate::graph::closure::candidate_dependency_closure;
+use crate::graph::dependency_graph::{GraphBuildError, build_graph};
 use crate::graph::epoch::{EpochAncestry, validate_epoch_ancestry};
+use crate::graph::equivocation::{QuarantineError, quarantine_equivocation_descendants};
 use crate::graph::schedule::ScheduleError;
 use crate::reference::apply::apply_exact_closure;
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
@@ -29,6 +31,8 @@ pub(crate) enum EpochEvaluationInputError {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum EpochEvaluationError {
     Schedule(ScheduleError),
+    Graph(GraphBuildError),
+    Quarantine(QuarantineError),
     State(crate::control::epoch_state::AcceptedEpochStateError),
 }
 
@@ -314,13 +318,34 @@ pub(crate) fn evaluate_epoch(
                 canonical_control: !terminal,
             }
         });
-    let dispositions = resolve_epoch(
+    let mut dispositions = resolve_epoch(
         epoch_candidates,
         input.accepted_base().accepted_closure().clone(),
         budget,
         cancellation,
     )
     .map_err(EpochEvaluationError::Schedule)?;
+    let eligible = all_candidates
+        .values()
+        .filter(|candidate| {
+            input
+                .accepted_base()
+                .accepted_closure()
+                .contains(&candidate.change_hash)
+                || dispositions.get(&candidate.change_hash) == Some(&ProtocolDisposition::Accepted)
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+    let graph = build_graph(
+        eligible.clone(),
+        input.accepted_base().accepted_closure().clone(),
+    )
+    .map_err(EpochEvaluationError::Graph)?;
+    let quarantine = quarantine_equivocation_descendants(eligible, &graph, budget, cancellation)
+        .map_err(EpochEvaluationError::Quarantine)?;
+    for hash in &quarantine.quarantined {
+        dispositions.insert(*hash, ProtocolDisposition::Excluded);
+    }
     let mut accepted_candidates = input.accepted_base().accepted_candidates().clone();
     accepted_candidates.extend(
         input
@@ -331,6 +356,8 @@ pub(crate) fn evaluate_epoch(
                     .then_some((*hash, candidate.clone()))
             }),
     );
+    accepted_candidates
+        .retain(|hash, _| dispositions.get(hash) != Some(&ProtocolDisposition::Excluded));
     let accepted_closure = accepted_candidates.keys().copied().collect::<BTreeSet<_>>();
     let depended_on = accepted_candidates
         .values()
@@ -348,7 +375,7 @@ pub(crate) fn evaluate_epoch(
         frontier_heads,
         accepted_candidates,
         dispositions,
-        Vec::new(),
+        quarantine.alerts,
         materialized,
     )
     .map_err(EpochEvaluationError::State)
