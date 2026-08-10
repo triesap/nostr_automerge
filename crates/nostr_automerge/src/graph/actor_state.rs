@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use super::change_candidate::ChangeCandidate;
 use crate::{ActorId, ChangeHash};
@@ -21,6 +21,8 @@ pub(crate) enum ActorStateError {
     EmptyChange,
     NonEmptyChange,
     DependencyFrontier,
+    MissingDependency,
+    DependencyCycle,
 }
 
 pub(crate) fn apply_empty_counter(
@@ -136,10 +138,37 @@ pub(crate) fn validate_actor_predecessor(
 pub(crate) fn initialize_actor_states(
     accepted_base: impl IntoIterator<Item = ChangeCandidate>,
 ) -> Result<BTreeMap<ActorId, EpochActorState>, ActorStateError> {
-    let mut changes = accepted_base.into_iter().collect::<Vec<_>>();
-    changes.sort_by_key(|candidate| (candidate.actor, candidate.sequence, candidate.change_hash));
+    let changes = accepted_base
+        .into_iter()
+        .map(|candidate| (candidate.change_hash, candidate))
+        .collect::<BTreeMap<_, _>>();
+    let mut remaining_dependencies = BTreeMap::new();
+    let mut dependants = BTreeMap::<ChangeHash, BTreeSet<ChangeHash>>::new();
+    let mut ready = BTreeSet::new();
+    for (hash, candidate) in &changes {
+        let dependencies = candidate
+            .dependencies
+            .iter()
+            .copied()
+            .collect::<BTreeSet<_>>();
+        if !dependencies
+            .iter()
+            .all(|dependency| changes.contains_key(dependency))
+        {
+            return Err(ActorStateError::MissingDependency);
+        }
+        if dependencies.is_empty() {
+            ready.insert(*hash);
+        }
+        remaining_dependencies.insert(*hash, dependencies.len());
+        for dependency in dependencies {
+            dependants.entry(dependency).or_default().insert(*hash);
+        }
+    }
     let mut states = BTreeMap::<ActorId, EpochActorState>::new();
-    for candidate in changes {
+    let mut processed = 0usize;
+    while let Some(hash) = ready.pop_first() {
+        let candidate = &changes[&hash];
         let expected_sequence = match states.get(&candidate.actor) {
             Some(state) => state
                 .last_sequence
@@ -177,6 +206,25 @@ pub(crate) fn initialize_actor_states(
                 highest_change: candidate.change_hash,
             },
         );
+        processed = processed
+            .checked_add(1)
+            .ok_or(ActorStateError::DependencyCycle)?;
+        if let Some(children) = dependants.get(&hash) {
+            for child in children {
+                let Some(remaining) = remaining_dependencies.get_mut(child) else {
+                    return Err(ActorStateError::MissingDependency);
+                };
+                *remaining = remaining
+                    .checked_sub(1)
+                    .ok_or(ActorStateError::DependencyCycle)?;
+                if *remaining == 0 {
+                    ready.insert(*child);
+                }
+            }
+        }
+    }
+    if processed != changes.len() {
+        return Err(ActorStateError::DependencyCycle);
     }
     Ok(states)
 }
@@ -209,11 +257,14 @@ pub(crate) mod tests {
 
     #[test]
     fn initialize_actor_state_from_epoch_base() {
-        let states = initialize_actor_states([
-            candidate(2, 1, 1, 0),
-            candidate(1, 2, 3, 0),
-            candidate(1, 1, 1, 2),
-        ]);
+        let mut first = candidate(1, 1, 1, 2);
+        first.change_hash = ChangeHash::from_bytes([9; 32]);
+        let mut empty_second = candidate(1, 2, 3, 0);
+        empty_second.change_hash = ChangeHash::from_bytes([1; 32]);
+        empty_second.dependencies = vec![first.change_hash];
+        let mut other_actor = candidate(2, 1, 1, 0);
+        other_actor.change_hash = ChangeHash::from_bytes([8; 32]);
+        let states = initialize_actor_states([empty_second.clone(), other_actor, first.clone()]);
         assert!(states.is_ok());
         let states = match states {
             Ok(states) => states,
@@ -221,6 +272,10 @@ pub(crate) mod tests {
         };
         assert_eq!(states[&ActorId::from_bytes([1; 32])].last_sequence, 2);
         assert_eq!(states[&ActorId::from_bytes([1; 32])].next_op, 3);
+        assert_eq!(
+            states[&ActorId::from_bytes([1; 32])].highest_change,
+            empty_second.change_hash
+        );
         assert_eq!(
             initialize_actor_states([candidate(1, 2, 1, 1)]),
             Err(ActorStateError::SequenceGap)
@@ -230,6 +285,24 @@ pub(crate) mod tests {
         assert_eq!(
             initialize_actor_states([candidate(1, 1, 1, 1), conflict]),
             Err(ActorStateError::Equivocation)
+        );
+
+        let mut missing = candidate(3, 1, 1, 1);
+        missing.dependencies = vec![ChangeHash::from_bytes([7; 32])];
+        assert_eq!(
+            initialize_actor_states([missing]),
+            Err(ActorStateError::MissingDependency)
+        );
+
+        let mut left = candidate(3, 1, 1, 1);
+        left.change_hash = ChangeHash::from_bytes([3; 32]);
+        let mut right = candidate(4, 1, 1, 1);
+        right.change_hash = ChangeHash::from_bytes([4; 32]);
+        left.dependencies = vec![right.change_hash];
+        right.dependencies = vec![left.change_hash];
+        assert_eq!(
+            initialize_actor_states([right, left]),
+            Err(ActorStateError::DependencyCycle)
         );
     }
 
