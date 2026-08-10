@@ -8,5 +8,5 @@ pub use crate::automerge_adapter::materialized_view::{
     MaterializedObjectType, MaterializedPathElement, MaterializedScalar, MaterializedValue,
 };
 pub use checkpoint_result::{CheckpointVerificationResult, CheckpointVerificationStatus};
-pub use evaluation_report::{EvaluationFailure, EvaluationReport};
+pub use evaluation_report::{EvaluationFailure, EvaluationReport, ProtocolItemIdentifier};
 pub use reference_evaluator::ReferenceEvaluator;

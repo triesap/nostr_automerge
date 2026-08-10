@@ -59,4 +59,4 @@ active equivocation quarantine.
 - `step_378`: `311af7a` — quarantine preserves accepted actor history below the first conflict.
 - `step_379`: `7ff32b2` — duplicate valid carriers coalesce without actor equivocation.
 - `step_380`: `ff4804f` — the signed causal matrix exercises every change rule through the public engine.
-- `step_381`: this commit — the causal change acceptance phase gate is green.
+- `step_381`: `87045fe` — the causal change acceptance phase gate is green.

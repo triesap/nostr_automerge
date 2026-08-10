@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 19: Canonical Reports And Dispositions
 
 Status: active
-Current checkpoint: `step_382`
+Current checkpoint: `step_383`
 Steps: `step_382` through `step_398`
 Primary findings: `FINDING_017`, `FINDING_018`, `FINDING_022`
 
@@ -30,3 +30,7 @@ and `git diff --check`.
 Canonical completion is limited to complete, budget exhausted, or cancelled.
 The API exposes no third-party error and no canonical collection conflates
 invalid evidence with valid noncanonical evidence.
+
+## Completed Checkpoints
+
+- `step_382`: this commit — public protocol identifiers are explicitly namespaced and canonically ordered.

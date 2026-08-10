@@ -28,6 +28,47 @@ pub enum EvaluationFailure {
 
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 
+/// A canonical identifier whose namespace prevents collisions between protocol item kinds.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum ProtocolItemIdentifier {
+    /// A signed control event identified by its NIP-01 event identifier.
+    ControlEvent(EventId),
+    /// An Automerge change identified by its canonical change hash.
+    ChangeHash(ChangeHash),
+    /// A signed protocol event not represented by a more specific namespace.
+    Event(EventId),
+}
+
+impl ProtocolItemIdentifier {
+    /// Constructs a control-event identifier.
+    #[must_use]
+    pub const fn control_event(identifier: EventId) -> Self {
+        Self::ControlEvent(identifier)
+    }
+
+    /// Constructs a generic signed-event identifier.
+    #[must_use]
+    pub const fn event(identifier: EventId) -> Self {
+        Self::Event(identifier)
+    }
+
+    /// Returns the underlying canonical 32-byte identifier.
+    #[must_use]
+    pub const fn as_bytes(&self) -> &[u8; 32] {
+        match self {
+            Self::ControlEvent(identifier) | Self::Event(identifier) => identifier.as_bytes(),
+            Self::ChangeHash(identifier) => identifier.as_bytes(),
+        }
+    }
+}
+
+impl From<ChangeHash> for ProtocolItemIdentifier {
+    fn from(identifier: ChangeHash) -> Self {
+        Self::ChangeHash(identifier)
+    }
+}
+
 /// Canonical owned result of one deterministic reference evaluation.
 #[derive(Clone, PartialEq, Eq)]
 pub struct EvaluationReport {
@@ -306,7 +347,7 @@ fn strictly_sorted<T: Ord>(values: &[T]) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{EvaluationReport, EvaluationReportParts};
+    use super::{EvaluationReport, EvaluationReportParts, ProtocolItemIdentifier};
     use crate::{
         ChangeHash, Completion, DispositionsDigest, DocumentCoordinate, EventId, HistoryDigest,
     };
@@ -352,5 +393,22 @@ mod tests {
         incomplete_with_document.completion = Completion::Cancelled;
         incomplete_with_document.failure = Some(super::EvaluationFailure::Cancelled);
         assert!(EvaluationReport::from_parts(incomplete_with_document).is_ok());
+    }
+
+    #[test]
+    fn disposition_identifier_orders_namespaces_and_redacts_debug() {
+        let control = ProtocolItemIdentifier::control_event(EventId::from_bytes([3; 32]));
+        let change = ProtocolItemIdentifier::from(ChangeHash::from_bytes([1; 32]));
+        let event = ProtocolItemIdentifier::event(EventId::from_bytes([0; 32]));
+        assert!(control < change);
+        assert!(change < event);
+        assert_eq!(change.as_bytes(), &[1; 32]);
+        assert_eq!(
+            change,
+            ProtocolItemIdentifier::ChangeHash(ChangeHash::from_bytes([1; 32]))
+        );
+        let debug = format!("{control:?} {change:?} {event:?}");
+        assert!(debug.contains("[REDACTED]"));
+        assert!(!debug.contains("03030303"));
     }
 }

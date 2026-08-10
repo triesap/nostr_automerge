@@ -43,7 +43,7 @@ pub use engine::{
     CheckpointVerificationResult, CheckpointVerificationStatus, EvaluationFailure,
     EvaluationReport, MaterializedConflict, MaterializedDocumentView, MaterializedEntry,
     MaterializedMark, MaterializedObjectType, MaterializedPathElement, MaterializedScalar,
-    MaterializedValue, ReferenceEvaluator,
+    MaterializedValue, ProtocolItemIdentifier, ReferenceEvaluator,
 };
 pub use error::HexError;
 pub use evidence::corpus_builder::{
