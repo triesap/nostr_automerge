@@ -518,7 +518,11 @@ mod tests {
         };
         let mut exhausted = WorkBudget::new(0, 1);
         assert_eq!(
-            charge_actor_reconstruction(&[candidate.clone()], &mut exhausted, &NeverCancelled),
+            charge_actor_reconstruction(
+                std::slice::from_ref(&candidate),
+                &mut exhausted,
+                &NeverCancelled,
+            ),
             Err(crate::graph::schedule::ScheduleError::BudgetExhausted)
         );
         assert_eq!(exhausted.consumed().get(WorkCounter::GraphNode), 0);

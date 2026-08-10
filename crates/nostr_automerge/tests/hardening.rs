@@ -1,5 +1,49 @@
 //! Hardening configuration contract tests.
 #[test]
+fn no_untrusted_panic_paths() {
+    fn rust_sources(directory: &std::path::Path, output: &mut Vec<std::path::PathBuf>) {
+        let Ok(entries) = std::fs::read_dir(directory) else {
+            return;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                rust_sources(&path, output);
+            } else if path.extension().is_some_and(|extension| extension == "rs") {
+                output.push(path);
+            }
+        }
+    }
+
+    let source_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let mut sources = Vec::new();
+    rust_sources(&source_root, &mut sources);
+    assert!(!sources.is_empty());
+    for path in sources {
+        let source = std::fs::read_to_string(&path);
+        assert!(source.is_ok(), "failed to read {}", path.display());
+        let Ok(source) = source else { return };
+        let test_boundaries = [
+            "#[cfg(test)]\nmod tests",
+            "#[cfg(test)]\npub(crate) mod tests",
+        ];
+        let production_end = test_boundaries
+            .iter()
+            .filter_map(|boundary| source.find(boundary))
+            .min()
+            .unwrap_or(source.len());
+        let production = &source[..production_end];
+        for forbidden in ["unreachable!", "panic!", ".unwrap()", ".expect("] {
+            assert!(
+                !production.contains(forbidden),
+                "{} contains production panic path {forbidden}",
+                path.display()
+            );
+        }
+    }
+}
+
+#[test]
 fn initialize_cargo_fuzz_harness() {
     let manifest = include_str!("../../../fuzz/Cargo.toml");
     assert!(manifest.contains("cargo-fuzz"));
