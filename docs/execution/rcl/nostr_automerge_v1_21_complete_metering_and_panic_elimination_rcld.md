@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 21: Complete Metering And Panic Elimination
 
 Status: active
-Current checkpoint: `step_425`
+Current checkpoint: `step_426`
 Steps: `step_410` through `step_429`
 Primary findings: `FINDING_022`, `FINDING_023`, `FINDING_027`
 
@@ -46,4 +46,5 @@ optional later work, and never be converted into a protocol invalidity.
 - `step_421`: `cd48b6c` — materialized object projection uses an explicit pending-object stack and survives 2,048 nested maps.
 - `step_422`: `5ec0d6d` — public snapshot projection charges canonical bytes and one load operation before Automerge decode and preserves typed resource completion.
 - `step_423`: `736460c` — text projection charges its object and exact UTF-16 length before materialization, and charges every projected mark.
-- `step_424`: this commit — the projection stack charges every object, path, property, conflict, value, and conservative sort bound.
+- `step_424`: `bf7222f` — the projection stack charges every object, path, property, conflict, value, and conservative sort bound.
+- `step_425`: this commit — incomplete core evaluation skips checkpoint and projection work, and checkpoint interruption stops all later checkpoint verification.

@@ -107,14 +107,37 @@ impl ReferenceEvaluator {
                 )
             })
             .collect::<Vec<_>>();
-        let checkpoints = verify_checkpoints(
-            corpus,
-            coordinate,
-            &canonical_controls,
-            &batch.accepted_at_control,
-            budget,
-            cancellation,
-        );
+        let checkpoints = match batch.completion {
+            Completion::Complete => verify_checkpoints(
+                corpus,
+                coordinate,
+                &canonical_controls,
+                &batch.accepted_at_control,
+                budget,
+                cancellation,
+            ),
+            Completion::BudgetExhausted => checkpoint_refusals(
+                corpus,
+                coordinate,
+                CheckpointVerificationStatus::BudgetExhausted,
+            ),
+            Completion::Cancelled => {
+                checkpoint_refusals(corpus, coordinate, CheckpointVerificationStatus::Cancelled)
+            }
+        };
+        if checkpoints
+            .iter()
+            .any(|checkpoint| checkpoint.status() == CheckpointVerificationStatus::Cancelled)
+        {
+            batch.completion = Completion::Cancelled;
+            batch.failure = Some(EvaluationFailure::Cancelled);
+        } else if checkpoints
+            .iter()
+            .any(|checkpoint| checkpoint.status() == CheckpointVerificationStatus::BudgetExhausted)
+        {
+            batch.completion = Completion::BudgetExhausted;
+            batch.failure = Some(EvaluationFailure::BudgetExhausted);
+        }
         let dispositions = batch.dispositions.into_iter().collect::<Vec<_>>();
         disposition_records.extend(dispositions.iter().map(|(hash, disposition)| {
             DispositionRecord::new(ProtocolItemIdentifier::from(*hash), *disposition, None)
@@ -138,7 +161,18 @@ impl ReferenceEvaluator {
         let dispositions_digest =
             dispositions_digest(self.revision, coordinate, &disposition_items)
                 .map_err(|_| EvaluationError::ReportInvariant)?;
-        let document = match project_document(batch.materialized_document, budget, cancellation) {
+        let projection = match batch.completion {
+            Completion::Complete => {
+                project_document(batch.materialized_document, budget, cancellation)
+            }
+            Completion::BudgetExhausted => {
+                Err(crate::automerge_adapter::materialized_view::ProjectionError::Budget)
+            }
+            Completion::Cancelled => {
+                Err(crate::automerge_adapter::materialized_view::ProjectionError::Cancelled)
+            }
+        };
+        let document = match projection {
             Ok(document) => document,
             Err(crate::automerge_adapter::materialized_view::ProjectionError::Budget) => {
                 batch.completion = Completion::BudgetExhausted;
@@ -304,6 +338,7 @@ fn verify_checkpoints(
         Ok(prepared) => prepared,
         Err(stop) => return checkpoint_refusals(corpus, coordinate, stop.status()),
     };
+    let mut stopped: Option<CheckpointVerificationStatus> = None;
     corpus
         .events
         .values()
@@ -316,6 +351,20 @@ fn verify_checkpoints(
         })
         .map(|descriptor| {
             let descriptor_id = descriptor.event_id();
+            if let Some(status) = stopped {
+                let commitments = descriptor.descriptor();
+                return CheckpointVerificationResult::new(
+                    descriptor_id,
+                    Vec::new(),
+                    descriptor.snapshot_hash(),
+                    commitments.heads.iter().copied().collect(),
+                    commitments.change_count,
+                    commitments.change_set_hash,
+                    Vec::new(),
+                    Vec::new(),
+                    status,
+                );
+            }
             let chunk_events = checkpoint_chunk_event_ids(corpus, descriptor_id);
             let coverage_result = carrier_coverage.get(&descriptor_id);
             let accepted_result = accepted_history.get(&descriptor_id);
@@ -342,6 +391,13 @@ fn verify_checkpoints(
                     cancellation,
                 )
             });
+            if matches!(
+                status,
+                CheckpointVerificationStatus::BudgetExhausted
+                    | CheckpointVerificationStatus::Cancelled
+            ) {
+                stopped = Some(status);
+            }
             let commitments = descriptor.descriptor();
             CheckpointVerificationResult::new(
                 descriptor_id,
