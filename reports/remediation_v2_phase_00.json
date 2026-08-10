@@ -1,0 +1,56 @@
+{
+  "schema": "nostr_automerge.remediation_phase.v2",
+  "phase": "phase_00_authority_and_baseline",
+  "status": "pass",
+  "recorded": "2026-08-10",
+  "reviewed_baseline_commit": "6729d6e8241fc24f9772b3f1b9f843ac87ae5409",
+  "phase_input_head": "970e0d8",
+  "completed_steps": ["step_308", "step_309", "step_310", "step_311", "step_312", "step_313", "step_314", "step_315", "step_316", "step_317"],
+  "commits": {
+    "step_308": "041e527",
+    "step_309": "612b26c",
+    "step_310": "77d9c50",
+    "step_311": "ab2cb28",
+    "step_312": "4d3bec5",
+    "step_313": "e2109df",
+    "step_314": "00aa111",
+    "step_315": "21de0c8",
+    "step_316": "970e0d8",
+    "step_317": "self"
+  },
+  "toolchain": {
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "cargo": "cargo 1.97.1 (c980f4866 2026-06-30)"
+  },
+  "commands": [
+    {"command": "cargo extbuild doctor", "result": "pass"},
+    {"command": "cargo extbuild run -- python3 scripts/local_gate.py standard", "result": "pass"},
+    {"command": "python3 scripts/validate_spec.py", "result": "pass"},
+    {"command": "python3 scripts/validate_remediation_v2_baseline.py", "result": "pass"},
+    {"command": "python3 scripts/validate_remediation_v2_findings.py", "result": "pass"},
+    {"command": "python3 scripts/validate_claim_levels_v2.py", "result": "pass"},
+    {"command": "python3 scripts/validate_adrs.py", "result": "pass"},
+    {"command": "python3 scripts/validate_source_anchors.py --self-test", "result": "pass"},
+    {"command": "python3 scripts/validate_source_anchors.py", "result": "pass"},
+    {"command": "python3 scripts/validate_repository_policy.py", "result": "pass"},
+    {"command": "python3 scripts/validate_remediation_v2_ledger.py", "result": "pass"},
+    {"command": "python3 scripts/validate_remediation_v2_phase.py", "result": "pass"},
+    {"command": "git diff --check", "result": "pass"}
+  ],
+  "artifact_sha256": {
+    "Cargo.lock": "74aafde92cfcb35e7216dc847a75ca556ac9722a93147a9a6ccd61c3121a7e60",
+    "spec/NIP_DRAFT.md": "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3",
+    "spec/remediation_v2_findings.json": "df5367bc2686b165ef88145822eaff7530887c2bd047fac8872ff441f0968491",
+    "spec/remediation_v2_requirements.json": "22a7af4ebb2d5980b7acd00cc6e52d0d1f33ee77eb1e8b7af54b1ae727c03274",
+    "spec/claim_levels.json": "2e61142581fc92f25da7079bf3f6d74bbb485f99dabb4c23fe52c05085582818",
+    "reports/spec_baseline.txt": "1c173359f124768a01c9dd05bb19abeee72be1369d2167945337c55f0c50eb23",
+    "reports/source_anchors_v2.json": "27f59934cc1613f8d23e68f7fc222b11472fe701609aaa14fdcf41f264e8d132"
+  },
+  "repaired_gate_failures": [
+    "restored immutable spec/CONFORMANCE.md after companion digest validation rejected a local edit",
+    "updated the governance validator to require the current fail-closed README wording",
+    "refreshed the controlled specification baseline after adding approved ADR and claim files"
+  ],
+  "next": {"rcld": 16, "checkpoint": "step_318"},
+  "publication_authorized": false
+}

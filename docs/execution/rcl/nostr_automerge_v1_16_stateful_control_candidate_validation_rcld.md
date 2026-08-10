@@ -1,6 +1,7 @@
 # nostr_automerge Draft V1 RCLD 16: Stateful Control Candidate Validation
 
-Status: pending RCLD 15
+Status: active
+Current checkpoint: `step_318`
 Steps: `step_318` through `step_336`
 Primary findings: `FINDING_014`, `FINDING_015`, `FINDING_018`
 

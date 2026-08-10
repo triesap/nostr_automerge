@@ -28,7 +28,8 @@ def main() -> int:
         "README.md",
         (
             "## Status",
-            "not complete yet",
+            "full implementation",
+            "are not currently claimed",
             "does not currently claim",
             "## Architecture Boundary",
             "spec/NIP_DRAFT.md",

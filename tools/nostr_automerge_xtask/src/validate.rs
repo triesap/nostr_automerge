@@ -78,7 +78,7 @@ mod tests {
         assert!(names.contains(&"remediation_authority"));
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         let report = validate_repository(&root);
-        assert!(report.is_ok());
+        assert!(report.is_ok(), "{report:?}");
         let Ok(report) = report else { return };
         assert_eq!(report.validators.last(), Some(&"requirement_coverage"));
         assert!(report.covered_requirements > 0);

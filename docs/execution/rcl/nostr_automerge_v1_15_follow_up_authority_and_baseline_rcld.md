@@ -1,10 +1,10 @@
 # nostr_automerge Draft V1 RCLD 15: Follow-up Authority And Baseline
 
-Status: active
+Status: complete
 Created: 2026-08-10
 Mode: rcl-durable
 Coordination repository: `triesap/nostr_automerge`
-Current checkpoint: `step_310`
+Completed: 2026-08-10
 
 ## Purpose
 
@@ -56,3 +56,11 @@ only eligible next checkpoint.
 
 - `step_308`: `041e527` — follow-up baseline and RCLD sequence recorded.
 - `step_309`: `612b26c` — findings and remediation requirements registered.
+- `step_310`: `77d9c50` — execution authority and contiguous ledger activated.
+- `step_311`: `ab2cb28` — follow-up architecture decisions registered.
+- `step_312`: `4d3bec5` — unchanged protocol authority snapshot bound.
+- `step_313`: `e2109df` — follow-up repository instructions activated.
+- `step_314`: `00aa111` — stale completion and conformance claims withdrawn.
+- `step_315`: `21de0c8` — independent claim gates defined fail closed.
+- `step_316`: `970e0d8` — reviewed source anchors validated.
+- `step_317`: this commit — phase report published and RCLD 16 activated.
