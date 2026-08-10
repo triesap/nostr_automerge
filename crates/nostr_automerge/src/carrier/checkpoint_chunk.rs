@@ -90,16 +90,12 @@ pub(crate) fn validate(
     if event.kind() != crate::checkpoint::CHUNK_KIND {
         return Err(CheckpointChunkCarrierError::Kind);
     }
-    tags::require_absent(event.tags(), "d").map_err(CheckpointChunkCarrierError::Tags)?;
-    tags::require_durable_tags(event.tags()).map_err(CheckpointChunkCarrierError::Tags)?;
-    if event.tags().len() != 4
-        || event.tags().iter().any(|tag| {
-            tag.first()
-                .is_none_or(|name| name != "a" && name != "e" && name != "x" && name != "part")
-        })
-    {
-        return Err(CheckpointChunkCarrierError::Tags(tags::TagError::Forbidden));
-    }
+    tags::require_tag_contract(
+        event.tags(),
+        &[("a", 2), ("e", 2), ("x", 2), ("part", 3)],
+        &["expiration", "-"],
+    )
+    .map_err(CheckpointChunkCarrierError::Tags)?;
     let coordinate: DocumentCoordinate = tags::required_tag(event.tags(), "a", 2)
         .map_err(CheckpointChunkCarrierError::Tags)?[1]
         .parse()

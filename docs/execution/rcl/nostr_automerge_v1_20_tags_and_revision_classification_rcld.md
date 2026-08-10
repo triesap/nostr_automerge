@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 20: Tags And Revision Classification
 
 Status: active
-Current checkpoint: `step_404`
+Current checkpoint: `step_405`
 Steps: `step_399` through `step_409`
 Primary findings: `FINDING_020`, `FINDING_021`
 
@@ -36,4 +36,5 @@ ambiguous revision declarations remain invalid signed evidence.
 - `step_400`: `5923861` — change carriers use the shared contract and ignore harmless unknown tags.
 - `step_401`: `42c2033` — control carriers preserve sequence-dependent parent rules while ignoring unknown tags.
 - `step_402`: `59d83d5` — manifest carriers require only d and ignore all harmless extension tags.
-- `step_403`: this commit — checkpoint descriptors retain exact a/e/x requirements and ignore unknown tags.
+- `step_403`: `fdaffdf` — checkpoint descriptors retain exact a/e/x requirements and ignore unknown tags.
+- `step_404`: this commit — checkpoint chunks retain exact a/e/x/part requirements and ignore unknown tags.
