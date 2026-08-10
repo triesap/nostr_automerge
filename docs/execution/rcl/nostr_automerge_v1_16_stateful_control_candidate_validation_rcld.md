@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 16: Stateful Control Candidate Validation
 
 Status: active
-Current checkpoint: `step_318`
+Current checkpoint: `step_319`
 Steps: `step_318` through `step_336`
 Primary findings: `FINDING_014`, `FINDING_015`, `FINDING_018`
 
@@ -31,3 +31,7 @@ Clippy, and `git diff --check`.
 No shallow or statically prevalidated child may enter selection. RCLD 17 is
 eligible only after every candidate has a canonical valid, pending, or invalid
 outcome derived from accepted parent state.
+
+## Completed Checkpoints
+
+- `step_318`: this commit — complete accepted epoch state introduced.
