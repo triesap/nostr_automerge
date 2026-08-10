@@ -1138,6 +1138,39 @@ fn invalid_lower_id_child_cannot_win() {
         .event_id();
     assert!(invalid_id < valid_id);
 
+    let build = |events: &[RawEventBytes]| {
+        let mut builder = CorpusBuilder::new();
+        for event in events {
+            assert!(matches!(
+                builder.ingest(event.clone()),
+                IngestOutcome::Accepted { .. } | IngestOutcome::Duplicate { .. }
+            ));
+        }
+        builder.finish()
+    };
+    let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
+    let before = evaluator.evaluate(
+        &build(&[genesis.clone(), valid.clone()]),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    let after = evaluator.reevaluate(
+        &build(&[invalid.clone(), valid.clone(), genesis.clone()]),
+        coordinate,
+        &before,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(after.canonical_controls(), before.canonical_controls());
+    assert_eq!(after.accepted_changes(), before.accepted_changes());
+    assert_eq!(after.heads(), before.heads());
+    assert_eq!(after.history_digest(), before.history_digest());
+    assert!(!after.integrity_alerts().iter().any(|alert| matches!(
+        alert,
+        nostr_automerge::IntegrityAlert::CanonicalControlReorganization(_)
+    )));
+
     let orders = [
         vec![genesis.clone(), invalid.clone(), valid.clone()],
         vec![valid.clone(), invalid.clone(), genesis.clone()],
@@ -1194,6 +1227,11 @@ fn invalid_lower_id_child_cannot_win() {
         reports[2].control_dispositions()
     );
     assert_eq!(reports[0].history_digest(), reports[2].history_digest());
+}
+
+#[test]
+fn late_invalid_lower_id_child_does_not_reorganize() {
+    invalid_lower_id_child_cannot_win();
 }
 
 #[allow(clippy::expect_used)]
