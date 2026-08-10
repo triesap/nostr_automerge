@@ -1,9 +1,12 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::ChangeHash;
+use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 use crate::control::epoch_state::AcceptedEpochState;
 use crate::control::validate::ControlEnvelope;
+use crate::graph::actor_state::EpochActorState;
 use crate::graph::change_candidate::ChangeCandidate;
+use crate::{ActorId, IntegrityAlert, ProtocolDisposition};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum EpochEvaluationInputError {
@@ -86,11 +89,59 @@ impl EpochEvaluationInput {
     }
 }
 
+/// Complete authoritative output of evaluating one selected control epoch.
+#[derive(Clone)]
+pub(crate) struct EpochEvaluationResult {
+    accepted_state: AcceptedEpochState,
+    dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
+    integrity_alerts: Vec<IntegrityAlert>,
+}
+
+impl EpochEvaluationResult {
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn new(
+        accepted_closure: BTreeSet<ChangeHash>,
+        frontier_heads: BTreeSet<ChangeHash>,
+        accepted_candidates: BTreeMap<ChangeHash, ChangeCandidate>,
+        actor_states: BTreeMap<ActorId, EpochActorState>,
+        writer_contributions: BTreeMap<ActorId, ChangeHash>,
+        dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
+        integrity_alerts: Vec<IntegrityAlert>,
+        materialized: Option<MaterializedDocumentView>,
+    ) -> Result<Self, crate::control::epoch_state::AcceptedEpochStateError> {
+        let accepted_state = AcceptedEpochState::new(
+            accepted_closure,
+            frontier_heads,
+            accepted_candidates,
+            actor_states,
+            writer_contributions,
+            materialized,
+        )?;
+        Ok(Self {
+            accepted_state,
+            dispositions,
+            integrity_alerts,
+        })
+    }
+
+    pub(crate) const fn accepted_state(&self) -> &AcceptedEpochState {
+        &self.accepted_state
+    }
+
+    pub(crate) const fn dispositions(&self) -> &BTreeMap<ChangeHash, ProtocolDisposition> {
+        &self.dispositions
+    }
+
+    pub(crate) fn integrity_alerts(&self) -> &[IntegrityAlert] {
+        &self.integrity_alerts
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
-    use super::{EpochEvaluationInput, EpochEvaluationInputError};
+    use super::{EpochEvaluationInput, EpochEvaluationInputError, EpochEvaluationResult};
     use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
     use crate::carrier::control::{ValidatedControlCarrier, ValidatedControlContent};
     use crate::control::epoch_state::{AcceptedEpochState, AcceptedEpochStateError};
@@ -99,7 +150,7 @@ mod tests {
     use crate::graph::change_candidate::ChangeCandidate;
     use crate::{
         ActorId, ChangeHash, ControllerPublicKey, DevicePublicKey, DocumentCoordinate, DocumentId,
-        EventId,
+        EventId, ProtocolDisposition,
     };
 
     fn control(base_heads: Vec<ChangeHash>) -> ControlEnvelope {
@@ -186,6 +237,83 @@ mod tests {
         );
         assert!(matches!(
             inconsistent,
+            Err(AcceptedEpochStateError::ActorStateMismatch)
+        ));
+    }
+
+    #[test]
+    fn epoch_result_requires_complete_consistent_accepted_state() {
+        let hash = ChangeHash::from_bytes([9; 32]);
+        let actor = ActorId::from_bytes([10; 32]);
+        let candidate = ChangeCandidate {
+            change_hash: hash,
+            actor,
+            sequence: 1,
+            start_op: 1,
+            operation_count: 1,
+            dependencies: Vec::new(),
+            control_id: EventId::from_bytes([3; 32]),
+            author: DevicePublicKey::from_bytes([11; 32]),
+            valid_carriers: BTreeSet::from([EventId::from_bytes([12; 32])]),
+        };
+        let actors = BTreeMap::from([(
+            actor,
+            EpochActorState {
+                last_sequence: 1,
+                next_op: 2,
+                highest_change: hash,
+            },
+        )]);
+        let dispositions = BTreeMap::from([(hash, ProtocolDisposition::Accepted)]);
+        let result = EpochEvaluationResult::new(
+            BTreeSet::from([hash]),
+            BTreeSet::from([hash]),
+            BTreeMap::from([(hash, candidate.clone())]),
+            actors.clone(),
+            BTreeMap::from([(actor, hash)]),
+            dispositions.clone(),
+            Vec::new(),
+            MaterializedDocumentView::empty_for_test().ok(),
+        );
+        assert!(result.is_ok());
+        let Ok(result) = result else {
+            return;
+        };
+        assert_eq!(
+            result.accepted_state().frontier_heads(),
+            &BTreeSet::from([hash])
+        );
+        assert_eq!(result.accepted_state().actor_states(), &actors);
+        assert_eq!(result.dispositions(), &dispositions);
+        assert!(result.integrity_alerts().is_empty());
+
+        let bad_head = EpochEvaluationResult::new(
+            BTreeSet::from([hash]),
+            BTreeSet::from([ChangeHash::from_bytes([13; 32])]),
+            BTreeMap::from([(hash, candidate.clone())]),
+            actors.clone(),
+            BTreeMap::from([(actor, hash)]),
+            dispositions.clone(),
+            Vec::new(),
+            None,
+        );
+        assert!(matches!(
+            bad_head,
+            Err(AcceptedEpochStateError::FrontierMismatch)
+        ));
+
+        let bad_actor = EpochEvaluationResult::new(
+            BTreeSet::from([hash]),
+            BTreeSet::from([hash]),
+            BTreeMap::from([(hash, candidate)]),
+            BTreeMap::new(),
+            BTreeMap::from([(actor, hash)]),
+            dispositions,
+            Vec::new(),
+            None,
+        );
+        assert!(matches!(
+            bad_actor,
             Err(AcceptedEpochStateError::ActorStateMismatch)
         ));
     }
