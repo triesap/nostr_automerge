@@ -289,4 +289,41 @@ mod tests {
             Err(super::QuarantineError::Cancelled)
         ));
     }
+
+    #[test]
+    fn quarantine_later_actor_changes() {
+        let first = candidate(7, 1, 1, 1);
+        let mut conflict = first.clone();
+        conflict.change_hash = ChangeHash::from_bytes([2; 32]);
+        let mut dependent = candidate(7, 2, 2, 1);
+        dependent.change_hash = ChangeHash::from_bytes([3; 32]);
+        dependent.dependencies = vec![first.change_hash];
+        let mut independent = candidate(7, 3, 3, 1);
+        independent.change_hash = ChangeHash::from_bytes([4; 32]);
+        let inputs = vec![
+            independent.clone(),
+            dependent.clone(),
+            conflict.clone(),
+            first.clone(),
+        ];
+        let graph = build_graph(inputs.clone(), BTreeSet::new());
+        assert!(graph.is_ok());
+        let Ok(graph) = graph else { return };
+        let result = quarantine_descendants(
+            inputs,
+            &graph,
+            &mut WorkBudget::new(0, 100),
+            &NeverCancelled,
+        );
+        assert!(result.is_ok_and(|result| {
+            [
+                first.change_hash,
+                conflict.change_hash,
+                dependent.change_hash,
+                independent.change_hash,
+            ]
+            .iter()
+            .all(|hash| result.quarantined.contains(hash))
+        }));
+    }
 }

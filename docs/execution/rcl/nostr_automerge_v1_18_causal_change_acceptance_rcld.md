@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 18: Causal Change Acceptance
 
 Status: active
-Current checkpoint: `step_376`
+Current checkpoint: `step_377`
 Steps: `step_356` through `step_381`
 Primary findings: `FINDING_016`, `FINDING_018`
 
@@ -53,4 +53,5 @@ active equivocation quarantine.
 - `step_372`: `b1b8b5f` — candidate admission is canonical by decoded change hash.
 - `step_373`: `addc723` — change dispositions iterate to one metered stable fixpoint.
 - `step_374`: `52f0fb7` — equivocation analysis includes accepted base sequences.
-- `step_375`: this commit — quarantine begins at the first conflicting actor sequence.
+- `step_375`: `9983da0` — quarantine begins at the first conflicting actor sequence.
+- `step_376`: this commit — every later change from the affected actor is quarantined.
