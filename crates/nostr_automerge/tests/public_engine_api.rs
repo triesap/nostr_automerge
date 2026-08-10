@@ -2769,6 +2769,106 @@ fn every_work_counter_has_exact_before_and_after_boundaries() {
 }
 
 #[test]
+fn every_v2_work_counter_boundary() {
+    let matrix: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/resources/work_boundaries.json"
+    ))
+    .unwrap_or_default();
+    assert_eq!(matrix["schema"], "nostr_automerge.work_boundaries.v2");
+    assert_eq!(
+        matrix["boundaries"],
+        serde_json::json!([
+            "one_before",
+            "exact",
+            "one_after",
+            "cancelled",
+            "atomic_failure",
+            "no_post_stop"
+        ])
+    );
+    let required = matrix["required_amount"].as_u64().unwrap_or_default();
+    assert_eq!(required, 2);
+    let rows = matrix["rows"].as_array().cloned().unwrap_or_default();
+    assert_eq!(rows.len(), 10);
+    let mut covered = std::collections::BTreeSet::new();
+    for row in rows {
+        let name = row["counter"].as_str().unwrap_or_default();
+        let counter = match name {
+            "event" => WorkCounter::Event,
+            "carrier" => WorkCounter::Carrier,
+            "control" => WorkCounter::Control,
+            "graph_node" => WorkCounter::GraphNode,
+            "graph_edge" => WorkCounter::GraphEdge,
+            "decode_byte" => WorkCounter::DecodeByte,
+            "apply_change" => WorkCounter::ApplyChange,
+            "checkpoint_byte" => WorkCounter::CheckpointByte,
+            "checkpoint_item" => WorkCounter::CheckpointItem,
+            "assertion" => WorkCounter::Assertion,
+            _ => return,
+        };
+        assert_eq!(counter.as_str(), name);
+        assert!(
+            row["phases"]
+                .as_array()
+                .is_some_and(|phases| !phases.is_empty())
+        );
+        covered.insert(name.to_owned());
+        let bytes = row["capacity"] == "bytes";
+        let budget = |capacity| {
+            if bytes {
+                WorkBudget::new(capacity, 0)
+            } else {
+                WorkBudget::new(0, capacity)
+            }
+        };
+
+        let mut before = budget(required - 1);
+        let before_state = before;
+        assert!(before.charge(counter, required).is_err(), "{name}");
+        assert_eq!(before, before_state, "{name}");
+
+        let mut exact = budget(required);
+        assert!(exact.charge(counter, required).is_ok(), "{name}");
+        assert_eq!(exact.consumed().get(counter), required, "{name}");
+        assert_eq!(exact.remaining(), (0, 0), "{name}");
+
+        let mut after = budget(required + 1);
+        assert!(after.charge(counter, required).is_ok(), "{name}");
+        assert_eq!(after.consumed().get(counter), required, "{name}");
+        assert_eq!(after.remaining(), if bytes { (1, 0) } else { (0, 1) });
+    }
+    assert_eq!(covered.len(), 10);
+
+    let scenario = signed_engine_scenario();
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(scenario.change),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert!(matches!(
+        builder.ingest(scenario.control),
+        IngestOutcome::Accepted { .. }
+    ));
+    let mut cancelled = WorkBudget::new(1_000_000, 1_000);
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+        &builder.finish(),
+        scenario.coordinate,
+        &mut cancelled,
+        &|| true,
+    );
+    assert_eq!(report.completion(), Completion::Cancelled);
+    assert!(report.document().is_none());
+    for counter in [
+        WorkCounter::ApplyChange,
+        WorkCounter::CheckpointByte,
+        WorkCounter::CheckpointItem,
+        WorkCounter::Assertion,
+    ] {
+        assert_eq!(cancelled.consumed().get(counter), 0, "{}", counter.as_str());
+    }
+}
+
+#[test]
 fn cancellation_is_safe_at_every_evaluator_boundary() {
     let scenario = signed_engine_scenario();
     let mut builder = CorpusBuilder::new();

@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 21: Complete Metering And Panic Elimination
 
 Status: active
-Current checkpoint: `step_427`
+Current checkpoint: `step_428`
 Steps: `step_410` through `step_429`
 Primary findings: `FINDING_022`, `FINDING_023`, `FINDING_027`
 
@@ -48,4 +48,5 @@ optional later work, and never be converted into a protocol invalidity.
 - `step_423`: `736460c` — text projection charges its object and exact UTF-16 length before materialization, and charges every projected mark.
 - `step_424`: `bf7222f` — the projection stack charges every object, path, property, conflict, value, and conservative sort bound.
 - `step_425`: `2141c4d` — incomplete core evaluation skips checkpoint and projection work, and checkpoint interruption stops all later checkpoint verification.
-- `step_426`: this commit — a repository-wide production-source scan rejects evidence-reachable panic macros and bare unwrap/expect, with test-only assertions explicitly documented.
+- `step_426`: `920ce43` — a repository-wide production-source scan rejects evidence-reachable panic macros and bare unwrap/expect, with test-only assertions explicitly documented.
+- `step_427`: this commit — the signed public evaluator and every typed counter execute one-before, exact, one-after, cancellation, atomic-failure, and no-post-stop boundaries from a checked-in matrix.
