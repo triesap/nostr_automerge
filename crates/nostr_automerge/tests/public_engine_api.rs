@@ -5,6 +5,8 @@ mod support;
 use std::cell::Cell;
 use std::collections::BTreeSet;
 
+use automerge::transaction::{CommitOptions, Transactable};
+use automerge::{AutoCommit, ROOT, TextEncoding};
 use base64::Engine as _;
 use nostr_automerge::authoring::{ActorState, AuthoringDocument, Operation, UnsignedEventDraft};
 use nostr_automerge::{
@@ -2477,6 +2479,93 @@ fn change_start_op_must_equal_actor_next_op() {
             .contains(&(change_hash, ProtocolDisposition::Invalid))
     );
     assert!(report.accepted_changes().is_empty());
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn empty_change_consumes_only_sequence() {
+    let controller = TestSigner::from_byte(94);
+    let device = TestSigner::from_byte(95);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "94".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let control = signed_acl_control(
+        &controller,
+        coordinate,
+        1,
+        None,
+        0,
+        vec![(device.public_key().to_hex(), vec!["write"])],
+    );
+    let control_id = VerifiedNip01Event::verify(control.clone())
+        .expect("signed control")
+        .event_id();
+    let actor = ActorId::derive(coordinate, device.public_key());
+    let mut document = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit)
+        .with_actor(automerge::ActorId::from(actor.as_bytes().to_vec()));
+    let empty_hash = document.empty_change(CommitOptions::default());
+    let empty = document
+        .get_change_by_hash(&empty_hash)
+        .expect("empty change")
+        .raw_bytes()
+        .to_vec();
+    document
+        .put(ROOT, "after-empty", "accepted")
+        .expect("nonempty operation");
+    let nonempty_hash = document.commit().expect("nonempty change hash");
+    let nonempty = document
+        .get_change_by_hash(&nonempty_hash)
+        .expect("nonempty change")
+        .raw_bytes()
+        .to_vec();
+    let empty_hash = ChangeHash::from_bytes(empty_hash.0);
+    let nonempty_hash = ChangeHash::from_bytes(nonempty_hash.0);
+    let sign_change = |created_at: u64, hash: ChangeHash, raw: &[u8]| {
+        device.sign(
+            &UnsignedEventDraft::new(
+                created_at,
+                1_624,
+                vec![
+                    vec!["a".to_owned(), coordinate.to_address()],
+                    vec!["e".to_owned(), control_id.to_hex()],
+                    vec!["x".to_owned(), hash.to_hex()],
+                ],
+                base64::engine::general_purpose::STANDARD.encode(raw),
+            )
+            .expect("change draft")
+            .prepare(device.public_key())
+            .expect("change preimage"),
+        )
+    };
+    let mut builder = CorpusBuilder::new();
+    for event in [
+        sign_change(3, nonempty_hash, &nonempty),
+        sign_change(2, empty_hash, &empty),
+        control,
+    ] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(
+        report
+            .accepted_changes()
+            .iter()
+            .copied()
+            .collect::<BTreeSet<_>>(),
+        BTreeSet::from([empty_hash, nonempty_hash])
+    );
 }
 
 #[test]
