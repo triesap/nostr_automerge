@@ -2,6 +2,7 @@ use serde_json::Value;
 
 use crate::VerifiedNip01Event;
 use crate::profile::kinds::CarrierKind;
+use crate::wire::canonical_json::parse::parse_canonical;
 
 use super::CarrierCandidate;
 
@@ -35,7 +36,14 @@ fn declaration(kind: CarrierKind, content: &str) -> Declaration {
     if kind == CarrierKind::Change {
         return Declaration::default();
     }
-    let Ok(Value::Object(object)) = serde_json::from_str(content) else {
+    let limits = crate::ProtocolRevision::draft_v1().limits();
+    let maximum = match kind {
+        CarrierKind::Manifest => limits.manifest_content,
+        CarrierKind::Control => limits.control_content,
+        CarrierKind::CheckpointDescriptor | CarrierKind::CheckpointChunk => limits.raw_event,
+        CarrierKind::Change => return Declaration::default(),
+    };
+    let Ok(serde_json::Value::Object(object)) = parse_canonical(content, maximum) else {
         return Declaration::default();
     };
     let version = object.get("v").and_then(Value::as_u64);
@@ -77,6 +85,8 @@ mod tests {
             );
             assert!(declaration(kind, r#"{"v":2}"#).unsupported);
             assert!(declaration(kind, r#"{"format":"automerge-change-v2"}"#).unsupported);
+            assert!(!declaration(kind, r#"{"v":2,"v":1}"#).unsupported);
+            assert!(!declaration(kind, r#"{ "v":2}"#).unsupported);
         }
         assert_eq!(
             declaration(CarrierKind::Change, "binary base64"),

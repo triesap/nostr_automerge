@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 20: Tags And Revision Classification
 
 Status: active
-Current checkpoint: `step_406`
+Current checkpoint: `step_407`
 Steps: `step_399` through `step_409`
 Primary findings: `FINDING_020`, `FINDING_021`
 
@@ -38,4 +38,5 @@ ambiguous revision declarations remain invalid signed evidence.
 - `step_402`: `59d83d5` — manifest carriers require only d and ignore all harmless extension tags.
 - `step_403`: `fdaffdf` — checkpoint descriptors retain exact a/e/x requirements and ignore unknown tags.
 - `step_404`: `1335f6e` — checkpoint chunks retain exact a/e/x/part requirements and ignore unknown tags.
-- `step_405`: this commit — signed change variants prove unknown order, repetition, and extra elements leave canonical report inputs unchanged.
+- `step_405`: `39c15b6` — signed change variants prove unknown order, repetition, and extra elements leave canonical report inputs unchanged.
+- `step_406`: this commit — revision probing uses the bounded canonical JSON parser before inspecting declarations.
