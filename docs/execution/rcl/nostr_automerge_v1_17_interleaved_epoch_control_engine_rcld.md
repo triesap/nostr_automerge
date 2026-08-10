@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 17: Interleaved Epoch And Control Engine
 
-Status: active
-Current checkpoint: `step_355`
+Status: complete
+Completed: 2026-08-10
 Steps: `step_337` through `step_355`
 Primary findings: `FINDING_014`, `FINDING_015`, `FINDING_016`, `FINDING_018`, `FINDING_025`
 
@@ -50,4 +50,5 @@ normative conformance path may call a parallel static control-chain selector.
 - `step_351`: `26c4e74` — successor genesis starts a new empty document boundary.
 - `step_352`: `49af5ed` — replay reports late valid canonical reorganization.
 - `step_353`: `a901d21` — late invalid lower IDs do not reorganize state.
-- `step_354`: this commit — signed multi-epoch exact-closure evidence is durable.
+- `step_354`: `0581dae` — signed multi-epoch exact-closure evidence is durable.
+- `step_355`: this commit — the interleaved epoch/control phase gate is green.

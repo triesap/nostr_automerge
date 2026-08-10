@@ -1,6 +1,7 @@
 # nostr_automerge Draft V1 RCLD 18: Causal Change Acceptance
 
-Status: pending RCLD 17
+Status: active
+Current checkpoint: `step_356`
 Steps: `step_356` through `step_381`
 Primary findings: `FINDING_016`, `FINDING_018`
 
@@ -30,3 +31,7 @@ Rust checks, and `git diff --check`.
 Every accepted change has exact accepted dependencies, actor continuity,
 counter continuity, epoch ancestry, successful exact-state application, and no
 active equivocation quarantine.
+
+## Completed Checkpoints
+
+None.

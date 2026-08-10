@@ -1,0 +1,78 @@
+{
+  "schema": "nostr_automerge.remediation_phase.v2",
+  "phase": "phase_02_interleaved_epoch_control_engine",
+  "status": "pass",
+  "recorded": "2026-08-10",
+  "phase_input_head": "0581dae76873eb8cbf936cfa932e9de441aa6207",
+  "findings": ["FINDING_014", "FINDING_015", "FINDING_016", "FINDING_018", "FINDING_025"],
+  "completed_steps": [
+    "step_337", "step_338", "step_339", "step_340", "step_341", "step_342",
+    "step_343", "step_344", "step_345", "step_346", "step_347", "step_348",
+    "step_349", "step_350", "step_351", "step_352", "step_353", "step_354",
+    "step_355"
+  ],
+  "commits": {
+    "step_337": "3ec011b",
+    "step_338": "84fef47",
+    "step_339": "287a147",
+    "step_340": "66832f5",
+    "step_341": "6ac2279",
+    "step_342": "708b45c",
+    "step_343": "6771d14",
+    "step_344": "a727bf6",
+    "step_345": "26df528",
+    "step_346": "6ff9954",
+    "step_347": "26c95eb",
+    "step_348": "413a565",
+    "step_349": "038dde9",
+    "step_350": "e061d95",
+    "step_351": "26c4e74",
+    "step_352": "49af5ed",
+    "step_353": "a901d21",
+    "step_354": "0581dae",
+    "step_355": "self"
+  },
+  "toolchain": {
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "cargo": "cargo 1.97.1 (c980f4866 2026-06-30)"
+  },
+  "tests": {
+    "FINDING_014": [
+      "public_engine_api::signed_genesis_candidate_classification",
+      "public_engine_api::interleaved_child_selection"
+    ],
+    "FINDING_015": [
+      "public_engine_api::child_epoch_uses_exact_base_closure",
+      "public_engine_api::accepted_at_control_is_exact_closure"
+    ],
+    "FINDING_016": [
+      "public_engine_api::signed_multi_epoch_exact_closure",
+      "public_engine_api::signed_child_cannot_discard_retained_writer_contributions"
+    ],
+    "FINDING_018": [
+      "public_engine_api::children_are_evaluated_one_epoch_at_a_time",
+      "public_engine_api::child_transition_excludes_only_outside_closure"
+    ],
+    "FINDING_025": [
+      "public_engine_api::late_lower_control_id_reorganizes_and_replays_signed_state",
+      "public_engine_api::late_invalid_lower_id_child_does_not_reorganize"
+    ]
+  },
+  "commands": [
+    {"command": "cargo extbuild run -- python3 scripts/local_gate.py standard", "result": "pass"},
+    {"command": "cargo extbuild run -- cargo test -p nostr_automerge --test public_engine_api --locked", "result": "pass"},
+    {"command": "cargo extbuild run -- cargo clippy --workspace --all-targets --all-features --locked -- -D warnings", "result": "pass"},
+    {"command": "python3 scripts/validate_repository_policy.py", "result": "pass"},
+    {"command": "python3 scripts/validate_remediation_v2_ledger.py", "result": "pass"},
+    {"command": "git diff --check", "result": "pass"}
+  ],
+  "artifact_sha256": {
+    "crates/nostr_automerge/src/reference/epoch_engine.rs": "81bd90508c734855a12bf5f8ce064ba56d174dd3e5410c4c9d1b40c7bc5fc02f",
+    "crates/nostr_automerge/src/reference/evaluate.rs": "faadf0b97deb7e6980e9e56cc8f3ebec84f4903383c801b4b849d3d675ebba47",
+    "crates/nostr_automerge/src/engine/reference_evaluator.rs": "b7eafd26632175622cf3dc894ff8e094c332e7f3ba14e7383ad56b487bdc0600",
+    "crates/nostr_automerge/tests/public_engine_api.rs": "692d2422f13064c4309bccb1c21efa3213594d6398cc358e59891344a1e0cfcd",
+    "fixtures/v1_draft/controls/scenario_multi_epoch_exact_closure.json": "04e0abded33e4fbefe02be8396e65a70058567ac561cb0573540831137bccba0"
+  },
+  "next": {"rcld": 18, "checkpoint": "step_356"},
+  "publication_authorized": false
+}
