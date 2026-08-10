@@ -1,4 +1,5 @@
 use crate::DiagnosticCode;
+use crate::control::frontier::accepted_frontier_closure;
 use crate::control::parent_view::ParentEpochView;
 use crate::control::transition::{
     TransitionError, validate_account_mapping, validate_base_frontier_antichain,
@@ -38,6 +39,17 @@ pub(crate) fn evaluate_child(
     {
         return CandidateResult::Invalid(DiagnosticCode::registered("control.structure"));
     }
+    let base_closure = accepted_frontier_closure(
+        child.content.base_heads.iter().copied(),
+        view.accepted(),
+        view.dependency_index(),
+    );
+    if !base_closure.missing.is_empty() {
+        return CandidateResult::Pending(DiagnosticCode::registered("control.frontier"));
+    }
+    if !base_closure.out_of_parent.is_empty() {
+        return CandidateResult::Invalid(DiagnosticCode::registered("control.frontier"));
+    }
     if validate_account_mapping(&parent.content, &child.content).is_err() {
         return CandidateResult::Invalid(DiagnosticCode::registered("control.account_changed"));
     }
@@ -73,6 +85,8 @@ pub(crate) fn evaluate_child(
 
 #[cfg(test)]
 mod tests {
+    use std::collections::{BTreeMap, BTreeSet};
+
     use super::{CandidateResult, evaluate_child};
     use crate::control::parent_view::ParentEpochView;
     use crate::control::validate::tests::genesis;
@@ -102,6 +116,39 @@ mod tests {
         assert_eq!(
             evaluate_child(&parent, &invalid, &[&parent.content], &view),
             CandidateResult::Invalid(DiagnosticCode::registered("control.account_changed"))
+        );
+    }
+
+    #[test]
+    fn pending_frontier_promotes_after_delivery() {
+        let parent = genesis();
+        let mut child = parent.clone();
+        child.event_id = EventId::from_bytes([5; 32]);
+        child.parent = Some(parent.event_id);
+        child.content.sequence = 1;
+        let missing = ChangeHash::from_bytes([9; 32]);
+        child.content.base_heads = vec![missing];
+
+        assert_eq!(
+            evaluate_child(
+                &parent,
+                &child,
+                &[&parent.content],
+                &ParentEpochView::default()
+            ),
+            CandidateResult::Pending(DiagnosticCode::registered("control.frontier"))
+        );
+
+        let delivered = ParentEpochView::from_parts_for_test(
+            BTreeSet::from([missing]),
+            BTreeSet::from([missing]),
+            BTreeMap::from([(missing, BTreeSet::new())]),
+            BTreeMap::new(),
+            BTreeMap::new(),
+        );
+        assert_eq!(
+            evaluate_child(&parent, &child, &[&parent.content], &delivered),
+            CandidateResult::Valid
         );
     }
 }

@@ -45,12 +45,20 @@ impl ParentEpochView {
         self.accepted.contains(hash)
     }
 
+    pub(crate) fn accepted(&self) -> &BTreeSet<ChangeHash> {
+        &self.accepted
+    }
+
     pub(crate) fn heads(&self) -> &BTreeSet<ChangeHash> {
         &self.heads
     }
 
     pub(crate) fn dependencies(&self, hash: &ChangeHash) -> Option<&BTreeSet<ChangeHash>> {
         self.dependencies.get(hash)
+    }
+
+    pub(crate) fn dependency_index(&self) -> &BTreeMap<ChangeHash, BTreeSet<ChangeHash>> {
+        &self.dependencies
     }
 
     pub(crate) fn actor_state(&self, actor: &ActorId) -> Option<EpochActorState> {
