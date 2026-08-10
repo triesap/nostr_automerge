@@ -75,6 +75,17 @@ def main() -> int:
         count += end - start + 1
     if previous != 533 or count != 226:
         raise AssertionError("invalid follow-up step range")
+    authority = json.loads((ROOT / "spec/remediation_v2_authority.json").read_text())
+    if authority["schema"] != "nostr_automerge.remediation_v2_authority.v1":
+        raise AssertionError("invalid follow-up authority schema")
+    if authority["nip_document"]["mutable_by_remediation"] is not False:
+        raise AssertionError("follow-up remediation cannot mutate the NIP document")
+    for section in ("nip_document", "companion_spec", "requirements"):
+        item = authority[section]
+        if item["sha256"] != digest(item["path"]):
+            raise AssertionError(f"stale follow-up authority hash: {section}")
+    if authority["requirements"]["count"] != 87:
+        raise AssertionError("normative requirement count changed")
     print("PASS: follow-up baseline and 226-step RCLD sequence are bound")
     return 0
 

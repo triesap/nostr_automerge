@@ -1,0 +1,27 @@
+{
+  "schema": "nostr_automerge.remediation_v2_authority.v1",
+  "revision": "draft_2026_08",
+  "nip_document": {
+    "path": "spec/NIP_DRAFT.md",
+    "sha256": "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3",
+    "mutable_by_remediation": false
+  },
+  "companion_spec": {
+    "path": "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
+    "sha256": "f8a2e53c66fff9b61cab1b1c22074dd513e6525fea4c298b73a91e905c097de7"
+  },
+  "requirements": {
+    "path": "spec/requirements.json",
+    "sha256": "6db34703bc37ac52d57bc92235d311674cfc259cadf54fe6f55f73ee5d4bfd9e",
+    "count": 87
+  },
+  "follow_up_findings": {
+    "path": "spec/remediation_v2_findings.json",
+    "count": 14
+  },
+  "follow_up_requirements": {
+    "path": "spec/remediation_v2_requirements.json",
+    "count": 68
+  },
+  "adr_range": "ADR_0020_through_ADR_0032"
+}
