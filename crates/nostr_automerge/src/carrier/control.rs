@@ -182,6 +182,8 @@ pub(crate) fn validate(
     if event.kind() != 1_625 {
         return Err(ControlCarrierError::Kind);
     }
+    tags::require_tag_contract(event.tags(), &[("a", 2)], &["expiration", "-"])
+        .map_err(ControlCarrierError::Tags)?;
     let coordinate_tag =
         tags::required_tag(event.tags(), "a", 2).map_err(ControlCarrierError::Tags)?;
     let coordinate: DocumentCoordinate = coordinate_tag[1]
@@ -190,16 +192,6 @@ pub(crate) fn validate(
     let author = ControllerPublicKey::from_bytes(*event.author_bytes());
     if author != coordinate.controller() {
         return Err(ControlCarrierError::Coordinate);
-    }
-    for forbidden in ["d", "expiration", "-"] {
-        tags::require_absent(event.tags(), forbidden).map_err(ControlCarrierError::Tags)?;
-    }
-    if event
-        .tags()
-        .iter()
-        .any(|tag| tag.first().is_none_or(|name| name != "a" && name != "e"))
-    {
-        return Err(ControlCarrierError::Tags(TagError::Forbidden));
     }
     let content =
         validate_content(event.content(), coordinate).map_err(ControlCarrierError::Content)?;
@@ -214,9 +206,6 @@ pub(crate) fn validate(
                 .map_err(|_| ControlCarrierError::Tags(TagError::ElementCount))?,
         )
     };
-    if event.tags().len() != usize::from(parent.is_some()) + 1 {
-        return Err(ControlCarrierError::Tags(TagError::Repeated));
-    }
     Ok(ValidatedControlCarrier {
         event_id: event.event_id(),
         author,
@@ -419,6 +408,7 @@ fn string_array(value: &Value) -> Result<Vec<String>, ControlContentError> {
 mod tests {
     use super::{ControlContentError, parse_content, validate_content};
     use crate::DocumentCoordinate;
+    use crate::wire::tags::{TagError, require_tag_contract};
 
     const CONTENT: &str = r#"{"base_heads":[],"format":"automerge-change-v1","members":[{"account":null,"pubkey":"3333333333333333333333333333333333333333333333333333333333333333","roles":["checkpoint","write"]}],"policy":"controller-acl-v1","predecessor":null,"seq":0,"successor":null,"text_encoding":"utf16","v":1}"#;
 
@@ -440,6 +430,28 @@ mod tests {
         assert_eq!(parse_content(&extra), Err(ControlContentError::Shape));
         let bad_member = CONTENT.replace("\"roles\":[\"checkpoint\",\"write\"]", "\"roles\":null");
         assert_eq!(parse_content(&bad_member), Err(ControlContentError::Shape));
+    }
+
+    #[test]
+    fn control_tag_contract_ignores_unknown_names() {
+        let tags = vec![
+            vec!["a".into(), "coordinate".into()],
+            vec!["d".into(), "ignored".into()],
+            vec!["future".into()],
+            vec!["future".into(), "repeated".into()],
+        ];
+        assert_eq!(
+            require_tag_contract(&tags, &[("a", 2)], &["expiration", "-"]),
+            Ok(())
+        );
+        assert_eq!(
+            require_tag_contract(
+                &[tags[0].clone(), vec!["-".into()]],
+                &[("a", 2)],
+                &["expiration", "-"]
+            ),
+            Err(TagError::Forbidden)
+        );
     }
 
     #[test]
