@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 16: Stateful Control Candidate Validation
 
 Status: active
-Current checkpoint: `step_320`
+Current checkpoint: `step_321`
 Steps: `step_318` through `step_336`
 Primary findings: `FINDING_014`, `FINDING_015`, `FINDING_018`
 
@@ -35,4 +35,5 @@ outcome derived from accepted parent state.
 ## Completed Checkpoints
 
 - `step_318`: `0ff62e1` — complete accepted epoch state introduced.
-- `step_319`: this commit — stateful control candidate outcomes defined.
+- `step_319`: `ad2724b` — stateful control candidate outcomes defined.
+- `step_320`: this commit — parent epoch view derived from accepted state.

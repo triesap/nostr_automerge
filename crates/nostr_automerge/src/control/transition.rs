@@ -309,7 +309,7 @@ mod tests {
         let first = ChangeHash::from_bytes([1; 32]);
         let second = ChangeHash::from_bytes([2; 32]);
         let head = ChangeHash::from_bytes([3; 32]);
-        let view = ParentEpochView::new(
+        let view = ParentEpochView::from_parts_for_test(
             BTreeSet::from([first, second, head]),
             BTreeSet::from([head]),
             BTreeMap::from([(head, BTreeSet::from([first, second]))]),
@@ -350,7 +350,7 @@ mod tests {
         let first = ChangeHash::from_bytes([1; 32]);
         let second = ChangeHash::from_bytes([2; 32]);
         let actor = parent.members[0].actor;
-        let view = ParentEpochView::new(
+        let view = ParentEpochView::from_parts_for_test(
             BTreeSet::from([first, second]),
             BTreeSet::from([second]),
             BTreeMap::from([(second, BTreeSet::from([first]))]),
