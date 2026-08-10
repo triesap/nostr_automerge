@@ -2,9 +2,7 @@ use crate::carrier::VerifiedCarrier;
 use crate::checkpoint::authorize::{DescriptorAuthorization, authorize_descriptor};
 use crate::checkpoint::join::{JoinError, join_chunks};
 use crate::checkpoint::{HistoryVerificationError, historical_carrier_coverage};
-use crate::conformance::dispositions_digest::{
-    DispositionItem, DispositionNamespace, dispositions_digest,
-};
+use crate::conformance::dispositions_digest::{disposition_items, dispositions_digest};
 use crate::conformance::history_digest::history_digest;
 use crate::control::candidate::{
     CandidateResult, evaluate_account_continuity, evaluate_device_ancestry,
@@ -118,14 +116,8 @@ impl ReferenceEvaluator {
             &heads,
         )
         .unwrap_or_else(|_| unreachable!("engine report collections are canonical"));
-        let disposition_items = dispositions
-            .iter()
-            .map(|(hash, disposition)| DispositionItem {
-                namespace: DispositionNamespace::ChangeHash,
-                identifier: *hash.as_bytes(),
-                disposition: *disposition,
-            })
-            .collect::<Vec<_>>();
+        let disposition_items = disposition_items(&disposition_records)
+            .unwrap_or_else(|_| unreachable!("engine disposition records are canonical"));
         let dispositions_digest =
             dispositions_digest(self.revision, coordinate, &disposition_items)
                 .unwrap_or_else(|_| unreachable!("engine dispositions are canonical"));

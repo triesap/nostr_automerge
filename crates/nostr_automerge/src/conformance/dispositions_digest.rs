@@ -1,7 +1,10 @@
 use sha2::{Digest, Sha256};
 
 use super::digest::DigestError;
-use crate::{DispositionsDigest, DocumentCoordinate, ProtocolDisposition, ProtocolRevision};
+use crate::{
+    DispositionRecord, DispositionsDigest, DocumentCoordinate, ProtocolDisposition,
+    ProtocolItemIdentifier, ProtocolRevision,
+};
 
 const DOMAIN: &[u8] = b"nostr-crdt/automerge/dispositions/v1\0";
 const MANIFEST_KIND: u32 = 31_624;
@@ -19,6 +22,32 @@ pub(crate) struct DispositionItem {
     pub(crate) namespace: DispositionNamespace,
     pub(crate) identifier: [u8; 32],
     pub(crate) disposition: ProtocolDisposition,
+}
+
+pub(crate) fn disposition_items(
+    records: &[DispositionRecord],
+) -> Result<Vec<DispositionItem>, DigestError> {
+    if !records
+        .windows(2)
+        .all(|pair| pair[0].identifier() < pair[1].identifier())
+    {
+        return Err(DigestError::NonCanonical);
+    }
+    Ok(records
+        .iter()
+        .map(|record| {
+            let namespace = match record.identifier() {
+                ProtocolItemIdentifier::ControlEvent(_) => DispositionNamespace::ControlEvent,
+                ProtocolItemIdentifier::ChangeHash(_) => DispositionNamespace::ChangeHash,
+                ProtocolItemIdentifier::Event(_) => DispositionNamespace::Event,
+            };
+            DispositionItem {
+                namespace,
+                identifier: *record.identifier().as_bytes(),
+                disposition: record.disposition(),
+            }
+        })
+        .collect())
 }
 
 pub(crate) fn dispositions_digest(
@@ -54,7 +83,7 @@ pub(crate) fn dispositions_digest(
 mod tests {
     use core::str::FromStr;
 
-    use super::{DispositionItem, DispositionNamespace, dispositions_digest};
+    use super::{DispositionItem, DispositionNamespace, disposition_items, dispositions_digest};
     use crate::conformance::digest::DigestError;
     use crate::{Completion, DocumentCoordinate, ProtocolDisposition, ProtocolRevision};
 
@@ -100,6 +129,44 @@ mod tests {
                 coordinate,
                 &[items[0], items[0]]
             ),
+            Err(DigestError::NonCanonical)
+        );
+    }
+
+    #[test]
+    fn canonical_records_generate_every_namespaced_digest_item() {
+        let records = [
+            crate::DispositionRecord::new(
+                crate::ProtocolItemIdentifier::control_event(crate::EventId::from_bytes([1; 32])),
+                ProtocolDisposition::Accepted,
+                crate::DiagnosticCode::lookup("control.order"),
+            ),
+            crate::DispositionRecord::new(
+                crate::ProtocolItemIdentifier::from(crate::ChangeHash::from_bytes([2; 32])),
+                ProtocolDisposition::Excluded,
+                None,
+            ),
+            crate::DispositionRecord::new(
+                crate::ProtocolItemIdentifier::event(crate::EventId::from_bytes([3; 32])),
+                ProtocolDisposition::Invalid,
+                crate::DiagnosticCode::lookup("manifest.semantics"),
+            ),
+        ];
+        let items = disposition_items(&records);
+        assert!(items.is_ok());
+        let Ok(items) = items else { return };
+        assert_eq!(items.len(), 3);
+        assert_eq!(items[0].namespace, DispositionNamespace::ControlEvent);
+        assert_eq!(items[1].namespace, DispositionNamespace::ChangeHash);
+        assert_eq!(items[2].namespace, DispositionNamespace::Event);
+        assert_eq!(items[0].identifier, [1; 32]);
+        assert_eq!(items[0].disposition, ProtocolDisposition::Accepted);
+        assert_eq!(
+            disposition_items(&[records[0], records[0]]),
+            Err(DigestError::NonCanonical)
+        );
+        assert_eq!(
+            disposition_items(&[records[1], records[0]]),
             Err(DigestError::NonCanonical)
         );
     }
