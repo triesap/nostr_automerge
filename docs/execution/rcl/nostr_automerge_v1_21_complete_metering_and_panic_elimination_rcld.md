@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 21: Complete Metering And Panic Elimination
 
 Status: active
-Current checkpoint: `step_410`
+Current checkpoint: `step_411`
 Steps: `step_410` through `step_429`
 Primary findings: `FINDING_022`, `FINDING_023`, `FINDING_027`
 
@@ -29,3 +29,7 @@ standard Rust checks, and `git diff --check`.
 
 Budget/cancellation must preserve already-derived protocol outcomes, perform no
 optional later work, and never be converted into a protocol invalidity.
+
+## Completed Checkpoints
+
+- `step_410`: this commit — the evidence-derived traversal inventory assigns every loop a counter and cancellation owner or marks the exact remediation gap.
