@@ -2,6 +2,7 @@ use std::collections::BTreeSet;
 
 use crate::DevicePublicKey;
 use crate::carrier::control::ValidatedControlContent;
+use crate::control::frontier::accepted_frontier_closure;
 use crate::control::parent_view::ParentEpochView;
 use crate::control::validate::ControlEnvelope;
 use crate::types::role::Role;
@@ -23,29 +24,25 @@ pub(crate) fn validate_base_frontier_antichain(
     view: &ParentEpochView,
 ) -> Result<(), TransitionError> {
     let frontier = child.base_heads.iter().copied().collect::<BTreeSet<_>>();
+    let complete = accepted_frontier_closure(
+        frontier.iter().copied(),
+        view.accepted(),
+        view.dependency_index(),
+    );
+    if !complete.missing.is_empty() {
+        return Err(TransitionError::MissingBaseEvidence);
+    }
+    if !complete.out_of_parent.is_empty() {
+        return Err(TransitionError::BaseFrontierAntichain);
+    }
     for head in &frontier {
-        if !view.contains(head) {
-            return Err(TransitionError::MissingBaseEvidence);
-        }
-        let mut visited = BTreeSet::new();
-        let mut stack = view
-            .dependencies(head)
-            .into_iter()
-            .flatten()
-            .copied()
-            .collect::<Vec<_>>();
-        while let Some(ancestor) = stack.pop() {
-            if !view.contains(&ancestor) {
-                return Err(TransitionError::MissingBaseEvidence);
-            }
-            if frontier.contains(&ancestor) {
-                return Err(TransitionError::BaseFrontierAntichain);
-            }
-            if visited.insert(ancestor)
-                && let Some(dependencies) = view.dependencies(&ancestor)
-            {
-                stack.extend(dependencies.iter().copied());
-            }
+        let closure = accepted_frontier_closure([*head], view.accepted(), view.dependency_index());
+        if closure
+            .accepted
+            .iter()
+            .any(|ancestor| ancestor != head && frontier.contains(ancestor))
+        {
+            return Err(TransitionError::BaseFrontierAntichain);
         }
     }
     Ok(())
@@ -353,7 +350,7 @@ mod tests {
         let view = ParentEpochView::from_parts_for_test(
             BTreeSet::from([first, second]),
             BTreeSet::from([second]),
-            BTreeMap::from([(second, BTreeSet::from([first]))]),
+            BTreeMap::from([(first, BTreeSet::new()), (second, BTreeSet::from([first]))]),
             BTreeMap::new(),
             BTreeMap::from([(actor, second)]),
         );
@@ -373,5 +370,20 @@ mod tests {
             validate_base_frontier_antichain(&child, &view),
             Err(TransitionError::MissingBaseEvidence)
         );
+
+        let third = ChangeHash::from_bytes([3; 32]);
+        let fan_in = ParentEpochView::from_parts_for_test(
+            BTreeSet::from([first, second, third]),
+            BTreeSet::from([third]),
+            BTreeMap::from([
+                (first, BTreeSet::new()),
+                (second, BTreeSet::new()),
+                (third, BTreeSet::from([first, second])),
+            ]),
+            BTreeMap::new(),
+            BTreeMap::new(),
+        );
+        child.base_heads = vec![first, second];
+        assert_eq!(validate_base_frontier_antichain(&child, &fan_in), Ok(()));
     }
 }
