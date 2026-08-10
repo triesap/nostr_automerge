@@ -4,7 +4,7 @@ use crate::ChangeHash;
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 use crate::control::epoch_state::AcceptedEpochState;
 use crate::control::validate::ControlEnvelope;
-use crate::graph::actor_state::EpochActorState;
+use crate::graph::actor_state::{EpochActorState, validate_actor_predecessor};
 use crate::graph::change_candidate::ChangeCandidate;
 use crate::graph::schedule::ScheduleError;
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
@@ -187,38 +187,19 @@ pub(crate) fn evaluate_epoch(
 ) -> Result<EpochEvaluationResult, EpochEvaluationError> {
     let selected = input.selected_control();
     let terminal = selected.content().terminal;
-    let actor_has_origin = |candidate: &ChangeCandidate| {
-        if input
-            .accepted_base()
-            .actor_states()
-            .contains_key(&candidate.actor)
-            || candidate.sequence == 1
-        {
-            return true;
-        }
+    let mut all_candidates = input.accepted_base().accepted_candidates().clone();
+    all_candidates.extend(input.candidate_changes().clone());
+    let complete_dependency_closure = |candidate: &ChangeCandidate| {
         let mut pending = candidate.dependencies.clone();
         let mut visited = BTreeSet::new();
         while let Some(hash) = pending.pop() {
             if !visited.insert(hash) {
                 continue;
             }
-            if let Some(ancestor) = input.accepted_base().accepted_candidates().get(&hash) {
-                if ancestor.actor == candidate.actor && ancestor.sequence == 1 {
-                    return true;
-                }
-                pending.extend(ancestor.dependencies.iter().copied());
-            } else if let Some(ancestor) = input.candidate_changes().get(&hash) {
-                if ancestor.actor == candidate.actor && ancestor.sequence == 1 {
-                    return true;
-                }
-                pending.extend(ancestor.dependencies.iter().copied());
-            } else {
-                // An absent named dependency keeps the candidate pending. Its
-                // actor origin cannot be judged until that evidence arrives.
-                return true;
-            }
+            let ancestor = all_candidates.get(&hash)?;
+            pending.extend(ancestor.dependencies.iter().copied());
         }
-        false
+        Some(visited)
     };
     let epoch_candidates = input
         .candidate_changes()
@@ -230,7 +211,11 @@ pub(crate) fn evaluate_epoch(
                     && member.device == candidate.author
                     && member.roles.contains(&Role::Write)
             });
-            let semantically_valid = authorized && actor_has_origin(&candidate);
+            let actor_sequence_valid =
+                complete_dependency_closure(&candidate).is_none_or(|closure| {
+                    validate_actor_predecessor(&candidate, &closure, &all_candidates).is_ok()
+                });
+            let semantically_valid = authorized && actor_sequence_valid;
             EpochCandidate {
                 candidate,
                 semantically_valid,

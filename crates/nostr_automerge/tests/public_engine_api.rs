@@ -2391,6 +2391,91 @@ fn new_actor_sequence_must_start_at_one() {
     assert!(report.accepted_changes().is_empty());
 }
 
+#[test]
+#[allow(clippy::expect_used)]
+fn actor_sequence_requires_exact_predecessor() {
+    new_actor_sequence_must_start_at_one();
+    let controller = TestSigner::from_byte(88);
+    let device = TestSigner::from_byte(89);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "88".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let control = signed_acl_control(
+        &controller,
+        coordinate,
+        1,
+        None,
+        0,
+        vec![(device.public_key().to_hex(), vec!["write"])],
+    );
+    let control_id = VerifiedNip01Event::verify(control.clone())
+        .expect("signed control")
+        .event_id();
+    let actor = ActorId::derive(coordinate, device.public_key());
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
+        .expect("empty authoring document");
+    let first = document
+        .author_change(&[Operation::PutString {
+            key: "first".to_owned(),
+            value: "one".to_owned(),
+        }])
+        .expect("first change");
+    let second = document
+        .author_change(&[Operation::PutString {
+            key: "second".to_owned(),
+            value: "two".to_owned(),
+        }])
+        .expect("second change");
+    let sign_change = |created_at: u64, authored: &nostr_automerge::authoring::AuthoredChange| {
+        device.sign(
+            &UnsignedEventDraft::new(
+                created_at,
+                1_624,
+                vec![
+                    vec!["a".to_owned(), coordinate.to_address()],
+                    vec!["e".to_owned(), control_id.to_hex()],
+                    vec!["x".to_owned(), authored.change_hash().to_hex()],
+                ],
+                base64::engine::general_purpose::STANDARD.encode(authored.raw()),
+            )
+            .expect("change draft")
+            .prepare(device.public_key())
+            .expect("change preimage"),
+        )
+    };
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(sign_change(3, &second)),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert!(matches!(
+        builder.ingest(sign_change(2, &first)),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert!(matches!(
+        builder.ingest(control),
+        IngestOutcome::Accepted { .. }
+    ));
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(
+        report
+            .accepted_changes()
+            .iter()
+            .copied()
+            .collect::<BTreeSet<_>>(),
+        BTreeSet::from([first.change_hash(), second.change_hash()])
+    );
+}
+
 struct SignedEngineScenario {
     coordinate: DocumentCoordinate,
     control: RawEventBytes,

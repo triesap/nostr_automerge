@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 18: Causal Change Acceptance
 
 Status: active
-Current checkpoint: `step_359`
+Current checkpoint: `step_360`
 Steps: `step_356` through `step_381`
 Primary findings: `FINDING_016`, `FINDING_018`
 
@@ -36,4 +36,5 @@ active equivocation quarantine.
 
 - `step_356`: `81684ff` — accepted epochs derive and carry exact actor state.
 - `step_357`: `09e30fd` — actor state initializes in exact topological closure order.
-- `step_358`: this commit — a new actor's first complete change must use sequence one.
+- `step_358`: `3a200ea` — a new actor's first complete change must use sequence one.
+- `step_359`: this commit — sequence advancement requires one causal actor predecessor.
