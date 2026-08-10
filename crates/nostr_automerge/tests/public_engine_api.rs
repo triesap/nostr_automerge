@@ -2322,6 +2322,23 @@ fn rewrite_change_sequence(
     (raw, ChangeHash::from_bytes(digest))
 }
 
+fn rewrite_first_change_start_op(mut raw: Vec<u8>, start_op: u8) -> (Vec<u8>, ChangeHash) {
+    let mut data_start = 9usize;
+    while raw[data_start] & 0x80 != 0 {
+        data_start += 1;
+    }
+    data_start += 1;
+    assert_eq!(raw[data_start], 0);
+    let actor_len = usize::from(raw[data_start + 1]);
+    let sequence_offset = data_start + 2 + actor_len;
+    assert_eq!(raw[sequence_offset], 1);
+    assert_eq!(raw[sequence_offset + 1], 1);
+    raw[sequence_offset + 1] = start_op;
+    let digest: [u8; 32] = Sha256::digest(&raw[8..]).into();
+    raw[4..8].copy_from_slice(&digest[..4]);
+    (raw, ChangeHash::from_bytes(digest))
+}
+
 #[test]
 #[allow(clippy::expect_used)]
 fn new_actor_sequence_must_start_at_one() {
@@ -2379,6 +2396,75 @@ fn new_actor_sequence_must_start_at_one() {
         builder.ingest(control),
         IngestOutcome::Accepted { .. }
     ));
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert!(
+        report
+            .dispositions()
+            .contains(&(change_hash, ProtocolDisposition::Invalid))
+    );
+    assert!(report.accepted_changes().is_empty());
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn change_start_op_must_equal_actor_next_op() {
+    let controller = TestSigner::from_byte(92);
+    let device = TestSigner::from_byte(93);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "92".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let control = signed_acl_control(
+        &controller,
+        coordinate,
+        1,
+        None,
+        0,
+        vec![(device.public_key().to_hex(), vec!["write"])],
+    );
+    let control_id = VerifiedNip01Event::verify(control.clone())
+        .expect("signed control")
+        .event_id();
+    let actor = ActorId::derive(coordinate, device.public_key());
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
+        .expect("empty authoring document");
+    let first = document
+        .author_change(&[Operation::PutString {
+            key: "wrong-counter".to_owned(),
+            value: "invalid".to_owned(),
+        }])
+        .expect("first change");
+    let (raw, change_hash) = rewrite_first_change_start_op(first.raw().to_vec(), 2);
+    let change = device.sign(
+        &UnsignedEventDraft::new(
+            2,
+            1_624,
+            vec![
+                vec!["a".to_owned(), coordinate.to_address()],
+                vec!["e".to_owned(), control_id.to_hex()],
+                vec!["x".to_owned(), change_hash.to_hex()],
+            ],
+            base64::engine::general_purpose::STANDARD.encode(raw),
+        )
+        .expect("change draft")
+        .prepare(device.public_key())
+        .expect("change preimage"),
+    );
+    let mut builder = CorpusBuilder::new();
+    for event in [change, control] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
     let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
         &builder.finish(),
         coordinate,

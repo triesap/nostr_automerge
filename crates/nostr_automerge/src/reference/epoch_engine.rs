@@ -4,7 +4,9 @@ use crate::ChangeHash;
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 use crate::control::epoch_state::AcceptedEpochState;
 use crate::control::validate::ControlEnvelope;
-use crate::graph::actor_state::{EpochActorState, validate_actor_predecessor};
+use crate::graph::actor_state::{
+    EpochActorState, apply_nonempty_counter, initialize_actor_states, validate_actor_predecessor,
+};
 use crate::graph::change_candidate::ChangeCandidate;
 use crate::graph::schedule::ScheduleError;
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
@@ -215,7 +217,23 @@ pub(crate) fn evaluate_epoch(
                 complete_dependency_closure(&candidate).is_none_or(|closure| {
                     validate_actor_predecessor(&candidate, &closure, &all_candidates).is_ok()
                 });
-            let semantically_valid = authorized && actor_sequence_valid;
+            let actor_counter_valid =
+                complete_dependency_closure(&candidate).is_none_or(|closure| {
+                    let base = closure
+                        .iter()
+                        .filter_map(|hash| all_candidates.get(hash).cloned());
+                    initialize_actor_states(base).is_ok_and(|mut states| {
+                        if candidate.operation_count == 0 {
+                            states
+                                .get(&candidate.actor)
+                                .map_or(1, |state| state.next_op)
+                                == candidate.start_op
+                        } else {
+                            apply_nonempty_counter(&mut states, &candidate).is_ok()
+                        }
+                    })
+                });
+            let semantically_valid = authorized && actor_sequence_valid && actor_counter_valid;
             EpochCandidate {
                 candidate,
                 semantically_valid,
