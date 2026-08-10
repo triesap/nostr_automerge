@@ -2453,6 +2453,52 @@ fn event_dispositions_digest_boundary() {
 }
 
 #[test]
+#[allow(clippy::expect_used)]
+fn signed_revision_declarations_distinguish_invalid_from_unsupported() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/tags/revision_classification.json"
+    ))
+    .expect("revision classification fixture");
+    assert_eq!(fixture["cases"].as_array().map(Vec::len), Some(6));
+    let signer = TestSigner::from_byte(114);
+    let document_id = "ba".repeat(32);
+    let cases = [
+        (r#"{"v":2}"#, true),
+        (r#"{"format":"automerge-change-v2"}"#, true),
+        (r#"{"v":2,"v":1}"#, false),
+        (
+            r#"{"format":"automerge-change-v2","format":"automerge-change-v1"}"#,
+            false,
+        ),
+        (r#"{ "v":2}"#, false),
+        (r#"{"v":2"#, false),
+    ];
+    for (created_at, (content, unsupported)) in cases.into_iter().enumerate() {
+        let event = signer.sign(
+            &UnsignedEventDraft::new(
+                u64::try_from(created_at + 1).expect("small case index"),
+                31_624,
+                vec![vec!["d".to_owned(), document_id.clone()]],
+                content.to_owned(),
+            )
+            .expect("manifest draft")
+            .prepare(signer.public_key())
+            .expect("manifest preimage"),
+        );
+        let mut builder = CorpusBuilder::new();
+        let outcome = builder.ingest(event);
+        assert_eq!(
+            matches!(outcome, IngestOutcome::UnsupportedRevision { .. }),
+            unsupported
+        );
+        assert_eq!(
+            matches!(outcome, IngestOutcome::InvalidCarrier { .. }),
+            !unsupported
+        );
+    }
+}
+
+#[test]
 fn duplicate_delayed_and_invalid_evidence_converges() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!(
         "../../../fixtures/v1_draft/integrity/cases.json"
