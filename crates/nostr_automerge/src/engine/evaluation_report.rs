@@ -108,7 +108,9 @@ pub struct DispositionRecord {
 }
 
 impl DispositionRecord {
-    pub(crate) const fn new(
+    /// Constructs a namespaced disposition record for canonical serialization.
+    #[must_use]
+    pub const fn new(
         identifier: ProtocolItemIdentifier,
         disposition: ProtocolDisposition,
         diagnostic: Option<crate::DiagnosticCode>,

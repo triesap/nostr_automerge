@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 19: Canonical Reports And Dispositions
 
 Status: active
-Current checkpoint: `step_395`
+Current checkpoint: `step_396`
 Steps: `step_382` through `step_398`
 Primary findings: `FINDING_017`, `FINDING_018`, `FINDING_022`
 
@@ -45,4 +45,5 @@ invalid evidence with valid noncanonical evidence.
 - `step_391`: `71d1a57` — evaluation returns typed noncanonical errors while protocol-invalid evidence remains reportable.
 - `step_392`: `f74954d` — completion is exactly complete, budget exhausted, or cancelled.
 - `step_393`: `0db8318` — every report invariant fails with a typed error and no unreachable assertion.
-- `step_394`: this commit — materialized projection failures propagate as repository-owned typed errors.
+- `step_394`: `d82e51e` — materialized projection failures propagate as repository-owned typed errors.
+- `step_395`: this commit — the library is the single normative history and dispositions digest implementation.

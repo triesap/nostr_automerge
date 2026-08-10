@@ -37,6 +37,9 @@ mod types;
 mod wire;
 mod work_budget;
 
+pub use conformance::digest::{
+    DigestError, canonical_dispositions_digest, canonical_history_digest,
+};
 pub use diagnostic::DiagnosticCode;
 pub use disposition::{Completion, ProtocolDisposition};
 pub use engine::{

@@ -6,15 +6,16 @@ use serde_json::{Map, Value};
 use sha2::{Digest, Sha256};
 
 use nostr_automerge::checkpoint::{leaf_hash, merkle_root};
-use nostr_automerge::{DocumentCoordinate, ProtocolRevision, RawEventBytes, VerifiedNip01Event};
+use nostr_automerge::{
+    ChangeHash, DispositionRecord, DocumentCoordinate, EventId, ProtocolDisposition,
+    ProtocolItemIdentifier, ProtocolRevision, RawEventBytes, VerifiedNip01Event,
+    canonical_dispositions_digest, canonical_history_digest,
+};
 
 use crate::expected::ExpectedReport;
 use crate::runner::RunError;
 
-const HISTORY_DOMAIN: &[u8] = b"nostr-crdt/automerge/history/v1\0";
-const DISPOSITIONS_DOMAIN: &[u8] = b"nostr-crdt/automerge/dispositions/v1\0";
 const ACTOR_DOMAIN: &[u8] = b"nostr-crdt/automerge/actor/v1\0";
-const MANIFEST_KIND: u32 = 31_624;
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -248,7 +249,7 @@ fn evaluate_core(input: &CoreInput) -> Result<CoreResult, RunError> {
         excluded,
         heads: heads.clone(),
         history_digest: history_digest(coordinate, &chain, &accepted, &heads)?,
-        dispositions_digest: dispositions_digest(coordinate, &dispositions),
+        dispositions_digest: dispositions_digest(coordinate, &dispositions)?,
         actor_id: actor_id(&input.actor)?,
         nip01_event_id: event.event_id().to_hex(),
     })
@@ -350,64 +351,56 @@ fn history_digest(
     accepted: &[String],
     heads: &[String],
 ) -> Result<String, RunError> {
-    let revision = b"draft_2026_08";
-    let mut hash = Sha256::new();
-    hash.update(HISTORY_DOMAIN);
-    hash.update(
-        u16::try_from(revision.len())
-            .map_err(|_| RunError::Input)?
-            .to_be_bytes(),
-    );
-    hash.update(revision);
-    hash.update(MANIFEST_KIND.to_be_bytes());
-    hash.update(coordinate.controller().as_bytes());
-    hash.update(coordinate.document_id().as_bytes());
-    hash.update(
-        u32::try_from(controls.len())
-            .map_err(|_| RunError::Input)?
-            .to_be_bytes(),
-    );
-    controls.iter().try_for_each(|id| {
-        hash.update(parse_hex32(id)?);
-        Ok::<(), RunError>(())
-    })?;
-    hash.update(
-        u64::try_from(accepted.len())
-            .map_err(|_| RunError::Input)?
-            .to_be_bytes(),
-    );
-    accepted.iter().try_for_each(|id| {
-        hash.update(parse_hex32(id)?);
-        Ok::<(), RunError>(())
-    })?;
-    hash.update(
-        u32::try_from(heads.len())
-            .map_err(|_| RunError::Input)?
-            .to_be_bytes(),
-    );
-    heads.iter().try_for_each(|id| {
-        hash.update(parse_hex32(id)?);
-        Ok::<(), RunError>(())
-    })?;
-    Ok(hex(hash.finalize().into()))
+    let controls = controls
+        .iter()
+        .map(|value| EventId::from_str(value).map_err(|_| RunError::Input))
+        .collect::<Result<Vec<_>, _>>()?;
+    let accepted = accepted
+        .iter()
+        .map(|value| ChangeHash::from_str(value).map_err(|_| RunError::Input))
+        .collect::<Result<Vec<_>, _>>()?;
+    let heads = heads
+        .iter()
+        .map(|value| ChangeHash::from_str(value).map_err(|_| RunError::Input))
+        .collect::<Result<Vec<_>, _>>()?;
+    canonical_history_digest(
+        ProtocolRevision::draft_v1(),
+        coordinate,
+        &controls,
+        &accepted,
+        &heads,
+    )
+    .map(|digest| digest.to_hex())
+    .map_err(|_| RunError::Input)
 }
 
-fn dispositions_digest(coordinate: DocumentCoordinate, items: &[(u8, [u8; 32], u8)]) -> String {
-    let revision = b"draft_2026_08";
-    let mut hash = Sha256::new();
-    hash.update(DISPOSITIONS_DOMAIN);
-    hash.update((revision.len() as u16).to_be_bytes());
-    hash.update(revision);
-    hash.update(MANIFEST_KIND.to_be_bytes());
-    hash.update(coordinate.controller().as_bytes());
-    hash.update(coordinate.document_id().as_bytes());
-    hash.update((items.len() as u64).to_be_bytes());
-    for (namespace, identifier, disposition) in items {
-        hash.update([*namespace]);
-        hash.update(identifier);
-        hash.update([*disposition]);
-    }
-    hex(hash.finalize().into())
+fn dispositions_digest(
+    coordinate: DocumentCoordinate,
+    items: &[(u8, [u8; 32], u8)],
+) -> Result<String, RunError> {
+    let records = items
+        .iter()
+        .map(|(namespace, identifier, disposition)| {
+            let identifier = match namespace {
+                1 => ProtocolItemIdentifier::control_event(EventId::from_bytes(*identifier)),
+                2 => ProtocolItemIdentifier::from(ChangeHash::from_bytes(*identifier)),
+                3 => ProtocolItemIdentifier::event(EventId::from_bytes(*identifier)),
+                _ => return Err(RunError::Input),
+            };
+            let disposition = match disposition {
+                1 => ProtocolDisposition::Accepted,
+                2 => ProtocolDisposition::Pending,
+                3 => ProtocolDisposition::Excluded,
+                4 => ProtocolDisposition::Invalid,
+                5 => ProtocolDisposition::UnsupportedRevision,
+                _ => return Err(RunError::Input),
+            };
+            Ok(DispositionRecord::new(identifier, disposition, None))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    canonical_dispositions_digest(ProtocolRevision::draft_v1(), coordinate, &records)
+        .map(|digest| digest.to_hex())
+        .map_err(|_| RunError::Input)
 }
 
 fn set_assertion(
@@ -464,4 +457,31 @@ fn hex(bytes: [u8; 32]) -> String {
         let _ = write!(&mut output, "{byte:02x}");
     }
     output
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn normative_digests_have_one_implementation() {
+        let adapter = include_str!("interop.rs");
+        let adapter = adapter.split("#[cfg(test)]").next().unwrap_or(adapter);
+        let history =
+            include_str!("../../../crates/nostr_automerge/src/conformance/history_digest.rs");
+        let dispositions =
+            include_str!("../../../crates/nostr_automerge/src/conformance/dispositions_digest.rs");
+        assert!(!adapter.contains("nostr-crdt/automerge/history/v1"));
+        assert!(!adapter.contains("nostr-crdt/automerge/dispositions/v1"));
+        assert_eq!(
+            history.matches("nostr-crdt/automerge/history/v1").count(),
+            1
+        );
+        assert_eq!(
+            dispositions
+                .matches("nostr-crdt/automerge/dispositions/v1")
+                .count(),
+            1
+        );
+        assert!(adapter.contains("canonical_history_digest("));
+        assert!(adapter.contains("canonical_dispositions_digest("));
+    }
 }
