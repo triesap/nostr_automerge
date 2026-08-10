@@ -595,6 +595,12 @@ fn no_preselected_control_chain_path() {
 }
 
 #[test]
+fn accepted_at_control_is_exact_closure() {
+    children_are_evaluated_one_epoch_at_a_time();
+    child_epoch_uses_exact_base_closure();
+}
+
+#[test]
 #[allow(clippy::expect_used)]
 fn child_epoch_uses_exact_base_closure() {
     children_are_evaluated_one_epoch_at_a_time();

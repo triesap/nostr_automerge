@@ -129,6 +129,7 @@ mod tests {
     use crate::conformance::digest::{
         DispositionItem, DispositionNamespace, dispositions_digest, history_digest,
     };
+    use crate::reference::epoch_engine::AcceptedAtControl;
     use crate::reference::evaluate::BatchEvaluationReport;
     use crate::{
         ChangeHash, Completion, DocumentCoordinate, EventId, ProtocolDisposition, ProtocolRevision,
@@ -232,7 +233,10 @@ mod tests {
         let evaluation = BatchEvaluationReport {
             canonical_controls: vec![controls[0]],
             control_dispositions: BTreeMap::from([(controls[0], ProtocolDisposition::Accepted)]),
-            accepted_at_control: BTreeMap::from([(controls[0], BTreeSet::from([accepted[0]]))]),
+            accepted_at_control: BTreeMap::from([(
+                controls[0],
+                AcceptedAtControl::for_test(BTreeSet::from([accepted[0]])),
+            )]),
             dispositions: BTreeMap::from([(accepted[0], ProtocolDisposition::Accepted)]),
             accepted_changes: BTreeSet::from([accepted[0]]),
             heads: BTreeSet::from([accepted[0]]),

@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 17: Interleaved Epoch And Control Engine
 
 Status: active
-Current checkpoint: `step_347`
+Current checkpoint: `step_348`
 Steps: `step_337` through `step_355`
 Primary findings: `FINDING_014`, `FINDING_015`, `FINDING_016`, `FINDING_018`, `FINDING_025`
 
@@ -42,4 +42,5 @@ normative conformance path may call a parallel static control-chain selector.
 - `step_343`: `6771d14` — every direct child is classified from the epoch result.
 - `step_344`: `a727bf6` — the next control is selected only after child classification.
 - `step_345`: `26df528` — child epochs start from the exact selected closure.
-- `step_346`: this commit — no production path preselects a complete control chain.
+- `step_346`: `6ff9954` — no production path preselects a complete control chain.
+- `step_347`: this commit — exact closure, heads, and actor state are stored per control.

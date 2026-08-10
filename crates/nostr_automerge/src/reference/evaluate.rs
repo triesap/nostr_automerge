@@ -16,7 +16,8 @@ use crate::graph::equivocation::{QuarantineError, quarantine_equivocation_descen
 use crate::graph::schedule::{ScheduleError, schedule_candidates};
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
 use crate::reference::epoch_engine::{
-    EpochEvaluationError, EpochEvaluationInput, EpochEvaluationResult, evaluate_epoch,
+    AcceptedAtControl, EpochEvaluationError, EpochEvaluationInput, EpochEvaluationResult,
+    evaluate_epoch,
 };
 use crate::{
     CancellationCheck, ChangeHash, Completion, EvaluationFailure, EventId, IntegrityAlert,
@@ -44,7 +45,7 @@ pub(crate) struct BatchControl {
 pub(crate) struct BatchEvaluationReport {
     pub(crate) canonical_controls: Vec<EventId>,
     pub(crate) control_dispositions: BTreeMap<EventId, ProtocolDisposition>,
-    pub(crate) accepted_at_control: BTreeMap<EventId, BTreeSet<ChangeHash>>,
+    pub(crate) accepted_at_control: BTreeMap<EventId, AcceptedAtControl>,
     pub(crate) dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
     pub(crate) accepted_changes: BTreeSet<ChangeHash>,
     pub(crate) heads: BTreeSet<ChangeHash>,
@@ -300,7 +301,6 @@ pub(crate) fn evaluate_batch(
         }));
         accepted_changes
             .retain(|hash| dispositions.get(hash) != Some(&ProtocolDisposition::Excluded));
-        accepted_at_control.insert(selected, accepted_changes.clone());
         let Some(epoch_result) = epoch_result_from_accepted(
             &accepted_changes,
             &controls,
@@ -310,6 +310,7 @@ pub(crate) fn evaluate_batch(
             completion = Completion::Failed;
             break;
         };
+        accepted_at_control.insert(selected, AcceptedAtControl::from_result(&epoch_result));
         parent_epoch_result = Some(epoch_result);
         parent_id = Some(selected);
     }
@@ -654,7 +655,7 @@ fn derive_heads(
 mod tests {
     use std::collections::BTreeSet;
 
-    use super::{BatchChange, BatchControl, evaluate_batch};
+    use super::{AcceptedAtControl, BatchChange, BatchControl, evaluate_batch};
     use crate::automerge_adapter::decode::decode_change;
     use crate::graph::actor_state::tests::candidate;
     use crate::{
@@ -714,8 +715,9 @@ mod tests {
         assert_eq!(
             basic_report
                 .accepted_at_control
-                .get(&EventId::from_bytes([1; 32])),
-            Some(&basic_report.accepted_changes)
+                .get(&EventId::from_bytes([1; 32]))
+                .map(AcceptedAtControl::accepted_closure),
+            Some(&basic_report.accepted_changes),
         );
         assert!(basic_report.materialized_document.is_some());
         let final_schedule_exhausted = evaluate_batch(

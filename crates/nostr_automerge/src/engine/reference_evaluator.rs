@@ -14,6 +14,7 @@ use crate::control::genesis::classify_genesis;
 use crate::control::validate::ControlEnvelope;
 use crate::evidence::event::EventEvidence;
 use crate::graph::change_candidate::{CandidateCarrier, ChangeCandidate};
+use crate::reference::epoch_engine::AcceptedAtControl;
 use crate::reference::evaluate::{BatchChange, BatchControl, evaluate_batch};
 use crate::types::role::Role;
 use crate::{
@@ -143,10 +144,7 @@ fn verify_checkpoints(
     corpus: &EvidenceCorpus,
     coordinate: DocumentCoordinate,
     canonical_controls: &[crate::EventId],
-    accepted_at_control: &std::collections::BTreeMap<
-        crate::EventId,
-        std::collections::BTreeSet<ChangeHash>,
-    >,
+    accepted_at_control: &std::collections::BTreeMap<crate::EventId, AcceptedAtControl>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Vec<CheckpointVerificationResult> {
@@ -335,10 +333,7 @@ const fn assembly_status(error: crate::checkpoint::AssemblyError) -> CheckpointV
 fn checkpoint_accepted_history(
     corpus: &EvidenceCorpus,
     coordinate: DocumentCoordinate,
-    accepted_at_control: &std::collections::BTreeMap<
-        crate::EventId,
-        std::collections::BTreeSet<ChangeHash>,
-    >,
+    accepted_at_control: &std::collections::BTreeMap<crate::EventId, AcceptedAtControl>,
 ) -> std::collections::BTreeMap<
     crate::EventId,
     Result<std::collections::BTreeSet<ChangeHash>, HistoryVerificationError>,
@@ -354,7 +349,7 @@ fn checkpoint_accepted_history(
                 descriptor.event_id(),
                 accepted_at_control
                     .get(&descriptor.control_id())
-                    .cloned()
+                    .map(|state| state.accepted_closure().clone())
                     .ok_or(HistoryVerificationError::UnknownControl),
             )),
             _ => None,

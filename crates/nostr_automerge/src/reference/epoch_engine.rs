@@ -108,6 +108,44 @@ pub(crate) struct EpochEvaluationResult {
     integrity_alerts: Vec<IntegrityAlert>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct AcceptedAtControl {
+    accepted_closure: BTreeSet<ChangeHash>,
+    frontier_heads: BTreeSet<ChangeHash>,
+    actor_states: BTreeMap<ActorId, EpochActorState>,
+}
+
+impl AcceptedAtControl {
+    pub(crate) fn from_result(result: &EpochEvaluationResult) -> Self {
+        Self {
+            accepted_closure: result.accepted_state().accepted_closure().clone(),
+            frontier_heads: result.accepted_state().frontier_heads().clone(),
+            actor_states: result.accepted_state().actor_states().clone(),
+        }
+    }
+
+    pub(crate) const fn accepted_closure(&self) -> &BTreeSet<ChangeHash> {
+        &self.accepted_closure
+    }
+
+    pub(crate) const fn frontier_heads(&self) -> &BTreeSet<ChangeHash> {
+        &self.frontier_heads
+    }
+
+    pub(crate) const fn actor_states(&self) -> &BTreeMap<ActorId, EpochActorState> {
+        &self.actor_states
+    }
+
+    #[cfg(test)]
+    pub(crate) fn for_test(accepted_closure: BTreeSet<ChangeHash>) -> Self {
+        Self {
+            frontier_heads: accepted_closure.clone(),
+            accepted_closure,
+            actor_states: BTreeMap::new(),
+        }
+    }
+}
+
 impl EpochEvaluationResult {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
@@ -224,7 +262,8 @@ mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
     use super::{
-        EpochEvaluationInput, EpochEvaluationInputError, EpochEvaluationResult, evaluate_epoch,
+        AcceptedAtControl, EpochEvaluationInput, EpochEvaluationInputError, EpochEvaluationResult,
+        evaluate_epoch,
     };
     use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
     use crate::carrier::control::{ValidatedControlCarrier, ValidatedControlContent};
@@ -376,6 +415,10 @@ mod tests {
         assert_eq!(result.accepted_state().actor_states(), &actors);
         assert_eq!(result.dispositions(), &dispositions);
         assert!(result.integrity_alerts().is_empty());
+        let snapshot = AcceptedAtControl::from_result(&result);
+        assert_eq!(snapshot.accepted_closure(), &BTreeSet::from([hash]));
+        assert_eq!(snapshot.frontier_heads(), &BTreeSet::from([hash]));
+        assert_eq!(snapshot.actor_states(), &actors);
 
         let bad_head = EpochEvaluationResult::new(
             BTreeSet::from([hash]),
