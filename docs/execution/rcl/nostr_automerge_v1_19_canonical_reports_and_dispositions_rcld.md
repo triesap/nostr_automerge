@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 19: Canonical Reports And Dispositions
 
 Status: active
-Current checkpoint: `step_393`
+Current checkpoint: `step_394`
 Steps: `step_382` through `step_398`
 Primary findings: `FINDING_017`, `FINDING_018`, `FINDING_022`
 
@@ -43,4 +43,5 @@ invalid evidence with valid noncanonical evidence.
 - `step_389`: `c5c4dea` — dynamic control outcomes are cryptographically bound and order-independent.
 - `step_390`: `8331a6d` — applicable signed-event outcomes are bound while untrusted raw bytes remain outside the digest.
 - `step_391`: `71d1a57` — evaluation returns typed noncanonical errors while protocol-invalid evidence remains reportable.
-- `step_392`: this commit — completion is exactly complete, budget exhausted, or cancelled.
+- `step_392`: `f74954d` — completion is exactly complete, budget exhausted, or cancelled.
+- `step_393`: this commit — every report invariant fails with a typed error and no unreachable assertion.

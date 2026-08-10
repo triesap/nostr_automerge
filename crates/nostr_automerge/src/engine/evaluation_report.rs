@@ -189,13 +189,8 @@ pub(crate) struct EvaluationReportParts {
     pub(crate) document: Option<MaterializedDocumentView>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct EvaluationReportInvariant;
-
 impl EvaluationReport {
-    pub(crate) fn from_parts(
-        parts: EvaluationReportParts,
-    ) -> Result<Self, EvaluationReportInvariant> {
+    pub(crate) fn from_parts(parts: EvaluationReportParts) -> Result<Self, EvaluationError> {
         if parts
             .canonical_controls
             .iter()
@@ -221,7 +216,7 @@ impl EvaluationReport {
                 .windows(2)
                 .all(|pair| pair[0].descriptor_event() < pair[1].descriptor_event())
         {
-            return Err(EvaluationReportInvariant);
+            return Err(EvaluationError::ReportInvariant);
         }
         let accepted = parts
             .accepted_changes
@@ -251,7 +246,7 @@ impl EvaluationReport {
             || !excluded.is_disjoint(&invalid)
             || !parts.heads.iter().all(|head| accepted.contains(head))
         {
-            return Err(EvaluationReportInvariant);
+            return Err(EvaluationError::ReportInvariant);
         }
         let completion_matches_failure = matches!(
             (parts.completion, parts.failure),
@@ -263,10 +258,10 @@ impl EvaluationReport {
                 | (Completion::Cancelled, Some(EvaluationFailure::Cancelled))
         );
         if !completion_matches_failure {
-            return Err(EvaluationReportInvariant);
+            return Err(EvaluationError::ReportInvariant);
         }
         if (parts.completion == Completion::Complete) != parts.document.is_some() {
-            return Err(EvaluationReportInvariant);
+            return Err(EvaluationError::ReportInvariant);
         }
         Ok(Self {
             coordinate: parts.coordinate,
@@ -288,13 +283,6 @@ impl EvaluationReport {
             failure: parts.failure,
             document: parts.document,
         })
-    }
-
-    pub(crate) fn from_canonical_parts(parts: EvaluationReportParts) -> Self {
-        match Self::from_parts(parts) {
-            Ok(report) => report,
-            Err(_) => unreachable!("reference evaluator produced a non-canonical report"),
-        }
     }
 
     /// Returns the evaluated document coordinate.
@@ -494,6 +482,90 @@ mod tests {
         incomplete_with_document.completion = Completion::Cancelled;
         incomplete_with_document.failure = Some(super::EvaluationFailure::Cancelled);
         assert!(EvaluationReport::from_parts(incomplete_with_document).is_ok());
+    }
+
+    #[test]
+    fn report_invariant_mutations_return_typed_errors() {
+        let coordinate =
+            format!("31624:{}:{}", "31".repeat(32), "32".repeat(32)).parse::<DocumentCoordinate>();
+        assert!(coordinate.is_ok());
+        let Ok(coordinate) = coordinate else { return };
+        let hash = ChangeHash::from_bytes([2; 32]);
+        let parts = || EvaluationReportParts {
+            coordinate,
+            canonical_controls: vec![EventId::from_bytes([1; 32])],
+            disposition_records: vec![],
+            control_dispositions: vec![(
+                EventId::from_bytes([1; 32]),
+                crate::ProtocolDisposition::Accepted,
+            )],
+            dispositions: vec![(hash, crate::ProtocolDisposition::Accepted)],
+            accepted_changes: vec![hash],
+            pending_changes: vec![],
+            excluded_changes: vec![],
+            invalid_changes: vec![],
+            heads: vec![hash],
+            evidence: vec![],
+            checkpoints: vec![],
+            history_digest: HistoryDigest::from_bytes([3; 32]),
+            dispositions_digest: DispositionsDigest::from_bytes([4; 32]),
+            integrity_alerts: vec![],
+            completion: Completion::Cancelled,
+            failure: Some(super::EvaluationFailure::Cancelled),
+            document: None,
+        };
+        assert!(EvaluationReport::from_parts(parts()).is_ok());
+
+        let assert_invariant = |parts| {
+            assert_eq!(
+                EvaluationReport::from_parts(parts),
+                Err(super::EvaluationError::ReportInvariant)
+            );
+        };
+        let mut duplicate_control = parts();
+        duplicate_control
+            .canonical_controls
+            .push(EventId::from_bytes([1; 32]));
+        assert_invariant(duplicate_control);
+
+        let mut duplicate_control_outcome = parts();
+        duplicate_control_outcome.control_dispositions.push((
+            EventId::from_bytes([1; 32]),
+            crate::ProtocolDisposition::Excluded,
+        ));
+        assert_invariant(duplicate_control_outcome);
+
+        let record = DispositionRecord::new(
+            ProtocolItemIdentifier::from(hash),
+            crate::ProtocolDisposition::Accepted,
+            None,
+        );
+        let mut duplicate_record = parts();
+        duplicate_record.disposition_records = vec![record, record];
+        assert_invariant(duplicate_record);
+
+        let mut duplicate_disposition = parts();
+        duplicate_disposition
+            .dispositions
+            .push((hash, crate::ProtocolDisposition::Excluded));
+        assert_invariant(duplicate_disposition);
+
+        let mut overlapping = parts();
+        overlapping.pending_changes.push(hash);
+        assert_invariant(overlapping);
+
+        let mut foreign_head = parts();
+        foreign_head.heads = vec![ChangeHash::from_bytes([9; 32])];
+        assert_invariant(foreign_head);
+
+        let mut completion_mismatch = parts();
+        completion_mismatch.failure = None;
+        assert_invariant(completion_mismatch);
+
+        let mut document_mismatch = parts();
+        document_mismatch.completion = Completion::Complete;
+        document_mismatch.failure = None;
+        assert_invariant(document_mismatch);
     }
 
     #[test]
