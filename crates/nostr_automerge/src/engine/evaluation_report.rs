@@ -69,6 +69,52 @@ impl From<ChangeHash> for ProtocolItemIdentifier {
     }
 }
 
+/// One canonical dynamic protocol outcome with optional explanatory detail.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct DispositionRecord {
+    identifier: ProtocolItemIdentifier,
+    disposition: ProtocolDisposition,
+    diagnostic: Option<crate::DiagnosticCode>,
+}
+
+impl DispositionRecord {
+    pub(crate) const fn new(
+        identifier: ProtocolItemIdentifier,
+        disposition: ProtocolDisposition,
+        diagnostic: Option<crate::DiagnosticCode>,
+    ) -> Self {
+        Self {
+            identifier,
+            disposition,
+            diagnostic,
+        }
+    }
+
+    /// Returns the namespaced protocol item identifier.
+    #[must_use]
+    pub const fn identifier(&self) -> ProtocolItemIdentifier {
+        self.identifier
+    }
+
+    /// Returns the canonical protocol disposition.
+    #[must_use]
+    pub const fn disposition(&self) -> ProtocolDisposition {
+        self.disposition
+    }
+
+    /// Returns an optional stable diagnostic that does not affect digest identity.
+    #[must_use]
+    pub const fn diagnostic(&self) -> Option<crate::DiagnosticCode> {
+        self.diagnostic
+    }
+}
+
+fn disposition_records_are_canonical(records: &[DispositionRecord]) -> bool {
+    records
+        .windows(2)
+        .all(|pair| pair[0].identifier < pair[1].identifier)
+}
+
 /// Canonical owned result of one deterministic reference evaluation.
 #[derive(Clone, PartialEq, Eq)]
 pub struct EvaluationReport {
@@ -347,7 +393,10 @@ fn strictly_sorted<T: Ord>(values: &[T]) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{EvaluationReport, EvaluationReportParts, ProtocolItemIdentifier};
+    use super::{
+        DispositionRecord, EvaluationReport, EvaluationReportParts, ProtocolItemIdentifier,
+        disposition_records_are_canonical,
+    };
     use crate::{
         ChangeHash, Completion, DispositionsDigest, DocumentCoordinate, EventId, HistoryDigest,
     };
@@ -410,5 +459,21 @@ mod tests {
         let debug = format!("{control:?} {change:?} {event:?}");
         assert!(debug.contains("[REDACTED]"));
         assert!(!debug.contains("03030303"));
+    }
+
+    #[test]
+    fn disposition_record_requires_canonical_unique_identifiers() {
+        let control = ProtocolItemIdentifier::control_event(EventId::from_bytes([1; 32]));
+        let change = ProtocolItemIdentifier::from(ChangeHash::from_bytes([2; 32]));
+        let diagnostic = crate::DiagnosticCode::lookup("graph.cycle");
+        let first =
+            DispositionRecord::new(control, crate::ProtocolDisposition::Accepted, diagnostic);
+        let second = DispositionRecord::new(change, crate::ProtocolDisposition::Excluded, None);
+        assert_eq!(first.identifier(), control);
+        assert_eq!(first.disposition(), crate::ProtocolDisposition::Accepted);
+        assert_eq!(first.diagnostic(), diagnostic);
+        assert!(disposition_records_are_canonical(&[first, second]));
+        assert!(!disposition_records_are_canonical(&[second, first]));
+        assert!(!disposition_records_are_canonical(&[first, first]));
     }
 }
