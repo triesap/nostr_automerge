@@ -124,11 +124,7 @@ pub(crate) fn evaluate_batch(
             completion = Completion::Cancelled;
             break;
         }
-        let candidate_count = u64::try_from(children.len()).unwrap_or(u64::MAX);
-        if budget
-            .charge(WorkCounter::Control, candidate_count)
-            .is_err()
-        {
+        if charge_control_transitions(children.len(), budget).is_err() {
             completion = Completion::BudgetExhausted;
             break;
         }
@@ -472,6 +468,16 @@ pub(crate) fn evaluate_batch(
         completion,
         failure: None,
     }
+}
+
+fn charge_control_transitions(
+    candidate_count: usize,
+    budget: &mut WorkBudget,
+) -> Result<(), crate::BudgetExhausted> {
+    budget.charge(
+        WorkCounter::Control,
+        u64::try_from(candidate_count).unwrap_or(u64::MAX),
+    )
 }
 
 enum EpochResolutionError {
