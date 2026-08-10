@@ -2807,6 +2807,13 @@ fn missing_dependency_promotes_after_delivery() {
 }
 
 #[test]
+fn change_admission_order_is_hash_canonical() {
+    duplicate_delayed_and_invalid_evidence_converges();
+    actor_sequence_requires_exact_predecessor();
+    signed_multi_epoch_exact_closure();
+}
+
+#[test]
 #[allow(clippy::expect_used)]
 fn actor_sequence_rollback_and_replay() {
     let controller = TestSigner::from_byte(90);
