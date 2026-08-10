@@ -58,6 +58,21 @@ pub(crate) fn evaluate_role_continuity(
     }
 }
 
+pub(crate) fn evaluate_device_ancestry(
+    ancestry: &[ControlEnvelope],
+    child: &ControlEnvelope,
+) -> CandidateResult {
+    let contents = ancestry
+        .iter()
+        .map(|control| &control.content)
+        .collect::<Vec<_>>();
+    if validate_no_reintroduction(&contents, &child.content).is_err() {
+        CandidateResult::Invalid(DiagnosticCode::registered("control.device_reintroduced"))
+    } else {
+        CandidateResult::Valid
+    }
+}
+
 pub(crate) fn evaluate_child(
     parent: &ControlEnvelope,
     child: &ControlEnvelope,

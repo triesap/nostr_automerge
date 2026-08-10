@@ -642,6 +642,97 @@ fn signed_child_roles_are_monotonic() {
 }
 
 #[test]
+#[allow(clippy::expect_used)]
+fn signed_removed_device_cannot_reappear() {
+    let controller = TestSigner::from_byte(41);
+    let removed = TestSigner::from_byte(42);
+    let fresh = TestSigner::from_byte(43);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "44".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let retained = controller.public_key().to_hex();
+    let removed_key = removed.public_key().to_hex();
+    let fresh_key = fresh.public_key().to_hex();
+    let genesis = signed_acl_control(
+        &controller,
+        coordinate,
+        1,
+        None,
+        0,
+        vec![
+            (retained.clone(), vec!["write"]),
+            (removed_key.clone(), vec!["checkpoint"]),
+        ],
+    );
+    let genesis_id = VerifiedNip01Event::verify(genesis.clone())
+        .expect("signed genesis")
+        .event_id();
+    let removal = signed_acl_control(
+        &controller,
+        coordinate,
+        2,
+        Some(genesis_id),
+        1,
+        vec![(retained.clone(), vec!["write"])],
+    );
+    let removal_id = VerifiedNip01Event::verify(removal.clone())
+        .expect("signed removal")
+        .event_id();
+    let later_fresh = signed_acl_control(
+        &controller,
+        coordinate,
+        3,
+        Some(removal_id),
+        2,
+        vec![
+            (retained.clone(), vec!["write"]),
+            (fresh_key.clone(), vec!["checkpoint"]),
+        ],
+    );
+    let later_fresh_id = VerifiedNip01Event::verify(later_fresh.clone())
+        .expect("signed fresh device")
+        .event_id();
+    let reintroduced = signed_acl_control(
+        &controller,
+        coordinate,
+        4,
+        Some(later_fresh_id),
+        3,
+        vec![
+            (retained, vec!["write"]),
+            (fresh_key, vec!["checkpoint"]),
+            (removed_key, vec!["checkpoint"]),
+        ],
+    );
+    let reintroduced_id = VerifiedNip01Event::verify(reintroduced.clone())
+        .expect("signed reintroduction")
+        .event_id();
+
+    let mut builder = CorpusBuilder::new();
+    for event in [reintroduced, later_fresh, removal, genesis] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(
+        report.canonical_controls(),
+        [genesis_id, removal_id, later_fresh_id]
+    );
+    assert!(!report.canonical_controls().contains(&reintroduced_id));
+}
+
+#[test]
 fn duplicate_delayed_and_invalid_evidence_converges() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!(
         "../../../fixtures/v1_draft/integrity/cases.json"

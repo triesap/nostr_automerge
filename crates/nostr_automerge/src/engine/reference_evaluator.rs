@@ -7,8 +7,8 @@ use crate::conformance::dispositions_digest::{
 };
 use crate::conformance::history_digest::history_digest;
 use crate::control::candidate::{
-    CandidateResult, evaluate_account_continuity, evaluate_parent_continuity,
-    evaluate_role_continuity,
+    CandidateResult, evaluate_account_continuity, evaluate_device_ancestry,
+    evaluate_parent_continuity, evaluate_role_continuity,
 };
 use crate::control::validate::ControlEnvelope;
 use crate::evidence::event::EventEvidence;
@@ -486,6 +486,7 @@ fn controls_for_coordinate(
                 && parent_continuity_is_valid(corpus, control)
                 && account_continuity_is_valid(corpus, control)
                 && role_continuity_is_valid(corpus, control)
+                && device_ancestry_is_valid(corpus, control)
                 && !has_terminal_parent(corpus, control)
                 && !violates_retained_writer_frontier(corpus, control) =>
             {
@@ -500,6 +501,32 @@ fn controls_for_coordinate(
             _ => None,
         })
         .collect()
+}
+
+fn device_ancestry_is_valid(
+    corpus: &EvidenceCorpus,
+    child: &crate::carrier::control::ValidatedControlCarrier,
+) -> bool {
+    let mut ancestry = Vec::new();
+    let mut visited = std::collections::BTreeSet::new();
+    let mut current = child.parent();
+    while let Some(event_id) = current {
+        if !visited.insert(event_id) {
+            return false;
+        }
+        let Some(EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::Control(control),
+            ..
+        }) = corpus.events.get(&event_id)
+        else {
+            return false;
+        };
+        current = control.parent();
+        ancestry.push(ControlEnvelope::from_validated(control.as_ref().clone()));
+    }
+    ancestry.reverse();
+    let child = ControlEnvelope::from_validated(child.clone());
+    evaluate_device_ancestry(&ancestry, &child) == CandidateResult::Valid
 }
 
 fn role_continuity_is_valid(

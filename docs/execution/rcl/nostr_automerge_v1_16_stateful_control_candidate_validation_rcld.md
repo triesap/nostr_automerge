@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 16: Stateful Control Candidate Validation
 
 Status: active
-Current checkpoint: `step_327`
+Current checkpoint: `step_328`
 Steps: `step_318` through `step_336`
 Primary findings: `FINDING_014`, `FINDING_015`, `FINDING_018`
 
@@ -42,4 +42,5 @@ outcome derived from accepted parent state.
 - `step_323`: `eb8100f` — accepted dependency indexes now enforce exact base antichains.
 - `step_324`: `615fe4f` — public selection now enforces exact parent continuity.
 - `step_325`: `d85e09e` — retained account mappings are immutable on the public route.
-- `step_326`: this commit — retained roles are monotonic on the public route.
+- `step_326`: `290fa15` — retained roles are monotonic on the public route.
+- `step_327`: this commit — canonical ACL ancestry forbids removed-key reintroduction.
