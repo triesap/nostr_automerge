@@ -8,9 +8,9 @@ use crate::conformance::dispositions_digest::{
 use crate::conformance::history_digest::history_digest;
 use crate::control::candidate::{
     CandidateResult, evaluate_account_continuity, evaluate_device_ancestry,
-    evaluate_parent_continuity, evaluate_role_continuity, evaluate_successor_genesis,
-    evaluate_terminal_continuity,
+    evaluate_parent_continuity, evaluate_role_continuity, evaluate_terminal_continuity,
 };
+use crate::control::genesis::classify_genesis;
 use crate::control::validate::ControlEnvelope;
 use crate::evidence::event::EventEvidence;
 use crate::graph::change_candidate::{CandidateCarrier, ChangeCandidate};
@@ -485,6 +485,7 @@ fn prepare_controls(
                 carrier: VerifiedCarrier::Control(control),
                 ..
             } if control.coordinate() == coordinate => {
+                let envelope = ControlEnvelope::from_validated(control.as_ref().clone());
                 let disposition = if corpus
                     .indexes
                     .controls
@@ -492,8 +493,23 @@ fn prepare_controls(
                     .contains(&control.event_id())
                 {
                     ProtocolDisposition::Pending
-                } else if !genesis_link_is_valid(corpus, control)
-                    || !parent_continuity_is_valid(corpus, control)
+                } else if control.parent().is_none() {
+                    let predecessor = control.predecessor().and_then(|link| {
+                        match corpus.events.get(&link.terminal_control) {
+                            Some(EventEvidence::VerifiedCarrier {
+                                carrier: VerifiedCarrier::Control(terminal),
+                                ..
+                            }) => Some(ControlEnvelope::from_validated(terminal.as_ref().clone())),
+                            _ => None,
+                        }
+                    });
+                    let outcome = classify_genesis(&envelope, predecessor.as_ref()).disposition();
+                    if outcome == ProtocolDisposition::Accepted {
+                        ProtocolDisposition::Excluded
+                    } else {
+                        outcome
+                    }
+                } else if !parent_continuity_is_valid(corpus, control)
                     || !account_continuity_is_valid(corpus, control)
                     || !role_continuity_is_valid(corpus, control)
                     || !device_ancestry_is_valid(corpus, control)
@@ -513,7 +529,7 @@ fn prepare_controls(
                     accepted_base: control.base_heads().collect(),
                     frozen: control.terminal(),
                     changes: changes_for_control(corpus, control),
-                    envelope: Some(ControlEnvelope::from_validated(control.as_ref().clone())),
+                    envelope: Some(envelope),
                 })
             }
             _ => None,
@@ -603,31 +619,6 @@ fn parent_continuity_is_valid(
     let parent = ControlEnvelope::from_validated(parent.as_ref().clone());
     let child = ControlEnvelope::from_validated(child.clone());
     evaluate_parent_continuity(&parent, &child) == CandidateResult::Valid
-}
-
-fn genesis_link_is_valid(
-    corpus: &EvidenceCorpus,
-    control: &crate::carrier::control::ValidatedControlCarrier,
-) -> bool {
-    if control.parent().is_some() {
-        return control.predecessor().is_none();
-    }
-    let Some(predecessor) = control.predecessor() else {
-        return control.sequence() == 0;
-    };
-    if control.sequence() != 0 {
-        return false;
-    }
-    let Some(EventEvidence::VerifiedCarrier {
-        carrier: VerifiedCarrier::Control(terminal),
-        ..
-    }) = corpus.events.get(&predecessor.terminal_control)
-    else {
-        return false;
-    };
-    let terminal = ControlEnvelope::from_validated(terminal.as_ref().clone());
-    let successor = ControlEnvelope::from_validated(control.clone());
-    evaluate_successor_genesis(&terminal, &successor) == CandidateResult::Valid
 }
 
 fn terminal_continuity_is_valid(

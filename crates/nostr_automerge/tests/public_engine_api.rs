@@ -786,6 +786,94 @@ fn signed_control_transition_matrix() {
 
 #[test]
 #[allow(clippy::expect_used)]
+fn signed_genesis_candidate_classification() {
+    let controller = TestSigner::from_byte(43);
+    let writer = TestSigner::from_byte(44);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "55".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let members = vec![(writer.public_key().to_hex(), vec!["write"])];
+    let first = signed_acl_control(&controller, coordinate, 1, None, 0, members.clone());
+    let second = signed_acl_control(&controller, coordinate, 2, None, 0, members.clone());
+    let first_id = VerifiedNip01Event::verify(first.clone())
+        .expect("signed first genesis")
+        .event_id();
+    let second_id = VerifiedNip01Event::verify(second.clone())
+        .expect("signed second genesis")
+        .event_id();
+    let selected = first_id.min(second_id);
+    let mut builder = CorpusBuilder::new();
+    for event in [second, first] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(report.canonical_controls(), [selected]);
+    assert_eq!(report.control_dispositions().len(), 2);
+
+    let successor_controller = TestSigner::from_byte(45);
+    let successor_writer = TestSigner::from_byte(46);
+    let successor_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        successor_controller.public_key().to_hex(),
+        "56".repeat(32)
+    )
+    .parse()
+    .expect("fixed successor coordinate");
+    let missing_terminal = EventId::from_bytes([47; 32]);
+    let successor_content = format!(
+        r#"{{"base_heads":[],"format":"automerge-change-v1","members":[{{"account":null,"pubkey":"{}","roles":["write"]}}],"policy":"controller-acl-v1","predecessor":{{"coordinate":"{}","terminal_control":"{}"}},"seq":0,"successor":null,"text_encoding":"utf16","v":1}}"#,
+        successor_writer.public_key().to_hex(),
+        coordinate.to_address(),
+        missing_terminal.to_hex()
+    );
+    let pending = successor_controller.sign(
+        &UnsignedEventDraft::new(
+            4,
+            1_625,
+            vec![vec!["a".to_owned(), successor_coordinate.to_address()]],
+            successor_content,
+        )
+        .expect("pending successor draft")
+        .prepare(successor_controller.public_key())
+        .expect("pending successor preimage"),
+    );
+    let pending_id = VerifiedNip01Event::verify(pending.clone())
+        .expect("signed pending successor")
+        .event_id();
+    let mut pending_builder = CorpusBuilder::new();
+    assert!(matches!(
+        pending_builder.ingest(pending),
+        IngestOutcome::Accepted { .. }
+    ));
+    let pending_report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &pending_builder.finish(),
+        successor_coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert!(pending_report.canonical_controls().is_empty());
+    assert_eq!(
+        pending_report.control_dispositions(),
+        [(pending_id, ProtocolDisposition::Pending)]
+    );
+
+    signed_successor_genesis_requires_reciprocal_terminal_continuity();
+}
+
+#[test]
+#[allow(clippy::expect_used)]
 fn signed_child_account_mapping_is_immutable() {
     let controller = TestSigner::from_byte(33);
     let changed_account = TestSigner::from_byte(34);
@@ -2718,6 +2806,24 @@ fn signed_successor_genesis_requires_reciprocal_terminal_continuity() {
     let terminal_id = VerifiedNip01Event::verify(terminal.clone())
         .expect("signed terminal")
         .event_id();
+    let wrong_terminal_content = format!(
+        r#"{{"base_heads":[],"format":"automerge-change-v1","members":[],"policy":"controller-acl-v1","predecessor":null,"seq":0,"successor":"{}","text_encoding":"utf16","v":1}}"#,
+        predecessor_coordinate.to_address()
+    );
+    let wrong_terminal = predecessor_controller.sign(
+        &UnsignedEventDraft::new(
+            2,
+            1_625,
+            vec![vec!["a".to_owned(), predecessor_coordinate.to_address()]],
+            wrong_terminal_content,
+        )
+        .expect("wrong terminal draft")
+        .prepare(predecessor_controller.public_key())
+        .expect("wrong terminal preimage"),
+    );
+    let wrong_terminal_id = VerifiedNip01Event::verify(wrong_terminal.clone())
+        .expect("signed wrong terminal")
+        .event_id();
     let successor_content = |terminal_control: EventId| {
         format!(
             r#"{{"base_heads":[],"format":"automerge-change-v1","members":[{{"account":null,"pubkey":"{}","roles":["checkpoint","write"]}}],"policy":"controller-acl-v1","predecessor":{{"coordinate":"{}","terminal_control":"{}"}},"seq":0,"successor":null,"text_encoding":"utf16","v":1}}"#,
@@ -2739,16 +2845,16 @@ fn signed_successor_genesis_requires_reciprocal_terminal_continuity() {
             .expect("successor preimage"),
         )
     };
-    let valid = sign_successor(2, terminal_id);
+    let valid = sign_successor(3, terminal_id);
     let valid_id = VerifiedNip01Event::verify(valid.clone())
         .expect("signed successor")
         .event_id();
-    let invalid = sign_successor(3, EventId::from_bytes([99; 32]));
+    let invalid = sign_successor(4, wrong_terminal_id);
     let invalid_id = VerifiedNip01Event::verify(invalid.clone())
         .expect("signed invalid successor")
         .event_id();
     let mut builder = CorpusBuilder::new();
-    for event in [invalid, valid, terminal] {
+    for event in [invalid, wrong_terminal, valid, terminal] {
         assert!(matches!(
             builder.ingest(event),
             IngestOutcome::Accepted { .. }
@@ -2764,6 +2870,11 @@ fn signed_successor_genesis_requires_reciprocal_terminal_continuity() {
     assert_eq!(report.completion(), Completion::Complete);
     assert_eq!(report.canonical_controls(), [valid_id]);
     assert!(!report.canonical_controls().contains(&invalid_id));
+    assert!(
+        report
+            .control_dispositions()
+            .contains(&(invalid_id, ProtocolDisposition::Invalid))
+    );
     assert!(report.accepted_changes().is_empty());
     assert!(report.heads().is_empty());
     assert!(report.document().is_some_and(|view| !view.is_empty()));

@@ -2,6 +2,7 @@ pub(crate) mod candidate;
 pub(crate) mod candidate_outcome;
 pub(crate) mod epoch_state;
 pub(crate) mod frontier;
+pub(crate) mod genesis;
 pub(crate) mod parent_view;
 pub(crate) mod reorganization;
 pub(crate) mod select;
