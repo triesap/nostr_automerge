@@ -88,18 +88,12 @@ pub(crate) fn validate(
     if event.kind() != crate::checkpoint::DESCRIPTOR_KIND {
         return Err(CheckpointDescriptorCarrierError::Kind);
     }
-    tags::require_absent(event.tags(), "d").map_err(CheckpointDescriptorCarrierError::Tags)?;
-    tags::require_durable_tags(event.tags()).map_err(CheckpointDescriptorCarrierError::Tags)?;
-    if event.tags().len() != 3
-        || event.tags().iter().any(|tag| {
-            tag.first()
-                .is_none_or(|name| name != "a" && name != "e" && name != "x")
-        })
-    {
-        return Err(CheckpointDescriptorCarrierError::Tags(
-            tags::TagError::Forbidden,
-        ));
-    }
+    tags::require_tag_contract(
+        event.tags(),
+        &[("a", 2), ("e", 2), ("x", 2)],
+        &["expiration", "-"],
+    )
+    .map_err(CheckpointDescriptorCarrierError::Tags)?;
     let coordinate: DocumentCoordinate = tags::required_tag(event.tags(), "a", 2)
         .map_err(CheckpointDescriptorCarrierError::Tags)?[1]
         .parse()
