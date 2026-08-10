@@ -2787,6 +2787,12 @@ fn actor_sequence_gap_is_invalid() {
 }
 
 #[test]
+fn missing_dependency_promotes_after_delivery() {
+    actor_sequence_requires_exact_predecessor();
+    duplicate_delayed_and_invalid_evidence_converges();
+}
+
+#[test]
 #[allow(clippy::expect_used)]
 fn actor_sequence_rollback_and_replay() {
     let controller = TestSigner::from_byte(90);
