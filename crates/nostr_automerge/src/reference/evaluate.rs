@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::automerge_adapter::document::{AppliedDocument, materialize_history};
+use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 use crate::control::candidate::{CandidateResult, evaluate_child};
 use crate::control::candidate_outcome::ControlCandidateOutcome;
 use crate::control::epoch_state::AcceptedEpochState;
@@ -13,6 +14,7 @@ use crate::graph::dependency_graph::build_graph;
 use crate::graph::equivocation::{QuarantineError, quarantine_equivocation_descendants};
 use crate::graph::schedule::{ScheduleError, schedule_candidates};
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
+use crate::reference::epoch_engine::{EpochEvaluationError, EpochEvaluationInput, evaluate_epoch};
 use crate::{
     CancellationCheck, ChangeHash, Completion, EvaluationFailure, EventId, IntegrityAlert,
     ProtocolDisposition, WorkBudget, WorkCounter,
@@ -197,20 +199,29 @@ pub(crate) fn evaluate_batch(
             dispositions.insert(*hash, ProtocolDisposition::Excluded);
         }
         accepted_changes = control.accepted_base.clone();
-        let epoch_inputs = control.changes.iter().map(|change| EpochCandidate {
-            candidate: change.candidate.clone(),
-            semantically_valid: change.semantically_valid,
-            canonical_control: !control.frozen,
-        });
-        let epoch = resolve_epoch(epoch_inputs, accepted_changes.clone(), budget, cancellation);
+        let epoch = if control_index == 0 {
+            resolve_genesis_epoch(control, budget, cancellation)
+        } else {
+            let epoch_inputs = control.changes.iter().map(|change| EpochCandidate {
+                candidate: change.candidate.clone(),
+                semantically_valid: change.semantically_valid,
+                canonical_control: !control.frozen,
+            });
+            resolve_epoch(epoch_inputs, accepted_changes.clone(), budget, cancellation)
+                .map_err(EpochResolutionError::Schedule)
+        };
         let resolved = match epoch {
             Ok(resolved) => resolved,
-            Err(ScheduleError::BudgetExhausted) => {
+            Err(EpochResolutionError::Schedule(ScheduleError::BudgetExhausted)) => {
                 completion = Completion::BudgetExhausted;
                 break;
             }
-            Err(ScheduleError::Cancelled) => {
+            Err(EpochResolutionError::Schedule(ScheduleError::Cancelled)) => {
                 completion = Completion::Cancelled;
+                break;
+            }
+            Err(EpochResolutionError::InvalidState) => {
+                completion = Completion::Failed;
                 break;
             }
         };
@@ -366,6 +377,54 @@ pub(crate) fn evaluate_batch(
         completion,
         failure: None,
     }
+}
+
+enum EpochResolutionError {
+    Schedule(ScheduleError),
+    InvalidState,
+}
+
+fn resolve_genesis_epoch(
+    control: &BatchControl,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<BTreeMap<ChangeHash, ProtocolDisposition>, EpochResolutionError> {
+    let Some(selected) = control.envelope.clone() else {
+        let epoch_inputs = control.changes.iter().map(|change| EpochCandidate {
+            candidate: change.candidate.clone(),
+            semantically_valid: change.semantically_valid,
+            canonical_control: !control.frozen,
+        });
+        return resolve_epoch(epoch_inputs, BTreeSet::new(), budget, cancellation)
+            .map_err(EpochResolutionError::Schedule);
+    };
+    let empty = AcceptedEpochState::new(
+        BTreeSet::new(),
+        BTreeSet::new(),
+        BTreeMap::new(),
+        BTreeMap::new(),
+        BTreeMap::new(),
+        MaterializedDocumentView::empty().ok(),
+    )
+    .map_err(|_| EpochResolutionError::InvalidState)?;
+    let input = EpochEvaluationInput::new(
+        selected,
+        empty,
+        control
+            .changes
+            .iter()
+            .map(|change| change.candidate.clone()),
+        Vec::new(),
+    )
+    .map_err(|_| EpochResolutionError::InvalidState)?;
+    evaluate_epoch(&input, budget, cancellation)
+        .map(|result| result.dispositions().clone())
+        .map_err(|error| match error {
+            EpochEvaluationError::Schedule(error) => EpochResolutionError::Schedule(error),
+            EpochEvaluationError::ActorState(_) | EpochEvaluationError::State(_) => {
+                EpochResolutionError::InvalidState
+            }
+        })
 }
 
 fn parent_epoch_view(

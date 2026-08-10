@@ -30,7 +30,7 @@ def main() -> int:
     if steps != list(range(308, 534)):
         raise AssertionError("follow-up checkpoints are not contiguous and unique")
     current = re.search(r"Current checkpoint: `step_(\d{3})`", ledger)
-    if current is None or current.group(1) != "341":
+    if current is None or current.group(1) != "342":
         raise AssertionError("unexpected active follow-up checkpoint")
     active = [line for line in ledger.splitlines() if "| active |" in line]
     if len(active) != 1 or not active[0].startswith("| 17 |"):

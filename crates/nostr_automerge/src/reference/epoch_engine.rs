@@ -4,9 +4,13 @@ use crate::ChangeHash;
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 use crate::control::epoch_state::AcceptedEpochState;
 use crate::control::validate::ControlEnvelope;
-use crate::graph::actor_state::EpochActorState;
+use crate::graph::actor_state::{ActorStateError, EpochActorState, initialize_actor_states};
 use crate::graph::change_candidate::ChangeCandidate;
+use crate::graph::schedule::ScheduleError;
+use crate::reference::epoch::{EpochCandidate, resolve_epoch};
+use crate::types::role::Role;
 use crate::{ActorId, IntegrityAlert, ProtocolDisposition};
+use crate::{CancellationCheck, WorkBudget};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum EpochEvaluationInputError {
@@ -14,6 +18,13 @@ pub(crate) enum EpochEvaluationInputError {
     AncestryMismatch,
     CandidateControlMismatch,
     DuplicateCandidate,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum EpochEvaluationError {
+    Schedule(ScheduleError),
+    ActorState(ActorStateError),
+    State(crate::control::epoch_state::AcceptedEpochStateError),
 }
 
 /// Complete trusted input for evaluating one selected control epoch.
@@ -137,11 +148,84 @@ impl EpochEvaluationResult {
     }
 }
 
+pub(crate) fn evaluate_epoch(
+    input: &EpochEvaluationInput,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<EpochEvaluationResult, EpochEvaluationError> {
+    let selected = input.selected_control();
+    let terminal = selected.content().terminal;
+    let epoch_candidates = input
+        .candidate_changes()
+        .values()
+        .cloned()
+        .map(|candidate| {
+            let authorized = selected.content().members.iter().any(|member| {
+                member.actor == candidate.actor
+                    && member.device == candidate.author
+                    && member.roles.contains(&Role::Write)
+            });
+            EpochCandidate {
+                candidate,
+                semantically_valid: authorized && !terminal,
+                canonical_control: true,
+            }
+        });
+    let dispositions = resolve_epoch(
+        epoch_candidates,
+        input.accepted_base().accepted_closure().clone(),
+        budget,
+        cancellation,
+    )
+    .map_err(EpochEvaluationError::Schedule)?;
+    let mut accepted_candidates = input.accepted_base().accepted_candidates().clone();
+    accepted_candidates.extend(
+        input
+            .candidate_changes()
+            .iter()
+            .filter_map(|(hash, candidate)| {
+                (dispositions.get(hash) == Some(&ProtocolDisposition::Accepted))
+                    .then_some((*hash, candidate.clone()))
+            }),
+    );
+    let accepted_closure = accepted_candidates.keys().copied().collect::<BTreeSet<_>>();
+    let actor_states = initialize_actor_states(accepted_candidates.values().cloned())
+        .map_err(EpochEvaluationError::ActorState)?;
+    let writer_contributions = actor_states
+        .iter()
+        .map(|(actor, state)| (*actor, state.highest_change))
+        .collect();
+    let depended_on = accepted_candidates
+        .values()
+        .flat_map(|candidate| candidate.dependencies.iter().copied())
+        .filter(|hash| accepted_closure.contains(hash))
+        .collect::<BTreeSet<_>>();
+    let frontier_heads = accepted_closure.difference(&depended_on).copied().collect();
+    let materialized = if accepted_closure == *input.accepted_base().accepted_closure() {
+        input.accepted_base().materialized().cloned()
+    } else {
+        None
+    };
+    EpochEvaluationResult::new(
+        accepted_closure,
+        frontier_heads,
+        accepted_candidates,
+        actor_states,
+        writer_contributions,
+        dispositions,
+        Vec::new(),
+        materialized,
+    )
+    .map_err(EpochEvaluationError::State)
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
-    use super::{EpochEvaluationInput, EpochEvaluationInputError, EpochEvaluationResult};
+    use super::{
+        EpochEvaluationInput, EpochEvaluationInputError, EpochEvaluationResult, evaluate_epoch,
+    };
     use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
     use crate::carrier::control::{ValidatedControlCarrier, ValidatedControlContent};
     use crate::control::epoch_state::{AcceptedEpochState, AcceptedEpochStateError};
@@ -150,7 +234,7 @@ mod tests {
     use crate::graph::change_candidate::ChangeCandidate;
     use crate::{
         ActorId, ChangeHash, ControllerPublicKey, DevicePublicKey, DocumentCoordinate, DocumentId,
-        EventId, ProtocolDisposition,
+        EventId, NeverCancelled, ProtocolDisposition, WorkBudget,
     };
 
     fn control(base_heads: Vec<ChangeHash>) -> ControlEnvelope {
@@ -197,6 +281,12 @@ mod tests {
         assert!(input.accepted_base().accepted_closure().is_empty());
         assert!(input.candidate_changes().is_empty());
         assert!(input.canonical_ancestry().is_empty());
+        let evaluated = evaluate_epoch(&input, &mut WorkBudget::new(1_000, 1_000), &NeverCancelled);
+        assert!(evaluated.is_ok());
+        assert!(evaluated.is_ok_and(|result| {
+            result.accepted_state().accepted_closure().is_empty()
+                && result.accepted_state().materialized().is_some()
+        }));
 
         let head = ChangeHash::from_bytes([4; 32]);
         assert!(matches!(

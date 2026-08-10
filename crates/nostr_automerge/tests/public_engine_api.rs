@@ -302,6 +302,173 @@ fn signed_events_reach_materialized_state_through_public_engine() {
 
 #[test]
 #[allow(clippy::expect_used)]
+fn evaluate_selected_genesis_epoch() {
+    signed_empty_terminal_genesis_materializes_empty_state();
+    signed_events_reach_materialized_state_through_public_engine();
+
+    let controller = TestSigner::from_byte(47);
+    let first_writer = TestSigner::from_byte(48);
+    let second_writer = TestSigner::from_byte(49);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "57".repeat(32)
+    )
+    .parse()
+    .expect("fixed concurrent coordinate");
+    let control = signed_acl_control(
+        &controller,
+        coordinate,
+        1,
+        None,
+        0,
+        vec![
+            (first_writer.public_key().to_hex(), vec!["write"]),
+            (second_writer.public_key().to_hex(), vec!["write"]),
+        ],
+    );
+    let control_id = VerifiedNip01Event::verify(control.clone())
+        .expect("signed concurrent genesis")
+        .event_id();
+    let author = |writer: &TestSigner, key: &str, created_at: u64| {
+        let actor = ActorId::derive(coordinate, writer.public_key());
+        let mut document = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
+            .expect("empty authoring document");
+        let authored = document
+            .author_change(&[Operation::PutString {
+                key: key.to_owned(),
+                value: "concurrent".to_owned(),
+            }])
+            .expect("canonical concurrent change");
+        let hash = authored.change_hash();
+        let event = writer.sign(
+            &UnsignedEventDraft::new(
+                created_at,
+                1_624,
+                vec![
+                    vec!["a".to_owned(), coordinate.to_address()],
+                    vec!["e".to_owned(), control_id.to_hex()],
+                    vec!["x".to_owned(), hash.to_hex()],
+                ],
+                base64::engine::general_purpose::STANDARD.encode(authored.raw()),
+            )
+            .expect("concurrent change draft")
+            .prepare(writer.public_key())
+            .expect("concurrent change preimage"),
+        );
+        (event, hash)
+    };
+    let (first, first_hash) = author(&first_writer, "first", 2);
+    let (second, second_hash) = author(&second_writer, "second", 3);
+    let mut builder = CorpusBuilder::new();
+    for event in [second, control, first] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(
+        report
+            .accepted_changes()
+            .iter()
+            .copied()
+            .collect::<BTreeSet<_>>(),
+        BTreeSet::from([first_hash, second_hash])
+    );
+    assert_eq!(
+        report.heads().iter().copied().collect::<BTreeSet<_>>(),
+        BTreeSet::from([first_hash, second_hash])
+    );
+
+    let pending_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "58".repeat(32)
+    )
+    .parse()
+    .expect("fixed pending coordinate");
+    let pending_control = signed_acl_control(
+        &controller,
+        pending_coordinate,
+        4,
+        None,
+        0,
+        vec![(first_writer.public_key().to_hex(), vec!["write"])],
+    );
+    let pending_control_id = VerifiedNip01Event::verify(pending_control.clone())
+        .expect("signed pending genesis")
+        .event_id();
+    let pending_actor = ActorId::derive(pending_coordinate, first_writer.public_key());
+    let mut pending_document =
+        AuthoringDocument::empty(ActorState::initial(pending_actor, BTreeSet::new()))
+            .expect("empty pending document");
+    let missing = pending_document
+        .author_change(&[Operation::PutString {
+            key: "missing".to_owned(),
+            value: "ancestor".to_owned(),
+        }])
+        .expect("missing ancestor change");
+    let dependent = pending_document
+        .author_change(&[Operation::PutString {
+            key: "dependent".to_owned(),
+            value: "pending".to_owned(),
+        }])
+        .expect("dependent change");
+    assert!(
+        dependent
+            .new_state()
+            .accepted_heads()
+            .contains(&dependent.change_hash())
+    );
+    let dependent_event = first_writer.sign(
+        &UnsignedEventDraft::new(
+            5,
+            1_624,
+            vec![
+                vec!["a".to_owned(), pending_coordinate.to_address()],
+                vec!["e".to_owned(), pending_control_id.to_hex()],
+                vec!["x".to_owned(), dependent.change_hash().to_hex()],
+            ],
+            base64::engine::general_purpose::STANDARD.encode(dependent.raw()),
+        )
+        .expect("dependent draft")
+        .prepare(first_writer.public_key())
+        .expect("dependent preimage"),
+    );
+    let mut pending_builder = CorpusBuilder::new();
+    for event in [dependent_event, pending_control] {
+        assert!(matches!(
+            pending_builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let pending_report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &pending_builder.finish(),
+        pending_coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert!(pending_report.accepted_changes().is_empty());
+    assert!(
+        pending_report
+            .dispositions()
+            .contains(&(dependent.change_hash(), ProtocolDisposition::Pending))
+    );
+    assert!(
+        !pending_report
+            .accepted_changes()
+            .contains(&missing.change_hash())
+    );
+}
+
+#[test]
+#[allow(clippy::expect_used)]
 fn signed_empty_terminal_genesis_materializes_empty_state() {
     let controller = TestSigner::from_byte(22);
     let coordinate: DocumentCoordinate = format!(

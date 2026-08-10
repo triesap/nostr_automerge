@@ -164,9 +164,13 @@ pub struct MaterializedDocumentView {
 }
 
 impl MaterializedDocumentView {
+    pub(crate) fn empty() -> Result<Self, ProjectionError> {
+        Self::from_canonical_bytes(Automerge::new().save_nocompress())
+    }
+
     #[cfg(test)]
     pub(crate) fn empty_for_test() -> Result<Self, ProjectionError> {
-        Self::from_canonical_bytes(Automerge::new().save_nocompress())
+        Self::empty()
     }
 
     pub(crate) fn from_canonical_bytes(canonical_bytes: Vec<u8>) -> Result<Self, ProjectionError> {
