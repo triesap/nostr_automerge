@@ -68,7 +68,29 @@ pub(crate) fn evaluate_batch(
             Completion::Cancelled,
         );
     }
-    let controls = controls
+    let mut collected = Vec::new();
+    for control in controls {
+        if cancellation.is_cancelled() {
+            return incomplete_report(
+                Vec::new(),
+                BTreeMap::new(),
+                BTreeSet::new(),
+                Vec::new(),
+                Completion::Cancelled,
+            );
+        }
+        if budget.charge(WorkCounter::Control, 1).is_err() {
+            return incomplete_report(
+                Vec::new(),
+                BTreeMap::new(),
+                BTreeSet::new(),
+                Vec::new(),
+                Completion::BudgetExhausted,
+            );
+        }
+        collected.push(control);
+    }
+    let controls = collected
         .into_iter()
         .map(|control| (control.event_id, control))
         .collect::<BTreeMap<_, _>>();

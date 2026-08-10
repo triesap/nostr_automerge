@@ -8,7 +8,7 @@ evidence.
 | Area | Traversal owner | Required counter | Cancellation owner | Current state |
 | --- | --- | --- | --- | --- |
 | ingress summary | `EvidenceCorpus` event, carrier, and decode summaries | `event`, `carrier`, `decode_byte` | evaluator entry | metered |
-| control collection | `reference::evaluate::evaluate_controls` | `control` | control loop | metered |
+| control collection | `reference::evaluate::evaluate_batch` | `control` | each retained batch control before indexing | metered |
 | child transition | `control::transition` and `control::candidate` | `control`, `graph_node`, `graph_edge` | transition caller and internal walks | remediation required |
 | control ancestry | `engine::reference_evaluator::control_ancestry` | `control` | ancestry walk | remediation required |
 | frontier closure | `control::frontier` | `graph_node`, `graph_edge` | closure walk | remediation required |

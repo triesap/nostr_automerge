@@ -2627,7 +2627,7 @@ fn control_selection_and_transition_have_distinct_charges() {
         builder.ingest(scenario.control),
         IngestOutcome::Accepted { .. }
     ));
-    let mut budget = WorkBudget::new(1_000_000, 5);
+    let mut budget = WorkBudget::new(1_000_000, 6);
     let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         scenario.coordinate,
@@ -2639,7 +2639,7 @@ fn control_selection_and_transition_have_distinct_charges() {
     assert_eq!(report.canonical_controls(), [scenario.control_id]);
     assert!(report.dispositions().is_empty());
     assert!(report.accepted_changes().is_empty());
-    assert_eq!(budget.consumed().get(WorkCounter::Control), 1);
+    assert_eq!(budget.consumed().get(WorkCounter::Control), 2);
 }
 
 #[test]
