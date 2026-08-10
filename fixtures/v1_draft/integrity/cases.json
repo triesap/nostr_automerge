@@ -2,6 +2,7 @@
   "schema": "nostr-automerge-integrity-cases-v1",
   "cases": [
     "duplicate_carrier_is_non_authoritative",
+    "duplicate_valid_carriers_are_not_equivocation",
     "controller_equivocation",
     "canonical_control_reorganization",
     "device_equivocation",

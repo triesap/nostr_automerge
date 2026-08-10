@@ -1,0 +1,12 @@
+{
+  "fixture_id": "v1_draft.integrity.duplicate_valid_carriers",
+  "requirements": ["R2_CHANGE_013"],
+  "scenario": "two valid signed kind-1624 events carry identical Automerge bytes and hash under one selected control",
+  "permutations": ["canonical", "duplicate_first", "control_between_duplicates"],
+  "expected": {
+    "accepted_change_identities": 1,
+    "distinct_event_ids": 2,
+    "device_equivocation": false,
+    "reports_identical": true
+  }
+}

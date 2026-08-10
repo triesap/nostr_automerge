@@ -3191,6 +3191,102 @@ fn equivocation_preserves_prior_actor_history() {
     )));
 }
 
+#[test]
+#[allow(clippy::expect_used)]
+fn duplicate_valid_carriers_are_not_equivocation() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/integrity/duplicate_valid_carriers.json"
+    ))
+    .expect("duplicate carrier fixture");
+    assert_eq!(fixture["requirements"][0], "R2_CHANGE_013");
+
+    let controller = TestSigner::from_byte(105);
+    let device = TestSigner::from_byte(106);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "a6".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let control = signed_acl_control(
+        &controller,
+        coordinate,
+        1,
+        None,
+        0,
+        vec![(device.public_key().to_hex(), vec!["write"])],
+    );
+    let control_id = VerifiedNip01Event::verify(control.clone())
+        .expect("signed control")
+        .event_id();
+    let actor = ActorId::derive(coordinate, device.public_key());
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
+        .expect("empty authoring document");
+    let change = document
+        .author_change(&[Operation::PutString {
+            key: "duplicate".to_owned(),
+            value: "one identity".to_owned(),
+        }])
+        .expect("authored change");
+    let sign_change = |created_at: u64| {
+        device.sign(
+            &UnsignedEventDraft::new(
+                created_at,
+                1_624,
+                vec![
+                    vec!["a".to_owned(), coordinate.to_address()],
+                    vec!["e".to_owned(), control_id.to_hex()],
+                    vec!["x".to_owned(), change.change_hash().to_hex()],
+                ],
+                base64::engine::general_purpose::STANDARD.encode(change.raw()),
+            )
+            .expect("change draft")
+            .prepare(device.public_key())
+            .expect("change preimage"),
+        )
+    };
+    let first = sign_change(2);
+    let second = sign_change(3);
+    let first_id = VerifiedNip01Event::verify(first.clone())
+        .expect("first carrier")
+        .event_id();
+    let second_id = VerifiedNip01Event::verify(second.clone())
+        .expect("second carrier")
+        .event_id();
+    assert_ne!(first_id, second_id);
+
+    let orders = [
+        vec![control.clone(), first.clone(), second.clone()],
+        vec![second.clone(), first.clone(), control.clone()],
+        vec![first, control, second],
+    ];
+    let mut reports = Vec::new();
+    for order in orders {
+        let mut builder = CorpusBuilder::new();
+        for event in order {
+            assert!(matches!(
+                builder.ingest(event),
+                IngestOutcome::Accepted { .. }
+            ));
+        }
+        let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+            &builder.finish(),
+            coordinate,
+            &mut WorkBudget::new(1_000_000, 1_000),
+            &NeverCancelled,
+        );
+        assert_eq!(report.completion(), Completion::Complete);
+        assert_eq!(report.accepted_changes(), [change.change_hash()]);
+        assert!(!report.integrity_alerts().iter().any(|alert| matches!(
+            alert,
+            nostr_automerge::IntegrityAlert::DeviceEquivocation(_)
+        )));
+        reports.push(report);
+    }
+    assert!(reports.windows(2).all(|pair| pair[0] == pair[1]));
+}
+
 struct SignedEngineScenario {
     coordinate: DocumentCoordinate,
     control: RawEventBytes,

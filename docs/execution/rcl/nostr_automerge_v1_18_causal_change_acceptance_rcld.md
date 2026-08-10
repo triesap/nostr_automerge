@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 18: Causal Change Acceptance
 
 Status: active
-Current checkpoint: `step_379`
+Current checkpoint: `step_380`
 Steps: `step_356` through `step_381`
 Primary findings: `FINDING_016`, `FINDING_018`
 
@@ -56,4 +56,5 @@ active equivocation quarantine.
 - `step_375`: `9983da0` — quarantine begins at the first conflicting actor sequence.
 - `step_376`: `fa47aa2` — every later change from the affected actor is quarantined.
 - `step_377`: `ac795f3` — quarantine removes every transitive cross-actor dependant.
-- `step_378`: this commit — quarantine preserves accepted actor history below the first conflict.
+- `step_378`: `311af7a` — quarantine preserves accepted actor history below the first conflict.
+- `step_379`: this commit — duplicate valid carriers coalesce without actor equivocation.
