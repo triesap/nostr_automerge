@@ -2570,6 +2570,103 @@ fn empty_change_consumes_only_sequence() {
 
 #[test]
 #[allow(clippy::expect_used)]
+fn empty_change_requires_exact_current_heads() {
+    empty_change_consumes_only_sequence();
+    let controller = TestSigner::from_byte(96);
+    let writer = TestSigner::from_byte(97);
+    let merger = TestSigner::from_byte(98);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "96".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let members = vec![
+        (writer.public_key().to_hex(), vec!["write"]),
+        (merger.public_key().to_hex(), vec!["write"]),
+    ];
+    let genesis = signed_acl_control(&controller, coordinate, 1, None, 0, members.clone());
+    let genesis_id = VerifiedNip01Event::verify(genesis.clone())
+        .expect("signed genesis")
+        .event_id();
+    let writer_actor = ActorId::derive(coordinate, writer.public_key());
+    let mut authored = AuthoringDocument::empty(ActorState::initial(writer_actor, BTreeSet::new()))
+        .expect("empty authoring document");
+    let first = authored
+        .author_change(&[Operation::PutString {
+            key: "base".to_owned(),
+            value: "retained".to_owned(),
+        }])
+        .expect("base change");
+    let child = signed_acl_control_with_base(
+        &controller,
+        coordinate,
+        4,
+        Some(genesis_id),
+        1,
+        members,
+        &[first.change_hash()],
+    );
+    let child_id = VerifiedNip01Event::verify(child.clone())
+        .expect("signed child")
+        .event_id();
+    let merger_actor = ActorId::derive(coordinate, merger.public_key());
+    let mut empty_document = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit)
+        .with_actor(automerge::ActorId::from(merger_actor.as_bytes().to_vec()));
+    let stale_hash = empty_document.empty_change(CommitOptions::default());
+    let stale = empty_document
+        .get_change_by_hash(&stale_hash)
+        .expect("stale empty change")
+        .raw_bytes()
+        .to_vec();
+    let stale_hash = ChangeHash::from_bytes(stale_hash.0);
+    let sign_change =
+        |signer: &TestSigner, created_at: u64, selected: EventId, hash: ChangeHash, raw: &[u8]| {
+            signer.sign(
+                &UnsignedEventDraft::new(
+                    created_at,
+                    1_624,
+                    vec![
+                        vec!["a".to_owned(), coordinate.to_address()],
+                        vec!["e".to_owned(), selected.to_hex()],
+                        vec!["x".to_owned(), hash.to_hex()],
+                    ],
+                    base64::engine::general_purpose::STANDARD.encode(raw),
+                )
+                .expect("change draft")
+                .prepare(signer.public_key())
+                .expect("change preimage"),
+            )
+        };
+    let mut builder = CorpusBuilder::new();
+    for event in [
+        sign_change(&writer, 2, genesis_id, first.change_hash(), first.raw()),
+        sign_change(&merger, 3, child_id, stale_hash, &stale),
+        genesis,
+        child,
+    ] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(report.accepted_changes(), [first.change_hash()]);
+    assert!(
+        report
+            .dispositions()
+            .contains(&(stale_hash, ProtocolDisposition::Invalid))
+    );
+}
+
+#[test]
+#[allow(clippy::expect_used)]
 fn actor_sequence_requires_exact_predecessor() {
     new_actor_sequence_must_start_at_one();
     let controller = TestSigner::from_byte(88);

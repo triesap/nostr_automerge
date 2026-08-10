@@ -5,7 +5,8 @@ use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 use crate::control::epoch_state::AcceptedEpochState;
 use crate::control::validate::ControlEnvelope;
 use crate::graph::actor_state::{
-    EpochActorState, apply_nonempty_counter, initialize_actor_states, validate_actor_predecessor,
+    EpochActorState, apply_empty_counter, apply_nonempty_counter, initialize_actor_states,
+    validate_actor_predecessor,
 };
 use crate::graph::change_candidate::ChangeCandidate;
 use crate::graph::schedule::ScheduleError;
@@ -224,10 +225,24 @@ pub(crate) fn evaluate_epoch(
                         .filter_map(|hash| all_candidates.get(hash).cloned());
                     initialize_actor_states(base).is_ok_and(|mut states| {
                         if candidate.operation_count == 0 {
-                            states
-                                .get(&candidate.actor)
-                                .map_or(1, |state| state.next_op)
-                                == candidate.start_op
+                            let depended_on = closure
+                                .iter()
+                                .filter_map(|hash| all_candidates.get(hash))
+                                .flat_map(|ancestor| ancestor.dependencies.iter().copied())
+                                .filter(|hash| closure.contains(hash))
+                                .collect::<BTreeSet<_>>();
+                            let mut current_heads = closure
+                                .difference(&depended_on)
+                                .copied()
+                                .collect::<BTreeSet<_>>();
+                            current_heads.extend(
+                                input
+                                    .accepted_base()
+                                    .frontier_heads()
+                                    .difference(&closure)
+                                    .copied(),
+                            );
+                            apply_empty_counter(&mut states, &candidate, &current_heads).is_ok()
                         } else {
                             apply_nonempty_counter(&mut states, &candidate).is_ok()
                         }
