@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 18: Causal Change Acceptance
 
 Status: active
-Current checkpoint: `step_369`
+Current checkpoint: `step_370`
 Steps: `step_356` through `step_381`
 Primary findings: `FINDING_016`, `FINDING_018`
 
@@ -46,4 +46,5 @@ active equivocation quarantine.
 - `step_365`: `1414bec` — empty changes require the exact causal frontier.
 - `step_366`: `1b0edab` — each candidate receives one exact dependency closure.
 - `step_367`: `5fa7661` — complete candidates must descend from every control base head.
-- `step_368`: this commit — missing named dependencies stay pending and promote on delivery.
+- `step_368`: `baacf83` — missing named dependencies stay pending and promote on delivery.
+- `step_369`: this commit — complete dependency cycles and their descendants are invalid.

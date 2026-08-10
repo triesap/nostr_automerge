@@ -270,4 +270,55 @@ mod tests {
             Err(ScheduleError::Cancelled)
         );
     }
+
+    #[test]
+    fn dependency_cycle_is_invalid() {
+        let evaluate = |candidates| {
+            schedule_candidates(
+                candidates,
+                BTreeSet::new(),
+                &mut WorkBudget::new(0, 100),
+                &NeverCancelled,
+            )
+        };
+        let mut left = candidate(1, 1, 1, 1);
+        left.change_hash = ChangeHash::from_bytes([1; 32]);
+        let mut right = candidate(2, 1, 1, 1);
+        right.change_hash = ChangeHash::from_bytes([2; 32]);
+        left.dependencies = vec![right.change_hash];
+        right.dependencies = vec![left.change_hash];
+        let mut descendant = candidate(3, 1, 1, 1);
+        descendant.change_hash = ChangeHash::from_bytes([3; 32]);
+        descendant.dependencies = vec![right.change_hash];
+        assert_eq!(
+            evaluate(vec![descendant.clone(), right.clone(), left.clone()])
+                .map(|schedule| schedule.cyclic),
+            Ok(BTreeSet::from([
+                left.change_hash,
+                right.change_hash,
+                descendant.change_hash,
+            ]))
+        );
+
+        let mut third = candidate(3, 1, 1, 1);
+        third.change_hash = ChangeHash::from_bytes([4; 32]);
+        right.dependencies = vec![third.change_hash];
+        third.dependencies = vec![left.change_hash];
+        assert_eq!(
+            evaluate(vec![third.clone(), right, left.clone()]).map(|schedule| schedule.cyclic),
+            Ok(BTreeSet::from([
+                left.change_hash,
+                ChangeHash::from_bytes([2; 32]),
+                third.change_hash,
+            ]))
+        );
+
+        let mut self_cycle = candidate(4, 1, 1, 1);
+        self_cycle.change_hash = ChangeHash::from_bytes([5; 32]);
+        self_cycle.dependencies = vec![self_cycle.change_hash];
+        assert_eq!(
+            evaluate(vec![self_cycle.clone()]).map(|schedule| schedule.cyclic),
+            Ok(BTreeSet::from([self_cycle.change_hash]))
+        );
+    }
 }
