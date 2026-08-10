@@ -24,7 +24,10 @@ use crate::{
     WorkBudget, WorkCounter,
 };
 
-use super::evaluation_report::{EvaluationFailure, EvaluationReport, EvaluationReportParts};
+use super::evaluation_report::{
+    DispositionRecord, EvaluationFailure, EvaluationReport, EvaluationReportParts,
+    ProtocolItemIdentifier,
+};
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 
 /// Stateless deterministic batch evaluator for immutable signed evidence.
@@ -78,6 +81,17 @@ impl ReferenceEvaluator {
         let canonical_controls = batch.canonical_controls;
         let mut control_dispositions = preliminary_control_dispositions;
         control_dispositions.extend(batch.control_dispositions);
+        let control_dispositions = control_dispositions.into_iter().collect::<Vec<_>>();
+        let disposition_records = control_dispositions
+            .iter()
+            .map(|(event_id, disposition)| {
+                DispositionRecord::new(
+                    ProtocolItemIdentifier::control_event(*event_id),
+                    *disposition,
+                    None,
+                )
+            })
+            .collect();
         let checkpoints = verify_checkpoints(
             corpus,
             coordinate,
@@ -120,7 +134,8 @@ impl ReferenceEvaluator {
         EvaluationReport::from_canonical_parts(EvaluationReportParts {
             coordinate,
             canonical_controls,
-            control_dispositions: control_dispositions.into_iter().collect(),
+            disposition_records,
+            control_dispositions,
             dispositions,
             accepted_changes,
             pending_changes,

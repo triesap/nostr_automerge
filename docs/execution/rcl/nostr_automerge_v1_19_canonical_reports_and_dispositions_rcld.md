@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 19: Canonical Reports And Dispositions
 
 Status: active
-Current checkpoint: `step_384`
+Current checkpoint: `step_385`
 Steps: `step_382` through `step_398`
 Primary findings: `FINDING_017`, `FINDING_018`, `FINDING_022`
 
@@ -34,4 +34,5 @@ invalid evidence with valid noncanonical evidence.
 ## Completed Checkpoints
 
 - `step_382`: `db5ec19` — public protocol identifiers are explicitly namespaced and canonically ordered.
-- `step_383`: this commit — canonical disposition records expose read-only outcomes and reject duplicate identifiers.
+- `step_383`: `a37551e` — canonical disposition records expose read-only outcomes and reject duplicate identifiers.
+- `step_384`: this commit — every evaluated control outcome populates one canonical control-event record.

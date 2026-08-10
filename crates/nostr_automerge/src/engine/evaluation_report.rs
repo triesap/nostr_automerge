@@ -120,6 +120,7 @@ fn disposition_records_are_canonical(records: &[DispositionRecord]) -> bool {
 pub struct EvaluationReport {
     coordinate: DocumentCoordinate,
     canonical_controls: Vec<EventId>,
+    disposition_records: Vec<DispositionRecord>,
     control_dispositions: Vec<(EventId, ProtocolDisposition)>,
     dispositions: Vec<(ChangeHash, ProtocolDisposition)>,
     accepted_changes: Vec<ChangeHash>,
@@ -139,6 +140,7 @@ pub struct EvaluationReport {
 pub(crate) struct EvaluationReportParts {
     pub(crate) coordinate: DocumentCoordinate,
     pub(crate) canonical_controls: Vec<EventId>,
+    pub(crate) disposition_records: Vec<DispositionRecord>,
     pub(crate) control_dispositions: Vec<(EventId, ProtocolDisposition)>,
     pub(crate) dispositions: Vec<(ChangeHash, ProtocolDisposition)>,
     pub(crate) accepted_changes: Vec<ChangeHash>,
@@ -176,6 +178,7 @@ impl EvaluationReport {
                 .control_dispositions
                 .windows(2)
                 .all(|pair| pair[0].0 < pair[1].0)
+            || !disposition_records_are_canonical(&parts.disposition_records)
             || !parts
                 .dispositions
                 .windows(2)
@@ -237,6 +240,7 @@ impl EvaluationReport {
         Ok(Self {
             coordinate: parts.coordinate,
             canonical_controls: parts.canonical_controls,
+            disposition_records: parts.disposition_records,
             control_dispositions: parts.control_dispositions,
             dispositions: parts.dispositions,
             accepted_changes: parts.accepted_changes,
@@ -271,6 +275,12 @@ impl EvaluationReport {
     #[must_use]
     pub fn canonical_controls(&self) -> &[EventId] {
         &self.canonical_controls
+    }
+
+    /// Returns all canonical protocol outcomes in namespace and identifier order.
+    #[must_use]
+    pub fn disposition_records(&self) -> &[DispositionRecord] {
+        &self.disposition_records
     }
 
     /// Returns stateful control dispositions ordered by event identifier.
@@ -373,6 +383,7 @@ impl fmt::Debug for EvaluationReport {
                 "control_disposition_count",
                 &self.control_dispositions.len(),
             )
+            .field("disposition_record_count", &self.disposition_records.len())
             .field("accepted_change_count", &self.accepted_changes.len())
             .field("pending_change_count", &self.pending_changes.len())
             .field("excluded_change_count", &self.excluded_changes.len())
@@ -410,6 +421,7 @@ mod tests {
         let parts = || EvaluationReportParts {
             coordinate,
             canonical_controls: vec![EventId::from_bytes([1; 32])],
+            disposition_records: vec![],
             control_dispositions: vec![(
                 EventId::from_bytes([1; 32]),
                 crate::ProtocolDisposition::Accepted,

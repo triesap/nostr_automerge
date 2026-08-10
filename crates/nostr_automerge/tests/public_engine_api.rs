@@ -13,8 +13,8 @@ use nostr_automerge::{
     ActorId, ChangeHash, CheckpointVerificationStatus, ChunkHash, Completion, CorpusBuilder,
     DocumentCoordinate, EvaluationFailure, EventId, EvidenceCorpus, EvidenceStatus, IngestOutcome,
     MaterializedPathElement, MaterializedScalar, MaterializedValue, NeverCancelled,
-    ProtocolDisposition, ProtocolRevision, RawEventBytes, ReferenceEvaluator, VerifiedNip01Event,
-    WorkBudget, WorkCounter,
+    ProtocolDisposition, ProtocolItemIdentifier, ProtocolRevision, RawEventBytes,
+    ReferenceEvaluator, VerifiedNip01Event, WorkBudget, WorkCounter,
 };
 use sha2::{Digest as _, Sha256};
 use support::test_signer::TestSigner;
@@ -1979,6 +1979,24 @@ fn public_report_contains_control_dispositions() {
             .collect::<BTreeSet<_>>(),
         BTreeSet::from([ProtocolDisposition::Accepted, ProtocolDisposition::Excluded,])
     );
+    let records = report.disposition_records();
+    assert_eq!(records.len(), dispositions.len());
+    assert!(
+        records
+            .windows(2)
+            .all(|pair| pair[0].identifier() < pair[1].identifier())
+    );
+    for (event_id, disposition) in dispositions {
+        assert!(records.iter().any(|record| {
+            record.identifier() == ProtocolItemIdentifier::control_event(event_id)
+                && record.disposition() == disposition
+        }));
+    }
+}
+
+#[test]
+fn control_disposition_records_are_complete() {
+    public_report_contains_control_dispositions();
 }
 
 #[test]
