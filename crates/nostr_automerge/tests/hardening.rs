@@ -104,8 +104,8 @@ fn publish_security_and_release_readiness_report() {
         report["local_alpha_package"],
         "artifact_and_reproducibility_verified"
     );
-    assert_eq!(report["public_engine"], "complete");
-    assert_eq!(report["code_completion"], "complete");
+    assert_eq!(report["public_engine"], "substantial_alpha_remediation_required");
+    assert_eq!(report["code_completion"], "follow_up_remediation_required");
     assert_eq!(report["external_review"], "not_completed_release_hold");
     assert_eq!(report["locked_gate"], "pass");
 }
@@ -130,7 +130,7 @@ fn publish_finding_by_finding_remediation_closure() {
     assert_eq!(results[12], "closed");
     assert_eq!(
         report["status"],
-        "local_implementation_complete_publication_held"
+        "historical_step_307_claim_superseded_by_follow_up_remediation"
     );
     assert!(report["non_claims"].as_array().is_some_and(|claims| {
         claims
@@ -154,7 +154,8 @@ fn close_local_implementation_scope_without_release_overclaim() {
     assert_eq!(report["nip_document"], "out_of_scope_not_modified");
     assert_eq!(
         report["status"],
-        "local_implementation_complete_publication_held"
+        "historical_step_307_claim_superseded_by_follow_up_remediation"
     );
+    assert_eq!(report["superseded_by"], "rcld_15_through_rcld_28");
     assert_eq!(report["release_holds"].as_array().map(Vec::len), Some(3));
 }

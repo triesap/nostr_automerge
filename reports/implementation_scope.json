@@ -21,5 +21,6 @@
     "separate_publication_authority"
   ],
   "schema": "nostr_automerge.implementation_scope.v1",
-  "status": "local_implementation_complete_publication_held"
+  "status": "historical_step_307_claim_superseded_by_follow_up_remediation",
+  "superseded_by": "rcld_15_through_rcld_28"
 }

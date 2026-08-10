@@ -72,7 +72,7 @@ def main() -> int:
     if steps != list(range(193, 308)):
         raise AssertionError("remediation RCLD steps are incomplete or reordered")
     adrs = sorted((ROOT / "docs/adr").glob("adr_[0-9][0-9][0-9][0-9]_*.md"))
-    if len(adrs) != 19 or any("## Decision" not in path.read_text() for path in adrs[12:]):
+    if len(adrs) != 32 or any("## Decision" not in path.read_text() for path in adrs[12:]):
         raise AssertionError("remediation ADR is missing or invalid")
     report_path = ROOT / "reports/remediation_phase_00.json"
     if report_path.exists():

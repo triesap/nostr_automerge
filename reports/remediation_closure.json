@@ -112,5 +112,6 @@
     "pnpm local:gate release_evidence"
   ],
   "schema": "nostr_automerge.remediation_closure.v1",
-  "status": "local_implementation_complete_publication_held"
+  "status": "historical_step_307_claim_superseded_by_follow_up_remediation",
+  "superseded_by": "FINDING_014_through_FINDING_027"
 }
