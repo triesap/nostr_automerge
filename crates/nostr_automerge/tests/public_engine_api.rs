@@ -531,6 +531,113 @@ fn signed_child_parent_sequence_rules() {
 
 #[test]
 #[allow(clippy::expect_used)]
+fn invalid_lower_id_child_cannot_win() {
+    let controller = TestSigner::from_byte(39);
+    let writer = TestSigner::from_byte(40);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "53".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let members = vec![(writer.public_key().to_hex(), vec!["write"])];
+    let genesis = signed_acl_control(&controller, coordinate, 1, None, 0, members.clone());
+    let genesis_id = VerifiedNip01Event::verify(genesis.clone())
+        .expect("signed genesis")
+        .event_id();
+    let valid = signed_acl_control(
+        &controller,
+        coordinate,
+        2,
+        Some(genesis_id),
+        1,
+        members.clone(),
+    );
+    let valid_id = VerifiedNip01Event::verify(valid.clone())
+        .expect("signed valid child")
+        .event_id();
+    let invalid = (3..10_000)
+        .find_map(|created_at| {
+            let candidate = signed_acl_control(
+                &controller,
+                coordinate,
+                created_at,
+                Some(genesis_id),
+                2,
+                members.clone(),
+            );
+            let candidate_id = VerifiedNip01Event::verify(candidate.clone())
+                .expect("signed invalid child")
+                .event_id();
+            (candidate_id < valid_id).then_some(candidate)
+        })
+        .expect("deterministically find a lower invalid EventId");
+    let invalid_id = VerifiedNip01Event::verify(invalid.clone())
+        .expect("signed invalid child")
+        .event_id();
+    assert!(invalid_id < valid_id);
+
+    let orders = [
+        vec![genesis.clone(), invalid.clone(), valid.clone()],
+        vec![valid.clone(), invalid.clone(), genesis.clone()],
+        vec![
+            invalid.clone(),
+            genesis.clone(),
+            valid.clone(),
+            invalid,
+            valid,
+            genesis,
+        ],
+    ];
+    let reports = orders.map(|events| {
+        let mut builder = CorpusBuilder::new();
+        for event in events {
+            assert!(matches!(
+                builder.ingest(event),
+                IngestOutcome::Accepted { .. } | IngestOutcome::Duplicate { .. }
+            ));
+        }
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+            &builder.finish(),
+            coordinate,
+            &mut WorkBudget::new(1_000_000, 1_000),
+            &NeverCancelled,
+        )
+    });
+    for report in &reports {
+        assert_eq!(report.completion(), Completion::Complete);
+        assert_eq!(report.canonical_controls(), [genesis_id, valid_id]);
+        assert_eq!(report.control_dispositions().len(), 3);
+        assert!(
+            report
+                .control_dispositions()
+                .contains(&(genesis_id, ProtocolDisposition::Accepted))
+        );
+        assert!(
+            report
+                .control_dispositions()
+                .contains(&(invalid_id, ProtocolDisposition::Invalid))
+        );
+        assert!(
+            report
+                .control_dispositions()
+                .contains(&(valid_id, ProtocolDisposition::Accepted))
+        );
+    }
+    assert_eq!(
+        reports[0].canonical_controls(),
+        reports[1].canonical_controls()
+    );
+    assert_eq!(
+        reports[0].control_dispositions(),
+        reports[2].control_dispositions()
+    );
+    assert_eq!(reports[0].history_digest(), reports[2].history_digest());
+}
+
+#[test]
+#[allow(clippy::expect_used)]
 fn signed_child_account_mapping_is_immutable() {
     let controller = TestSigner::from_byte(33);
     let changed_account = TestSigner::from_byte(34);
