@@ -138,11 +138,7 @@ impl ReferenceEvaluator {
         let dispositions_digest =
             dispositions_digest(self.revision, coordinate, &disposition_items)
                 .map_err(|_| EvaluationError::ReportInvariant)?;
-        let document = batch
-            .materialized_document
-            .map(MaterializedDocumentView::from_canonical_bytes)
-            .transpose()
-            .map_err(|_| EvaluationError::Projection)?;
+        let document = project_document(batch.materialized_document)?;
         EvaluationReport::from_parts(EvaluationReportParts {
             coordinate,
             canonical_controls,
@@ -196,6 +192,15 @@ impl ReferenceEvaluator {
         }
         Ok(current)
     }
+}
+
+fn project_document(
+    canonical_bytes: Option<Vec<u8>>,
+) -> Result<Option<MaterializedDocumentView>, EvaluationError> {
+    canonical_bytes
+        .map(MaterializedDocumentView::from_canonical_bytes)
+        .transpose()
+        .map_err(|_| EvaluationError::Projection)
 }
 
 fn event_disposition_records(corpus: &EvidenceCorpus) -> Vec<DispositionRecord> {
@@ -838,5 +843,14 @@ mod tests {
             Status::BudgetExhausted
         );
         assert_eq!(assembly_status(AssemblyError::Cancelled), Status::Cancelled);
+    }
+
+    #[test]
+    fn projection_failure_is_typed_error_internal() {
+        assert_eq!(
+            super::project_document(Some(vec![0xff])),
+            Err(crate::EvaluationError::Projection)
+        );
+        assert_eq!(super::project_document(None), Ok(None));
     }
 }

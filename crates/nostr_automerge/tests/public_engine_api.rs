@@ -86,6 +86,18 @@ fn evaluation_errors_are_noncanonical() {
     assert_eq!(cancelled.completion(), Completion::Cancelled);
 }
 
+#[test]
+fn projection_failure_is_typed_error() {
+    assert_eq!(
+        EvaluationError::Projection.to_string(),
+        "internal materialized projection failure"
+    );
+    let evaluator = include_str!("../src/engine/reference_evaluator.rs");
+    assert!(evaluator.contains("project_document(batch.materialized_document)?"));
+    assert!(evaluator.contains("map_err(|_| EvaluationError::Projection)"));
+    assert!(!evaluator.contains("applied state must project"));
+}
+
 #[allow(clippy::expect_used)]
 impl ReferenceEvaluatorTestExt for ReferenceEvaluator {
     fn evaluate_report(
