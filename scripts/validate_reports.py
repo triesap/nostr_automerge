@@ -15,13 +15,13 @@ HEX32 = re.compile(r"^[0-9a-f]{64}$")
 COORDINATE = re.compile(r"^31624:[0-9a-f]{64}:[0-9a-f]{64}$")
 REPORT_FIELDS = {
     "report_schema", "fixture_id", "revision", "coordinate",
-    "canonical_controls", "accepted_changes", "pending_changes",
-    "excluded_changes", "invalid_events", "unsupported_events", "heads",
+    "canonical_controls", "disposition_records", "accepted_changes", "pending_changes",
+    "excluded_changes", "invalid_changes", "invalid_events", "unsupported_events", "heads",
     "history_digest", "dispositions_digest", "integrity_alerts",
     "state_assertions", "completion",
 }
 ID_LIST_FIELDS = (
-    "accepted_changes", "pending_changes", "excluded_changes",
+    "accepted_changes", "pending_changes", "excluded_changes", "invalid_changes",
     "invalid_events", "unsupported_events", "heads",
 )
 EXPECTED_KEYS = {
@@ -86,6 +86,30 @@ def validate(report: dict[str, Any]) -> None:
     validate_id_list(report["canonical_controls"])
     for field in ID_LIST_FIELDS:
         validate_id_list(report[field])
+    records = report["disposition_records"]
+    if not isinstance(records, list):
+        raise ReportError("invalid_disposition_records")
+    keys = []
+    namespaces = {"control_event": 1, "change_hash": 2, "event": 3}
+    dispositions = {"accepted", "pending", "excluded", "invalid", "unsupported_revision"}
+    for record in records:
+        if not isinstance(record, dict) or set(record) not in (
+            {"namespace", "identifier", "disposition"},
+            {"namespace", "identifier", "disposition", "diagnostic"},
+        ):
+            raise ReportError("invalid_disposition_record")
+        if record["namespace"] not in namespaces or record["disposition"] not in dispositions:
+            raise ReportError("invalid_disposition_record")
+        if not isinstance(record["identifier"], str) or HEX32.fullmatch(record["identifier"]) is None:
+            raise ReportError("invalid_disposition_record")
+        keys.append((namespaces[record["namespace"]], record["identifier"]))
+    if keys != sorted(set(keys)):
+        raise ReportError("noncanonical_disposition_records")
+    change_sets = [set(report[field]) for field in (
+        "accepted_changes", "pending_changes", "excluded_changes", "invalid_changes"
+    )]
+    if any(left & right for index, left in enumerate(change_sets) for right in change_sets[index + 1:]):
+        raise ReportError("conflated_change_collections")
     for field in ("history_digest", "dispositions_digest"):
         if not isinstance(report[field], str) or HEX32.fullmatch(report[field]) is None:
             raise ReportError("invalid_digest")
@@ -154,10 +178,31 @@ def main() -> int:
     unknown_alert = copy.deepcopy(report)
     unknown_alert["integrity_alerts"] = [{"type": "warning"}]
     expect_failure(unknown_alert, "unknown_alert")
+    failed = copy.deepcopy(report)
+    failed["completion"] = "failed"
+    expect_failure(failed, "invalid_completion")
+    duplicate_record = copy.deepcopy(report)
+    synthetic_record = {
+        "namespace": "change_hash",
+        "identifier": "0" * 64,
+        "disposition": "invalid",
+    }
+    duplicate_record["disposition_records"] = [synthetic_record, synthetic_record]
+    expect_failure(duplicate_record, "noncanonical_disposition_records")
+    wrong_order = copy.deepcopy(report)
+    wrong_order["disposition_records"] = [
+        {"namespace": "event", "identifier": "0" * 64, "disposition": "invalid"},
+        {"namespace": "control_event", "identifier": "1" * 64, "disposition": "accepted"},
+    ]
+    expect_failure(wrong_order, "noncanonical_disposition_records")
+    conflated = copy.deepcopy(report)
+    conflated["excluded_changes"] = ["0" * 64]
+    conflated["invalid_changes"] = ["0" * 64]
+    expect_failure(conflated, "conflated_change_collections")
 
     print("PASS: canonical conformance report")
     print("- examples=1")
-    print("- negative_cases=5")
+    print("- negative_cases=9")
     print(f"- assertion_variants={len(EXPECTED_KEYS)}")
     print(f"- alert_variants={len(ALERT_KEYS)}")
     return 0

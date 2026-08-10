@@ -15,7 +15,7 @@ use nostr_automerge::{
 };
 
 use crate::checksum::verify_fixture_files;
-use crate::expected::{CheckpointResult, ExpectedReport, load_expected};
+use crate::expected::{CheckpointResult, DispositionRecord, ExpectedReport, load_expected};
 use crate::fixture::load_fixture;
 use crate::report_json::write_canonical_report;
 use crate::scenario::ScenarioInput;
@@ -26,6 +26,7 @@ pub(crate) enum RunError {
     Checksum,
     Expected,
     Input,
+    Evaluation,
     Mismatch,
 }
 
@@ -43,6 +44,7 @@ impl RunError {
             Self::Checksum => "fixture checksum verification failed",
             Self::Expected => "expected report is invalid",
             Self::Input => "fixture input is invalid or unsupported",
+            Self::Evaluation => "reference evaluation failed",
             Self::Mismatch => "fixture result does not match expected report",
         }
     }
@@ -114,13 +116,40 @@ fn generic_report(
             &NeverCancelled,
         )
     }
-    .map_err(|_| RunError::Input)?;
+    .map_err(|_| RunError::Evaluation)?;
     output.coordinate = report.coordinate().to_address();
     output.canonical_controls = report
         .canonical_controls()
         .iter()
         .map(|event_id| (*event_id).to_hex())
         .collect();
+    output.disposition_records = report
+        .disposition_records()
+        .iter()
+        .map(|record| {
+            let namespace = match record.identifier() {
+                nostr_automerge::ProtocolItemIdentifier::ControlEvent(_) => "control_event",
+                nostr_automerge::ProtocolItemIdentifier::ChangeHash(_) => "change_hash",
+                nostr_automerge::ProtocolItemIdentifier::Event(_) => "event",
+                _ => return Err(RunError::Input),
+            };
+            Ok(DispositionRecord {
+                namespace: namespace.to_owned(),
+                identifier: record.identifier().as_bytes().iter().fold(
+                    String::with_capacity(64),
+                    |mut output, byte| {
+                        use core::fmt::Write as _;
+                        let _ = write!(&mut output, "{byte:02x}");
+                        output
+                    },
+                ),
+                disposition: record.disposition().as_str().to_owned(),
+                diagnostic: record
+                    .diagnostic()
+                    .map(|diagnostic| diagnostic.as_str().to_owned()),
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
     output.accepted_changes = report
         .accepted_changes()
         .iter()
@@ -133,6 +162,11 @@ fn generic_report(
         .collect();
     output.excluded_changes = report
         .excluded_changes()
+        .iter()
+        .map(|change_hash| (*change_hash).to_hex())
+        .collect();
+    output.invalid_changes = report
+        .invalid_changes()
         .iter()
         .map(|change_hash| (*change_hash).to_hex())
         .collect();

@@ -11,5 +11,5 @@
     "source_versions": {"permutation_seed": "20260804"}
   },
   "inputs": [{"name":"seeded_orders","path":"interop_property_001.input.json","sha256":"201404c1d00abeef22843de752d89f57ca43ff9710066fd74764e4210036e220","media_type":"application/json"}],
-  "expected": {"report_path":"interop_property_001.expected.json","sha256":"e642a1b0a9aa5d2cfbef1102730c83c184ec3fa05ff702f5a0eecb04fc7e169e"}
+  "expected": {"report_path":"interop_property_001.expected.json","sha256":"45e9c0efec72b7aaa200dd5160644bb30ea9e960495c9384b416b6b72c1444a4"}
 }

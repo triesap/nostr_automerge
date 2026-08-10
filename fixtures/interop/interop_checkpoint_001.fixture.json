@@ -11,5 +11,5 @@
     "source_versions": {"sha256": "standard"}
   },
   "inputs": [{"name":"checkpoint_chunks","path":"interop_checkpoint_001.input.json","sha256":"f94cfd07964f1f3200ec931fd4c82d936d7e4695ebace11d267281182b465d45","media_type":"application/json"}],
-  "expected": {"report_path":"interop_checkpoint_001.expected.json","sha256":"39f3535a67fe1a3235519916a502c5a7e83503d4e3de16dc3e566735435c41b4"}
+  "expected": {"report_path":"interop_checkpoint_001.expected.json","sha256":"dd5db3c92434c249a7cf291e5655c1579ace3649c8d4b2c7994f4243a8a753e6"}
 }

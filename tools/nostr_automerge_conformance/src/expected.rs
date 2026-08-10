@@ -18,9 +18,11 @@ pub(crate) struct ExpectedReport {
     pub(crate) revision: String,
     pub(crate) coordinate: String,
     pub(crate) canonical_controls: Vec<String>,
+    pub(crate) disposition_records: Vec<DispositionRecord>,
     pub(crate) accepted_changes: Vec<String>,
     pub(crate) pending_changes: Vec<String>,
     pub(crate) excluded_changes: Vec<String>,
+    pub(crate) invalid_changes: Vec<String>,
     pub(crate) invalid_events: Vec<String>,
     pub(crate) unsupported_events: Vec<String>,
     pub(crate) heads: Vec<String>,
@@ -31,6 +33,16 @@ pub(crate) struct ExpectedReport {
     pub(crate) checkpoints: Vec<CheckpointResult>,
     pub(crate) state_assertions: Vec<StateAssertion>,
     pub(crate) completion: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct DispositionRecord {
+    pub(crate) namespace: String,
+    pub(crate) identifier: String,
+    pub(crate) disposition: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) diagnostic: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -86,6 +98,35 @@ pub(crate) fn validate_expected(report: &ExpectedReport) -> Result<(), ExpectedE
     DispositionsDigest::from_str(&report.dispositions_digest)
         .map_err(|_| ExpectedError::Identifier)?;
     unique_ids::<EventId>(&report.canonical_controls)?;
+    let mut previous = None;
+    for record in &report.disposition_records {
+        let namespace = match record.namespace.as_str() {
+            "control_event" => 1_u8,
+            "change_hash" => 2,
+            "event" => 3,
+            _ => return Err(ExpectedError::Schema),
+        };
+        let identifier = match namespace {
+            2 => *ChangeHash::from_str(&record.identifier)
+                .map_err(|_| ExpectedError::Identifier)?
+                .as_bytes(),
+            _ => *EventId::from_str(&record.identifier)
+                .map_err(|_| ExpectedError::Identifier)?
+                .as_bytes(),
+        };
+        if previous.is_some_and(|value| value >= (namespace, identifier))
+            || !matches!(
+                record.disposition.as_str(),
+                "accepted" | "pending" | "excluded" | "invalid" | "unsupported_revision"
+            )
+            || record.diagnostic.as_ref().is_some_and(|diagnostic| {
+                nostr_automerge::DiagnosticCode::lookup(diagnostic).is_none()
+            })
+        {
+            return Err(ExpectedError::Ordering);
+        }
+        previous = Some((namespace, identifier));
+    }
     for checkpoint in &report.checkpoints {
         EventId::from_str(&checkpoint.descriptor_event).map_err(|_| ExpectedError::Identifier)?;
         SnapshotHash::from_str(&checkpoint.snapshot_hash).map_err(|_| ExpectedError::Identifier)?;
@@ -130,6 +171,20 @@ pub(crate) fn validate_expected(report: &ExpectedReport) -> Result<(), ExpectedE
     canonical_ids::<ChangeHash>(&report.accepted_changes)?;
     canonical_ids::<ChangeHash>(&report.pending_changes)?;
     canonical_ids::<ChangeHash>(&report.excluded_changes)?;
+    canonical_ids::<ChangeHash>(&report.invalid_changes)?;
+    let accepted = report.accepted_changes.iter().collect::<BTreeSet<_>>();
+    let pending = report.pending_changes.iter().collect::<BTreeSet<_>>();
+    let excluded = report.excluded_changes.iter().collect::<BTreeSet<_>>();
+    let invalid = report.invalid_changes.iter().collect::<BTreeSet<_>>();
+    if !accepted.is_disjoint(&pending)
+        || !accepted.is_disjoint(&excluded)
+        || !accepted.is_disjoint(&invalid)
+        || !pending.is_disjoint(&excluded)
+        || !pending.is_disjoint(&invalid)
+        || !excluded.is_disjoint(&invalid)
+    {
+        return Err(ExpectedError::Ordering);
+    }
     canonical_ids::<EventId>(&report.invalid_events)?;
     canonical_ids::<EventId>(&report.unsupported_events)?;
     canonical_ids::<ChangeHash>(&report.heads)?;

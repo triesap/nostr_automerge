@@ -11,5 +11,5 @@
     "source_versions": {"json": "rfc-8259"}
   },
   "inputs": [{"name":"raw_duplicate_member","path":"interop_malformed_001.input.json","sha256":"1f751b9c7ffef4be73eff0710c9a34a239fa777e7dd194990d8dab5a7aeea66c","media_type":"application/json"}],
-  "expected": {"report_path":"interop_malformed_001.expected.json","sha256":"8580aa6d11154cca90efbbdce4efc5df52892ce22cbafc004738ad6bb5e76da8"}
+  "expected": {"report_path":"interop_malformed_001.expected.json","sha256":"cb90bd00a52b2bc0d073ce9c63e3013fd95d9bb8a4d30554f22c6b2c4ee2fef4"}
 }

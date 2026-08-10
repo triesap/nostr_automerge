@@ -10,9 +10,11 @@
     "revision",
     "coordinate",
     "canonical_controls",
+    "disposition_records",
     "accepted_changes",
     "pending_changes",
     "excluded_changes",
+    "invalid_changes",
     "invalid_events",
     "unsupported_events",
     "heads",
@@ -39,6 +41,11 @@
     "canonical_controls": {
       "$ref": "#/$defs/id_list"
     },
+    "disposition_records": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/disposition_record"}
+    },
     "accepted_changes": {
       "$ref": "#/$defs/id_list"
     },
@@ -46,6 +53,9 @@
       "$ref": "#/$defs/id_list"
     },
     "excluded_changes": {
+      "$ref": "#/$defs/id_list"
+    },
+    "invalid_changes": {
       "$ref": "#/$defs/id_list"
     },
     "invalid_events": {
@@ -97,6 +107,17 @@
       "uniqueItems": true,
       "items": {
         "$ref": "#/$defs/hex32"
+      }
+    },
+    "disposition_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["namespace", "identifier", "disposition"],
+      "properties": {
+        "namespace": {"enum": ["control_event", "change_hash", "event"]},
+        "identifier": {"$ref": "#/$defs/hex32"},
+        "disposition": {"enum": ["accepted", "pending", "excluded", "invalid", "unsupported_revision"]},
+        "diagnostic": {"type": "string", "pattern": "^[a-z][a-z0-9_.]+$"}
       }
     },
     "assertion": {

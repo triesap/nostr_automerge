@@ -82,6 +82,8 @@ struct CoreResult {
     accepted: Vec<String>,
     pending: Vec<String>,
     excluded: Vec<String>,
+    invalid: Vec<String>,
+    disposition_records: Vec<crate::expected::DispositionRecord>,
     heads: Vec<String>,
     history_digest: String,
     dispositions_digest: String,
@@ -198,7 +200,14 @@ fn evaluate_core(input: &CoreInput) -> Result<CoreResult, RunError> {
         .collect::<Vec<_>>();
     let excluded = changes
         .iter()
-        .filter(|change| !accepted.contains(&change.hash) && !pending.contains(&change.hash))
+        .filter(|change| {
+            change.valid && !accepted.contains(&change.hash) && !pending.contains(&change.hash)
+        })
+        .map(|change| change.hash.clone())
+        .collect::<Vec<_>>();
+    let invalid = changes
+        .iter()
+        .filter(|change| !change.valid)
         .map(|change| change.hash.clone())
         .collect::<Vec<_>>();
     let accepted = accepted.into_iter().collect::<Vec<_>>();
@@ -238,6 +247,29 @@ fn evaluate_core(input: &CoreInput) -> Result<CoreResult, RunError> {
         dispositions.push((2_u8, parse_hex32(&change.hash)?, code));
     }
     dispositions.sort_by_key(|item| (item.0, item.1));
+    let disposition_records = dispositions
+        .iter()
+        .map(
+            |(namespace, identifier, disposition)| crate::expected::DispositionRecord {
+                namespace: match namespace {
+                    1 => "control_event",
+                    2 => "change_hash",
+                    _ => "event",
+                }
+                .to_owned(),
+                identifier: hex(*identifier),
+                disposition: match disposition {
+                    1 => "accepted",
+                    2 => "pending",
+                    3 => "excluded",
+                    4 => "invalid",
+                    _ => "unsupported_revision",
+                }
+                .to_owned(),
+                diagnostic: None,
+            },
+        )
+        .collect();
 
     let raw = RawEventBytes::new(input.nip01_event.as_bytes(), ProtocolRevision::draft_v1())
         .map_err(|_| RunError::Input)?;
@@ -247,6 +279,8 @@ fn evaluate_core(input: &CoreInput) -> Result<CoreResult, RunError> {
         accepted: accepted.clone(),
         pending,
         excluded,
+        invalid,
+        disposition_records,
         heads: heads.clone(),
         history_digest: history_digest(coordinate, &chain, &accepted, &heads)?,
         dispositions_digest: dispositions_digest(coordinate, &dispositions)?,
@@ -260,6 +294,10 @@ fn apply_core_result(report: &mut ExpectedReport, result: &CoreResult) -> Result
     report.accepted_changes.clone_from(&result.accepted);
     report.pending_changes.clone_from(&result.pending);
     report.excluded_changes.clone_from(&result.excluded);
+    report.invalid_changes.clone_from(&result.invalid);
+    report
+        .disposition_records
+        .clone_from(&result.disposition_records);
     report.heads.clone_from(&result.heads);
     report.history_digest.clone_from(&result.history_digest);
     report
