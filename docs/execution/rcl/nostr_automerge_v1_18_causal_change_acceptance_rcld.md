@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 18: Causal Change Acceptance
 
 Status: active
-Current checkpoint: `step_366`
+Current checkpoint: `step_367`
 Steps: `step_356` through `step_381`
 Primary findings: `FINDING_016`, `FINDING_018`
 
@@ -43,4 +43,5 @@ active equivocation quarantine.
 - `step_362`: `e699a09` — candidate start operations must equal causal actor state.
 - `step_363`: `b6e40d5` — nonempty changes advance checked counters and highest hash.
 - `step_364`: `5bf2d22` — empty changes consume sequence while preserving next operation.
-- `step_365`: this commit — empty changes require the exact causal frontier.
+- `step_365`: `1414bec` — empty changes require the exact causal frontier.
+- `step_366`: this commit — each candidate receives one exact dependency closure.

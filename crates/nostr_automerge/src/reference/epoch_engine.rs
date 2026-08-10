@@ -9,6 +9,7 @@ use crate::graph::actor_state::{
     validate_actor_predecessor,
 };
 use crate::graph::change_candidate::ChangeCandidate;
+use crate::graph::closure::candidate_dependency_closure;
 use crate::graph::schedule::ScheduleError;
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
 use crate::types::role::Role;
@@ -193,16 +194,8 @@ pub(crate) fn evaluate_epoch(
     let mut all_candidates = input.accepted_base().accepted_candidates().clone();
     all_candidates.extend(input.candidate_changes().clone());
     let complete_dependency_closure = |candidate: &ChangeCandidate| {
-        let mut pending = candidate.dependencies.clone();
-        let mut visited = BTreeSet::new();
-        while let Some(hash) = pending.pop() {
-            if !visited.insert(hash) {
-                continue;
-            }
-            let ancestor = all_candidates.get(&hash)?;
-            pending.extend(ancestor.dependencies.iter().copied());
-        }
-        Some(visited)
+        let closure = candidate_dependency_closure(candidate, &all_candidates);
+        closure.missing.is_empty().then_some(closure.known)
     };
     let epoch_candidates = input
         .candidate_changes()

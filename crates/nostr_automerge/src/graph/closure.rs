@@ -1,5 +1,6 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
+use super::change_candidate::ChangeCandidate;
 use super::dependency_graph::DependencyGraph;
 use crate::{CancellationCheck, ChangeHash, WorkBudget, WorkCounter};
 
@@ -8,6 +9,74 @@ pub(crate) enum ClosureError {
     Missing(ChangeHash),
     BudgetExhausted,
     Cancelled,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct CandidateDependencyClosure {
+    pub(crate) known: BTreeSet<ChangeHash>,
+    pub(crate) missing: BTreeSet<ChangeHash>,
+    pub(crate) cyclic: BTreeSet<ChangeHash>,
+    pub(crate) ordered: Vec<ChangeHash>,
+}
+
+pub(crate) fn candidate_dependency_closure(
+    candidate: &ChangeCandidate,
+    candidates: &BTreeMap<ChangeHash, ChangeCandidate>,
+) -> CandidateDependencyClosure {
+    let mut result = CandidateDependencyClosure::default();
+    let mut pending = candidate.dependencies.clone();
+    while let Some(hash) = pending.pop() {
+        if !result.known.insert(hash) {
+            continue;
+        }
+        if let Some(ancestor) = candidates.get(&hash) {
+            pending.extend(ancestor.dependencies.iter().copied());
+        } else {
+            result.known.remove(&hash);
+            result.missing.insert(hash);
+        }
+    }
+
+    let mut indegrees = result
+        .known
+        .iter()
+        .map(|hash| (*hash, 0usize))
+        .collect::<BTreeMap<_, _>>();
+    let mut dependants = BTreeMap::<ChangeHash, BTreeSet<ChangeHash>>::new();
+    for hash in &result.known {
+        if let Some(ancestor) = candidates.get(hash) {
+            for dependency in ancestor
+                .dependencies
+                .iter()
+                .filter(|dependency| result.known.contains(dependency))
+            {
+                if let Some(indegree) = indegrees.get_mut(hash) {
+                    *indegree += 1;
+                }
+                dependants.entry(*dependency).or_default().insert(*hash);
+            }
+        }
+    }
+    let mut ready = indegrees
+        .iter()
+        .filter_map(|(hash, indegree)| (*indegree == 0).then_some(*hash))
+        .collect::<BTreeSet<_>>();
+    while let Some(hash) = ready.pop_first() {
+        result.ordered.push(hash);
+        if let Some(children) = dependants.get(&hash) {
+            for child in children {
+                if let Some(indegree) = indegrees.get_mut(child) {
+                    *indegree -= 1;
+                    if *indegree == 0 {
+                        ready.insert(*child);
+                    }
+                }
+            }
+        }
+    }
+    let ordered = result.ordered.iter().copied().collect::<BTreeSet<_>>();
+    result.cyclic = result.known.difference(&ordered).copied().collect();
+    result
 }
 
 pub(crate) fn ancestor_closure(
@@ -51,7 +120,8 @@ pub(crate) fn ancestor_closure(
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
-    use super::{ClosureError, ancestor_closure};
+    use super::{ClosureError, ancestor_closure, candidate_dependency_closure};
+    use crate::graph::actor_state::tests::candidate;
     use crate::graph::dependency_graph::DependencyGraph;
     use crate::{ChangeHash, NeverCancelled, WorkBudget, WorkCounter};
 
@@ -99,5 +169,47 @@ mod tests {
             ancestor_closure(&graph, [hash(2)], &mut cancelled, &|| true),
             Err(ClosureError::Cancelled)
         );
+    }
+
+    #[test]
+    fn candidate_dependency_closure_covers_all_graph_shapes() {
+        let mut root = candidate(1, 1, 1, 1);
+        root.change_hash = hash(1);
+        let mut left = candidate(2, 1, 1, 1);
+        left.change_hash = hash(2);
+        left.dependencies = vec![root.change_hash];
+        let mut right = candidate(3, 1, 1, 1);
+        right.change_hash = hash(3);
+        right.dependencies = vec![root.change_hash];
+        let mut diamond = candidate(4, 1, 1, 1);
+        diamond.change_hash = hash(4);
+        diamond.dependencies = vec![left.change_hash, right.change_hash];
+        let candidates = [root.clone(), left.clone(), right.clone(), diamond.clone()]
+            .into_iter()
+            .map(|candidate| (candidate.change_hash, candidate))
+            .collect::<BTreeMap<_, _>>();
+        let closure = candidate_dependency_closure(&diamond, &candidates);
+        assert_eq!(closure.known, BTreeSet::from([hash(1), hash(2), hash(3)]));
+        assert_eq!(closure.ordered, vec![hash(1), hash(2), hash(3)]);
+        assert!(closure.missing.is_empty() && closure.cyclic.is_empty());
+
+        let mut multiple_roots = diamond.clone();
+        multiple_roots.dependencies = vec![left.change_hash, right.change_hash, hash(9)];
+        let closure = candidate_dependency_closure(&multiple_roots, &candidates);
+        assert_eq!(closure.missing, BTreeSet::from([hash(9)]));
+
+        let mut cycle_left = left;
+        let mut cycle_right = right;
+        cycle_left.dependencies = vec![cycle_right.change_hash];
+        cycle_right.dependencies = vec![cycle_left.change_hash];
+        let cycle_candidates = [cycle_left.clone(), cycle_right.clone()]
+            .into_iter()
+            .map(|candidate| (candidate.change_hash, candidate))
+            .collect::<BTreeMap<_, _>>();
+        let mut cycle_root = root;
+        cycle_root.dependencies = vec![cycle_left.change_hash];
+        let closure = candidate_dependency_closure(&cycle_root, &cycle_candidates);
+        assert_eq!(closure.cyclic, BTreeSet::from([hash(2), hash(3)]));
+        assert!(closure.ordered.is_empty());
     }
 }
