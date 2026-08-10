@@ -8,7 +8,7 @@ use crate::conformance::dispositions_digest::{
 use crate::conformance::history_digest::history_digest;
 use crate::control::candidate::{
     CandidateResult, evaluate_account_continuity, evaluate_device_ancestry,
-    evaluate_parent_continuity, evaluate_role_continuity,
+    evaluate_parent_continuity, evaluate_role_continuity, evaluate_terminal_continuity,
 };
 use crate::control::validate::ControlEnvelope;
 use crate::evidence::event::EventEvidence;
@@ -487,7 +487,7 @@ fn controls_for_coordinate(
                 && account_continuity_is_valid(corpus, control)
                 && role_continuity_is_valid(corpus, control)
                 && device_ancestry_is_valid(corpus, control)
-                && !has_terminal_parent(corpus, control)
+                && terminal_continuity_is_valid(corpus, control)
                 && !violates_retained_writer_frontier(corpus, control) =>
             {
                 Some(BatchControl {
@@ -670,19 +670,23 @@ fn highest_writer_contribution(
         .map(|(_, hash)| hash)
 }
 
-fn has_terminal_parent(
+fn terminal_continuity_is_valid(
     corpus: &EvidenceCorpus,
-    control: &crate::carrier::control::ValidatedControlCarrier,
+    child: &crate::carrier::control::ValidatedControlCarrier,
 ) -> bool {
-    control.parent().is_some_and(|parent_id| {
-        matches!(
-            corpus.events.get(&parent_id),
-            Some(EventEvidence::VerifiedCarrier {
-                carrier: VerifiedCarrier::Control(parent),
-                ..
-            }) if parent.coordinate() == control.coordinate() && parent.terminal()
-        )
-    })
+    let Some(parent_id) = child.parent() else {
+        return true;
+    };
+    let Some(EventEvidence::VerifiedCarrier {
+        carrier: VerifiedCarrier::Control(parent),
+        ..
+    }) = corpus.events.get(&parent_id)
+    else {
+        return false;
+    };
+    let parent = ControlEnvelope::from_validated(parent.as_ref().clone());
+    let child = ControlEnvelope::from_validated(child.clone());
+    evaluate_terminal_continuity(&parent, &child) == CandidateResult::Valid
 }
 
 fn changes_for_control(

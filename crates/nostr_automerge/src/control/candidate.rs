@@ -73,6 +73,17 @@ pub(crate) fn evaluate_device_ancestry(
     }
 }
 
+pub(crate) fn evaluate_terminal_continuity(
+    parent: &ControlEnvelope,
+    child: &ControlEnvelope,
+) -> CandidateResult {
+    if validate_terminal_child(&parent.content, &child.content).is_err() {
+        CandidateResult::Invalid(DiagnosticCode::registered("control.terminal_child"))
+    } else {
+        CandidateResult::Valid
+    }
+}
+
 pub(crate) fn evaluate_child(
     parent: &ControlEnvelope,
     child: &ControlEnvelope,
