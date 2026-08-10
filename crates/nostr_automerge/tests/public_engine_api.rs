@@ -2112,6 +2112,106 @@ fn signed_event_disposition_records() {
 }
 
 #[test]
+#[allow(clippy::expect_used)]
+fn invalid_and_excluded_changes_are_distinct() {
+    let controller = TestSigner::from_byte(108);
+    let invalid_writer = TestSigner::from_byte(109);
+    let equivocated_writer = TestSigner::from_byte(110);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "b2".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let control = signed_acl_control(
+        &controller,
+        coordinate,
+        1,
+        None,
+        0,
+        vec![
+            (invalid_writer.public_key().to_hex(), vec!["write"]),
+            (equivocated_writer.public_key().to_hex(), vec!["write"]),
+        ],
+    );
+    let control_id = VerifiedNip01Event::verify(control.clone())
+        .expect("signed control")
+        .event_id();
+    let invalid_actor = ActorId::derive(coordinate, invalid_writer.public_key());
+    let mut invalid_document =
+        AuthoringDocument::empty(ActorState::initial(invalid_actor, BTreeSet::new()))
+            .expect("invalid writer document");
+    let invalid = invalid_document
+        .author_change(&[Operation::PutString {
+            key: "invalid".to_owned(),
+            value: "sequence two".to_owned(),
+        }])
+        .expect("first change");
+    let (invalid_raw, invalid_hash) = rewrite_change_sequence(invalid.raw().to_vec(), 1, 2);
+    let equivocated_actor = ActorId::derive(coordinate, equivocated_writer.public_key());
+    let make_conflict = |key: &str| {
+        let mut document = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit).with_actor(
+            automerge::ActorId::from(equivocated_actor.as_bytes().to_vec()),
+        );
+        document.put(ROOT, key, "excluded").expect("conflict op");
+        let hash = document.commit().expect("conflict hash");
+        let raw = document
+            .get_change_by_hash(&hash)
+            .expect("conflict change")
+            .raw_bytes()
+            .to_vec();
+        (ChangeHash::from_bytes(hash.0), raw)
+    };
+    let (left_hash, left_raw) = make_conflict("left");
+    let (right_hash, right_raw) = make_conflict("right");
+    let sign_change = |signer: &TestSigner, created_at: u64, hash: ChangeHash, raw: &[u8]| {
+        signer.sign(
+            &UnsignedEventDraft::new(
+                created_at,
+                1_624,
+                vec![
+                    vec!["a".to_owned(), coordinate.to_address()],
+                    vec!["e".to_owned(), control_id.to_hex()],
+                    vec!["x".to_owned(), hash.to_hex()],
+                ],
+                base64::engine::general_purpose::STANDARD.encode(raw),
+            )
+            .expect("change draft")
+            .prepare(signer.public_key())
+            .expect("change preimage"),
+        )
+    };
+    let mut builder = CorpusBuilder::new();
+    for event in [
+        sign_change(&invalid_writer, 2, invalid_hash, &invalid_raw),
+        sign_change(&equivocated_writer, 3, left_hash, &left_raw),
+        sign_change(&equivocated_writer, 4, right_hash, &right_raw),
+        control,
+    ] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(report.invalid_changes(), [invalid_hash]);
+    assert!(!report.excluded_changes().contains(&invalid_hash));
+    assert!(report.excluded_changes().contains(&left_hash));
+    assert!(report.excluded_changes().contains(&right_hash));
+    assert!(report.invalid_changes().iter().all(|hash| {
+        report
+            .dispositions()
+            .contains(&(*hash, ProtocolDisposition::Invalid))
+    }));
+}
+
+#[test]
 fn duplicate_delayed_and_invalid_evidence_converges() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!(
         "../../../fixtures/v1_draft/integrity/cases.json"

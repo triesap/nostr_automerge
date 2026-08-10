@@ -325,6 +325,12 @@ impl EvaluationReport {
         &self.excluded_changes
     }
 
+    /// Returns invalid change hashes in canonical byte order.
+    #[must_use]
+    pub fn invalid_changes(&self) -> &[ChangeHash] {
+        &self.invalid_changes
+    }
+
     /// Returns materialized Automerge heads in canonical byte order.
     #[must_use]
     pub fn heads(&self) -> &[ChangeHash] {

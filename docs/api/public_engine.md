@@ -19,9 +19,10 @@ signature, revision, and carrier validators. An `IngestOutcome` describes the
 observation without exposing event content in diagnostics. Duplicate delivery
 is idempotent, and delivery order does not affect canonical evaluation.
 
-`EvaluationReport` owns its canonical controls, change dispositions, accepted,
-pending, and excluded hashes, Automerge heads, integrity alerts, evidence
-records, digests, completion, and immutable materialized document view. A local
+`EvaluationReport` owns its canonical controls, namespaced disposition records,
+and pairwise-distinct accepted, pending, excluded, and invalid change hashes,
+plus Automerge heads, integrity alerts, evidence records, digests, completion,
+and immutable materialized document view. A local
 budget exhaustion or cancellation changes `Completion`; it does not rewrite a
 protocol disposition. Default debug output reports counts and never includes
 raw event content or materialized document bytes.
