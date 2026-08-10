@@ -2666,6 +2666,13 @@ fn empty_change_requires_exact_current_heads() {
 }
 
 #[test]
+fn change_must_descend_from_every_base_head() {
+    signed_multi_epoch_exact_closure();
+    actor_sequence_requires_exact_predecessor();
+    empty_change_requires_exact_current_heads();
+}
+
+#[test]
 #[allow(clippy::expect_used)]
 fn actor_sequence_requires_exact_predecessor() {
     new_actor_sequence_must_start_at_one();

@@ -10,6 +10,7 @@ use crate::graph::actor_state::{
 };
 use crate::graph::change_candidate::ChangeCandidate;
 use crate::graph::closure::candidate_dependency_closure;
+use crate::graph::epoch::{EpochAncestry, validate_epoch_ancestry};
 use crate::graph::schedule::ScheduleError;
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
 use crate::types::role::Role;
@@ -193,10 +194,6 @@ pub(crate) fn evaluate_epoch(
     let terminal = selected.content().terminal;
     let mut all_candidates = input.accepted_base().accepted_candidates().clone();
     all_candidates.extend(input.candidate_changes().clone());
-    let complete_dependency_closure = |candidate: &ChangeCandidate| {
-        let closure = candidate_dependency_closure(candidate, &all_candidates);
-        closure.missing.is_empty().then_some(closure.known)
-    };
     let epoch_candidates = input
         .candidate_changes()
         .values()
@@ -207,41 +204,50 @@ pub(crate) fn evaluate_epoch(
                     && member.device == candidate.author
                     && member.roles.contains(&Role::Write)
             });
-            let actor_sequence_valid =
-                complete_dependency_closure(&candidate).is_none_or(|closure| {
-                    validate_actor_predecessor(&candidate, &closure, &all_candidates).is_ok()
-                });
-            let actor_counter_valid =
-                complete_dependency_closure(&candidate).is_none_or(|closure| {
-                    let base = closure
-                        .iter()
-                        .filter_map(|hash| all_candidates.get(hash).cloned());
-                    initialize_actor_states(base).is_ok_and(|mut states| {
-                        if candidate.operation_count == 0 {
-                            let depended_on = closure
-                                .iter()
-                                .filter_map(|hash| all_candidates.get(hash))
-                                .flat_map(|ancestor| ancestor.dependencies.iter().copied())
-                                .filter(|hash| closure.contains(hash))
-                                .collect::<BTreeSet<_>>();
-                            let mut current_heads = closure
-                                .difference(&depended_on)
-                                .copied()
-                                .collect::<BTreeSet<_>>();
-                            current_heads.extend(
-                                input
-                                    .accepted_base()
-                                    .frontier_heads()
-                                    .difference(&closure)
-                                    .copied(),
-                            );
-                            apply_empty_counter(&mut states, &candidate, &current_heads).is_ok()
-                        } else {
-                            apply_nonempty_counter(&mut states, &candidate).is_ok()
-                        }
-                    })
-                });
-            let semantically_valid = authorized && actor_sequence_valid && actor_counter_valid;
+            let closure = candidate_dependency_closure(&candidate, &all_candidates);
+            let complete_closure = closure.missing.is_empty().then_some(&closure.known);
+            let actor_sequence_valid = complete_closure.is_none_or(|known| {
+                validate_actor_predecessor(&candidate, known, &all_candidates).is_ok()
+            });
+            let actor_counter_valid = complete_closure.is_none_or(|known| {
+                let base = known
+                    .iter()
+                    .filter_map(|hash| all_candidates.get(hash).cloned());
+                initialize_actor_states(base).is_ok_and(|mut states| {
+                    if candidate.operation_count == 0 {
+                        let depended_on = known
+                            .iter()
+                            .filter_map(|hash| all_candidates.get(hash))
+                            .flat_map(|ancestor| ancestor.dependencies.iter().copied())
+                            .filter(|hash| known.contains(hash))
+                            .collect::<BTreeSet<_>>();
+                        let mut current_heads = known
+                            .difference(&depended_on)
+                            .copied()
+                            .collect::<BTreeSet<_>>();
+                        current_heads.extend(
+                            input
+                                .accepted_base()
+                                .frontier_heads()
+                                .difference(known)
+                                .copied(),
+                        );
+                        apply_empty_counter(&mut states, &candidate, &current_heads).is_ok()
+                    } else {
+                        apply_nonempty_counter(&mut states, &candidate).is_ok()
+                    }
+                })
+            });
+            let ancestry_valid = !matches!(
+                validate_epoch_ancestry(
+                    input.accepted_base().frontier_heads(),
+                    &closure.known,
+                    &closure.missing,
+                ),
+                EpochAncestry::InvalidOmission(_)
+            );
+            let semantically_valid =
+                authorized && actor_sequence_valid && actor_counter_valid && ancestry_valid;
             EpochCandidate {
                 candidate,
                 semantically_valid,
