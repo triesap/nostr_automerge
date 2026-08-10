@@ -733,6 +733,113 @@ fn signed_removed_device_cannot_reappear() {
 }
 
 #[test]
+#[allow(clippy::expect_used)]
+fn public_report_contains_control_dispositions() {
+    let controller = TestSigner::from_byte(45);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "46".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let retained = controller.public_key().to_hex();
+    let genesis = signed_acl_control(
+        &controller,
+        coordinate,
+        1,
+        None,
+        0,
+        vec![(retained.clone(), vec!["write"])],
+    );
+    let genesis_id = VerifiedNip01Event::verify(genesis.clone())
+        .expect("signed genesis")
+        .event_id();
+    let first = signed_acl_control(
+        &controller,
+        coordinate,
+        2,
+        Some(genesis_id),
+        1,
+        vec![(retained.clone(), vec!["write"])],
+    );
+    let first_id = VerifiedNip01Event::verify(first.clone())
+        .expect("signed first sibling")
+        .event_id();
+    let second = signed_acl_control(
+        &controller,
+        coordinate,
+        3,
+        Some(genesis_id),
+        1,
+        vec![(retained.clone(), vec!["write"])],
+    );
+    let second_id = VerifiedNip01Event::verify(second.clone())
+        .expect("signed second sibling")
+        .event_id();
+    let invalid = signed_acl_control(
+        &controller,
+        coordinate,
+        4,
+        Some(genesis_id),
+        1,
+        vec![(retained.clone(), vec!["checkpoint", "write"])],
+    );
+    let invalid_id = VerifiedNip01Event::verify(invalid.clone())
+        .expect("signed invalid sibling")
+        .event_id();
+    let pending = signed_acl_control(
+        &controller,
+        coordinate,
+        5,
+        Some(EventId::from_bytes([0x55; 32])),
+        1,
+        vec![(retained, vec!["write"])],
+    );
+    let pending_id = VerifiedNip01Event::verify(pending.clone())
+        .expect("signed pending sibling")
+        .event_id();
+    let mut builder = CorpusBuilder::new();
+    for event in [pending, invalid, second, first, genesis] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    let dispositions = report
+        .control_dispositions()
+        .iter()
+        .copied()
+        .collect::<std::collections::BTreeMap<_, _>>();
+    assert_eq!(
+        dispositions.get(&genesis_id),
+        Some(&ProtocolDisposition::Accepted)
+    );
+    assert_eq!(
+        dispositions.get(&invalid_id),
+        Some(&ProtocolDisposition::Invalid)
+    );
+    assert_eq!(
+        dispositions.get(&pending_id),
+        Some(&ProtocolDisposition::Pending)
+    );
+    assert_eq!(
+        [first_id, second_id]
+            .into_iter()
+            .filter_map(|event_id| dispositions.get(&event_id))
+            .copied()
+            .collect::<BTreeSet<_>>(),
+        BTreeSet::from([ProtocolDisposition::Accepted, ProtocolDisposition::Excluded,])
+    );
+}
+
+#[test]
 fn duplicate_delayed_and_invalid_evidence_converges() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!(
         "../../../fixtures/v1_draft/integrity/cases.json"

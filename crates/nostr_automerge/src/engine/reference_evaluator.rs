@@ -62,10 +62,10 @@ impl ReferenceEvaluator {
         cancellation: &impl CancellationCheck,
     ) -> EvaluationReport {
         let ingress_complete = charge_ingress(corpus, budget);
-        let controls = if ingress_complete {
-            controls_for_coordinate(corpus, coordinate)
+        let (controls, preliminary_control_dispositions) = if ingress_complete {
+            prepare_controls(corpus, coordinate)
         } else {
-            Vec::new()
+            (Vec::new(), std::collections::BTreeMap::new())
         };
         let mut batch = evaluate_batch(controls, budget, cancellation);
         if !ingress_complete {
@@ -74,6 +74,8 @@ impl ReferenceEvaluator {
             batch.materialized_document = None;
         }
         let canonical_controls = batch.canonical_controls;
+        let mut control_dispositions = preliminary_control_dispositions;
+        control_dispositions.extend(batch.control_dispositions);
         let checkpoints = verify_checkpoints(
             corpus,
             coordinate,
@@ -116,6 +118,7 @@ impl ReferenceEvaluator {
         EvaluationReport::from_canonical_parts(EvaluationReportParts {
             coordinate,
             canonical_controls,
+            control_dispositions: control_dispositions.into_iter().collect(),
             dispositions,
             accepted_changes,
             pending_changes,
@@ -466,30 +469,44 @@ fn disposition_hashes(
         .collect()
 }
 
-fn controls_for_coordinate(
+fn prepare_controls(
     corpus: &EvidenceCorpus,
     coordinate: DocumentCoordinate,
-) -> Vec<BatchControl> {
-    corpus
+) -> (
+    Vec<BatchControl>,
+    std::collections::BTreeMap<crate::EventId, ProtocolDisposition>,
+) {
+    let mut dispositions = std::collections::BTreeMap::new();
+    let controls = corpus
         .events
         .values()
         .filter_map(|evidence| match evidence {
             EventEvidence::VerifiedCarrier {
                 carrier: VerifiedCarrier::Control(control),
                 ..
-            } if control.coordinate() == coordinate
-                && !corpus
+            } if control.coordinate() == coordinate => {
+                let disposition = if corpus
                     .indexes
                     .controls
                     .pending
                     .contains(&control.event_id())
-                && genesis_link_is_valid(corpus, control)
-                && parent_continuity_is_valid(corpus, control)
-                && account_continuity_is_valid(corpus, control)
-                && role_continuity_is_valid(corpus, control)
-                && device_ancestry_is_valid(corpus, control)
-                && terminal_continuity_is_valid(corpus, control) =>
-            {
+                {
+                    ProtocolDisposition::Pending
+                } else if !genesis_link_is_valid(corpus, control)
+                    || !parent_continuity_is_valid(corpus, control)
+                    || !account_continuity_is_valid(corpus, control)
+                    || !role_continuity_is_valid(corpus, control)
+                    || !device_ancestry_is_valid(corpus, control)
+                    || !terminal_continuity_is_valid(corpus, control)
+                {
+                    ProtocolDisposition::Invalid
+                } else {
+                    ProtocolDisposition::Excluded
+                };
+                dispositions.insert(control.event_id(), disposition);
+                if disposition != ProtocolDisposition::Excluded {
+                    return None;
+                }
                 Some(BatchControl {
                     event_id: control.event_id(),
                     parent: control.parent(),
@@ -501,7 +518,8 @@ fn controls_for_coordinate(
             }
             _ => None,
         })
-        .collect()
+        .collect();
+    (controls, dispositions)
 }
 
 fn device_ancestry_is_valid(

@@ -37,6 +37,7 @@ pub(crate) struct BatchControl {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct BatchEvaluationReport {
     pub(crate) canonical_controls: Vec<EventId>,
+    pub(crate) control_dispositions: BTreeMap<EventId, ProtocolDisposition>,
     pub(crate) accepted_at_control: BTreeMap<EventId, BTreeSet<ChangeHash>>,
     pub(crate) dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
     pub(crate) accepted_changes: BTreeSet<ChangeHash>,
@@ -109,6 +110,14 @@ pub(crate) fn evaluate_batch(
         parent = Some(selected);
     }
     let canonical_set = canonical_controls.iter().copied().collect::<BTreeSet<_>>();
+    let mut control_dispositions = controls
+        .keys()
+        .copied()
+        .map(|event_id| (event_id, ProtocolDisposition::Excluded))
+        .collect::<BTreeMap<_, _>>();
+    for event_id in &canonical_controls {
+        control_dispositions.insert(*event_id, ProtocolDisposition::Accepted);
+    }
     let mut dispositions = BTreeMap::new();
     for control in controls
         .values()
@@ -147,7 +156,16 @@ pub(crate) fn evaluate_batch(
                 canonical_controls.truncate(control_index);
                 break;
             };
-            if evaluate_retained_writer_continuity(parent, child, &view) != CandidateResult::Valid {
+            let outcome = evaluate_retained_writer_continuity(parent, child, &view);
+            if outcome != CandidateResult::Valid {
+                control_dispositions.insert(
+                    *control_id,
+                    match outcome {
+                        CandidateResult::Pending(_) => ProtocolDisposition::Pending,
+                        CandidateResult::Invalid(_) => ProtocolDisposition::Invalid,
+                        CandidateResult::Valid => ProtocolDisposition::Accepted,
+                    },
+                );
                 canonical_controls.truncate(control_index);
                 break;
             }
@@ -315,6 +333,7 @@ pub(crate) fn evaluate_batch(
     };
     BatchEvaluationReport {
         canonical_controls,
+        control_dispositions,
         accepted_at_control,
         dispositions,
         accepted_changes,
@@ -411,6 +430,7 @@ fn incomplete_report(
 ) -> BatchEvaluationReport {
     BatchEvaluationReport {
         canonical_controls,
+        control_dispositions: BTreeMap::new(),
         accepted_at_control: BTreeMap::new(),
         dispositions,
         accepted_changes,

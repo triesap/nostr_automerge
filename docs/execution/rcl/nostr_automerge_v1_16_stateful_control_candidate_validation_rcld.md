@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 16: Stateful Control Candidate Validation
 
 Status: active
-Current checkpoint: `step_331`
+Current checkpoint: `step_332`
 Steps: `step_318` through `step_336`
 Primary findings: `FINDING_014`, `FINDING_015`, `FINDING_018`
 
@@ -46,4 +46,5 @@ outcome derived from accepted parent state.
 - `step_327`: `f7e6742` — canonical ACL ancestry forbids removed-key reintroduction.
 - `step_328`: `0e2e684` — terminal parents reject ordinary children through the classifier.
 - `step_329`: `7a8596c` — successor rotation requires exact reciprocal continuity.
-- `step_330`: this commit — retained-writer validation derives from accepted parent state.
+- `step_330`: `b87c675` — retained-writer validation derives from accepted parent state.
+- `step_331`: this commit — public reports retain dynamic control dispositions.

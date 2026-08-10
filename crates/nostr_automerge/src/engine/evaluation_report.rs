@@ -33,6 +33,7 @@ use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 pub struct EvaluationReport {
     coordinate: DocumentCoordinate,
     canonical_controls: Vec<EventId>,
+    control_dispositions: Vec<(EventId, ProtocolDisposition)>,
     dispositions: Vec<(ChangeHash, ProtocolDisposition)>,
     accepted_changes: Vec<ChangeHash>,
     pending_changes: Vec<ChangeHash>,
@@ -51,6 +52,7 @@ pub struct EvaluationReport {
 pub(crate) struct EvaluationReportParts {
     pub(crate) coordinate: DocumentCoordinate,
     pub(crate) canonical_controls: Vec<EventId>,
+    pub(crate) control_dispositions: Vec<(EventId, ProtocolDisposition)>,
     pub(crate) dispositions: Vec<(ChangeHash, ProtocolDisposition)>,
     pub(crate) accepted_changes: Vec<ChangeHash>,
     pub(crate) pending_changes: Vec<ChangeHash>,
@@ -83,6 +85,10 @@ impl EvaluationReport {
             || !strictly_sorted(&parts.pending_changes)
             || !strictly_sorted(&parts.excluded_changes)
             || !strictly_sorted(&parts.heads)
+            || !parts
+                .control_dispositions
+                .windows(2)
+                .all(|pair| pair[0].0 < pair[1].0)
             || !parts
                 .dispositions
                 .windows(2)
@@ -144,6 +150,7 @@ impl EvaluationReport {
         Ok(Self {
             coordinate: parts.coordinate,
             canonical_controls: parts.canonical_controls,
+            control_dispositions: parts.control_dispositions,
             dispositions: parts.dispositions,
             accepted_changes: parts.accepted_changes,
             pending_changes: parts.pending_changes,
@@ -177,6 +184,12 @@ impl EvaluationReport {
     #[must_use]
     pub fn canonical_controls(&self) -> &[EventId] {
         &self.canonical_controls
+    }
+
+    /// Returns stateful control dispositions ordered by event identifier.
+    #[must_use]
+    pub fn control_dispositions(&self) -> &[(EventId, ProtocolDisposition)] {
+        &self.control_dispositions
     }
 
     /// Returns canonical change dispositions ordered by change hash.
@@ -263,6 +276,10 @@ impl fmt::Debug for EvaluationReport {
         formatter
             .debug_struct("EvaluationReport")
             .field("canonical_control_count", &self.canonical_controls.len())
+            .field(
+                "control_disposition_count",
+                &self.control_dispositions.len(),
+            )
             .field("accepted_change_count", &self.accepted_changes.len())
             .field("pending_change_count", &self.pending_changes.len())
             .field("excluded_change_count", &self.excluded_changes.len())
@@ -297,6 +314,10 @@ mod tests {
         let parts = || EvaluationReportParts {
             coordinate,
             canonical_controls: vec![EventId::from_bytes([1; 32])],
+            control_dispositions: vec![(
+                EventId::from_bytes([1; 32]),
+                crate::ProtocolDisposition::Accepted,
+            )],
             dispositions: vec![],
             accepted_changes: vec![ChangeHash::from_bytes([2; 32])],
             pending_changes: vec![],
