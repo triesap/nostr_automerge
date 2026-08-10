@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 21: Complete Metering And Panic Elimination
 
 Status: active
-Current checkpoint: `step_423`
+Current checkpoint: `step_424`
 Steps: `step_410` through `step_429`
 Primary findings: `FINDING_022`, `FINDING_023`, `FINDING_027`
 
@@ -44,4 +44,5 @@ optional later work, and never be converted into a protocol invalidity.
 - `step_419`: `47c3967` — checkpoint authorization and chunk preparation use trusted indexes, typed item charges, cancellation, and refusal-only early stop.
 - `step_420`: `0ffcde2` — checkpoint carrier coverage, accepted-at-control cloning, embedded history enumeration, and membership checks are metered and cancellable.
 - `step_421`: `cd48b6c` — materialized object projection uses an explicit pending-object stack and survives 2,048 nested maps.
-- `step_422`: this commit — public snapshot projection charges canonical bytes and one load operation before Automerge decode and preserves typed resource completion.
+- `step_422`: `5ec0d6d` — public snapshot projection charges canonical bytes and one load operation before Automerge decode and preserves typed resource completion.
+- `step_423`: this commit — text projection charges its object and exact UTF-16 length before materialization, and charges every projected mark.

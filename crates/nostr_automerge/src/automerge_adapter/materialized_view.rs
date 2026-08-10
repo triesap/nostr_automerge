@@ -175,7 +175,7 @@ impl MaterializedDocumentView {
     }
 
     pub(crate) fn from_canonical_bytes(canonical_bytes: Vec<u8>) -> Result<Self, ProjectionError> {
-        Self::project_canonical_bytes(canonical_bytes)
+        Self::project_canonical_bytes(canonical_bytes, None)
     }
 
     pub(crate) fn from_canonical_bytes_metered(
@@ -196,10 +196,19 @@ impl MaterializedDocumentView {
         budget
             .charge(WorkCounter::ApplyChange, 1)
             .map_err(|_| ProjectionError::Budget)?;
-        Self::project_canonical_bytes(canonical_bytes)
+        Self::project_canonical_bytes(
+            canonical_bytes,
+            Some(ProjectionMeter {
+                budget,
+                cancellation,
+            }),
+        )
     }
 
-    fn project_canonical_bytes(canonical_bytes: Vec<u8>) -> Result<Self, ProjectionError> {
+    fn project_canonical_bytes(
+        canonical_bytes: Vec<u8>,
+        mut meter: Option<ProjectionMeter<'_>>,
+    ) -> Result<Self, ProjectionError> {
         let options = LoadOptions::new()
             .text_encoding(TextEncoding::Utf16CodeUnit)
             .migrate_strings(StringMigration::NoMigration)
@@ -209,7 +218,7 @@ impl MaterializedDocumentView {
             .map_err(|_| ProjectionError::Invalid)?;
         let mut entries = Vec::new();
         let mut marks = Vec::new();
-        project_document_iterative(&document, &mut entries, &mut marks)?;
+        project_document_iterative(&document, &mut entries, &mut marks, &mut meter)?;
         entries.sort_by(|left, right| left.path.cmp(&right.path));
         marks.sort();
         Ok(Self {
@@ -281,10 +290,38 @@ struct ProjectionObject {
     path: Vec<MaterializedPathElement>,
 }
 
+struct ProjectionMeter<'a> {
+    budget: &'a mut WorkBudget,
+    cancellation: &'a dyn CancellationCheck,
+}
+
+impl ProjectionMeter<'_> {
+    fn charge(&mut self, counter: WorkCounter, amount: u64) -> Result<(), ProjectionError> {
+        if self.cancellation.is_cancelled() {
+            return Err(ProjectionError::Cancelled);
+        }
+        self.budget
+            .charge(counter, amount)
+            .map_err(|_| ProjectionError::Budget)
+    }
+}
+
+fn charge_projection(
+    meter: &mut Option<ProjectionMeter<'_>>,
+    counter: WorkCounter,
+    amount: u64,
+) -> Result<(), ProjectionError> {
+    if let Some(meter) = meter {
+        meter.charge(counter, amount)?;
+    }
+    Ok(())
+}
+
 fn project_document_iterative(
     document: &Automerge,
     entries: &mut Vec<MaterializedEntry>,
     marks: &mut Vec<MaterializedMark>,
+    meter: &mut Option<ProjectionMeter<'_>>,
 ) -> Result<(), ProjectionError> {
     let mut pending = vec![ProjectionObject {
         object: ROOT,
@@ -300,7 +337,15 @@ fn project_document_iterative(
                 for key in keys {
                     let mut next = current.path.clone();
                     next.push(MaterializedPathElement::Key(key.clone()));
-                    project_property(document, &current.object, key, next, entries, &mut pending)?;
+                    project_property(
+                        document,
+                        &current.object,
+                        key,
+                        next,
+                        entries,
+                        &mut pending,
+                        meter,
+                    )?;
                 }
             }
             MaterializedObjectType::List => {
@@ -316,6 +361,7 @@ fn project_document_iterative(
                         next,
                         entries,
                         &mut pending,
+                        meter,
                     )?;
                 }
             }
@@ -324,6 +370,7 @@ fn project_document_iterative(
                     .marks(&current.object)
                     .map_err(|_| ProjectionError::Invalid)?
                 {
+                    charge_projection(meter, WorkCounter::Assertion, 1)?;
                     marks.push(MaterializedMark {
                         path: current.path.clone(),
                         name: mark.name.to_string(),
@@ -345,6 +392,7 @@ fn project_property(
     path: Vec<MaterializedPathElement>,
     entries: &mut Vec<MaterializedEntry>,
     pending: &mut Vec<ProjectionObject>,
+    meter: &mut Option<ProjectionMeter<'_>>,
 ) -> Result<(), ProjectionError> {
     let mut conflicts = Vec::new();
     let mut objects = Vec::new();
@@ -357,7 +405,7 @@ fn project_property(
         }
         conflicts.push(MaterializedConflict {
             operation_id: id.to_string(),
-            value: value_at(document, value, &id)?,
+            value: value_at(document, value, &id, meter)?,
         });
     }
     conflicts.sort_by(|left, right| left.operation_id.cmp(&right.operation_id));
@@ -379,13 +427,21 @@ fn value_at(
     document: &Automerge,
     value: Value<'_>,
     id: &ObjId,
+    meter: &mut Option<ProjectionMeter<'_>>,
 ) -> Result<MaterializedValue, ProjectionError> {
     match value {
         Value::Scalar(value) => Ok(MaterializedValue::Scalar(scalar(value.as_ref())?)),
-        Value::Object(ObjType::Text) => Ok(MaterializedValue::Text {
-            object_id: id.to_string(),
-            value: document.text(id).map_err(|_| ProjectionError::Invalid)?,
-        }),
+        Value::Object(ObjType::Text) => {
+            let text_work = u64::try_from(document.length(id))
+                .ok()
+                .and_then(|length| length.checked_add(1))
+                .ok_or(ProjectionError::Budget)?;
+            charge_projection(meter, WorkCounter::Assertion, text_work)?;
+            Ok(MaterializedValue::Text {
+                object_id: id.to_string(),
+                value: document.text(id).map_err(|_| ProjectionError::Invalid)?,
+            })
+        }
         Value::Object(kind) => Ok(MaterializedValue::Object {
             object_type: object_type(kind),
             object_id: id.to_string(),
@@ -611,6 +667,39 @@ mod tests {
                         )
                 )
         }));
+    }
+
+    #[test]
+    fn text_projection_charges_utf16_units_before_materialization() {
+        let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+        document.set_actor(ActorId::from([13; 32]));
+        {
+            let mut tx = document.transaction();
+            let text = tx.put_object(ROOT, "text", ObjType::Text);
+            let Ok(text) = text else { return };
+            assert!(tx.splice_text(&text, 0, 0, "A😀").is_ok());
+            tx.commit();
+        }
+        let bytes = document.save_nocompress();
+        let mut exact = WorkBudget::new(u64::MAX, 5);
+        let projected = MaterializedDocumentView::from_canonical_bytes_metered(
+            bytes.clone(),
+            &mut exact,
+            &NeverCancelled,
+        );
+        assert!(projected.is_ok());
+        assert_eq!(exact.consumed().get(WorkCounter::Assertion), 4);
+
+        let mut exhausted = WorkBudget::new(u64::MAX, 4);
+        assert_eq!(
+            MaterializedDocumentView::from_canonical_bytes_metered(
+                bytes,
+                &mut exhausted,
+                &NeverCancelled,
+            ),
+            Err(ProjectionError::Budget)
+        );
+        assert_eq!(exhausted.consumed().get(WorkCounter::Assertion), 0);
     }
 
     #[test]

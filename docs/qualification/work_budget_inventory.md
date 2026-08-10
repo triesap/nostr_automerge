@@ -23,7 +23,7 @@ evidence.
 | checkpoint assembly | `checkpoint::join`, `checkpoint::assemble` | `checkpoint_item`, `checkpoint_byte` | each chunk and byte boundary | partial |
 | checkpoint history | `engine::reference_evaluator` and `checkpoint::verify_history` | `checkpoint_item` for canonical-control coverage, accepted snapshots, embedded changes, and membership checks | before every history item and set-membership check | metered |
 | checkpoint load | `automerge_adapter::checkpoint` | `checkpoint_item`, `checkpoint_byte` | before load | metered |
-| materialized projection | `automerge_adapter::materialized_view` | `decode_byte` and `apply_change` for snapshot load; `assertion` for projected values | before snapshot decode plus explicit object stack, property, conflict, text, and mark loops | snapshot load metered; value traversal pending |
+| materialized projection | `automerge_adapter::materialized_view` | `decode_byte` and `apply_change` for snapshot load; `assertion` for projected values | before snapshot decode, each UTF-16 text unit, each mark, plus explicit object/property/conflict loops | snapshot and text work metered; general value traversal pending |
 | assertion matching | conformance assertion runner | `assertion` | each assertion and projected value | remediation required |
 | canonical digests | history and disposition encoders | sealed report-size input already charged by producing traversal | caller boundary | derived-only |
 
