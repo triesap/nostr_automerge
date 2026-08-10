@@ -2900,11 +2900,16 @@ fn actor_sequence_rollback_and_replay() {
         &mut WorkBudget::new(1_000_000, 1_000),
         &NeverCancelled,
     );
-    assert_eq!(report.accepted_changes(), [first.change_hash()]);
+    assert!(report.accepted_changes().is_empty());
     assert!(
         report
             .dispositions()
-            .contains(&(rollback_hash, ProtocolDisposition::Invalid))
+            .contains(&(first.change_hash(), ProtocolDisposition::Excluded))
+    );
+    assert!(
+        report
+            .dispositions()
+            .contains(&(rollback_hash, ProtocolDisposition::Excluded))
     );
     assert_eq!(
         report
@@ -2914,6 +2919,15 @@ fn actor_sequence_rollback_and_replay() {
             .count(),
         1
     );
+    assert!(report.integrity_alerts().iter().any(|alert| matches!(
+        alert,
+        nostr_automerge::IntegrityAlert::DeviceEquivocation(_)
+    )));
+}
+
+#[test]
+fn base_sequence_equivocation_is_detected() {
+    actor_sequence_rollback_and_replay();
 }
 
 struct SignedEngineScenario {

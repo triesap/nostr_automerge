@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 18: Causal Change Acceptance
 
 Status: active
-Current checkpoint: `step_374`
+Current checkpoint: `step_375`
 Steps: `step_356` through `step_381`
 Primary findings: `FINDING_016`, `FINDING_018`
 
@@ -51,4 +51,5 @@ active equivocation quarantine.
 - `step_370`: `b987550` — eligible changes apply only to their exact causal closure.
 - `step_371`: `c3963d2` — expected application failures remain candidate-local.
 - `step_372`: `b1b8b5f` — candidate admission is canonical by decoded change hash.
-- `step_373`: this commit — change dispositions iterate to one metered stable fixpoint.
+- `step_373`: `addc723` — change dispositions iterate to one metered stable fixpoint.
+- `step_374`: this commit — equivocation analysis includes accepted base sequences.

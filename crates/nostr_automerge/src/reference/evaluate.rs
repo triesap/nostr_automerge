@@ -267,12 +267,25 @@ pub(crate) fn evaluate_batch(
             }
         };
         dispositions.extend(resolved);
-        let eligible = control
-            .changes
-            .iter()
-            .filter(|change| change.semantically_valid && !control.frozen)
-            .map(|change| change.candidate.clone())
-            .collect::<Vec<_>>();
+        let mut eligible = controls
+            .values()
+            .flat_map(|candidate_control| candidate_control.changes.iter())
+            .filter(|change| {
+                accepted_changes.contains(&change.candidate.change_hash)
+                    || (change.candidate.control_id == selected
+                        && change.semantically_valid
+                        && !control.frozen)
+            })
+            .map(|change| (change.candidate.change_hash, change.candidate.clone()))
+            .collect::<BTreeMap<_, _>>();
+        for change in &control.changes {
+            if change.semantically_valid && !control.frozen {
+                eligible
+                    .entry(change.candidate.change_hash)
+                    .or_insert_with(|| change.candidate.clone());
+            }
+        }
+        let eligible = eligible.into_values().collect::<Vec<_>>();
         if let Ok(graph) = build_graph(eligible.clone(), accepted_changes.clone()) {
             match quarantine_equivocation_descendants(eligible, &graph, budget, cancellation) {
                 Ok(quarantine) => {
