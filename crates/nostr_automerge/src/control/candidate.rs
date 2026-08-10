@@ -17,11 +17,9 @@ pub(crate) enum CandidateResult {
     Invalid(DiagnosticCode),
 }
 
-pub(crate) fn evaluate_child(
+pub(crate) fn evaluate_parent_continuity(
     parent: &ControlEnvelope,
     child: &ControlEnvelope,
-    ancestry: &[&crate::carrier::control::ValidatedControlContent],
-    view: &ParentEpochView,
 ) -> CandidateResult {
     if child.parent != Some(parent.event_id)
         || child.coordinate != parent.coordinate
@@ -32,7 +30,20 @@ pub(crate) fn evaluate_child(
             .checked_add(1)
             .is_none_or(|sequence| child.content.sequence != sequence)
     {
-        return CandidateResult::Invalid(DiagnosticCode::registered("control.parent"));
+        CandidateResult::Invalid(DiagnosticCode::registered("control.parent"))
+    } else {
+        CandidateResult::Valid
+    }
+}
+
+pub(crate) fn evaluate_child(
+    parent: &ControlEnvelope,
+    child: &ControlEnvelope,
+    ancestry: &[&crate::carrier::control::ValidatedControlContent],
+    view: &ParentEpochView,
+) -> CandidateResult {
+    if let result @ CandidateResult::Invalid(_) = evaluate_parent_continuity(parent, child) {
+        return result;
     }
     if validate_canonical_collections(&child.content).is_err()
         || validate_base_frontier(&child.content, false).is_err()

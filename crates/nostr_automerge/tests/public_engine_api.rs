@@ -271,6 +271,86 @@ fn signed_terminal_genesis_rejects_children() {
 }
 
 #[test]
+#[allow(clippy::expect_used)]
+fn signed_child_parent_sequence_rules() {
+    let controller = TestSigner::from_byte(31);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "32".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let content = |sequence: u64| {
+        format!(
+            r#"{{"base_heads":[],"format":"automerge-change-v1","members":[{{"account":null,"pubkey":"{}","roles":["write"]}}],"policy":"controller-acl-v1","predecessor":null,"seq":{sequence},"successor":null,"text_encoding":"utf16","v":1}}"#,
+            controller.public_key().to_hex()
+        )
+    };
+    let genesis = controller.sign(
+        &UnsignedEventDraft::new(
+            1,
+            1_625,
+            vec![vec!["a".to_owned(), coordinate.to_address()]],
+            content(0),
+        )
+        .expect("genesis draft")
+        .prepare(controller.public_key())
+        .expect("genesis preimage"),
+    );
+    let genesis_id = VerifiedNip01Event::verify(genesis.clone())
+        .expect("signed genesis")
+        .event_id();
+    let child_tags = vec![
+        vec!["a".to_owned(), coordinate.to_address()],
+        vec!["e".to_owned(), genesis_id.to_hex()],
+    ];
+    let valid = controller.sign(
+        &UnsignedEventDraft::new(2, 1_625, child_tags.clone(), content(1))
+            .expect("valid child draft")
+            .prepare(controller.public_key())
+            .expect("valid child preimage"),
+    );
+    let valid_id = VerifiedNip01Event::verify(valid.clone())
+        .expect("signed valid child")
+        .event_id();
+    let wrong = (3..=1_000)
+        .map(|created_at| {
+            controller.sign(
+                &UnsignedEventDraft::new(created_at, 1_625, child_tags.clone(), content(2))
+                    .expect("wrong-sequence child draft")
+                    .prepare(controller.public_key())
+                    .expect("wrong-sequence child preimage"),
+            )
+        })
+        .find(|candidate| {
+            VerifiedNip01Event::verify(candidate.clone())
+                .is_ok_and(|event| event.event_id() < valid_id)
+        })
+        .expect("find a lower-id wrong-sequence child");
+    let wrong_id = VerifiedNip01Event::verify(wrong.clone())
+        .expect("signed wrong-sequence child")
+        .event_id();
+    assert!(wrong_id < valid_id);
+
+    let mut builder = CorpusBuilder::new();
+    for event in [wrong, valid, genesis] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(report.canonical_controls(), [genesis_id, valid_id]);
+    assert!(!report.canonical_controls().contains(&wrong_id));
+}
+
+#[test]
 fn duplicate_delayed_and_invalid_evidence_converges() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!(
         "../../../fixtures/v1_draft/integrity/cases.json"
