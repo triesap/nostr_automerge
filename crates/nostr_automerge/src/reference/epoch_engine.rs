@@ -18,7 +18,7 @@ use crate::reference::apply::apply_exact_closure;
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
 use crate::types::role::Role;
 use crate::{ActorId, IntegrityAlert, ProtocolDisposition};
-use crate::{CancellationCheck, WorkBudget};
+use crate::{CancellationCheck, WorkBudget, WorkCounter};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum EpochEvaluationInputError {
@@ -224,100 +224,102 @@ pub(crate) fn evaluate_epoch(
     let terminal = selected.content().terminal;
     let mut all_candidates = input.accepted_base().accepted_candidates().clone();
     all_candidates.extend(input.candidate_changes().clone());
-    let epoch_candidates = input
-        .candidate_changes()
-        .values()
-        .cloned()
-        .map(|candidate| {
-            let authorized = selected.content().members.iter().any(|member| {
-                member.actor == candidate.actor
-                    && member.device == candidate.author
-                    && member.roles.contains(&Role::Write)
-            });
-            let closure = candidate_dependency_closure(&candidate, &all_candidates);
-            let complete_closure = closure.missing.is_empty().then_some(&closure.known);
-            let actor_sequence_valid = complete_closure.is_none_or(|known| {
-                validate_actor_predecessor(&candidate, known, &all_candidates).is_ok()
-            });
-            let actor_counter_valid = complete_closure.is_none_or(|known| {
-                let base = known
-                    .iter()
-                    .filter_map(|hash| all_candidates.get(hash).cloned());
-                initialize_actor_states(base).is_ok_and(|mut states| {
-                    if candidate.operation_count == 0 {
-                        let depended_on = known
-                            .iter()
-                            .filter_map(|hash| all_candidates.get(hash))
-                            .flat_map(|ancestor| ancestor.dependencies.iter().copied())
-                            .filter(|hash| known.contains(hash))
-                            .collect::<BTreeSet<_>>();
-                        let mut current_heads = known
-                            .difference(&depended_on)
-                            .copied()
-                            .collect::<BTreeSet<_>>();
-                        current_heads.extend(
-                            input
-                                .accepted_base()
-                                .frontier_heads()
-                                .difference(known)
-                                .copied(),
-                        );
-                        apply_empty_counter(&mut states, &candidate, &current_heads).is_ok()
-                    } else {
-                        apply_nonempty_counter(&mut states, &candidate).is_ok()
-                    }
-                })
-            });
-            let ancestry_valid = !matches!(
-                validate_epoch_ancestry(
-                    input.accepted_base().frontier_heads(),
-                    &closure.known,
-                    &closure.missing,
-                ),
-                EpochAncestry::InvalidOmission(_)
-            );
-            let prior_semantics_valid =
-                authorized && actor_sequence_valid && actor_counter_valid && ancestry_valid;
-            let application_valid = if !prior_semantics_valid {
-                false
-            } else if !closure.missing.is_empty() {
-                true
-            } else if !closure.cyclic.is_empty() {
-                false
-            } else {
-                input
-                    .raw_changes()
-                    .get(&candidate.change_hash)
-                    .is_some_and(|raw| {
-                        let closure_raw = closure
-                            .known
-                            .iter()
-                            .filter_map(|hash| {
-                                input
-                                    .raw_changes()
-                                    .get(hash)
-                                    .cloned()
-                                    .map(|raw| (*hash, raw))
-                            })
-                            .collect::<BTreeMap<_, _>>();
-                        closure_raw.len() == closure.known.len()
-                            && apply_exact_closure(
-                                &closure_raw,
-                                &closure.ordered,
-                                candidate.change_hash,
-                                raw,
-                                &candidate.dependencies.iter().copied().collect(),
-                            )
-                            .is_ok()
-                    })
-            };
-            let semantically_valid = prior_semantics_valid && application_valid;
-            EpochCandidate {
-                candidate,
-                semantically_valid,
-                canonical_control: !terminal,
-            }
+    let mut epoch_candidates = Vec::with_capacity(input.candidate_changes().len());
+    for candidate in input.candidate_changes().values().cloned() {
+        let authorized = selected.content().members.iter().any(|member| {
+            member.actor == candidate.actor
+                && member.device == candidate.author
+                && member.roles.contains(&Role::Write)
         });
+        let closure = candidate_dependency_closure(&candidate, &all_candidates);
+        let complete_closure = closure.missing.is_empty().then_some(&closure.known);
+        let actor_sequence_valid = complete_closure.is_none_or(|known| {
+            validate_actor_predecessor(&candidate, known, &all_candidates).is_ok()
+        });
+        let actor_counter_valid = if let Some(known) = complete_closure {
+            let base = known
+                .iter()
+                .filter_map(|hash| all_candidates.get(hash).cloned())
+                .collect::<Vec<_>>();
+            charge_actor_reconstruction(&base, budget, cancellation)
+                .map_err(EpochEvaluationError::Schedule)?;
+            initialize_actor_states(base).is_ok_and(|mut states| {
+                if candidate.operation_count == 0 {
+                    let depended_on = known
+                        .iter()
+                        .filter_map(|hash| all_candidates.get(hash))
+                        .flat_map(|ancestor| ancestor.dependencies.iter().copied())
+                        .filter(|hash| known.contains(hash))
+                        .collect::<BTreeSet<_>>();
+                    let mut current_heads = known
+                        .difference(&depended_on)
+                        .copied()
+                        .collect::<BTreeSet<_>>();
+                    current_heads.extend(
+                        input
+                            .accepted_base()
+                            .frontier_heads()
+                            .difference(known)
+                            .copied(),
+                    );
+                    apply_empty_counter(&mut states, &candidate, &current_heads).is_ok()
+                } else {
+                    apply_nonempty_counter(&mut states, &candidate).is_ok()
+                }
+            })
+        } else {
+            true
+        };
+        let ancestry_valid = !matches!(
+            validate_epoch_ancestry(
+                input.accepted_base().frontier_heads(),
+                &closure.known,
+                &closure.missing,
+            ),
+            EpochAncestry::InvalidOmission(_)
+        );
+        let prior_semantics_valid =
+            authorized && actor_sequence_valid && actor_counter_valid && ancestry_valid;
+        let application_valid = if !prior_semantics_valid {
+            false
+        } else if !closure.missing.is_empty() {
+            true
+        } else if !closure.cyclic.is_empty() {
+            false
+        } else {
+            input
+                .raw_changes()
+                .get(&candidate.change_hash)
+                .is_some_and(|raw| {
+                    let closure_raw = closure
+                        .known
+                        .iter()
+                        .filter_map(|hash| {
+                            input
+                                .raw_changes()
+                                .get(hash)
+                                .cloned()
+                                .map(|raw| (*hash, raw))
+                        })
+                        .collect::<BTreeMap<_, _>>();
+                    closure_raw.len() == closure.known.len()
+                        && apply_exact_closure(
+                            &closure_raw,
+                            &closure.ordered,
+                            candidate.change_hash,
+                            raw,
+                            &candidate.dependencies.iter().copied().collect(),
+                        )
+                        .is_ok()
+                })
+        };
+        let semantically_valid = prior_semantics_valid && application_valid;
+        epoch_candidates.push(EpochCandidate {
+            candidate,
+            semantically_valid,
+            canonical_control: !terminal,
+        });
+    }
     let mut dispositions = resolve_epoch(
         epoch_candidates,
         input.accepted_base().accepted_closure().clone(),
@@ -370,6 +372,12 @@ pub(crate) fn evaluate_epoch(
     } else {
         None
     };
+    charge_actor_reconstruction(
+        &accepted_candidates.values().cloned().collect::<Vec<_>>(),
+        budget,
+        cancellation,
+    )
+    .map_err(EpochEvaluationError::Schedule)?;
     EpochEvaluationResult::new(
         accepted_closure,
         frontier_heads,
@@ -381,13 +389,43 @@ pub(crate) fn evaluate_epoch(
     .map_err(EpochEvaluationError::State)
 }
 
+fn charge_actor_reconstruction(
+    candidates: &[ChangeCandidate],
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<(), ScheduleError> {
+    if cancellation.is_cancelled() {
+        return Err(ScheduleError::Cancelled);
+    }
+    let nodes = u64::try_from(candidates.len())
+        .ok()
+        .and_then(|count| count.checked_mul(2))
+        .ok_or(ScheduleError::BudgetExhausted)?;
+    let edges = candidates.iter().try_fold(0_u64, |total, candidate| {
+        u64::try_from(candidate.dependencies.len())
+            .ok()
+            .and_then(|count| count.checked_mul(2))
+            .and_then(|count| total.checked_add(count))
+    });
+    let edges = edges.ok_or(ScheduleError::BudgetExhausted)?;
+    budget
+        .charge(WorkCounter::GraphNode, nodes)
+        .map_err(|_| ScheduleError::BudgetExhausted)?;
+    if cancellation.is_cancelled() {
+        return Err(ScheduleError::Cancelled);
+    }
+    budget
+        .charge(WorkCounter::GraphEdge, edges)
+        .map_err(|_| ScheduleError::BudgetExhausted)
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
     use super::{
         AcceptedAtControl, EpochEvaluationInput, EpochEvaluationInputError, EpochEvaluationResult,
-        evaluate_epoch,
+        charge_actor_reconstruction, evaluate_epoch,
     };
     use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
     use crate::carrier::control::{ValidatedControlCarrier, ValidatedControlContent};
@@ -397,7 +435,7 @@ mod tests {
     use crate::graph::change_candidate::ChangeCandidate;
     use crate::{
         ActorId, ChangeHash, ControllerPublicKey, DevicePublicKey, DocumentCoordinate, DocumentId,
-        EventId, NeverCancelled, ProtocolDisposition, WorkBudget,
+        EventId, NeverCancelled, ProtocolDisposition, WorkBudget, WorkCounter,
     };
 
     fn control(base_heads: Vec<ChangeHash>) -> ControlEnvelope {
@@ -454,6 +492,31 @@ mod tests {
             EpochEvaluationInput::new(control(vec![head]), empty_state(), [], Vec::new()),
             Err(EpochEvaluationInputError::BaseFrontierMismatch)
         ));
+    }
+
+    #[test]
+    fn actor_reconstruction_precharge_is_bounded_and_atomic() {
+        let candidate = ChangeCandidate {
+            change_hash: ChangeHash::from_bytes([5; 32]),
+            actor: ActorId::from_bytes([6; 32]),
+            sequence: 1,
+            start_op: 1,
+            operation_count: 1,
+            dependencies: Vec::new(),
+            control_id: EventId::from_bytes([3; 32]),
+            author: DevicePublicKey::from_bytes([7; 32]),
+            valid_carriers: BTreeSet::new(),
+        };
+        let mut exhausted = WorkBudget::new(0, 1);
+        assert_eq!(
+            charge_actor_reconstruction(&[candidate.clone()], &mut exhausted, &NeverCancelled),
+            Err(crate::graph::schedule::ScheduleError::BudgetExhausted)
+        );
+        assert_eq!(exhausted.consumed().get(WorkCounter::GraphNode), 0);
+
+        let mut exact = WorkBudget::new(0, 2);
+        assert!(charge_actor_reconstruction(&[candidate], &mut exact, &NeverCancelled).is_ok());
+        assert_eq!(exact.consumed().get(WorkCounter::GraphNode), 2);
     }
 
     #[test]
