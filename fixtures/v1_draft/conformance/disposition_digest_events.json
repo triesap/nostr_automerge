@@ -1,0 +1,10 @@
+{
+  "fixture_id": "v1_draft.conformance.disposition_digest_events",
+  "requirements": ["R2_REPORT_007"],
+  "included": ["supported_signed_protocol_events", "unsupported_revision_signed_protocol_events"],
+  "excluded": ["invalid_raw_bytes_without_a_trusted_event_id", "irrelevant_signed_events", "duplicate_observations"],
+  "invariants": [
+    "unsupported_manifest_changes_digest",
+    "invalid_raw_bytes_do_not_change_digest"
+  ]
+}

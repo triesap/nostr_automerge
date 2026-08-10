@@ -2285,6 +2285,69 @@ fn control_outcomes_change_dispositions_digest() {
 }
 
 #[test]
+#[allow(clippy::expect_used)]
+fn event_dispositions_digest_boundary() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/conformance/disposition_digest_events.json"
+    ))
+    .expect("event digest fixture");
+    assert_eq!(fixture["requirements"][0], "R2_REPORT_007");
+    let signer = TestSigner::from_byte(112);
+    let document_id = "b6".repeat(32);
+    let coordinate: DocumentCoordinate =
+        format!("31624:{}:{document_id}", signer.public_key().to_hex())
+            .parse()
+            .expect("fixed coordinate");
+    let unsupported = signer.sign(
+        &UnsignedEventDraft::new(
+            1,
+            31_624,
+            vec![vec!["d".to_owned(), document_id]],
+            format!(
+                r#"{{"application":null,"checkpoint":null,"control":"{}","description":null,"format":"automerge-change-v1","name":null,"relays":[],"status":"active","successor":null,"text_encoding":"utf16","v":2}}"#,
+                "b7".repeat(32)
+            ),
+        )
+        .expect("unsupported manifest draft")
+        .prepare(signer.public_key())
+        .expect("unsupported manifest preimage"),
+    );
+    let evaluate = |builder: CorpusBuilder| {
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+            &builder.finish(),
+            coordinate,
+            &mut WorkBudget::new(1_000_000, 1_000),
+            &NeverCancelled,
+        )
+    };
+    let empty = evaluate(CorpusBuilder::new());
+    let mut invalid_raw = CorpusBuilder::new();
+    assert!(matches!(
+        invalid_raw.ingest_bytes(b"{}"),
+        IngestOutcome::Invalid { .. }
+    ));
+    let invalid_raw = evaluate(invalid_raw);
+    let mut unsupported_builder = CorpusBuilder::new();
+    assert!(matches!(
+        unsupported_builder.ingest(unsupported),
+        IngestOutcome::UnsupportedRevision { .. }
+    ));
+    let unsupported = evaluate(unsupported_builder);
+    assert_eq!(
+        empty.dispositions_digest(),
+        invalid_raw.dispositions_digest()
+    );
+    assert_ne!(
+        empty.dispositions_digest(),
+        unsupported.dispositions_digest()
+    );
+    assert!(unsupported.disposition_records().iter().any(|record| {
+        matches!(record.identifier(), ProtocolItemIdentifier::Event(_))
+            && record.disposition() == ProtocolDisposition::UnsupportedRevision
+    }));
+}
+
+#[test]
 fn duplicate_delayed_and_invalid_evidence_converges() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!(
         "../../../fixtures/v1_draft/integrity/cases.json"
@@ -3995,7 +4058,7 @@ fn checkpoints_never_authorize_or_redefine_history() {
     assert_eq!(report.accepted_changes(), baseline.accepted_changes());
     assert_eq!(report.heads(), baseline.heads());
     assert_eq!(report.history_digest(), baseline.history_digest());
-    assert_eq!(report.dispositions_digest(), baseline.dispositions_digest());
+    assert_ne!(report.dispositions_digest(), baseline.dispositions_digest());
     assert_eq!(
         report.document().map(|document| document.byte_len()),
         baseline.document().map(|document| document.byte_len())
