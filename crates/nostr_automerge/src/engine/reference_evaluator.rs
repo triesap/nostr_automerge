@@ -82,7 +82,7 @@ impl ReferenceEvaluator {
         let mut control_dispositions = preliminary_control_dispositions;
         control_dispositions.extend(batch.control_dispositions);
         let control_dispositions = control_dispositions.into_iter().collect::<Vec<_>>();
-        let disposition_records = control_dispositions
+        let mut disposition_records = control_dispositions
             .iter()
             .map(|(event_id, disposition)| {
                 DispositionRecord::new(
@@ -91,7 +91,7 @@ impl ReferenceEvaluator {
                     None,
                 )
             })
-            .collect();
+            .collect::<Vec<_>>();
         let checkpoints = verify_checkpoints(
             corpus,
             coordinate,
@@ -101,17 +101,14 @@ impl ReferenceEvaluator {
             cancellation,
         );
         let dispositions = batch.dispositions.into_iter().collect::<Vec<_>>();
-        let accepted_changes = batch.accepted_changes.into_iter().collect::<Vec<_>>();
+        disposition_records.extend(dispositions.iter().map(|(hash, disposition)| {
+            DispositionRecord::new(ProtocolItemIdentifier::from(*hash), *disposition, None)
+        }));
+        let accepted_changes = disposition_hashes(&dispositions, ProtocolDisposition::Accepted);
         let heads = batch.heads.into_iter().collect::<Vec<_>>();
         let pending_changes = disposition_hashes(&dispositions, ProtocolDisposition::Pending);
-        let excluded_changes = dispositions
-            .iter()
-            .filter_map(|(hash, disposition)| {
-                (*disposition != ProtocolDisposition::Accepted
-                    && *disposition != ProtocolDisposition::Pending)
-                    .then_some(*hash)
-            })
-            .collect::<Vec<_>>();
+        let excluded_changes = disposition_hashes(&dispositions, ProtocolDisposition::Excluded);
+        let invalid_changes = disposition_hashes(&dispositions, ProtocolDisposition::Invalid);
         let history_digest = history_digest(
             self.revision,
             coordinate,
@@ -140,6 +137,7 @@ impl ReferenceEvaluator {
             accepted_changes,
             pending_changes,
             excluded_changes,
+            invalid_changes,
             heads,
             evidence: corpus.records().collect(),
             checkpoints,

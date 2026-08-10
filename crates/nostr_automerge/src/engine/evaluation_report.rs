@@ -126,6 +126,7 @@ pub struct EvaluationReport {
     accepted_changes: Vec<ChangeHash>,
     pending_changes: Vec<ChangeHash>,
     excluded_changes: Vec<ChangeHash>,
+    invalid_changes: Vec<ChangeHash>,
     heads: Vec<ChangeHash>,
     evidence: Vec<EvidenceRecord>,
     checkpoints: Vec<CheckpointVerificationResult>,
@@ -146,6 +147,7 @@ pub(crate) struct EvaluationReportParts {
     pub(crate) accepted_changes: Vec<ChangeHash>,
     pub(crate) pending_changes: Vec<ChangeHash>,
     pub(crate) excluded_changes: Vec<ChangeHash>,
+    pub(crate) invalid_changes: Vec<ChangeHash>,
     pub(crate) heads: Vec<ChangeHash>,
     pub(crate) evidence: Vec<EvidenceRecord>,
     pub(crate) checkpoints: Vec<CheckpointVerificationResult>,
@@ -173,6 +175,7 @@ impl EvaluationReport {
             || !strictly_sorted(&parts.accepted_changes)
             || !strictly_sorted(&parts.pending_changes)
             || !strictly_sorted(&parts.excluded_changes)
+            || !strictly_sorted(&parts.invalid_changes)
             || !strictly_sorted(&parts.heads)
             || !parts
                 .control_dispositions
@@ -205,9 +208,17 @@ impl EvaluationReport {
             .iter()
             .copied()
             .collect::<BTreeSet<_>>();
+        let invalid = parts
+            .invalid_changes
+            .iter()
+            .copied()
+            .collect::<BTreeSet<_>>();
         if !accepted.is_disjoint(&pending)
             || !accepted.is_disjoint(&excluded)
+            || !accepted.is_disjoint(&invalid)
             || !pending.is_disjoint(&excluded)
+            || !pending.is_disjoint(&invalid)
+            || !excluded.is_disjoint(&invalid)
             || !parts.heads.iter().all(|head| accepted.contains(head))
         {
             return Err(EvaluationReportInvariant);
@@ -246,6 +257,7 @@ impl EvaluationReport {
             accepted_changes: parts.accepted_changes,
             pending_changes: parts.pending_changes,
             excluded_changes: parts.excluded_changes,
+            invalid_changes: parts.invalid_changes,
             heads: parts.heads,
             evidence: parts.evidence,
             checkpoints: parts.checkpoints,
@@ -387,6 +399,7 @@ impl fmt::Debug for EvaluationReport {
             .field("accepted_change_count", &self.accepted_changes.len())
             .field("pending_change_count", &self.pending_changes.len())
             .field("excluded_change_count", &self.excluded_changes.len())
+            .field("invalid_change_count", &self.invalid_changes.len())
             .field("head_count", &self.heads.len())
             .field("evidence_count", &self.evidence.len())
             .field("checkpoint_count", &self.checkpoints.len())
@@ -430,6 +443,7 @@ mod tests {
             accepted_changes: vec![ChangeHash::from_bytes([2; 32])],
             pending_changes: vec![],
             excluded_changes: vec![],
+            invalid_changes: vec![],
             heads: vec![ChangeHash::from_bytes([2; 32])],
             evidence: vec![],
             checkpoints: vec![],

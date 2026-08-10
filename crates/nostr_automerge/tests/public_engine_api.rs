@@ -2000,6 +2000,47 @@ fn control_disposition_records_are_complete() {
 }
 
 #[test]
+fn change_disposition_collections_are_disjoint() {
+    let scenario = signed_engine_scenario();
+    let mut builder = CorpusBuilder::new();
+    for event in [scenario.change, scenario.control] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        scenario.coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    let accepted = report
+        .accepted_changes()
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let pending = report
+        .pending_changes()
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let excluded = report
+        .excluded_changes()
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    assert!(accepted.is_disjoint(&pending));
+    assert!(accepted.is_disjoint(&excluded));
+    assert!(pending.is_disjoint(&excluded));
+    let change_records = report
+        .disposition_records()
+        .iter()
+        .filter(|record| matches!(record.identifier(), ProtocolItemIdentifier::ChangeHash(_)));
+    assert_eq!(change_records.count(), report.dispositions().len());
+}
+
+#[test]
 fn duplicate_delayed_and_invalid_evidence_converges() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!(
         "../../../fixtures/v1_draft/integrity/cases.json"
