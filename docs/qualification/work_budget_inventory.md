@@ -21,7 +21,7 @@ evidence.
 | Automerge application | `reference::apply`, `automerge_adapter::document` | `apply_change`, `graph_edge` | each change and dependency | partial |
 | checkpoint collection | `engine::reference_evaluator` trusted checkpoint indexes | `checkpoint_item` for canonical controls, controls, members, descriptors, and chunks | before every indexed preparation boundary | metered |
 | checkpoint assembly | `checkpoint::join`, `checkpoint::assemble` | `checkpoint_item`, `checkpoint_byte` | each chunk and byte boundary | partial |
-| checkpoint history | `checkpoint::verify`, `checkpoint::verify_history` | `checkpoint_item`, `checkpoint_byte` | graph and carrier walks | remediation required |
+| checkpoint history | `engine::reference_evaluator` and `checkpoint::verify_history` | `checkpoint_item` for canonical-control coverage, accepted snapshots, embedded changes, and membership checks | before every history item and set-membership check | metered |
 | checkpoint load | `automerge_adapter::checkpoint` | `checkpoint_item`, `checkpoint_byte` | before load | metered |
 | materialized projection | `automerge_adapter::materialized_view` | `assertion`, `apply_change` | object, property, conflict, text, and mark loops | remediation required |
 | assertion matching | conformance assertion runner | `assertion` | each assertion and projected value | remediation required |

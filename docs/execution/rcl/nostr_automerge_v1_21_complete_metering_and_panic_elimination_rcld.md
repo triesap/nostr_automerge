@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 21: Complete Metering And Panic Elimination
 
 Status: active
-Current checkpoint: `step_420`
+Current checkpoint: `step_421`
 Steps: `step_410` through `step_429`
 Primary findings: `FINDING_022`, `FINDING_023`, `FINDING_027`
 
@@ -41,4 +41,5 @@ optional later work, and never be converted into a protocol invalidity.
 - `step_416`: `00c3477` — actor reconstruction receives bounded node/edge precharges and cooperative cancellation at both evaluation sites.
 - `step_417`: `ee89138` — candidate dependency closure charges every evidence-derived node and edge traversal and propagates cancellation.
 - `step_418`: `780d75b` — equivocation grouping, carrier aggregation, affected-set construction, descendant discovery, and quarantine output are fully metered and cancellable.
-- `step_419`: this commit — checkpoint authorization and chunk preparation use trusted indexes, typed item charges, cancellation, and refusal-only early stop.
+- `step_419`: `47c3967` — checkpoint authorization and chunk preparation use trusted indexes, typed item charges, cancellation, and refusal-only early stop.
+- `step_420`: this commit — checkpoint carrier coverage, accepted-at-control cloning, embedded history enumeration, and membership checks are metered and cancellable.

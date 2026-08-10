@@ -15,6 +15,8 @@ pub enum HistoryVerificationError {
     UnknownControl,
     /// Caller-selected checkpoint work budget was exhausted.
     Budget,
+    /// Caller requested cooperative cancellation.
+    Cancelled,
 }
 
 /// Derives qualifying validated carrier coverage through one canonical control.
@@ -22,17 +24,29 @@ pub(crate) fn historical_carrier_coverage(
     corpus: &crate::EvidenceCorpus,
     canonical_controls: &[crate::EventId],
     through: crate::EventId,
+    budget: &mut crate::WorkBudget,
+    cancellation: &impl crate::CancellationCheck,
 ) -> Result<BTreeSet<ChangeHash>, HistoryVerificationError> {
-    let end = canonical_controls
-        .iter()
-        .position(|control| *control == through)
-        .ok_or(HistoryVerificationError::UnknownControl)?;
-    Ok(canonical_controls[..=end]
-        .iter()
-        .filter_map(|control| corpus.indexes.changes.hashes_by_control.get(control))
-        .flat_map(BTreeSet::iter)
-        .copied()
-        .collect())
+    let mut coverage = BTreeSet::new();
+    let mut found = false;
+    for control in canonical_controls {
+        charge_history_item(budget, cancellation)?;
+        if let Some(hashes) = corpus.indexes.changes.hashes_by_control.get(control) {
+            for hash in hashes {
+                charge_history_item(budget, cancellation)?;
+                coverage.insert(*hash);
+            }
+        }
+        if *control == through {
+            found = true;
+            break;
+        }
+    }
+    if found {
+        Ok(coverage)
+    } else {
+        Err(HistoryVerificationError::UnknownControl)
+    }
 }
 
 /// Requires every embedded identity to have a valid carrier and accepted status no later than the descriptor control.
@@ -58,20 +72,41 @@ pub(crate) fn verify_full_history_metered(
     valid_carriers: &BTreeSet<ChangeHash>,
     accepted_at_control: &BTreeSet<ChangeHash>,
     budget: &mut crate::WorkBudget,
+    cancellation: &impl crate::CancellationCheck,
 ) -> Result<(), HistoryVerificationError> {
     let changes = snapshot
         .loaded
         .document
         .embedded_changes()
         .map_err(|_| HistoryVerificationError::Snapshot)?;
+    let mut embedded = BTreeSet::new();
+    for change in changes {
+        charge_history_item(budget, cancellation)?;
+        embedded.insert(change.hash);
+    }
+    for hash in &embedded {
+        charge_history_item(budget, cancellation)?;
+        if !valid_carriers.contains(hash) {
+            return Err(HistoryVerificationError::MissingCarrier);
+        }
+        charge_history_item(budget, cancellation)?;
+        if !accepted_at_control.contains(hash) {
+            return Err(HistoryVerificationError::NotAccepted);
+        }
+    }
+    Ok(())
+}
+
+fn charge_history_item(
+    budget: &mut crate::WorkBudget,
+    cancellation: &impl crate::CancellationCheck,
+) -> Result<(), HistoryVerificationError> {
+    if cancellation.is_cancelled() {
+        return Err(HistoryVerificationError::Cancelled);
+    }
     budget
-        .charge_checkpoint_items(u64::try_from(changes.len()).unwrap_or(u64::MAX))
-        .map_err(|_| HistoryVerificationError::Budget)?;
-    verify_sets(
-        &changes.iter().map(|change| change.hash).collect(),
-        valid_carriers,
-        accepted_at_control,
-    )
+        .charge_checkpoint_items(1)
+        .map_err(|_| HistoryVerificationError::Budget)
 }
 fn verify_sets(
     embedded: &BTreeSet<ChangeHash>,
@@ -135,16 +170,34 @@ mod tests {
             indexes,
         };
         assert_eq!(
-            historical_carrier_coverage(&corpus, &[first, second, third], second),
+            historical_carrier_coverage(
+                &corpus,
+                &[first, second, third],
+                second,
+                &mut crate::WorkBudget::new(0, 10),
+                &crate::NeverCancelled,
+            ),
             Ok(BTreeSet::from([a, b]))
         );
         assert_eq!(
             historical_carrier_coverage(
                 &corpus,
                 &[first, second, third],
-                EventId::from_bytes([9; 32])
+                EventId::from_bytes([9; 32]),
+                &mut crate::WorkBudget::new(0, 10),
+                &crate::NeverCancelled,
             ),
             Err(HistoryVerificationError::UnknownControl)
+        );
+        assert_eq!(
+            historical_carrier_coverage(
+                &corpus,
+                &[first, second, third],
+                second,
+                &mut crate::WorkBudget::new(0, 0),
+                &crate::NeverCancelled,
+            ),
+            Err(HistoryVerificationError::Budget)
         );
     }
 }

@@ -258,14 +258,31 @@ fn verify_checkpoints(
         let authorizations =
             checkpoint_authorizations(corpus, coordinate, &canonical_set, budget, cancellation)?;
         let chunk_sets = checkpoint_chunk_sets(corpus, coordinate, budget, cancellation)?;
-        Ok::<_, CheckpointWorkStop>((authorizations, chunk_sets))
+        let carrier_coverage = checkpoint_carrier_coverage(
+            corpus,
+            coordinate,
+            canonical_controls,
+            budget,
+            cancellation,
+        )?;
+        let accepted_history = checkpoint_accepted_history(
+            corpus,
+            coordinate,
+            accepted_at_control,
+            budget,
+            cancellation,
+        )?;
+        Ok::<_, CheckpointWorkStop>((
+            authorizations,
+            chunk_sets,
+            carrier_coverage,
+            accepted_history,
+        ))
     })();
-    let (authorizations, chunk_sets) = match prepared {
+    let (authorizations, chunk_sets, carrier_coverage, accepted_history) = match prepared {
         Ok(prepared) => prepared,
         Err(stop) => return checkpoint_refusals(corpus, coordinate, stop.status()),
     };
-    let carrier_coverage = checkpoint_carrier_coverage(corpus, coordinate, canonical_controls);
-    let accepted_history = checkpoint_accepted_history(corpus, coordinate, accepted_at_control);
     corpus
         .events
         .values()
@@ -279,25 +296,31 @@ fn verify_checkpoints(
         .map(|descriptor| {
             let descriptor_id = descriptor.event_id();
             let chunk_events = checkpoint_chunk_event_ids(corpus, descriptor_id);
-            let coverage = carrier_coverage
-                .get(&descriptor_id)
+            let coverage_result = carrier_coverage.get(&descriptor_id);
+            let accepted_result = accepted_history.get(&descriptor_id);
+            let coverage = coverage_result
                 .and_then(|value| value.as_ref().ok())
                 .cloned()
                 .unwrap_or_default();
-            let accepted = accepted_history
-                .get(&descriptor_id)
+            let accepted = accepted_result
                 .and_then(|value| value.as_ref().ok())
                 .cloned()
                 .unwrap_or_default();
-            let status = verify_one_checkpoint(
-                descriptor,
-                authorizations.get(&descriptor_id).copied(),
-                chunk_sets.get(&descriptor_id),
-                &coverage,
-                &accepted,
-                budget,
-                cancellation,
-            );
+            let history_refusal = coverage_result
+                .and_then(|result| result.as_ref().err())
+                .or_else(|| accepted_result.and_then(|result| result.as_ref().err()))
+                .map(history_refusal_status);
+            let status = history_refusal.unwrap_or_else(|| {
+                verify_one_checkpoint(
+                    descriptor,
+                    authorizations.get(&descriptor_id).copied(),
+                    chunk_sets.get(&descriptor_id),
+                    &coverage,
+                    &accepted,
+                    budget,
+                    cancellation,
+                )
+            });
             let commitments = descriptor.descriptor();
             CheckpointVerificationResult::new(
                 descriptor_id,
@@ -312,6 +335,19 @@ fn verify_checkpoints(
             )
         })
         .collect()
+}
+
+const fn history_refusal_status(error: &HistoryVerificationError) -> CheckpointVerificationStatus {
+    match error {
+        HistoryVerificationError::UnknownControl => CheckpointVerificationStatus::PendingControl,
+        HistoryVerificationError::Budget => CheckpointVerificationStatus::BudgetExhausted,
+        HistoryVerificationError::Cancelled => CheckpointVerificationStatus::Cancelled,
+        HistoryVerificationError::MissingCarrier => {
+            CheckpointVerificationStatus::MissingHistoricalCarrier
+        }
+        HistoryVerificationError::NotAccepted => CheckpointVerificationStatus::NotAcceptedAtControl,
+        HistoryVerificationError::Snapshot => CheckpointVerificationStatus::SnapshotLoad,
+    }
 }
 
 fn checkpoint_chunk_event_ids(
@@ -399,7 +435,13 @@ fn verify_one_checkpoint(
             _ => CheckpointVerificationStatus::ClosureMismatch,
         };
     }
-    match crate::checkpoint::verify_full_history_metered(&snapshot, coverage, accepted, budget) {
+    match crate::checkpoint::verify_full_history_metered(
+        &snapshot,
+        coverage,
+        accepted,
+        budget,
+        cancellation,
+    ) {
         Ok(()) => CheckpointVerificationStatus::Verified,
         Err(HistoryVerificationError::MissingCarrier) => {
             CheckpointVerificationStatus::MissingHistoricalCarrier
@@ -412,6 +454,7 @@ fn verify_one_checkpoint(
             CheckpointVerificationStatus::PendingControl
         }
         Err(HistoryVerificationError::Budget) => CheckpointVerificationStatus::BudgetExhausted,
+        Err(HistoryVerificationError::Cancelled) => CheckpointVerificationStatus::Cancelled,
     }
 }
 
@@ -448,51 +491,95 @@ fn checkpoint_accepted_history(
     corpus: &EvidenceCorpus,
     coordinate: DocumentCoordinate,
     accepted_at_control: &std::collections::BTreeMap<crate::EventId, AcceptedAtControl>,
-) -> std::collections::BTreeMap<
-    crate::EventId,
-    Result<std::collections::BTreeSet<ChangeHash>, HistoryVerificationError>,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<
+    std::collections::BTreeMap<
+        crate::EventId,
+        Result<std::collections::BTreeSet<ChangeHash>, HistoryVerificationError>,
+    >,
+    CheckpointWorkStop,
 > {
-    corpus
-        .events
-        .values()
-        .filter_map(|evidence| match evidence {
-            EventEvidence::VerifiedCarrier {
-                carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
-                ..
-            } if descriptor.coordinate() == coordinate => Some((
-                descriptor.event_id(),
-                accepted_at_control
-                    .get(&descriptor.control_id())
-                    .map(|state| state.accepted_closure().clone())
-                    .ok_or(HistoryVerificationError::UnknownControl),
-            )),
-            _ => None,
-        })
-        .collect()
+    let mut history = std::collections::BTreeMap::new();
+    for descriptor_id in corpus
+        .indexes
+        .checkpoints
+        .descriptors_by_coordinate
+        .get(&coordinate)
+        .into_iter()
+        .flatten()
+    {
+        charge_checkpoint_work(budget, cancellation, 1)?;
+        if let Some(EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
+            ..
+        }) = corpus.events.get(descriptor_id)
+        {
+            let accepted = if let Some(state) = accepted_at_control.get(&descriptor.control_id()) {
+                charge_checkpoint_work(
+                    budget,
+                    cancellation,
+                    u64::try_from(state.accepted_closure().len()).unwrap_or(u64::MAX),
+                )?;
+                Ok(state.accepted_closure().clone())
+            } else {
+                Err(HistoryVerificationError::UnknownControl)
+            };
+            history.insert(*descriptor_id, accepted);
+        }
+    }
+    Ok(history)
 }
 
 fn checkpoint_carrier_coverage(
     corpus: &EvidenceCorpus,
     coordinate: DocumentCoordinate,
     canonical_controls: &[crate::EventId],
-) -> std::collections::BTreeMap<
-    crate::EventId,
-    Result<std::collections::BTreeSet<ChangeHash>, HistoryVerificationError>,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<
+    std::collections::BTreeMap<
+        crate::EventId,
+        Result<std::collections::BTreeSet<ChangeHash>, HistoryVerificationError>,
+    >,
+    CheckpointWorkStop,
 > {
-    corpus
-        .events
-        .values()
-        .filter_map(|evidence| match evidence {
-            EventEvidence::VerifiedCarrier {
-                carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
-                ..
-            } if descriptor.coordinate() == coordinate => Some((
-                descriptor.event_id(),
-                historical_carrier_coverage(corpus, canonical_controls, descriptor.control_id()),
-            )),
-            _ => None,
-        })
-        .collect()
+    let mut coverage = std::collections::BTreeMap::new();
+    for descriptor_id in corpus
+        .indexes
+        .checkpoints
+        .descriptors_by_coordinate
+        .get(&coordinate)
+        .into_iter()
+        .flatten()
+    {
+        charge_checkpoint_work(budget, cancellation, 1)?;
+        if let Some(EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
+            ..
+        }) = corpus.events.get(descriptor_id)
+        {
+            let result = historical_carrier_coverage(
+                corpus,
+                canonical_controls,
+                descriptor.control_id(),
+                budget,
+                cancellation,
+            );
+            match result {
+                Err(HistoryVerificationError::Budget) => {
+                    return Err(CheckpointWorkStop::Budget);
+                }
+                Err(HistoryVerificationError::Cancelled) => {
+                    return Err(CheckpointWorkStop::Cancelled);
+                }
+                result => {
+                    coverage.insert(*descriptor_id, result);
+                }
+            }
+        }
+    }
+    Ok(coverage)
 }
 
 fn checkpoint_chunk_sets(
