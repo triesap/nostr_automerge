@@ -183,14 +183,7 @@ impl MaterializedDocumentView {
             Automerge::load_with_options(&canonical_bytes, options).map_err(|_| ProjectionError)?;
         let mut entries = Vec::new();
         let mut marks = Vec::new();
-        project_object(
-            &document,
-            &ROOT,
-            MaterializedObjectType::Map,
-            &[],
-            &mut entries,
-            &mut marks,
-        )?;
+        project_document_iterative(&document, &mut entries, &mut marks)?;
         entries.sort_by(|left, right| left.path.cmp(&right.path));
         marks.sort();
         Ok(Self {
@@ -252,43 +245,63 @@ impl fmt::Debug for MaterializedDocumentView {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct ProjectionError;
 
-fn project_object(
-    document: &Automerge,
-    object: &ObjId,
+struct ProjectionObject {
+    object: ObjId,
     object_type: MaterializedObjectType,
-    path: &[MaterializedPathElement],
+    path: Vec<MaterializedPathElement>,
+}
+
+fn project_document_iterative(
+    document: &Automerge,
     entries: &mut Vec<MaterializedEntry>,
     marks: &mut Vec<MaterializedMark>,
 ) -> Result<(), ProjectionError> {
-    match object_type {
-        MaterializedObjectType::Map | MaterializedObjectType::Table => {
-            let mut keys = document.keys(object).collect::<Vec<_>>();
-            keys.sort();
-            keys.dedup();
-            for key in keys {
-                let mut next = path.to_vec();
-                next.push(MaterializedPathElement::Key(key.clone()));
-                project_property(document, object, key, next, entries, marks)?;
+    let mut pending = vec![ProjectionObject {
+        object: ROOT,
+        object_type: MaterializedObjectType::Map,
+        path: Vec::new(),
+    }];
+    while let Some(current) = pending.pop() {
+        match current.object_type {
+            MaterializedObjectType::Map | MaterializedObjectType::Table => {
+                let mut keys = document.keys(&current.object).collect::<Vec<_>>();
+                keys.sort();
+                keys.dedup();
+                for key in keys {
+                    let mut next = current.path.clone();
+                    next.push(MaterializedPathElement::Key(key.clone()));
+                    project_property(document, &current.object, key, next, entries, &mut pending)?;
+                }
             }
-        }
-        MaterializedObjectType::List => {
-            for index in 0..document.length(object) {
-                let mut next = path.to_vec();
-                next.push(MaterializedPathElement::Index(
-                    u64::try_from(index).map_err(|_| ProjectionError)?,
-                ));
-                project_property(document, object, index, next, entries, marks)?;
+            MaterializedObjectType::List => {
+                for index in 0..document.length(&current.object) {
+                    let mut next = current.path.clone();
+                    next.push(MaterializedPathElement::Index(
+                        u64::try_from(index).map_err(|_| ProjectionError)?,
+                    ));
+                    project_property(
+                        document,
+                        &current.object,
+                        index,
+                        next,
+                        entries,
+                        &mut pending,
+                    )?;
+                }
             }
-        }
-        MaterializedObjectType::Text => {
-            for mark in document.marks(object).map_err(|_| ProjectionError)? {
-                marks.push(MaterializedMark {
-                    path: path.to_vec(),
-                    name: mark.name.to_string(),
-                    value: scalar(&mark.value)?,
-                    start: u64::try_from(mark.start).map_err(|_| ProjectionError)?,
-                    end: u64::try_from(mark.end).map_err(|_| ProjectionError)?,
-                });
+            MaterializedObjectType::Text => {
+                for mark in document
+                    .marks(&current.object)
+                    .map_err(|_| ProjectionError)?
+                {
+                    marks.push(MaterializedMark {
+                        path: current.path.clone(),
+                        name: mark.name.to_string(),
+                        value: scalar(&mark.value)?,
+                        start: u64::try_from(mark.start).map_err(|_| ProjectionError)?,
+                        end: u64::try_from(mark.end).map_err(|_| ProjectionError)?,
+                    });
+                }
             }
         }
     }
@@ -301,7 +314,7 @@ fn project_property(
     property: impl Into<automerge::Prop> + Clone,
     path: Vec<MaterializedPathElement>,
     entries: &mut Vec<MaterializedEntry>,
-    marks: &mut Vec<MaterializedMark>,
+    pending: &mut Vec<ProjectionObject>,
 ) -> Result<(), ProjectionError> {
     let mut conflicts = Vec::new();
     let mut objects = Vec::new();
@@ -323,7 +336,11 @@ fn project_property(
         conflicts,
     });
     for (kind, id) in objects {
-        project_object(document, &id, kind, &path, entries, marks)?;
+        pending.push(ProjectionObject {
+            object: id,
+            object_type: kind,
+            path: path.clone(),
+        });
     }
     Ok(())
 }
@@ -636,5 +653,25 @@ mod tests {
         assert_eq!(mark.value(), &MaterializedScalar::Bool(true));
         assert_eq!((mark.start(), mark.end()), (1, 3));
         assert_eq!(view.text_utf16_len(mark.path()), Some(5));
+    }
+
+    #[test]
+    fn deeply_nested_projection_uses_an_explicit_stack() {
+        let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+        document.set_actor(ActorId::from([8; 32]));
+        {
+            let mut tx = document.transaction();
+            let first = tx.put_object(ROOT, "root", ObjType::Map);
+            let Ok(mut parent) = first else { return };
+            for _ in 0..2_048 {
+                let child = tx.put_object(&parent, "child", ObjType::Map);
+                let Ok(child) = child else { return };
+                parent = child;
+            }
+            assert!(tx.put(&parent, "value", true).is_ok());
+            tx.commit();
+        }
+        let view = MaterializedDocumentView::from_canonical_bytes(document.save_nocompress());
+        assert!(view.is_ok_and(|view| view.entries().len() == 2_050));
     }
 }
