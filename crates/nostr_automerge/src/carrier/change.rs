@@ -103,6 +103,12 @@ fn validate_parts(
     event_tags: &[Vec<String>],
     content: &str,
 ) -> Result<ChangeCarrier, ChangeCarrierError> {
+    tags::require_tag_contract(
+        event_tags,
+        &[("a", 2), ("e", 2), ("x", 2)],
+        &["expiration", "-"],
+    )
+    .map_err(|_| ChangeCarrierError::Tags)?;
     let coordinate: DocumentCoordinate = tag_value(event_tags, "a")?
         .parse()
         .map_err(|_| ChangeCarrierError::Tags)?;
@@ -112,17 +118,6 @@ fn validate_parts(
     let declared_change_hash: ChangeHash = tag_value(event_tags, "x")?
         .parse()
         .map_err(|_| ChangeCarrierError::Tags)?;
-    tags::require_absent(event_tags, "d").map_err(|_| ChangeCarrierError::Tags)?;
-    tags::require_durable_tags(event_tags).map_err(|_| ChangeCarrierError::Tags)?;
-    if event_tags.len() != 3
-        || event_tags.iter().any(|tag| {
-            tag.first()
-                .is_none_or(|name| name != "a" && name != "e" && name != "x")
-        })
-    {
-        return Err(ChangeCarrierError::Tags);
-    }
-
     let raw = base64::decode_padded(content, ProtocolRevision::draft_v1().limits().change_bytes)
         .map_err(|_| ChangeCarrierError::Base64)?;
     let decoded = qualify_canonical_reencoding(&raw, ProtocolRevision::draft_v1())
@@ -198,6 +193,37 @@ mod tests {
         let content = base64::encode_padded(&raw);
         let valid = validate_parts(EventId::from_bytes([0x55; 32]), author, &tags, &content);
         assert!(valid.is_ok());
+        let mut extended = tags.clone();
+        extended.extend([
+            vec!["d".to_owned(), "ignored".to_owned()],
+            vec!["future".to_owned()],
+            vec!["future".to_owned(), "repeated".to_owned()],
+        ]);
+        assert!(
+            validate_parts(EventId::from_bytes([0x55; 32]), author, &extended, &content).is_ok()
+        );
+        let mut forbidden = tags.clone();
+        forbidden.push(vec!["expiration".to_owned(), "1".to_owned()]);
+        assert_eq!(
+            validate_parts(
+                EventId::from_bytes([0x55; 32]),
+                author,
+                &forbidden,
+                &content
+            ),
+            Err(ChangeCarrierError::Tags)
+        );
+        let mut duplicate_required = tags.clone();
+        duplicate_required.push(tags[0].clone());
+        assert_eq!(
+            validate_parts(
+                EventId::from_bytes([0x55; 32]),
+                author,
+                &duplicate_required,
+                &content
+            ),
+            Err(ChangeCarrierError::Tags)
+        );
 
         let mut wrong_hash = tags.clone();
         wrong_hash[2][1] = "00".repeat(32);
