@@ -15,7 +15,7 @@ evidence.
 | actor reconstruction | `reference::epoch_engine::charge_actor_reconstruction` and `graph::actor_state` | conservative `graph_node` and `graph_edge` precharge for topology indexing and traversal | before reconstruction and between node/edge charges | metered |
 | dependency scheduling | `graph::schedule` and `graph::closure::candidate_dependency_closure` | `graph_node`, `graph_edge` | every queue, set, topology, and adjacency loop | metered |
 | ancestor closure | `graph::closure::ancestor_closure` | `graph_node`, `graph_edge` | every stack and dependency loop | metered |
-| equivocation grouping | `graph::equivocation` | `graph_node`, `graph_edge` | grouping and quarantine walks | partial |
+| equivocation grouping | `graph::equivocation` | `graph_node`, `graph_edge` | every candidate, carrier, group, affected-set, queue, descendant, and quarantine walk | metered |
 | epoch fixpoint | `reference::epoch` | `graph_node`, `graph_edge`, `apply_change` | each pass and candidate | partial |
 | Automerge decode | carrier qualification and adapter decode | `decode_byte` | before decode | metered |
 | Automerge application | `reference::apply`, `automerge_adapter::document` | `apply_change`, `graph_edge` | each change and dependency | partial |

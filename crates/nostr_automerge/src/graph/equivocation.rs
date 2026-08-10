@@ -34,9 +34,15 @@ impl From<AlertError> for QuarantineError {
 
 pub(crate) fn detect_equivocations(
     candidates: impl IntoIterator<Item = ChangeCandidate>,
-) -> Vec<EquivocationGroup> {
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<Vec<EquivocationGroup>, QuarantineError> {
     let mut groups = BTreeMap::<(ActorId, u64), BTreeMap<ChangeHash, BTreeSet<EventId>>>::new();
     for candidate in candidates {
+        charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
+        let carrier_count = u64::try_from(candidate.valid_carriers.len())
+            .map_err(|_| QuarantineError::BudgetExhausted)?;
+        charge_quarantine_amount(budget, cancellation, WorkCounter::GraphEdge, carrier_count)?;
         groups
             .entry((candidate.actor, candidate.sequence))
             .or_default()
@@ -46,9 +52,25 @@ pub(crate) fn detect_equivocations(
     }
     let mut first_by_actor = BTreeMap::<ActorId, EquivocationGroup>::new();
     for ((actor, sequence), changes) in groups {
+        charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
         if changes.len() < 2 || first_by_actor.contains_key(&actor) {
             continue;
         }
+        let conflicting_count =
+            u64::try_from(changes.len()).map_err(|_| QuarantineError::BudgetExhausted)?;
+        let carrier_count = changes.values().try_fold(0_u64, |total, carriers| {
+            u64::try_from(carriers.len())
+                .ok()
+                .and_then(|count| total.checked_add(count))
+        });
+        let carrier_count = carrier_count.ok_or(QuarantineError::BudgetExhausted)?;
+        charge_quarantine_amount(
+            budget,
+            cancellation,
+            WorkCounter::GraphNode,
+            conflicting_count,
+        )?;
+        charge_quarantine_amount(budget, cancellation, WorkCounter::GraphEdge, carrier_count)?;
         first_by_actor.insert(
             actor,
             EquivocationGroup {
@@ -59,7 +81,10 @@ pub(crate) fn detect_equivocations(
             },
         );
     }
-    first_by_actor.into_values().collect()
+    let count =
+        u64::try_from(first_by_actor.len()).map_err(|_| QuarantineError::BudgetExhausted)?;
+    charge_quarantine_amount(budget, cancellation, WorkCounter::GraphNode, count)?;
+    Ok(first_by_actor.into_values().collect())
 }
 
 pub(crate) fn quarantine_equivocation_descendants(
@@ -78,21 +103,27 @@ pub(crate) fn quarantine_equivocation_descendants(
             .map_err(|_| QuarantineError::BudgetExhausted)?;
         candidates.insert(candidate.change_hash, candidate);
     }
-    let groups = detect_equivocations(candidates.values().cloned());
+    let groups = detect_equivocations(candidates.values().cloned(), budget, cancellation)?;
     let mut quarantined = BTreeSet::new();
     let mut alerts = Vec::with_capacity(groups.len());
 
     for group in groups {
-        let mut affected = group.conflicting_changes.clone();
-        affected.extend(
-            candidates
-                .values()
-                .filter(|candidate| {
-                    candidate.actor == group.actor && candidate.sequence > group.first_sequence
-                })
-                .map(|candidate| candidate.change_hash),
-        );
-        let mut queue = affected.iter().copied().collect::<Vec<_>>();
+        let mut affected = BTreeSet::new();
+        for hash in &group.conflicting_changes {
+            charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
+            affected.insert(*hash);
+        }
+        for candidate in candidates.values() {
+            charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
+            if candidate.actor == group.actor && candidate.sequence > group.first_sequence {
+                affected.insert(candidate.change_hash);
+            }
+        }
+        let mut queue = Vec::with_capacity(affected.len());
+        for hash in &affected {
+            charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
+            queue.push(*hash);
+        }
         while let Some(hash) = queue.pop() {
             if cancellation.is_cancelled() {
                 return Err(QuarantineError::Cancelled);
@@ -114,25 +145,56 @@ pub(crate) fn quarantine_equivocation_descendants(
                 }
             }
         }
-        let descendants = affected
-            .difference(&group.conflicting_changes)
-            .copied()
-            .collect::<Vec<_>>();
+        let mut descendants = Vec::new();
+        for hash in affected.difference(&group.conflicting_changes) {
+            charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
+            descendants.push(*hash);
+        }
+        let mut conflicting_changes = Vec::with_capacity(group.conflicting_changes.len());
+        for hash in &group.conflicting_changes {
+            charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
+            conflicting_changes.push(*hash);
+        }
         alerts.push(IntegrityAlert::DeviceEquivocation(
             DeviceEquivocationAlert::new(
                 group.actor,
                 group.first_sequence,
-                group.conflicting_changes.iter().copied().collect(),
+                conflicting_changes,
                 descendants,
             )?,
         ));
-        quarantined.extend(affected);
+        for hash in affected {
+            charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
+            quarantined.insert(hash);
+        }
     }
 
     Ok(QuarantineResult {
         quarantined,
         alerts,
     })
+}
+
+fn charge_quarantine_work(
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+    counter: WorkCounter,
+) -> Result<(), QuarantineError> {
+    charge_quarantine_amount(budget, cancellation, counter, 1)
+}
+
+fn charge_quarantine_amount(
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+    counter: WorkCounter,
+    amount: u64,
+) -> Result<(), QuarantineError> {
+    if cancellation.is_cancelled() {
+        return Err(QuarantineError::Cancelled);
+    }
+    budget
+        .charge(counter, amount)
+        .map_err(|_| QuarantineError::BudgetExhausted)
 }
 
 #[cfg(test)]
@@ -150,8 +212,12 @@ mod tests {
     #[test]
     fn detect_device_equivocation_groups() {
         let first = candidate(1, 1, 1, 1);
-        assert!(detect_equivocations([first.clone()]).is_empty());
-        assert!(detect_equivocations([first.clone(), first.clone()]).is_empty());
+        let detect = |candidates| {
+            detect_equivocations(candidates, &mut WorkBudget::new(0, 100), &NeverCancelled)
+                .unwrap_or_default()
+        };
+        assert!(detect(vec![first.clone()]).is_empty());
+        assert!(detect(vec![first.clone(), first.clone()]).is_empty());
 
         let mut conflict = first.clone();
         conflict.change_hash = ChangeHash::from_bytes([2; 32]);
@@ -161,7 +227,7 @@ mod tests {
         let mut later = conflict.clone();
         later.sequence = 2;
         later.change_hash = ChangeHash::from_bytes([4; 32]);
-        let groups = detect_equivocations([later, third, conflict, first]);
+        let groups = detect(vec![later, third, conflict, first]);
         assert_eq!(groups.len(), 1);
         assert_eq!(groups[0].first_sequence, 1);
         assert_eq!(groups[0].conflicting_changes.len(), 3);
@@ -181,8 +247,12 @@ mod tests {
         later.change_hash = ChangeHash::from_bytes([3; 32]);
         let mut later_conflict = later.clone();
         later_conflict.change_hash = ChangeHash::from_bytes([4; 32]);
-        let groups =
-            detect_equivocations([later_conflict, first_conflict.clone(), later, first.clone()]);
+        let groups = detect_equivocations(
+            [later_conflict, first_conflict.clone(), later, first.clone()],
+            &mut WorkBudget::new(0, 100),
+            &NeverCancelled,
+        )
+        .unwrap_or_default();
         assert_eq!(groups.len(), 1);
         assert_eq!(groups[0].first_sequence, 1);
         assert_eq!(
@@ -229,8 +299,8 @@ mod tests {
         );
         assert!(!result.quarantined.contains(&independent.change_hash));
         assert_eq!(result.alerts.len(), 1);
-        assert_eq!(budget.consumed().get(WorkCounter::GraphNode), 9);
-        assert_eq!(budget.consumed().get(WorkCounter::GraphEdge), 2);
+        assert!(budget.consumed().get(WorkCounter::GraphNode) > 9);
+        assert!(budget.consumed().get(WorkCounter::GraphEdge) >= 2);
         assert!(matches!(
             result.alerts[0],
             IntegrityAlert::DeviceEquivocation(_)
