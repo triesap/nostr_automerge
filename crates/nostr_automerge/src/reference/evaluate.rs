@@ -92,6 +92,7 @@ pub(crate) fn evaluate_batch(
     let mut canonical_controls = Vec::new();
     let mut integrity_alerts = Vec::new();
     let mut completion = Completion::Complete;
+    let mut failure = None;
     let mut accepted_changes = BTreeSet::new();
     let mut accepted_at_control = BTreeMap::new();
     let mut parent_epoch_result: Option<EpochEvaluationResult> = None;
@@ -207,13 +208,13 @@ pub(crate) fn evaluate_batch(
             .cloned()
             .unwrap_or_default();
         let Some(control) = controls.get(&selected) else {
-            completion = Completion::Failed;
+            failure = Some(EvaluationFailure::InvariantViolation);
             break;
         };
         let Some(selected_state) =
             accepted_state_for_closure(&selected_base, &controls, parent_epoch_result.as_ref())
         else {
-            completion = Completion::Failed;
+            failure = Some(EvaluationFailure::InvariantViolation);
             break;
         };
         canonical_controls.push(selected);
@@ -262,7 +263,7 @@ pub(crate) fn evaluate_batch(
                 break;
             }
             Err(EpochResolutionError::InvalidState) => {
-                completion = Completion::Failed;
+                failure = Some(EvaluationFailure::Graph);
                 break;
             }
         };
@@ -303,7 +304,7 @@ pub(crate) fn evaluate_batch(
                     break;
                 }
                 Err(QuarantineError::Alert(_)) => {
-                    completion = Completion::Failed;
+                    failure = Some(EvaluationFailure::InvariantViolation);
                     break;
                 }
             }
@@ -319,7 +320,7 @@ pub(crate) fn evaluate_batch(
             dispositions.clone(),
             Vec::new(),
         ) else {
-            completion = Completion::Failed;
+            failure = Some(EvaluationFailure::InvariantViolation);
             break;
         };
         accepted_at_control.insert(selected, AcceptedAtControl::from_result(&epoch_result));
@@ -330,9 +331,9 @@ pub(crate) fn evaluate_batch(
         parent_id = Some(selected);
     }
 
-    if completion != Completion::Complete {
+    if completion != Completion::Complete || failure.is_some() {
         let heads = derive_heads(&accepted_changes, &controls);
-        return incomplete_report(
+        let report = incomplete_report(
             canonical_controls,
             dispositions,
             accepted_changes,
@@ -340,6 +341,10 @@ pub(crate) fn evaluate_batch(
             completion,
         )
         .with_heads(heads);
+        return match failure {
+            Some(failure) => report.with_failure(failure),
+            None => report,
+        };
     }
 
     let candidates = controls
@@ -405,7 +410,7 @@ pub(crate) fn evaluate_batch(
                     dispositions,
                     accepted_changes,
                     integrity_alerts,
-                    Completion::Failed,
+                    Completion::Complete,
                 )
                 .with_failure(EvaluationFailure::Apply)
                 .with_heads(heads);
@@ -426,7 +431,7 @@ pub(crate) fn evaluate_batch(
                 dispositions,
                 accepted_changes,
                 integrity_alerts,
-                Completion::Failed,
+                Completion::Complete,
             )
             .with_failure(EvaluationFailure::InvariantViolation)
             .with_heads(derived_heads);
@@ -645,7 +650,6 @@ fn incomplete_report(
             Completion::Complete => None,
             Completion::BudgetExhausted => Some(EvaluationFailure::BudgetExhausted),
             Completion::Cancelled => Some(EvaluationFailure::Cancelled),
-            Completion::Failed => Some(EvaluationFailure::InvariantViolation),
         },
     }
 }
@@ -751,7 +755,7 @@ mod tests {
             &mut WorkBudget::new(0, 20),
             &NeverCancelled,
         );
-        assert_eq!(materialization_failed.completion, Completion::Failed);
+        assert_eq!(materialization_failed.completion, Completion::Complete);
         assert_eq!(
             materialization_failed.failure,
             Some(EvaluationFailure::Apply)

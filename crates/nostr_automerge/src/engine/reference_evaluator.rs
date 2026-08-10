@@ -76,7 +76,10 @@ impl ReferenceEvaluator {
             batch.failure = Some(EvaluationFailure::BudgetExhausted);
             batch.materialized_document = None;
         }
-        if batch.completion == Completion::Failed {
+        if !matches!(
+            batch.failure,
+            None | Some(EvaluationFailure::BudgetExhausted | EvaluationFailure::Cancelled)
+        ) {
             return Err(match batch.failure {
                 Some(EvaluationFailure::Graph) => EvaluationError::Graph,
                 Some(EvaluationFailure::Decode) => EvaluationError::Decode,

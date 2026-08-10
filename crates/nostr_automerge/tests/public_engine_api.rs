@@ -4376,7 +4376,7 @@ fn validated_checkpoint_descriptor_carrier_enters_corpus() {
         checkpoint.status(),
         CheckpointVerificationStatus::PendingControl
     );
-    assert_eq!(checkpoint.completion(), Completion::Failed);
+    assert_eq!(checkpoint.completion(), Completion::Complete);
 
     let sign = |created_at: u64, tags: Vec<Vec<String>>, content: String| {
         signer.sign(

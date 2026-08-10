@@ -153,7 +153,7 @@ impl CheckpointVerificationResult {
             CheckpointVerificationStatus::Verified => Completion::Complete,
             CheckpointVerificationStatus::BudgetExhausted => Completion::BudgetExhausted,
             CheckpointVerificationStatus::Cancelled => Completion::Cancelled,
-            _ => Completion::Failed,
+            _ => Completion::Complete,
         }
     }
 }

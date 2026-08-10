@@ -149,7 +149,6 @@ fn generic_report(
         Completion::Complete => "complete",
         Completion::BudgetExhausted => "budget_exhausted",
         Completion::Cancelled => "cancelled",
-        Completion::Failed => return Err(RunError::Input),
     }
     .to_owned();
     output.integrity_alerts = report

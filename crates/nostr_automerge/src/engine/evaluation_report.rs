@@ -261,16 +261,6 @@ impl EvaluationReport {
                     Some(EvaluationFailure::BudgetExhausted)
                 )
                 | (Completion::Cancelled, Some(EvaluationFailure::Cancelled))
-                | (
-                    Completion::Failed,
-                    Some(
-                        EvaluationFailure::InvalidEvidence
-                            | EvaluationFailure::Graph
-                            | EvaluationFailure::Decode
-                            | EvaluationFailure::Apply
-                            | EvaluationFailure::InvariantViolation
-                    )
-                )
         );
         if !completion_matches_failure {
             return Err(EvaluationReportInvariant);

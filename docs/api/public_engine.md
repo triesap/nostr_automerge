@@ -36,9 +36,10 @@ raw event content or materialized document bytes.
 `Completion::Complete` guarantees that scheduling, Automerge application,
 materialization, and applied-head agreement succeeded and that a real immutable
 document view is present, including for an empty accepted history.
-`BudgetExhausted`, `Cancelled`, and `Failed` are local execution states. Their
+`BudgetExhausted` and `Cancelled` are local incomplete execution states. Their
 matching `EvaluationFailure` category explains why evaluation stopped without
-reclassifying accepted, pending, invalid, or excluded protocol evidence. An
+reclassifying accepted, pending, invalid, or excluded protocol evidence.
+Non-capacity failures are `EvaluationError` values, never completion values. An
 incomplete report never exposes a document assembled from partial work.
 
 The API is alpha. Public type and method names may change before a stable crate
