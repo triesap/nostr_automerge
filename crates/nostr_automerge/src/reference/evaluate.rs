@@ -5,6 +5,7 @@ use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 use crate::control::candidate::{CandidateResult, evaluate_child};
 use crate::control::candidate_outcome::ControlCandidateOutcome;
 use crate::control::epoch_state::AcceptedEpochState;
+use crate::control::frontier::accepted_frontier_closure;
 use crate::control::parent_view::ParentEpochView;
 use crate::control::select::select_valid_outcomes_with_alert;
 use crate::control::validate::ControlEnvelope;
@@ -76,129 +77,161 @@ pub(crate) fn evaluate_batch(
             .or_default()
             .insert(control.event_id);
     }
+    let mut control_dispositions = controls
+        .keys()
+        .copied()
+        .map(|event_id| (event_id, ProtocolDisposition::Excluded))
+        .collect::<BTreeMap<_, _>>();
+    let mut dispositions = controls
+        .values()
+        .flat_map(|control| control.changes.iter())
+        .map(|change| (change.candidate.change_hash, ProtocolDisposition::Excluded))
+        .collect::<BTreeMap<_, _>>();
     let mut canonical_controls = Vec::new();
     let mut integrity_alerts = Vec::new();
-    let mut parent = None;
-    while let Some(children) = by_parent.get(&parent) {
+    let mut completion = Completion::Complete;
+    let mut accepted_changes = BTreeSet::new();
+    let mut accepted_at_control = BTreeMap::new();
+    let mut parent_id = None;
+    while let Some(children) = by_parent.get(&parent_id) {
         if cancellation.is_cancelled() {
-            return incomplete_report(
-                canonical_controls,
-                BTreeMap::new(),
-                BTreeSet::new(),
-                integrity_alerts,
-                Completion::Cancelled,
-            );
+            completion = Completion::Cancelled;
+            break;
         }
         let candidate_count = u64::try_from(children.len()).unwrap_or(u64::MAX);
         if budget
             .charge(WorkCounter::Control, candidate_count)
             .is_err()
         {
-            return incomplete_report(
-                canonical_controls,
-                BTreeMap::new(),
-                BTreeSet::new(),
-                integrity_alerts,
-                Completion::BudgetExhausted,
-            );
+            completion = Completion::BudgetExhausted;
+            break;
         }
-        let outcomes = children.iter().filter_map(|event_id| {
-            controls.get(event_id).map(|control| {
-                ControlCandidateOutcome::valid(
-                    *event_id,
-                    control.parent,
-                    control
-                        .envelope
-                        .as_ref()
-                        .map_or(0, ControlEnvelope::sequence),
-                    control.accepted_base.clone(),
-                )
+        let parent_view = if parent_id.is_some() {
+            match parent_epoch_view(&accepted_changes, &controls) {
+                Some(view) => Some(view),
+                None => {
+                    completion = Completion::Failed;
+                    break;
+                }
+            }
+        } else {
+            None
+        };
+        let ancestry = canonical_controls
+            .iter()
+            .filter_map(|event_id| {
+                controls
+                    .get(event_id)
+                    .and_then(|control| control.envelope.as_ref())
+                    .map(ControlEnvelope::content)
             })
+            .collect::<Vec<_>>();
+        let parent_envelope = parent_id.and_then(|event_id| {
+            controls
+                .get(&event_id)
+                .and_then(|control| control.envelope.as_ref())
         });
-        let (selection, alert) = select_valid_outcomes_with_alert(parent, outcomes);
+        let outcomes = children
+            .iter()
+            .filter_map(|event_id| {
+                let control = controls.get(event_id)?;
+                let sequence = control
+                    .envelope
+                    .as_ref()
+                    .map_or(0, ControlEnvelope::sequence);
+                let Some(child) = control.envelope.as_ref() else {
+                    return Some(ControlCandidateOutcome::valid(
+                        *event_id,
+                        control.parent,
+                        sequence,
+                        control.accepted_base.clone(),
+                    ));
+                };
+                let Some(parent) = parent_envelope else {
+                    return Some(ControlCandidateOutcome::valid(
+                        *event_id,
+                        None,
+                        sequence,
+                        BTreeSet::new(),
+                    ));
+                };
+                let Some(view) = parent_view.as_ref() else {
+                    return Some(ControlCandidateOutcome::invalid(
+                        *event_id,
+                        control.parent,
+                        sequence,
+                        crate::DiagnosticCode::registered("control.state"),
+                        None,
+                    ));
+                };
+                Some(match evaluate_child(parent, child, &ancestry, view) {
+                    CandidateResult::Valid => {
+                        let closure = accepted_frontier_closure(
+                            child.base_heads(),
+                            view.accepted(),
+                            view.dependency_index(),
+                        );
+                        ControlCandidateOutcome::valid(
+                            *event_id,
+                            control.parent,
+                            sequence,
+                            closure.accepted,
+                        )
+                    }
+                    CandidateResult::Pending(diagnostic) => ControlCandidateOutcome::pending(
+                        *event_id,
+                        control.parent,
+                        sequence,
+                        diagnostic,
+                        None,
+                    ),
+                    CandidateResult::Invalid(diagnostic) => ControlCandidateOutcome::invalid(
+                        *event_id,
+                        control.parent,
+                        sequence,
+                        diagnostic,
+                        None,
+                    ),
+                })
+            })
+            .collect::<Vec<_>>();
+        for outcome in &outcomes {
+            if outcome.disposition() != ProtocolDisposition::Accepted {
+                control_dispositions.insert(outcome.event_id(), outcome.disposition());
+            }
+        }
+        let (selection, alert) =
+            select_valid_outcomes_with_alert(parent_id, outcomes.iter().cloned());
         let Some(selected) = selection.selected else {
             break;
         };
+        let selected_base = outcomes
+            .iter()
+            .find(|outcome| outcome.event_id() == selected)
+            .and_then(ControlCandidateOutcome::validated_base_closure)
+            .cloned()
+            .unwrap_or_default();
+        let Some(control) = controls.get(&selected) else {
+            completion = Completion::Failed;
+            break;
+        };
         canonical_controls.push(selected);
+        control_dispositions.insert(selected, ProtocolDisposition::Accepted);
         if let Some(alert) = alert {
             integrity_alerts.push(alert);
         }
-        parent = Some(selected);
-    }
-    let canonical_set = canonical_controls.iter().copied().collect::<BTreeSet<_>>();
-    let mut control_dispositions = controls
-        .keys()
-        .copied()
-        .map(|event_id| (event_id, ProtocolDisposition::Excluded))
-        .collect::<BTreeMap<_, _>>();
-    for event_id in &canonical_controls {
-        control_dispositions.insert(*event_id, ProtocolDisposition::Accepted);
-    }
-    let mut dispositions = BTreeMap::new();
-    for control in controls
-        .values()
-        .filter(|control| !canonical_set.contains(&control.event_id))
-    {
         for change in &control.changes {
-            dispositions.insert(change.candidate.change_hash, ProtocolDisposition::Excluded);
-        }
-    }
-    let mut completion = Completion::Complete;
-    let mut accepted_changes = BTreeSet::new();
-    let mut accepted_at_control = BTreeMap::new();
-    for (control_index, control_id) in canonical_controls.clone().iter().enumerate() {
-        let Some(control) = controls.get(control_id) else {
-            continue;
-        };
-        if cancellation.is_cancelled() {
-            completion = Completion::Cancelled;
-            break;
+            dispositions.remove(&change.candidate.change_hash);
         }
         if budget.charge(WorkCounter::Control, 1).is_err() {
             completion = Completion::BudgetExhausted;
             break;
         }
-        if control_index > 0
-            && let Some(parent_id) = control.parent
-            && let (Some(parent), Some(child)) = (
-                controls
-                    .get(&parent_id)
-                    .and_then(|value| value.envelope.as_ref()),
-                control.envelope.as_ref(),
-            )
-        {
-            let Some(view) = parent_epoch_view(&accepted_changes, &controls) else {
-                completion = Completion::Failed;
-                canonical_controls.truncate(control_index);
-                break;
-            };
-            let ancestry = canonical_controls[..control_index]
-                .iter()
-                .filter_map(|event_id| {
-                    controls
-                        .get(event_id)
-                        .and_then(|control| control.envelope.as_ref())
-                        .map(ControlEnvelope::content)
-                })
-                .collect::<Vec<_>>();
-            let outcome = evaluate_child(parent, child, &ancestry, &view);
-            if outcome != CandidateResult::Valid {
-                control_dispositions.insert(
-                    *control_id,
-                    match outcome {
-                        CandidateResult::Pending(_) => ProtocolDisposition::Pending,
-                        CandidateResult::Invalid(_) => ProtocolDisposition::Invalid,
-                        CandidateResult::Valid => ProtocolDisposition::Accepted,
-                    },
-                );
-                canonical_controls.truncate(control_index);
-                break;
-            }
-        }
-        for hash in accepted_changes.difference(&control.accepted_base) {
+        for hash in accepted_changes.difference(&selected_base) {
             dispositions.insert(*hash, ProtocolDisposition::Excluded);
         }
-        accepted_changes = control.accepted_base.clone();
+        accepted_changes = selected_base;
+        let control_index = canonical_controls.len() - 1;
         let epoch = if control_index == 0 {
             resolve_genesis_epoch(control, budget, cancellation)
         } else {
@@ -259,7 +292,8 @@ pub(crate) fn evaluate_batch(
         }));
         accepted_changes
             .retain(|hash| dispositions.get(hash) != Some(&ProtocolDisposition::Excluded));
-        accepted_at_control.insert(*control_id, accepted_changes.clone());
+        accepted_at_control.insert(selected, accepted_changes.clone());
+        parent_id = Some(selected);
     }
 
     if completion != Completion::Complete {

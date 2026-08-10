@@ -167,8 +167,8 @@ pub(crate) fn evaluate_epoch(
             });
             EpochCandidate {
                 candidate,
-                semantically_valid: authorized && !terminal,
-                canonical_control: true,
+                semantically_valid: authorized,
+                canonical_control: !terminal,
             }
         });
     let dispositions = resolve_epoch(

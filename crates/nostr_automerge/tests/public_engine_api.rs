@@ -194,7 +194,7 @@ fn pending_child_does_not_block_valid_sibling() {
     assert!(
         after
             .control_dispositions()
-            .contains(&(sibling_id, ProtocolDisposition::Excluded))
+            .contains(&(sibling_id, ProtocolDisposition::Invalid))
     );
 }
 
@@ -465,6 +465,112 @@ fn evaluate_selected_genesis_epoch() {
             .accepted_changes()
             .contains(&missing.change_hash())
     );
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn children_are_evaluated_one_epoch_at_a_time() {
+    let controller = TestSigner::from_byte(50);
+    let writer = TestSigner::from_byte(51);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "59".repeat(32)
+    )
+    .parse()
+    .expect("fixed three-level coordinate");
+    let members = vec![(writer.public_key().to_hex(), vec!["write"])];
+    let genesis = signed_acl_control(&controller, coordinate, 1, None, 0, members.clone());
+    let genesis_id = VerifiedNip01Event::verify(genesis.clone())
+        .expect("signed genesis")
+        .event_id();
+    let actor = ActorId::derive(coordinate, writer.public_key());
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
+        .expect("empty authoring document");
+    let first = document
+        .author_change(&[Operation::PutString {
+            key: "epoch0".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .expect("genesis epoch change");
+    let child = signed_acl_control_with_base(
+        &controller,
+        coordinate,
+        2,
+        Some(genesis_id),
+        1,
+        members.clone(),
+        &[first.change_hash()],
+    );
+    let child_id = VerifiedNip01Event::verify(child.clone())
+        .expect("signed child")
+        .event_id();
+    let second = document
+        .author_change(&[Operation::PutString {
+            key: "epoch1".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .expect("child epoch change");
+    let grandchild = signed_acl_control_with_base(
+        &controller,
+        coordinate,
+        3,
+        Some(child_id),
+        2,
+        members,
+        &[second.change_hash()],
+    );
+    let grandchild_id = VerifiedNip01Event::verify(grandchild.clone())
+        .expect("signed grandchild")
+        .event_id();
+    let sign_change =
+        |created_at: u64,
+         control_id: EventId,
+         authored: &nostr_automerge::authoring::AuthoredChange| {
+            writer.sign(
+                &UnsignedEventDraft::new(
+                    created_at,
+                    1_624,
+                    vec![
+                        vec!["a".to_owned(), coordinate.to_address()],
+                        vec!["e".to_owned(), control_id.to_hex()],
+                        vec!["x".to_owned(), authored.change_hash().to_hex()],
+                    ],
+                    base64::engine::general_purpose::STANDARD.encode(authored.raw()),
+                )
+                .expect("change draft")
+                .prepare(writer.public_key())
+                .expect("change preimage"),
+            )
+        };
+    let first_event = sign_change(4, genesis_id, &first);
+    let second_event = sign_change(5, child_id, &second);
+    let mut builder = CorpusBuilder::new();
+    for event in [grandchild, second_event, child, first_event, genesis] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(
+        report.canonical_controls(),
+        [genesis_id, child_id, grandchild_id]
+    );
+    assert_eq!(
+        report
+            .accepted_changes()
+            .iter()
+            .copied()
+            .collect::<BTreeSet<_>>(),
+        BTreeSet::from([first.change_hash(), second.change_hash()])
+    );
+    assert_eq!(report.heads(), [second.change_hash()]);
 }
 
 #[test]
