@@ -19,18 +19,34 @@ pub(crate) struct CandidateDependencyClosure {
     pub(crate) ordered: Vec<ChangeHash>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum CandidateClosureError {
+    BudgetExhausted,
+    Cancelled,
+}
+
 pub(crate) fn candidate_dependency_closure(
     candidate: &ChangeCandidate,
     candidates: &BTreeMap<ChangeHash, ChangeCandidate>,
-) -> CandidateDependencyClosure {
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<CandidateDependencyClosure, CandidateClosureError> {
     let mut result = CandidateDependencyClosure::default();
-    let mut pending = candidate.dependencies.clone();
+    let mut pending = Vec::with_capacity(candidate.dependencies.len());
+    for dependency in &candidate.dependencies {
+        charge_closure_work(budget, cancellation, WorkCounter::GraphEdge)?;
+        pending.push(*dependency);
+    }
     while let Some(hash) = pending.pop() {
+        charge_closure_work(budget, cancellation, WorkCounter::GraphNode)?;
         if !result.known.insert(hash) {
             continue;
         }
         if let Some(ancestor) = candidates.get(&hash) {
-            pending.extend(ancestor.dependencies.iter().copied());
+            for dependency in &ancestor.dependencies {
+                charge_closure_work(budget, cancellation, WorkCounter::GraphEdge)?;
+                pending.push(*dependency);
+            }
         } else {
             result.known.remove(&hash);
             result.missing.insert(hash);
@@ -40,16 +56,21 @@ pub(crate) fn candidate_dependency_closure(
     let mut indegrees = result
         .known
         .iter()
-        .map(|hash| (*hash, 0usize))
-        .collect::<BTreeMap<_, _>>();
+        .map(|hash| {
+            charge_closure_work(budget, cancellation, WorkCounter::GraphNode)
+                .map(|()| (*hash, 0usize))
+        })
+        .collect::<Result<BTreeMap<_, _>, _>>()?;
     let mut dependants = BTreeMap::<ChangeHash, BTreeSet<ChangeHash>>::new();
     for hash in &result.known {
+        charge_closure_work(budget, cancellation, WorkCounter::GraphNode)?;
         if let Some(ancestor) = candidates.get(hash) {
             for dependency in ancestor
                 .dependencies
                 .iter()
                 .filter(|dependency| result.known.contains(dependency))
             {
+                charge_closure_work(budget, cancellation, WorkCounter::GraphEdge)?;
                 if let Some(indegree) = indegrees.get_mut(hash) {
                     *indegree += 1;
                 }
@@ -59,12 +80,20 @@ pub(crate) fn candidate_dependency_closure(
     }
     let mut ready = indegrees
         .iter()
-        .filter_map(|(hash, indegree)| (*indegree == 0).then_some(*hash))
+        .map(|(hash, indegree)| {
+            charge_closure_work(budget, cancellation, WorkCounter::GraphNode)
+                .map(|()| (*indegree == 0).then_some(*hash))
+        })
+        .collect::<Result<Vec<_>, _>>()?
+        .into_iter()
+        .flatten()
         .collect::<BTreeSet<_>>();
     while let Some(hash) = ready.pop_first() {
+        charge_closure_work(budget, cancellation, WorkCounter::GraphNode)?;
         result.ordered.push(hash);
         if let Some(children) = dependants.get(&hash) {
             for child in children {
+                charge_closure_work(budget, cancellation, WorkCounter::GraphEdge)?;
                 if let Some(indegree) = indegrees.get_mut(child) {
                     *indegree -= 1;
                     if *indegree == 0 {
@@ -74,9 +103,29 @@ pub(crate) fn candidate_dependency_closure(
             }
         }
     }
-    let ordered = result.ordered.iter().copied().collect::<BTreeSet<_>>();
-    result.cyclic = result.known.difference(&ordered).copied().collect();
-    result
+    let mut ordered = BTreeSet::new();
+    for hash in &result.ordered {
+        charge_closure_work(budget, cancellation, WorkCounter::GraphNode)?;
+        ordered.insert(*hash);
+    }
+    for hash in result.known.difference(&ordered) {
+        charge_closure_work(budget, cancellation, WorkCounter::GraphNode)?;
+        result.cyclic.insert(*hash);
+    }
+    Ok(result)
+}
+
+fn charge_closure_work(
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+    counter: WorkCounter,
+) -> Result<(), CandidateClosureError> {
+    if cancellation.is_cancelled() {
+        return Err(CandidateClosureError::Cancelled);
+    }
+    budget
+        .charge(counter, 1)
+        .map_err(|_| CandidateClosureError::BudgetExhausted)
 }
 
 pub(crate) fn ancestor_closure(
@@ -120,7 +169,9 @@ pub(crate) fn ancestor_closure(
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
-    use super::{ClosureError, ancestor_closure, candidate_dependency_closure};
+    use super::{
+        CandidateClosureError, ClosureError, ancestor_closure, candidate_dependency_closure,
+    };
     use crate::graph::actor_state::tests::candidate;
     use crate::graph::dependency_graph::DependencyGraph;
     use crate::{ChangeHash, NeverCancelled, WorkBudget, WorkCounter};
@@ -188,14 +239,27 @@ mod tests {
             .into_iter()
             .map(|candidate| (candidate.change_hash, candidate))
             .collect::<BTreeMap<_, _>>();
-        let closure = candidate_dependency_closure(&diamond, &candidates);
+        let mut budget = WorkBudget::new(0, 100);
+        let closure =
+            candidate_dependency_closure(&diamond, &candidates, &mut budget, &NeverCancelled);
+        let Ok(closure) = closure else {
+            return;
+        };
         assert_eq!(closure.known, BTreeSet::from([hash(1), hash(2), hash(3)]));
         assert_eq!(closure.ordered, vec![hash(1), hash(2), hash(3)]);
         assert!(closure.missing.is_empty() && closure.cyclic.is_empty());
 
         let mut multiple_roots = diamond.clone();
         multiple_roots.dependencies = vec![left.change_hash, right.change_hash, hash(9)];
-        let closure = candidate_dependency_closure(&multiple_roots, &candidates);
+        let closure = candidate_dependency_closure(
+            &multiple_roots,
+            &candidates,
+            &mut WorkBudget::new(0, 100),
+            &NeverCancelled,
+        );
+        let Ok(closure) = closure else {
+            return;
+        };
         assert_eq!(closure.missing, BTreeSet::from([hash(9)]));
 
         let mut cycle_left = left;
@@ -208,8 +272,35 @@ mod tests {
             .collect::<BTreeMap<_, _>>();
         let mut cycle_root = root;
         cycle_root.dependencies = vec![cycle_left.change_hash];
-        let closure = candidate_dependency_closure(&cycle_root, &cycle_candidates);
+        let closure = candidate_dependency_closure(
+            &cycle_root,
+            &cycle_candidates,
+            &mut WorkBudget::new(0, 100),
+            &NeverCancelled,
+        );
+        let Ok(closure) = closure else {
+            return;
+        };
         assert_eq!(closure.cyclic, BTreeSet::from([hash(2), hash(3)]));
         assert!(closure.ordered.is_empty());
+
+        assert_eq!(
+            candidate_dependency_closure(
+                &diamond,
+                &candidates,
+                &mut WorkBudget::new(0, 0),
+                &NeverCancelled,
+            ),
+            Err(CandidateClosureError::BudgetExhausted)
+        );
+        assert_eq!(
+            candidate_dependency_closure(
+                &diamond,
+                &candidates,
+                &mut WorkBudget::new(0, 100),
+                &|| true,
+            ),
+            Err(CandidateClosureError::Cancelled)
+        );
     }
 }

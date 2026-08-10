@@ -13,7 +13,7 @@ evidence.
 | control ancestry | `reference::evaluate::collect_control_ancestry` and checkpoint ancestry lookup | `control` per canonical ancestor | before every lookup | metered for evaluation; checkpoint path pending |
 | frontier closure | `reference::evaluate::charge_control_closures` and `control::frontier` | conservative `graph_node` and `graph_edge` precharge for every closure pass | before nodes and before edges | metered |
 | actor reconstruction | `reference::epoch_engine::charge_actor_reconstruction` and `graph::actor_state` | conservative `graph_node` and `graph_edge` precharge for topology indexing and traversal | before reconstruction and between node/edge charges | metered |
-| dependency scheduling | `graph::schedule` | `graph_node`, `graph_edge` | every queue and adjacency loop | metered |
+| dependency scheduling | `graph::schedule` and `graph::closure::candidate_dependency_closure` | `graph_node`, `graph_edge` | every queue, set, topology, and adjacency loop | metered |
 | ancestor closure | `graph::closure::ancestor_closure` | `graph_node`, `graph_edge` | every stack and dependency loop | metered |
 | equivocation grouping | `graph::equivocation` | `graph_node`, `graph_edge` | grouping and quarantine walks | partial |
 | epoch fixpoint | `reference::epoch` | `graph_node`, `graph_edge`, `apply_change` | each pass and candidate | partial |

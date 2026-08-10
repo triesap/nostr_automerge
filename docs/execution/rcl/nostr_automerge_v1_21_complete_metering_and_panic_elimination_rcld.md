@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 21: Complete Metering And Panic Elimination
 
 Status: active
-Current checkpoint: `step_417`
+Current checkpoint: `step_418`
 Steps: `step_410` through `step_429`
 Primary findings: `FINDING_022`, `FINDING_023`, `FINDING_027`
 
@@ -38,4 +38,5 @@ optional later work, and never be converted into a protocol invalidity.
 - `step_413`: `5f0be91` — candidate transition charging is an explicit atomic boundary before stateful validation.
 - `step_414`: `63c5ddd` — every control frontier and antichain closure pass receives conservative graph precharges and cancellation boundaries.
 - `step_415`: `01d87f9` — canonical control ancestry charges and checks cancellation before every lookup.
-- `step_416`: this commit — actor reconstruction receives bounded node/edge precharges and cooperative cancellation at both evaluation sites.
+- `step_416`: `00c3477` — actor reconstruction receives bounded node/edge precharges and cooperative cancellation at both evaluation sites.
+- `step_417`: this commit — candidate dependency closure charges every evidence-derived node and edge traversal and propagates cancellation.

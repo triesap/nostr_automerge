@@ -9,7 +9,7 @@ use crate::graph::actor_state::{
     validate_actor_predecessor,
 };
 use crate::graph::change_candidate::ChangeCandidate;
-use crate::graph::closure::candidate_dependency_closure;
+use crate::graph::closure::{CandidateClosureError, candidate_dependency_closure};
 use crate::graph::dependency_graph::{GraphBuildError, build_graph};
 use crate::graph::epoch::{EpochAncestry, validate_epoch_ancestry};
 use crate::graph::equivocation::{QuarantineError, quarantine_equivocation_descendants};
@@ -231,7 +231,9 @@ pub(crate) fn evaluate_epoch(
                 && member.device == candidate.author
                 && member.roles.contains(&Role::Write)
         });
-        let closure = candidate_dependency_closure(&candidate, &all_candidates);
+        let closure =
+            candidate_dependency_closure(&candidate, &all_candidates, budget, cancellation)
+                .map_err(|error| EpochEvaluationError::Schedule(closure_schedule_error(error)))?;
         let complete_closure = closure.missing.is_empty().then_some(&closure.known);
         let actor_sequence_valid = complete_closure.is_none_or(|known| {
             validate_actor_predecessor(&candidate, known, &all_candidates).is_ok()
@@ -417,6 +419,13 @@ fn charge_actor_reconstruction(
     budget
         .charge(WorkCounter::GraphEdge, edges)
         .map_err(|_| ScheduleError::BudgetExhausted)
+}
+
+const fn closure_schedule_error(error: CandidateClosureError) -> ScheduleError {
+    match error {
+        CandidateClosureError::BudgetExhausted => ScheduleError::BudgetExhausted,
+        CandidateClosureError::Cancelled => ScheduleError::Cancelled,
+    }
 }
 
 #[cfg(test)]
