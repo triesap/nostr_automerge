@@ -2,9 +2,10 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::automerge_adapter::document::{AppliedDocument, materialize_history};
 use crate::control::candidate::{CandidateResult, evaluate_retained_writer_continuity};
+use crate::control::candidate_outcome::ControlCandidateOutcome;
 use crate::control::epoch_state::AcceptedEpochState;
 use crate::control::parent_view::ParentEpochView;
-use crate::control::select::select_with_alert;
+use crate::control::select::select_valid_outcomes_with_alert;
 use crate::control::validate::ControlEnvelope;
 use crate::graph::actor_state::initialize_actor_states;
 use crate::graph::change_candidate::ChangeCandidate;
@@ -99,7 +100,20 @@ pub(crate) fn evaluate_batch(
                 Completion::BudgetExhausted,
             );
         }
-        let (selection, alert) = select_with_alert(parent, children.iter().copied());
+        let outcomes = children.iter().filter_map(|event_id| {
+            controls.get(event_id).map(|control| {
+                ControlCandidateOutcome::valid(
+                    *event_id,
+                    control.parent,
+                    control
+                        .envelope
+                        .as_ref()
+                        .map_or(0, ControlEnvelope::sequence),
+                    control.accepted_base.clone(),
+                )
+            })
+        });
+        let (selection, alert) = select_valid_outcomes_with_alert(parent, outcomes);
         let Some(selected) = selection.selected else {
             break;
         };

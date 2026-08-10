@@ -1,6 +1,8 @@
 use std::collections::BTreeSet;
 
 use crate::EventId;
+use crate::ProtocolDisposition;
+use crate::control::candidate_outcome::ControlCandidateOutcome;
 use crate::{ControllerEquivocationAlert, IntegrityAlert};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -45,10 +47,25 @@ pub(crate) fn select_with_alert(
     (selection, alert)
 }
 
+pub(crate) fn select_valid_outcomes_with_alert(
+    parent: Option<EventId>,
+    outcomes: impl IntoIterator<Item = ControlCandidateOutcome>,
+) -> (ControlSelection, Option<IntegrityAlert>) {
+    select_with_alert(
+        parent,
+        outcomes.into_iter().filter_map(|outcome| {
+            (outcome.disposition() == ProtocolDisposition::Accepted).then_some(outcome.event_id())
+        }),
+    )
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{select_child, select_with_alert};
-    use crate::{EventId, IntegrityAlert};
+    use std::collections::BTreeSet;
+
+    use super::{select_child, select_valid_outcomes_with_alert, select_with_alert};
+    use crate::control::candidate_outcome::ControlCandidateOutcome;
+    use crate::{ChangeHash, DiagnosticCode, EventId, IntegrityAlert};
 
     #[test]
     fn select_canonical_child_by_lowest_eventid() {
@@ -85,5 +102,57 @@ mod tests {
                     && details.selected_control() == low
         ));
         assert_eq!(select_with_alert(Some(parent), [low]).1, None);
+    }
+
+    #[test]
+    fn select_only_valid_control_candidates() {
+        let parent = EventId::from_bytes([9; 32]);
+        let low_pending = ControlCandidateOutcome::pending(
+            EventId::from_bytes([1; 32]),
+            Some(parent),
+            1,
+            DiagnosticCode::registered("control.frontier"),
+            None,
+        );
+        let low_invalid = ControlCandidateOutcome::invalid(
+            EventId::from_bytes([2; 32]),
+            Some(parent),
+            1,
+            DiagnosticCode::registered("control.parent"),
+            None,
+        );
+        let first_valid = ControlCandidateOutcome::valid(
+            EventId::from_bytes([3; 32]),
+            Some(parent),
+            1,
+            BTreeSet::<ChangeHash>::new(),
+        );
+        let second_valid = ControlCandidateOutcome::valid(
+            EventId::from_bytes([4; 32]),
+            Some(parent),
+            1,
+            BTreeSet::new(),
+        );
+        for outcomes in [
+            vec![
+                second_valid.clone(),
+                low_invalid.clone(),
+                first_valid.clone(),
+                low_pending.clone(),
+            ],
+            vec![
+                low_pending.clone(),
+                first_valid.clone(),
+                second_valid.clone(),
+            ],
+            vec![low_invalid, second_valid, first_valid],
+        ] {
+            let (selection, _) = select_valid_outcomes_with_alert(Some(parent), outcomes);
+            assert_eq!(selection.selected, Some(EventId::from_bytes([3; 32])));
+            assert_eq!(
+                selection.excluded_siblings,
+                BTreeSet::from([EventId::from_bytes([4; 32])])
+            );
+        }
     }
 }

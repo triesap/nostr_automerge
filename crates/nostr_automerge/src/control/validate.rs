@@ -23,6 +23,10 @@ impl ControlEnvelope {
             content,
         }
     }
+
+    pub(crate) const fn sequence(&self) -> u64 {
+        self.content.sequence
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
