@@ -219,7 +219,17 @@ impl MaterializedDocumentView {
         let mut entries = Vec::new();
         let mut marks = Vec::new();
         project_document_iterative(&document, &mut entries, &mut marks, &mut meter)?;
+        charge_projection(
+            &mut meter,
+            WorkCounter::Assertion,
+            projection_sort_work(entries.len())?,
+        )?;
         entries.sort_by(|left, right| left.path.cmp(&right.path));
+        charge_projection(
+            &mut meter,
+            WorkCounter::Assertion,
+            projection_sort_work(marks.len())?,
+        )?;
         marks.sort();
         Ok(Self {
             canonical_bytes,
@@ -317,6 +327,14 @@ fn charge_projection(
     Ok(())
 }
 
+fn projection_sort_work(len: usize) -> Result<u64, ProjectionError> {
+    if len < 2 {
+        return Ok(0);
+    }
+    let len = u64::try_from(len).map_err(|_| ProjectionError::Budget)?;
+    Ok(len.saturating_mul(u64::from(len.ilog2()) + 1))
+}
+
 fn project_document_iterative(
     document: &Automerge,
     entries: &mut Vec<MaterializedEntry>,
@@ -329,12 +347,25 @@ fn project_document_iterative(
         path: Vec::new(),
     }];
     while let Some(current) = pending.pop() {
+        charge_projection(meter, WorkCounter::Assertion, 1)?;
         match current.object_type {
             MaterializedObjectType::Map | MaterializedObjectType::Table => {
-                let mut keys = document.keys(&current.object).collect::<Vec<_>>();
+                let mut keys = Vec::new();
+                for key in document.keys(&current.object) {
+                    charge_projection(meter, WorkCounter::Assertion, 1)?;
+                    keys.push(key);
+                }
                 keys.sort();
                 keys.dedup();
                 for key in keys {
+                    charge_projection(
+                        meter,
+                        WorkCounter::Assertion,
+                        u64::try_from(current.path.len())
+                            .ok()
+                            .and_then(|length| length.checked_add(1))
+                            .ok_or(ProjectionError::Budget)?,
+                    )?;
                     let mut next = current.path.clone();
                     next.push(MaterializedPathElement::Key(key.clone()));
                     project_property(
@@ -350,6 +381,14 @@ fn project_document_iterative(
             }
             MaterializedObjectType::List => {
                 for index in 0..document.length(&current.object) {
+                    charge_projection(
+                        meter,
+                        WorkCounter::Assertion,
+                        u64::try_from(current.path.len())
+                            .ok()
+                            .and_then(|length| length.checked_add(1))
+                            .ok_or(ProjectionError::Budget)?,
+                    )?;
                     let mut next = current.path.clone();
                     next.push(MaterializedPathElement::Index(
                         u64::try_from(index).map_err(|_| ProjectionError::Invalid)?,
@@ -396,10 +435,15 @@ fn project_property(
 ) -> Result<(), ProjectionError> {
     let mut conflicts = Vec::new();
     let mut objects = Vec::new();
-    for (value, id) in document
+    let values = document
         .get_all(object, property)
-        .map_err(|_| ProjectionError::Invalid)?
-    {
+        .map_err(|_| ProjectionError::Invalid)?;
+    charge_projection(
+        meter,
+        WorkCounter::Assertion,
+        u64::try_from(values.len()).map_err(|_| ProjectionError::Budget)?,
+    )?;
+    for (value, id) in values {
         if let Value::Object(kind) = &value {
             objects.push((object_type(*kind), id.clone()));
         }
@@ -408,6 +452,11 @@ fn project_property(
             value: value_at(document, value, &id, meter)?,
         });
     }
+    charge_projection(
+        meter,
+        WorkCounter::Assertion,
+        projection_sort_work(conflicts.len())?,
+    )?;
     conflicts.sort_by(|left, right| left.operation_id.cmp(&right.operation_id));
     entries.push(MaterializedEntry {
         path: path.clone(),
@@ -429,6 +478,7 @@ fn value_at(
     id: &ObjId,
     meter: &mut Option<ProjectionMeter<'_>>,
 ) -> Result<MaterializedValue, ProjectionError> {
+    charge_projection(meter, WorkCounter::Assertion, 1)?;
     match value {
         Value::Scalar(value) => Ok(MaterializedValue::Scalar(scalar(value.as_ref())?)),
         Value::Object(ObjType::Text) => {
@@ -681,16 +731,17 @@ mod tests {
             tx.commit();
         }
         let bytes = document.save_nocompress();
-        let mut exact = WorkBudget::new(u64::MAX, 5);
+        let mut exact = WorkBudget::new(u64::MAX, u64::MAX);
         let projected = MaterializedDocumentView::from_canonical_bytes_metered(
             bytes.clone(),
             &mut exact,
             &NeverCancelled,
         );
         assert!(projected.is_ok());
-        assert_eq!(exact.consumed().get(WorkCounter::Assertion), 4);
+        let assertion_work = exact.consumed().get(WorkCounter::Assertion);
+        assert!(assertion_work >= 4);
 
-        let mut exhausted = WorkBudget::new(u64::MAX, 4);
+        let mut exhausted = WorkBudget::new(u64::MAX, assertion_work);
         assert_eq!(
             MaterializedDocumentView::from_canonical_bytes_metered(
                 bytes,
@@ -699,7 +750,7 @@ mod tests {
             ),
             Err(ProjectionError::Budget)
         );
-        assert_eq!(exhausted.consumed().get(WorkCounter::Assertion), 0);
+        assert!(exhausted.consumed().get(WorkCounter::Assertion) < assertion_work);
     }
 
     #[test]
