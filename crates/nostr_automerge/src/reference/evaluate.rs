@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::automerge_adapter::document::{AppliedDocument, materialize_history};
-use crate::control::candidate::{CandidateResult, evaluate_retained_writer_continuity};
+use crate::control::candidate::{CandidateResult, evaluate_child};
 use crate::control::candidate_outcome::ControlCandidateOutcome;
 use crate::control::epoch_state::AcceptedEpochState;
 use crate::control::parent_view::ParentEpochView;
@@ -170,7 +170,16 @@ pub(crate) fn evaluate_batch(
                 canonical_controls.truncate(control_index);
                 break;
             };
-            let outcome = evaluate_retained_writer_continuity(parent, child, &view);
+            let ancestry = canonical_controls[..control_index]
+                .iter()
+                .filter_map(|event_id| {
+                    controls
+                        .get(event_id)
+                        .and_then(|control| control.envelope.as_ref())
+                        .map(ControlEnvelope::content)
+                })
+                .collect::<Vec<_>>();
+            let outcome = evaluate_child(parent, child, &ancestry, &view);
             if outcome != CandidateResult::Valid {
                 control_dispositions.insert(
                     *control_id,

@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 16: Stateful Control Candidate Validation
 
 Status: active
-Current checkpoint: `step_335`
+Current checkpoint: `step_336`
 Steps: `step_318` through `step_336`
 Primary findings: `FINDING_014`, `FINDING_015`, `FINDING_018`
 
@@ -50,4 +50,5 @@ outcome derived from accepted parent state.
 - `step_331`: `cdd7dee` — public reports retain dynamic control dispositions.
 - `step_332`: `783c43c` — control selection consumes only valid candidate outcomes.
 - `step_333`: `d847dea` — pending children remain visible and promote after dependency arrival.
-- `step_334`: this commit — invalid lower-ID children cannot defeat valid siblings.
+- `step_334`: `2559a93` — invalid lower-ID children cannot defeat valid siblings.
+- `step_335`: this commit — the complete signed child-control matrix executes publicly.

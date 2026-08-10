@@ -61,6 +61,8 @@ fn signed_acl_control_with_base(
         })
         .collect::<Vec<_>>()
         .join(",");
+    let mut base_heads = base_heads.to_vec();
+    base_heads.sort_unstable();
     let base_heads = base_heads
         .iter()
         .map(|head| format!("\"{}\"", head.to_hex()))
@@ -634,6 +636,152 @@ fn invalid_lower_id_child_cannot_win() {
         reports[2].control_dispositions()
     );
     assert_eq!(reports[0].history_digest(), reports[2].history_digest());
+}
+
+#[allow(clippy::expect_used)]
+fn signed_frontier_antichain_is_enforced() {
+    let controller = TestSigner::from_byte(41);
+    let writer = TestSigner::from_byte(42);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "54".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let members = vec![(writer.public_key().to_hex(), vec!["write"])];
+    let genesis = signed_acl_control(&controller, coordinate, 1, None, 0, members.clone());
+    let genesis_id = VerifiedNip01Event::verify(genesis.clone())
+        .expect("signed genesis")
+        .event_id();
+    let actor = ActorId::derive(coordinate, writer.public_key());
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
+        .expect("empty authoring document");
+    let first = document
+        .author_change(&[Operation::PutString {
+            key: "first".to_owned(),
+            value: "ancestor".to_owned(),
+        }])
+        .expect("first canonical change");
+    let second = document
+        .author_change(&[Operation::PutString {
+            key: "second".to_owned(),
+            value: "descendant".to_owned(),
+        }])
+        .expect("second canonical change");
+    let sign_change = |created_at: u64, authored: &nostr_automerge::authoring::AuthoredChange| {
+        writer.sign(
+            &UnsignedEventDraft::new(
+                created_at,
+                1_624,
+                vec![
+                    vec!["a".to_owned(), coordinate.to_address()],
+                    vec!["e".to_owned(), genesis_id.to_hex()],
+                    vec!["x".to_owned(), authored.change_hash().to_hex()],
+                ],
+                base64::engine::general_purpose::STANDARD.encode(authored.raw()),
+            )
+            .expect("change draft")
+            .prepare(writer.public_key())
+            .expect("change preimage"),
+        )
+    };
+    let first_event = sign_change(2, &first);
+    let second_event = sign_change(3, &second);
+    let child = signed_acl_control_with_base(
+        &controller,
+        coordinate,
+        4,
+        Some(genesis_id),
+        1,
+        members,
+        &[first.change_hash(), second.change_hash()],
+    );
+    let child_id = VerifiedNip01Event::verify(child.clone())
+        .expect("signed non-antichain child")
+        .event_id();
+    let mut builder = CorpusBuilder::new();
+    for event in [child, second_event, genesis, first_event] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(report.canonical_controls(), [genesis_id]);
+    assert_eq!(report.accepted_changes().len(), 2);
+    assert!(
+        report
+            .control_dispositions()
+            .contains(&(child_id, ProtocolDisposition::Invalid))
+    );
+}
+
+#[test]
+fn signed_control_transition_matrix() {
+    let scenarios: &[(&str, &str, fn())] = &[
+        (
+            "parent_sequence",
+            "R2_CTRL_001",
+            signed_child_parent_sequence_rules,
+        ),
+        (
+            "account",
+            "R2_CTRL_001",
+            signed_child_account_mapping_is_immutable,
+        ),
+        ("roles", "R2_CTRL_001", signed_child_roles_are_monotonic),
+        (
+            "reintroduction",
+            "R2_CTRL_001",
+            signed_removed_device_cannot_reappear,
+        ),
+        (
+            "terminal",
+            "R2_CTRL_001",
+            signed_terminal_genesis_rejects_children,
+        ),
+        (
+            "successor",
+            "R2_CTRL_001",
+            signed_successor_genesis_requires_reciprocal_terminal_continuity,
+        ),
+        (
+            "frontier_antichain",
+            "R2_CTRL_010",
+            signed_frontier_antichain_is_enforced,
+        ),
+        (
+            "retained_writer",
+            "R2_CTRL_010",
+            signed_child_retained_writer_frontier_rules,
+        ),
+        (
+            "missing_evidence",
+            "R2_CTRL_010",
+            pending_controls_converge_after_signed_parent_delivery,
+        ),
+        (
+            "valid_sibling",
+            "R2_CTRL_010",
+            pending_child_does_not_block_valid_sibling,
+        ),
+        (
+            "invalid_lower_id_sibling",
+            "R2_CTRL_010",
+            invalid_lower_id_child_cannot_win,
+        ),
+    ];
+    for (name, requirement, scenario) in scenarios {
+        assert!(!name.is_empty());
+        assert!(matches!(*requirement, "R2_CTRL_001" | "R2_CTRL_010"));
+        scenario();
+    }
 }
 
 #[test]

@@ -27,6 +27,10 @@ impl ControlEnvelope {
     pub(crate) const fn sequence(&self) -> u64 {
         self.content.sequence
     }
+
+    pub(crate) const fn content(&self) -> &ValidatedControlContent {
+        &self.content
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
