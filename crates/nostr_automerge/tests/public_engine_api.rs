@@ -583,6 +583,18 @@ fn interleaved_child_selection() {
 }
 
 #[test]
+fn no_preselected_control_chain_path() {
+    let evaluator_source = include_str!("../src/reference/evaluate.rs");
+    let public_adapter_source = include_str!("../src/engine/reference_evaluator.rs");
+    assert!(!evaluator_source.contains(
+        "for (control_index, control_id) in canonical_controls.clone().iter().enumerate()"
+    ));
+    assert!(evaluator_source.contains("parent_epoch_result"));
+    assert!(public_adapter_source.contains("envelope: Some(envelope)"));
+    children_are_evaluated_one_epoch_at_a_time();
+}
+
+#[test]
 #[allow(clippy::expect_used)]
 fn child_epoch_uses_exact_base_closure() {
     children_are_evaluated_one_epoch_at_a_time();
