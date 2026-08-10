@@ -31,3 +31,11 @@ The implementation checkpoints following this inventory close every row marked
 `partial` or `remediation required`. Test-only loops and loops bounded by a
 literal protocol constant are outside runtime charging, but remain subject to
 the source panic policy.
+
+## Frozen Counter Semantics
+
+`decode_byte` and `checkpoint_byte` consume byte capacity. Every other counter
+consumes item capacity. A charge computes both the next counter and remaining
+capacity before mutating either value, so overflow and exhaustion are atomic.
+Cancellation is checked before the charge and before performing the associated
+optional work. A failed charge never becomes protocol-invalid evidence.

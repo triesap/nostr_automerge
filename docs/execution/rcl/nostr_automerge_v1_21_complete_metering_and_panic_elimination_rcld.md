@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 21: Complete Metering And Panic Elimination
 
 Status: active
-Current checkpoint: `step_411`
+Current checkpoint: `step_412`
 Steps: `step_410` through `step_429`
 Primary findings: `FINDING_022`, `FINDING_023`, `FINDING_027`
 
@@ -32,4 +32,5 @@ optional later work, and never be converted into a protocol invalidity.
 
 ## Completed Checkpoints
 
-- `step_410`: this commit — the evidence-derived traversal inventory assigns every loop a counter and cancellation owner or marks the exact remediation gap.
+- `step_410`: `c7adb47` — the evidence-derived traversal inventory assigns every loop a counter and cancellation owner or marks the exact remediation gap.
+- `step_411`: this commit — every counter has a public frozen capacity dimension and failed charges remain atomic.

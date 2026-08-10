@@ -26,6 +26,15 @@ pub enum WorkCounter {
     Assertion,
 }
 
+/// The caller-provided capacity dimension consumed by a work counter.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum WorkCapacity {
+    /// Capacity measured in exact bytes.
+    Bytes,
+    /// Capacity measured in deterministic logical items.
+    Items,
+}
+
 impl WorkCounter {
     /// Returns the stable machine-readable counter name.
     #[must_use]
@@ -41,6 +50,22 @@ impl WorkCounter {
             Self::CheckpointByte => "checkpoint_byte",
             Self::CheckpointItem => "checkpoint_item",
             Self::Assertion => "assertion",
+        }
+    }
+
+    /// Returns the capacity dimension charged by this counter.
+    #[must_use]
+    pub const fn capacity(self) -> WorkCapacity {
+        match self {
+            Self::DecodeByte | Self::CheckpointByte => WorkCapacity::Bytes,
+            Self::Event
+            | Self::Carrier
+            | Self::Control
+            | Self::GraphNode
+            | Self::GraphEdge
+            | Self::ApplyChange
+            | Self::CheckpointItem
+            | Self::Assertion => WorkCapacity::Items,
         }
     }
 }
@@ -135,10 +160,7 @@ impl WorkBudget {
             .get(counter)
             .checked_add(amount)
             .ok_or(BudgetExhausted { counter })?;
-        let bytes = matches!(
-            counter,
-            WorkCounter::DecodeByte | WorkCounter::CheckpointByte
-        );
+        let bytes = counter.capacity() == WorkCapacity::Bytes;
         let remaining = if bytes {
             self.remaining_bytes
         } else {
@@ -245,7 +267,9 @@ impl CancellationCheck for NeverCancelled {
 
 #[cfg(test)]
 mod tests {
-    use super::{CancellationCheck, NeverCancelled, WorkBudget, WorkCounter, WorkCounters};
+    use super::{
+        CancellationCheck, NeverCancelled, WorkBudget, WorkCapacity, WorkCounter, WorkCounters,
+    };
 
     #[test]
     fn deterministic_work_dimensions_are_independent() {
@@ -263,6 +287,25 @@ mod tests {
             WorkCounter::Assertion,
         ] {
             assert_eq!(counters.get(counter), 0);
+        }
+    }
+
+    #[test]
+    fn every_counter_has_one_frozen_capacity_dimension() {
+        for counter in [WorkCounter::DecodeByte, WorkCounter::CheckpointByte] {
+            assert_eq!(counter.capacity(), WorkCapacity::Bytes);
+        }
+        for counter in [
+            WorkCounter::Event,
+            WorkCounter::Carrier,
+            WorkCounter::Control,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphEdge,
+            WorkCounter::ApplyChange,
+            WorkCounter::CheckpointItem,
+            WorkCounter::Assertion,
+        ] {
+            assert_eq!(counter.capacity(), WorkCapacity::Items);
         }
     }
 

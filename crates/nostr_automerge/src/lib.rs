@@ -69,7 +69,8 @@ pub use wire::error::WireDiagnostic;
 pub use wire::nip01::verified::{Nip01VerificationError, VerifiedNip01Event};
 pub use wire::raw_event::{RawEventBytes, RawEventError};
 pub use work_budget::{
-    BudgetExhausted, CancellationCheck, NeverCancelled, WorkBudget, WorkCounter, WorkCounters,
+    BudgetExhausted, CancellationCheck, NeverCancelled, WorkBudget, WorkCapacity, WorkCounter,
+    WorkCounters,
 };
 
 /// The package version of this implementation.
