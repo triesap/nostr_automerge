@@ -821,6 +821,10 @@ fn signed_genesis_candidate_classification() {
     );
     assert_eq!(report.canonical_controls(), [selected]);
     assert_eq!(report.control_dispositions().len(), 2);
+    assert!(report.integrity_alerts().iter().any(|alert| matches!(
+        alert,
+        nostr_automerge::IntegrityAlert::ControllerEquivocation { .. }
+    )));
 
     let successor_controller = TestSigner::from_byte(45);
     let successor_writer = TestSigner::from_byte(46);
@@ -869,6 +873,11 @@ fn signed_genesis_candidate_classification() {
         [(pending_id, ProtocolDisposition::Pending)]
     );
 
+    signed_successor_genesis_requires_reciprocal_terminal_continuity();
+}
+
+#[test]
+fn invalid_lower_id_genesis_cannot_win() {
     signed_successor_genesis_requires_reciprocal_terminal_continuity();
 }
 
@@ -2849,10 +2858,17 @@ fn signed_successor_genesis_requires_reciprocal_terminal_continuity() {
     let valid_id = VerifiedNip01Event::verify(valid.clone())
         .expect("signed successor")
         .event_id();
-    let invalid = sign_successor(4, wrong_terminal_id);
+    let invalid = (4..10_000)
+        .map(|created_at| sign_successor(created_at, wrong_terminal_id))
+        .find(|candidate| {
+            VerifiedNip01Event::verify(candidate.clone())
+                .is_ok_and(|event| event.event_id() < valid_id)
+        })
+        .expect("find a lower-id invalid successor genesis");
     let invalid_id = VerifiedNip01Event::verify(invalid.clone())
         .expect("signed invalid successor")
         .event_id();
+    assert!(invalid_id < valid_id);
     let mut builder = CorpusBuilder::new();
     for event in [invalid, wrong_terminal, valid, terminal] {
         assert!(matches!(
