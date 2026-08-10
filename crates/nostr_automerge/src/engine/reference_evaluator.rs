@@ -248,9 +248,22 @@ fn verify_checkpoints(
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Vec<CheckpointVerificationResult> {
-    let canonical_set = canonical_controls.iter().copied().collect();
-    let authorizations = checkpoint_authorizations(corpus, coordinate, &canonical_set);
-    let chunk_sets = checkpoint_chunk_sets(corpus, coordinate);
+    let prepared = (|| {
+        charge_checkpoint_work(
+            budget,
+            cancellation,
+            u64::try_from(canonical_controls.len()).unwrap_or(u64::MAX),
+        )?;
+        let canonical_set = canonical_controls.iter().copied().collect();
+        let authorizations =
+            checkpoint_authorizations(corpus, coordinate, &canonical_set, budget, cancellation)?;
+        let chunk_sets = checkpoint_chunk_sets(corpus, coordinate, budget, cancellation)?;
+        Ok::<_, CheckpointWorkStop>((authorizations, chunk_sets))
+    })();
+    let (authorizations, chunk_sets) = match prepared {
+        Ok(prepared) => prepared,
+        Err(stop) => return checkpoint_refusals(corpus, coordinate, stop.status()),
+    };
     let carrier_coverage = checkpoint_carrier_coverage(corpus, coordinate, canonical_controls);
     let accepted_history = checkpoint_accepted_history(corpus, coordinate, accepted_at_control);
     corpus
@@ -306,15 +319,13 @@ fn checkpoint_chunk_event_ids(
     descriptor_id: crate::EventId,
 ) -> Vec<crate::EventId> {
     corpus
-        .events
-        .values()
-        .filter_map(|evidence| match evidence {
-            EventEvidence::VerifiedCarrier {
-                carrier: VerifiedCarrier::CheckpointChunk(chunk),
-                ..
-            } if chunk.descriptor_id() == descriptor_id => Some(chunk.event_id()),
-            _ => None,
-        })
+        .indexes
+        .checkpoints
+        .chunks_by_descriptor
+        .get(&descriptor_id)
+        .into_iter()
+        .flatten()
+        .copied()
         .collect()
 }
 
@@ -328,6 +339,9 @@ fn verify_one_checkpoint(
     cancellation: &impl CancellationCheck,
 ) -> CheckpointVerificationStatus {
     use crate::checkpoint::{HistoryVerificationError, VerifyError};
+    if cancellation.is_cancelled() {
+        return CheckpointVerificationStatus::Cancelled;
+    }
     match authorization {
         Some(DescriptorAuthorization::Authorized) => {}
         Some(DescriptorAuthorization::PendingControl) | None => {
@@ -484,62 +498,160 @@ fn checkpoint_carrier_coverage(
 fn checkpoint_chunk_sets(
     corpus: &EvidenceCorpus,
     coordinate: DocumentCoordinate,
-) -> std::collections::BTreeMap<
-    crate::EventId,
-    Result<Vec<crate::checkpoint::CheckpointChunk>, JoinError>,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<
+    std::collections::BTreeMap<
+        crate::EventId,
+        Result<Vec<crate::checkpoint::CheckpointChunk>, JoinError>,
+    >,
+    CheckpointWorkStop,
 > {
-    corpus
-        .events
-        .values()
-        .filter_map(|evidence| match evidence {
-            EventEvidence::VerifiedCarrier {
-                carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
+    let mut sets = std::collections::BTreeMap::new();
+    let descriptor_ids = corpus
+        .indexes
+        .checkpoints
+        .descriptors_by_coordinate
+        .get(&coordinate)
+        .into_iter()
+        .flatten();
+    for descriptor_id in descriptor_ids {
+        charge_checkpoint_work(budget, cancellation, 1)?;
+        let Some(EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
+            ..
+        }) = corpus.events.get(descriptor_id)
+        else {
+            continue;
+        };
+        let mut chunks = Vec::new();
+        for chunk_id in corpus
+            .indexes
+            .checkpoints
+            .chunks_by_descriptor
+            .get(descriptor_id)
+            .into_iter()
+            .flatten()
+        {
+            charge_checkpoint_work(budget, cancellation, 1)?;
+            if let Some(EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::CheckpointChunk(chunk),
                 ..
-            } if descriptor.coordinate() == coordinate => {
-                let chunks = corpus
-                    .events
-                    .values()
-                    .filter_map(|evidence| match evidence {
-                        EventEvidence::VerifiedCarrier {
-                            carrier: VerifiedCarrier::CheckpointChunk(chunk),
-                            ..
-                        } if chunk.descriptor_id() == descriptor.event_id() => Some(chunk.as_ref()),
-                        _ => None,
-                    });
-                Some((descriptor.event_id(), join_chunks(descriptor, chunks)))
+            }) = corpus.events.get(chunk_id)
+            {
+                chunks.push(chunk.as_ref());
             }
-            _ => None,
-        })
-        .collect()
+        }
+        sets.insert(*descriptor_id, join_chunks(descriptor, chunks));
+    }
+    Ok(sets)
 }
 
 fn checkpoint_authorizations(
     corpus: &EvidenceCorpus,
     coordinate: DocumentCoordinate,
     canonical_controls: &std::collections::BTreeSet<crate::EventId>,
-) -> std::collections::BTreeMap<crate::EventId, DescriptorAuthorization> {
-    let controls = corpus
-        .events
-        .values()
-        .filter_map(|evidence| match evidence {
-            EventEvidence::VerifiedCarrier {
-                carrier: VerifiedCarrier::Control(control),
-                ..
-            } => Some((control.event_id(), control.as_ref())),
-            _ => None,
-        })
-        .collect();
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<std::collections::BTreeMap<crate::EventId, DescriptorAuthorization>, CheckpointWorkStop>
+{
+    let mut controls = std::collections::BTreeMap::new();
+    for control_id in corpus.indexes.controls.controls_by_id.keys() {
+        charge_checkpoint_work(budget, cancellation, 1)?;
+        if let Some(EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::Control(control),
+            ..
+        }) = corpus.events.get(control_id)
+        {
+            controls.insert(*control_id, control.as_ref());
+        }
+    }
+    let mut authorizations = std::collections::BTreeMap::new();
+    for descriptor_id in corpus
+        .indexes
+        .checkpoints
+        .descriptors_by_coordinate
+        .get(&coordinate)
+        .into_iter()
+        .flatten()
+    {
+        charge_checkpoint_work(budget, cancellation, 1)?;
+        if let Some(EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
+            ..
+        }) = corpus.events.get(descriptor_id)
+        {
+            let member_work = controls.get(&descriptor.control_id()).map_or(0, |control| {
+                u64::try_from(control.members().len()).unwrap_or(u64::MAX)
+            });
+            charge_checkpoint_work(budget, cancellation, member_work)?;
+            authorizations.insert(
+                *descriptor_id,
+                authorize_descriptor(descriptor, canonical_controls, &controls),
+            );
+        }
+    }
+    Ok(authorizations)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum CheckpointWorkStop {
+    Budget,
+    Cancelled,
+}
+
+impl CheckpointWorkStop {
+    const fn status(self) -> CheckpointVerificationStatus {
+        match self {
+            Self::Budget => CheckpointVerificationStatus::BudgetExhausted,
+            Self::Cancelled => CheckpointVerificationStatus::Cancelled,
+        }
+    }
+}
+
+fn charge_checkpoint_work(
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+    amount: u64,
+) -> Result<(), CheckpointWorkStop> {
+    if cancellation.is_cancelled() {
+        return Err(CheckpointWorkStop::Cancelled);
+    }
+    budget
+        .charge_checkpoint_items(amount)
+        .map_err(|_| CheckpointWorkStop::Budget)
+}
+
+fn checkpoint_refusals(
+    corpus: &EvidenceCorpus,
+    coordinate: DocumentCoordinate,
+    status: CheckpointVerificationStatus,
+) -> Vec<CheckpointVerificationResult> {
     corpus
-        .events
-        .values()
-        .filter_map(|evidence| match evidence {
-            EventEvidence::VerifiedCarrier {
+        .indexes
+        .checkpoints
+        .descriptors_by_coordinate
+        .get(&coordinate)
+        .into_iter()
+        .flatten()
+        .filter_map(|descriptor_id| match corpus.events.get(descriptor_id) {
+            Some(EventEvidence::VerifiedCarrier {
                 carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
                 ..
-            } if descriptor.coordinate() == coordinate => Some((
-                descriptor.event_id(),
-                authorize_descriptor(descriptor, canonical_controls, &controls),
-            )),
+            }) => {
+                let commitments = descriptor.descriptor();
+                Some(CheckpointVerificationResult::new(
+                    *descriptor_id,
+                    Vec::new(),
+                    descriptor.snapshot_hash(),
+                    commitments.heads.iter().copied().collect(),
+                    commitments.change_count,
+                    commitments.change_set_hash,
+                    Vec::new(),
+                    Vec::new(),
+                    status,
+                ))
+            }
             _ => None,
         })
         .collect()
@@ -799,10 +911,27 @@ fn change_for_hash(
 
 #[cfg(test)]
 mod tests {
-    use super::{assembly_status, join_status};
+    use super::{CheckpointWorkStop, assembly_status, charge_checkpoint_work, join_status};
     use crate::CheckpointVerificationStatus as Status;
     use crate::checkpoint::AssemblyError;
     use crate::checkpoint::join::JoinError;
+    use crate::{WorkBudget, WorkCounter};
+
+    #[test]
+    fn checkpoint_preparation_charge_stops_before_optional_work() {
+        let mut exhausted = WorkBudget::new(0, 1);
+        assert_eq!(
+            charge_checkpoint_work(&mut exhausted, &crate::NeverCancelled, 2),
+            Err(CheckpointWorkStop::Budget)
+        );
+        assert_eq!(exhausted.consumed().get(WorkCounter::CheckpointItem), 0);
+        let mut cancelled = WorkBudget::new(0, 2);
+        assert_eq!(
+            charge_checkpoint_work(&mut cancelled, &|| true, 1),
+            Err(CheckpointWorkStop::Cancelled)
+        );
+        assert_eq!(cancelled.consumed().get(WorkCounter::CheckpointItem), 0);
+    }
 
     #[test]
     fn every_checkpoint_refusal_has_a_stable_public_status() {

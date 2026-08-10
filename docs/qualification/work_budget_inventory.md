@@ -19,7 +19,7 @@ evidence.
 | epoch fixpoint | `reference::epoch` | `graph_node`, `graph_edge`, `apply_change` | each pass and candidate | partial |
 | Automerge decode | carrier qualification and adapter decode | `decode_byte` | before decode | metered |
 | Automerge application | `reference::apply`, `automerge_adapter::document` | `apply_change`, `graph_edge` | each change and dependency | partial |
-| checkpoint collection | `engine::reference_evaluator` | `checkpoint_item`, `checkpoint_byte` | each descriptor and chunk | remediation required |
+| checkpoint collection | `engine::reference_evaluator` trusted checkpoint indexes | `checkpoint_item` for canonical controls, controls, members, descriptors, and chunks | before every indexed preparation boundary | metered |
 | checkpoint assembly | `checkpoint::join`, `checkpoint::assemble` | `checkpoint_item`, `checkpoint_byte` | each chunk and byte boundary | partial |
 | checkpoint history | `checkpoint::verify`, `checkpoint::verify_history` | `checkpoint_item`, `checkpoint_byte` | graph and carrier walks | remediation required |
 | checkpoint load | `automerge_adapter::checkpoint` | `checkpoint_item`, `checkpoint_byte` | before load | metered |
