@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,15 @@ SHA256 = re.compile(r"^[0-9a-f]{64}$")
 REQUIRED_TOP_LEVEL = {
     "fixture_schema", "fixture_id", "revision", "requirements", "seed",
     "provenance", "inputs", "expected",
+}
+ABSTRACT_TRUTH_FIELDS = {
+    "accepted",
+    "changes",
+    "controls",
+    "excluded",
+    "selected",
+    "synthetic_dependencies",
+    "valid",
 }
 
 
@@ -128,6 +138,23 @@ def validate(metadata: dict[str, Any], *, base: Path, resolve_files: bool) -> No
         raise FixtureError("expected_hash_mismatch")
 
 
+def validate_signed_scenario(value: dict[str, Any]) -> None:
+    """Reject caller-declared protocol truth from signed scenario v2 inputs."""
+
+    if value.get("scenario_schema") != "nostr_automerge.signed_scenario.v2":
+        raise FixtureError("invalid_signed_scenario_schema")
+    input_fields = {key: item for key, item in value.items() if key != "expected_report"}
+    pending: list[object] = [input_fields]
+    while pending:
+        item = pending.pop()
+        if isinstance(item, dict):
+            if ABSTRACT_TRUTH_FIELDS & set(item):
+                raise FixtureError("abstract_protocol_truth")
+            pending.extend(item.values())
+        elif isinstance(item, list):
+            pending.extend(item)
+
+
 def main() -> int:
     """Validate schema metadata, examples, and required negative behavior."""
 
@@ -140,6 +167,29 @@ def main() -> int:
         raise AssertionError("fixture corpus is empty")
     for path in paths:
         validate(load_json(path), base=path.parent, resolve_files=True)
+    signed_paths = sorted(FIXTURE_ROOT.rglob("*.input.json"))
+    signed_count = 0
+    for path in signed_paths:
+        value = load_json(path)
+        if value.get("scenario_schema") == "nostr_automerge.signed_scenario.v2":
+            validate_signed_scenario(value)
+            signed_count += 1
+
+    if sys.argv[1:] == ["--self-test"]:
+        candidate = {
+            "scenario_schema": "nostr_automerge.signed_scenario.v2",
+            "valid": True,
+            "expected_report": {},
+        }
+        try:
+            validate_signed_scenario(candidate)
+        except FixtureError as error:
+            if str(error) != "abstract_protocol_truth":
+                raise
+        else:
+            raise AssertionError("abstract validity input unexpectedly passed")
+    elif sys.argv[1:]:
+        raise SystemExit("usage: validate_fixtures.py [--self-test]")
 
     candidate = load_json(paths[0])
     candidate["inputs"][0]["path"] = "../escape.json"
@@ -155,6 +205,8 @@ def main() -> int:
     print(f"- fixtures={len(paths)}")
     print("- path_traversal=reject")
     print("- checksums=pass")
+    print(f"- signed_scenarios={signed_count}")
+    print("- abstract_protocol_truth=reject")
     return 0
 
 
