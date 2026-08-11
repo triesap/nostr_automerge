@@ -37,7 +37,17 @@ def validate_candidate(candidate: dict[str, object]) -> None:
     attestation = load("reports/interop_typescript_v3.json")
     if candidate.get("schema") != "nostr_automerge.final_candidate_identity.v1" or candidate.get("status") != "pass":
         raise EvidenceError("candidate_shape")
-    if rust.get("implementation_commit") != implementation_commit() or rust.get("cargo_lock_sha256") != sha256(ROOT / "Cargo.lock") or rust.get("protected_changes_after_implementation") != []:
+    implementation = implementation_commit()
+    changed = subprocess.run(
+        ("git", "diff", "--name-only", f"{implementation}..HEAD"),
+        cwd=ROOT, check=True, capture_output=True, text=True,
+    ).stdout.splitlines()
+    protected = [
+        path for path in changed
+        if path.startswith(("crates/", "tools/nostr_automerge_conformance/", "fixtures/"))
+        or path in {"Cargo.toml", "Cargo.lock", "rust-toolchain.toml"}
+    ]
+    if rust.get("implementation_commit") != implementation or rust.get("cargo_lock_sha256") != sha256(ROOT / "Cargo.lock") or rust.get("protected_changes_after_implementation") != protected or protected:
         raise EvidenceError("rust_candidate")
     evidence_commit = rust.get("evidence_commit", "")
     if subprocess.run(("git", "merge-base", "--is-ancestor", rust["implementation_commit"], evidence_commit), cwd=ROOT).returncode != 0:
