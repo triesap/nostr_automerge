@@ -30,9 +30,20 @@ def canonical_reports(value: object) -> bytes:
 
 
 def compare(left: object, right: object) -> str:
-    if canonical_reports(left) != canonical_reports(right):
+    if not isinstance(left, dict) or not isinstance(right, dict):
         raise CanonicalMismatch(MISMATCH_CLASS)
-    return hashlib.sha256(canonical_reports(left)).hexdigest()
+    left_reports = left.get("reports")
+    right_reports = right.get("reports")
+    if not isinstance(left_reports, list) or not isinstance(right_reports, list):
+        raise CanonicalMismatch(MISMATCH_CLASS)
+    left_bytes = [(item["fixture_id"], item["report_sha256"]) for item in left_reports]
+    right_bytes = [(item["fixture_id"], item["report_sha256"]) for item in right_reports]
+    if left_bytes != right_bytes or [item["report"] for item in left_reports] != [
+        item["report"] for item in right_reports
+    ]:
+        raise CanonicalMismatch(MISMATCH_CLASS)
+    compared = (json.dumps(left_bytes, separators=(",", ":")) + "\n").encode()
+    return hashlib.sha256(compared).hexdigest()
 
 
 def self_test() -> None:
@@ -52,9 +63,9 @@ def self_test() -> None:
         raise AssertionError("mismatch self-test altered the source report")
 
 
-def compare_profile(profile: str, typescript_root: Path) -> None:
-    rust_path = ROOT / "reports" / f"rust_signed_{profile}.json"
-    typescript_path = typescript_root / "reports" / f"typescript_signed_{profile}.json"
+def compare_profile(profile: str, rust_evidence: Path, typescript_evidence: Path) -> None:
+    rust_path = rust_evidence / f"rust_signed_{profile}.json"
+    typescript_path = typescript_evidence / f"typescript_signed_{profile}.json"
     rust = json.loads(rust_path.read_text(encoding="utf-8"))
     typescript = json.loads(typescript_path.read_text(encoding="utf-8"))
     digest = compare(rust, typescript)
@@ -66,18 +77,23 @@ def compare_profile(profile: str, typescript_root: Path) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("profile", nargs="?", choices=PROFILES)
-    parser.add_argument("--typescript-root", type=Path)
+    parser.add_argument("--rust-evidence", type=Path)
+    parser.add_argument("--typescript-evidence", type=Path)
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     if args.self_test:
-        if args.profile is not None or args.typescript_root is not None:
-            parser.error("--self-test does not accept a profile or TypeScript root")
+        if args.profile is not None or args.rust_evidence is not None or args.typescript_evidence is not None:
+            parser.error("--self-test does not accept evidence roots")
         self_test()
         print(f"PASS: deliberate mismatch classified as {MISMATCH_CLASS}")
         return 0
-    if args.profile is None or args.typescript_root is None:
-        parser.error("profile and --typescript-root are required")
-    compare_profile(args.profile, args.typescript_root.resolve(strict=True))
+    if args.profile is None or args.rust_evidence is None or args.typescript_evidence is None:
+        parser.error("profile and both evidence roots are required")
+    compare_profile(
+        args.profile,
+        args.rust_evidence.resolve(strict=True),
+        args.typescript_evidence.resolve(strict=True),
+    )
     return 0
 
 
