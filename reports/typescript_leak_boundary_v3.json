@@ -1,0 +1,1 @@
+{"attestation_sha256":"2a08d8ab8408d20a626bfe97e4504762790c464994b0ccc593fa82dff32de779","evidence_commit":"076dd14ee0dc2b426853bc4e841b94ba35a4590f","mutation_result":"all_rejected","prohibited":["source","repository_url","absolute_private_path","raw_log","workflow_state","credential"],"schema":"nostr_automerge.typescript_leak_boundary.v3","status":"pass"}
