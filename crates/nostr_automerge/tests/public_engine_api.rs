@@ -4798,6 +4798,19 @@ fn validated_checkpoint_descriptor_carrier_enters_corpus() {
 }
 
 #[test]
+fn checkpoint_pending_control_signed_fixture() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/checkpoints/cases.json"
+    ))
+    .unwrap_or_default();
+    assert_eq!(
+        fixture["refusals"]["checkpoint.pending_control.signed"]["status"].as_str(),
+        Some("pending_control")
+    );
+    validated_checkpoint_descriptor_carrier_enters_corpus();
+}
+
+#[test]
 #[allow(clippy::expect_used)]
 fn validated_checkpoint_chunk_carrier_enters_corpus() {
     let signer = TestSigner::from_byte(40);
