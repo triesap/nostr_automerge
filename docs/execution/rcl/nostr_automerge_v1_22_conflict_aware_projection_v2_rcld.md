@@ -38,3 +38,7 @@ Rust checks, and `git diff --check`.
 
 Projection is deterministic, lossless for the sealed profile, fully metered,
 iterative, and implementable independently from the neutral contract.
+
+## Completed Checkpoints
+
+- `step_430`: this commit — ADR 0027 freezes branch placement, identity, ordering, mark expansion, assertion uniqueness, and metering semantics.
