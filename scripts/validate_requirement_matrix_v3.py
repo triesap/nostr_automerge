@@ -262,6 +262,41 @@ def validate(report: dict[str, object]) -> None:
             raise EvidenceError(f"unknown_evidence_kind:{identifier}")
 
 
+def matrix_self_test() -> None:
+    baseline = json.loads((ROOT / "reports/requirements_coverage_v3.json").read_text())
+    covered_index = next(index for index, row in enumerate(baseline["rows"]) if row.get("proofs"))
+    noncode_index = next(index for index, row in enumerate(baseline["rows"]) if row["applicability"] == "out-of-core")
+    fixture_index = next(index for index, row in enumerate(baseline["rows"]) if row.get("proofs", [{}])[0].get("evidence_kind") == "signed_fixture")
+    test_index = next(index for index, row in enumerate(baseline["rows"]) if row.get("proofs", [{}])[0].get("evidence_kind") in {"cargo_test", "policy"})
+    mutations: list[tuple[str, dict[str, object]]] = []
+    missing = copy.deepcopy(baseline); missing["rows"].pop(); mutations.append(("removed_row", missing))
+    duplicate = copy.deepcopy(baseline); duplicate["rows"][-1] = duplicate["rows"][0]; mutations.append(("duplicate_row", duplicate))
+    stale = copy.deepcopy(baseline); stale["requirements_sha256"] = "00" * 32; mutations.append(("stale_authority", stale))
+    unauthorized = copy.deepcopy(baseline); unauthorized["rows"][noncode_index] = copy.deepcopy(baseline["rows"][covered_index]); unauthorized["rows"][noncode_index]["id"] = baseline["rows"][noncode_index]["id"]; mutations.append(("unauthorized_out_of_core", unauthorized))
+    commit = copy.deepcopy(baseline); commit["rows"][covered_index]["proofs"][0]["implementation_commit"] = "00" * 20; mutations.append(("changed_commit", commit))
+    artifact = copy.deepcopy(baseline); artifact["rows"][covered_index]["proofs"][0]["result_artifact"] = "reports/results/missing.json"; mutations.append(("missing_artifact", artifact))
+    wrong_hash = copy.deepcopy(baseline); wrong_hash["rows"][covered_index]["proofs"][0]["result_sha256"] = "00" * 32; mutations.append(("wrong_hash", wrong_hash))
+    missing_test = copy.deepcopy(baseline); missing_test["rows"][test_index]["proofs"][0]["evidence_id"] = "nonexistent::test"; mutations.append(("missing_test", missing_test))
+    missing_fixture = copy.deepcopy(baseline); missing_fixture["rows"][fixture_index]["proofs"][0]["evidence_id"] = "nonexistent-fixture"; mutations.append(("missing_fixture", missing_fixture))
+    failing = copy.deepcopy(baseline); failing["rows"][covered_index]["proofs"][0]["result"] = "fail"; mutations.append(("failing_result", failing))
+    cross = copy.deepcopy(baseline); cross["rows"][covered_index]["proofs"][0]["implementation_identity"] = "triesap/nostr_automerge_typescript"; mutations.append(("cross_implementation", cross))
+    caught = []
+    for name, mutation in mutations:
+        try:
+            validate(mutation)
+        except EvidenceError as error:
+            caught.append({"mutation": name, "diagnostic": str(error), "result": "caught"})
+            continue
+        raise AssertionError(f"material evidence mutation survived: {name}")
+    commit = subprocess.run(("git", "rev-parse", "HEAD"), cwd=ROOT, check=True, capture_output=True, text=True).stdout.strip()
+    report = {
+        "schema": "nostr_automerge.requirement_evidence_mutations.v1",
+        "source_commit": commit, "generated": len(mutations), "caught": len(caught),
+        "survived": 0, "status": "pass", "mutations": caught,
+    }
+    (ROOT / "reports/requirements_evidence_mutations_v3.json").write_text(json.dumps(report, sort_keys=True, separators=(",", ":")) + "\n")
+
+
 def result_self_test() -> None:
     manifest = json.loads((ROOT / "reports/test_evidence_manifest.json").read_text())
     for job in manifest["jobs"].values():
@@ -315,6 +350,7 @@ def main() -> int:
     parser.add_argument("--fixture-self-test", action="store_true")
     parser.add_argument("--test-self-test", action="store_true")
     parser.add_argument("--typescript-self-test", action="store_true")
+    parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     if args.schema_self_test:
         schema_self_test()
@@ -339,6 +375,10 @@ def main() -> int:
     if args.typescript_self_test:
         typescript_self_test()
         print("PASS: opaque TypeScript proof metadata fails closed without source disclosure")
+        return 0
+    if args.self_test:
+        matrix_self_test()
+        print("PASS: every material requirement evidence mutation was caught")
         return 0
     validate(json.loads(args.report.read_text()))
     print("PASS: all 87 requirements have closed executed evidence or approved holds")
