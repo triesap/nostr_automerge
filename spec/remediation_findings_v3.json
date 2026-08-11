@@ -1,0 +1,80 @@
+{
+  "schema": "nostr_automerge.remediation_findings.v3",
+  "reviewed_repository": "triesap/nostr_automerge",
+  "reviewed_public_head": "cee7559b8bd7eb00f5f1e37b24c8f9c68e11049d",
+  "finding_count": 8,
+  "findings": [
+    {
+      "id": "FINDING_028",
+      "severity": "critical",
+      "title": "Second broad equivocation pass can exclude a valid same-sequence change",
+      "affected": ["crates/nostr_automerge/src/reference/epoch_engine.rs", "crates/nostr_automerge/src/reference/evaluate.rs", "crates/nostr_automerge/src/engine/reference_evaluator.rs"],
+      "requirements": ["R3_EQUIV_001", "R3_EQUIV_002", "R3_EQUIV_003", "R3_EQUIV_004", "R3_EQUIV_005", "R3_EQUIV_006", "R3_EQUIV_009"],
+      "closure": "The authoritative epoch result is propagated directly; no wider post-epoch equivocation pass exists; invalid same-sequence candidates cannot poison valid or accepted-base history; signed Rust and independent TypeScript fixtures pass.",
+      "status": "open"
+    },
+    {
+      "id": "FINDING_029",
+      "severity": "high",
+      "title": "Interrupted reports discard accepted control dispositions and accepted-at-control state",
+      "affected": ["crates/nostr_automerge/src/reference/evaluate.rs", "crates/nostr_automerge/src/engine/reference_evaluator.rs", "crates/nostr_automerge/src/engine/evaluation_report.rs"],
+      "requirements": ["R3_REPORT_001", "R3_REPORT_002", "R3_REPORT_003", "R3_REPORT_004", "R3_REPORT_007"],
+      "closure": "Every interruption path preserves all conclusive protocol outcomes; canonical controls and dispositions cannot contradict; exact-boundary tests pass.",
+      "status": "open"
+    },
+    {
+      "id": "FINDING_030",
+      "severity": "high",
+      "title": "Selected manifest does not dynamically validate its referenced control",
+      "affected": ["crates/nostr_automerge/src/evidence/corpus_builder.rs", "crates/nostr_automerge/src/carrier/manifest.rs", "crates/nostr_automerge/src/engine/reference_evaluator.rs"],
+      "requirements": ["R3_MANIFEST_001", "R3_MANIFEST_002", "R3_MANIFEST_003", "R3_MANIFEST_004", "R3_MANIFEST_005", "R3_MANIFEST_006", "R3_MANIFEST_008"],
+      "closure": "NIP-01 replacement remains first; the selected manifest is resolved against stateful control outcomes; missing, wrong-coordinate, invalid, noncanonical-valid, and canonical-valid references have signed fixtures.",
+      "status": "open"
+    },
+    {
+      "id": "FINDING_031",
+      "severity": "high",
+      "title": "Manifest and checkpoint event dispositions reflect static carrier status instead of dynamic protocol validity",
+      "affected": ["crates/nostr_automerge/src/engine/reference_evaluator.rs", "crates/nostr_automerge/src/engine/evaluation_report.rs", "crates/nostr_automerge/src/checkpoint/"],
+      "requirements": ["R3_EVENT_001", "R3_EVENT_002", "R3_EVENT_003", "R3_EVENT_004", "R3_EVENT_005", "R3_EVENT_007", "R3_EVENT_008"],
+      "closure": "Dynamic manifest, descriptor, and chunk outcomes produce canonical event dispositions without contradictions; namespaced digest fixtures and independent TypeScript reports agree.",
+      "status": "open"
+    },
+    {
+      "id": "FINDING_032",
+      "severity": "medium-high",
+      "title": "Control preparation and post-stop report construction remain incompletely metered and cancellable",
+      "affected": ["crates/nostr_automerge/src/engine/reference_evaluator.rs", "crates/nostr_automerge/src/reference/evaluate.rs", "crates/nostr_automerge/src/evidence/corpus_builder.rs"],
+      "requirements": ["R3_BUDGET_001", "R3_BUDGET_002", "R3_BUDGET_003", "R3_BUDGET_004", "R3_BUDGET_005", "R3_BUDGET_006", "R3_BUDGET_007", "R3_BUDGET_009"],
+      "closure": "All untrusted-evidence traversals are budgeted and cancellable; ancestry is not repeatedly rescanned; post-stop work is compact and bounded; adversarial tests pass.",
+      "status": "open"
+    },
+    {
+      "id": "FINDING_033",
+      "severity": "medium",
+      "title": "Requirement matrix and current interoperability evidence are not fully reconciled",
+      "affected": ["reports/requirements_coverage_v3.json", "scripts/validate_requirement_matrix_v3.py", "reports/interop_combined.json", "reports/interop_typescript_v2.json"],
+      "requirements": ["R3_INTEROP_005", "R3_INTEROP_007", "R3_EVID_001", "R3_EVID_002", "R3_EVID_003", "R3_EVID_004"],
+      "closure": "All applicable rows are final rather than held; each cross-language row binds the final independent attestation overlay; stale six-fixture evidence is superseded or removed; validators fail closed.",
+      "status": "open"
+    },
+    {
+      "id": "FINDING_034",
+      "severity": "medium-specification",
+      "title": "The causal Automerge operation-counter formula requires unambiguous implementation authority",
+      "affected": ["spec/AUTOMERGE_PROFILE.md", "spec/NOSTR_AUTOMERGE_V1_SPEC.md", "spec/requirements.json", "fixtures/v1_draft/scenarios/actor_counters/"],
+      "requirements": ["R3_SPEC_001", "R3_SPEC_002", "R3_SPEC_004", "R3_SPEC_005"],
+      "closure": "Implementation-owned authority states the exact dependency-closure causal-max formula, distinguishes actor sequence from operation counters, and Rust and TypeScript neutral vectors agree. The externally authored NIP snapshot remains unchanged.",
+      "status": "open"
+    },
+    {
+      "id": "FINDING_035",
+      "severity": "release-hold",
+      "title": "Sustained native fuzzing and independent external review remain incomplete",
+      "affected": ["reports/fuzz_campaign.json", "reports/external_review.json", "reports/release_readiness.json"],
+      "requirements": ["R3_RELEASE_001", "R3_RELEASE_002", "R3_RELEASE_003", "R3_RELEASE_004"],
+      "closure": "The holds remain explicit until authorized execution and review occur; code completion is never represented as publication readiness.",
+      "status": "held"
+    }
+  ]
+}
