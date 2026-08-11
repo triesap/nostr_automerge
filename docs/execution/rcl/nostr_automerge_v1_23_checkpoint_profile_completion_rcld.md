@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 23: Checkpoint Profile Completion
 
 Status: active
-Current checkpoint: `step_449`
+Current checkpoint: `step_450`
 Steps: `step_444` through `step_459`
 Primary findings: `FINDING_014`, `FINDING_018`, `FINDING_022`, `FINDING_024`, `FINDING_025`
 
@@ -39,4 +39,5 @@ state, heads, history digest, or materialized state.
 - `step_446`: `49fbf5a` — exact raw signed control, descriptor, and chunk events prove that a nonempty serialized empty snapshot verifies while canonical history stays empty.
 - `step_447`: `e9b4686` — checkpoint verification binds its historical comparison to the exact parent-epoch closure captured at the referenced canonical control.
 - `step_448`: `3e2325a` — a named raw signed descriptor fixture proves that an unresolved control is reported as `pending_control`, not invalid or unauthorized.
-- `step_449`: this commit — a named raw signed descriptor fixture proves that checkpoint authority is derived only from the referenced accepted control.
+- `step_449`: `a13a854` — a named raw signed descriptor fixture proves that checkpoint authority is derived only from the referenced accepted control.
+- `step_450`: this commit — signed wrong-author, cross-coordinate, and cross-descriptor chunks prove strict carrier binding through the public engine.

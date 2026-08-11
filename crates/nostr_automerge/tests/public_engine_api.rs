@@ -4423,6 +4423,126 @@ fn hex32(bytes: [u8; 32]) -> String {
 }
 
 #[allow(clippy::expect_used)]
+fn evaluate_single_chunk_variant(
+    chunk_signer: &TestSigner,
+    chunk_coordinate: Option<DocumentCoordinate>,
+    chunk_descriptor: Option<EventId>,
+) -> nostr_automerge::EvaluationReport {
+    let scenario = signed_engine_scenario();
+    let descriptor_signer = TestSigner::from_byte(21);
+    let snapshot_hash: [u8; 32] = Sha256::digest(&scenario.snapshot).into();
+    let chunk_hash = snapshot_hash;
+    let chunk_root = nostr_automerge::checkpoint::leaf_hash(0, 1, chunk_hash);
+    let mut change_set = Sha256::new();
+    change_set.update(b"nostr-crdt/automerge/change-set/v1");
+    change_set.update([0]);
+    change_set.update(1_u64.to_be_bytes());
+    change_set.update(scenario.change_hash.as_bytes());
+    let descriptor = descriptor_signer.sign(
+        &UnsignedEventDraft::new(
+            3,
+            1_626,
+            vec![
+                vec!["a".to_owned(), scenario.coordinate.to_address()],
+                vec!["e".to_owned(), scenario.control_id.to_hex()],
+                vec!["x".to_owned(), hex32(snapshot_hash)],
+            ],
+            format!(
+                r#"{{"change_count":1,"change_set_hash":"{}","chunk_count":1,"chunk_root":"{}","chunk_size":{},"dependency_edges":0,"encoding":"automerge-save-v1","heads":["{}"],"raw_size":{},"total_ops":1,"v":1}}"#,
+                hex32(change_set.finalize().into()),
+                hex32(chunk_root),
+                scenario.snapshot.len(),
+                scenario.change_hash.to_hex(),
+                scenario.snapshot.len(),
+            ),
+        )
+        .expect("descriptor draft")
+        .prepare(descriptor_signer.public_key())
+        .expect("descriptor preimage"),
+    );
+    let descriptor_id = VerifiedNip01Event::verify(descriptor.clone())
+        .expect("descriptor")
+        .event_id();
+    let chunk = chunk_signer.sign(
+        &UnsignedEventDraft::new(
+            4,
+            1_627,
+            vec![
+                vec![
+                    "a".to_owned(),
+                    chunk_coordinate.unwrap_or(scenario.coordinate).to_address(),
+                ],
+                vec![
+                    "e".to_owned(),
+                    chunk_descriptor.unwrap_or(descriptor_id).to_hex(),
+                ],
+                vec!["x".to_owned(), hex32(chunk_hash)],
+                vec!["part".to_owned(), "0".to_owned(), "1".to_owned()],
+            ],
+            format!(
+                r#"{{"data":"{}","proof":[],"v":1}}"#,
+                base64::engine::general_purpose::STANDARD.encode(&scenario.snapshot)
+            ),
+        )
+        .expect("chunk draft")
+        .prepare(chunk_signer.public_key())
+        .expect("chunk preimage"),
+    );
+    let mut builder = CorpusBuilder::new();
+    for event in [chunk, descriptor, scenario.change, scenario.control] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+        &builder.finish(),
+        scenario.coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000_000),
+        &NeverCancelled,
+    )
+}
+
+#[test]
+fn checkpoint_author_and_binding_refusals() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/checkpoints/negative_binding.json"
+    ))
+    .unwrap_or_default();
+    assert_eq!(fixture["cases"].as_array().map(Vec::len), Some(3));
+    checkpoint_unauthorized_signed_fixture();
+    let wrong_author = evaluate_single_chunk_variant(&TestSigner::from_byte(62), None, None);
+    assert_eq!(
+        wrong_author.checkpoints()[0].status(),
+        CheckpointVerificationStatus::ChunkAuthorMismatch
+    );
+
+    let other_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        TestSigner::from_byte(20).public_key().to_hex(),
+        "ff".repeat(32)
+    )
+    .parse()
+    .unwrap_or_else(|_| signed_engine_scenario().coordinate);
+    let wrong_coordinate =
+        evaluate_single_chunk_variant(&TestSigner::from_byte(21), Some(other_coordinate), None);
+    assert_eq!(
+        wrong_coordinate.checkpoints()[0].status(),
+        CheckpointVerificationStatus::ChunkCoordinateMismatch
+    );
+
+    let wrong_descriptor = evaluate_single_chunk_variant(
+        &TestSigner::from_byte(21),
+        None,
+        Some(EventId::from_bytes([0x77; 32])),
+    );
+    assert_eq!(
+        wrong_descriptor.checkpoints()[0].status(),
+        CheckpointVerificationStatus::MissingChunk
+    );
+}
+
+#[allow(clippy::expect_used)]
 fn checkpoint_proof(leaves: &[[u8; 32]], index: usize) -> Vec<(&'static str, [u8; 32])> {
     if leaves.len() == 1 {
         return Vec::new();
