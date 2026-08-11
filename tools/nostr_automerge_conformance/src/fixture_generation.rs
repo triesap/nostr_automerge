@@ -26,11 +26,212 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "control_transition" => generate_control_transition_profile(),
         "control_fork" => generate_control_fork_profile(),
         "actor_counters" => generate_actor_counter_profile(),
+        "dependencies" => generate_dependency_profile(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
 }
 
 type Member<'a> = (&'a Signer, Option<String>, &'a [&'a str]);
+
+fn generate_dependency_profile() -> Result<(), String> {
+    let controller = Signer::from_byte(82)?;
+    let first_writer = Signer::from_byte(83)?;
+    let left_writer = Signer::from_byte(84)?;
+    let right_writer = Signer::from_byte(85)?;
+    let merger = Signer::from_byte(86)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "82".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid dependency coordinate".to_owned())?;
+    let members = vec![
+        (&first_writer, None, &["write"][..]),
+        (&left_writer, None, &["write"][..]),
+        (&right_writer, None, &["write"][..]),
+        (&merger, None, &["write"][..]),
+    ];
+    let control = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, members.clone(), "automerge-change-v1"),
+    )?;
+    let control_id = event_id(&control)?;
+    let actor = ActorId::derive(coordinate, first_writer.public_key);
+    let mut authored_document =
+        AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+            .map_err(|error| format!("dependency document: {error:?}"))?;
+    let base = authored_document
+        .author_change(&[Operation::PutString {
+            key: "base".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .map_err(|error| format!("base change: {error:?}"))?;
+    let base_state = authored_document.accepted_state_bytes();
+    let chain = authored_document
+        .author_change(&[Operation::PutString {
+            key: "chain".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .map_err(|error| format!("chain change: {error:?}"))?;
+    let base_hash = base.change_hash();
+    let base_raw = base.raw().to_vec();
+    let chain_hash = chain.change_hash();
+    let chain_raw = chain.raw().to_vec();
+
+    let left_actor = ActorId::derive(coordinate, left_writer.public_key);
+    let mut left_document = AuthoringDocument::from_accepted(
+        &base_state,
+        ActorState::initial(left_actor, [base_hash].into_iter().collect()),
+    )
+    .map_err(|error| format!("left document: {error:?}"))?;
+    let left = left_document
+        .author_change(&[Operation::PutString {
+            key: "left".to_owned(),
+            value: "branch".to_owned(),
+        }])
+        .map_err(|error| format!("left change: {error:?}"))?;
+    let left_hash = left.change_hash();
+    let left_raw = left.raw().to_vec();
+
+    let right_actor = ActorId::derive(coordinate, right_writer.public_key);
+    let mut right_document = AuthoringDocument::from_accepted(
+        &base_state,
+        ActorState::initial(right_actor, [base_hash].into_iter().collect()),
+    )
+    .map_err(|error| format!("right document: {error:?}"))?;
+    let right = right_document
+        .author_change(&[Operation::PutString {
+            key: "right".to_owned(),
+            value: "branch".to_owned(),
+        }])
+        .map_err(|error| format!("right change: {error:?}"))?;
+    let right_hash = right.change_hash();
+    let right_raw = right.raw().to_vec();
+
+    let mut merge_document = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit);
+    merge_document
+        .apply_changes(
+            [base_raw.clone(), left_raw.clone(), right_raw.clone()]
+                .into_iter()
+                .map(automerge::Change::from_bytes)
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|error| format!("decode diamond: {error:?}"))?,
+        )
+        .map_err(|error| format!("apply diamond: {error:?}"))?;
+    let merge_actor = ActorId::derive(coordinate, merger.public_key);
+    merge_document.set_actor(automerge::ActorId::from(merge_actor.as_bytes().to_vec()));
+    let merge_hash = merge_document.empty_change(CommitOptions::default());
+    let merge_raw = merge_document
+        .get_change_by_hash(&merge_hash)
+        .ok_or_else(|| "missing merge change".to_owned())?
+        .raw_bytes()
+        .to_vec();
+    let merge_hash = ChangeHash::from_bytes(merge_hash.0);
+
+    let base_event = sign_change(
+        &first_writer,
+        2,
+        coordinate,
+        control_id,
+        base_hash,
+        &base_raw,
+    )?;
+    let chain_event = sign_change(
+        &first_writer,
+        3,
+        coordinate,
+        control_id,
+        chain_hash,
+        &chain_raw,
+    )?;
+    let left_event = sign_change(
+        &left_writer,
+        4,
+        coordinate,
+        control_id,
+        left_hash,
+        &left_raw,
+    )?;
+    let right_event = sign_change(
+        &right_writer,
+        5,
+        coordinate,
+        control_id,
+        right_hash,
+        &right_raw,
+    )?;
+    let merge_event = sign_change(&merger, 6, coordinate, control_id, merge_hash, &merge_raw)?;
+    let omitted_control = sign_control(
+        &controller,
+        7,
+        coordinate,
+        Some(control_id),
+        control_content_full(1, members, "automerge-change-v1"),
+    )?;
+    let mut cycle_attempt_raw = base_raw.clone();
+    cycle_attempt_raw[4] ^= 1;
+    let cycle_attempt = sign_change(
+        &first_writer,
+        8,
+        coordinate,
+        control_id,
+        base_hash,
+        &cycle_attempt_raw,
+    )?;
+    let cases = vec![
+        (
+            "dependencies_missing",
+            vec![control.clone(), chain_event.clone()],
+        ),
+        (
+            "dependencies_late_recovery",
+            vec![control.clone(), chain_event.clone(), base_event.clone()],
+        ),
+        (
+            "dependencies_base_omission",
+            vec![control.clone(), base_event.clone(), omitted_control],
+        ),
+        (
+            "dependencies_chain",
+            vec![control.clone(), base_event.clone(), chain_event],
+        ),
+        (
+            "dependencies_diamond",
+            vec![
+                control.clone(),
+                base_event.clone(),
+                left_event.clone(),
+                right_event.clone(),
+                merge_event.clone(),
+            ],
+        ),
+        (
+            "dependencies_cycle_attempt",
+            vec![control.clone(), cycle_attempt],
+        ),
+        (
+            "dependencies_exact_application",
+            vec![control, base_event, right_event, left_event, merge_event],
+        ),
+    ];
+    let root = repository_root().join("fixtures/v1_draft/scenarios/dependencies");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    for (fixture_id, events) in cases {
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            &["NCRDT-CONF-002", "NCRDT-SEQ-001", "NCRDT-STATE-001"],
+            "dependencies",
+        )?;
+    }
+    Ok(())
+}
 
 fn generate_actor_counter_profile() -> Result<(), String> {
     let controller = Signer::from_byte(80)?;
@@ -222,7 +423,15 @@ fn rewrite_change_sequence(
 }
 
 fn rewrite_first_change_start_op(
+    raw: Vec<u8>,
+    start_op: u8,
+) -> Result<(Vec<u8>, ChangeHash), String> {
+    rewrite_change_start_op(raw, 1, start_op)
+}
+
+fn rewrite_change_start_op(
     mut raw: Vec<u8>,
+    expected_start_op: u8,
     start_op: u8,
 ) -> Result<(Vec<u8>, ChangeHash), String> {
     let mut data_start = 9_usize;
@@ -230,15 +439,19 @@ fn rewrite_first_change_start_op(
         data_start += 1;
     }
     data_start += 1;
-    if raw.get(data_start) != Some(&0) {
-        return Err("first change unexpectedly has dependencies".to_owned());
-    }
+    let dependency_count = usize::from(
+        *raw.get(data_start)
+            .ok_or_else(|| "missing dependency count".to_owned())?,
+    );
+    let actor_len_offset = data_start + 1 + dependency_count * 32;
     let actor_len = usize::from(
-        *raw.get(data_start + 1)
+        *raw.get(actor_len_offset)
             .ok_or_else(|| "missing actor length".to_owned())?,
     );
-    let sequence_offset = data_start + 2 + actor_len;
-    if raw.get(sequence_offset) != Some(&1) || raw.get(sequence_offset + 1) != Some(&1) {
+    let sequence_offset = actor_len_offset + 1 + actor_len;
+    if raw.get(sequence_offset) != Some(&1)
+        || raw.get(sequence_offset + 1) != Some(&expected_start_op)
+    {
         return Err("unexpected first change counters".to_owned());
     }
     raw[sequence_offset + 1] = start_op;

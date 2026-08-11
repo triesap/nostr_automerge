@@ -1,0 +1,61 @@
+{
+  "budget": {
+    "max_bytes": 1000000,
+    "max_items": 1000000
+  },
+  "cancel_after": null,
+  "coordinate": "31624:9c1f585aa80762f9f4458f6806978b7befb46c7b68af82d399630793ff1a2b50:8282828282828282828282828282828282828282828282828282828282828282",
+  "expected_report": {
+    "accepted_changes": [],
+    "canonical_controls": [
+      "13bf42adc91835411238c7f219d1a6ab647a197e5e9009bfe458175db7b83247"
+    ],
+    "completion": "complete",
+    "coordinate": "31624:9c1f585aa80762f9f4458f6806978b7befb46c7b68af82d399630793ff1a2b50:8282828282828282828282828282828282828282828282828282828282828282",
+    "disposition_records": [
+      {
+        "disposition": "accepted",
+        "identifier": "13bf42adc91835411238c7f219d1a6ab647a197e5e9009bfe458175db7b83247",
+        "namespace": "control_event"
+      },
+      {
+        "disposition": "pending",
+        "identifier": "d4d6bbd1b4622306883aec9ddf307fc1f3d19c12fb5cb5413edb6e4f94bee95d",
+        "namespace": "change_hash"
+      }
+    ],
+    "dispositions_digest": "7dbd087a39999a4f5053638fdb2da2d9af2f775dfc2a0dc18efac4ea87755e95",
+    "excluded_changes": [],
+    "fixture_id": "dependencies_missing",
+    "heads": [],
+    "history_digest": "d8141ad97a5de296235fb0b0d431ca4a2e9d0185f717d5f678660ad1dff0112e",
+    "integrity_alerts": [],
+    "invalid_changes": [],
+    "invalid_events": [],
+    "pending_changes": [
+      "d4d6bbd1b4622306883aec9ddf307fc1f3d19c12fb5cb5413edb6e4f94bee95d"
+    ],
+    "report_schema": "nostr_automerge.report.v1",
+    "revision": "draft_2026_08",
+    "state_assertions": [],
+    "unsupported_events": []
+  },
+  "fixture_id": "dependencies_missing",
+  "raw_events": [
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"1162ffa0f68dda9783c9e3c419ed824a086c1594dc8d3333306016611739dfc1\\\",\\\"roles\\\":[\\\"write\\\"]},{\\\"account\\\":null,\\\"pubkey\\\":\\\"1428f3a3532ff4f1cac70f7292bfad06d1037f800ee8839b56ebba917a22e900\\\",\\\"roles\\\":[\\\"write\\\"]},{\\\"account\\\":null,\\\"pubkey\\\":\\\"887b313b55d7c6706037fe7bd554364faccfe21bc2652a2a6a0b0d7026c585ea\\\",\\\"roles\\\":[\\\"write\\\"]},{\\\"account\\\":null,\\\"pubkey\\\":\\\"9ac20335eb38768d2052be1dbbc3c8f6178407458e51e6b4ad22f1d91758895b\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":0,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":1,\"id\":\"13bf42adc91835411238c7f219d1a6ab647a197e5e9009bfe458175db7b83247\",\"kind\":1625,\"pubkey\":\"9c1f585aa80762f9f4458f6806978b7befb46c7b68af82d399630793ff1a2b50\",\"sig\":\"d11fca8e0980a459c58e31024e149c272ca9f0671262f1b055e58b5a2e3f42c3eaf334d78e360a573c29d7935ef823cd1fe0a0c0005aee8722e5c06511270df9\",\"tags\":[[\"a\",\"31624:9c1f585aa80762f9f4458f6806978b7befb46c7b68af82d399630793ff1a2b50:8282828282828282828282828282828282828282828282828282828282828282\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kg9TWu9EBawHRw+PR3dx7xvcZ7RIcsmLpbQwi2utI/orP7wDDBOeIkSAL4Cihn42qMiTRF+5AYTb2ndapIMZgtGvAkcf85MtpvAICAAAABhUHNAFCAlYDVwhwAn8FY2hhaW4BfwF/hgFhY2NlcHRlZH8A\",\"created_at\":3,\"id\":\"675c8e78d0a59b5b43d42359f24ca992ec3a075e673058f6cd4a58406b8c4be2\",\"kind\":1624,\"pubkey\":\"1428f3a3532ff4f1cac70f7292bfad06d1037f800ee8839b56ebba917a22e900\",\"sig\":\"da5502f80286a9ed75eb8dd650c998bbd7f446b670ca2aa66930e7fc80246be589135512ad81c47be60b5a6b69213f15ca6ee7b13688809b8574808fddb0233e\",\"tags\":[[\"a\",\"31624:9c1f585aa80762f9f4458f6806978b7befb46c7b68af82d399630793ff1a2b50:8282828282828282828282828282828282828282828282828282828282828282\"],[\"e\",\"13bf42adc91835411238c7f219d1a6ab647a197e5e9009bfe458175db7b83247\"],[\"x\",\"d4d6bbd1b4622306883aec9ddf307fc1f3d19c12fb5cb5413edb6e4f94bee95d\"]]}",
+      "encoding": "utf8"
+    }
+  ],
+  "requirements": [
+    "NCRDT-CONF-002",
+    "NCRDT-SEQ-001",
+    "NCRDT-STATE-001"
+  ],
+  "revision": "draft_2026_08",
+  "scenario_schema": "nostr_automerge.signed_scenario.v2"
+}

@@ -1,0 +1,62 @@
+{
+  "budget": {
+    "max_bytes": 1000000,
+    "max_items": 1000000
+  },
+  "cancel_after": null,
+  "coordinate": "31624:9c1f585aa80762f9f4458f6806978b7befb46c7b68af82d399630793ff1a2b50:8282828282828282828282828282828282828282828282828282828282828282",
+  "expected_report": {
+    "accepted_changes": [],
+    "canonical_controls": [
+      "13bf42adc91835411238c7f219d1a6ab647a197e5e9009bfe458175db7b83247"
+    ],
+    "completion": "complete",
+    "coordinate": "31624:9c1f585aa80762f9f4458f6806978b7befb46c7b68af82d399630793ff1a2b50:8282828282828282828282828282828282828282828282828282828282828282",
+    "disposition_records": [
+      {
+        "disposition": "accepted",
+        "identifier": "13bf42adc91835411238c7f219d1a6ab647a197e5e9009bfe458175db7b83247",
+        "namespace": "control_event"
+      },
+      {
+        "diagnostic": "automerge.checksum",
+        "disposition": "invalid",
+        "identifier": "dde0f4fa6694b0d677a5ef5ff8cbb3ee740760c725e3568fbdbe600888299f1d",
+        "namespace": "event"
+      }
+    ],
+    "dispositions_digest": "1765b0b14dd827aad9cb806932b3221e5a0d8e19a4c1f1b3c7698357c9a82df4",
+    "excluded_changes": [],
+    "fixture_id": "dependencies_cycle_attempt",
+    "heads": [],
+    "history_digest": "d8141ad97a5de296235fb0b0d431ca4a2e9d0185f717d5f678660ad1dff0112e",
+    "integrity_alerts": [],
+    "invalid_changes": [],
+    "invalid_events": [
+      "dde0f4fa6694b0d677a5ef5ff8cbb3ee740760c725e3568fbdbe600888299f1d"
+    ],
+    "pending_changes": [],
+    "report_schema": "nostr_automerge.report.v1",
+    "revision": "draft_2026_08",
+    "state_assertions": [],
+    "unsupported_events": []
+  },
+  "fixture_id": "dependencies_cycle_attempt",
+  "raw_events": [
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"1162ffa0f68dda9783c9e3c419ed824a086c1594dc8d3333306016611739dfc1\\\",\\\"roles\\\":[\\\"write\\\"]},{\\\"account\\\":null,\\\"pubkey\\\":\\\"1428f3a3532ff4f1cac70f7292bfad06d1037f800ee8839b56ebba917a22e900\\\",\\\"roles\\\":[\\\"write\\\"]},{\\\"account\\\":null,\\\"pubkey\\\":\\\"887b313b55d7c6706037fe7bd554364faccfe21bc2652a2a6a0b0d7026c585ea\\\",\\\"roles\\\":[\\\"write\\\"]},{\\\"account\\\":null,\\\"pubkey\\\":\\\"9ac20335eb38768d2052be1dbbc3c8f6178407458e51e6b4ad22f1d91758895b\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":0,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":1,\"id\":\"13bf42adc91835411238c7f219d1a6ab647a197e5e9009bfe458175db7b83247\",\"kind\":1625,\"pubkey\":\"9c1f585aa80762f9f4458f6806978b7befb46c7b68af82d399630793ff1a2b50\",\"sig\":\"d11fca8e0980a459c58e31024e149c272ca9f0671262f1b055e58b5a2e3f42c3eaf334d78e360a573c29d7935ef823cd1fe0a0c0005aee8722e5c06511270df9\",\"tags\":[[\"a\",\"31624:9c1f585aa80762f9f4458f6806978b7befb46c7b68af82d399630793ff1a2b50:8282828282828282828282828282828282828282828282828282828282828282\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kg9DD49EBSgAgC+AooZ+NqjIk0RfuQGE29p3WqSDGYLRrwJHH/OTLabwBAQAAAAYVBjQBQgJWA1cIcAJ/BGJhc2UBfwF/hgFhY2NlcHRlZH8A\",\"created_at\":8,\"id\":\"dde0f4fa6694b0d677a5ef5ff8cbb3ee740760c725e3568fbdbe600888299f1d\",\"kind\":1624,\"pubkey\":\"1428f3a3532ff4f1cac70f7292bfad06d1037f800ee8839b56ebba917a22e900\",\"sig\":\"9405eaa3d7ed2e21a1b5110f0c7ed8ab1ddc255a6e9071e8bee74dce1c2308517915b67b3ab55df365d8995337fe30d2a56a1133e5e181b0df847ff47a611e1e\",\"tags\":[[\"a\",\"31624:9c1f585aa80762f9f4458f6806978b7befb46c7b68af82d399630793ff1a2b50:8282828282828282828282828282828282828282828282828282828282828282\"],[\"e\",\"13bf42adc91835411238c7f219d1a6ab647a197e5e9009bfe458175db7b83247\"],[\"x\",\"d1c3e3d1dddc7bc6f719ed121cb262e96d0c22daeb48fe8acfef00c304e78891\"]]}",
+      "encoding": "utf8"
+    }
+  ],
+  "requirements": [
+    "NCRDT-CONF-002",
+    "NCRDT-SEQ-001",
+    "NCRDT-STATE-001"
+  ],
+  "revision": "draft_2026_08",
+  "scenario_schema": "nostr_automerge.signed_scenario.v2"
+}
