@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/fixtures/schema/interop_attestation_v2.schema.json",
+  "title": "Opaque independent TypeScript interoperability evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "implementation_identity", "commit", "dependency_lock_sha256", "toolchain", "fixture_distribution_sha256", "profiles", "result", "deliberate_mismatch", "provenance"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.interop_attestation.v2"},
+    "implementation_identity": {"const": "triesap/nostr_automerge_typescript"},
+    "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "dependency_lock_sha256": {"$ref": "#/$defs/sha256"},
+    "toolchain": {"type": "object", "additionalProperties": false, "required": ["node", "pnpm", "typescript"], "properties": {"node": {"type": "string", "minLength": 1}, "pnpm": {"type": "string", "minLength": 1}, "typescript": {"type": "string", "minLength": 1}}},
+    "fixture_distribution_sha256": {"$ref": "#/$defs/sha256"},
+    "profiles": {"type": "object", "additionalProperties": false, "required": ["core", "checkpoint", "malformed", "property", "projection"], "properties": {"core": {"$ref": "#/$defs/profile"}, "checkpoint": {"$ref": "#/$defs/profile"}, "malformed": {"$ref": "#/$defs/profile"}, "property": {"$ref": "#/$defs/profile"}, "projection": {"$ref": "#/$defs/profile"}}},
+    "result": {"const": "pass"},
+    "deliberate_mismatch": {"const": "detected"},
+    "provenance": {"const": "operator-local"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "profile": {"type": "object", "additionalProperties": false, "required": ["report_sha256", "result"], "properties": {"report_sha256": {"$ref": "#/$defs/sha256"}, "result": {"const": "pass"}}}
+  }
+}

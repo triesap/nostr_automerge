@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SCHEMA = ROOT / "tools/validation/requirement_coverage_v3.schema.json"
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 COMMIT = re.compile(r"^[0-9a-f]{40}$")
+TS_PROFILES = {"core", "checkpoint", "malformed", "property", "projection"}
 
 
 class EvidenceError(Exception):
@@ -137,6 +138,67 @@ def test_self_test() -> None:
             raise AssertionError("nonexecuted Rust test unexpectedly resolved")
 
 
+def validate_typescript_attestation(attestation: dict[str, object]) -> None:
+    required = {
+        "schema", "implementation_identity", "commit", "dependency_lock_sha256",
+        "toolchain", "fixture_distribution_sha256", "profiles", "result",
+        "deliberate_mismatch", "provenance",
+    }
+    if set(attestation) != required:
+        raise EvidenceError("typescript_attestation_shape")
+    if attestation["schema"] != "nostr_automerge.interop_attestation.v2":
+        raise EvidenceError("typescript_attestation_schema")
+    if attestation["implementation_identity"] != "triesap/nostr_automerge_typescript":
+        raise EvidenceError("typescript_implementation_identity")
+    if not COMMIT.fullmatch(attestation["commit"]):
+        raise EvidenceError("typescript_commit")
+    for field in ("dependency_lock_sha256", "fixture_distribution_sha256"):
+        if not SHA256.fullmatch(attestation[field]):
+            raise EvidenceError(f"typescript_{field}")
+    if set(attestation["profiles"]) != TS_PROFILES:
+        raise EvidenceError("typescript_profile_membership")
+    if any(set(profile) != {"report_sha256", "result"} or not SHA256.fullmatch(profile["report_sha256"]) or profile["result"] != "pass" for profile in attestation["profiles"].values()):
+        raise EvidenceError("typescript_profile_result")
+    if attestation["result"] != "pass" or attestation["deliberate_mismatch"] != "detected" or attestation["provenance"] != "operator-local":
+        raise EvidenceError("typescript_result")
+    serialized = json.dumps(attestation, sort_keys=True)
+    workstation_home = "/" + "Users/"
+    if "://" in serialized or workstation_home in serialized or "../" in serialized:
+        raise EvidenceError("typescript_private_material")
+
+
+def typescript_self_test() -> None:
+    baseline = {
+        "schema": "nostr_automerge.interop_attestation.v2",
+        "implementation_identity": "triesap/nostr_automerge_typescript",
+        "commit": "11" * 20, "dependency_lock_sha256": "22" * 32,
+        "toolchain": {"node": "26.5.1", "pnpm": "10.30.3", "typescript": "6.0.0"},
+        "fixture_distribution_sha256": sha256(ROOT / "fixtures/distribution/manifest_v3.json"),
+        "profiles": {name: {"report_sha256": "33" * 32, "result": "pass"} for name in TS_PROFILES},
+        "result": "pass", "deliberate_mismatch": "detected", "provenance": "operator-local",
+    }
+    validate_typescript_attestation(baseline)
+    for field, value in (
+        ("implementation_identity", "other/private"),
+        ("commit", "00"),
+        ("fixture_distribution_sha256", "44"),
+    ):
+        mutation = copy.deepcopy(baseline)
+        mutation[field] = value
+        try:
+            validate_typescript_attestation(mutation)
+        except EvidenceError:
+            continue
+        raise AssertionError(f"invalid TypeScript {field} unexpectedly passed")
+    missing_profile = copy.deepcopy(baseline)
+    missing_profile["profiles"].pop("projection")
+    try:
+        validate_typescript_attestation(missing_profile)
+    except EvidenceError:
+        return
+    raise AssertionError("missing TypeScript profile unexpectedly passed")
+
+
 def result_self_test() -> None:
     manifest = json.loads((ROOT / "reports/test_evidence_manifest.json").read_text())
     for job in manifest["jobs"].values():
@@ -189,6 +251,7 @@ def main() -> int:
     parser.add_argument("--hash-self-test", action="store_true")
     parser.add_argument("--fixture-self-test", action="store_true")
     parser.add_argument("--test-self-test", action="store_true")
+    parser.add_argument("--typescript-self-test", action="store_true")
     args = parser.parse_args()
     if args.schema_self_test:
         schema_self_test()
@@ -209,6 +272,10 @@ def main() -> int:
     if args.test_self_test:
         test_self_test()
         print("PASS: every Rust test proof resolves to a passing unfiltered job")
+        return 0
+    if args.typescript_self_test:
+        typescript_self_test()
+        print("PASS: opaque TypeScript proof metadata fails closed without source disclosure")
         return 0
     validate_shape(json.loads(args.report.read_text()))
     print("PASS: requirement evidence v3 has a valid top-level shape")
