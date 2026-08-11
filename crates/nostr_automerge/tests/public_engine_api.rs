@@ -2260,7 +2260,7 @@ fn signed_event_disposition_records() {
         &NeverCancelled,
     );
     for (event_id, disposition) in [
-        (valid_id, ProtocolDisposition::Accepted),
+        (valid_id, ProtocolDisposition::Excluded),
         (invalid_id, ProtocolDisposition::Invalid),
         (unsupported_id, ProtocolDisposition::UnsupportedRevision),
     ] {
