@@ -122,7 +122,12 @@ def validate_repository() -> None:
         except (UnicodeDecodeError, IsADirectoryError):
             continue
         validate_content(relative, text)
-    validate_attestation(json.loads((ROOT / "reports/interop_typescript_v2.json").read_text()))
+    validate_attestation(json.loads(attestation_path().read_text()))
+
+
+def attestation_path() -> Path:
+    current = ROOT / "reports/interop_typescript_v3.json"
+    return current if current.is_file() else ROOT / "reports/interop_typescript_v2.json"
 
 
 def expect_rejected(action: object, reason: str) -> None:
@@ -134,7 +139,7 @@ def expect_rejected(action: object, reason: str) -> None:
 
 
 def self_test() -> None:
-    valid = json.loads((ROOT / "reports/interop_typescript_v2.json").read_text())
+    valid = json.loads(attestation_path().read_text())
     validate_attestation(valid)
     leaked = copy.deepcopy(valid)
     leaked["source"] = "export const secret = true"
