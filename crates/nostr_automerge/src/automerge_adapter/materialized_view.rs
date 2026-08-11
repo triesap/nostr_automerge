@@ -965,6 +965,51 @@ mod tests {
     }
 
     #[test]
+    fn conflicting_text_and_marks_retain_their_text_branch() {
+        let change = |actor: u8, value: &str| {
+            let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+            document.set_actor(ActorId::from([actor; 32]));
+            {
+                let mut tx = document.transaction();
+                let text = tx.put_object(ROOT, "conflict", ObjType::Text);
+                let Ok(text) = text else { return None };
+                if tx.splice_text(&text, 0, 0, value).is_err()
+                    || tx
+                        .mark(
+                            &text,
+                            Mark::new("branch".to_owned(), true, 0, value.len()),
+                            ExpandMark::Both,
+                        )
+                        .is_err()
+                {
+                    return None;
+                }
+                tx.commit();
+            }
+            document.get_changes(&[]).first().cloned()
+        };
+        let (Some(left), Some(right)) = (change(24, "left"), change(25, "right")) else {
+            return;
+        };
+        let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+        assert!(document.apply_changes([right, left]).is_ok());
+        let view = MaterializedDocumentView::from_canonical_bytes(document.save_nocompress());
+        let Ok(view) = view else { return };
+        let text = view
+            .entries()
+            .iter()
+            .find(|entry| entry.path() == [MaterializedPathElement::Key("conflict".to_owned())]);
+        assert!(text.is_some_and(|entry| entry.conflicts().len() == 2));
+        assert_eq!(view.marks().len(), 2);
+        assert!(view.marks().iter().all(|mark| matches!(
+            mark.path(),
+            [MaterializedPathElement::Key(key), MaterializedPathElement::Branch { .. }]
+                if key == "conflict"
+        )));
+        assert_ne!(view.marks()[0].path(), view.marks()[1].path());
+    }
+
+    #[test]
     fn project_real_marks_with_utf16_ranges() {
         let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
         document.set_actor(ActorId::from([6; 32]));
