@@ -1,6 +1,7 @@
 # nostr_automerge Draft V1 RCLD 24: Signed Neutral Conformance
 
-Status: pending RCLD 23
+Status: active
+Current checkpoint: `step_460`
 Steps: `step_460` through `step_481`
 Primary findings: `FINDING_014`, `FINDING_015`, `FINDING_016`, `FINDING_017`, `FINDING_020`, `FINDING_021`, `FINDING_023`, `FINDING_025`, `FINDING_026`
 

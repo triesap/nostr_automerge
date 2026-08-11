@@ -276,7 +276,35 @@ def main() -> int:
         raise AssertionError("conflict-aware projection phase does not activate step_444")
     if projection.get("publication_authorized") is not False:
         raise AssertionError("conflict-aware projection phase cannot authorize publication")
-    print("PASS: phase reports activate conflict-aware projection then step_444")
+    checkpoint = json.loads((ROOT / "reports/remediation_v2_phase_08.json").read_text())
+    if checkpoint.get("phase") != "phase_08_checkpoint_completion" or checkpoint.get("status") != "pass":
+        raise AssertionError("checkpoint completion phase is not passing")
+    checkpoint_steps = [f"step_{step:03d}" for step in range(444, 460)]
+    if checkpoint.get("completed_steps") != checkpoint_steps or set(checkpoint.get("commits", {})) != set(checkpoint_steps):
+        raise AssertionError("checkpoint completion coverage is incomplete")
+    requirements = [f"R2_CP_{number:03d}" for number in range(1, 5)]
+    if checkpoint.get("requirements") != requirements or set(checkpoint.get("tests", {})) != set(requirements):
+        raise AssertionError("checkpoint completion requirement evidence is incomplete")
+    if any(not checkpoint["tests"][requirement] for requirement in requirements):
+        raise AssertionError("checkpoint completion phase lacks direct tests")
+    if any(command.get("result") != "pass" for command in checkpoint.get("commands", [])):
+        raise AssertionError("checkpoint completion phase contains a nonpassing command")
+    for relative, expected in checkpoint.get("artifact_sha256", {}).items():
+        if not artifact_matches(checkpoint, "reports/remediation_v2_phase_08.json", relative, expected):
+            raise AssertionError(f"checkpoint completion artifact hash mismatch: {relative}")
+    for commit_hash in checkpoint["commits"].values():
+        if commit_hash == "self":
+            continue
+        commit = subprocess.run(
+            ["git", "cat-file", "-e", f"{commit_hash}^{{commit}}"], cwd=ROOT, check=False
+        )
+        if commit.returncode:
+            raise AssertionError(f"checkpoint completion commit does not exist: {commit_hash}")
+    if checkpoint.get("next") != {"rcld": 24, "checkpoint": "step_460"}:
+        raise AssertionError("checkpoint completion phase does not activate step_460")
+    if checkpoint.get("publication_authorized") is not False:
+        raise AssertionError("checkpoint completion phase cannot authorize publication")
+    print("PASS: phase reports activate checkpoint completion then step_460")
     return 0
 
 

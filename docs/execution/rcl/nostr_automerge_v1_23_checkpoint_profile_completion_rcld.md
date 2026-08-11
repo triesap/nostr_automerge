@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 23: Checkpoint Profile Completion
 
-Status: active
-Current checkpoint: `step_458`
+Status: complete
+Current checkpoint: `step_459`
 Steps: `step_444` through `step_459`
 Primary findings: `FINDING_014`, `FINDING_018`, `FINDING_022`, `FINDING_024`, `FINDING_025`
 
@@ -48,4 +48,5 @@ state, heads, history digest, or materialized state.
 - `step_455`: `30c7180` — an existing declared head that omits a disconnected embedded branch reaches `closure_mismatch` before any checkpoint can affect replay state.
 - `step_456`: `7da2c1b` — signed snapshots containing a carrierless or checkpoint-only-authorized change reach the two distinct verified-history refusals.
 - `step_457`: `5ae2936` — deterministic budget and cancellation boundaries stop checkpoint work while preserving canonical controls, accepted history, heads, and history digest.
-- `step_458`: this commit — the generated checkpoint report executes every signed fixture test and binds each exact ID, expected status, test name, pass result, and result hash.
+- `step_458`: `fe8cf5c` — the generated checkpoint report executes every signed fixture test and binds each exact ID, expected status, test name, pass result, and result hash.
+- `step_459`: this commit — the complete standard, conformance, resource, report, phase-evidence, and remediation-validator gates close checkpoint completion without publication authority.

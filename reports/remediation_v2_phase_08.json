@@ -1,0 +1,16 @@
+{
+  "schema":"nostr_automerge.remediation_phase.v2",
+  "phase":"phase_08_checkpoint_completion",
+  "status":"pass",
+  "recorded":"2026-08-10",
+  "phase_input_head":"fe8cf5c7781b4da04b858156a476faf0fa005ab6",
+  "findings":["FINDING_014","FINDING_018","FINDING_022","FINDING_024","FINDING_025"],
+  "requirements":["R2_CP_001","R2_CP_002","R2_CP_003","R2_CP_004"],
+  "completed_steps":["step_444","step_445","step_446","step_447","step_448","step_449","step_450","step_451","step_452","step_453","step_454","step_455","step_456","step_457","step_458","step_459"],
+  "commits":{"step_444":"a366d4f","step_445":"edf05de","step_446":"49fbf5a","step_447":"e9b4686","step_448":"3e2325a","step_449":"a13a854","step_450":"eef3740","step_451":"d61cd19","step_452":"281cbaf","step_453":"bbebc21","step_454":"d4b3270","step_455":"30c7180","step_456":"7da2c1b","step_457":"5ae2936","step_458":"fe8cf5c","step_459":"self"},
+  "tests":{"R2_CP_001":["public_engine_api::signed_empty_history_checkpoint_verifies_without_redefining_history","public_engine_api::signed_single_chunk_checkpoint_verifies_real_automerge_history","public_engine_api::signed_irregular_multichunk_checkpoint_reconstructs_exact_history"],"R2_CP_002":["public_engine_api::checkpoint_author_and_binding_refusals","public_engine_api::checkpoint_index_refusals","public_engine_api::checkpoint_size_refusals","public_engine_api::checkpoint_merkle_refusals","public_engine_api::checkpoint_snapshot_refusals","checkpoint_replay_agreement::checkpoint_closure_refusals"],"R2_CP_003":["public_engine_api::checkpoint_history_refusals","checkpoint_conformance::publish_checkpoint_conformance_fixtures_and_report"],"R2_CP_004":["public_engine_api::checkpoints_never_authorize_or_redefine_history","public_engine_api::checkpoint_interruption_is_non_authoritative","public_engine_api::accepted_at_control_is_exact_closure"]},
+  "commands":[{"command":"cargo extbuild run -- python3 scripts/local_gate.py standard","result":"pass"},{"command":"cargo extbuild run -- python3 scripts/local_gate.py conformance","result":"pass"},{"command":"cargo extbuild run -- python3 scripts/local_gate.py resource","result":"pass"},{"command":"cargo extbuild run -- cargo run -p nostr_automerge_xtask --locked -- checkpoint-report","result":"pass"},{"command":"cargo extbuild run -- cargo test -p nostr_automerge --test checkpoint_conformance --locked","result":"pass"},{"command":"git diff --check","result":"pass"}],
+  "artifact_sha256":{"crates/nostr_automerge/src/checkpoint/verify.rs":"d65c5dc7dbfe11c911ea6724de32001105fba789ce3e7aa2a8edae80b56c9c26","crates/nostr_automerge/tests/public_engine_api.rs":"3138595ac777572c45d441dcf11c7525de1e37275afd5f54029fbc81e3ba3c0b","crates/nostr_automerge/tests/checkpoint_replay_agreement.rs":"a344baf678f0c9913c525d619e564f960fb33fb0601a4c534fc9861683538a21","tools/nostr_automerge_xtask/src/checkpoint_report.rs":"2807e866120f2bb931f6222f487f72732031ebf41dc540b5727ce14a8e5bb635","reports/checkpoint_conformance.json":"94db55d6d60f01abbe37289a77218c55eb3f5b090051e40c8d9cad806bcd1142","fixtures/v1_draft/checkpoints/cases.json":"b0a47fa7821532c031ffc02ebb584006208111660982004c6b72330d22670210","Cargo.lock":"74aafde92cfcb35e7216dc847a75ca556ac9722a93147a9a6ccd61c3121a7e60"},
+  "next":{"rcld":24,"checkpoint":"step_460"},
+  "publication_authorized":false
+}
