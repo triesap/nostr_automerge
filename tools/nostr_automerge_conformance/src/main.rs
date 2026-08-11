@@ -14,6 +14,8 @@ mod interop;
 #[allow(dead_code)]
 mod permutation;
 #[allow(dead_code)]
+mod permutations;
+#[allow(dead_code)]
 mod report_json;
 mod runner;
 mod scenario;

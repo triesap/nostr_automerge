@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 24: Signed Neutral Conformance
 
 Status: active
-Current checkpoint: `step_473`
+Current checkpoint: `step_474`
 Steps: `step_460` through `step_481`
 Primary findings: `FINDING_014`, `FINDING_015`, `FINDING_016`, `FINDING_017`, `FINDING_020`, `FINDING_021`, `FINDING_023`, `FINDING_025`, `FINDING_026`
 
@@ -49,4 +49,5 @@ selection answers.
 - `step_470`: `87cf2d5` — signed carrier pairs exercise unknown-tag invariance and exact required-tag refusals across manifest, control, change, descriptor, and chunk kinds.
 - `step_471`: `51279c9` — signed revision ambiguity covers canonical unknown versions, duplicate declarations, malformed and noncanonical JSON, and unsafe numeric ranges.
 - `step_472`: `bbbcdfa` — signed complete checkpoint evidence covers verified empty and single-history snapshots plus authorization, chunk, Merkle, and snapshot refusals.
-- `step_473`: this commit — signed accepted history drives exact scalar, list, text, Unicode, counter, and object-key materialized state assertions.
+- `step_473`: `0c55f5c` — signed accepted history drives exact scalar, list, text, Unicode, counter, and object-key materialized state assertions.
+- `step_474`: this commit — deterministic signed-byte delivery generation covers canonical, reverse, seeded, duplicate-heavy, dependency-last, control-last, and invalid-first classes.
