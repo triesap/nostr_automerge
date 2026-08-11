@@ -38,3 +38,11 @@ change-control process.
 | [0030](adr_0030_executed_requirement_evidence.md) | Approved | `NCRDT-CONF-003` |
 | [0031](adr_0031_private_typescript_attestation_v2.md) | Approved | `NCRDT-TS-001`, `NCRDT-CONF-003` |
 | [0032](adr_0032_release_assurance_remains_separate.md) | Approved | `NCRDT-RESOURCE-001`, `NCRDT-COMPLETION-001` |
+| [0033](adr_0033_authoritative_epoch_result.md) | Approved | `R3_EQUIV_001`, `R3_EQUIV_002`, `R3_EQUIV_003` |
+| [0034](adr_0034_interrupted_reports_preserve_outcomes.md) | Approved | `R3_REPORT_001`, `R3_REPORT_002`, `R3_REPORT_003` |
+| [0035](adr_0035_selected_manifest_dynamic_validation.md) | Approved | `R3_MANIFEST_001`, `R3_MANIFEST_002`, `R3_MANIFEST_003` |
+| [0036](adr_0036_dynamic_event_dispositions.md) | Approved | `R3_EVENT_001`, `R3_EVENT_002`, `R3_EVENT_003` |
+| [0037](adr_0037_complete_evaluation_metering.md) | Approved | `R3_BUDGET_001`, `R3_BUDGET_002`, `R3_BUDGET_003` |
+| [0038](adr_0038_causal_operation_counter.md) | Approved | `R3_SPEC_001`, `R3_SPEC_002`, `R3_SPEC_004` |
+| [0039](adr_0039_private_typescript_attestation_v3.md) | Approved | `R3_INTEROP_003`, `R3_INTEROP_005`, `R3_EVID_002` |
+| [0040](adr_0040_release_assurance_separate.md) | Approved | `R3_RELEASE_001`, `R3_RELEASE_002`, `R3_RELEASE_003` |
