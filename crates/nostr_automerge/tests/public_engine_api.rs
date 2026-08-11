@@ -4427,6 +4427,7 @@ fn evaluate_single_chunk_variant(
     chunk_signer: &TestSigner,
     chunk_coordinate: Option<DocumentCoordinate>,
     chunk_descriptor: Option<EventId>,
+    parts: &[(u64, &str, &str)],
 ) -> nostr_automerge::EvaluationReport {
     let scenario = signed_engine_scenario();
     let descriptor_signer = TestSigner::from_byte(21);
@@ -4463,33 +4464,35 @@ fn evaluate_single_chunk_variant(
     let descriptor_id = VerifiedNip01Event::verify(descriptor.clone())
         .expect("descriptor")
         .event_id();
-    let chunk = chunk_signer.sign(
-        &UnsignedEventDraft::new(
-            4,
-            1_627,
-            vec![
+    let chunks = parts.iter().map(|(created_at, index, count)| {
+        chunk_signer.sign(
+            &UnsignedEventDraft::new(
+                *created_at,
+                1_627,
                 vec![
-                    "a".to_owned(),
-                    chunk_coordinate.unwrap_or(scenario.coordinate).to_address(),
+                    vec![
+                        "a".to_owned(),
+                        chunk_coordinate.unwrap_or(scenario.coordinate).to_address(),
+                    ],
+                    vec![
+                        "e".to_owned(),
+                        chunk_descriptor.unwrap_or(descriptor_id).to_hex(),
+                    ],
+                    vec!["x".to_owned(), hex32(chunk_hash)],
+                    vec!["part".to_owned(), (*index).to_owned(), (*count).to_owned()],
                 ],
-                vec![
-                    "e".to_owned(),
-                    chunk_descriptor.unwrap_or(descriptor_id).to_hex(),
-                ],
-                vec!["x".to_owned(), hex32(chunk_hash)],
-                vec!["part".to_owned(), "0".to_owned(), "1".to_owned()],
-            ],
-            format!(
-                r#"{{"data":"{}","proof":[],"v":1}}"#,
-                base64::engine::general_purpose::STANDARD.encode(&scenario.snapshot)
-            ),
+                format!(
+                    r#"{{"data":"{}","proof":[],"v":1}}"#,
+                    base64::engine::general_purpose::STANDARD.encode(&scenario.snapshot)
+                ),
+            )
+            .expect("chunk draft")
+            .prepare(chunk_signer.public_key())
+            .expect("chunk preimage"),
         )
-        .expect("chunk draft")
-        .prepare(chunk_signer.public_key())
-        .expect("chunk preimage"),
-    );
+    });
     let mut builder = CorpusBuilder::new();
-    for event in [chunk, descriptor, scenario.change, scenario.control] {
+    for event in chunks.chain([descriptor, scenario.change, scenario.control]) {
         assert!(matches!(
             builder.ingest(event),
             IngestOutcome::Accepted { .. }
@@ -4511,7 +4514,8 @@ fn checkpoint_author_and_binding_refusals() {
     .unwrap_or_default();
     assert_eq!(fixture["cases"].as_array().map(Vec::len), Some(3));
     checkpoint_unauthorized_signed_fixture();
-    let wrong_author = evaluate_single_chunk_variant(&TestSigner::from_byte(62), None, None);
+    let wrong_author =
+        evaluate_single_chunk_variant(&TestSigner::from_byte(62), None, None, &[(4, "0", "1")]);
     assert_eq!(
         wrong_author.checkpoints()[0].status(),
         CheckpointVerificationStatus::ChunkAuthorMismatch
@@ -4524,8 +4528,12 @@ fn checkpoint_author_and_binding_refusals() {
     )
     .parse()
     .unwrap_or_else(|_| signed_engine_scenario().coordinate);
-    let wrong_coordinate =
-        evaluate_single_chunk_variant(&TestSigner::from_byte(21), Some(other_coordinate), None);
+    let wrong_coordinate = evaluate_single_chunk_variant(
+        &TestSigner::from_byte(21),
+        Some(other_coordinate),
+        None,
+        &[(4, "0", "1")],
+    );
     assert_eq!(
         wrong_coordinate.checkpoints()[0].status(),
         CheckpointVerificationStatus::ChunkCoordinateMismatch
@@ -4535,11 +4543,39 @@ fn checkpoint_author_and_binding_refusals() {
         &TestSigner::from_byte(21),
         None,
         Some(EventId::from_bytes([0x77; 32])),
+        &[(4, "0", "1")],
     );
     assert_eq!(
         wrong_descriptor.checkpoints()[0].status(),
         CheckpointVerificationStatus::MissingChunk
     );
+}
+
+#[test]
+fn checkpoint_index_refusals() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/checkpoints/negative_indices.json"
+    ))
+    .unwrap_or_default();
+    assert_eq!(fixture["cases"].as_array().map(Vec::len), Some(5));
+    let signer = TestSigner::from_byte(21);
+    let duplicate =
+        evaluate_single_chunk_variant(&signer, None, None, &[(4, "0", "1"), (5, "0", "1")]);
+    assert_eq!(
+        duplicate.checkpoints()[0].status(),
+        CheckpointVerificationStatus::DuplicateChunk
+    );
+    let missing = evaluate_single_chunk_variant(&signer, None, None, &[]);
+    assert_eq!(
+        missing.checkpoints()[0].status(),
+        CheckpointVerificationStatus::MissingChunk
+    );
+    let wrong_count = evaluate_single_chunk_variant(&signer, None, None, &[(4, "0", "2")]);
+    assert_eq!(
+        wrong_count.checkpoints()[0].status(),
+        CheckpointVerificationStatus::ChunkCountMismatch
+    );
+    validated_checkpoint_chunk_carrier_enters_corpus();
 }
 
 #[allow(clippy::expect_used)]
@@ -5006,6 +5042,8 @@ fn validated_checkpoint_chunk_carrier_enters_corpus() {
     leading_zero[3][1] = "00".to_owned();
     let mut upper_hash = valid_tags();
     upper_hash[2][1] = "AA".repeat(32);
+    let mut out_of_range = valid_tags();
+    out_of_range[3][1] = "1".to_owned();
     for (created_at, tags, content, expected) in [
         (
             2,
@@ -5015,8 +5053,9 @@ fn validated_checkpoint_chunk_carrier_enters_corpus() {
         ),
         (3, leading_zero, canonical_content, "checkpoint.chunk"),
         (4, upper_hash, canonical_content, "checkpoint.chunk"),
+        (5, out_of_range, canonical_content, "checkpoint.chunk"),
         (
-            5,
+            6,
             valid_tags(),
             r#"{"data":"YQ","proof":[],"v":1}"#,
             "checkpoint.chunk",
