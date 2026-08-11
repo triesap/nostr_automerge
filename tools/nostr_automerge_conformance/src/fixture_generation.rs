@@ -28,11 +28,154 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "actor_counters" => generate_actor_counter_profile(),
         "dependencies" => generate_dependency_profile(),
         "multi_epoch" => generate_multi_epoch_profile(),
+        "equivocation" => generate_equivocation_profile(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
 }
 
 type Member<'a> = (&'a Signer, Option<String>, &'a [&'a str]);
+
+fn generate_equivocation_profile() -> Result<(), String> {
+    let controller = Signer::from_byte(90)?;
+    let writer = Signer::from_byte(91)?;
+    let dependant = Signer::from_byte(92)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "90".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid equivocation coordinate".to_owned())?;
+    let control = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(
+            0,
+            vec![(&writer, None, &["write"]), (&dependant, None, &["write"])],
+            "automerge-change-v1",
+        ),
+    )?;
+    let control_id = event_id(&control)?;
+    let actor = ActorId::derive(coordinate, writer.public_key);
+    let author_root = |key: &str, value: &str| -> Result<_, String> {
+        let mut document = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+            .map_err(|error| format!("equivocation document: {error:?}"))?;
+        document
+            .author_change(&[Operation::PutString {
+                key: key.to_owned(),
+                value: value.to_owned(),
+            }])
+            .map_err(|error| format!("equivocation change: {error:?}"))
+    };
+    let first = author_root("first", "conflict")?;
+    let second = author_root("second", "conflict")?;
+    let first_event = sign_change(
+        &writer,
+        2,
+        coordinate,
+        control_id,
+        first.change_hash(),
+        first.raw(),
+    )?;
+    let second_event = sign_change(
+        &writer,
+        3,
+        coordinate,
+        control_id,
+        second.change_hash(),
+        second.raw(),
+    )?;
+    let duplicate_event = sign_change(
+        &writer,
+        4,
+        coordinate,
+        control_id,
+        first.change_hash(),
+        first.raw(),
+    )?;
+
+    let mut history = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit);
+    history
+        .apply_changes([automerge::Change::from_bytes(first.raw().to_vec())
+            .map_err(|error| format!("decode prior: {error:?}"))?])
+        .map_err(|error| format!("apply prior: {error:?}"))?;
+    let mut left = history.fork();
+    let mut right = history.fork();
+    left.set_actor(automerge::ActorId::from(actor.as_bytes().to_vec()));
+    right.set_actor(automerge::ActorId::from(actor.as_bytes().to_vec()));
+    left.put(ROOT, "left", "later")
+        .map_err(|error| format!("left conflict: {error:?}"))?;
+    right
+        .put(ROOT, "right", "later")
+        .map_err(|error| format!("right conflict: {error:?}"))?;
+    let left_hash = left
+        .commit()
+        .ok_or_else(|| "missing left conflict".to_owned())?;
+    let right_hash = right
+        .commit()
+        .ok_or_else(|| "missing right conflict".to_owned())?;
+    let left_raw = left
+        .get_change_by_hash(&left_hash)
+        .ok_or_else(|| "missing left conflict bytes".to_owned())?
+        .raw_bytes()
+        .to_vec();
+    let right_raw = right
+        .get_change_by_hash(&right_hash)
+        .ok_or_else(|| "missing right conflict bytes".to_owned())?
+        .raw_bytes()
+        .to_vec();
+    let left_hash = ChangeHash::from_bytes(left_hash.0);
+    let right_hash = ChangeHash::from_bytes(right_hash.0);
+    let left_event = sign_change(&writer, 5, coordinate, control_id, left_hash, &left_raw)?;
+    let right_event = sign_change(&writer, 6, coordinate, control_id, right_hash, &right_raw)?;
+    let cases = vec![
+        (
+            "equivocation_first_conflict",
+            vec![control.clone(), first_event.clone(), second_event.clone()],
+        ),
+        (
+            "equivocation_base_conflict",
+            vec![control.clone(), second_event, first_event.clone()],
+        ),
+        (
+            "equivocation_later_changes",
+            vec![
+                control.clone(),
+                first_event.clone(),
+                left_event.clone(),
+                right_event.clone(),
+            ],
+        ),
+        (
+            "equivocation_descendants",
+            vec![
+                control.clone(),
+                first_event.clone(),
+                left_event,
+                right_event,
+            ],
+        ),
+        (
+            "equivocation_duplicate_carriers",
+            vec![control, first_event, duplicate_event],
+        ),
+    ];
+    let root = repository_root().join("fixtures/v1_draft/scenarios/equivocation");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    for (fixture_id, events) in cases {
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            &["NCRDT-CONF-002", "NCRDT-EQUIV-001"],
+            "equivocation",
+        )?;
+    }
+    Ok(())
+}
 
 fn generate_multi_epoch_profile() -> Result<(), String> {
     let controller = Signer::from_byte(87)?;

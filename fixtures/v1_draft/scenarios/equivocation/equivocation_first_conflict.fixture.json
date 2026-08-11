@@ -1,0 +1,30 @@
+{
+  "expected": {
+    "report_path": "equivocation_first_conflict.expected.json",
+    "sha256": "81cbf9b0ebb56bfbb06f9a069bcd41413badc9656ca42479e283f40f70b810b8"
+  },
+  "fixture_id": "equivocation_first_conflict",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "equivocation_first_conflict.input.json",
+      "sha256": "f3ae5ceb19957512791f5eee958e6f940837b78eaa72cf06708d08b19f8e16aa"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile equivocation",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CONF-002",
+    "NCRDT-EQUIV-001"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}

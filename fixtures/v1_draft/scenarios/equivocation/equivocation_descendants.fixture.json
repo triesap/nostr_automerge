@@ -1,0 +1,30 @@
+{
+  "expected": {
+    "report_path": "equivocation_descendants.expected.json",
+    "sha256": "c4347ba760f2a3cf48b2e030b424435f8c9487dd88adf6c8ff8a3d7ddbc58d9d"
+  },
+  "fixture_id": "equivocation_descendants",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "equivocation_descendants.input.json",
+      "sha256": "40be567f49ebe4774c0be34266d779c6580c6056e896eb7cecd7372e72c56999"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile equivocation",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CONF-002",
+    "NCRDT-EQUIV-001"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}
