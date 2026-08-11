@@ -213,7 +213,10 @@ def validate_private_boundary() -> None:
 
 
 def validate_phase(phase: str) -> None:
-    report_path = ROOT / "reports" / f"remediation_v3_{phase}.json"
+    phase_match = re.fullmatch(r"phase_(\d{2})(?:_[a-z0-9_]+)?", phase)
+    if phase_match is None:
+        raise AssertionError(f"invalid phase identifier: {phase}")
+    report_path = ROOT / "reports" / f"remediation_v3_phase_{phase_match.group(1)}.json"
     if not report_path.exists():
         raise PendingArtifactError(f"phase artifact is pending: {report_path.name}")
     report = load_json(str(report_path.relative_to(ROOT)))
@@ -221,6 +224,24 @@ def validate_phase(phase: str) -> None:
         raise AssertionError("unexpected phase report schema")
     if report.get("phase") != phase or report.get("status") != "pass":
         raise AssertionError("phase report is not passing")
+    phase_index = int(phase_match.group(1))
+    if phase_index >= len(PHASES):
+        raise AssertionError("phase index is outside the approved sequence")
+    rcld, start, end = PHASES[phase_index]
+    if report.get("rcld") != rcld or report.get("completed_steps") != [
+        f"step_{step:03d}" for step in range(start, end + 1)
+    ]:
+        raise AssertionError("phase completion range is inconsistent")
+    verified = report.get("verified_source_commit")
+    if not isinstance(verified, str) or not HEX_40.fullmatch(verified):
+        raise AssertionError("phase verified commit is invalid")
+    if git_output("cat-file", "-t", verified) != "commit":
+        raise AssertionError("phase verified commit does not exist")
+    verification = report.get("verification")
+    if not isinstance(verification, list) or not verification:
+        raise AssertionError("phase verification is missing")
+    if any(item.get("result") != "pass" for item in verification):
+        raise AssertionError("phase verification contains a nonpassing command")
 
 
 def validate_final() -> None:

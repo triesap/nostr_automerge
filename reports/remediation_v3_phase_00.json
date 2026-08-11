@@ -1,0 +1,28 @@
+{
+  "schema": "nostr_automerge.remediation_v3_phase.v1",
+  "phase": "phase_00_authority_and_baseline",
+  "rcld": 29,
+  "completed_steps": ["step_534", "step_535", "step_536", "step_537", "step_538", "step_539", "step_540", "step_541"],
+  "verified_source_commit": "9770288a70440154be5af217154127da70845024",
+  "status": "pass",
+  "verification": [
+    {"command": "python3 scripts/validate_remediation_v3.py --baseline", "result": "pass"},
+    {"command": "python3 scripts/validate_remediation_v3.py --findings", "result": "pass"},
+    {"command": "python3 scripts/validate_remediation_v3.py --ledger", "result": "pass"},
+    {"command": "python3 scripts/validate_remediation_v3.py --adr", "result": "pass"},
+    {"command": "python3 scripts/validate_remediation_v3.py --source-anchors", "result": "pass"},
+    {"command": "python3 scripts/validate_remediation_v3.py --private-boundary", "result": "pass"},
+    {"command": "python3 scripts/validate_remediation_v3.py --self-test", "result": "pass"},
+    {"command": "cargo fmt --all --check", "result": "pass"},
+    {"command": "cargo check --workspace --all-targets --locked", "result": "pass"},
+    {"command": "cargo test --workspace --tests --locked", "result": "pass"},
+    {"command": "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings", "result": "pass"},
+    {"command": "cargo doc --workspace --no-deps --locked", "result": "pass"},
+    {"command": "cargo run -p nostr_automerge_xtask --locked -- validate", "result": "pass"}
+  ],
+  "holds": ["sustained_native_fuzzing", "independent_external_review", "publication_authority"],
+  "nip_snapshot_changed": false,
+  "typescript_source_imported": false,
+  "next_rcld": 30,
+  "next_step": "step_542"
+}

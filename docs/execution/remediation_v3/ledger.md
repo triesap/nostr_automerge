@@ -1,8 +1,8 @@
 # Draft V1 Remediation V3 Execution Ledger
 
 Status: executing
-Active RCLD: 29
-Active checkpoint: `step_536`
+Active RCLD: 30
+Active checkpoint: `step_542`
 Range: `step_534` through `step_659`
 
 Exactly one RCLD and one checkpoint are active. Checkpoints remain contiguous,
@@ -10,8 +10,8 @@ unique, dependency ordered, and independently reviewable.
 
 | RCLD | Steps | Status | Scope |
 | --- | --- | --- | --- |
-| 29 | `step_534`–`step_541` | active | Authority and baseline |
-| 30 | `step_542`–`step_557` | pending | Authoritative equivocation composition |
+| 29 | `step_534`–`step_541` | complete | Authority and baseline |
+| 30 | `step_542`–`step_557` | active | Authoritative equivocation composition |
 | 31 | `step_558`–`step_569` | pending | Interrupted canonical reports |
 | 32 | `step_570`–`step_582` | pending | Selected manifest dynamic validation |
 | 33 | `step_583`–`step_596` | pending | Dynamic manifest and checkpoint event dispositions |
@@ -25,6 +25,12 @@ unique, dependency ordered, and independently reviewable.
 
 - `step_534`: recorded exact post-RCLD-28 baseline.
 - `step_535`: registered findings 028 through 035.
+- `step_536`: created the remediation v3 RCLD authority and ledger.
+- `step_537`: registered ADRs 0033 through 0040.
+- `step_538`: locked reviewed source anchors and Git objects.
+- `step_539`: added the fail-closed remediation v3 validator.
+- `step_540`: enforced the private TypeScript boundary.
+- `step_541`: closed the authority and baseline phase.
 
 ## Scope Adaptations
 
