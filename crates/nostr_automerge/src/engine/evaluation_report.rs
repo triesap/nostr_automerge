@@ -250,6 +250,19 @@ impl EvaluationReport {
         {
             return Err(EvaluationError::ReportInvariant);
         }
+        if parts.canonical_controls.iter().any(|control| {
+            match parts
+                .control_dispositions
+                .binary_search_by_key(control, |(event_id, _)| *event_id)
+            {
+                Ok(index) => {
+                    parts.control_dispositions[index].1 != crate::ProtocolDisposition::Accepted
+                }
+                Err(_) => true,
+            }
+        }) {
+            return Err(EvaluationError::ReportInvariant);
+        }
         let completion_matches_failure = matches!(
             (parts.completion, parts.failure),
             (Completion::Complete, None)
@@ -536,6 +549,15 @@ mod tests {
             crate::ProtocolDisposition::Excluded,
         ));
         assert_invariant(duplicate_control_outcome);
+
+        let mut missing_canonical_outcome = parts();
+        missing_canonical_outcome.control_dispositions.clear();
+        assert_invariant(missing_canonical_outcome);
+
+        let mut contradictory_canonical_outcome = parts();
+        contradictory_canonical_outcome.control_dispositions[0].1 =
+            crate::ProtocolDisposition::Excluded;
+        assert_invariant(contradictory_canonical_outcome);
 
         let record = DispositionRecord::new(
             ProtocolItemIdentifier::from(hash),

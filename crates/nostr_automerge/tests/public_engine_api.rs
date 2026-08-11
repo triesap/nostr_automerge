@@ -39,6 +39,21 @@ trait ReferenceEvaluatorTestExt {
     ) -> EvaluationReport;
 }
 
+fn assert_canonical_control_outcomes_are_consistent(report: &EvaluationReport) {
+    for control in report.canonical_controls() {
+        assert_eq!(
+            report
+                .control_dispositions()
+                .binary_search_by_key(control, |(event_id, _)| *event_id)
+                .ok()
+                .and_then(|index| report.control_dispositions().get(index))
+                .map(|(_, disposition)| *disposition),
+            Some(ProtocolDisposition::Accepted),
+            "canonical control {control:?} must have one accepted outcome"
+        );
+    }
+}
+
 #[test]
 #[allow(clippy::expect_used)]
 fn evaluation_errors_are_noncanonical() {
@@ -2659,6 +2674,7 @@ fn control_selection_and_transition_have_distinct_charges() {
 
     assert_eq!(report.completion(), Completion::BudgetExhausted);
     assert_eq!(report.canonical_controls(), [scenario.control_id]);
+    assert_canonical_control_outcomes_are_consistent(&report);
     assert!(report.dispositions().is_empty());
     assert!(report.accepted_changes().is_empty());
     assert_eq!(budget.consumed().get(WorkCounter::Control), 2);
@@ -2729,6 +2745,11 @@ fn automerge_application_and_materialization_are_charged() {
     );
     assert_eq!(report.completion(), Completion::BudgetExhausted);
     assert_eq!(report.accepted_changes(), [scenario.change_hash]);
+    assert_eq!(report.history_digest(), measured_report.history_digest());
+    assert_eq!(
+        report.dispositions_digest(),
+        measured_report.dispositions_digest()
+    );
     assert!(report.document().is_none());
     assert_eq!(exhausted.consumed().get(WorkCounter::ApplyChange), 3);
     assert!(
@@ -2941,6 +2962,7 @@ fn cancellation_is_safe_at_every_evaluator_boundary() {
         );
         assert_eq!(report.completion(), Completion::Cancelled, "{cancel_at}");
         assert_eq!(report.failure(), Some(EvaluationFailure::Cancelled));
+        assert_canonical_control_outcomes_are_consistent(&report);
         assert!(report.document().is_none());
         assert!(
             report
@@ -2948,6 +2970,44 @@ fn cancellation_is_safe_at_every_evaluator_boundary() {
                 .iter()
                 .all(|head| report.accepted_changes().contains(head))
         );
+    }
+}
+
+#[test]
+fn every_item_budget_boundary_preserves_canonical_control_outcomes() {
+    let scenario = signed_engine_scenario();
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(scenario.change),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert!(matches!(
+        builder.ingest(scenario.control),
+        IngestOutcome::Accepted { .. }
+    ));
+    let corpus = builder.finish();
+    let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
+    let mut measured = WorkBudget::new(1_000_000, 1_000);
+    let complete =
+        evaluator.evaluate_report(&corpus, scenario.coordinate, &mut measured, &NeverCancelled);
+    assert_eq!(complete.completion(), Completion::Complete);
+    let consumed_items = 1_000 - measured.remaining().1;
+
+    for item_budget in 0..=consumed_items {
+        let report = evaluator.evaluate_report(
+            &corpus,
+            scenario.coordinate,
+            &mut WorkBudget::new(1_000_000, item_budget),
+            &NeverCancelled,
+        );
+        assert_canonical_control_outcomes_are_consistent(&report);
+        if report.disposition_records() == complete.disposition_records()
+            && report.canonical_controls() == complete.canonical_controls()
+            && report.heads() == complete.heads()
+        {
+            assert_eq!(report.history_digest(), complete.history_digest());
+            assert_eq!(report.dispositions_digest(), complete.dispositions_digest());
+        }
     }
 }
 

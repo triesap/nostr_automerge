@@ -57,37 +57,32 @@ pub(crate) struct BatchEvaluationReport {
     pub(crate) failure: Option<EvaluationFailure>,
 }
 
+#[derive(Clone, Debug, Default)]
+struct PreservedBatchProgress {
+    canonical_controls: Vec<EventId>,
+    control_dispositions: BTreeMap<EventId, ProtocolDisposition>,
+    accepted_at_control: BTreeMap<EventId, AcceptedAtControl>,
+    dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
+    accepted_changes: BTreeSet<ChangeHash>,
+    integrity_alerts: Vec<IntegrityAlert>,
+}
+
 pub(crate) fn evaluate_batch(
     controls: impl IntoIterator<Item = BatchControl>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> BatchEvaluationReport {
     if cancellation.is_cancelled() {
-        return incomplete_report(
-            Vec::new(),
-            BTreeMap::new(),
-            BTreeSet::new(),
-            Vec::new(),
-            Completion::Cancelled,
-        );
+        return incomplete_report(PreservedBatchProgress::default(), Completion::Cancelled);
     }
     let mut collected = Vec::new();
     for control in controls {
         if cancellation.is_cancelled() {
-            return incomplete_report(
-                Vec::new(),
-                BTreeMap::new(),
-                BTreeSet::new(),
-                Vec::new(),
-                Completion::Cancelled,
-            );
+            return incomplete_report(PreservedBatchProgress::default(), Completion::Cancelled);
         }
         if budget.charge(WorkCounter::Control, 1).is_err() {
             return incomplete_report(
-                Vec::new(),
-                BTreeMap::new(),
-                BTreeSet::new(),
-                Vec::new(),
+                PreservedBatchProgress::default(),
                 Completion::BudgetExhausted,
             );
         }
@@ -298,10 +293,14 @@ pub(crate) fn evaluate_batch(
     if completion != Completion::Complete || failure.is_some() {
         let heads = derive_heads(&accepted_changes, &controls);
         let report = incomplete_report(
-            canonical_controls,
-            dispositions,
-            accepted_changes,
-            integrity_alerts,
+            PreservedBatchProgress {
+                canonical_controls,
+                control_dispositions,
+                accepted_at_control,
+                dispositions,
+                accepted_changes,
+                integrity_alerts,
+            },
             completion,
         )
         .with_heads(heads);
@@ -326,10 +325,14 @@ pub(crate) fn evaluate_batch(
             };
             let heads = derive_heads(&accepted_changes, &controls);
             return incomplete_report(
-                canonical_controls,
-                dispositions,
-                accepted_changes,
-                integrity_alerts,
+                PreservedBatchProgress {
+                    canonical_controls,
+                    control_dispositions,
+                    accepted_at_control,
+                    dispositions,
+                    accepted_changes,
+                    integrity_alerts,
+                },
                 completion,
             )
             .with_heads(heads);
@@ -356,10 +359,14 @@ pub(crate) fn evaluate_batch(
     {
         let heads = derive_heads(&accepted_changes, &controls);
         return incomplete_report(
-            canonical_controls,
-            dispositions,
-            accepted_changes,
-            integrity_alerts,
+            PreservedBatchProgress {
+                canonical_controls,
+                control_dispositions,
+                accepted_at_control,
+                dispositions,
+                accepted_changes,
+                integrity_alerts,
+            },
             completion,
         )
         .with_heads(heads);
@@ -370,10 +377,14 @@ pub(crate) fn evaluate_batch(
             Err(_) => {
                 let heads = derive_heads(&accepted_changes, &controls);
                 return incomplete_report(
-                    canonical_controls,
-                    dispositions,
-                    accepted_changes,
-                    integrity_alerts,
+                    PreservedBatchProgress {
+                        canonical_controls,
+                        control_dispositions,
+                        accepted_at_control,
+                        dispositions,
+                        accepted_changes,
+                        integrity_alerts,
+                    },
                     Completion::Complete,
                 )
                 .with_failure(EvaluationFailure::Apply)
@@ -391,10 +402,14 @@ pub(crate) fn evaluate_batch(
         }) if applied_heads_agree(&derived_heads, &heads) => (heads, Some(canonical_bytes)),
         Some(_) => {
             return incomplete_report(
-                canonical_controls,
-                dispositions,
-                accepted_changes,
-                integrity_alerts,
+                PreservedBatchProgress {
+                    canonical_controls,
+                    control_dispositions,
+                    accepted_at_control,
+                    dispositions,
+                    accepted_changes,
+                    integrity_alerts,
+                },
                 Completion::Complete,
             )
             .with_failure(EvaluationFailure::InvariantViolation)
@@ -699,21 +714,18 @@ impl BatchEvaluationReport {
 }
 
 fn incomplete_report(
-    canonical_controls: Vec<EventId>,
-    dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
-    accepted_changes: BTreeSet<ChangeHash>,
-    integrity_alerts: Vec<IntegrityAlert>,
+    progress: PreservedBatchProgress,
     completion: Completion,
 ) -> BatchEvaluationReport {
     BatchEvaluationReport {
-        canonical_controls,
-        control_dispositions: BTreeMap::new(),
-        accepted_at_control: BTreeMap::new(),
-        dispositions,
-        accepted_changes,
+        canonical_controls: progress.canonical_controls,
+        control_dispositions: progress.control_dispositions,
+        accepted_at_control: progress.accepted_at_control,
+        dispositions: progress.dispositions,
+        accepted_changes: progress.accepted_changes,
         heads: BTreeSet::new(),
         materialized_document: None,
-        integrity_alerts,
+        integrity_alerts: progress.integrity_alerts,
         completion,
         failure: match completion {
             Completion::Complete => None,
@@ -856,6 +868,21 @@ mod tests {
             Completion::BudgetExhausted
         );
         assert_eq!(final_schedule_exhausted.accepted_changes.len(), 1);
+        assert_eq!(
+            final_schedule_exhausted.canonical_controls,
+            vec![EventId::from_bytes([1; 32])]
+        );
+        assert_eq!(
+            final_schedule_exhausted.control_dispositions[&EventId::from_bytes([1; 32])],
+            ProtocolDisposition::Accepted
+        );
+        assert_eq!(
+            final_schedule_exhausted
+                .accepted_at_control
+                .get(&EventId::from_bytes([1; 32]))
+                .map(AcceptedAtControl::accepted_closure),
+            Some(&final_schedule_exhausted.accepted_changes)
+        );
         assert!(final_schedule_exhausted.materialized_document.is_none());
 
         let mut malformed = basic.clone();
@@ -891,9 +918,10 @@ mod tests {
             ProtocolDisposition::Invalid
         );
 
+        let mut fork_budget = WorkBudget::new(0, 200);
         let forked = evaluate_batch(
             [control(2, None, vec![]), control(1, None, vec![])],
-            &mut WorkBudget::new(0, 200),
+            &mut fork_budget,
             &NeverCancelled,
         );
         assert_eq!(
@@ -901,6 +929,18 @@ mod tests {
             vec![EventId::from_bytes([1; 32])]
         );
         assert_eq!(forked.integrity_alerts.len(), 1);
+        let fork_consumed = 200 - fork_budget.remaining().1;
+        let interrupted_fork = evaluate_batch(
+            [control(2, None, vec![]), control(1, None, vec![])],
+            &mut WorkBudget::new(0, fork_consumed - 1),
+            &NeverCancelled,
+        );
+        assert_eq!(interrupted_fork.completion, Completion::BudgetExhausted);
+        assert_eq!(interrupted_fork.integrity_alerts, forked.integrity_alerts);
+        assert_eq!(
+            interrupted_fork.control_dispositions,
+            forked.control_dispositions
+        );
 
         let equivocated = evaluate_batch(
             [control(1, None, vec![change(1, 1, 1), change(2, 1, 1)])],
