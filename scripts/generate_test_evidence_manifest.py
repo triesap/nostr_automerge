@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "reports/test_evidence_manifest.json"
 RESULTS = ROOT / "reports/results"
-TEST_COMMAND = "cargo test --workspace --tests --locked -- --list"
+TEST_COMMAND = "cargo test --workspace --tests --locked"
 
 
 def sha256(data: bytes) -> str:
@@ -26,16 +26,20 @@ def git(*args: str) -> str:
     ).stdout.strip()
 
 
-def collect_tests() -> list[str]:
+def listed_tests(*extra: str) -> set[str]:
     completed = subprocess.run(
-        ("cargo", "test", "--workspace", "--tests", "--locked", "--", "--list"),
+        ("cargo", "test", "--workspace", "--tests", "--locked", "--", "--list", *extra),
         cwd=ROOT, check=True, capture_output=True, text=True,
     )
-    tests = {
+    return {
         line.rsplit(": test", 1)[0]
         for line in completed.stdout.splitlines()
         if line.endswith(": test")
     }
+
+
+def collect_tests() -> list[str]:
+    tests = listed_tests() - listed_tests("--ignored")
     if not tests:
         raise AssertionError("Cargo emitted no executable test identifiers")
     return sorted(tests)
@@ -60,6 +64,10 @@ def write_result(name: str, result: dict[str, object]) -> tuple[str, str]:
 def generate() -> dict[str, object]:
     manifest_bytes = (ROOT / "fixtures/distribution/manifest_v3.json").read_bytes()
     source_commit = git("rev-parse", "HEAD")
+    test_run = subprocess.run(
+        ("cargo", "test", "--workspace", "--tests", "--locked"), cwd=ROOT,
+        check=True, capture_output=True,
+    )
     tests = collect_tests()
     fixtures = collect_fixtures()
     toolchain = subprocess.run(
@@ -70,7 +78,7 @@ def generate() -> dict[str, object]:
         "job": "rust-tests", "status": "pass", "source_commit": source_commit,
         "command": TEST_COMMAND, "toolchain": toolchain,
         "executed_ids": tests,
-        "output_sha256": sha256(("\n".join(tests) + "\n").encode()),
+        "output_sha256": sha256(test_run.stdout + test_run.stderr),
     })
     profile_paths = sorted(ROOT.glob("reports/rust_signed_*.json"))
     signed_result = write_result("signed_conformance", {

@@ -118,6 +118,25 @@ def fixture_self_test() -> None:
         raise AssertionError("mutated fixture digest unexpectedly matched")
 
 
+def test_execution_index() -> set[str]:
+    manifest = json.loads((ROOT / "reports/test_evidence_manifest.json").read_text())
+    job = manifest["jobs"]["rust-tests"]
+    if job.get("status") != "pass" or job.get("command") != "cargo test --workspace --tests --locked":
+        raise EvidenceError("rust_test_job_not_passing_or_unfiltered")
+    result = json.loads((ROOT / job["result_artifact"]).read_text())
+    tests = job.get("test_ids", [])
+    if tests != result.get("executed_ids") or len(tests) != len(set(tests)):
+        raise EvidenceError("rust_test_execution_membership")
+    return set(tests)
+
+
+def test_self_test() -> None:
+    tests = test_execution_index()
+    for nonexistent in ("nonexistent::test", "filtered_out_test", "ignored_test"):
+        if nonexistent in tests:
+            raise AssertionError("nonexecuted Rust test unexpectedly resolved")
+
+
 def result_self_test() -> None:
     manifest = json.loads((ROOT / "reports/test_evidence_manifest.json").read_text())
     for job in manifest["jobs"].values():
@@ -169,6 +188,7 @@ def main() -> int:
     parser.add_argument("--result-self-test", action="store_true")
     parser.add_argument("--hash-self-test", action="store_true")
     parser.add_argument("--fixture-self-test", action="store_true")
+    parser.add_argument("--test-self-test", action="store_true")
     args = parser.parse_args()
     if args.schema_self_test:
         schema_self_test()
@@ -185,6 +205,10 @@ def main() -> int:
     if args.fixture_self_test:
         fixture_self_test()
         print("PASS: every distributed fixture occurs in one passing profile")
+        return 0
+    if args.test_self_test:
+        test_self_test()
+        print("PASS: every Rust test proof resolves to a passing unfiltered job")
         return 0
     validate_shape(json.loads(args.report.read_text()))
     print("PASS: requirement evidence v3 has a valid top-level shape")
