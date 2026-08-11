@@ -8,6 +8,7 @@ import copy
 import hashlib
 import json
 import re
+import subprocess
 from pathlib import Path
 
 
@@ -36,6 +37,13 @@ def validate_shape(report: dict[str, object]) -> None:
             raise EvidenceError(f"invalid_digest:{field}")
     if report["requirement_count"] != 87 or not isinstance(report["rows"], list) or len(report["rows"]) != 87:
         raise EvidenceError("requirement_count")
+
+
+def git_path_exists(commit: str, relative: str) -> bool:
+    return subprocess.run(
+        ("git", "cat-file", "-e", f"{commit}:{relative}"), cwd=ROOT,
+        capture_output=True,
+    ).returncode == 0
 
 
 def validate_result_artifact(path: Path, expected_sha256: str) -> None:
@@ -199,6 +207,61 @@ def typescript_self_test() -> None:
     raise AssertionError("missing TypeScript profile unexpectedly passed")
 
 
+def validate(report: dict[str, object]) -> None:
+    validate_shape(report)
+    requirements_path = ROOT / "spec/requirements.json"
+    applicability_path = ROOT / "spec/requirements_applicability.json"
+    distribution_path = ROOT / "fixtures/distribution/manifest_v3.json"
+    if report["requirements_sha256"] != sha256(requirements_path) or report["applicability_sha256"] != sha256(applicability_path) or report["fixture_distribution_sha256"] != sha256(distribution_path):
+        raise EvidenceError("stale_authority_or_distribution")
+    requirements = json.loads(requirements_path.read_text())["requirements"]
+    applicability = json.loads(applicability_path.read_text())["classifications"]
+    rows = report["rows"]
+    if [row.get("id") for row in rows] != [item["id"] for item in requirements] or len({row["id"] for row in rows}) != 87:
+        raise EvidenceError("missing_duplicate_unknown_or_reordered")
+    tests = test_execution_index()
+    fixtures = fixture_execution_index()
+    for requirement, row in zip(requirements, rows, strict=True):
+        identifier = requirement["id"]
+        expected_authority = {
+            "source": requirement["source"], "section": requirement["section"],
+            "text_sha256": hashlib.sha256(requirement["text"].encode()).hexdigest(),
+        }
+        if row.get("authority") != expected_authority or row.get("applicability") != applicability[identifier]:
+            raise EvidenceError(f"stale_row_authority:{identifier}")
+        classification = applicability[identifier]
+        if classification in {"out-of-core", "explicitly-deferred"}:
+            if set(row) != {"id", "applicability", "authority", "status", "rationale"} or row["status"] != "not-applicable":
+                raise EvidenceError(f"invalid_noncode_row:{identifier}")
+            continue
+        expected_status = "pass" if classification == "rust-only" else "held"
+        expected_fields = {"id", "applicability", "authority", "status", "proofs"}
+        if expected_status == "held":
+            expected_fields.add("hold")
+        if set(row) != expected_fields or row["status"] != expected_status:
+            raise EvidenceError(f"invalid_covered_row:{identifier}")
+        proofs = row["proofs"]
+        if len(proofs) != 1 or proofs[0].get("language") != "rust":
+            raise EvidenceError(f"typescript_proof_not_yet_attested:{identifier}")
+        proof = proofs[0]
+        if proof["implementation_identity"] != "triesap/nostr_automerge" or proof["result"] != "pass":
+            raise EvidenceError(f"cross_implementation_or_failure:{identifier}")
+        if not COMMIT.fullmatch(proof["implementation_commit"]) or not git_path_exists(proof["implementation_commit"], proof["implementation_path"]):
+            raise EvidenceError(f"stale_implementation:{identifier}")
+        validate_result_artifact(ROOT / proof["result_artifact"], proof["result_sha256"])
+        result = json.loads((ROOT / proof["result_artifact"]).read_text())
+        if result["source_commit"] != proof["implementation_commit"] or result["command"] != proof["execution_command"]:
+            raise EvidenceError(f"stale_execution_binding:{identifier}")
+        if proof["evidence_kind"] == "signed_fixture":
+            if proof["evidence_id"] not in fixtures:
+                raise EvidenceError(f"missing_fixture:{identifier}")
+        elif proof["evidence_kind"] in {"cargo_test", "policy"}:
+            if proof["evidence_id"] not in tests:
+                raise EvidenceError(f"missing_test:{identifier}")
+        else:
+            raise EvidenceError(f"unknown_evidence_kind:{identifier}")
+
+
 def result_self_test() -> None:
     manifest = json.loads((ROOT / "reports/test_evidence_manifest.json").read_text())
     for job in manifest["jobs"].values():
@@ -277,8 +340,8 @@ def main() -> int:
         typescript_self_test()
         print("PASS: opaque TypeScript proof metadata fails closed without source disclosure")
         return 0
-    validate_shape(json.loads(args.report.read_text()))
-    print("PASS: requirement evidence v3 has a valid top-level shape")
+    validate(json.loads(args.report.read_text()))
+    print("PASS: all 87 requirements have closed executed evidence or approved holds")
     return 0
 
 
