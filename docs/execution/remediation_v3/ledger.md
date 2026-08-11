@@ -1,8 +1,8 @@
 # Draft V1 Remediation V3 Execution Ledger
 
 Status: executing
-Active RCLD: 34
-Active checkpoint: `step_597`
+Active RCLD: 35
+Active checkpoint: `step_613`
 Range: `step_534` through `step_659`
 
 Exactly one RCLD and one checkpoint are active. Checkpoints remain contiguous,
@@ -15,8 +15,8 @@ unique, dependency ordered, and independently reviewable.
 | 31 | `step_558`–`step_569` | complete | Interrupted canonical reports |
 | 32 | `step_570`–`step_582` | complete | Selected manifest dynamic validation |
 | 33 | `step_583`–`step_596` | complete | Dynamic manifest and checkpoint event dispositions |
-| 34 | `step_597`–`step_612` | active | Complete work budgeting and cancellation |
-| 35 | `step_613`–`step_621` | pending | Implementation-owned normative clarification |
+| 34 | `step_597`–`step_612` | complete | Complete work budgeting and cancellation |
+| 35 | `step_613`–`step_621` | active | Implementation-owned normative clarification |
 | 36 | `step_622`–`step_635` | pending | Signed conformance and independent TypeScript parity |
 | 37 | `step_636`–`step_647` | pending | Final requirement evidence reconciliation |
 | 38 | `step_648`–`step_659` | pending | Final assurance and truthful closure |
@@ -41,6 +41,8 @@ unique, dependency ordered, and independently reviewable.
 - `step_582`: refreshed commit-bound execution evidence, closed Finding 030, and activated RCLD 33.
 - `step_583`–`step_595`: combined as one approved green TDD slice; derived manifest, descriptor, and chunk event dispositions from dynamic protocol outcomes and caught all status-crossing mutations.
 - `step_596`: refreshed commit-bound execution evidence, closed Finding 031, and activated RCLD 34.
+- `step_597`–`step_611`: combined as one approved green TDD slice; metered every remaining evidence-derived evaluator traversal, memoized control ancestry, stopped optional work promptly, and bounded checkpoint interruption.
+- `step_612`: refreshed commit-bound execution evidence, closed Finding 032, and activated RCLD 35.
 
 ## Scope Adaptations
 
