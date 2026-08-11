@@ -247,7 +247,36 @@ def main() -> int:
         raise AssertionError("metering/panic-elimination phase does not activate step_430")
     if work.get("publication_authorized") is not False:
         raise AssertionError("metering/panic-elimination phase cannot authorize publication")
-    print("PASS: phase reports activate metering/panic elimination then step_430")
+
+    projection = json.loads((ROOT / "reports/remediation_v2_phase_07.json").read_text())
+    if projection.get("phase") != "phase_07_conflict_aware_projection_v2" or projection.get("status") != "pass":
+        raise AssertionError("conflict-aware projection phase is not passing")
+    projection_steps = [f"step_{step:03d}" for step in range(430, 444)]
+    if projection.get("completed_steps") != projection_steps or set(projection.get("commits", {})) != set(projection_steps):
+        raise AssertionError("conflict-aware projection checkpoint coverage is incomplete")
+    requirements = [f"R2_PROJ_{number:03d}" for number in range(1, 5)]
+    if projection.get("requirements") != requirements or set(projection.get("tests", {})) != set(requirements):
+        raise AssertionError("conflict-aware projection requirement evidence is incomplete")
+    if any(not projection["tests"][requirement] for requirement in requirements):
+        raise AssertionError("conflict-aware projection phase lacks direct tests")
+    if any(command.get("result") != "pass" for command in projection.get("commands", [])):
+        raise AssertionError("conflict-aware projection phase contains a nonpassing command")
+    for relative, expected in projection.get("artifact_sha256", {}).items():
+        if not artifact_matches(projection, "reports/remediation_v2_phase_07.json", relative, expected):
+            raise AssertionError(f"conflict-aware projection artifact hash mismatch: {relative}")
+    for commit_hash in projection["commits"].values():
+        if commit_hash == "self":
+            continue
+        commit = subprocess.run(
+            ["git", "cat-file", "-e", f"{commit_hash}^{{commit}}"], cwd=ROOT, check=False
+        )
+        if commit.returncode:
+            raise AssertionError(f"conflict-aware projection commit does not exist: {commit_hash}")
+    if projection.get("next") != {"rcld": 23, "checkpoint": "step_444"}:
+        raise AssertionError("conflict-aware projection phase does not activate step_444")
+    if projection.get("publication_authorized") is not False:
+        raise AssertionError("conflict-aware projection phase cannot authorize publication")
+    print("PASS: phase reports activate conflict-aware projection then step_444")
     return 0
 
 
