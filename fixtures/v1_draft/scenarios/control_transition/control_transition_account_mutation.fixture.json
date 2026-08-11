@@ -1,0 +1,30 @@
+{
+  "expected": {
+    "report_path": "control_transition_account_mutation.expected.json",
+    "sha256": "d035b4ec379728f96cdb2311923f6c82b4c0939b59ebadfc058195c9a9936a28"
+  },
+  "fixture_id": "control_transition_account_mutation",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "control_transition_account_mutation.input.json",
+      "sha256": "5c94c014e0c165e4669bfadee82ee03ed654c83d2fde9664aff1fb14eeb4a4ff"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile control_transition",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CONF-002",
+    "NCRDT-CONTROL-001"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}

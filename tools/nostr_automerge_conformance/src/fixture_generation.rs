@@ -1,7 +1,10 @@
 use std::path::{Path, PathBuf};
 
 use nostr_automerge::authoring::{PreparedEvent, UnsignedEventDraft};
-use nostr_automerge::{DevicePublicKey, DocumentCoordinate, ProtocolRevision, RawEventBytes};
+use nostr_automerge::{
+    DevicePublicKey, DocumentCoordinate, EventId, ProtocolRevision, RawEventBytes,
+    VerifiedNip01Event,
+};
 use secp256k1::{Keypair, Secp256k1, SecretKey};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -15,8 +18,287 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
     match profile {
         "manifest" => generate_manifest_profile(),
         "control_genesis" => generate_control_genesis_profile(),
+        "control_transition" => generate_control_transition_profile(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
+}
+
+type Member<'a> = (&'a Signer, Option<String>, &'a [&'a str]);
+
+fn generate_control_transition_profile() -> Result<(), String> {
+    let controller = Signer::from_byte(75)?;
+    let writer = Signer::from_byte(76)?;
+    let removed = Signer::from_byte(77)?;
+    let document_id = "75".repeat(32);
+    let coordinate: DocumentCoordinate =
+        format!("31624:{}:{document_id}", controller.public_key.to_hex())
+            .parse()
+            .map_err(|_| "invalid transition coordinate".to_owned())?;
+    let other_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "76".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid alternate transition coordinate".to_owned())?;
+    let account = Some("21".repeat(32));
+    let changed_account = Some("22".repeat(32));
+    let ordinary_members = || vec![(&writer, account.clone(), &["checkpoint", "write"][..])];
+    let checkpoint_members = || vec![(&writer, account.clone(), &["checkpoint"][..])];
+    let two_members = || {
+        vec![
+            (&writer, account.clone(), &["checkpoint", "write"][..]),
+            (&removed, None, &["write"][..]),
+        ]
+    };
+    let genesis = |created_at: u64, members: Vec<Member<'_>>| {
+        sign_control(
+            &controller,
+            created_at,
+            coordinate,
+            None,
+            control_content_full(0, members, "automerge-change-v1"),
+        )
+    };
+    let child = |created_at: u64,
+                 tagged_coordinate: DocumentCoordinate,
+                 parent: EventId,
+                 sequence: u64,
+                 members: Vec<Member<'_>>,
+                 format: &str| {
+        sign_control(
+            &controller,
+            created_at,
+            tagged_coordinate,
+            Some(parent),
+            control_content_full(sequence, members, format),
+        )
+    };
+
+    let valid_parent = genesis(1, ordinary_members())?;
+    let valid_parent_id = event_id(&valid_parent)?;
+    let valid_child = child(
+        2,
+        coordinate,
+        valid_parent_id,
+        1,
+        ordinary_members(),
+        "automerge-change-v1",
+    )?;
+
+    let sequence_parent = genesis(3, ordinary_members())?;
+    let sequence_parent_id = event_id(&sequence_parent)?;
+    let sequence_child = child(
+        4,
+        coordinate,
+        sequence_parent_id,
+        2,
+        ordinary_members(),
+        "automerge-change-v1",
+    )?;
+
+    let missing_parent_child = sign_control(
+        &controller,
+        5,
+        coordinate,
+        None,
+        control_content_full(1, ordinary_members(), "automerge-change-v1"),
+    )?;
+    let unknown_parent_child = child(
+        6,
+        coordinate,
+        "31".repeat(32).parse().map_err(|_| "invalid event id")?,
+        1,
+        ordinary_members(),
+        "automerge-change-v1",
+    )?;
+
+    let role_parent = genesis(7, checkpoint_members())?;
+    let role_parent_id = event_id(&role_parent)?;
+    let role_child = child(
+        8,
+        coordinate,
+        role_parent_id,
+        1,
+        ordinary_members(),
+        "automerge-change-v1",
+    )?;
+
+    let account_parent = genesis(9, ordinary_members())?;
+    let account_parent_id = event_id(&account_parent)?;
+    let account_child = child(
+        10,
+        coordinate,
+        account_parent_id,
+        1,
+        vec![(&writer, changed_account, &["checkpoint", "write"])],
+        "automerge-change-v1",
+    )?;
+
+    let removal_parent = genesis(11, two_members())?;
+    let removal_parent_id = event_id(&removal_parent)?;
+    let removal_child = child(
+        12,
+        coordinate,
+        removal_parent_id,
+        1,
+        ordinary_members(),
+        "automerge-change-v1",
+    )?;
+    let removal_child_id = event_id(&removal_child)?;
+    let reintroduction_child = child(
+        13,
+        coordinate,
+        removal_child_id,
+        2,
+        two_members(),
+        "automerge-change-v1",
+    )?;
+
+    let terminal_parent = genesis(14, checkpoint_members())?;
+    let terminal_parent_id = event_id(&terminal_parent)?;
+    let terminal_child = child(
+        15,
+        coordinate,
+        terminal_parent_id,
+        1,
+        checkpoint_members(),
+        "automerge-change-v1",
+    )?;
+
+    let coordinate_parent = sign_control(
+        &controller,
+        16,
+        other_coordinate,
+        None,
+        control_content_full(0, ordinary_members(), "automerge-change-v1"),
+    )?;
+    let coordinate_parent_id = event_id(&coordinate_parent)?;
+    let coordinate_child = child(
+        17,
+        coordinate,
+        coordinate_parent_id,
+        1,
+        ordinary_members(),
+        "automerge-change-v1",
+    )?;
+
+    let format_parent = genesis(18, ordinary_members())?;
+    let format_parent_id = event_id(&format_parent)?;
+    let format_child = child(
+        19,
+        coordinate,
+        format_parent_id,
+        1,
+        ordinary_members(),
+        "automerge-change-v2",
+    )?;
+
+    let cases = vec![
+        ("control_transition_valid", vec![valid_parent, valid_child]),
+        (
+            "control_transition_wrong_sequence",
+            vec![sequence_parent, sequence_child],
+        ),
+        (
+            "control_transition_missing_parent_tag",
+            vec![missing_parent_child],
+        ),
+        (
+            "control_transition_unknown_parent",
+            vec![unknown_parent_child],
+        ),
+        (
+            "control_transition_role_escalation",
+            vec![role_parent, role_child],
+        ),
+        (
+            "control_transition_account_mutation",
+            vec![account_parent, account_child],
+        ),
+        (
+            "control_transition_removed_reintroduction",
+            vec![removal_parent, removal_child, reintroduction_child],
+        ),
+        (
+            "control_transition_terminal_child",
+            vec![terminal_parent, terminal_child],
+        ),
+        (
+            "control_transition_wrong_coordinate",
+            vec![coordinate_parent, coordinate_child],
+        ),
+        (
+            "control_transition_format_change",
+            vec![format_parent, format_child],
+        ),
+    ];
+    let root = repository_root().join("fixtures/v1_draft/scenarios/control_transition");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    for (fixture_id, events) in cases {
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            &["NCRDT-CONF-002", "NCRDT-CONTROL-001"],
+            "control_transition",
+        )?;
+    }
+    Ok(())
+}
+
+fn sign_control(
+    signer: &Signer,
+    created_at: u64,
+    coordinate: DocumentCoordinate,
+    parent: Option<EventId>,
+    content: String,
+) -> Result<RawEventBytes, String> {
+    let mut tags = vec![vec!["a".to_owned(), coordinate.to_address()]];
+    if let Some(parent) = parent {
+        tags.push(vec!["e".to_owned(), parent.to_hex()]);
+    }
+    signer.sign(
+        &UnsignedEventDraft::new(created_at, 1_625, tags, content)
+            .map_err(|error| format!("control draft: {error:?}"))?
+            .prepare(signer.public_key)
+            .map_err(|error| format!("control preimage: {error:?}"))?,
+    )
+}
+
+fn event_id(raw: &RawEventBytes) -> Result<EventId, String> {
+    VerifiedNip01Event::verify(raw.clone())
+        .map(|event| event.event_id())
+        .map_err(|error| format!("signed event verification: {error:?}"))
+}
+
+fn control_content_full(sequence: u64, mut members: Vec<Member<'_>>, format: &str) -> String {
+    members.sort_by_key(|(signer, _, _)| signer.public_key);
+    let members = members
+        .into_iter()
+        .map(|(signer, account, roles)| {
+            let mut roles = roles.to_vec();
+            roles.sort_unstable();
+            json!({
+                "account": account,
+                "pubkey": signer.public_key.to_hex(),
+                "roles": roles,
+            })
+        })
+        .collect::<Vec<_>>();
+    json!({
+        "base_heads": [],
+        "format": format,
+        "members": members,
+        "policy": "controller-acl-v1",
+        "predecessor": null,
+        "seq": sequence,
+        "successor": null,
+        "text_encoding": "utf16",
+        "v": 1,
+    })
+    .to_string()
 }
 
 fn generate_control_genesis_profile() -> Result<(), String> {

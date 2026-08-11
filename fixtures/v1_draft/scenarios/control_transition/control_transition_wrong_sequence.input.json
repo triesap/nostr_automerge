@@ -1,0 +1,58 @@
+{
+  "budget": {
+    "max_bytes": 1000000,
+    "max_items": 1000000
+  },
+  "cancel_after": null,
+  "coordinate": "31624:d32b8a8af7e376739f1675707c8b57c6ad9f010c5ba82c60d973bf7a42be577c:7575757575757575757575757575757575757575757575757575757575757575",
+  "expected_report": {
+    "accepted_changes": [],
+    "canonical_controls": [
+      "05c42ff8e7f07f5393a58ed0cfd4352b6d7ebe19c5f0c8685298b07c7c2dc4b2"
+    ],
+    "completion": "complete",
+    "coordinate": "31624:d32b8a8af7e376739f1675707c8b57c6ad9f010c5ba82c60d973bf7a42be577c:7575757575757575757575757575757575757575757575757575757575757575",
+    "disposition_records": [
+      {
+        "disposition": "accepted",
+        "identifier": "05c42ff8e7f07f5393a58ed0cfd4352b6d7ebe19c5f0c8685298b07c7c2dc4b2",
+        "namespace": "control_event"
+      },
+      {
+        "disposition": "invalid",
+        "identifier": "08868744bb44f410d1a4523f578ea4cc31e8a0783a86a173706d57c3ea5c9946",
+        "namespace": "control_event"
+      }
+    ],
+    "dispositions_digest": "cdde21a252cb4f8d977bdbbe03246533f9554834b4354cd33109f126c358436f",
+    "excluded_changes": [],
+    "fixture_id": "control_transition_wrong_sequence",
+    "heads": [],
+    "history_digest": "0b91c5d9b9a984fad0a626b1c7c20670347f1c7ecd4b239879e8388233e5dcb7",
+    "integrity_alerts": [],
+    "invalid_changes": [],
+    "invalid_events": [],
+    "pending_changes": [],
+    "report_schema": "nostr_automerge.report.v1",
+    "revision": "draft_2026_08",
+    "state_assertions": [],
+    "unsupported_events": []
+  },
+  "fixture_id": "control_transition_wrong_sequence",
+  "raw_events": [
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":\\\"2121212121212121212121212121212121212121212121212121212121212121\\\",\\\"pubkey\\\":\\\"c91d295563aa25d500374244b0428ed9d7978740d8dae8e466b8a16c15945b37\\\",\\\"roles\\\":[\\\"checkpoint\\\",\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":0,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":3,\"id\":\"05c42ff8e7f07f5393a58ed0cfd4352b6d7ebe19c5f0c8685298b07c7c2dc4b2\",\"kind\":1625,\"pubkey\":\"d32b8a8af7e376739f1675707c8b57c6ad9f010c5ba82c60d973bf7a42be577c\",\"sig\":\"be1441098c83d109de42b2fb64d23f1c13ad7141916e83ca5504d3524f7aec5d641669ef3896e9e709d9917ff4907a223fc634acabaee9bd5c12ce7c7eea0058\",\"tags\":[[\"a\",\"31624:d32b8a8af7e376739f1675707c8b57c6ad9f010c5ba82c60d973bf7a42be577c:7575757575757575757575757575757575757575757575757575757575757575\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":\\\"2121212121212121212121212121212121212121212121212121212121212121\\\",\\\"pubkey\\\":\\\"c91d295563aa25d500374244b0428ed9d7978740d8dae8e466b8a16c15945b37\\\",\\\"roles\\\":[\\\"checkpoint\\\",\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":2,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":4,\"id\":\"08868744bb44f410d1a4523f578ea4cc31e8a0783a86a173706d57c3ea5c9946\",\"kind\":1625,\"pubkey\":\"d32b8a8af7e376739f1675707c8b57c6ad9f010c5ba82c60d973bf7a42be577c\",\"sig\":\"addb24371b286b183d4f786b0a0998eaf0a59c1fc7a9789cbd75810087e9fbafd9e171237b4ab45f2075e63479b8572003644f45bfd67ca849186bbb5c900a26\",\"tags\":[[\"a\",\"31624:d32b8a8af7e376739f1675707c8b57c6ad9f010c5ba82c60d973bf7a42be577c:7575757575757575757575757575757575757575757575757575757575757575\"],[\"e\",\"05c42ff8e7f07f5393a58ed0cfd4352b6d7ebe19c5f0c8685298b07c7c2dc4b2\"]]}",
+      "encoding": "utf8"
+    }
+  ],
+  "requirements": [
+    "NCRDT-CONF-002",
+    "NCRDT-CONTROL-001"
+  ],
+  "revision": "draft_2026_08",
+  "scenario_schema": "nostr_automerge.signed_scenario.v2"
+}

@@ -1,0 +1,30 @@
+{
+  "expected": {
+    "report_path": "control_transition_role_escalation.expected.json",
+    "sha256": "4b483d271ef05bdcd56806ee6cb76971c9cee595357236e9abfbf7922726f91d"
+  },
+  "fixture_id": "control_transition_role_escalation",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "control_transition_role_escalation.input.json",
+      "sha256": "7cd256da135e7b5a4d444f0392bac0b81e71a9999132e80cafc1617afbaa64f1"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile control_transition",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CONF-002",
+    "NCRDT-CONTROL-001"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}

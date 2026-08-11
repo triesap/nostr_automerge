@@ -3,7 +3,7 @@
   "dependencies": {
     "automerge": "0.10.0",
     "base64": "0.22.1",
-    "cargo_lock_sha256": "74aafde92cfcb35e7216dc847a75ca556ac9722a93147a9a6ccd61c3121a7e60",
+    "cargo_lock_sha256": "9181a5a9b119eb46cd3d17702fea660fa2f09d3b27183e625565347aea6ccd7e",
     "secp256k1": "0.31.1",
     "serde": "1.0.219",
     "serde_json": "1.0.142",
