@@ -503,9 +503,10 @@ fn project_property(
         WorkCounter::Assertion,
         u64::try_from(values.len()).map_err(|_| ProjectionError::Budget)?,
     )?;
+    let has_conflicts = values.len() > 1;
     for (value, id) in values {
         if let Value::Object(kind) = &value {
-            objects.push((object_type(*kind), id.clone()));
+            objects.push((id.to_string(), object_type(*kind), id.clone()));
         }
         conflicts.push(MaterializedConflict {
             operation_id: id.to_string(),
@@ -522,11 +523,20 @@ fn project_property(
         path: path.clone(),
         conflicts,
     });
-    for (kind, id) in objects {
+    objects.sort_by(|left, right| left.0.cmp(&right.0));
+    for (operation_id, kind, id) in objects.into_iter().rev() {
+        let mut child_path = path.clone();
+        if has_conflicts {
+            child_path.push(MaterializedPathElement::branch(
+                object.to_string(),
+                operation_id,
+                id.to_string(),
+            ));
+        }
         pending.push(ProjectionObject {
             object: id,
             object_type: kind,
-            path: path.clone(),
+            path: child_path,
         });
     }
     Ok(())
@@ -855,6 +865,56 @@ mod tests {
         let values = entry
             .conflicts()
             .iter()
+            .map(|conflict| conflict.value().clone())
+            .collect::<std::collections::BTreeSet<_>>();
+        assert_eq!(
+            values,
+            std::collections::BTreeSet::from([
+                MaterializedValue::Scalar(MaterializedScalar::String("left".to_owned())),
+                MaterializedValue::Scalar(MaterializedScalar::String("right".to_owned())),
+            ])
+        );
+    }
+
+    #[test]
+    fn nested_conflicting_maps_retain_distinct_branch_paths() {
+        let change = |actor: u8, value: &str| {
+            let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+            document.set_actor(ActorId::from([actor; 32]));
+            {
+                let mut tx = document.transaction();
+                let map = tx.put_object(ROOT, "conflict", ObjType::Map);
+                let Ok(map) = map else { return None };
+                if tx.put(&map, "same", value).is_err() {
+                    return None;
+                }
+                tx.commit();
+            }
+            document.get_changes(&[]).first().cloned()
+        };
+        let (Some(left), Some(right)) = (change(20, "left"), change(21, "right")) else {
+            return;
+        };
+        let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+        assert!(document.apply_changes([right, left]).is_ok());
+        let view = MaterializedDocumentView::from_canonical_bytes(document.save_nocompress());
+        let Ok(view) = view else { return };
+        let descendants = view
+            .entries()
+            .iter()
+            .filter(|entry| {
+                matches!(
+                    entry.path(),
+                    [MaterializedPathElement::Key(key), MaterializedPathElement::Branch { .. }, MaterializedPathElement::Key(child)]
+                        if key == "conflict" && child == "same"
+                )
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(descendants.len(), 2);
+        assert_ne!(descendants[0].path(), descendants[1].path());
+        let values = descendants
+            .iter()
+            .flat_map(|entry| entry.conflicts())
             .map(|conflict| conflict.value().clone())
             .collect::<std::collections::BTreeSet<_>>();
         assert_eq!(
