@@ -14,8 +14,138 @@ use crate::scenario::{RawScenarioEvent, ScenarioBudget, ScenarioInput};
 pub(crate) fn generate(profile: &str) -> Result<(), String> {
     match profile {
         "manifest" => generate_manifest_profile(),
+        "control_genesis" => generate_control_genesis_profile(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
+}
+
+fn generate_control_genesis_profile() -> Result<(), String> {
+    let controller = Signer::from_byte(72)?;
+    let device = Signer::from_byte(73)?;
+    let other = Signer::from_byte(74)?;
+    let document_id = "72".repeat(32);
+    let coordinate: DocumentCoordinate =
+        format!("31624:{}:{document_id}", controller.public_key.to_hex())
+            .parse()
+            .map_err(|_| "invalid genesis coordinate".to_owned())?;
+    let content =
+        |sequence: u64, members: Vec<(String, &[&str])>| control_content(sequence, members);
+    let sign = |signer: &Signer,
+                created_at: u64,
+                tagged_coordinate: DocumentCoordinate,
+                parent: Option<&str>,
+                content: String| {
+        let mut tags = vec![vec!["a".to_owned(), tagged_coordinate.to_address()]];
+        if let Some(parent) = parent {
+            tags.push(vec!["e".to_owned(), parent.to_owned()]);
+        }
+        signer.sign(
+            &UnsignedEventDraft::new(created_at, 1_625, tags, content)
+                .map_err(|error| format!("control draft: {error:?}"))?
+                .prepare(signer.public_key)
+                .map_err(|error| format!("control preimage: {error:?}"))?,
+        )
+    };
+    let ordinary = content(
+        0,
+        vec![(device.public_key.to_hex(), &["checkpoint", "write"])],
+    );
+    let terminal = content(0, vec![(device.public_key.to_hex(), &["checkpoint"])]);
+    let other_coordinate: DocumentCoordinate =
+        format!("31624:{}:{document_id}", other.public_key.to_hex())
+            .parse()
+            .map_err(|_| "invalid alternate coordinate".to_owned())?;
+    let cases = vec![
+        (
+            "control_genesis_valid",
+            vec![sign(&controller, 1, coordinate, None, ordinary.clone())?],
+        ),
+        (
+            "control_genesis_terminal",
+            vec![sign(&controller, 2, coordinate, None, terminal)?],
+        ),
+        (
+            "control_genesis_invalid_author",
+            vec![sign(&device, 3, coordinate, None, ordinary.clone())?],
+        ),
+        (
+            "control_genesis_wrong_coordinate",
+            vec![sign(
+                &controller,
+                4,
+                other_coordinate,
+                None,
+                ordinary.clone(),
+            )?],
+        ),
+        (
+            "control_genesis_wrong_sequence",
+            vec![sign(
+                &controller,
+                5,
+                coordinate,
+                None,
+                content(1, vec![(device.public_key.to_hex(), &["write"])]),
+            )?],
+        ),
+        (
+            "control_genesis_parent_tag",
+            vec![sign(
+                &controller,
+                6,
+                coordinate,
+                Some(&"33".repeat(32)),
+                ordinary.clone(),
+            )?],
+        ),
+        (
+            "control_genesis_competing",
+            vec![
+                sign(&controller, 7, coordinate, None, ordinary.clone())?,
+                sign(
+                    &controller,
+                    8,
+                    coordinate,
+                    None,
+                    content(0, vec![(other.public_key.to_hex(), &["write"])]),
+                )?,
+            ],
+        ),
+    ];
+    let root = repository_root().join("fixtures/v1_draft/scenarios/control_genesis");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    for (fixture_id, events) in cases {
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            &["NCRDT-CONF-001", "NCRDT-CONTROL-001"],
+            "control_genesis",
+        )?;
+    }
+    Ok(())
+}
+
+fn control_content(sequence: u64, mut members: Vec<(String, &[&str])>) -> String {
+    members.sort_by(|left, right| left.0.cmp(&right.0));
+    let members = members
+        .into_iter()
+        .map(|(pubkey, roles)| {
+            let mut roles = roles.to_vec();
+            roles.sort_unstable();
+            let roles = roles
+                .into_iter()
+                .map(|role| format!("\"{role}\""))
+                .collect::<Vec<_>>()
+                .join(",");
+            format!(r#"{{"account":null,"pubkey":"{pubkey}","roles":[{roles}]}}"#)
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    format!(
+        r#"{{"base_heads":[],"format":"automerge-change-v1","members":[{members}],"policy":"controller-acl-v1","predecessor":null,"seq":{sequence},"successor":null,"text_encoding":"utf16","v":1}}"#
+    )
 }
 
 struct Signer {
@@ -149,6 +279,24 @@ fn write_fixture(
     coordinate: DocumentCoordinate,
     events: Vec<RawEventBytes>,
 ) -> Result<(), String> {
+    write_fixture_with_requirements(
+        root,
+        fixture_id,
+        coordinate,
+        events,
+        &["NCRDT-CONF-001", "NCRDT-MANIFEST-001"],
+        "manifest",
+    )
+}
+
+fn write_fixture_with_requirements(
+    root: &Path,
+    fixture_id: &str,
+    coordinate: DocumentCoordinate,
+    events: Vec<RawEventBytes>,
+    requirements: &[&str],
+    profile: &str,
+) -> Result<(), String> {
     let coordinate_text = coordinate.to_address();
     let scenario = ScenarioInput {
         scenario_schema: "nostr_automerge.scenario.v1".to_owned(),
@@ -181,7 +329,7 @@ fn write_fixture(
             "data": event.as_str(),
             "encoding": "utf8"
         })).collect::<Vec<_>>(),
-        "requirements": ["NCRDT-CONF-001", "NCRDT-MANIFEST-001"],
+        "requirements": requirements,
         "revision": "draft_2026_08",
         "scenario_schema": "nostr_automerge.signed_scenario.v2"
     });
@@ -198,11 +346,11 @@ fn write_fixture(
         "inputs": [{"media_type":"application/json", "name":"signed_scenario", "path":input_name, "sha256":sha256(&input_bytes)}],
         "provenance": {
             "created_at":"2026-08-10",
-            "generator":"nostr_automerge_conformance generate_signed_profile manifest",
+            "generator":format!("nostr_automerge_conformance generate_signed_profile {profile}"),
             "generator_revision":"signed_scenario_v2",
             "source_versions":{"nostr_automerge":"0.1.0-alpha.0"}
         },
-        "requirements":["NCRDT-CONF-001", "NCRDT-MANIFEST-001"],
+        "requirements":requirements,
         "revision":"draft_2026_08",
         "seed":null
     });

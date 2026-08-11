@@ -1,0 +1,30 @@
+{
+  "expected": {
+    "report_path": "control_genesis_wrong_sequence.expected.json",
+    "sha256": "926cfd254dedc44d535cd2eb768f48ec9a2fd6dd001cd049887c39fbdc10cdeb"
+  },
+  "fixture_id": "control_genesis_wrong_sequence",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "control_genesis_wrong_sequence.input.json",
+      "sha256": "c318a582f60a1ba5954acdcfa6c6791005fda121d7b0a6e1a8f9ea224095e9cc"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile control_genesis",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CONF-001",
+    "NCRDT-CONTROL-001"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}

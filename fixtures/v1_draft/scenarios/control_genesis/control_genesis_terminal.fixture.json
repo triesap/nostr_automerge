@@ -1,0 +1,30 @@
+{
+  "expected": {
+    "report_path": "control_genesis_terminal.expected.json",
+    "sha256": "a3e93e0dd0f542d9fc3493af4ad62a2e1aecfaf9ce4e6ab201f626f418af1c30"
+  },
+  "fixture_id": "control_genesis_terminal",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "control_genesis_terminal.input.json",
+      "sha256": "970acef30c65214b73f0d2d6a31ed9da8b21b5ea925416fb235322170b6b9f14"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile control_genesis",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CONF-001",
+    "NCRDT-CONTROL-001"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}
