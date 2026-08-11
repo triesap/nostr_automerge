@@ -189,10 +189,7 @@ pub(crate) fn validate_expected(report: &ExpectedReport) -> Result<(), ExpectedE
     canonical_ids::<EventId>(&report.unsupported_events)?;
     canonical_ids::<ChangeHash>(&report.heads)?;
     for assertion in &report.state_assertions {
-        if assertion
-            .path
-            .iter()
-            .any(|part| !part.is_string() && part.as_u64().is_none())
+        if assertion.path.iter().any(|part| !valid_path_element(part))
             || !valid_expected_value(&assertion.expected)
         {
             return Err(ExpectedError::Assertion);
@@ -214,6 +211,25 @@ pub(crate) fn validate_expected(report: &ExpectedReport) -> Result<(), ExpectedE
         }
     }
     Ok(())
+}
+
+fn valid_path_element(value: &Value) -> bool {
+    if value.is_string() || value.as_u64().is_some() {
+        return true;
+    }
+    let Some(object) = value.as_object() else {
+        return false;
+    };
+    object.len() == 4
+        && object.get("type").and_then(Value::as_str) == Some("branch")
+        && ["parent_object_id", "operation_id", "child_object_id"]
+            .iter()
+            .all(|field| {
+                object
+                    .get(*field)
+                    .and_then(Value::as_str)
+                    .is_some_and(|value| !value.is_empty())
+            })
 }
 
 fn unique_ids<T: FromStr + Ord>(values: &[String]) -> Result<(), ExpectedError> {
@@ -252,9 +268,16 @@ fn valid_expected_value(value: &Value) -> bool {
         | "event_id" | "string" | "text" | "bytes_base64" => {
             object.len() == 2 && object.get("value").is_some_and(Value::is_string)
         }
-        "mark" => ["name", "value", "start", "end"]
-            .iter()
-            .all(|field| object.contains_key(*field)),
+        "mark" => {
+            object.len() == 6
+                && ["name", "value", "start", "end", "expansion"]
+                    .iter()
+                    .all(|field| object.contains_key(*field))
+                && object
+                    .get("expansion")
+                    .and_then(Value::as_str)
+                    .is_some_and(|value| matches!(value, "none" | "before" | "after" | "both"))
+        }
         "conflicts" => object
             .get("values")
             .and_then(Value::as_array)
@@ -280,6 +303,30 @@ mod tests {
         let mut wrong_schema = report.clone();
         wrong_schema.report_schema = "nostr_automerge.report.v2".to_owned();
         assert_eq!(validate_expected(&wrong_schema), Err(ExpectedError::Schema));
+
+        let mut branch = report.clone();
+        branch.state_assertions[0].path.push(serde_json::json!({
+            "type":"branch",
+            "parent_object_id":"_root",
+            "operation_id":"1@actor",
+            "child_object_id":"1@actor"
+        }));
+        assert!(validate_expected(&branch).is_ok());
+        branch.state_assertions[0].path[1] = serde_json::json!({"type":"branch"});
+        assert_eq!(validate_expected(&branch), Err(ExpectedError::Assertion));
+
+        let mut mark = report.clone();
+        mark.state_assertions[0].expected = serde_json::json!({
+            "type":"mark",
+            "name":"bold",
+            "value":true,
+            "start":0,
+            "end":1,
+            "expansion":"both"
+        });
+        assert!(validate_expected(&mark).is_ok());
+        mark.state_assertions[0].expected["expansion"] = serde_json::json!("invalid");
+        assert_eq!(validate_expected(&mark), Err(ExpectedError::Assertion));
 
         let mut unsorted = report;
         unsorted.accepted_changes = vec!["22".repeat(32), "11".repeat(32)];

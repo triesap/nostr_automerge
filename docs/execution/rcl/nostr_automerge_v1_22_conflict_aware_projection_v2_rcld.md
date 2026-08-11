@@ -49,4 +49,5 @@ iterative, and implementable independently from the neutral contract.
 - `step_435`: `c592e87` — conflicting text values and their marks retain the exact branch-qualified text path.
 - `step_436`: `7309eec` — persisted mark operations resolve to exact UTF-16 ranges and preserve none, before, after, and both expansion modes.
 - `step_437`: `680c1f0` — explicit variant ranks, UTF-16 key/name comparison, numeric indexes, and identity tuples define canonical projection order.
-- `step_438`: this commit — neutral assertion evaluation rejects zero or multiple path matches instead of selecting the first.
+- `step_438`: `554e6b4` — neutral assertion evaluation rejects zero or multiple path matches instead of selecting the first.
+- `step_439`: this commit — the neutral report schema and parser accept exact branch elements and require explicit mark expansion.

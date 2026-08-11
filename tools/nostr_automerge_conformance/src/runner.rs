@@ -283,6 +283,25 @@ fn materialized_path(path: &[Value]) -> Result<Vec<MaterializedPathElement>, Run
                 Ok(MaterializedPathElement::Key(key.to_owned()))
             } else if let Some(index) = part.as_u64() {
                 Ok(MaterializedPathElement::Index(index))
+            } else if let Some(branch) = part.as_object() {
+                if branch.len() != 4 || branch.get("type").and_then(Value::as_str) != Some("branch")
+                {
+                    return Err(RunError::Expected);
+                }
+                Ok(MaterializedPathElement::branch(
+                    branch
+                        .get("parent_object_id")
+                        .and_then(Value::as_str)
+                        .ok_or(RunError::Expected)?,
+                    branch
+                        .get("operation_id")
+                        .and_then(Value::as_str)
+                        .ok_or(RunError::Expected)?,
+                    branch
+                        .get("child_object_id")
+                        .and_then(Value::as_str)
+                        .ok_or(RunError::Expected)?,
+                ))
             } else {
                 Err(RunError::Expected)
             }
@@ -535,7 +554,8 @@ mod tests {
     use std::path::Path;
 
     use super::{
-        RunError, compare_expected, discover_fixtures, exactly_one, generic_report, run_corpus,
+        RunError, compare_expected, discover_fixtures, exactly_one, generic_report,
+        materialized_path, run_corpus,
     };
     use crate::expected::load_expected;
     use crate::scenario::ScenarioInput;
@@ -551,6 +571,25 @@ mod tests {
         assert_eq!(
             exactly_one(&values, |value| *value == 1),
             Err(RunError::Input)
+        );
+    }
+
+    #[test]
+    fn neutral_branch_path_maps_to_the_public_projection_type() {
+        let path = materialized_path(&[
+            serde_json::json!("root"),
+            serde_json::json!({
+                "type":"branch",
+                "parent_object_id":"_root",
+                "operation_id":"1@actor",
+                "child_object_id":"1@actor"
+            }),
+        ]);
+        let Ok(path) = path else { return };
+        assert_eq!(path.len(), 2);
+        assert_eq!(
+            path[1].branch_identity(),
+            Some(("_root", "1@actor", "1@actor"))
         );
     }
 

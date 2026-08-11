@@ -131,9 +131,20 @@
         "path": {
           "type": "array",
           "items": {
-            "type": [
-              "string",
-              "integer"
+            "oneOf": [
+              {"type": "string"},
+              {"type": "integer", "minimum": 0},
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["type", "parent_object_id", "operation_id", "child_object_id"],
+                "properties": {
+                  "type": {"const": "branch"},
+                  "parent_object_id": {"type": "string", "minLength": 1},
+                  "operation_id": {"type": "string", "minLength": 1},
+                  "child_object_id": {"type": "string", "minLength": 1}
+                }
+              }
             ]
           }
         },
@@ -151,7 +162,7 @@
         {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"enum": ["bytes32", "change_hash", "event_id"]}, "value": {"$ref": "#/$defs/hex32"}}},
         {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"enum": ["string", "text", "bytes_base64"]}, "value": {"type": "string"}}},
         {"type": "object", "additionalProperties": false, "required": ["type"], "properties": {"type": {"enum": ["map", "list", "table"]}}},
-        {"type": "object", "additionalProperties": false, "required": ["type", "name", "value", "start", "end"], "properties": {"type": {"const": "mark"}, "name": {"type": "string"}, "value": {"type": ["string", "boolean", "null"]}, "start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 0}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "name", "value", "start", "end", "expansion"], "properties": {"type": {"const": "mark"}, "name": {"type": "string"}, "value": {"type": ["string", "boolean", "null"]}, "start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 0}, "expansion": {"enum": ["none", "before", "after", "both"]}}},
         {"type": "object", "additionalProperties": false, "required": ["type", "values"], "properties": {"type": {"const": "conflicts"}, "values": {"type": "array", "minItems": 2, "items": {"type": "object"}}}}
       ]
     },
