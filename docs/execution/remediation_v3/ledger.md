@@ -1,8 +1,8 @@
 # Draft V1 Remediation V3 Execution Ledger
 
 Status: executing
-Active RCLD: 35
-Active checkpoint: `step_613`
+Active RCLD: 36
+Active checkpoint: `step_622`
 Range: `step_534` through `step_659`
 
 Exactly one RCLD and one checkpoint are active. Checkpoints remain contiguous,
@@ -16,8 +16,8 @@ unique, dependency ordered, and independently reviewable.
 | 32 | `step_570`–`step_582` | complete | Selected manifest dynamic validation |
 | 33 | `step_583`–`step_596` | complete | Dynamic manifest and checkpoint event dispositions |
 | 34 | `step_597`–`step_612` | complete | Complete work budgeting and cancellation |
-| 35 | `step_613`–`step_621` | active | Implementation-owned normative clarification |
-| 36 | `step_622`–`step_635` | pending | Signed conformance and independent TypeScript parity |
+| 35 | `step_613`–`step_621` | complete | Implementation-owned normative clarification |
+| 36 | `step_622`–`step_635` | active | Signed conformance and independent TypeScript parity |
 | 37 | `step_636`–`step_647` | pending | Final requirement evidence reconciliation |
 | 38 | `step_648`–`step_659` | pending | Final assurance and truthful closure |
 
@@ -43,6 +43,8 @@ unique, dependency ordered, and independently reviewable.
 - `step_596`: refreshed commit-bound execution evidence, closed Finding 031, and activated RCLD 34.
 - `step_597`–`step_611`: combined as one approved green TDD slice; metered every remaining evidence-derived evaluator traversal, memoized control ancestry, stopped optional work promptly, and bounded checkpoint interruption.
 - `step_612`: refreshed commit-bound execution evidence, closed Finding 032, and activated RCLD 35.
+- `step_613`–`step_620`: combined as one approved green specification-and-vector slice; clarified causal counters, selected manifests, and dynamic event outcomes while preserving the external NIP snapshot and all 87 requirement identifiers.
+- `step_621`: refreshed commit-bound execution evidence, closed Finding 034, and activated RCLD 36.
 
 ## Scope Adaptations
 

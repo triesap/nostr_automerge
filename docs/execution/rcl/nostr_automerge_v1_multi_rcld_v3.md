@@ -1,6 +1,6 @@
 # nostr_automerge Draft V1 Remediation V3 Multi-RCLD
 
-Status: executing; RCLD 35 and `step_613` are active
+Status: executing; RCLD 36 and `step_622` are active
 Created: 2026-08-11
 Mode: rcl-durable
 Rust workspace and Git repository: repository root
@@ -311,7 +311,7 @@ control/checkpoint volumes cannot cause a panic or unbounded post-stop work.
 
 ## RCLD 35 — Normative Clarification
 
-Status: active at `step_613`
+Status: complete
 Steps: `step_613` through `step_621`
 Primary findings: 030, 031, 034
 
@@ -336,7 +336,7 @@ stable; `spec/NIP_DRAFT.md` is unchanged.
 
 ## RCLD 36 — Signed Conformance And Independent TypeScript Parity
 
-Status: pending RCLD 35
+Status: active at `step_622`
 Steps: `step_622` through `step_635`
 Primary findings: 028–034
 
@@ -470,7 +470,7 @@ deviations and holds are explicit. Completion does not mean:
 4. RCLD 32 — Selected manifest dynamic validation (`step_570`–`step_582`) — complete.
 5. RCLD 33 — Dynamic manifest and checkpoint event dispositions (`step_583`–`step_596`) — complete.
 6. RCLD 34 — Complete work budgeting and cancellation (`step_597`–`step_612`) — complete.
-7. RCLD 35 — Normative clarification (`step_613`–`step_621`) — active.
-8. RCLD 36 — Signed conformance and independent TypeScript parity (`step_622`–`step_635`) — pending.
+7. RCLD 35 — Normative clarification (`step_613`–`step_621`) — complete.
+8. RCLD 36 — Signed conformance and independent TypeScript parity (`step_622`–`step_635`) — active.
 9. RCLD 37 — Final requirement evidence reconciliation (`step_636`–`step_647`) — pending.
 10. RCLD 38 — Final assurance and truthful closure (`step_648`–`step_659`) — pending.
