@@ -68,7 +68,11 @@ pub(crate) fn run_fixture(path: &Path) -> Result<Vec<u8>, RunError> {
         return Err(RunError::Input);
     }
     let input = fs::read(base.join(&fixture.inputs[0].path)).map_err(|_| RunError::Input)?;
-    let actual = if let Ok(signed) = SignedScenarioInput::parse(&input) {
+    let signed = SignedScenarioInput::parse(&input);
+    if is_normative_signed_fixture(path) && signed.is_err() {
+        return Err(RunError::Input);
+    }
+    let actual = if let Ok(signed) = signed {
         if signed.fixture_id != fixture.fixture_id
             || signed.revision != fixture.revision
             || signed.requirements != fixture.requirements
@@ -92,6 +96,11 @@ pub(crate) fn run_fixture(path: &Path) -> Result<Vec<u8>, RunError> {
     };
     compare_expected(&actual, &expected)?;
     write_canonical_report(&actual).map_err(|_| RunError::Expected)
+}
+
+fn is_normative_signed_fixture(path: &Path) -> bool {
+    path.ancestors()
+        .any(|ancestor| ancestor.file_name().is_some_and(|name| name == "scenarios"))
 }
 
 pub(crate) fn generic_report(
@@ -588,12 +597,48 @@ pub(crate) fn write_corpus_summary(summary: &CorpusSummary) -> Result<Vec<u8>, R
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::{fs, path::Path};
 
     use super::{
         RunError, compare_expected, discover_fixtures, exactly_one, generic_report,
         materialized_path, run_corpus,
     };
+    use crate::fixture::load_fixture;
+    use crate::scenario::SignedScenarioInput;
+
+    #[test]
+    fn normative_fixtures_use_public_engine() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/v1_draft/scenarios");
+        let fixtures = discover_fixtures(&root);
+        assert!(fixtures.is_ok());
+        let Ok(fixtures) = fixtures else { return };
+        assert!(!fixtures.is_empty());
+        for path in fixtures {
+            let fixture = load_fixture(&path);
+            assert!(fixture.is_ok(), "{}", path.display());
+            let Ok(fixture) = fixture else { continue };
+            assert_eq!(fixture.inputs.len(), 1);
+            let base = path.parent();
+            assert!(base.is_some(), "fixture has no parent: {}", path.display());
+            let Some(base) = base else { continue };
+            let input = fs::read(base.join(&fixture.inputs[0].path));
+            assert!(input.is_ok(), "{}", path.display());
+            let Ok(input) = input else { continue };
+            assert!(
+                SignedScenarioInput::parse(&input).is_ok(),
+                "{}",
+                path.display()
+            );
+        }
+        let source = include_str!("runner.rs");
+        let signed_branch = source
+            .split("let actual = if let Ok(signed) = signed")
+            .nth(1)
+            .and_then(|tail| tail.split("} else if").next());
+        assert!(signed_branch.is_some_and(|branch| {
+            branch.contains("generic_report") && !branch.contains("interop::evaluate")
+        }));
+    }
     use crate::expected::load_expected;
     use crate::scenario::ScenarioInput;
 
