@@ -41,4 +41,5 @@ iterative, and implementable independently from the neutral contract.
 
 ## Completed Checkpoints
 
-- `step_430`: this commit — ADR 0027 freezes branch placement, identity, ordering, mark expansion, assertion uniqueness, and metering semantics.
+- `step_430`: `69a0c03` — ADR 0027 freezes branch placement, identity, ordering, mark expansion, assertion uniqueness, and metering semantics.
+- `step_431`: this commit — the public neutral view exposes exact conflict-branch path fields and the four mark expansion values.

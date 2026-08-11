@@ -98,6 +98,28 @@ fn projection_failure_is_typed_error() {
     assert!(!evaluator.contains("applied state must project"));
 }
 
+#[test]
+fn conflict_aware_projection_types_are_public_and_exact() {
+    use nostr_automerge::{MaterializedMarkExpansion, MaterializedPathElement};
+
+    let branch = MaterializedPathElement::Branch {
+        parent_object_id: "_root".to_owned(),
+        operation_id: "1@actor".to_owned(),
+        child_object_id: "1@actor".to_owned(),
+    };
+    assert!(matches!(branch, MaterializedPathElement::Branch { .. }));
+    assert_eq!(
+        [
+            MaterializedMarkExpansion::None,
+            MaterializedMarkExpansion::Before,
+            MaterializedMarkExpansion::After,
+            MaterializedMarkExpansion::Both,
+        ]
+        .len(),
+        4
+    );
+}
+
 #[allow(clippy::expect_used)]
 impl ReferenceEvaluatorTestExt for ReferenceEvaluator {
     fn evaluate_report(

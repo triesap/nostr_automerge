@@ -13,6 +13,28 @@ pub enum MaterializedPathElement {
     Key(String),
     /// A list position under UTF-16 document semantics.
     Index(u64),
+    /// The exact conflicting composite branch selected for following descendants.
+    Branch {
+        /// Stable identity of the object containing the conflicting property.
+        parent_object_id: String,
+        /// Stable identity of the operation that selected this child value.
+        operation_id: String,
+        /// Stable identity of the selected child object.
+        child_object_id: String,
+    },
+}
+
+/// Exact Automerge mark boundary expansion semantics.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum MaterializedMarkExpansion {
+    /// Neither boundary expands.
+    None,
+    /// Only insertion at the start boundary inherits the mark.
+    Before,
+    /// Only insertion at the end boundary inherits the mark.
+    After,
+    /// Both boundaries expand.
+    Both,
 }
 
 /// Exact Automerge composite object type.
@@ -122,6 +144,7 @@ pub struct MaterializedMark {
     value: MaterializedScalar,
     start: u64,
     end: u64,
+    expansion: MaterializedMarkExpansion,
 }
 
 impl MaterializedMark {
@@ -153,6 +176,12 @@ impl MaterializedMark {
     #[must_use]
     pub const fn end(&self) -> u64 {
         self.end
+    }
+
+    /// Returns the exact boundary expansion mode.
+    #[must_use]
+    pub const fn expansion(&self) -> MaterializedMarkExpansion {
+        self.expansion
     }
 }
 
@@ -416,6 +445,7 @@ fn project_document_iterative(
                         value: scalar(&mark.value)?,
                         start: u64::try_from(mark.start).map_err(|_| ProjectionError::Invalid)?,
                         end: u64::try_from(mark.end).map_err(|_| ProjectionError::Invalid)?,
+                        expansion: MaterializedMarkExpansion::None,
                     });
                 }
             }
