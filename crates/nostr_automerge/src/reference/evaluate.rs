@@ -10,7 +10,9 @@ use crate::control::parent_view::ParentEpochView;
 use crate::control::select::select_valid_outcomes_with_alert;
 use crate::control::validate::ControlEnvelope;
 use crate::graph::change_candidate::ChangeCandidate;
+use crate::graph::dependency_graph::build_graph;
 use crate::graph::equivocation::QuarantineError;
+use crate::graph::equivocation::quarantine_equivocation_descendants;
 use crate::graph::schedule::{ScheduleError, schedule_candidates};
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
 use crate::reference::epoch_engine::{
@@ -512,13 +514,48 @@ fn resolve_authoritative_epoch(
             semantically_valid: change.legacy_eligible,
             canonical_control: !control.frozen,
         });
-        let dispositions = resolve_epoch(
+        let mut dispositions = resolve_epoch(
             epoch_inputs,
             accepted_base.accepted_closure().clone(),
             budget,
             cancellation,
         )
         .map_err(EpochResolutionError::Schedule)?;
+        let mut all_candidates = accepted_base.accepted_candidates().clone();
+        all_candidates.extend(
+            control
+                .changes
+                .iter()
+                .map(|change| (change.candidate.change_hash, change.candidate.clone())),
+        );
+        let eligible = all_candidates
+            .values()
+            .filter(|candidate| {
+                accepted_base
+                    .accepted_closure()
+                    .contains(&candidate.change_hash)
+                    || dispositions.get(&candidate.change_hash)
+                        == Some(&ProtocolDisposition::Accepted)
+            })
+            .cloned()
+            .collect::<Vec<_>>();
+        let graph = build_graph(eligible.clone(), accepted_base.accepted_closure().clone())
+            .map_err(|_| EpochResolutionError::InvalidState)?;
+        let quarantine =
+            quarantine_equivocation_descendants(eligible, &graph, budget, cancellation).map_err(
+                |error| match error {
+                    QuarantineError::BudgetExhausted => {
+                        EpochResolutionError::Schedule(ScheduleError::BudgetExhausted)
+                    }
+                    QuarantineError::Cancelled => {
+                        EpochResolutionError::Schedule(ScheduleError::Cancelled)
+                    }
+                    QuarantineError::Alert(_) => EpochResolutionError::InvalidState,
+                },
+            )?;
+        for hash in &quarantine.quarantined {
+            dispositions.insert(*hash, ProtocolDisposition::Excluded);
+        }
         let mut accepted_candidates = accepted_base.accepted_candidates().clone();
         accepted_candidates.extend(control.changes.iter().filter_map(|change| {
             (dispositions.get(&change.candidate.change_hash)
@@ -540,7 +577,7 @@ fn resolve_authoritative_epoch(
             frontier_heads,
             accepted_candidates,
             dispositions,
-            Vec::new(),
+            quarantine.alerts,
             materialized,
         )
         .map_err(|_| EpochResolutionError::InvalidState);
