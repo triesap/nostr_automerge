@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/nostr_automerge/remediation_v3.schema.json",
+  "title": "nostr_automerge remediation v3 artifact envelope",
+  "type": "object",
+  "required": ["schema"],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "pattern": "^nostr_automerge\\.remediation_v3_[a-z0-9_.-]+\\.v[0-9]+$"
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}
