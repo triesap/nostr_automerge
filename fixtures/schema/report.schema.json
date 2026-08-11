@@ -160,9 +160,10 @@
         {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"enum": ["i64", "u64", "counter", "timestamp"]}, "value": {"type": "string", "pattern": "^-?[0-9]+$"}}},
         {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"const": "f64_bits"}, "value": {"type": "string", "pattern": "^[0-9a-f]{16}$"}}},
         {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"enum": ["bytes32", "change_hash", "event_id"]}, "value": {"$ref": "#/$defs/hex32"}}},
-        {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"enum": ["string", "text", "bytes_base64"]}, "value": {"type": "string"}}},
-        {"type": "object", "additionalProperties": false, "required": ["type"], "properties": {"type": {"enum": ["map", "list", "table"]}}},
-        {"type": "object", "additionalProperties": false, "required": ["type", "name", "value", "start", "end", "expansion"], "properties": {"type": {"const": "mark"}, "name": {"type": "string"}, "value": {"type": ["string", "boolean", "null"]}, "start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 0}, "expansion": {"enum": ["none", "before", "after", "both"]}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"enum": ["string", "bytes_base64"]}, "value": {"type": "string"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "object_id", "value"], "properties": {"type": {"const": "text"}, "object_id": {"type": "string", "minLength": 1}, "value": {"type": "string"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "object_id"], "properties": {"type": {"enum": ["map", "list", "table"]}, "object_id": {"type": "string", "minLength": 1}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "name", "value", "start", "end", "expansion"], "properties": {"type": {"const": "mark"}, "name": {"type": "string"}, "value": {"type": "object"}, "start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 0}, "expansion": {"enum": ["none", "before", "after", "both"]}}},
         {"type": "object", "additionalProperties": false, "required": ["type", "values"], "properties": {"type": {"const": "conflicts"}, "values": {"type": "array", "minItems": 2, "items": {"type": "object"}}}}
       ]
     },

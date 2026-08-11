@@ -262,11 +262,26 @@ fn valid_expected_value(value: &Value) -> bool {
         return false;
     };
     match kind {
-        "null" | "map" | "list" | "table" => object.len() == 1,
+        "null" => object.len() == 1,
+        "map" | "list" | "table" => {
+            object.len() == 2
+                && object
+                    .get("object_id")
+                    .and_then(Value::as_str)
+                    .is_some_and(|value| !value.is_empty())
+        }
         "bool" => object.len() == 2 && object.get("value").is_some_and(Value::is_boolean),
         "i64" | "u64" | "counter" | "timestamp" | "f64_bits" | "bytes32" | "change_hash"
-        | "event_id" | "string" | "text" | "bytes_base64" => {
+        | "event_id" | "string" | "bytes_base64" => {
             object.len() == 2 && object.get("value").is_some_and(Value::is_string)
+        }
+        "text" => {
+            object.len() == 3
+                && object.get("value").is_some_and(Value::is_string)
+                && object
+                    .get("object_id")
+                    .and_then(Value::as_str)
+                    .is_some_and(|value| !value.is_empty())
         }
         "mark" => {
             object.len() == 6
@@ -277,6 +292,9 @@ fn valid_expected_value(value: &Value) -> bool {
                     .get("expansion")
                     .and_then(Value::as_str)
                     .is_some_and(|value| matches!(value, "none" | "before" | "after" | "both"))
+                && object.get("value").is_some_and(valid_expected_value)
+                && object.get("start").and_then(Value::as_u64).is_some()
+                && object.get("end").and_then(Value::as_u64).is_some()
         }
         "conflicts" => object
             .get("values")
@@ -319,7 +337,7 @@ mod tests {
         mark.state_assertions[0].expected = serde_json::json!({
             "type":"mark",
             "name":"bold",
-            "value":true,
+            "value":{"type":"bool","value":true},
             "start":0,
             "end":1,
             "expansion":"both"

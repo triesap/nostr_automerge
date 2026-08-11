@@ -9,9 +9,9 @@ use sha2::{Digest, Sha256};
 
 use nostr_automerge::{
     CheckpointVerificationStatus, Completion, ControllerPublicKey, CorpusBuilder, DevicePublicKey,
-    DocumentId, EvidenceIdentifier, EvidenceStatus, IntegrityAlert, MaterializedObjectType,
-    MaterializedPathElement, MaterializedScalar, MaterializedValue, NeverCancelled,
-    ProtocolRevision, ReferenceEvaluator, WorkBudget,
+    DocumentId, EvidenceIdentifier, EvidenceStatus, IntegrityAlert, MaterializedMark,
+    MaterializedMarkExpansion, MaterializedObjectType, MaterializedPathElement, MaterializedScalar,
+    MaterializedValue, NeverCancelled, ProtocolRevision, ReferenceEvaluator, WorkBudget,
 };
 
 use crate::checksum::verify_fixture_files;
@@ -193,8 +193,13 @@ fn generic_report(
     for assertion in &mut output.state_assertions {
         let path = materialized_path(&assertion.path)?;
         let document = report.document().ok_or(RunError::Input)?;
-        let entry = exactly_one(document.entries(), |entry| entry.path() == path)?;
-        assertion.expected = materialized_conflicts(entry.conflicts());
+        if assertion.expected.get("type").and_then(Value::as_str) == Some("mark") {
+            let mark = exactly_one(document.marks(), |mark| mark.path() == path)?;
+            assertion.expected = materialized_mark(mark);
+        } else {
+            let entry = exactly_one(document.entries(), |entry| entry.path() == path)?;
+            assertion.expected = materialized_conflicts(entry.conflicts());
+        }
     }
     output.checkpoints = report
         .checkpoints()
@@ -325,16 +330,38 @@ fn materialized_conflicts(conflicts: &[nostr_automerge::MaterializedConflict]) -
 fn materialized_value(value: &MaterializedValue) -> Value {
     match value {
         MaterializedValue::Scalar(value) => materialized_scalar(value),
-        MaterializedValue::Object { object_type, .. } => serde_json::json!({
+        MaterializedValue::Object {
+            object_type,
+            object_id,
+        } => serde_json::json!({
             "type": match object_type {
                 MaterializedObjectType::Map => "map",
                 MaterializedObjectType::List => "list",
                 MaterializedObjectType::Table => "table",
                 MaterializedObjectType::Text => "text",
-            }
+            },
+            "object_id": object_id,
         }),
-        MaterializedValue::Text { value, .. } => serde_json::json!({"type":"text", "value":value}),
+        MaterializedValue::Text { object_id, value } => {
+            serde_json::json!({"type":"text", "object_id":object_id, "value":value})
+        }
     }
+}
+
+fn materialized_mark(mark: &MaterializedMark) -> Value {
+    serde_json::json!({
+        "type":"mark",
+        "name":mark.name(),
+        "value":materialized_scalar(mark.value()),
+        "start":mark.start(),
+        "end":mark.end(),
+        "expansion":match mark.expansion() {
+            MaterializedMarkExpansion::None => "none",
+            MaterializedMarkExpansion::Before => "before",
+            MaterializedMarkExpansion::After => "after",
+            MaterializedMarkExpansion::Both => "both",
+        }
+    })
 }
 
 fn materialized_scalar(value: &MaterializedScalar) -> Value {
