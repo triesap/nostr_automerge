@@ -3,16 +3,20 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MANDATORY = set("""NCRDT-NIP01-001 NCRDT-NIP01-002 NCRDT-NIP01-003 NCRDT-ACQ-001 NCRDT-TAG-001 NCRDT-TAG-002 NCRDT-TAG-003 NCRDT-JSON-001 NCRDT-JSON-002 NCRDT-JSON-003 NCRDT-B64-001 NCRDT-LIMIT-001 NCRDT-ACTOR-002 NCRDT-FRAME-001 NCRDT-ENC-001 NCRDT-ENC-002 NCRDT-SEM-001 NCRDT-SEQ-001 NCRDT-SEQ-002 NCRDT-MANIFEST-001 NCRDT-MANIFEST-002 NCRDT-CONTROL-001 NCRDT-CHAIN-001 NCRDT-DUP-001 NCRDT-EQUIV-001 NCRDT-STATE-001 NCRDT-STATE-002 NCRDT-OUTCOME-001 NCRDT-CHECKPOINT-001 NCRDT-CPDESC-001 NCRDT-CPDESC-002 NCRDT-CPDESC-003 NCRDT-CPDESC-004 NCRDT-CPDESC-005 NCRDT-CPDESC-006 NCRDT-CPCHUNK-001 NCRDT-CPCHUNK-002 NCRDT-CPCHUNK-003 NCRDT-CPTRUST-001 NCRDT-CPTRUST-002 NCRDT-CONV-001 NCRDT-APP-001 NCRDT-VERSION-001 NCRDT-RESOURCE-001 NCRDT-CONF-001 NCRDT-CONF-002 NCRDT-PROFILE-001 NCRDT-DISPOSITION-001 NCRDT-COMPLETION-001 NCRDT-ALERT-001 NCRDT-ALERT-002 NCRDT-NIPBOUNDARY-001 NCRDT-EVIDENCE-001 NCRDT-EVALUATOR-001""".split())
-RUST_ONLY = set("NCRDT-FANIN-001 NCRDT-FANIN-002 NCRDT-REPO-001 NCRDT-FEATURES-001".split())
-LOCAL_BOTH = set("NCRDT-CORE-001 NCRDT-AUTOADAPTER-001 NCRDT-AUTOADAPTER-002 NCRDT-AUTOADAPTER-003 NCRDT-TS-001".split())
-DEFERRED = set("NCRDT-CPRECOVERY-001 NCRDT-CONF-004 NCRDT-LIMITS-001".split())
+APPLICABILITY_VALUES = {
+    "rust-and-typescript", "rust-only", "out-of-core", "explicitly-deferred",
+}
+V2_LOCAL_BOTH = {
+    "NCRDT-CORE-001", "NCRDT-AUTOADAPTER-001", "NCRDT-AUTOADAPTER-002",
+    "NCRDT-AUTOADAPTER-003", "NCRDT-TS-001",
+}
 
 
 def proof(identity: str, implementation: str, test: str, family: str, runner: str = "conformance") -> dict[str, str]:
@@ -68,12 +72,21 @@ def typescript_proof(identifier: str) -> dict[str, str]:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--check-applicability", action="store_true")
+    args = parser.parse_args()
     registry_bytes = (ROOT / "spec/requirements.json").read_bytes()
     requirements = json.loads(registry_bytes)["requirements"]
     known = {item["id"] for item in requirements}
-    classified = MANDATORY | RUST_ONLY | LOCAL_BOTH | DEFERRED
-    if not classified.issubset(known):
-        raise AssertionError("classification contains unknown requirement")
+    authority = json.loads((ROOT / "spec/requirements_applicability.json").read_text())
+    classifications = authority.get("classifications", {})
+    if set(classifications) != known:
+        raise AssertionError("every requirement must have exactly one approved applicability")
+    if not set(classifications.values()).issubset(APPLICABILITY_VALUES):
+        raise AssertionError("unknown approved applicability")
+    if args.check_applicability:
+        print(f"PASS: all {len(known)} requirements have approved applicability")
+        return 0
     rows = []
     for item in requirements:
         identifier = item["id"]
@@ -85,13 +98,13 @@ def main() -> int:
                 "text_sha256": hashlib.sha256(item["text"].encode()).hexdigest(),
             },
         }
-        if identifier in MANDATORY:
-            row.update(status="mandatory-pass", proofs={"rust": rust_proof(identifier), "typescript": typescript_proof(identifier)})
-        elif identifier in RUST_ONLY:
+        applicability = classifications[identifier]
+        if applicability == "rust-and-typescript":
+            status = "applicable-local" if identifier in V2_LOCAL_BOTH else "mandatory-pass"
+            row.update(status=status, proofs={"rust": rust_proof(identifier), "typescript": typescript_proof(identifier)})
+        elif applicability == "rust-only":
             row.update(status="applicable-local", proofs={"rust": rust_proof(identifier)})
-        elif identifier in LOCAL_BOTH:
-            row.update(status="applicable-local", proofs={"rust": rust_proof(identifier), "typescript": typescript_proof(identifier)})
-        elif identifier in DEFERRED:
+        elif applicability == "explicitly-deferred":
             row.update(status="explicitly-deferred", rationale="The controlling draft explicitly defers or prohibits this behavior.")
         else:
             row.update(status="out-of-core", rationale="Operational, application, relay, acquisition, retention, or publication behavior outside the deterministic core libraries.")
