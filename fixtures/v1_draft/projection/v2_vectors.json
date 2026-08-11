@@ -1,0 +1,15 @@
+{
+  "schema":"nostr_automerge.projection_vectors.v2",
+  "revision":"draft_2026_08",
+  "requirements":["R2_PROJ_001","R2_PROJ_002","R2_PROJ_003","R2_PROJ_004"],
+  "path_element_order":["key","index","branch"],
+  "utf16_order_vector":["😀",""],
+  "branch":{"type":"branch","parent_object_id":"_root","operation_id":"1@1414141414141414141414141414141414141414141414141414141414141414","child_object_id":"1@1414141414141414141414141414141414141414141414141414141414141414"},
+  "scalar_types":["null","bool","i64","u64","f64_bits","string","bytes_base64","timestamp","counter"],
+  "object_types":["map","list","table","text"],
+  "conflicting_descendant":{"ordinary_path":["conflict","same"],"branch_qualified_paths":2,"ordinary_path_must_fail":true},
+  "text":{"value":"A😀é","utf16_length":5},
+  "mark_expansions":["none","before","after","both"],
+  "deep_iterative_depth":2048,
+  "canonical":true
+}

@@ -44,6 +44,26 @@ fn no_untrusted_panic_paths() {
 }
 
 #[test]
+fn projection_v2_vectors_cover_the_complete_neutral_model() {
+    let vectors: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/projection/v2_vectors.json"
+    ))
+    .unwrap_or_default();
+    assert_eq!(vectors["schema"], "nostr_automerge.projection_vectors.v2");
+    assert_eq!(vectors["requirements"].as_array().map(Vec::len), Some(4));
+    assert_eq!(vectors["scalar_types"].as_array().map(Vec::len), Some(9));
+    assert_eq!(vectors["object_types"].as_array().map(Vec::len), Some(4));
+    assert_eq!(vectors["mark_expansions"].as_array().map(Vec::len), Some(4));
+    assert_eq!(
+        vectors["conflicting_descendant"]["branch_qualified_paths"],
+        2
+    );
+    assert_eq!(vectors["text"]["utf16_length"], 5);
+    assert_eq!(vectors["deep_iterative_depth"], 2048);
+    assert_eq!(vectors["canonical"], true);
+}
+
+#[test]
 fn initialize_cargo_fuzz_harness() {
     let manifest = include_str!("../../../fuzz/Cargo.toml");
     assert!(manifest.contains("cargo-fuzz"));

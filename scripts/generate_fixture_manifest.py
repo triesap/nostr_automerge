@@ -35,6 +35,7 @@ def main() -> int:
         Path("fixtures/v1_draft/changes/cases.json"),
         Path("fixtures/v1_draft/integrity/cases.json"),
         Path("fixtures/v1_draft/checkpoints/cases.json"),
+        Path("fixtures/v1_draft/projection/v2_vectors.json"),
     }
     for path, item in zip(metadata_paths, metadata, strict=True):
         relative = path.relative_to(ROOT)

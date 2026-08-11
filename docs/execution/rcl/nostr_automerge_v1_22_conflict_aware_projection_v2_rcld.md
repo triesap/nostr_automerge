@@ -51,4 +51,5 @@ iterative, and implementable independently from the neutral contract.
 - `step_437`: `680c1f0` — explicit variant ranks, UTF-16 key/name comparison, numeric indexes, and identity tuples define canonical projection order.
 - `step_438`: `554e6b4` — neutral assertion evaluation rejects zero or multiple path matches instead of selecting the first.
 - `step_439`: `43fc541` — the neutral report schema and parser accept exact branch elements and require explicit mark expansion.
-- `step_440`: this commit — canonical reports serialize real object identities, text identities, and exact materialized marks from the public document view.
+- `step_440`: `6be305f` — canonical reports serialize real object identities, text identities, and exact materialized marks from the public document view.
+- `step_441`: this commit — the canonical distribution publishes projection-v2 scalar, object, conflict, text, mark, ordering, and deep-traversal vectors.
