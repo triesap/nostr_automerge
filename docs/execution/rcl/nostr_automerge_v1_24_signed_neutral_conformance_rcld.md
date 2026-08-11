@@ -56,8 +56,9 @@ selection answers.
 - `step_477`: `f689ab5` — normative fixture loading and distribution validation reject historical abstract protocol-truth formats.
 - `step_478`: `45d633d` — distribution v3 binds every signed fixture artifact, profile, requirement, schema, and checksum exactly once.
 - `step_479`: `9d25964` — fresh Rust processes reproduce every signed profile report and bind source, lock, toolchain, manifest, and output hashes.
-- `step_480`: this commit — exact canonical comparison detects a deliberate copied-report mutation without changing source evidence.
+- `step_480`: `29b9c4d` — exact canonical comparison detects a deliberate copied-report mutation without changing source evidence.
 
 ## Corrective Checkpoints
 
-- `step_474a`: this commit — signed fixture execution now runs all eight generated delivery classes through the public engine and rejects any canonical mismatch.
+- `step_474a`: `7b0ccf3` — signed fixture execution now runs all eight generated delivery classes through the public engine and rejects any canonical mismatch.
+- `step_473a`: this commit — accepted multiwriter diamonds, transitive equivocation quarantine, all scalar families, nested conflicting branches, every mark expansion, and deep projection now execute as signed evidence. Automerge's exact causal operation clock is reconstructed from each dependency closure while sequence and equivocation state remains actor-local.

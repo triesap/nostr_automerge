@@ -85,7 +85,7 @@
     },
     {
       "commits": ["6af6078", "cff9f83", "b47c077"],
-      "evidence": ["reports/interop_combined.json", "fixtures/distribution/manifest.json"],
+      "evidence": ["reports/interop_combined.json", "fixtures/distribution/manifest_v3.json"],
       "id": "FINDING_013",
       "result": "closed"
     }

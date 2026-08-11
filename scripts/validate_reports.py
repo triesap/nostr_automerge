@@ -35,9 +35,10 @@ EXPECTED_KEYS = {
     "timestamp": {"type", "value"}, "f64_bits": {"type", "value"},
     "bytes32": {"type", "value"}, "change_hash": {"type", "value"},
     "event_id": {"type", "value"}, "string": {"type", "value"},
-    "text": {"type", "value"}, "bytes_base64": {"type", "value"},
-    "map": {"type"}, "list": {"type"},
-    "mark": {"type", "name", "value", "start", "end"},
+    "text": {"type", "object_id", "value"}, "bytes_base64": {"type", "value"},
+    "map": {"type", "object_id"}, "list": {"type", "object_id"},
+    "table": {"type", "object_id"},
+    "mark": {"type", "name", "value", "start", "end", "expansion"},
     "conflicts": {"type", "values"},
 }
 ALERT_KEYS = {
@@ -73,6 +74,32 @@ def validate_id_list(value: object) -> None:
         raise ReportError("noncanonical_id_list")
 
 
+def validate_control_chain(value: object) -> None:
+    """Require unique control identifiers while preserving causal chain order."""
+
+    if not isinstance(value, list) or any(
+        not isinstance(item, str) or HEX32.fullmatch(item) is None for item in value
+    ):
+        raise ReportError("invalid_id_list")
+    if len(value) != len(set(value)):
+        raise ReportError("noncanonical_id_list")
+
+
+def valid_path_element(value: object) -> bool:
+    if isinstance(value, str):
+        return True
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value >= 0
+    if not isinstance(value, dict) or set(value) != {
+        "type", "parent_object_id", "operation_id", "child_object_id"
+    }:
+        return False
+    return value.get("type") == "branch" and all(
+        isinstance(value.get(field), str) and bool(value[field])
+        for field in ("parent_object_id", "operation_id", "child_object_id")
+    )
+
+
 def validate(report: dict[str, Any]) -> None:
     """Validate report structure and canonical collection semantics."""
 
@@ -88,7 +115,7 @@ def validate(report: dict[str, Any]) -> None:
         raise ReportError("invalid_coordinate")
     if report["completion"] not in {"complete", "budget_exhausted", "cancelled"}:
         raise ReportError("invalid_completion")
-    validate_id_list(report["canonical_controls"])
+    validate_control_chain(report["canonical_controls"])
     for field in ID_LIST_FIELDS:
         validate_id_list(report[field])
     records = report["disposition_records"]
@@ -152,10 +179,7 @@ def validate(report: dict[str, Any]) -> None:
         if not isinstance(assertion, dict) or set(assertion) != {"path", "expected"}:
             raise ReportError("invalid_assertion")
         path = assertion["path"]
-        if not isinstance(path, list) or any(
-            not isinstance(item, (str, int)) or isinstance(item, bool) or
-            (isinstance(item, int) and item < 0) for item in path
-        ):
+        if not isinstance(path, list) or any(not valid_path_element(item) for item in path):
             raise ReportError("invalid_assertion_path")
         expected = assertion["expected"]
         if not isinstance(expected, dict) or expected.get("type") not in EXPECTED_KEYS:

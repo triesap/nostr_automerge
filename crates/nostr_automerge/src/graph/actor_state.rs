@@ -42,9 +42,10 @@ pub(crate) fn apply_empty_counter(
     {
         return Err(ActorStateError::DependencyFrontier);
     }
-    let (last_sequence, next_op) = states
+    let last_sequence = states
         .get(&candidate.actor)
-        .map_or((0, 1), |state| (state.last_sequence, state.next_op));
+        .map_or(0, |state| state.last_sequence);
+    let next_op = causal_next_op(states);
     if candidate.sequence
         != last_sequence
             .checked_add(1)
@@ -73,9 +74,10 @@ pub(crate) fn apply_nonempty_counter(
     if candidate.operation_count == 0 {
         return Err(ActorStateError::EmptyChange);
     }
-    let (last_sequence, next_op) = states
+    let last_sequence = states
         .get(&candidate.actor)
-        .map_or((0, 1), |state| (state.last_sequence, state.next_op));
+        .map_or(0, |state| state.last_sequence);
+    let next_op = causal_next_op(states);
     if candidate.sequence
         != last_sequence
             .checked_add(1)
@@ -135,6 +137,17 @@ pub(crate) fn validate_actor_predecessor(
     }
 }
 
+fn causal_next_op(states: &BTreeMap<ActorId, EpochActorState>) -> u64 {
+    // Automerge operation counters are causal Lamport counters. Actor sequence
+    // remains actor-local, while a new change starts after the greatest
+    // operation visible in its exact dependency closure.
+    states
+        .values()
+        .map(|state| state.next_op)
+        .max()
+        .unwrap_or(1)
+}
+
 pub(crate) fn initialize_actor_states(
     accepted_base: impl IntoIterator<Item = ChangeCandidate>,
 ) -> Result<BTreeMap<ActorId, EpochActorState>, ActorStateError> {
@@ -166,6 +179,7 @@ pub(crate) fn initialize_actor_states(
         }
     }
     let mut states = BTreeMap::<ActorId, EpochActorState>::new();
+    let mut causal_next_by_change = BTreeMap::<ChangeHash, u64>::new();
     let mut processed = 0usize;
     while let Some(hash) = ready.pop_first() {
         let candidate = &changes[&hash];
@@ -182,9 +196,12 @@ pub(crate) fn initialize_actor_states(
         if candidate.sequence != expected_sequence {
             return Err(ActorStateError::SequenceGap);
         }
-        let next_op = states
-            .get(&candidate.actor)
-            .map_or(1, |state| state.next_op);
+        let next_op = candidate
+            .dependencies
+            .iter()
+            .filter_map(|dependency| causal_next_by_change.get(dependency).copied())
+            .max()
+            .unwrap_or(1);
         let advanced = if candidate.operation_count == 0 {
             if candidate.start_op != next_op {
                 return Err(ActorStateError::OperationCounter);
@@ -206,6 +223,7 @@ pub(crate) fn initialize_actor_states(
                 highest_change: candidate.change_hash,
             },
         );
+        causal_next_by_change.insert(candidate.change_hash, advanced);
         processed = processed
             .checked_add(1)
             .ok_or(ActorStateError::DependencyCycle)?;
@@ -374,7 +392,7 @@ pub(crate) mod tests {
             Err(ActorStateError::OperationCounter)
         );
         assert_eq!(
-            apply_nonempty_counter(&mut states, &candidate(2, 1, 1, 1)),
+            apply_nonempty_counter(&mut states, &candidate(2, 1, 4, 1)),
             Ok(())
         );
     }
@@ -403,6 +421,23 @@ pub(crate) mod tests {
             apply_nonempty_counter(&mut overflow, &candidate(5, 3, u64::MAX, 1)),
             Err(ActorStateError::OperationCounter)
         );
+    }
+
+    #[test]
+    fn causal_operation_clock_allows_concurrent_actors() {
+        let mut base = candidate(1, 1, 1, 1);
+        base.change_hash = ChangeHash::from_bytes([1; 32]);
+        let mut left = candidate(2, 1, 2, 1);
+        left.change_hash = ChangeHash::from_bytes([2; 32]);
+        left.dependencies = vec![base.change_hash];
+        let mut right = candidate(3, 1, 2, 1);
+        right.change_hash = ChangeHash::from_bytes([3; 32]);
+        right.dependencies = vec![base.change_hash];
+        let mut merge = candidate(4, 1, 3, 0);
+        merge.change_hash = ChangeHash::from_bytes([4; 32]);
+        merge.dependencies = vec![left.change_hash, right.change_hash];
+        let states = initialize_actor_states([merge, right, base, left]);
+        assert!(states.is_ok());
     }
 
     #[test]

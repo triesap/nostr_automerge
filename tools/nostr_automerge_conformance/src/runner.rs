@@ -15,7 +15,9 @@ use nostr_automerge::{
 };
 
 use crate::checksum::verify_fixture_files;
-use crate::expected::{CheckpointResult, DispositionRecord, ExpectedReport, load_expected};
+use crate::expected::{
+    CheckpointResult, DispositionRecord, ExpectedReport, StateAssertion, load_expected,
+};
 use crate::fixture::{load_fixture, load_normative_fixture};
 use crate::permutations::required_delivery_permutations;
 use crate::report_json::write_canonical_report;
@@ -268,9 +270,28 @@ pub(crate) fn generic_report(
         .iter()
         .map(integrity_alert)
         .collect();
-    for assertion in &mut output.state_assertions {
+    let document = report.document();
+    let assertions = core::mem::take(&mut output.state_assertions);
+    let mut resolved_assertions = Vec::new();
+    for mut assertion in assertions {
+        if assertion.expected.get("type").and_then(Value::as_str) == Some("all_branch_descendants")
+        {
+            let document = document.ok_or(RunError::Input)?;
+            for entry in document.entries().iter().filter(|entry| {
+                entry
+                    .path()
+                    .iter()
+                    .any(|element| element.branch_identity().is_some())
+            }) {
+                resolved_assertions.push(StateAssertion {
+                    path: materialized_path_json(entry.path()),
+                    expected: materialized_conflicts(entry.conflicts()),
+                });
+            }
+            continue;
+        }
         let path = materialized_path(&assertion.path)?;
-        let document = report.document().ok_or(RunError::Input)?;
+        let document = document.ok_or(RunError::Input)?;
         if assertion.expected.get("type").and_then(Value::as_str) == Some("mark") {
             let mark = exactly_one(document.marks(), |mark| mark.path() == path)?;
             assertion.expected = materialized_mark(mark);
@@ -278,7 +299,9 @@ pub(crate) fn generic_report(
             let entry = exactly_one(document.entries(), |entry| entry.path() == path)?;
             assertion.expected = materialized_conflicts(entry.conflicts());
         }
+        resolved_assertions.push(assertion);
     }
+    output.state_assertions = resolved_assertions;
     output.checkpoints = report
         .checkpoints()
         .iter()
@@ -387,6 +410,24 @@ fn materialized_path(path: &[Value]) -> Result<Vec<MaterializedPathElement>, Run
                 ))
             } else {
                 Err(RunError::Expected)
+            }
+        })
+        .collect()
+}
+
+fn materialized_path_json(path: &[MaterializedPathElement]) -> Vec<Value> {
+    path.iter()
+        .map(|element| match element {
+            MaterializedPathElement::Key(key) => Value::String(key.clone()),
+            MaterializedPathElement::Index(index) => Value::from(*index),
+            branch => {
+                let (parent, operation, child) = branch.branch_identity().unwrap_or(("", "", ""));
+                serde_json::json!({
+                    "type":"branch",
+                    "parent_object_id":parent,
+                    "operation_id":operation,
+                    "child_object_id":child,
+                })
             }
         })
         .collect()

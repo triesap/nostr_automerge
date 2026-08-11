@@ -1,21 +1,21 @@
 {
   "expected": {
-    "report_path": "equivocation_base_conflict.expected.json",
-    "sha256": "77b41d78bad52087a903d4070a05d5caaab47b7d979fcdf9dc1999c61c160073"
+    "report_path": "projection_conflicting_maps.expected.json",
+    "sha256": "0dc3b21774fa8853adde8f0d4596396a10ea20753ca1f705a471c840cbecb965"
   },
-  "fixture_id": "equivocation_base_conflict",
+  "fixture_id": "projection_conflicting_maps",
   "fixture_schema": "nostr_automerge.fixture.v1",
   "inputs": [
     {
       "media_type": "application/json",
       "name": "signed_scenario",
-      "path": "equivocation_base_conflict.input.json",
-      "sha256": "2cbd99c3c5b5e5fa952332f09e3f4ab48501c4c27e3ccf1e8fbad7a06a0d1518"
+      "path": "projection_conflicting_maps.input.json",
+      "sha256": "5ec0babf2f113052fb8d2783c2b1ffabdbdc14d0afe878b4b35e6849109a958e"
     }
   ],
   "provenance": {
     "created_at": "2026-08-10",
-    "generator": "nostr_automerge_conformance generate_signed_profile equivocation",
+    "generator": "nostr_automerge_conformance generate_signed_profile projection",
     "generator_revision": "signed_scenario_v2",
     "source_versions": {
       "nostr_automerge": "0.1.0-alpha.0"
@@ -23,7 +23,7 @@
   },
   "requirements": [
     "NCRDT-CONF-002",
-    "NCRDT-EQUIV-001"
+    "NCRDT-STATE-002"
   ],
   "revision": "draft_2026_08",
   "seed": null

@@ -1,7 +1,8 @@
 use std::path::{Path, PathBuf};
 
+use automerge::marks::{ExpandMark, Mark};
 use automerge::transaction::{CommitOptions, Transactable};
-use automerge::{AutoCommit, ROOT, TextEncoding};
+use automerge::{AutoCommit, ObjType, ROOT, ScalarValue, TextEncoding};
 use base64::Engine as _;
 use nostr_automerge::authoring::{
     ActorState, AuthoringDocument, Operation, PreparedEvent, UnsignedEventDraft,
@@ -142,7 +143,257 @@ fn generate_projection_profile() -> Result<(), String> {
             assertions,
         )?;
     }
+
+    let advanced_writer = Signer::from_byte(102)?;
+    let conflict_writer = Signer::from_byte(103)?;
+    let advanced_control = sign_control(
+        &controller,
+        20,
+        coordinate,
+        None,
+        control_content_full(
+            0,
+            vec![
+                (&writer, None, &["write"]),
+                (&advanced_writer, None, &["write"]),
+                (&conflict_writer, None, &["write"]),
+            ],
+            "automerge-change-v1",
+        ),
+    )?;
+    let advanced_control_id = event_id(&advanced_control)?;
+    let advanced_actor = ActorId::derive(coordinate, advanced_writer.public_key);
+
+    let mut scalars = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit)
+        .with_actor(automerge::ActorId::from(advanced_actor.as_bytes().to_vec()));
+    for (key, value) in [
+        ("null", ScalarValue::Null),
+        ("bool", ScalarValue::Boolean(true)),
+        ("i64", ScalarValue::Int(-7)),
+        ("u64", ScalarValue::Uint(7)),
+        ("f64", ScalarValue::F64(1.5)),
+        ("bytes", ScalarValue::Bytes(vec![0, 1, 2, 255])),
+        ("timestamp", ScalarValue::Timestamp(-123)),
+        ("counter_scalar", ScalarValue::Counter(7_i64.into())),
+    ] {
+        scalars
+            .put(ROOT, key, value)
+            .map_err(|error| format!("scalar projection: {error:?}"))?;
+    }
+    let (scalar_raw, scalar_hash) = commit_automerge_change(&mut scalars, "scalar projection")?;
+    let scalar_event = sign_change(
+        &advanced_writer,
+        21,
+        coordinate,
+        advanced_control_id,
+        scalar_hash,
+        &scalar_raw,
+    )?;
+    write_fixture_with_state_assertions(
+        &root,
+        "projection_all_scalars",
+        coordinate,
+        vec![advanced_control.clone(), scalar_event],
+        &["NCRDT-CONF-002", "NCRDT-STATE-002"],
+        "projection",
+        [
+            "null",
+            "bool",
+            "i64",
+            "u64",
+            "f64",
+            "bytes",
+            "timestamp",
+            "counter_scalar",
+        ]
+        .into_iter()
+        .map(|key| StateAssertion {
+            path: vec![json!(key)],
+            expected: json!({"type":"string", "value":"placeholder"}),
+        })
+        .collect(),
+    )?;
+
+    let mut nested = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit)
+        .with_actor(automerge::ActorId::from(advanced_actor.as_bytes().to_vec()));
+    let map = nested
+        .put_object(ROOT, "map", ObjType::Map)
+        .map_err(|error| format!("nested map: {error:?}"))?;
+    nested
+        .put(&map, "value", "nested")
+        .map_err(|error| format!("nested value: {error:?}"))?;
+    let list = nested
+        .put_object(&map, "list", ObjType::List)
+        .map_err(|error| format!("nested list: {error:?}"))?;
+    nested
+        .insert(&list, 0, true)
+        .map_err(|error| format!("nested list value: {error:?}"))?;
+    let (nested_raw, nested_hash) = commit_automerge_change(&mut nested, "nested projection")?;
+    let nested_event = sign_change(
+        &advanced_writer,
+        22,
+        coordinate,
+        advanced_control_id,
+        nested_hash,
+        &nested_raw,
+    )?;
+    write_fixture_with_state_assertions(
+        &root,
+        "projection_nested_objects",
+        coordinate,
+        vec![advanced_control.clone(), nested_event],
+        &["NCRDT-CONF-002", "NCRDT-STATE-002"],
+        "projection",
+        vec![
+            StateAssertion {
+                path: vec![json!("map"), json!("value")],
+                expected: json!({"type":"string"}),
+            },
+            StateAssertion {
+                path: vec![json!("map"), json!("list"), json!(0)],
+                expected: json!({"type":"bool"}),
+            },
+        ],
+    )?;
+
+    let branch_change = |signer: &Signer, value: &str| -> Result<_, String> {
+        let actor = ActorId::derive(coordinate, signer.public_key);
+        let mut document = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit)
+            .with_actor(automerge::ActorId::from(actor.as_bytes().to_vec()));
+        let map = document
+            .put_object(ROOT, "conflict", ObjType::Map)
+            .map_err(|error| format!("conflicting map: {error:?}"))?;
+        document
+            .put(&map, "same", value)
+            .map_err(|error| format!("conflicting descendant: {error:?}"))?;
+        commit_automerge_change(&mut document, "conflicting projection")
+    };
+    let (left_raw, left_hash) = branch_change(&advanced_writer, "left")?;
+    let (right_raw, right_hash) = branch_change(&conflict_writer, "right")?;
+    let left_event = sign_change(
+        &advanced_writer,
+        23,
+        coordinate,
+        advanced_control_id,
+        left_hash,
+        &left_raw,
+    )?;
+    let right_event = sign_change(
+        &conflict_writer,
+        24,
+        coordinate,
+        advanced_control_id,
+        right_hash,
+        &right_raw,
+    )?;
+    write_fixture_with_state_assertions(
+        &root,
+        "projection_conflicting_maps",
+        coordinate,
+        vec![advanced_control.clone(), left_event, right_event],
+        &["NCRDT-CONF-002", "NCRDT-STATE-002"],
+        "projection",
+        vec![StateAssertion {
+            path: Vec::new(),
+            expected: json!({"type":"all_branch_descendants"}),
+        }],
+    )?;
+
+    for (index, (name, expansion)) in [
+        ("none", ExpandMark::None),
+        ("before", ExpandMark::Before),
+        ("after", ExpandMark::After),
+        ("both", ExpandMark::Both),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let mut document = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit)
+            .with_actor(automerge::ActorId::from(advanced_actor.as_bytes().to_vec()));
+        let text = document
+            .put_object(ROOT, "text", ObjType::Text)
+            .map_err(|error| format!("mark text: {error:?}"))?;
+        document
+            .splice_text(&text, 0, 0, "A😀B")
+            .map_err(|error| format!("mark content: {error:?}"))?;
+        document
+            .mark(&text, Mark::new("mode".to_owned(), true, 1, 3), expansion)
+            .map_err(|error| format!("mark expansion: {error:?}"))?;
+        let (raw, hash) = commit_automerge_change(&mut document, "mark projection")?;
+        let event = sign_change(
+            &advanced_writer,
+            25 + u64::try_from(index).map_err(|_| "mark index overflow")?,
+            coordinate,
+            advanced_control_id,
+            hash,
+            &raw,
+        )?;
+        write_fixture_with_state_assertions(
+            &root,
+            &format!("projection_mark_{name}"),
+            coordinate,
+            vec![advanced_control.clone(), event],
+            &["NCRDT-CONF-002", "NCRDT-STATE-002"],
+            "projection",
+            vec![StateAssertion {
+                path: vec![json!("text")],
+                expected: json!({"type":"mark"}),
+            }],
+        )?;
+    }
+
+    let mut deep = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit)
+        .with_actor(automerge::ActorId::from(advanced_actor.as_bytes().to_vec()));
+    let mut parent = deep
+        .put_object(ROOT, "root", ObjType::Map)
+        .map_err(|error| format!("deep root: {error:?}"))?;
+    let mut deep_path = vec![json!("root")];
+    for _ in 0..256 {
+        parent = deep
+            .put_object(&parent, "child", ObjType::Map)
+            .map_err(|error| format!("deep child: {error:?}"))?;
+        deep_path.push(json!("child"));
+    }
+    deep.put(&parent, "value", true)
+        .map_err(|error| format!("deep value: {error:?}"))?;
+    deep_path.push(json!("value"));
+    let (deep_raw, deep_hash) = commit_automerge_change(&mut deep, "deep projection")?;
+    let deep_event = sign_change(
+        &advanced_writer,
+        30,
+        coordinate,
+        advanced_control_id,
+        deep_hash,
+        &deep_raw,
+    )?;
+    write_fixture_with_state_assertions(
+        &root,
+        "projection_deep",
+        coordinate,
+        vec![advanced_control, deep_event],
+        &["NCRDT-CONF-002", "NCRDT-STATE-002"],
+        "projection",
+        vec![StateAssertion {
+            path: deep_path,
+            expected: json!({"type":"bool"}),
+        }],
+    )?;
     Ok(())
+}
+
+fn commit_automerge_change(
+    document: &mut AutoCommit,
+    label: &str,
+) -> Result<(Vec<u8>, ChangeHash), String> {
+    let hash = document
+        .commit()
+        .ok_or_else(|| format!("missing {label} change"))?;
+    let raw = document
+        .get_change_by_hash(&hash)
+        .ok_or_else(|| format!("missing {label} bytes"))?
+        .raw_bytes()
+        .to_vec();
+    Ok((raw, ChangeHash::from_bytes(hash.0)))
 }
 
 fn generate_checkpoint_profile() -> Result<(), String> {
@@ -726,6 +977,7 @@ fn generate_equivocation_profile() -> Result<(), String> {
     let controller = Signer::from_byte(90)?;
     let writer = Signer::from_byte(91)?;
     let dependant = Signer::from_byte(92)?;
+    let transitive = Signer::from_byte(93)?;
     let coordinate: DocumentCoordinate = format!(
         "31624:{}:{}",
         controller.public_key.to_hex(),
@@ -740,7 +992,11 @@ fn generate_equivocation_profile() -> Result<(), String> {
         None,
         control_content_full(
             0,
-            vec![(&writer, None, &["write"]), (&dependant, None, &["write"])],
+            vec![
+                (&writer, None, &["write"]),
+                (&dependant, None, &["write"]),
+                (&transitive, None, &["write"]),
+            ],
             "automerge-change-v1",
         ),
     )?;
@@ -817,6 +1073,46 @@ fn generate_equivocation_profile() -> Result<(), String> {
     let right_hash = ChangeHash::from_bytes(right_hash.0);
     let left_event = sign_change(&writer, 5, coordinate, control_id, left_hash, &left_raw)?;
     let right_event = sign_change(&writer, 6, coordinate, control_id, right_hash, &right_raw)?;
+    let dependant_actor = ActorId::derive(coordinate, dependant.public_key);
+    let mut dependant_document =
+        AuthoringDocument::empty(ActorState::initial(dependant_actor, Default::default()))
+            .map_err(|error| format!("dependant document: {error:?}"))?;
+    let dependant_change = dependant_document
+        .author_change(&[Operation::PutString {
+            key: "dependant".to_owned(),
+            value: "quarantined".to_owned(),
+        }])
+        .map_err(|error| format!("dependant change: {error:?}"))?;
+    let (dependant_raw, dependant_hash) =
+        with_change_dependencies(dependant_change.raw(), &[left_hash], 3)?;
+    let dependant_event = sign_change(
+        &dependant,
+        7,
+        coordinate,
+        control_id,
+        dependant_hash,
+        &dependant_raw,
+    )?;
+    let transitive_actor = ActorId::derive(coordinate, transitive.public_key);
+    let mut transitive_document =
+        AuthoringDocument::empty(ActorState::initial(transitive_actor, Default::default()))
+            .map_err(|error| format!("transitive document: {error:?}"))?;
+    let transitive_change = transitive_document
+        .author_change(&[Operation::PutString {
+            key: "transitive".to_owned(),
+            value: "quarantined".to_owned(),
+        }])
+        .map_err(|error| format!("transitive change: {error:?}"))?;
+    let (transitive_raw, transitive_hash) =
+        with_change_dependencies(transitive_change.raw(), &[dependant_hash], 4)?;
+    let transitive_event = sign_change(
+        &transitive,
+        8,
+        coordinate,
+        control_id,
+        transitive_hash,
+        &transitive_raw,
+    )?;
     let cases = vec![
         (
             "equivocation_first_conflict",
@@ -842,6 +1138,8 @@ fn generate_equivocation_profile() -> Result<(), String> {
                 first_event.clone(),
                 left_event,
                 right_event,
+                dependant_event,
+                transitive_event,
             ],
         ),
         (
@@ -1117,7 +1415,6 @@ fn generate_dependency_profile() -> Result<(), String> {
             value: "accepted".to_owned(),
         }])
         .map_err(|error| format!("base change: {error:?}"))?;
-    let base_state = authored_document.accepted_state_bytes();
     let chain = authored_document
         .author_change(&[Operation::PutString {
             key: "chain".to_owned(),
@@ -1130,54 +1427,40 @@ fn generate_dependency_profile() -> Result<(), String> {
     let chain_raw = chain.raw().to_vec();
 
     let left_actor = ActorId::derive(coordinate, left_writer.public_key);
-    let mut left_document = AuthoringDocument::from_accepted(
-        &base_state,
-        ActorState::initial(left_actor, [base_hash].into_iter().collect()),
-    )
-    .map_err(|error| format!("left document: {error:?}"))?;
+    let mut left_document =
+        AuthoringDocument::empty(ActorState::initial(left_actor, Default::default()))
+            .map_err(|error| format!("left document: {error:?}"))?;
     let left = left_document
         .author_change(&[Operation::PutString {
             key: "left".to_owned(),
             value: "branch".to_owned(),
         }])
         .map_err(|error| format!("left change: {error:?}"))?;
-    let left_hash = left.change_hash();
-    let left_raw = left.raw().to_vec();
+    let (left_raw, left_hash) = with_change_dependencies(left.raw(), &[base_hash], 2)?;
 
     let right_actor = ActorId::derive(coordinate, right_writer.public_key);
-    let mut right_document = AuthoringDocument::from_accepted(
-        &base_state,
-        ActorState::initial(right_actor, [base_hash].into_iter().collect()),
-    )
-    .map_err(|error| format!("right document: {error:?}"))?;
+    let mut right_document =
+        AuthoringDocument::empty(ActorState::initial(right_actor, Default::default()))
+            .map_err(|error| format!("right document: {error:?}"))?;
     let right = right_document
         .author_change(&[Operation::PutString {
             key: "right".to_owned(),
             value: "branch".to_owned(),
         }])
         .map_err(|error| format!("right change: {error:?}"))?;
-    let right_hash = right.change_hash();
-    let right_raw = right.raw().to_vec();
+    let (right_raw, right_hash) = with_change_dependencies(right.raw(), &[base_hash], 2)?;
 
-    let mut merge_document = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit);
-    merge_document
-        .apply_changes(
-            [base_raw.clone(), left_raw.clone(), right_raw.clone()]
-                .into_iter()
-                .map(automerge::Change::from_bytes)
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(|error| format!("decode diamond: {error:?}"))?,
-        )
-        .map_err(|error| format!("apply diamond: {error:?}"))?;
     let merge_actor = ActorId::derive(coordinate, merger.public_key);
-    merge_document.set_actor(automerge::ActorId::from(merge_actor.as_bytes().to_vec()));
+    let mut merge_document = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit)
+        .with_actor(automerge::ActorId::from(merge_actor.as_bytes().to_vec()));
     let merge_hash = merge_document.empty_change(CommitOptions::default());
-    let merge_raw = merge_document
+    let authored_merge_raw = merge_document
         .get_change_by_hash(&merge_hash)
         .ok_or_else(|| "missing merge change".to_owned())?
         .raw_bytes()
         .to_vec();
-    let merge_hash = ChangeHash::from_bytes(merge_hash.0);
+    let (merge_raw, merge_hash) =
+        with_change_dependencies(&authored_merge_raw, &[left_hash, right_hash], 3)?;
 
     let base_event = sign_change(
         &first_writer,
@@ -1275,7 +1558,8 @@ fn generate_dependency_profile() -> Result<(), String> {
             events,
             &["NCRDT-CONF-002", "NCRDT-SEQ-001", "NCRDT-STATE-001"],
             "dependencies",
-        )?;
+        )
+        .map_err(|error| format!("{fixture_id}: {error}"))?;
     }
     Ok(())
 }
@@ -1512,6 +1796,29 @@ fn rehash_change(mut raw: Vec<u8>) -> Result<(Vec<u8>, ChangeHash), String> {
     let digest: [u8; 32] = Sha256::digest(&raw[8..]).into();
     raw[4..8].copy_from_slice(&digest[..4]);
     Ok((raw, ChangeHash::from_bytes(digest)))
+}
+
+fn with_change_dependencies(
+    raw: &[u8],
+    dependencies: &[ChangeHash],
+    start_op: u64,
+) -> Result<(Vec<u8>, ChangeHash), String> {
+    let change = automerge::Change::from_bytes(raw.to_vec())
+        .map_err(|error| format!("decode authored change: {error:?}"))?;
+    let mut expanded = change.decode();
+    expanded.hash = None;
+    expanded.start_op = core::num::NonZeroU64::new(start_op)
+        .ok_or_else(|| "change start operation must be nonzero".to_owned())?;
+    expanded.deps = dependencies
+        .iter()
+        .map(|hash| automerge::ChangeHash(*hash.as_bytes()))
+        .collect();
+    expanded.deps.sort_unstable();
+    let rewritten = automerge::Change::from(expanded);
+    Ok((
+        rewritten.raw_bytes().to_vec(),
+        ChangeHash::from_bytes(rewritten.hash().0),
+    ))
 }
 
 fn generate_control_fork_profile() -> Result<(), String> {
