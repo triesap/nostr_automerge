@@ -11,8 +11,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-MANIFEST = ROOT / "fixtures" / "distribution" / "manifest.json"
-SCHEMA = "nostr_automerge.fixture_distribution.v2"
+MANIFEST = ROOT / "fixtures" / "distribution" / "manifest_v3.json"
+SCHEMA = "nostr_automerge.fixture_distribution.v3"
 PROFILES = {"core", "checkpoint", "malformed", "property"}
 SIGNED_SCHEMA = "nostr_automerge.signed_scenario.v2"
 

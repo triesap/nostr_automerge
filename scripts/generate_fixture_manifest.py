@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the canonical immutable neutral fixture distribution manifest."""
+"""Generate the canonical signed neutral fixture distribution v3."""
 
 from __future__ import annotations
 
@@ -10,51 +10,65 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "fixtures"
+SCENARIOS = FIXTURES / "v1_draft" / "scenarios"
+OUTPUT = FIXTURES / "distribution" / "manifest_v3.json"
+PROFILE_BY_FAMILY = {
+    "checkpoints": "checkpoint",
+    "projection": "property",
+    "versioning": "malformed",
+}
+
+
+def sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def main() -> int:
-    metadata_paths = sorted(FIXTURES.rglob("*.fixture.json"))
-    metadata = [json.loads(path.read_text(encoding="utf-8")) for path in metadata_paths]
-    fixture_ids = {item["fixture_id"] for item in metadata}
-    profiles = {
-        "core": ["actor_derivation_001", "interop_core_001"],
-        "checkpoint": ["interop_checkpoint_001"],
-        "malformed": ["interop_malformed_001", "scenario_nip01_boundaries"],
-        "property": ["interop_property_001"],
-    }
-    profiled = {identifier for values in profiles.values() for identifier in values}
-    if profiled != fixture_ids:
-        raise AssertionError("every fixture must appear in exactly one canonical profile")
-    paths = {
-        Path("fixtures/schema/fixture.schema.json"),
-        Path("fixtures/schema/report.schema.json"),
-        Path("fixtures/schema/scenario.schema.json"),
-        Path("fixtures/schema/interop_attestation.schema.json"),
-        Path("fixtures/v1_draft/manifests/cases.json"),
-        Path("fixtures/v1_draft/controls/scenarios.json"),
-        Path("fixtures/v1_draft/changes/cases.json"),
-        Path("fixtures/v1_draft/integrity/cases.json"),
-        Path("fixtures/v1_draft/checkpoints/cases.json"),
-        Path("fixtures/v1_draft/projection/v2_vectors.json"),
-    }
-    for path, item in zip(metadata_paths, metadata, strict=True):
-        relative = path.relative_to(ROOT)
-        paths.add(relative)
-        paths.update(relative.parent / source["path"] for source in item["inputs"])
-        paths.add(relative.parent / item["expected"]["report_path"])
-    files = []
-    for relative in sorted(paths, key=lambda value: value.as_posix().encode()):
-        data = (ROOT / relative).read_bytes()
-        files.append({"path": relative.as_posix(), "sha256": hashlib.sha256(data).hexdigest()})
+    entries: list[dict[str, object]] = []
+    distributed_paths = set(FIXTURES.joinpath("schema").glob("*.schema.json"))
+    seen_ids: set[str] = set()
+    profiles = {name: [] for name in ("checkpoint", "core", "malformed", "property")}
+
+    for metadata_path in sorted(SCENARIOS.rglob("*.fixture.json")):
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        fixture_id = metadata["fixture_id"]
+        if fixture_id in seen_ids:
+            raise AssertionError(f"duplicate fixture id: {fixture_id}")
+        seen_ids.add(fixture_id)
+        family = metadata_path.parent.name
+        profile = PROFILE_BY_FAMILY.get(family, "core")
+        inputs = [metadata_path.parent / item["path"] for item in metadata["inputs"]]
+        expected = metadata_path.parent / metadata["expected"]["report_path"]
+        paths = [metadata_path, *inputs, expected]
+        if any(not path.is_file() for path in paths):
+            raise AssertionError(f"fixture has a missing artifact: {fixture_id}")
+        distributed_paths.update(paths)
+        profiles[profile].append(fixture_id)
+        entries.append(
+            {
+                "fixture_id": fixture_id,
+                "profile": profile,
+                "requirements": metadata["requirements"],
+                "metadata_path": metadata_path.relative_to(ROOT).as_posix(),
+                "input_paths": [path.relative_to(ROOT).as_posix() for path in inputs],
+                "expected_path": expected.relative_to(ROOT).as_posix(),
+            }
+        )
+
+    files = [
+        {"path": path.relative_to(ROOT).as_posix(), "sha256": sha256(path)}
+        for path in sorted(distributed_paths, key=lambda value: value.relative_to(ROOT).as_posix().encode())
+    ]
     manifest = {
-        "distribution_schema": "nostr_automerge.fixture_distribution.v2",
-        "distribution_id": "draft_2026_08_interop_2",
+        "distribution_schema": "nostr_automerge.fixture_distribution.v3",
+        "distribution_id": "draft_2026_08_signed_neutral_3",
         "protocol_revision": "draft_2026_08",
-        "status": "canonical_neutral_corpus",
+        "status": "canonical_signed_neutral_corpus",
         "profiles": profiles,
+        "fixtures": entries,
         "files": files,
     }
-    (FIXTURES / "distribution/manifest.json").write_text(
+    OUTPUT.write_text(
         json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n",
         encoding="utf-8",
     )
