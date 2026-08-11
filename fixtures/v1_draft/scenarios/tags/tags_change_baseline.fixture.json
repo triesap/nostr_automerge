@@ -1,0 +1,30 @@
+{
+  "expected": {
+    "report_path": "tags_change_baseline.expected.json",
+    "sha256": "ec0f6b3955e7fb91c7115b98731c69952b6bce20d8b314656c29fa3225ed94be"
+  },
+  "fixture_id": "tags_change_baseline",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "tags_change_baseline.input.json",
+      "sha256": "50181cd9b386329e1d145e229b112e024cc8f6aaf58b59b4df0e0e0f51713651"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile tags",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CONF-002",
+    "NCRDT-TAG-001"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}

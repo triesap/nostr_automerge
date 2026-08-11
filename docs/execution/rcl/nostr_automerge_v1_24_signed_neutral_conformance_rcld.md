@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 24: Signed Neutral Conformance
 
 Status: active
-Current checkpoint: `step_469`
+Current checkpoint: `step_470`
 Steps: `step_460` through `step_481`
 Primary findings: `FINDING_014`, `FINDING_015`, `FINDING_016`, `FINDING_017`, `FINDING_020`, `FINDING_021`, `FINDING_023`, `FINDING_025`, `FINDING_026`
 
@@ -45,4 +45,5 @@ selection answers.
 - `step_466`: `cd4226c` — signed change carriers exercise actor sequence starts, predecessors, gaps, rollback, operation counters, nonempty advancement, and empty-change preservation.
 - `step_467`: `cda49fd` — signed causal graphs cover missing and late dependencies, base omission, chains, diamonds, impossible-cycle refusal, and exact dependency-closure application.
 - `step_468`: `b6312b4` — signed interleaved history covers multi-change parent closure, pruned and retained writers, child epochs, terminal controls, and reciprocal successor evidence.
-- `step_469`: this commit — signed conflicts cover initial and later actor equivocation, quarantined branches, duplicate carriers, and exact integrity alerts.
+- `step_469`: `2008c2b` — signed conflicts cover initial and later actor equivocation, quarantined branches, duplicate carriers, and exact integrity alerts.
+- `step_470`: this commit — signed carrier pairs exercise unknown-tag invariance and exact required-tag refusals across manifest, control, change, descriptor, and chunk kinds.

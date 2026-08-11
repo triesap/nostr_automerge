@@ -1,0 +1,49 @@
+{
+  "budget": {
+    "max_bytes": 1000000,
+    "max_items": 1000000
+  },
+  "cancel_after": null,
+  "coordinate": "31624:500676732e52c1533501381e83901d292c5c3d92daf6e106057bed0652a44632:9393939393939393939393939393939393939393939393939393939393939393",
+  "expected_report": {
+    "accepted_changes": [],
+    "canonical_controls": [
+      "7c28efb856a42f3a712955b28dc7e4d578b76367d20d8a56145845f5df71fee6"
+    ],
+    "completion": "complete",
+    "coordinate": "31624:500676732e52c1533501381e83901d292c5c3d92daf6e106057bed0652a44632:9393939393939393939393939393939393939393939393939393939393939393",
+    "disposition_records": [
+      {
+        "disposition": "accepted",
+        "identifier": "7c28efb856a42f3a712955b28dc7e4d578b76367d20d8a56145845f5df71fee6",
+        "namespace": "control_event"
+      }
+    ],
+    "dispositions_digest": "2bbf668ffe86882e5144771d20991c64462c00881c89f0868024e337fde97558",
+    "excluded_changes": [],
+    "fixture_id": "tags_control_unknown",
+    "heads": [],
+    "history_digest": "c0cd6b16702b1e714e3cb8323b47d0057b4ec4bdf6b48ae3b3f700b10b5bb2de",
+    "integrity_alerts": [],
+    "invalid_changes": [],
+    "invalid_events": [],
+    "pending_changes": [],
+    "report_schema": "nostr_automerge.report.v1",
+    "revision": "draft_2026_08",
+    "state_assertions": [],
+    "unsupported_events": []
+  },
+  "fixture_id": "tags_control_unknown",
+  "raw_events": [
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5f64993ccb4044a005e82ba07e78b2815a6a17aa7d5ad62fd59d519778072483\\\",\\\"roles\\\":[\\\"checkpoint\\\",\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":0,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":2,\"id\":\"7c28efb856a42f3a712955b28dc7e4d578b76367d20d8a56145845f5df71fee6\",\"kind\":1625,\"pubkey\":\"500676732e52c1533501381e83901d292c5c3d92daf6e106057bed0652a44632\",\"sig\":\"b8beff33998d497991752f98e7659da2f0f8e4aae90021b83103e67b06d66b3219f08e98141541a7028204304dede344e52a5624175be70c7edfcbf5c887fd98\",\"tags\":[[\"a\",\"31624:500676732e52c1533501381e83901d292c5c3d92daf6e106057bed0652a44632:9393939393939393939393939393939393939393939393939393939393939393\"],[\"future\",\"control\"]]}",
+      "encoding": "utf8"
+    }
+  ],
+  "requirements": [
+    "NCRDT-CONF-002",
+    "NCRDT-TAG-001"
+  ],
+  "revision": "draft_2026_08",
+  "scenario_schema": "nostr_automerge.signed_scenario.v2"
+}

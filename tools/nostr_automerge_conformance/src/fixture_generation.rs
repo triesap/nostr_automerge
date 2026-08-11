@@ -29,11 +29,155 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "dependencies" => generate_dependency_profile(),
         "multi_epoch" => generate_multi_epoch_profile(),
         "equivocation" => generate_equivocation_profile(),
+        "tags" => generate_tag_profile(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
 }
 
 type Member<'a> = (&'a Signer, Option<String>, &'a [&'a str]);
+
+fn generate_tag_profile() -> Result<(), String> {
+    let controller = Signer::from_byte(93)?;
+    let writer = Signer::from_byte(94)?;
+    let document_id = "93".repeat(32);
+    let coordinate: DocumentCoordinate =
+        format!("31624:{}:{document_id}", controller.public_key.to_hex())
+            .parse()
+            .map_err(|_| "invalid tag coordinate".to_owned())?;
+    let control_content = control_content_full(
+        0,
+        vec![(&writer, None, &["checkpoint", "write"])],
+        "automerge-change-v1",
+    );
+    let control = sign_raw_event(
+        &controller,
+        1,
+        1_625,
+        vec![vec!["a".to_owned(), coordinate.to_address()]],
+        control_content.clone(),
+    )?;
+    let control_unknown = sign_raw_event(
+        &controller,
+        2,
+        1_625,
+        vec![
+            vec!["a".to_owned(), coordinate.to_address()],
+            vec!["future".to_owned(), "control".to_owned()],
+        ],
+        control_content.clone(),
+    )?;
+    let control_id = event_id(&control)?;
+    let actor = ActorId::derive(coordinate, writer.public_key);
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+        .map_err(|error| format!("tag document: {error:?}"))?;
+    let change = document
+        .author_change(&[Operation::PutString {
+            key: "tag".to_owned(),
+            value: "invariant".to_owned(),
+        }])
+        .map_err(|error| format!("tag change: {error:?}"))?;
+    let change_tags = || {
+        vec![
+            vec!["a".to_owned(), coordinate.to_address()],
+            vec!["e".to_owned(), control_id.to_hex()],
+            vec!["x".to_owned(), change.change_hash().to_hex()],
+        ]
+    };
+    let change_event = sign_raw_event(
+        &writer,
+        3,
+        1_624,
+        change_tags(),
+        base64::engine::general_purpose::STANDARD.encode(change.raw()),
+    )?;
+    let mut unknown_change_tags = change_tags();
+    unknown_change_tags.push(vec!["future".to_owned(), "change".to_owned()]);
+    let change_unknown = sign_raw_event(
+        &writer,
+        4,
+        1_624,
+        unknown_change_tags,
+        base64::engine::general_purpose::STANDARD.encode(change.raw()),
+    )?;
+    let manifest = sign_raw_event(
+        &controller,
+        5,
+        31_624,
+        vec![
+            vec!["d".to_owned(), document_id],
+            vec!["future".to_owned(), "manifest".to_owned()],
+        ],
+        manifest_content(&control_id.to_hex(), "active", 1),
+    )?;
+    let descriptor = sign_raw_event(
+        &writer,
+        6,
+        1_626,
+        vec![
+            vec!["a".to_owned(), coordinate.to_address()],
+            vec!["future".to_owned(), "descriptor".to_owned()],
+        ],
+        "{}".to_owned(),
+    )?;
+    let chunk = sign_raw_event(
+        &writer,
+        7,
+        1_627,
+        vec![
+            vec!["a".to_owned(), coordinate.to_address()],
+            vec!["future".to_owned(), "chunk".to_owned()],
+        ],
+        "{}".to_owned(),
+    )?;
+    let duplicate_required = sign_raw_event(
+        &controller,
+        8,
+        1_625,
+        vec![
+            vec!["a".to_owned(), coordinate.to_address()],
+            vec!["a".to_owned(), coordinate.to_address()],
+        ],
+        control_content,
+    )?;
+    let cases = vec![
+        ("tags_control_baseline", vec![control.clone()]),
+        ("tags_control_unknown", vec![control_unknown]),
+        ("tags_change_baseline", vec![control.clone(), change_event]),
+        ("tags_change_unknown", vec![control.clone(), change_unknown]),
+        ("tags_manifest_unknown", vec![manifest]),
+        ("tags_descriptor_unknown", vec![control.clone(), descriptor]),
+        ("tags_chunk_unknown", vec![control.clone(), chunk]),
+        ("tags_required_duplicate", vec![duplicate_required]),
+    ];
+    let root = repository_root().join("fixtures/v1_draft/scenarios/tags");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    for (fixture_id, events) in cases {
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            &["NCRDT-CONF-002", "NCRDT-TAG-001"],
+            "tags",
+        )?;
+    }
+    Ok(())
+}
+
+fn sign_raw_event(
+    signer: &Signer,
+    created_at: u64,
+    kind: u16,
+    tags: Vec<Vec<String>>,
+    content: String,
+) -> Result<RawEventBytes, String> {
+    signer.sign(
+        &UnsignedEventDraft::new(created_at, kind, tags, content)
+            .map_err(|error| format!("event draft: {error:?}"))?
+            .prepare(signer.public_key)
+            .map_err(|error| format!("event preimage: {error:?}"))?,
+    )
+}
 
 fn generate_equivocation_profile() -> Result<(), String> {
     let controller = Signer::from_byte(90)?;
