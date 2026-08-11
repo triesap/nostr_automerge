@@ -1,8 +1,8 @@
 # Draft V1 Remediation V3 Execution Ledger
 
 Status: executing
-Active RCLD: 36
-Active checkpoint: `step_622`
+Active RCLD: 37
+Active checkpoint: `step_636`
 Range: `step_534` through `step_659`
 
 Exactly one RCLD and one checkpoint are active. Checkpoints remain contiguous,
@@ -17,8 +17,8 @@ unique, dependency ordered, and independently reviewable.
 | 33 | `step_583`–`step_596` | complete | Dynamic manifest and checkpoint event dispositions |
 | 34 | `step_597`–`step_612` | complete | Complete work budgeting and cancellation |
 | 35 | `step_613`–`step_621` | complete | Implementation-owned normative clarification |
-| 36 | `step_622`–`step_635` | active | Signed conformance and independent TypeScript parity |
-| 37 | `step_636`–`step_647` | pending | Final requirement evidence reconciliation |
+| 36 | `step_622`–`step_635` | complete | Signed conformance and independent TypeScript parity |
+| 37 | `step_636`–`step_647` | active | Final requirement evidence reconciliation |
 | 38 | `step_648`–`step_659` | pending | Final assurance and truthful closure |
 
 ## Completed Checkpoints
@@ -45,6 +45,9 @@ unique, dependency ordered, and independently reviewable.
 - `step_612`: refreshed commit-bound execution evidence, closed Finding 032, and activated RCLD 35.
 - `step_613`–`step_620`: combined as one approved green specification-and-vector slice; clarified causal counters, selected manifests, and dynamic event outcomes while preserving the external NIP snapshot and all 87 requirement identifiers.
 - `step_621`: refreshed commit-bound execution evidence, closed Finding 034, and activated RCLD 36.
+- `step_622`–`step_629`: published and independently reviewed the 103-case signed-v4 distribution; the Rust public engine passed every fixture twice.
+- `step_630`–`step_634`: bound source-free execution contracts and exact Rust/TypeScript profile agreement to both implementation commits, locks, toolchains, and the v4 distribution; all mismatch and leakage mutations were caught.
+- `step_635`: closed signed protocol parity for Findings 028–031 and 034 and activated RCLD 37; Finding 033 remains open only for final requirement-row reconciliation.
 
 ## Scope Adaptations
 

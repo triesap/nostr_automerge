@@ -1,0 +1,32 @@
+{
+  "schema": "nostr_automerge.remediation_v3_phase.v1",
+  "phase": "phase_07_signed_conformance_and_independent_interop",
+  "rcld": 36,
+  "completed_steps": ["step_622", "step_623", "step_624", "step_625", "step_626", "step_627", "step_628", "step_629", "step_630", "step_631", "step_632", "step_633", "step_634", "step_635"],
+  "verified_source_commit": "e5038803bd0727e9692e5725e40936475ed9fb66",
+  "rust_implementation_commit": "50c487f93556aa096d373d2ab357b3995932cd60",
+  "typescript_implementation_commit": "14a86b5b39b9498fd9691f5d9d6e422981b87ec3",
+  "fixture_distribution_sha256": "34bafb476a70dd28f02a036b97b5a978f686fbeea3278681e8804298457c268c",
+  "status": "pass",
+  "finding_status": {"FINDING_028": "closed", "FINDING_029": "closed", "FINDING_030": "closed", "FINDING_031": "closed", "FINDING_033": "advanced", "FINDING_034": "closed"},
+  "verification": [
+    {"command": "cargo check -p nostr_automerge_conformance --all-targets --locked", "result": "pass"},
+    {"command": "python3 scripts/validate_distribution.py", "result": "pass"},
+    {"command": "python3 scripts/validate_fixture_manifest.py --self-test", "result": "pass"},
+    {"command": "python3 scripts/local_gate.py conformance", "result": "pass"},
+    {"command": "pnpm check with NOSTR_AUTOMERGE_FIXTURES", "result": "pass"},
+    {"command": "pnpm signed:profiles with NOSTR_AUTOMERGE_FIXTURES", "result": "pass"},
+    {"command": "python3 scripts/generate_rust_conformance.py", "result": "pass"},
+    {"command": "python3 scripts/compare_interop_profile_v3.py for all profiles", "result": "pass"},
+    {"command": "python3 scripts/validate_interop_attestation_v3.py --self-test", "result": "pass"},
+    {"command": "python3 scripts/validate_typescript_leak_boundary_v3.py --self-test", "result": "pass"}
+  ],
+  "signed_fixture_count": 103,
+  "typescript_test_count": 44,
+  "process_runs_per_fixture_per_engine": 2,
+  "profile_result": "byte_exact_match",
+  "private_source_material_retained": false,
+  "holds": ["final_requirement_evidence_reconciliation", "sustained_native_fuzzing", "independent_external_review", "publication_authority"],
+  "next_rcld": 37,
+  "next_step": "step_636"
+}
