@@ -30,11 +30,67 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "multi_epoch" => generate_multi_epoch_profile(),
         "equivocation" => generate_equivocation_profile(),
         "tags" => generate_tag_profile(),
+        "versioning" => generate_versioning_profile(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
 }
 
 type Member<'a> = (&'a Signer, Option<String>, &'a [&'a str]);
+
+fn generate_versioning_profile() -> Result<(), String> {
+    let controller = Signer::from_byte(95)?;
+    let writer = Signer::from_byte(96)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "95".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid versioning coordinate".to_owned())?;
+    let canonical =
+        control_content_full(0, vec![(&writer, None, &["write"])], "automerge-change-v1");
+    let unknown = canonical.replacen("automerge-change-v1", "automerge-change-v2", 1);
+    let duplicate_version = canonical.replacen("\"v\":1", "\"v\":1,\"v\":2", 1);
+    let duplicate_format = canonical.replacen(
+        "\"format\":\"automerge-change-v1\"",
+        "\"format\":\"automerge-change-v2\",\"format\":\"automerge-change-v1\"",
+        1,
+    );
+    let noncanonical = canonical.replacen(
+        "{\"base_heads\":[],\"format\"",
+        "{\"format\":\"automerge-change-v1\",\"base_heads\":[],\"discarded_format\"",
+        1,
+    );
+    let out_of_range = canonical.replacen("\"v\":1", "\"v\":9007199254740992", 1);
+    let cases = [
+        ("versioning_unknown", unknown),
+        ("versioning_duplicate_v", duplicate_version),
+        ("versioning_duplicate_format", duplicate_format),
+        ("versioning_malformed", "{".to_owned()),
+        ("versioning_noncanonical", noncanonical),
+        ("versioning_out_of_range", out_of_range),
+    ];
+    let root = repository_root().join("fixtures/v1_draft/scenarios/versioning");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    for (index, (fixture_id, content)) in cases.into_iter().enumerate() {
+        let event = sign_raw_event(
+            &controller,
+            1 + u64::try_from(index).map_err(|_| "version index overflow")?,
+            1_625,
+            vec![vec!["a".to_owned(), coordinate.to_address()]],
+            content,
+        )?;
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            coordinate,
+            vec![event],
+            &["NCRDT-CONF-002", "NCRDT-VERSION-001"],
+            "versioning",
+        )?;
+    }
+    Ok(())
+}
 
 fn generate_tag_profile() -> Result<(), String> {
     let controller = Signer::from_byte(93)?;
