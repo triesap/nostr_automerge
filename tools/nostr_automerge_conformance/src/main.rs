@@ -10,17 +10,12 @@ mod expected;
 #[allow(dead_code)]
 mod fixture;
 mod fixture_generation;
-mod interop;
-#[allow(dead_code)]
-mod permutation;
 #[allow(dead_code)]
 mod permutations;
 #[allow(dead_code)]
 mod report_json;
 mod runner;
 mod scenario;
-#[allow(dead_code)]
-mod scenario_variants;
 
 const HELP: &str = "nostr_automerge_conformance\n\nUSAGE:\n    nostr_automerge_conformance run_fixture <path>\n    nostr_automerge_conformance run_corpus <directory> [--family <name>] [--requirement <id>]\n    nostr_automerge_conformance generate_signed_profile <profile>\n    nostr_automerge_conformance --help";
 
@@ -126,6 +121,23 @@ fn main() -> ExitCode {
 #[cfg(test)]
 mod tests {
     use super::run;
+
+    #[test]
+    fn no_parallel_normative_evaluator() {
+        let source = include_str!("main.rs");
+        let forbidden = ["mod ", "interop", ";"].concat();
+        assert!(!source.contains(&forbidden));
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/interop.rs");
+        assert!(!path.exists());
+        for legacy in ["permutation.rs", "scenario_variants.rs"] {
+            assert!(
+                !std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("src")
+                    .join(legacy)
+                    .exists()
+            );
+        }
+    }
 
     #[test]
     fn add_single_fixture_cli_command() {

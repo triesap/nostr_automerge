@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 24: Signed Neutral Conformance
 
 Status: active
-Current checkpoint: `step_475`
+Current checkpoint: `step_476`
 Steps: `step_460` through `step_481`
 Primary findings: `FINDING_014`, `FINDING_015`, `FINDING_016`, `FINDING_017`, `FINDING_020`, `FINDING_021`, `FINDING_023`, `FINDING_025`, `FINDING_026`
 
@@ -51,4 +51,5 @@ selection answers.
 - `step_472`: `bbbcdfa` — signed complete checkpoint evidence covers verified empty and single-history snapshots plus authorization, chunk, Merkle, and snapshot refusals.
 - `step_473`: `0c55f5c` — signed accepted history drives exact scalar, list, text, Unicode, counter, and object-key materialized state assertions.
 - `step_474`: `e11a881` — deterministic signed-byte delivery generation covers canonical, reverse, seeded, duplicate-heavy, dependency-last, control-last, and invalid-first classes.
-- `step_475`: this commit — every normative scenario is required to parse as signed v2 input and route exclusively through CorpusBuilder and ReferenceEvaluator.
+- `step_475`: `f16fd38` — every normative scenario is required to parse as signed v2 input and route exclusively through CorpusBuilder and ReferenceEvaluator.
+- `step_476`: this commit — the simplified parallel evaluator and its abstract fixture inputs are removed, leaving one normative Rust consensus path.

@@ -92,7 +92,7 @@ pub(crate) fn run_fixture(path: &Path) -> Result<Vec<u8>, RunError> {
             serde_json::from_slice(&input).map_err(|_| RunError::Input)?;
         actor_derivation_report(expected.clone(), &input)?
     } else {
-        crate::interop::evaluate(&fixture.fixture_id, &input, &expected)?
+        return Err(RunError::Input);
     };
     compare_expected(&actual, &expected)?;
     write_canonical_report(&actual).map_err(|_| RunError::Expected)
@@ -707,7 +707,7 @@ mod tests {
         assert_eq!(filtered.total, 1);
         assert_eq!(filtered.failed, 0);
         let requirement = run_corpus(paths.clone(), None, Some("NCRDT-ACTOR-001"));
-        assert_eq!(requirement.total, 2);
+        assert_eq!(requirement.total, 1);
         assert_eq!(requirement.failed, 0);
         let failures = run_corpus(
             paths
