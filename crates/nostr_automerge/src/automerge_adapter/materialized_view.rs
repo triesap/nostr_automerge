@@ -927,6 +927,44 @@ mod tests {
     }
 
     #[test]
+    fn nested_conflicting_lists_retain_distinct_index_branches() {
+        let change = |actor: u8, value: &str| {
+            let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+            document.set_actor(ActorId::from([actor; 32]));
+            {
+                let mut tx = document.transaction();
+                let list = tx.put_object(ROOT, "conflict", ObjType::List);
+                let Ok(list) = list else { return None };
+                if tx.insert(&list, 0, value).is_err() {
+                    return None;
+                }
+                tx.commit();
+            }
+            document.get_changes(&[]).first().cloned()
+        };
+        let (Some(left), Some(right)) = (change(22, "left"), change(23, "right")) else {
+            return;
+        };
+        let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+        assert!(document.apply_changes([left, right]).is_ok());
+        let view = MaterializedDocumentView::from_canonical_bytes(document.save_nocompress());
+        let Ok(view) = view else { return };
+        let descendants = view
+            .entries()
+            .iter()
+            .filter(|entry| {
+                matches!(
+                    entry.path(),
+                    [MaterializedPathElement::Key(key), MaterializedPathElement::Branch { .. }, MaterializedPathElement::Index(0)]
+                        if key == "conflict"
+                )
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(descendants.len(), 2);
+        assert_ne!(descendants[0].path(), descendants[1].path());
+    }
+
+    #[test]
     fn project_real_marks_with_utf16_ranges() {
         let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
         document.set_actor(ActorId::from([6; 32]));
