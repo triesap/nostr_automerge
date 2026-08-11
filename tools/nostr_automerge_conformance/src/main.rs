@@ -9,6 +9,7 @@ mod checksum;
 mod expected;
 #[allow(dead_code)]
 mod fixture;
+mod fixture_generation;
 mod interop;
 #[allow(dead_code)]
 mod permutation;
@@ -19,7 +20,7 @@ mod scenario;
 #[allow(dead_code)]
 mod scenario_variants;
 
-const HELP: &str = "nostr_automerge_conformance\n\nUSAGE:\n    nostr_automerge_conformance run_fixture <path>\n    nostr_automerge_conformance run_corpus <directory> [--family <name>] [--requirement <id>]\n    nostr_automerge_conformance --help";
+const HELP: &str = "nostr_automerge_conformance\n\nUSAGE:\n    nostr_automerge_conformance run_fixture <path>\n    nostr_automerge_conformance run_corpus <directory> [--family <name>] [--requirement <id>]\n    nostr_automerge_conformance generate_signed_profile <profile>\n    nostr_automerge_conformance --help";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct CliOutput {
@@ -66,6 +67,20 @@ fn run(args: impl IntoIterator<Item = String>) -> CliOutput {
                 Err(()) => CliOutput {
                     stdout: String::new(),
                     stderr: "corpus command failed\n".to_owned(),
+                    code: 2,
+                },
+            }
+        }
+        [command, profile] if command == "generate_signed_profile" => {
+            match fixture_generation::generate(profile) {
+                Ok(()) => CliOutput {
+                    stdout: format!("generated signed profile: {profile}\n"),
+                    stderr: String::new(),
+                    code: 0,
+                },
+                Err(error) => CliOutput {
+                    stdout: String::new(),
+                    stderr: format!("signed profile generation failed: {error}\n"),
                     code: 2,
                 },
             }

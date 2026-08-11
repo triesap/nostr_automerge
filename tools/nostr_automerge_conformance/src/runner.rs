@@ -94,7 +94,7 @@ pub(crate) fn run_fixture(path: &Path) -> Result<Vec<u8>, RunError> {
     write_canonical_report(&actual).map_err(|_| RunError::Expected)
 }
 
-fn generic_report(
+pub(crate) fn generic_report(
     scenario: ScenarioInput,
     mut output: ExpectedReport,
 ) -> Result<ExpectedReport, RunError> {

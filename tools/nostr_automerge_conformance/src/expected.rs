@@ -35,6 +35,32 @@ pub(crate) struct ExpectedReport {
     pub(crate) completion: String,
 }
 
+impl ExpectedReport {
+    pub(crate) fn empty(fixture_id: &str, coordinate: &str) -> Self {
+        Self {
+            report_schema: "nostr_automerge.report.v1".to_owned(),
+            fixture_id: fixture_id.to_owned(),
+            revision: "draft_2026_08".to_owned(),
+            coordinate: coordinate.to_owned(),
+            canonical_controls: Vec::new(),
+            disposition_records: Vec::new(),
+            accepted_changes: Vec::new(),
+            pending_changes: Vec::new(),
+            excluded_changes: Vec::new(),
+            invalid_changes: Vec::new(),
+            invalid_events: Vec::new(),
+            unsupported_events: Vec::new(),
+            heads: Vec::new(),
+            history_digest: "00".repeat(32),
+            dispositions_digest: "00".repeat(32),
+            integrity_alerts: Vec::new(),
+            checkpoints: Vec::new(),
+            state_assertions: Vec::new(),
+            completion: "complete".to_owned(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct DispositionRecord {

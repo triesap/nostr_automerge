@@ -510,6 +510,7 @@ version = "0.1.0-alpha.0"
 dependencies = [
  "base64",
  "nostr_automerge",
+ "secp256k1",
  "serde",
  "serde_json",
  "sha2 0.10.9",

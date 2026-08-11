@@ -1,0 +1,50 @@
+{
+  "budget": {
+    "max_bytes": 1000000,
+    "max_items": 1000000
+  },
+  "cancel_after": null,
+  "coordinate": "31624:1492bc6a132ac91cb8b9f57d2b809dd2bdb8e1a294d3edbb6c6f7fc03bf11cac:7171717171717171717171717171717171717171717171717171717171717171",
+  "expected_report": {
+    "accepted_changes": [],
+    "canonical_controls": [],
+    "completion": "complete",
+    "coordinate": "31624:1492bc6a132ac91cb8b9f57d2b809dd2bdb8e1a294d3edbb6c6f7fc03bf11cac:7171717171717171717171717171717171717171717171717171717171717171",
+    "disposition_records": [
+      {
+        "diagnostic": "jcs.noncanonical",
+        "disposition": "invalid",
+        "identifier": "3fda88aa5e9dc2359039b456639ce4bc4fc9bc28b5a1675faaada4be7bf0ac3a",
+        "namespace": "event"
+      }
+    ],
+    "dispositions_digest": "72fa8a507ecf6d865287210e1171956093911953e14c7725692cd6f23ddcaa0b",
+    "excluded_changes": [],
+    "fixture_id": "manifest_noncanonical",
+    "heads": [],
+    "history_digest": "dffe915fb4ac8bc0a358138692aabe259375aac21486e9530c519f462a77e4e9",
+    "integrity_alerts": [],
+    "invalid_changes": [],
+    "invalid_events": [
+      "3fda88aa5e9dc2359039b456639ce4bc4fc9bc28b5a1675faaada4be7bf0ac3a"
+    ],
+    "pending_changes": [],
+    "report_schema": "nostr_automerge.report.v1",
+    "revision": "draft_2026_08",
+    "state_assertions": [],
+    "unsupported_events": []
+  },
+  "fixture_id": "manifest_noncanonical",
+  "raw_events": [
+    {
+      "data": "{\"content\":\"{\\\"checkpoint\\\":null,\\\"application\\\":null,\\\"control\\\":\\\"1111111111111111111111111111111111111111111111111111111111111111\\\",\\\"description\\\":null,\\\"format\\\":\\\"automerge-change-v1\\\",\\\"name\\\":null,\\\"relays\\\":[],\\\"status\\\":\\\"active\\\",\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":7,\"id\":\"3fda88aa5e9dc2359039b456639ce4bc4fc9bc28b5a1675faaada4be7bf0ac3a\",\"kind\":31624,\"pubkey\":\"1492bc6a132ac91cb8b9f57d2b809dd2bdb8e1a294d3edbb6c6f7fc03bf11cac\",\"sig\":\"1bc764ee79078f32e4780f74454d3593e5157c8f349df72929e3134e47ff037c827f03e0062ecb6e31e3126f92476e5c3b22c27ace76854f8827df0e0543b907\",\"tags\":[[\"d\",\"7171717171717171717171717171717171717171717171717171717171717171\"]]}",
+      "encoding": "utf8"
+    }
+  ],
+  "requirements": [
+    "NCRDT-CONF-001",
+    "NCRDT-MANIFEST-001"
+  ],
+  "revision": "draft_2026_08",
+  "scenario_schema": "nostr_automerge.signed_scenario.v2"
+}

@@ -1,0 +1,30 @@
+{
+  "expected": {
+    "report_path": "manifest_unsupported_revision.expected.json",
+    "sha256": "76349a514bdafa068bd7f874e38427a43a52fd545924d143c8c6e268936b5eb8"
+  },
+  "fixture_id": "manifest_unsupported_revision",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "manifest_unsupported_revision.input.json",
+      "sha256": "0b7b5d453501003274cfc1a52404044f965044a0b4eb3addda14457e1b2c8cd7"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile manifest",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CONF-001",
+    "NCRDT-MANIFEST-001"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}

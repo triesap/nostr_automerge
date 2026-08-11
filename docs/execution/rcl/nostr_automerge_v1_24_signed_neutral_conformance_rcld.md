@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 24: Signed Neutral Conformance
 
 Status: active
-Current checkpoint: `step_461`
+Current checkpoint: `step_462`
 Steps: `step_460` through `step_481`
 Primary findings: `FINDING_014`, `FINDING_015`, `FINDING_016`, `FINDING_017`, `FINDING_020`, `FINDING_021`, `FINDING_023`, `FINDING_025`, `FINDING_026`
 
@@ -37,4 +37,5 @@ selection answers.
 ## Completed Checkpoints
 
 - `step_460`: `efee313` — signed scenario schema v2 contains only exact raw event encodings, local work controls, authority requirement IDs, and the expected canonical report; caller-declared protocol truth is rejected.
-- `step_461`: this commit — fixture validation recursively rejects abstract validity, selection, acceptance, exclusion, control, change, and synthetic-dependency truth outside the expected report.
+- `step_461`: `b8b3440` — fixture validation recursively rejects abstract validity, selection, acceptance, exclusion, control, change, and synthetic-dependency truth outside the expected report.
+- `step_462`: this commit — seven deterministic signed manifest scenarios execute valid, invalid-latest, tie, extension-tag, unsupported-revision, malformed, and noncanonical evidence through the public engine.
