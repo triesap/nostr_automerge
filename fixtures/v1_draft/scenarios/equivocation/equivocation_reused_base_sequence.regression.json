@@ -1,0 +1,1 @@
+{"expected":{"accepted_base":"retained","integrity_alerts":0,"reused_candidate":"invalid"},"fixture_id":"equivocation_reused_base_sequence","requirements":["R3_EQUIV_003","R3_EQUIV_004","R3_EQUIV_006"],"schema":"nostr_automerge.regression_case.v1"}

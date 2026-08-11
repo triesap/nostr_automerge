@@ -3899,6 +3899,48 @@ fn accepted_base_is_not_quarantined_by_invalid_sequence_reuse() {
 
 #[test]
 #[allow(clippy::expect_used)]
+fn equivocation_regression_case_contracts_are_complete() {
+    let cases = [
+        include_str!(
+            "../../../fixtures/v1_draft/scenarios/equivocation/equivocation_valid_vs_bad_start_op.regression.json"
+        ),
+        include_str!(
+            "../../../fixtures/v1_draft/scenarios/equivocation/equivocation_valid_vs_missing_predecessor.regression.json"
+        ),
+        include_str!(
+            "../../../fixtures/v1_draft/scenarios/equivocation/equivocation_valid_vs_base_omission.regression.json"
+        ),
+        include_str!(
+            "../../../fixtures/v1_draft/scenarios/equivocation/equivocation_reused_base_sequence.regression.json"
+        ),
+        include_str!(
+            "../../../fixtures/v1_draft/scenarios/equivocation/equivocation_two_otherwise_valid.regression.json"
+        ),
+    ];
+    let parsed = cases
+        .into_iter()
+        .map(|case| serde_json::from_str::<serde_json::Value>(case).expect("regression case"))
+        .collect::<Vec<_>>();
+    assert_eq!(parsed.len(), 5);
+    assert!(parsed.iter().all(|case| {
+        case["schema"] == "nostr_automerge.regression_case.v1"
+            && case["requirements"]
+                .as_array()
+                .is_some_and(|requirements| !requirements.is_empty())
+            && case["expected"].is_object()
+    }));
+    assert_eq!(
+        parsed
+            .iter()
+            .filter(|case| case["expected"]["integrity_alerts"] == 0)
+            .count(),
+        4
+    );
+    assert_eq!(parsed[4]["expected"]["integrity_alerts"], 1);
+}
+
+#[test]
+#[allow(clippy::expect_used)]
 fn equivocation_quarantines_transitive_dependants() {
     let controller = TestSigner::from_byte(99);
     let equivocated = TestSigner::from_byte(100);

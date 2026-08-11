@@ -1,0 +1,1 @@
+{"expected":{"accepted_candidate":"valid","integrity_alerts":0,"rejected_candidate":"invalid"},"fixture_id":"equivocation_valid_vs_bad_start_op","requirements":["R3_EQUIV_001","R3_EQUIV_002","R3_EQUIV_006"],"schema":"nostr_automerge.regression_case.v1"}

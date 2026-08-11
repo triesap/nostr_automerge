@@ -1,0 +1,1 @@
+{"expected":{"conflicting_candidates":"excluded","integrity_alerts":1,"prior_history":"retained"},"fixture_id":"equivocation_two_otherwise_valid","requirements":["R3_EQUIV_005","R3_EQUIV_006","R3_EQUIV_009"],"schema":"nostr_automerge.regression_case.v1"}
