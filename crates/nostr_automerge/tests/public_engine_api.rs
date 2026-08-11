@@ -102,12 +102,12 @@ fn projection_failure_is_typed_error() {
 fn conflict_aware_projection_types_are_public_and_exact() {
     use nostr_automerge::{MaterializedMarkExpansion, MaterializedPathElement};
 
-    let branch = MaterializedPathElement::Branch {
-        parent_object_id: "_root".to_owned(),
-        operation_id: "1@actor".to_owned(),
-        child_object_id: "1@actor".to_owned(),
-    };
-    assert!(matches!(branch, MaterializedPathElement::Branch { .. }));
+    let branch = MaterializedPathElement::branch("_root", "1@actor", "1@actor");
+    assert_eq!(
+        branch.branch_identity(),
+        Some(("_root", "1@actor", "1@actor"))
+    );
+    assert!(MaterializedPathElement::Key("key".to_owned()) < branch);
     assert_eq!(
         [
             MaterializedMarkExpansion::None,

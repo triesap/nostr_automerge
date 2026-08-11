@@ -24,6 +24,36 @@ pub enum MaterializedPathElement {
     },
 }
 
+impl MaterializedPathElement {
+    /// Creates one exact conflicting-object branch element.
+    #[must_use]
+    pub fn branch(
+        parent_object_id: impl Into<String>,
+        operation_id: impl Into<String>,
+        child_object_id: impl Into<String>,
+    ) -> Self {
+        Self::Branch {
+            parent_object_id: parent_object_id.into(),
+            operation_id: operation_id.into(),
+            child_object_id: child_object_id.into(),
+        }
+    }
+
+    /// Returns the three stable identities when this is a branch element.
+    #[must_use]
+    pub fn branch_identity(&self) -> Option<(&str, &str, &str)> {
+        let Self::Branch {
+            parent_object_id,
+            operation_id,
+            child_object_id,
+        } = self
+        else {
+            return None;
+        };
+        Some((parent_object_id, operation_id, child_object_id))
+    }
+}
+
 /// Exact Automerge mark boundary expansion semantics.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum MaterializedMarkExpansion {
