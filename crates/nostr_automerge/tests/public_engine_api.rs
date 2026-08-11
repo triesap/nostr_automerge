@@ -4428,6 +4428,7 @@ fn evaluate_single_chunk_variant(
     chunk_coordinate: Option<DocumentCoordinate>,
     chunk_descriptor: Option<EventId>,
     parts: &[(u64, &str, &str)],
+    chunk_data: Option<&[u8]>,
 ) -> nostr_automerge::EvaluationReport {
     let scenario = signed_engine_scenario();
     let descriptor_signer = TestSigner::from_byte(21);
@@ -4465,6 +4466,8 @@ fn evaluate_single_chunk_variant(
         .expect("descriptor")
         .event_id();
     let chunks = parts.iter().map(|(created_at, index, count)| {
+        let data = chunk_data.unwrap_or(&scenario.snapshot);
+        let data_hash: [u8; 32] = Sha256::digest(data).into();
         chunk_signer.sign(
             &UnsignedEventDraft::new(
                 *created_at,
@@ -4478,12 +4481,12 @@ fn evaluate_single_chunk_variant(
                         "e".to_owned(),
                         chunk_descriptor.unwrap_or(descriptor_id).to_hex(),
                     ],
-                    vec!["x".to_owned(), hex32(chunk_hash)],
+                    vec!["x".to_owned(), hex32(data_hash)],
                     vec!["part".to_owned(), (*index).to_owned(), (*count).to_owned()],
                 ],
                 format!(
                     r#"{{"data":"{}","proof":[],"v":1}}"#,
-                    base64::engine::general_purpose::STANDARD.encode(&scenario.snapshot)
+                    base64::engine::general_purpose::STANDARD.encode(data)
                 ),
             )
             .expect("chunk draft")
@@ -4514,8 +4517,13 @@ fn checkpoint_author_and_binding_refusals() {
     .unwrap_or_default();
     assert_eq!(fixture["cases"].as_array().map(Vec::len), Some(3));
     checkpoint_unauthorized_signed_fixture();
-    let wrong_author =
-        evaluate_single_chunk_variant(&TestSigner::from_byte(62), None, None, &[(4, "0", "1")]);
+    let wrong_author = evaluate_single_chunk_variant(
+        &TestSigner::from_byte(62),
+        None,
+        None,
+        &[(4, "0", "1")],
+        None,
+    );
     assert_eq!(
         wrong_author.checkpoints()[0].status(),
         CheckpointVerificationStatus::ChunkAuthorMismatch
@@ -4533,6 +4541,7 @@ fn checkpoint_author_and_binding_refusals() {
         Some(other_coordinate),
         None,
         &[(4, "0", "1")],
+        None,
     );
     assert_eq!(
         wrong_coordinate.checkpoints()[0].status(),
@@ -4544,6 +4553,7 @@ fn checkpoint_author_and_binding_refusals() {
         None,
         Some(EventId::from_bytes([0x77; 32])),
         &[(4, "0", "1")],
+        None,
     );
     assert_eq!(
         wrong_descriptor.checkpoints()[0].status(),
@@ -4560,21 +4570,45 @@ fn checkpoint_index_refusals() {
     assert_eq!(fixture["cases"].as_array().map(Vec::len), Some(5));
     let signer = TestSigner::from_byte(21);
     let duplicate =
-        evaluate_single_chunk_variant(&signer, None, None, &[(4, "0", "1"), (5, "0", "1")]);
+        evaluate_single_chunk_variant(&signer, None, None, &[(4, "0", "1"), (5, "0", "1")], None);
     assert_eq!(
         duplicate.checkpoints()[0].status(),
         CheckpointVerificationStatus::DuplicateChunk
     );
-    let missing = evaluate_single_chunk_variant(&signer, None, None, &[]);
+    let missing = evaluate_single_chunk_variant(&signer, None, None, &[], None);
     assert_eq!(
         missing.checkpoints()[0].status(),
         CheckpointVerificationStatus::MissingChunk
     );
-    let wrong_count = evaluate_single_chunk_variant(&signer, None, None, &[(4, "0", "2")]);
+    let wrong_count = evaluate_single_chunk_variant(&signer, None, None, &[(4, "0", "2")], None);
     assert_eq!(
         wrong_count.checkpoints()[0].status(),
         CheckpointVerificationStatus::ChunkCountMismatch
     );
+    validated_checkpoint_chunk_carrier_enters_corpus();
+}
+
+#[test]
+fn checkpoint_size_refusals() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/checkpoints/negative_sizes.json"
+    ))
+    .unwrap_or_default();
+    assert_eq!(fixture["cases"].as_array().map(Vec::len), Some(3));
+    let scenario = signed_engine_scenario();
+    let shortened = &scenario.snapshot[..scenario.snapshot.len() - 1];
+    let report = evaluate_single_chunk_variant(
+        &TestSigner::from_byte(21),
+        None,
+        None,
+        &[(4, "0", "1")],
+        Some(shortened),
+    );
+    assert_eq!(
+        report.checkpoints()[0].status(),
+        CheckpointVerificationStatus::ChunkSizeMismatch
+    );
+    validated_checkpoint_descriptor_carrier_enters_corpus();
     validated_checkpoint_chunk_carrier_enters_corpus();
 }
 
@@ -4964,6 +4998,16 @@ fn validated_checkpoint_descriptor_carrier_enters_corpus() {
                 if diagnostic.as_str() == expected
         ));
     }
+    let mut invalid_arithmetic = CorpusBuilder::new();
+    assert!(matches!(
+        invalid_arithmetic.ingest(sign(
+            6,
+            valid_tags(),
+            content.replace("\"raw_size\":1", "\"raw_size\":2")
+        )),
+        IngestOutcome::InvalidCarrier { diagnostic, .. }
+            if diagnostic.as_str() == "checkpoint.descriptor"
+    ));
 }
 
 #[test]
@@ -5068,6 +5112,27 @@ fn validated_checkpoint_chunk_carrier_enters_corpus() {
                 if diagnostic.as_str() == expected
         ));
     }
+    let oversized = vec![0_u8; 32_769];
+    let oversized_hash: [u8; 32] = Sha256::digest(&oversized).into();
+    let oversized_tags = vec![
+        vec!["a".to_owned(), coordinate.to_address()],
+        vec!["e".to_owned(), "04".repeat(32)],
+        vec![
+            "x".to_owned(),
+            ChunkHash::from_bytes(oversized_hash).to_hex(),
+        ],
+        vec!["part".to_owned(), "0".to_owned(), "1".to_owned()],
+    ];
+    let oversized_content = format!(
+        r#"{{"data":"{}","proof":[],"v":1}}"#,
+        base64::engine::general_purpose::STANDARD.encode(oversized)
+    );
+    let mut invalid = CorpusBuilder::new();
+    assert!(matches!(
+        invalid.ingest(sign(7, oversized_tags, &oversized_content)),
+        IngestOutcome::InvalidCarrier { diagnostic, .. }
+            if diagnostic.as_str() == "checkpoint.chunk"
+    ));
 }
 
 #[test]
