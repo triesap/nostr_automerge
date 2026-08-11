@@ -30,7 +30,11 @@ REQUIRED = (
     "VERSIONING_AND_COMPATIBILITY.md",
     "WIRE_FORMAT.md",
 )
-ADAPTED = {"ACCEPTANCE_CRITERIA.md"}
+ADAPTED = {
+    "ACCEPTANCE_CRITERIA.md",
+    "AUTOMERGE_PROFILE.md",
+    "NOSTR_AUTOMERGE_V1_SPEC.md",
+}
 
 
 def sha256(path: Path) -> str:

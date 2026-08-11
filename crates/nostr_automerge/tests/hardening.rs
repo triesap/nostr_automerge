@@ -64,6 +64,45 @@ fn projection_v2_vectors_cover_the_complete_neutral_model() {
 }
 
 #[test]
+fn implementation_owned_normative_clarifications_are_explicit() {
+    let companion = include_str!("../../../spec/NOSTR_AUTOMERGE_V1_SPEC.md");
+    let automerge = include_str!("../../../spec/AUTOMERGE_PROFILE.md");
+    let nip_checksum = include_str!("../../../spec/NIP_DRAFT.sha256");
+    for required in [
+        "next_op(C) = 1",
+        "exact accepted dependency closure",
+        "Selected manifest dynamic validity",
+        "Dynamic signed-event dispositions",
+        "never causes fallback to an older event",
+        "`event` namespace",
+        "They never authorize or",
+        "redefine document history.",
+        "does not claim",
+        "external NIP prose was edited",
+    ] {
+        assert!(
+            companion.contains(required),
+            "missing companion clause: {required}"
+        );
+    }
+    for required in [
+        "Actor sequence and Automerge operation counters are distinct",
+        "maximum exclusive next-operation value",
+        "empty change advances actor sequence only",
+        "checked for overflow",
+    ] {
+        assert!(
+            automerge.contains(required),
+            "missing profile clause: {required}"
+        );
+    }
+    assert_eq!(
+        nip_checksum,
+        "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3  NIP_DRAFT.md\n"
+    );
+}
+
+#[test]
 fn projection_v2_typescript_contract_is_independent_and_complete() {
     let contract = include_str!("../../../implementation/TYPESCRIPT_INTEROP_PLAN.md");
     for required in [

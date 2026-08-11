@@ -31,6 +31,12 @@
       "source": "radrootslabs/nostr_automerge",
       "target": "triesap/nostr_automerge",
       "classification": "repository_metadata_only"
+    },
+    {
+      "id": "remediation_v3_implementation_owned_clarification",
+      "source": "external_nip_dependency",
+      "target": "companion_specification_and_automerge_profile",
+      "classification": "implementation_conformance_clarification"
     }
   ],
   "imported_files": [
@@ -43,13 +49,19 @@
     {
       "path": "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
       "source_sha256": "f8a2e53c66fff9b61cab1b1c22074dd513e6525fea4c298b73a91e905c097de7",
-      "target_sha256": "f8a2e53c66fff9b61cab1b1c22074dd513e6525fea4c298b73a91e905c097de7",
-      "adapted": false
+      "target_sha256": "e99322cddb749f53bc6d6d98b42f32922f928c8595138d2296984b1b252bc015",
+      "adapted": true
+    },
+    {
+      "path": "spec/AUTOMERGE_PROFILE.md",
+      "source_sha256": "51315f74ace53e618a22e4e4fa72d5bae41ef1c3e2bb9fe4bd1937d9a38b8400",
+      "target_sha256": "4ff578746cc534b7812563608d7914dd4af1fef32f0e9091db88e017765aa0c6",
+      "adapted": true
     },
     {
       "path": "spec/requirements.json",
       "source_sha256": "19e09e9862fd3a22051a43eec6329a9015e8ea24628fd93d83fca2e2376849c3",
-      "target_sha256": "6db34703bc37ac52d57bc92235d311674cfc259cadf54fe6f55f73ee5d4bfd9e",
+      "target_sha256": "ef9fe4dd87723619f45444c7fb95a7b83e5af80604f272541a26737f7d3033f8",
       "adapted": true
     },
     {

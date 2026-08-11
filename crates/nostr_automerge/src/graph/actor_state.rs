@@ -441,6 +441,98 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn causal_operation_counter_neutral_vectors() {
+        let vectors: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../fixtures/v1_draft/conformance/causal_operation_counter_v1.json"
+        ))
+        .unwrap_or_default();
+        assert_eq!(
+            vectors["schema"],
+            "nostr_automerge.causal_operation_counter.v1"
+        );
+        assert_eq!(
+            vectors["requirements"],
+            serde_json::json!(["NCRDT-SEQ-001", "NCRDT-SEQ-002"])
+        );
+        let cases = vectors["cases"].as_array();
+        assert!(
+            cases.is_some(),
+            "neutral causal-counter cases must be an array"
+        );
+        let Some(cases) = cases else {
+            return;
+        };
+        assert_eq!(cases.len(), 6);
+        for case in cases {
+            let mut states = BTreeMap::new();
+            let mut current_heads = BTreeSet::new();
+            let visible = case["visible_actor_states"].as_array();
+            assert!(visible.is_some(), "visible actor states must be an array");
+            let Some(visible) = visible else {
+                return;
+            };
+            for state in visible {
+                let actor =
+                    u8::try_from(state["actor"].as_u64().unwrap_or_default()).unwrap_or_default();
+                let hash = ChangeHash::from_bytes([actor; 32]);
+                states.insert(
+                    ActorId::from_bytes([actor; 32]),
+                    EpochActorState {
+                        last_sequence: state["last_sequence"].as_u64().unwrap_or_default(),
+                        next_op: state["exclusive_next_op"].as_u64().unwrap_or_default(),
+                        highest_change: hash,
+                    },
+                );
+                current_heads.insert(hash);
+            }
+            let input = &case["candidate"];
+            let actor =
+                u8::try_from(input["actor"].as_u64().unwrap_or_default()).unwrap_or_default();
+            let mut candidate = candidate(
+                actor,
+                input["sequence"].as_u64().unwrap_or_default(),
+                input["start_op"].as_u64().unwrap_or_default(),
+                input["operation_count"].as_u64().unwrap_or_default(),
+            );
+            candidate.dependencies = current_heads.iter().copied().collect();
+            let result = if input["empty"].as_bool() == Some(true) {
+                apply_empty_counter(&mut states, &candidate, &current_heads)
+            } else {
+                apply_nonempty_counter(&mut states, &candidate)
+            };
+            match case["expected"]["result"].as_str() {
+                Some("accepted") => {
+                    assert_eq!(result, Ok(()), "case {}", case["id"]);
+                    assert_eq!(
+                        states
+                            .get(&ActorId::from_bytes([actor; 32]))
+                            .map(|state| state.next_op),
+                        case["expected"]["exclusive_next_op"].as_u64(),
+                        "case {}",
+                        case["id"]
+                    );
+                }
+                Some("operation_counter") => assert_eq!(
+                    result,
+                    Err(ActorStateError::OperationCounter),
+                    "case {}",
+                    case["id"]
+                ),
+                other => {
+                    assert!(
+                        other.is_some_and(|value| {
+                            matches!(value, "accepted" | "operation_counter")
+                        }),
+                        "unknown neutral-vector result: {}",
+                        case["id"]
+                    );
+                    return;
+                }
+            }
+        }
+    }
+
+    #[test]
     fn validate_empty_merge_change_counters() {
         let mut states = BTreeMap::new();
         let first = candidate(1, 1, 1, 2);

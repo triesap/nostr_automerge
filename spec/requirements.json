@@ -132,14 +132,14 @@
     {
       "id": "NCRDT-SEQ-001",
       "section": "Actor sequence and operation counters",
-      "text": "All arithmetic MUST be checked for overflow.",
-      "source": "spec/NIP_DRAFT.md"
+      "text": "For candidate C and its exact accepted dependency closure D(C), next_op(C) MUST be 1 when D(C) contains no operations and otherwise 1 plus the greatest operation counter visible in D(C); C.start_op MUST equal next_op(C), and all arithmetic and conversions MUST be checked for overflow.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
     },
     {
       "id": "NCRDT-SEQ-002",
       "section": "Actor sequence and operation counters",
-      "text": "For `seq > 1`, the accepted dependency closure MUST contain exactly one accepted change from the same actor with `seq - 1`.",
-      "source": "spec/NIP_DRAFT.md"
+      "text": "Actor sequence MUST start at 1 and increment exactly for that actor; for seq greater than 1 the exact accepted dependency closure MUST contain exactly one same-actor change with seq - 1, while an empty change consumes sequence without advancing the causal operation counter.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
     },
     {
       "id": "NCRDT-FANIN-001",
@@ -156,14 +156,14 @@
     {
       "id": "NCRDT-MANIFEST-001",
       "section": "Document manifest: kind `31624`",
-      "text": "- `control` SHOULD be the canonical control tip known to the controller and MUST name a valid control event for this coordinate; - `checkpoint` is `null` or one advisory checkpoint descriptor event id; - `format` is `automerge-change-v1`; - `text_encoding` is `utf16`; - `status` is `active`, `frozen`, or `superseded`; - `successor` is `null` or a document coordinate; - `relays` contains at most 16 unique absolute `ws` or `wss` URLs, sorted by UTF-8 bytes; - `name` is `null` or at most 256 UTF-8 bytes; - `description` is `null` or at most 2,048 UTF-8 bytes; and - `application` is `null` or the object shown above, where `id` is printable ASCII of at most 128 bytes, `schema_version` is at most 64 UTF-8 bytes, and `schema_hash` is `null` or one SHA-256 value.",
-      "source": "spec/NIP_DRAFT.md"
+      "text": "The manifest fields and limits defined by the draft MUST be enforced. Its selected control reference MUST resolve against stateful outcomes for the same coordinate: an accepted control is an available canonical hint, a statefully valid excluded control is an available noncanonical hint, a missing or pending control is pending/unavailable, and any wrong-kind, wrong-coordinate, unsupported, statically invalid, or dynamically invalid control is invalid/unavailable; checkpoint and control references remain advisory and grant no authority.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
     },
     {
       "id": "NCRDT-MANIFEST-002",
       "section": "Document manifest: kind `31624`",
-      "text": "The latest manifest is selected according to NIP-01 before manifest validation. If the selected event is invalid, the manifest is unavailable. Clients MUST NOT fall back to an older manifest because a relay may already have discarded it.",
-      "source": "spec/NIP_DRAFT.md"
+      "text": "The latest manifest MUST be selected according to NIP-01 before validating only that selected event; if it is pending, invalid, unsupported, or otherwise unavailable, clients MUST NOT fall back to an older manifest, and no manifest may select control history, grant authorization, or establish checkpoint trust.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
     },
     {
       "id": "NCRDT-CONTROL-001",
@@ -222,8 +222,8 @@
     {
       "id": "NCRDT-OUTCOME-001",
       "section": "Processing outcomes",
-      "text": "Clients SHOULD keep these local outcome categories distinct:",
-      "source": "spec/NIP_DRAFT.md"
+      "text": "Final manifest, checkpoint-descriptor, and checkpoint-chunk event outcomes MUST be derived from complete dynamic selection, authorization, binding, completeness, and verification results rather than static ingress validity; verified checkpoints remain advisory and MUST NOT authorize or redefine history.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
     },
     {
       "id": "NCRDT-CHECKPOINT-001",
@@ -426,8 +426,8 @@
     {
       "id": "NCRDT-DISPOSITION-001",
       "section": "Protocol dispositions",
-      "text": "Canonical dispositions are accepted, pending, excluded, invalid, and unsupported_revision.",
-      "source": "spec/NIP_DRAFT.md"
+      "text": "Canonical dispositions are accepted, pending, excluded, invalid, and unsupported_revision; every dynamically evaluated manifest, checkpoint descriptor, and checkpoint chunk MUST have exactly one canonical event-namespace disposition record included in the dispositions digest.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
     },
     {
       "id": "NCRDT-COMPLETION-001",

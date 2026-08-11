@@ -68,13 +68,22 @@ encoder, or NIP revision. Do not mask panic risk with catch_unwind.
 
 ## Counters
 
-Per actor:
-- sequence starts 1 and increments exactly;
-- next_op starts 1;
-- nonempty change requires start_op == next_op and advances by operation count;
-- empty change advances sequence only;
-- checked arithmetic only;
-- previous actor sequence must be in accepted dependency closure.
+Actor sequence and Automerge operation counters are distinct:
+
+- actor sequence starts at one and increments exactly for that actor;
+- for sequence greater than one, the exact accepted dependency closure contains
+  exactly one same-actor change with the preceding sequence;
+- for candidate `C`, `next_op(C)` is one when its exact accepted dependency
+  closure contains no operations, and otherwise one plus the greatest visible
+  operation counter;
+- equivalently, `next_op(C)` is the maximum exclusive next-operation value
+  exposed by the changes in that exact closure;
+- `C.start_op` must equal `next_op(C)`;
+- a nonempty change advances the causal counter by its operation count;
+- an empty change advances actor sequence only and preserves the causal
+  counter;
+- unrelated, pending, excluded, invalid, and later changes do not contribute;
+- all arithmetic and integer conversions are checked for overflow.
 
 ## Application
 

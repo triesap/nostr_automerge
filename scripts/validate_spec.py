@@ -15,6 +15,7 @@ VALIDATORS = [
     "validate_nip_snapshot.py", "validate_prior_art.py", "validate_protocol_revision.py",
     "validate_reports.py", "validate_repository_policy.py", "validate_requirements.py",
     "validate_runner_manifest.py",
+    "validate_normative_clarifications_v3.py",
     "validate_requirement_matrix_v3.py",
 ]
 

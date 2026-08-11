@@ -1,0 +1,56 @@
+{
+  "schema": "nostr_automerge.causal_operation_counter.v1",
+  "requirements": ["NCRDT-SEQ-001", "NCRDT-SEQ-002"],
+  "cases": [
+    {
+      "id": "genesis_starts_at_one",
+      "visible_actor_states": [],
+      "candidate": {"actor": 1, "sequence": 1, "start_op": 1, "operation_count": 3, "empty": false},
+      "expected": {"result": "accepted", "exclusive_next_op": 4}
+    },
+    {
+      "id": "concurrent_actors_use_causal_maximum",
+      "visible_actor_states": [
+        {"actor": 1, "last_sequence": 1, "exclusive_next_op": 4},
+        {"actor": 2, "last_sequence": 1, "exclusive_next_op": 8}
+      ],
+      "candidate": {"actor": 3, "sequence": 1, "start_op": 8, "operation_count": 2, "empty": false},
+      "expected": {"result": "accepted", "exclusive_next_op": 10}
+    },
+    {
+      "id": "empty_merge_preserves_causal_maximum",
+      "visible_actor_states": [
+        {"actor": 1, "last_sequence": 1, "exclusive_next_op": 4},
+        {"actor": 2, "last_sequence": 1, "exclusive_next_op": 8}
+      ],
+      "candidate": {"actor": 3, "sequence": 1, "start_op": 8, "operation_count": 0, "empty": true},
+      "expected": {"result": "accepted", "exclusive_next_op": 8}
+    },
+    {
+      "id": "actor_sequence_is_local_counter_is_causal",
+      "visible_actor_states": [
+        {"actor": 1, "last_sequence": 3, "exclusive_next_op": 8},
+        {"actor": 2, "last_sequence": 1, "exclusive_next_op": 4}
+      ],
+      "candidate": {"actor": 2, "sequence": 2, "start_op": 8, "operation_count": 1, "empty": false},
+      "expected": {"result": "accepted", "exclusive_next_op": 9}
+    },
+    {
+      "id": "wrong_causal_start_is_invalid",
+      "visible_actor_states": [
+        {"actor": 1, "last_sequence": 1, "exclusive_next_op": 4},
+        {"actor": 2, "last_sequence": 1, "exclusive_next_op": 8}
+      ],
+      "candidate": {"actor": 3, "sequence": 1, "start_op": 4, "operation_count": 1, "empty": false},
+      "expected": {"result": "operation_counter"}
+    },
+    {
+      "id": "causal_counter_overflow_is_invalid",
+      "visible_actor_states": [
+        {"actor": 1, "last_sequence": 1, "exclusive_next_op": 18446744073709551615}
+      ],
+      "candidate": {"actor": 2, "sequence": 1, "start_op": 18446744073709551615, "operation_count": 1, "empty": false},
+      "expected": {"result": "operation_counter"}
+    }
+  ]
+}
