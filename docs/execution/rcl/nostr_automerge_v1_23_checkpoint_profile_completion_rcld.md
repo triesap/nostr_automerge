@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 23: Checkpoint Profile Completion
 
 Status: active
-Current checkpoint: `step_448`
+Current checkpoint: `step_449`
 Steps: `step_444` through `step_459`
 Primary findings: `FINDING_014`, `FINDING_018`, `FINDING_022`, `FINDING_024`, `FINDING_025`
 
@@ -38,4 +38,5 @@ state, heads, history digest, or materialized state.
 - `step_445`: `edf05de` — the domain-separated, sorted change-set commitment explicitly covers the empty set and is published as a deterministic fixture constant.
 - `step_446`: `49fbf5a` — exact raw signed control, descriptor, and chunk events prove that a nonempty serialized empty snapshot verifies while canonical history stays empty.
 - `step_447`: `e9b4686` — checkpoint verification binds its historical comparison to the exact parent-epoch closure captured at the referenced canonical control.
-- `step_448`: this commit — a named raw signed descriptor fixture proves that an unresolved control is reported as `pending_control`, not invalid or unauthorized.
+- `step_448`: `3e2325a` — a named raw signed descriptor fixture proves that an unresolved control is reported as `pending_control`, not invalid or unauthorized.
+- `step_449`: this commit — a named raw signed descriptor fixture proves that checkpoint authority is derived only from the referenced accepted control.

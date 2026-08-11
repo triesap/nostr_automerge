@@ -4516,6 +4516,19 @@ fn checkpoints_never_authorize_or_redefine_history() {
 }
 
 #[test]
+fn checkpoint_unauthorized_signed_fixture() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/checkpoints/cases.json"
+    ))
+    .unwrap_or_default();
+    assert_eq!(
+        fixture["refusals"]["checkpoint.unauthorized.signed"]["status"].as_str(),
+        Some("unauthorized")
+    );
+    checkpoints_never_authorize_or_redefine_history();
+}
+
+#[test]
 #[allow(clippy::expect_used)]
 fn signed_manifest_selection_validates_latest_without_fallback_or_authority() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!(
