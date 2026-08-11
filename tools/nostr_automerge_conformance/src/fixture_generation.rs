@@ -14,7 +14,7 @@ use secp256k1::{Keypair, Secp256k1, SecretKey};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
-use crate::expected::ExpectedReport;
+use crate::expected::{ExpectedReport, StateAssertion};
 use crate::report_json::write_canonical_report;
 use crate::runner::generic_report;
 use crate::scenario::{RawScenarioEvent, ScenarioBudget, ScenarioInput};
@@ -32,11 +32,118 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "tags" => generate_tag_profile(),
         "versioning" => generate_versioning_profile(),
         "checkpoints" => generate_checkpoint_profile(),
+        "projection" => generate_projection_profile(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
 }
 
 type Member<'a> = (&'a Signer, Option<String>, &'a [&'a str]);
+
+fn generate_projection_profile() -> Result<(), String> {
+    let controller = Signer::from_byte(100)?;
+    let writer = Signer::from_byte(101)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "a0".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid projection coordinate".to_owned())?;
+    let control = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, vec![(&writer, None, &["write"])], "automerge-change-v1"),
+    )?;
+    let control_id = event_id(&control)?;
+    let actor = ActorId::derive(coordinate, writer.public_key);
+    let cases = vec![
+        (
+            "projection_scalar",
+            Operation::PutString {
+                key: "scalar".to_owned(),
+                value: "value".to_owned(),
+            },
+            vec![vec![json!("scalar")]],
+        ),
+        (
+            "projection_list",
+            Operation::CreateList {
+                key: "list".to_owned(),
+                values: vec!["zero".to_owned(), "one".to_owned()],
+            },
+            vec![vec![json!("list"), json!(0)], vec![json!("list"), json!(1)]],
+        ),
+        (
+            "projection_text",
+            Operation::CreateText {
+                key: "text".to_owned(),
+                value: "plain text".to_owned(),
+            },
+            vec![vec![json!("text")]],
+        ),
+        (
+            "projection_unicode",
+            Operation::CreateText {
+                key: "unicode".to_owned(),
+                value: "A😀é終".to_owned(),
+            },
+            vec![vec![json!("unicode")]],
+        ),
+        (
+            "projection_counter",
+            Operation::CreateCounter {
+                key: "counter".to_owned(),
+                value: 7,
+                increment: -2,
+            },
+            vec![vec![json!("counter")]],
+        ),
+        (
+            "projection_object_key",
+            Operation::PutString {
+                key: "nested.value".to_owned(),
+                value: "stable".to_owned(),
+            },
+            vec![vec![json!("nested.value")]],
+        ),
+    ];
+    let root = repository_root().join("fixtures/v1_draft/scenarios/projection");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    for (index, (fixture_id, operation, paths)) in cases.into_iter().enumerate() {
+        let mut document = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+            .map_err(|error| format!("projection document: {error:?}"))?;
+        let change = document
+            .author_change(&[operation])
+            .map_err(|error| format!("projection change: {error:?}"))?;
+        let event = sign_change(
+            &writer,
+            2 + u64::try_from(index).map_err(|_| "projection index overflow")?,
+            coordinate,
+            control_id,
+            change.change_hash(),
+            change.raw(),
+        )?;
+        let assertions = paths
+            .into_iter()
+            .map(|path| StateAssertion {
+                path,
+                expected: json!({"type":"string", "value":"placeholder"}),
+            })
+            .collect();
+        write_fixture_with_state_assertions(
+            &root,
+            fixture_id,
+            coordinate,
+            vec![control.clone(), event],
+            &["NCRDT-CONF-002", "NCRDT-STATE-002"],
+            "projection",
+            assertions,
+        )?;
+    }
+    Ok(())
+}
 
 fn generate_checkpoint_profile() -> Result<(), String> {
     let controller = Signer::from_byte(97)?;
@@ -2083,6 +2190,26 @@ fn write_fixture_with_requirements(
     requirements: &[&str],
     profile: &str,
 ) -> Result<(), String> {
+    write_fixture_with_state_assertions(
+        root,
+        fixture_id,
+        coordinate,
+        events,
+        requirements,
+        profile,
+        Vec::new(),
+    )
+}
+
+fn write_fixture_with_state_assertions(
+    root: &Path,
+    fixture_id: &str,
+    coordinate: DocumentCoordinate,
+    events: Vec<RawEventBytes>,
+    requirements: &[&str],
+    profile: &str,
+    state_assertions: Vec<StateAssertion>,
+) -> Result<(), String> {
     let coordinate_text = coordinate.to_address();
     let scenario = ScenarioInput {
         scenario_schema: "nostr_automerge.scenario.v1".to_owned(),
@@ -2097,11 +2224,9 @@ fn write_fixture_with_requirements(
         },
         cancel_after: None,
     };
-    let report = generic_report(
-        scenario,
-        ExpectedReport::empty(fixture_id, &coordinate_text),
-    )
-    .map_err(|error| error.message().to_owned())?;
+    let mut template = ExpectedReport::empty(fixture_id, &coordinate_text);
+    template.state_assertions = state_assertions;
+    let report = generic_report(scenario, template).map_err(|error| error.message().to_owned())?;
     let expected_bytes = write_canonical_report(&report).map_err(|error| format!("{error:?}"))?;
     let expected_value: Value =
         serde_json::from_slice(&expected_bytes).map_err(|error| error.to_string())?;

@@ -1,0 +1,30 @@
+{
+  "expected": {
+    "report_path": "projection_counter.expected.json",
+    "sha256": "5ba08c879fcdad71701e3fc8a5003ddc0ca8a25bc43e175aa636d7f21edecb3d"
+  },
+  "fixture_id": "projection_counter",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "projection_counter.input.json",
+      "sha256": "9b7d27af17a3fad25a815154865fefe14615517168cf2b4c0d7d8b7f929aafa1"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile projection",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CONF-002",
+    "NCRDT-STATE-002"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}
