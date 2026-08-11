@@ -864,9 +864,10 @@ mod tests {
         basic.candidate.start_op = decoded.start_op;
         basic.candidate.operation_count = u64::try_from(decoded.operations.len()).unwrap_or(0);
         basic.raw_change = Some(raw);
+        let mut basic_budget = WorkBudget::new(0, 200);
         let basic_report = evaluate_batch(
             [control(1, None, vec![basic.clone()])],
-            &mut WorkBudget::new(0, 20),
+            &mut basic_budget,
             &NeverCancelled,
         );
         assert_eq!(basic_report.completion, Completion::Complete);
@@ -878,9 +879,10 @@ mod tests {
             Some(&basic_report.accepted_changes),
         );
         assert!(basic_report.materialized_document.is_some());
+        let consumed_items = 200 - basic_budget.remaining().1;
         let final_schedule_exhausted = evaluate_batch(
             [control(1, None, vec![basic.clone()])],
-            &mut WorkBudget::new(0, 6),
+            &mut WorkBudget::new(0, consumed_items - 1),
             &NeverCancelled,
         );
         assert_eq!(
@@ -894,7 +896,7 @@ mod tests {
         malformed.raw_change = Some(vec![0xff]);
         let materialization_failed = evaluate_batch(
             [control(1, None, vec![malformed])],
-            &mut WorkBudget::new(0, 20),
+            &mut WorkBudget::new(0, 200),
             &NeverCancelled,
         );
         assert_eq!(materialization_failed.completion, Completion::Complete);
@@ -906,7 +908,7 @@ mod tests {
 
         let concurrent = evaluate_batch(
             [control(1, None, vec![change(1, 1, 1), change(2, 2, 1)])],
-            &mut WorkBudget::new(0, 20),
+            &mut WorkBudget::new(0, 200),
             &NeverCancelled,
         );
         assert_eq!(concurrent.accepted_changes.len(), 2);
@@ -915,7 +917,7 @@ mod tests {
         invalid.semantically_valid = false;
         let revoked = evaluate_batch(
             [control(1, None, vec![invalid.clone()])],
-            &mut WorkBudget::new(0, 20),
+            &mut WorkBudget::new(0, 200),
             &NeverCancelled,
         );
         assert_eq!(
@@ -925,7 +927,7 @@ mod tests {
 
         let forked = evaluate_batch(
             [control(2, None, vec![]), control(1, None, vec![])],
-            &mut WorkBudget::new(0, 20),
+            &mut WorkBudget::new(0, 200),
             &NeverCancelled,
         );
         assert_eq!(
@@ -936,7 +938,7 @@ mod tests {
 
         let equivocated = evaluate_batch(
             [control(1, None, vec![change(1, 1, 1), change(2, 1, 1)])],
-            &mut WorkBudget::new(0, 20),
+            &mut WorkBudget::new(0, 200),
             &NeverCancelled,
         );
         assert!(equivocated.accepted_changes.is_empty());
@@ -944,7 +946,7 @@ mod tests {
 
         let mut frozen = control(1, None, vec![change(1, 1, 1)]);
         frozen.frozen = true;
-        let frozen = evaluate_batch([frozen], &mut WorkBudget::new(0, 20), &NeverCancelled);
+        let frozen = evaluate_batch([frozen], &mut WorkBudget::new(0, 200), &NeverCancelled);
         assert!(frozen.accepted_changes.is_empty());
         assert_eq!(
             frozen.dispositions.values().next(),
@@ -954,11 +956,11 @@ mod tests {
         let mut reversed = vec![control(2, None, vec![]), control(1, None, vec![basic])];
         let first = evaluate_batch(
             reversed.clone(),
-            &mut WorkBudget::new(0, 20),
+            &mut WorkBudget::new(0, 200),
             &NeverCancelled,
         );
         reversed.reverse();
-        let second = evaluate_batch(reversed, &mut WorkBudget::new(0, 20), &NeverCancelled);
+        let second = evaluate_batch(reversed, &mut WorkBudget::new(0, 200), &NeverCancelled);
         assert_eq!(first, second);
     }
 

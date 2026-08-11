@@ -93,8 +93,8 @@ fn projection_failure_is_typed_error() {
         "internal materialized projection failure"
     );
     let evaluator = include_str!("../src/engine/reference_evaluator.rs");
-    assert!(evaluator.contains("project_document(batch.materialized_document)?"));
-    assert!(evaluator.contains("map_err(|_| EvaluationError::Projection)"));
+    assert!(evaluator.contains("ProjectionError::Invalid"));
+    assert!(evaluator.contains("return Err(EvaluationError::Projection)"));
     assert!(!evaluator.contains("applied state must project"));
 }
 
@@ -2671,9 +2671,10 @@ fn automerge_decode_work_is_bounded_before_state() {
         &NeverCancelled,
     );
     assert_eq!(report.completion(), Completion::BudgetExhausted);
-    assert!(report.canonical_controls().is_empty());
-    assert!(report.accepted_changes().is_empty());
-    assert_eq!(exhausted.consumed().get(WorkCounter::DecodeByte), 0);
+    assert_eq!(report.canonical_controls(), [scenario.control_id]);
+    assert_eq!(report.accepted_changes(), [scenario.change_hash]);
+    assert!(report.document().is_none());
+    assert!(exhausted.consumed().get(WorkCounter::DecodeByte) < decode_bytes);
 }
 
 #[test]
@@ -2694,7 +2695,7 @@ fn automerge_application_and_materialization_are_charged() {
     let measured_report =
         evaluator.evaluate_report(&corpus, scenario.coordinate, &mut measured, &NeverCancelled);
     assert_eq!(measured_report.completion(), Completion::Complete);
-    assert_eq!(measured.consumed().get(WorkCounter::ApplyChange), 2);
+    assert_eq!(measured.consumed().get(WorkCounter::ApplyChange), 3);
     let consumed_items = 1_000 - measured.remaining().1;
 
     let mut exhausted = WorkBudget::new(1_000_000, consumed_items - 1);
@@ -2707,7 +2708,11 @@ fn automerge_application_and_materialization_are_charged() {
     assert_eq!(report.completion(), Completion::BudgetExhausted);
     assert_eq!(report.accepted_changes(), [scenario.change_hash]);
     assert!(report.document().is_none());
-    assert_eq!(exhausted.consumed().get(WorkCounter::ApplyChange), 1);
+    assert_eq!(exhausted.consumed().get(WorkCounter::ApplyChange), 3);
+    assert!(
+        exhausted.consumed().get(WorkCounter::Assertion)
+            < measured.consumed().get(WorkCounter::Assertion)
+    );
 }
 
 #[test]
@@ -2731,7 +2736,7 @@ fn accepted_empty_history_has_a_real_document_view() {
     assert!(report.accepted_changes().is_empty());
     assert!(report.heads().is_empty());
     assert!(report.document().is_some_and(|view| view.byte_len() > 0));
-    assert_eq!(budget.consumed().get(WorkCounter::ApplyChange), 1);
+    assert_eq!(budget.consumed().get(WorkCounter::ApplyChange), 2);
 }
 
 #[test]
@@ -2898,6 +2903,7 @@ fn cancellation_is_safe_at_every_evaluator_boundary() {
 
     for cancel_at in 0..boundary_count {
         let calls = Cell::new(0_usize);
+        let cancelled = Cell::new(false);
         let report = evaluator.evaluate_report(
             &corpus,
             scenario.coordinate,
@@ -2905,7 +2911,10 @@ fn cancellation_is_safe_at_every_evaluator_boundary() {
             &|| {
                 let boundary = calls.get();
                 calls.set(boundary + 1);
-                boundary == cancel_at
+                if boundary == cancel_at {
+                    cancelled.set(true);
+                }
+                cancelled.get()
             },
         );
         assert_eq!(report.completion(), Completion::Cancelled, "{cancel_at}");

@@ -104,11 +104,11 @@ def resource() -> None:
     run("cargo", "bench", "-p", "nostr_automerge", "--bench", "resource_smoke", "--locked")
     run(
         "cargo", "test", "-p", "nostr_automerge", "--lib",
-        "graph_scaling_regression_models", "--locked",
+        "scaling", "--locked",
     )
     run(
         "cargo", "test", "-p", "nostr_automerge", "--test", "public_engine_api",
-        "every_work_counter_has_exact_before_and_after_boundaries", "--locked",
+        "every_v2_work_counter_boundary", "--locked",
     )
     elapsed = time.monotonic_ns() - started
     maximum_resident_set_bytes = resource_usage.getrusage(

@@ -1,6 +1,7 @@
 # nostr_automerge Draft V1 RCLD 22: Conflict-aware Projection V2
 
-Status: pending RCLD 21
+Status: active
+Current checkpoint: `step_430`
 Steps: `step_430` through `step_443`
 Primary findings: `FINDING_023`, `FINDING_026`
 

@@ -218,7 +218,36 @@ def main() -> int:
         raise AssertionError("tags/revision phase does not activate step_410")
     if tags.get("publication_authorized") is not False:
         raise AssertionError("tags/revision phase cannot authorize publication")
-    print("PASS: phase reports activate tags/revision then step_410")
+
+    work = json.loads((ROOT / "reports/remediation_v2_phase_06.json").read_text())
+    if work.get("phase") != "phase_06_complete_metering_and_panic_elimination" or work.get("status") != "pass":
+        raise AssertionError("metering/panic-elimination phase is not passing")
+    work_steps = [f"step_{step:03d}" for step in range(410, 430)]
+    if work.get("completed_steps") != work_steps or set(work.get("commits", {})) != set(work_steps):
+        raise AssertionError("metering/panic-elimination checkpoint coverage is incomplete")
+    requirements = [f"R2_WORK_{number:03d}" for number in range(1, 6)]
+    if work.get("requirements") != requirements or set(work.get("tests", {})) != set(requirements):
+        raise AssertionError("metering/panic-elimination requirement evidence is incomplete")
+    if any(not work["tests"][requirement] for requirement in requirements):
+        raise AssertionError("metering/panic-elimination phase lacks direct tests")
+    if any(command.get("result") != "pass" for command in work.get("commands", [])):
+        raise AssertionError("metering/panic-elimination phase contains a nonpassing command")
+    for relative, expected in work.get("artifact_sha256", {}).items():
+        if not artifact_matches(work, "reports/remediation_v2_phase_06.json", relative, expected):
+            raise AssertionError(f"metering/panic-elimination artifact hash mismatch: {relative}")
+    for commit_hash in work["commits"].values():
+        if commit_hash == "self":
+            continue
+        commit = subprocess.run(
+            ["git", "cat-file", "-e", f"{commit_hash}^{{commit}}"], cwd=ROOT, check=False
+        )
+        if commit.returncode:
+            raise AssertionError(f"metering/panic-elimination commit does not exist: {commit_hash}")
+    if work.get("next") != {"rcld": 22, "checkpoint": "step_430"}:
+        raise AssertionError("metering/panic-elimination phase does not activate step_430")
+    if work.get("publication_authorized") is not False:
+        raise AssertionError("metering/panic-elimination phase cannot authorize publication")
+    print("PASS: phase reports activate metering/panic elimination then step_430")
     return 0
 
 

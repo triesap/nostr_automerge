@@ -1,8 +1,8 @@
 # Draft V1 Follow-up Remediation Ledger
 
-Current RCLD: 21
-Current checkpoint: `step_429`
-Completed checkpoints: `step_308` through `step_428`
+Current RCLD: 22
+Current checkpoint: `step_430`
+Completed checkpoints: `step_308` through `step_429`
 
 ## Execution Policy
 
@@ -26,8 +26,8 @@ repositories.
 | 18 | `step_356`–`step_381` | complete | Complete causal change acceptance |
 | 19 | `step_382`–`step_398` | complete | Canonical reports and dispositions |
 | 20 | `step_399`–`step_409` | complete | Unknown tags and strict revisions |
-| 21 | `step_410`–`step_429` | active | Metering, cancellation, and panic safety |
-| 22 | `step_430`–`step_443` | pending | Conflict-aware projection v2 |
+| 21 | `step_410`–`step_429` | complete | Metering, cancellation, and panic safety |
+| 22 | `step_430`–`step_443` | active | Conflict-aware projection v2 |
 | 23 | `step_444`–`step_459` | pending | Checkpoint completion |
 | 24 | `step_460`–`step_481` | pending | Signed neutral conformance |
 | 25 | `step_482`–`step_493` | pending | Executed requirement evidence v3 |

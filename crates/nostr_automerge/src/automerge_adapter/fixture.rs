@@ -1,4 +1,19 @@
 use automerge::{ActorId, Automerge, ROOT, TextEncoding, transaction::Transactable};
+
+pub(crate) fn nested_map_bytes(depth: usize) -> Option<Vec<u8>> {
+    let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+    let mut transaction = document.transaction();
+    let mut parent = transaction
+        .put_object(ROOT, "root", automerge::ObjType::Map)
+        .ok()?;
+    for _ in 0..depth {
+        parent = transaction
+            .put_object(&parent, "child", automerge::ObjType::Map)
+            .ok()?;
+    }
+    transaction.commit();
+    Some(document.save_nocompress())
+}
 use sha2::{Digest, Sha256};
 
 use crate::ProtocolRevision;

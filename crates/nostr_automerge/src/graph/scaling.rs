@@ -4,11 +4,11 @@ use super::change_candidate::ChangeCandidate;
 use super::dependency_graph::{GraphBuildError, build_graph};
 use super::equivocation::quarantine_equivocation_descendants;
 use super::schedule::schedule_candidates;
+use crate::automerge_adapter::fixture::nested_map_bytes;
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 use crate::{
     ActorId, ChangeHash, DevicePublicKey, EventId, NeverCancelled, WorkBudget, WorkCounter,
 };
-use automerge::{Automerge, ObjType, ROOT, TextEncoding, transaction::Transactable};
 
 fn hash(value: u16) -> ChangeHash {
     let mut bytes = [0; 32];
@@ -138,19 +138,12 @@ fn expanded_control_actor_conflict_and_projection_models_are_bounded() {
     }
 
     let projection_work = |depth: usize| {
-        let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
-        let mut transaction = document.transaction();
-        let root = transaction.put_object(ROOT, "root", ObjType::Map);
-        let Ok(mut parent) = root else { return 0 };
-        for _ in 0..depth {
-            let child = transaction.put_object(&parent, "child", ObjType::Map);
-            let Ok(child) = child else { return 0 };
-            parent = child;
-        }
-        transaction.commit();
+        let Some(bytes) = nested_map_bytes(depth) else {
+            return 0;
+        };
         let mut budget = WorkBudget::new(u64::MAX, u64::MAX);
         let view = MaterializedDocumentView::from_canonical_bytes_metered(
-            document.save_nocompress(),
+            bytes,
             &mut budget,
             &NeverCancelled,
         );
