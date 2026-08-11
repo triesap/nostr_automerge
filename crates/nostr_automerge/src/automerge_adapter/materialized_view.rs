@@ -1,8 +1,9 @@
 use core::fmt;
+use std::collections::BTreeMap;
 
 use crate::{CancellationCheck, WorkBudget, WorkCounter};
 use automerge::{
-    Automerge, LoadOptions, ObjId, ObjType, OnPartialLoad, ROOT, ReadDoc, ScalarValue,
+    Automerge, Cursor, LoadOptions, ObjId, ObjType, OnPartialLoad, ROOT, ReadDoc, ScalarValue,
     StringMigration, TextEncoding, Value, VerificationMode,
 };
 
@@ -359,6 +360,20 @@ struct ProjectionObject {
     path: Vec<MaterializedPathElement>,
 }
 
+struct MarkDescriptor {
+    start: MarkBoundary,
+    end: MarkBoundary,
+    name: String,
+    value: MaterializedScalar,
+    expansion: MaterializedMarkExpansion,
+    operation_order: (u64, Vec<u8>),
+}
+
+enum MarkBoundary {
+    Start,
+    Operation(String),
+}
+
 struct ProjectionMeter<'a> {
     budget: &'a mut WorkBudget,
     cancellation: &'a dyn CancellationCheck,
@@ -400,6 +415,7 @@ fn project_document_iterative(
     marks: &mut Vec<MaterializedMark>,
     meter: &mut Option<ProjectionMeter<'_>>,
 ) -> Result<(), ProjectionError> {
+    let mark_descriptors = collect_mark_descriptors(document, meter)?;
     let mut pending = vec![ProjectionObject {
         object: ROOT,
         object_type: MaterializedObjectType::Map,
@@ -464,24 +480,179 @@ fn project_document_iterative(
                 }
             }
             MaterializedObjectType::Text => {
+                let object_id = current.object.to_string();
+                let descriptors = mark_descriptors
+                    .get(&object_id)
+                    .map(Vec::as_slice)
+                    .unwrap_or_default();
                 for mark in document
                     .marks(&current.object)
                     .map_err(|_| ProjectionError::Invalid)?
                 {
                     charge_projection(meter, WorkCounter::Assertion, 1)?;
+                    let start = u64::try_from(mark.start).map_err(|_| ProjectionError::Invalid)?;
+                    let end = u64::try_from(mark.end).map_err(|_| ProjectionError::Invalid)?;
+                    let value = scalar(&mark.value)?;
+                    let expansion = resolve_mark_expansion(
+                        document,
+                        &current.object,
+                        descriptors,
+                        mark.name.as_ref(),
+                        &value,
+                        start,
+                        end,
+                    )?;
                     marks.push(MaterializedMark {
                         path: current.path.clone(),
                         name: mark.name.to_string(),
-                        value: scalar(&mark.value)?,
-                        start: u64::try_from(mark.start).map_err(|_| ProjectionError::Invalid)?,
-                        end: u64::try_from(mark.end).map_err(|_| ProjectionError::Invalid)?,
-                        expansion: MaterializedMarkExpansion::None,
+                        value,
+                        start,
+                        end,
+                        expansion,
                     });
                 }
             }
         }
     }
     Ok(())
+}
+
+fn collect_mark_descriptors(
+    document: &Automerge,
+    meter: &mut Option<ProjectionMeter<'_>>,
+) -> Result<BTreeMap<String, Vec<MarkDescriptor>>, ProjectionError> {
+    let mut descriptors = BTreeMap::<String, Vec<MarkDescriptor>>::new();
+    for change in document.get_changes(&[]) {
+        charge_projection(meter, WorkCounter::Assertion, 1)?;
+        let expanded = change.decode();
+        let actor = expanded.actor_id.to_bytes().to_vec();
+        let mut pending = None;
+        for (offset, operation) in expanded.operations.into_iter().enumerate() {
+            charge_projection(meter, WorkCounter::Assertion, 1)?;
+            match operation.action {
+                automerge::legacy::OpType::MarkBegin(mark) => {
+                    let offset = u64::try_from(offset).map_err(|_| ProjectionError::Invalid)?;
+                    let counter = expanded
+                        .start_op
+                        .get()
+                        .checked_add(offset)
+                        .ok_or(ProjectionError::Invalid)?;
+                    pending = Some((
+                        operation.obj.to_string(),
+                        mark_boundary(operation.key)?,
+                        mark.name.to_string(),
+                        scalar(&mark.value)?,
+                        mark.expand,
+                        (counter, actor.clone()),
+                    ));
+                }
+                automerge::legacy::OpType::MarkEnd(after) => {
+                    let Some((object, start, name, value, before, operation_order)) =
+                        pending.take()
+                    else {
+                        return Err(ProjectionError::Invalid);
+                    };
+                    if object != operation.obj.to_string() {
+                        return Err(ProjectionError::Invalid);
+                    }
+                    descriptors.entry(object).or_default().push(MarkDescriptor {
+                        start,
+                        end: mark_boundary(operation.key)?,
+                        name,
+                        value,
+                        expansion: mark_expansion(before, after),
+                        operation_order,
+                    });
+                }
+                _ => {}
+            }
+        }
+        if pending.is_some() {
+            return Err(ProjectionError::Invalid);
+        }
+    }
+    Ok(descriptors)
+}
+
+fn mark_boundary(key: automerge::legacy::Key) -> Result<MarkBoundary, ProjectionError> {
+    match key {
+        automerge::legacy::Key::Seq(automerge::legacy::ElementId::Head) => Ok(MarkBoundary::Start),
+        automerge::legacy::Key::Seq(automerge::legacy::ElementId::Id(operation)) => {
+            Ok(MarkBoundary::Operation(operation.to_string()))
+        }
+        automerge::legacy::Key::Map(_) => Err(ProjectionError::Invalid),
+    }
+}
+
+fn resolve_mark_expansion(
+    document: &Automerge,
+    object: &ObjId,
+    descriptors: &[MarkDescriptor],
+    name: &str,
+    value: &MaterializedScalar,
+    start: u64,
+    end: u64,
+) -> Result<MaterializedMarkExpansion, ProjectionError> {
+    descriptors
+        .iter()
+        .filter_map(|descriptor| {
+            if descriptor.name != name || &descriptor.value != value {
+                return None;
+            }
+            let descriptor_start = boundary_position(document, object, &descriptor.start).ok()?;
+            let descriptor_end = boundary_position(document, object, &descriptor.end).ok()?;
+            (descriptor_start <= start && end <= descriptor_end).then_some(descriptor)
+        })
+        .max_by(|left, right| left.operation_order.cmp(&right.operation_order))
+        .map(|descriptor| descriptor.expansion)
+        .ok_or(ProjectionError::Invalid)
+}
+
+fn boundary_position(
+    document: &Automerge,
+    object: &ObjId,
+    boundary: &MarkBoundary,
+) -> Result<u64, ProjectionError> {
+    let cursor = match boundary {
+        MarkBoundary::Start => Cursor::Start,
+        MarkBoundary::Operation(operation) => {
+            Cursor::try_from(operation.as_str()).map_err(|_| ProjectionError::Invalid)?
+        }
+    };
+    let position = document
+        .get_cursor_position(object, &cursor, None)
+        .map_err(|_| ProjectionError::Invalid)?;
+    let mut position = u64::try_from(position).map_err(|_| ProjectionError::Invalid)?;
+    if matches!(boundary, MarkBoundary::Operation(_)) {
+        let width = match document
+            .get(
+                object,
+                usize::try_from(position).map_err(|_| ProjectionError::Invalid)?,
+            )
+            .map_err(|_| ProjectionError::Invalid)?
+        {
+            Some((Value::Scalar(value), _)) => match value.as_ref() {
+                ScalarValue::Str(value) => u64::try_from(value.encode_utf16().count())
+                    .map_err(|_| ProjectionError::Invalid)?,
+                _ => 1,
+            },
+            Some((Value::Object(_), _)) => 1,
+            None => 0,
+        };
+        position = position
+            .checked_add(width)
+            .ok_or(ProjectionError::Invalid)?;
+    }
+    Ok(position)
+}
+
+const fn mark_expansion(before: bool, after: bool) -> MaterializedMarkExpansion {
+    match (before, after) {
+        (false, false) => MaterializedMarkExpansion::None,
+        (true, false) => MaterializedMarkExpansion::Before,
+        (false, true) => MaterializedMarkExpansion::After,
+        (true, true) => MaterializedMarkExpansion::Both,
+    }
 }
 
 fn project_property(
@@ -602,8 +773,8 @@ mod tests {
     };
 
     use super::{
-        MaterializedDocumentView, MaterializedPathElement, MaterializedScalar, MaterializedValue,
-        ProjectionError,
+        MaterializedDocumentView, MaterializedMarkExpansion, MaterializedPathElement,
+        MaterializedScalar, MaterializedValue, ProjectionError,
     };
     use crate::{NeverCancelled, WorkBudget, WorkCounter};
 
@@ -1037,7 +1208,7 @@ mod tests {
             tx.commit();
         }
         let view = MaterializedDocumentView::from_canonical_bytes(document.save_nocompress());
-        assert!(view.is_ok());
+        assert!(view.is_ok(), "mark projection: {view:?}");
         let Ok(view) = view else { return };
         assert_eq!(view.marks().len(), 1);
         let mark = &view.marks()[0];
@@ -1048,7 +1219,37 @@ mod tests {
         assert_eq!(mark.name(), "bold");
         assert_eq!(mark.value(), &MaterializedScalar::Bool(true));
         assert_eq!((mark.start(), mark.end()), (1, 3));
+        assert_eq!(mark.expansion(), MaterializedMarkExpansion::Both);
         assert_eq!(view.text_utf16_len(mark.path()), Some(5));
+    }
+
+    #[test]
+    fn preserve_every_mark_expansion_mode() {
+        for (actor, upstream, expected) in [
+            (30, ExpandMark::None, MaterializedMarkExpansion::None),
+            (31, ExpandMark::Before, MaterializedMarkExpansion::Before),
+            (32, ExpandMark::After, MaterializedMarkExpansion::After),
+            (33, ExpandMark::Both, MaterializedMarkExpansion::Both),
+        ] {
+            let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+            document.set_actor(ActorId::from([actor; 32]));
+            {
+                let mut tx = document.transaction();
+                let text = tx.put_object(ROOT, "text", ObjType::Text);
+                let Ok(text) = text else { return };
+                assert!(tx.splice_text(&text, 0, 0, "A😀B").is_ok());
+                assert!(
+                    tx.mark(&text, Mark::new("mode".to_owned(), true, 1, 3), upstream,)
+                        .is_ok()
+                );
+                tx.commit();
+            }
+            let view = MaterializedDocumentView::from_canonical_bytes(document.save_nocompress());
+            let Ok(view) = view else { return };
+            assert_eq!(view.marks().len(), 1);
+            assert_eq!(view.marks()[0].expansion(), expected);
+            assert_eq!((view.marks()[0].start(), view.marks()[0].end()), (1, 3));
+        }
     }
 
     #[test]
