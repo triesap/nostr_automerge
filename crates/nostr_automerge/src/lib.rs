@@ -52,7 +52,8 @@ pub use engine::{
 pub use error::HexError;
 pub use evidence::corpus_builder::{
     CorpusBuilder, EvidenceCorpus, EvidenceIdentifier, EvidenceRecord, EvidenceStatus,
-    IngestOutcome, ManifestAvailability, ManifestHints,
+    IngestOutcome, ManifestAvailability, ManifestControlStatus, ManifestHints,
+    ManifestPendingReason, ResolvedManifestAvailability,
 };
 pub use integrity::{
     AlertError, CanonicalControlReorganizationAlert, CheckpointMismatchAlert,

@@ -237,6 +237,7 @@ mod tests {
                 controls[0],
                 AcceptedAtControl::for_test(BTreeSet::from([accepted[0]])),
             )]),
+            statefully_valid_controls: BTreeSet::from([controls[0]]),
             dispositions: BTreeMap::from([(accepted[0], ProtocolDisposition::Accepted)]),
             accepted_changes: BTreeSet::from([accepted[0]]),
             heads: BTreeSet::from([accepted[0]]),

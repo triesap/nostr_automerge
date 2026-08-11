@@ -11,6 +11,7 @@ use crate::control::candidate::{
 use crate::control::genesis::classify_genesis;
 use crate::control::reorganization::{ControlChainSummary, detect_reorganization};
 use crate::control::validate::ControlEnvelope;
+use crate::evidence::corpus_builder::ManifestSelectionState;
 use crate::evidence::event::EventEvidence;
 use crate::graph::change_candidate::{CandidateCarrier, ChangeCandidate};
 use crate::reference::epoch_engine::AcceptedAtControl;
@@ -19,7 +20,8 @@ use crate::types::role::Role;
 use crate::{
     CancellationCheck, ChangeHash, CheckpointVerificationResult, CheckpointVerificationStatus,
     Completion, DocumentCoordinate, EvidenceCorpus, EvidenceIdentifier, EvidenceStatus,
-    ProtocolDisposition, ProtocolRevision, WorkBudget, WorkCounter,
+    ManifestControlStatus, ManifestPendingReason, ProtocolDisposition, ProtocolRevision,
+    ResolvedManifestAvailability, WorkBudget, WorkCounter,
 };
 
 use super::evaluation_report::{
@@ -94,9 +96,15 @@ impl ReferenceEvaluator {
             });
         }
         let canonical_controls = batch.canonical_controls;
-        let mut control_dispositions = preliminary_control_dispositions;
-        control_dispositions.extend(batch.control_dispositions);
-        let control_dispositions = control_dispositions.into_iter().collect::<Vec<_>>();
+        let mut control_disposition_map = preliminary_control_dispositions;
+        control_disposition_map.extend(batch.control_dispositions);
+        let manifest = resolve_selected_manifest(
+            corpus,
+            coordinate,
+            &control_disposition_map,
+            &batch.statefully_valid_controls,
+        );
+        let control_dispositions = control_disposition_map.into_iter().collect::<Vec<_>>();
         let mut disposition_records = control_dispositions
             .iter()
             .map(|(event_id, disposition)| {
@@ -204,6 +212,7 @@ impl ReferenceEvaluator {
             history_digest,
             dispositions_digest,
             integrity_alerts: batch.integrity_alerts,
+            manifest,
             completion: batch.completion,
             failure: batch.failure,
             document,
@@ -240,6 +249,87 @@ impl ReferenceEvaluator {
             current.push_integrity_alert(alert);
         }
         Ok(current)
+    }
+}
+
+fn resolve_selected_manifest(
+    corpus: &EvidenceCorpus,
+    coordinate: DocumentCoordinate,
+    control_dispositions: &std::collections::BTreeMap<crate::EventId, ProtocolDisposition>,
+    statefully_valid_controls: &std::collections::BTreeSet<crate::EventId>,
+) -> ResolvedManifestAvailability {
+    let Some(selection) = corpus.selected_manifest_selection(coordinate) else {
+        return ResolvedManifestAvailability::Missing;
+    };
+    let hints = match selection.state {
+        ManifestSelectionState::Available(hints) => hints,
+        ManifestSelectionState::Unavailable(diagnostic) => {
+            return ResolvedManifestAvailability::Unavailable {
+                event_id: selection.event_id,
+                control: None,
+                diagnostic,
+            };
+        }
+    };
+    let control_id = hints.control();
+    let control = match corpus.events.get(&control_id) {
+        Some(EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::Control(control),
+            ..
+        }) => control,
+        Some(EventEvidence::InvalidCarrier { diagnostic, .. })
+        | Some(EventEvidence::UnsupportedRevision { diagnostic, .. }) => {
+            return ResolvedManifestAvailability::Unavailable {
+                event_id: selection.event_id,
+                control: Some(control_id),
+                diagnostic: *diagnostic,
+            };
+        }
+        Some(_) => {
+            return ResolvedManifestAvailability::Unavailable {
+                event_id: selection.event_id,
+                control: Some(control_id),
+                diagnostic: crate::DiagnosticCode::registered("carrier.kind"),
+            };
+        }
+        None => {
+            return ResolvedManifestAvailability::Pending {
+                hints,
+                reason: ManifestPendingReason::MissingControl,
+            };
+        }
+    };
+    if control.coordinate() != coordinate {
+        return ResolvedManifestAvailability::Unavailable {
+            event_id: selection.event_id,
+            control: Some(control_id),
+            diagnostic: crate::DiagnosticCode::registered("carrier.coordinate"),
+        };
+    }
+    match control_dispositions.get(&control_id).copied() {
+        Some(ProtocolDisposition::Accepted) => ResolvedManifestAvailability::Available {
+            hints,
+            control_status: ManifestControlStatus::Canonical,
+        },
+        Some(ProtocolDisposition::Excluded) if statefully_valid_controls.contains(&control_id) => {
+            ResolvedManifestAvailability::Available {
+                hints,
+                control_status: ManifestControlStatus::Noncanonical,
+            }
+        }
+        Some(ProtocolDisposition::Invalid | ProtocolDisposition::UnsupportedRevision) => {
+            ResolvedManifestAvailability::Unavailable {
+                event_id: selection.event_id,
+                control: Some(control_id),
+                diagnostic: crate::DiagnosticCode::registered("control.structure"),
+            }
+        }
+        Some(ProtocolDisposition::Pending | ProtocolDisposition::Excluded) | None => {
+            ResolvedManifestAvailability::Pending {
+                hints,
+                reason: ManifestPendingReason::ControlPending,
+            }
+        }
     }
 }
 

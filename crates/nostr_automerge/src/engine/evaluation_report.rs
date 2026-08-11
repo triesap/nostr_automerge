@@ -4,6 +4,7 @@ use std::collections::BTreeSet;
 use crate::{
     ChangeHash, CheckpointVerificationResult, Completion, DispositionsDigest, DocumentCoordinate,
     EventId, EvidenceRecord, HistoryDigest, IntegrityAlert, ProtocolDisposition,
+    ResolvedManifestAvailability,
 };
 
 /// Stable category explaining why an evaluation did not complete.
@@ -165,6 +166,7 @@ pub struct EvaluationReport {
     history_digest: HistoryDigest,
     dispositions_digest: DispositionsDigest,
     integrity_alerts: Vec<IntegrityAlert>,
+    manifest: ResolvedManifestAvailability,
     completion: Completion,
     failure: Option<EvaluationFailure>,
     document: Option<MaterializedDocumentView>,
@@ -186,6 +188,7 @@ pub(crate) struct EvaluationReportParts {
     pub(crate) history_digest: HistoryDigest,
     pub(crate) dispositions_digest: DispositionsDigest,
     pub(crate) integrity_alerts: Vec<IntegrityAlert>,
+    pub(crate) manifest: ResolvedManifestAvailability,
     pub(crate) completion: Completion,
     pub(crate) failure: Option<EvaluationFailure>,
     pub(crate) document: Option<MaterializedDocumentView>,
@@ -294,6 +297,7 @@ impl EvaluationReport {
             history_digest: parts.history_digest,
             dispositions_digest: parts.dispositions_digest,
             integrity_alerts: parts.integrity_alerts,
+            manifest: parts.manifest,
             completion: parts.completion,
             failure: parts.failure,
             document: parts.document,
@@ -372,6 +376,12 @@ impl EvaluationReport {
         &self.checkpoints
     }
 
+    /// Returns replacement-first advisory manifest availability after dynamic control resolution.
+    #[must_use]
+    pub const fn manifest(&self) -> &ResolvedManifestAvailability {
+        &self.manifest
+    }
+
     /// Returns the normative history digest.
     #[must_use]
     pub const fn history_digest(&self) -> HistoryDigest {
@@ -433,6 +443,7 @@ impl fmt::Debug for EvaluationReport {
             .field("evidence_count", &self.evidence.len())
             .field("checkpoint_count", &self.checkpoints.len())
             .field("alert_count", &self.integrity_alerts.len())
+            .field("manifest", &self.manifest)
             .field("completion", &self.completion)
             .field("failure", &self.failure)
             .field("has_document", &self.document.is_some())
@@ -479,6 +490,7 @@ mod tests {
             history_digest: HistoryDigest::from_bytes([3; 32]),
             dispositions_digest: DispositionsDigest::from_bytes([4; 32]),
             integrity_alerts: vec![],
+            manifest: crate::ResolvedManifestAvailability::Missing,
             completion: Completion::Complete,
             failure: None,
             document: None,
@@ -525,6 +537,7 @@ mod tests {
             history_digest: HistoryDigest::from_bytes([3; 32]),
             dispositions_digest: DispositionsDigest::from_bytes([4; 32]),
             integrity_alerts: vec![],
+            manifest: crate::ResolvedManifestAvailability::Missing,
             completion: Completion::Cancelled,
             failure: Some(super::EvaluationFailure::Cancelled),
             document: None,

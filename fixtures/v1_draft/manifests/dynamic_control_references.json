@@ -1,0 +1,20 @@
+{
+  "schema": "nostr-automerge-manifest-dynamic-cases-v1",
+  "requirements": [
+    "R3_MANIFEST_001",
+    "R3_MANIFEST_002",
+    "R3_MANIFEST_003",
+    "R3_MANIFEST_004",
+    "R3_MANIFEST_005",
+    "R3_MANIFEST_006",
+    "R3_MANIFEST_008"
+  ],
+  "cases": [
+    "missing_control_no_fallback",
+    "wrong_coordinate_control",
+    "dynamically_invalid_control",
+    "valid_noncanonical_control",
+    "accepted_canonical_control"
+  ],
+  "orders": ["source", "reverse", "manifest_first"]
+}

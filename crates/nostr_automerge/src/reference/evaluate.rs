@@ -48,6 +48,7 @@ pub(crate) struct BatchEvaluationReport {
     pub(crate) canonical_controls: Vec<EventId>,
     pub(crate) control_dispositions: BTreeMap<EventId, ProtocolDisposition>,
     pub(crate) accepted_at_control: BTreeMap<EventId, AcceptedAtControl>,
+    pub(crate) statefully_valid_controls: BTreeSet<EventId>,
     pub(crate) dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
     pub(crate) accepted_changes: BTreeSet<ChangeHash>,
     pub(crate) heads: BTreeSet<ChangeHash>,
@@ -62,6 +63,7 @@ struct PreservedBatchProgress {
     canonical_controls: Vec<EventId>,
     control_dispositions: BTreeMap<EventId, ProtocolDisposition>,
     accepted_at_control: BTreeMap<EventId, AcceptedAtControl>,
+    statefully_valid_controls: BTreeSet<EventId>,
     dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
     accepted_changes: BTreeSet<ChangeHash>,
     integrity_alerts: Vec<IntegrityAlert>,
@@ -115,6 +117,7 @@ pub(crate) fn evaluate_batch(
     let mut failure = None;
     let mut accepted_changes = BTreeSet::new();
     let mut accepted_at_control = BTreeMap::new();
+    let mut statefully_valid_controls = BTreeSet::new();
     let mut parent_epoch_result: Option<EpochEvaluationResult> = None;
     let mut parent_id = None;
     while let Some(children) = by_parent.get(&parent_id) {
@@ -213,6 +216,9 @@ pub(crate) fn evaluate_batch(
                 })
             })
             .collect::<Vec<_>>();
+        statefully_valid_controls.extend(outcomes.iter().filter_map(|outcome| {
+            (outcome.disposition() == ProtocolDisposition::Accepted).then_some(outcome.event_id())
+        }));
         for outcome in &outcomes {
             if outcome.disposition() != ProtocolDisposition::Accepted {
                 control_dispositions.insert(outcome.event_id(), outcome.disposition());
@@ -297,6 +303,7 @@ pub(crate) fn evaluate_batch(
                 canonical_controls,
                 control_dispositions,
                 accepted_at_control,
+                statefully_valid_controls,
                 dispositions,
                 accepted_changes,
                 integrity_alerts,
@@ -329,6 +336,7 @@ pub(crate) fn evaluate_batch(
                     canonical_controls,
                     control_dispositions,
                     accepted_at_control,
+                    statefully_valid_controls,
                     dispositions,
                     accepted_changes,
                     integrity_alerts,
@@ -363,6 +371,7 @@ pub(crate) fn evaluate_batch(
                 canonical_controls,
                 control_dispositions,
                 accepted_at_control,
+                statefully_valid_controls,
                 dispositions,
                 accepted_changes,
                 integrity_alerts,
@@ -381,6 +390,7 @@ pub(crate) fn evaluate_batch(
                         canonical_controls,
                         control_dispositions,
                         accepted_at_control,
+                        statefully_valid_controls,
                         dispositions,
                         accepted_changes,
                         integrity_alerts,
@@ -406,6 +416,7 @@ pub(crate) fn evaluate_batch(
                     canonical_controls,
                     control_dispositions,
                     accepted_at_control,
+                    statefully_valid_controls,
                     dispositions,
                     accepted_changes,
                     integrity_alerts,
@@ -421,6 +432,7 @@ pub(crate) fn evaluate_batch(
         canonical_controls,
         control_dispositions,
         accepted_at_control,
+        statefully_valid_controls,
         dispositions,
         accepted_changes,
         heads,
@@ -721,6 +733,7 @@ fn incomplete_report(
         canonical_controls: progress.canonical_controls,
         control_dispositions: progress.control_dispositions,
         accepted_at_control: progress.accepted_at_control,
+        statefully_valid_controls: progress.statefully_valid_controls,
         dispositions: progress.dispositions,
         accepted_changes: progress.accepted_changes,
         heads: BTreeSet::new(),

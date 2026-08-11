@@ -423,7 +423,10 @@ impl EvidenceCorpus {
 
     /// Iterates over advisory acquisition hints from fully validated manifests.
     ///
-    /// These hints never select canonical controls, changes, or checkpoints.
+    /// This is a static replacement-selection query and does not resolve the
+    /// referenced control. These hints never select canonical controls,
+    /// changes, or checkpoints. Use [`crate::EvaluationReport::manifest`] for
+    /// the replacement-first stateful result.
     pub fn manifest_hints(&self) -> impl Iterator<Item = ManifestHints> + '_ {
         selected_manifests(&self.events)
             .into_values()
@@ -433,10 +436,12 @@ impl EvidenceCorpus {
             })
     }
 
-    /// Returns NIP-01 replacement selection and validation for one coordinate.
+    /// Returns static NIP-01 replacement selection and validation for one coordinate.
     ///
     /// An invalid latest event is unavailable; this never falls back to an
-    /// older manifest and never grants control or checkpoint authority.
+    /// older manifest and never grants control or checkpoint authority. This
+    /// query does not resolve the selected manifest's control reference; use
+    /// [`crate::EvaluationReport::manifest`] for that dynamic result.
     #[must_use]
     pub fn selected_manifest(&self, coordinate: crate::DocumentCoordinate) -> ManifestAvailability {
         let Some(selection) = selected_manifests(&self.events).remove(&coordinate) else {
@@ -449,6 +454,13 @@ impl EvidenceCorpus {
                 diagnostic,
             },
         }
+    }
+
+    pub(crate) fn selected_manifest_selection(
+        &self,
+        coordinate: crate::DocumentCoordinate,
+    ) -> Option<ManifestSelection> {
+        selected_manifests(&self.events).remove(&coordinate)
     }
 
     /// Returns true when no evidence of any class was retained.
@@ -602,6 +614,54 @@ pub enum ManifestAvailability {
     },
 }
 
+/// Dynamic status of the selected manifest's advisory control reference.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum ManifestControlStatus {
+    /// The referenced control is accepted on the canonical control chain.
+    Canonical,
+    /// The referenced control is statefully valid but lost canonical selection.
+    Noncanonical,
+}
+
+/// Reason that a selected manifest's control reference is not yet resolvable.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum ManifestPendingReason {
+    /// The referenced control event is not present in retained evidence.
+    MissingControl,
+    /// The referenced control cannot yet receive a conclusive stateful outcome.
+    ControlPending,
+}
+
+/// Replacement-first selected-manifest result after stateful control evaluation.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ResolvedManifestAvailability {
+    /// No signed addressable manifest was retained for the evaluated coordinate.
+    Missing,
+    /// The selected manifest is usable as advisory discovery data.
+    Available {
+        /// The selected manifest's non-authoritative acquisition hints.
+        hints: ManifestHints,
+        /// Whether the hinted control is canonical or valid but noncanonical.
+        control_status: ManifestControlStatus,
+    },
+    /// The selected manifest awaits conclusive control evidence; no older event is used.
+    Pending {
+        /// The selected manifest's non-authoritative acquisition hints.
+        hints: ManifestHints,
+        /// Why the control reference cannot yet be resolved.
+        reason: ManifestPendingReason,
+    },
+    /// The selected manifest or its referenced control is invalid or unavailable.
+    Unavailable {
+        /// The selected signed manifest event identifier.
+        event_id: EventId,
+        /// The referenced control when static manifest validation exposed it.
+        control: Option<EventId>,
+        /// The stable validation or dynamic-resolution diagnostic.
+        diagnostic: DiagnosticCode,
+    },
+}
+
 impl ManifestHints {
     pub(crate) fn new(
         event_id: EventId,
@@ -651,14 +711,14 @@ impl ManifestHints {
 }
 
 #[derive(Clone)]
-struct ManifestSelection {
-    created_at: u64,
-    event_id: EventId,
-    state: ManifestSelectionState,
+pub(crate) struct ManifestSelection {
+    pub(crate) created_at: u64,
+    pub(crate) event_id: EventId,
+    pub(crate) state: ManifestSelectionState,
 }
 
 #[derive(Clone)]
-enum ManifestSelectionState {
+pub(crate) enum ManifestSelectionState {
     Available(ManifestHints),
     Unavailable(DiagnosticCode),
 }

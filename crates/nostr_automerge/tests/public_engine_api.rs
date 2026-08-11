@@ -12,10 +12,10 @@ use nostr_automerge::authoring::{ActorState, AuthoringDocument, Operation, Unsig
 use nostr_automerge::{
     ActorId, CancellationCheck, ChangeHash, CheckpointVerificationStatus, ChunkHash, Completion,
     CorpusBuilder, DocumentCoordinate, EvaluationError, EvaluationFailure, EvaluationReport,
-    EventId, EvidenceCorpus, EvidenceStatus, IngestOutcome, MaterializedPathElement,
-    MaterializedScalar, MaterializedValue, NeverCancelled, ProtocolDisposition,
-    ProtocolItemIdentifier, ProtocolRevision, RawEventBytes, ReferenceEvaluator,
-    VerifiedNip01Event, WorkBudget, WorkCounter,
+    EventId, EvidenceCorpus, EvidenceStatus, IngestOutcome, ManifestControlStatus,
+    ManifestPendingReason, MaterializedPathElement, MaterializedScalar, MaterializedValue,
+    NeverCancelled, ProtocolDisposition, ProtocolItemIdentifier, ProtocolRevision, RawEventBytes,
+    ReferenceEvaluator, ResolvedManifestAvailability, VerifiedNip01Event, WorkBudget, WorkCounter,
 };
 use sha2::{Digest as _, Sha256};
 use support::test_signer::TestSigner;
@@ -5680,6 +5680,187 @@ fn signed_manifest_selection_validates_latest_without_fallback_or_authority() {
         nostr_automerge::ManifestAvailability::Available(hints)
             if hints.event_id() == expected
     ));
+}
+
+#[allow(clippy::expect_used)]
+fn signed_manifest_hint(
+    controller: &TestSigner,
+    coordinate: DocumentCoordinate,
+    created_at: u64,
+    control: EventId,
+) -> RawEventBytes {
+    let content = format!(
+        r#"{{"application":null,"checkpoint":null,"control":"{}","description":null,"format":"automerge-change-v1","name":null,"relays":[],"status":"active","successor":null,"text_encoding":"utf16","v":1}}"#,
+        control.to_hex()
+    );
+    controller.sign(
+        &UnsignedEventDraft::new(
+            created_at,
+            31_624,
+            vec![vec!["d".to_owned(), coordinate.document_id().to_hex()]],
+            content,
+        )
+        .expect("manifest draft")
+        .prepare(controller.public_key())
+        .expect("manifest preimage"),
+    )
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn selected_manifest_control_references_are_resolved_after_replacement() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/manifests/dynamic_control_references.json"
+    ))
+    .expect("dynamic manifest fixture contract");
+    assert_eq!(fixture["cases"].as_array().map(Vec::len), Some(5));
+    assert_eq!(fixture["orders"].as_array().map(Vec::len), Some(3));
+
+    let controller = TestSigner::from_byte(122);
+    let device = TestSigner::from_byte(123);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "c2".repeat(32)
+    )
+    .parse()
+    .expect("manifest coordinate");
+    let members = vec![(device.public_key().to_hex(), vec!["write"])];
+    let left = signed_acl_control(&controller, coordinate, 1, None, 0, members.clone());
+    let right = signed_acl_control(&controller, coordinate, 2, None, 0, members.clone());
+    let left_id = VerifiedNip01Event::verify(left.clone())
+        .expect("left control")
+        .event_id();
+    let right_id = VerifiedNip01Event::verify(right.clone())
+        .expect("right control")
+        .event_id();
+    let canonical_id = left_id.min(right_id);
+    let noncanonical_id = left_id.max(right_id);
+
+    let evaluate = |events: Vec<RawEventBytes>| {
+        let mut builder = CorpusBuilder::new();
+        for event in events {
+            assert!(matches!(
+                builder.ingest(event),
+                IngestOutcome::Accepted { .. }
+            ));
+        }
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+            &builder.finish(),
+            coordinate,
+            &mut WorkBudget::new(1_000_000, 1_000),
+            &NeverCancelled,
+        )
+    };
+
+    let baseline = evaluate(vec![left.clone(), right.clone()]);
+    let canonical_manifest = signed_manifest_hint(&controller, coordinate, 3, canonical_id);
+    let canonical = evaluate(vec![
+        canonical_manifest.clone(),
+        right.clone(),
+        left.clone(),
+    ]);
+    assert!(matches!(
+        canonical.manifest(),
+        ResolvedManifestAvailability::Available {
+            hints,
+            control_status: ManifestControlStatus::Canonical,
+        } if hints.control() == canonical_id
+    ));
+    assert!(ManifestControlStatus::Canonical < ManifestControlStatus::Noncanonical);
+    let manifest_debug = format!("{:?}", canonical.manifest());
+    assert!(manifest_debug.contains("Canonical"));
+    assert!(!manifest_debug.contains(&canonical_id.to_hex()));
+
+    let noncanonical_manifest = signed_manifest_hint(&controller, coordinate, 3, noncanonical_id);
+    let orders = [
+        vec![left.clone(), right.clone(), noncanonical_manifest.clone()],
+        vec![noncanonical_manifest.clone(), right.clone(), left.clone()],
+        vec![right.clone(), left.clone(), noncanonical_manifest.clone()],
+    ];
+    let noncanonical_reports = orders.into_iter().map(evaluate).collect::<Vec<_>>();
+    assert!(noncanonical_reports.iter().all(|report| matches!(
+        report.manifest(),
+        ResolvedManifestAvailability::Available {
+            hints,
+            control_status: ManifestControlStatus::Noncanonical,
+        } if hints.control() == noncanonical_id
+    )));
+    assert!(
+        noncanonical_reports
+            .windows(2)
+            .all(|pair| pair[0] == pair[1])
+    );
+
+    let missing_id = EventId::from_bytes([0xee; 32]);
+    let older = signed_manifest_hint(&controller, coordinate, 3, canonical_id);
+    let selected_missing = signed_manifest_hint(&controller, coordinate, 4, missing_id);
+    let selected_missing_id = VerifiedNip01Event::verify(selected_missing.clone())
+        .expect("missing-control manifest")
+        .event_id();
+    let missing = evaluate(vec![left.clone(), right.clone(), older, selected_missing]);
+    assert!(matches!(
+        missing.manifest(),
+        ResolvedManifestAvailability::Pending {
+            hints,
+            reason: ManifestPendingReason::MissingControl,
+        } if hints.event_id() == selected_missing_id && hints.control() == missing_id
+    ));
+
+    let other_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "c3".repeat(32)
+    )
+    .parse()
+    .expect("other coordinate");
+    let other_control =
+        signed_acl_control(&controller, other_coordinate, 1, None, 0, members.clone());
+    let other_control_id = VerifiedNip01Event::verify(other_control.clone())
+        .expect("other control")
+        .event_id();
+    let wrong_coordinate = evaluate(vec![
+        left.clone(),
+        right.clone(),
+        other_control,
+        signed_manifest_hint(&controller, coordinate, 3, other_control_id),
+    ]);
+    assert!(matches!(
+        wrong_coordinate.manifest(),
+        ResolvedManifestAvailability::Unavailable { control: Some(control), diagnostic, .. }
+            if *control == other_control_id && diagnostic.as_str() == "carrier.coordinate"
+    ));
+
+    let invalid_child =
+        signed_acl_control(&controller, coordinate, 2, Some(canonical_id), 2, members);
+    let invalid_child_id = VerifiedNip01Event::verify(invalid_child.clone())
+        .expect("invalid child")
+        .event_id();
+    let invalid = evaluate(vec![
+        left,
+        right,
+        invalid_child,
+        signed_manifest_hint(&controller, coordinate, 3, invalid_child_id),
+    ]);
+    assert!(matches!(
+        invalid.manifest(),
+        ResolvedManifestAvailability::Unavailable { control: Some(control), .. }
+            if *control == invalid_child_id
+    ));
+
+    for report in [
+        &canonical,
+        &noncanonical_reports[0],
+        &missing,
+        &wrong_coordinate,
+        &invalid,
+    ] {
+        assert_eq!(report.canonical_controls(), baseline.canonical_controls());
+        assert_eq!(report.accepted_changes(), baseline.accepted_changes());
+        assert_eq!(report.heads(), baseline.heads());
+        assert_eq!(report.history_digest(), baseline.history_digest());
+        assert_eq!(report.document(), baseline.document());
+    }
 }
 
 #[test]
