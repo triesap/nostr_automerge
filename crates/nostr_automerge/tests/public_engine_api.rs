@@ -4447,6 +4447,13 @@ enum CheckpointHistoryVariant {
     NotAccepted,
 }
 
+#[derive(Clone, Copy)]
+enum CheckpointEvaluationControl {
+    Normal,
+    ItemBudget(u64),
+    CancelAfter(u64),
+}
+
 #[allow(clippy::expect_used, clippy::too_many_arguments)]
 fn evaluate_single_chunk_variant(
     chunk_signer: &TestSigner,
@@ -4459,6 +4466,38 @@ fn evaluate_single_chunk_variant(
     commitments_override: Option<CheckpointCommitmentVariant>,
     history_variant: CheckpointHistoryVariant,
 ) -> nostr_automerge::EvaluationReport {
+    evaluate_single_chunk_variant_controlled(
+        chunk_signer,
+        chunk_coordinate,
+        chunk_descriptor,
+        parts,
+        chunk_data,
+        snapshot_hash_override,
+        chunk_root_override,
+        commitments_override,
+        history_variant,
+        CheckpointEvaluationControl::Normal,
+    )
+    .0
+}
+
+#[allow(clippy::expect_used, clippy::too_many_arguments)]
+fn evaluate_single_chunk_variant_controlled(
+    chunk_signer: &TestSigner,
+    chunk_coordinate: Option<DocumentCoordinate>,
+    chunk_descriptor: Option<EventId>,
+    parts: &[(u64, &str, &str)],
+    chunk_data: Option<&[u8]>,
+    snapshot_hash_override: Option<[u8; 32]>,
+    chunk_root_override: Option<[u8; 32]>,
+    commitments_override: Option<CheckpointCommitmentVariant>,
+    history_variant: CheckpointHistoryVariant,
+    evaluation_control: CheckpointEvaluationControl,
+) -> (
+    nostr_automerge::EvaluationReport,
+    nostr_automerge::WorkCounters,
+    u64,
+) {
     let scenario = match history_variant {
         CheckpointHistoryVariant::Accepted | CheckpointHistoryVariant::MissingCarrier => {
             signed_engine_scenario()
@@ -4556,12 +4595,29 @@ fn evaluate_single_chunk_variant(
             IngestOutcome::Accepted { .. }
         ));
     }
-    ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+    let item_budget = match evaluation_control {
+        CheckpointEvaluationControl::ItemBudget(limit) => limit,
+        CheckpointEvaluationControl::Normal | CheckpointEvaluationControl::CancelAfter(_) => {
+            1_000_000
+        }
+    };
+    let cancellation_checks = std::cell::Cell::new(0_u64);
+    let cancellation = || {
+        let current = cancellation_checks.get();
+        cancellation_checks.set(current.saturating_add(1));
+        matches!(
+            evaluation_control,
+            CheckpointEvaluationControl::CancelAfter(limit) if current >= limit
+        )
+    };
+    let mut budget = WorkBudget::new(1_000_000, item_budget);
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         scenario.coordinate,
-        &mut WorkBudget::new(1_000_000, 1_000_000),
-        &NeverCancelled,
-    )
+        &mut budget,
+        &cancellation,
+    );
+    (report, budget.consumed(), cancellation_checks.get())
 }
 
 #[test]
@@ -4885,6 +4941,68 @@ fn checkpoint_history_refusals() {
     assert_eq!(
         not_accepted.checkpoints()[0].status(),
         CheckpointVerificationStatus::NotAcceptedAtControl
+    );
+}
+
+#[test]
+fn checkpoint_interruption_is_non_authoritative() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/checkpoints/interruption.json"
+    ))
+    .unwrap_or_default();
+    assert_eq!(fixture["cases"].as_array().map(Vec::len), Some(2));
+    let run = |control| {
+        evaluate_single_chunk_variant_controlled(
+            &TestSigner::from_byte(21),
+            None,
+            None,
+            &[(4, "0", "1")],
+            None,
+            None,
+            None,
+            None,
+            CheckpointHistoryVariant::Accepted,
+            control,
+        )
+    };
+    let (baseline, counters, checks) = run(CheckpointEvaluationControl::Normal);
+    let non_checkpoint_items = [
+        WorkCounter::Event,
+        WorkCounter::Carrier,
+        WorkCounter::Control,
+        WorkCounter::GraphNode,
+        WorkCounter::GraphEdge,
+        WorkCounter::ApplyChange,
+    ]
+    .into_iter()
+    .map(|counter| counters.get(counter))
+    .sum::<u64>();
+    let (budgeted, _, _) = run(CheckpointEvaluationControl::ItemBudget(
+        non_checkpoint_items.saturating_add(1),
+    ));
+    assert_eq!(budgeted.completion(), Completion::BudgetExhausted);
+    assert_eq!(budgeted.accepted_changes(), baseline.accepted_changes());
+    assert_eq!(budgeted.heads(), baseline.heads());
+    assert_eq!(budgeted.history_digest(), baseline.history_digest());
+    assert!(budgeted.checkpoints().iter().all(|checkpoint| {
+        checkpoint.status() == CheckpointVerificationStatus::BudgetExhausted
+    }));
+
+    let cancelled = (0..checks).find_map(|limit| {
+        let (report, _, _) = run(CheckpointEvaluationControl::CancelAfter(limit));
+        (report.accepted_changes() == baseline.accepted_changes()
+            && report.heads() == baseline.heads()
+            && report.history_digest() == baseline.history_digest()
+            && report
+                .checkpoints()
+                .iter()
+                .all(|checkpoint| checkpoint.status() == CheckpointVerificationStatus::Cancelled))
+        .then_some(report)
+    });
+    assert!(cancelled.is_some());
+    assert_eq!(
+        cancelled.map(|report| report.completion()),
+        Some(Completion::Cancelled)
     );
 }
 

@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 23: Checkpoint Profile Completion
 
 Status: active
-Current checkpoint: `step_456`
+Current checkpoint: `step_457`
 Steps: `step_444` through `step_459`
 Primary findings: `FINDING_014`, `FINDING_018`, `FINDING_022`, `FINDING_024`, `FINDING_025`
 
@@ -46,4 +46,5 @@ state, heads, history digest, or materialized state.
 - `step_453`: `bbebc21` — signed raw-hash, Merkle-root, snapshot-hash, and reverse multichunk cases prove ordered byte commitments end to end.
 - `step_454`: `d4b3270` — signed invalid-save, wrong-head, and every embedded commitment mutation reach their stable public refusal statuses.
 - `step_455`: `30c7180` — an existing declared head that omits a disconnected embedded branch reaches `closure_mismatch` before any checkpoint can affect replay state.
-- `step_456`: this commit — signed snapshots containing a carrierless or checkpoint-only-authorized change reach the two distinct verified-history refusals.
+- `step_456`: `7da2c1b` — signed snapshots containing a carrierless or checkpoint-only-authorized change reach the two distinct verified-history refusals.
+- `step_457`: this commit — deterministic budget and cancellation boundaries stop checkpoint work while preserving canonical controls, accepted history, heads, and history digest.
