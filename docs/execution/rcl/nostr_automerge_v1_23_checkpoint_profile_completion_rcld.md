@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 23: Checkpoint Profile Completion
 
 Status: active
-Current checkpoint: `step_444`
+Current checkpoint: `step_445`
 Steps: `step_444` through `step_459`
 Primary findings: `FINDING_014`, `FINDING_018`, `FINDING_022`, `FINDING_024`, `FINDING_025`
 
@@ -34,4 +34,5 @@ state, heads, history digest, or materialized state.
 
 ## Completed Checkpoints
 
-- `step_444`: this commit — descriptor parsing and arithmetic accept zero embedded changes and an empty head set while retaining nonempty snapshot/chunk commitments and all sealed maxima.
+- `step_444`: `a366d4f` — descriptor parsing and arithmetic accept zero embedded changes and an empty head set while retaining nonempty snapshot/chunk commitments and all sealed maxima.
+- `step_445`: this commit — the domain-separated, sorted change-set commitment explicitly covers the empty set and is published as a deterministic fixture constant.

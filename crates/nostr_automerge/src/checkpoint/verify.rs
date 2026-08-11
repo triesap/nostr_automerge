@@ -19,7 +19,6 @@ impl VerifiedSnapshot {
         descriptor: &CheckpointDescriptor,
         budget: &mut WorkBudget,
     ) -> Result<(), VerifyError> {
-        use sha2::{Digest, Sha256};
         let changes = self
             .loaded
             .document
@@ -40,19 +39,11 @@ impl VerifiedSnapshot {
         if !within_checkpoint_limits(change_count, total_ops, dependency_edges) {
             return Err(VerifyError::Commitments);
         }
-        let mut hashes = changes.iter().map(|c| c.hash).collect::<Vec<_>>();
-        hashes.sort();
-        let mut digest = Sha256::new();
-        digest.update(b"nostr-crdt/automerge/change-set/v1");
-        digest.update([0]);
-        digest.update(change_count.to_be_bytes());
-        for hash in hashes {
-            digest.update(hash.as_bytes());
-        }
+        let hashes = changes.iter().map(|c| c.hash).collect::<Vec<_>>();
         if change_count != descriptor.change_count
             || total_ops != descriptor.total_ops
             || dependency_edges != descriptor.dependency_edges
-            || <[u8; 32]>::from(digest.finalize()) != descriptor.change_set_hash
+            || change_set_hash(hashes)? != descriptor.change_set_hash
         {
             return Err(VerifyError::Commitments);
         }
@@ -98,6 +89,21 @@ impl VerifiedSnapshot {
             .collect::<std::collections::BTreeMap<_, _>>();
         exact_closure(&map, &self.heads)
     }
+}
+
+fn change_set_hash(mut hashes: Vec<ChangeHash>) -> Result<[u8; 32], VerifyError> {
+    use sha2::{Digest, Sha256};
+
+    hashes.sort();
+    let count = u64::try_from(hashes.len()).map_err(|_| VerifyError::Commitments)?;
+    let mut digest = Sha256::new();
+    digest.update(b"nostr-crdt/automerge/change-set/v1");
+    digest.update([0]);
+    digest.update(count.to_be_bytes());
+    for hash in hashes {
+        digest.update(hash.as_bytes());
+    }
+    Ok(digest.finalize().into())
 }
 
 fn within_checkpoint_limits(change_count: u64, operations: u64, dependency_edges: u64) -> bool {
@@ -184,6 +190,17 @@ mod tests {
         authoring::{ActorState, AuthoringDocument, Operation},
     };
     use sha2::{Digest, Sha256};
+    #[test]
+    fn commit_empty_sorted_change_set_hash() {
+        assert_eq!(
+            change_set_hash(Vec::new()).ok(),
+            Some([
+                0xcc, 0xe1, 0x46, 0xbe, 0x40, 0x7e, 0xe7, 0xaa, 0xe2, 0xe3, 0xfd, 0x5e, 0x4b, 0x12,
+                0x49, 0xb5, 0x00, 0x05, 0xb5, 0xb9, 0xa6, 0xe4, 0xe0, 0x0a, 0x2c, 0x5f, 0x65, 0xc8,
+                0x52, 0xfa, 0x42, 0x6c,
+            ])
+        );
+    }
     #[test]
     fn verify_declared_checkpoint_heads() {
         let mut doc = AuthoringDocument::empty(ActorState::initial(
