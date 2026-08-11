@@ -1,0 +1,31 @@
+{
+  "expected": {
+    "report_path": "checkpoints_unauthorized.expected.json",
+    "sha256": "7d98eb04bc54da4f52c1cb225e69f68dcaecd823961ff8fc936c7cc0ab6c0f4b"
+  },
+  "fixture_id": "checkpoints_unauthorized",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "checkpoints_unauthorized.input.json",
+      "sha256": "aa729c964560bbcd504eccc8aa3e6a58a527a7db77ce20195ba553603173cba2"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile checkpoints",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CHECKPOINT-001",
+    "NCRDT-CONF-002",
+    "NCRDT-CPTRUST-001"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}

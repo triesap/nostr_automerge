@@ -31,11 +31,391 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "equivocation" => generate_equivocation_profile(),
         "tags" => generate_tag_profile(),
         "versioning" => generate_versioning_profile(),
+        "checkpoints" => generate_checkpoint_profile(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
 }
 
 type Member<'a> = (&'a Signer, Option<String>, &'a [&'a str]);
+
+fn generate_checkpoint_profile() -> Result<(), String> {
+    let controller = Signer::from_byte(97)?;
+    let writer = Signer::from_byte(98)?;
+    let other = Signer::from_byte(99)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "97".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid checkpoint coordinate".to_owned())?;
+    let control = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(
+            0,
+            vec![(&writer, None, &["checkpoint", "write"])],
+            "automerge-change-v1",
+        ),
+    )?;
+    let control_id = event_id(&control)?;
+    let actor = ActorId::derive(coordinate, writer.public_key);
+    let empty_snapshot = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+        .map_err(|error| format!("empty checkpoint document: {error:?}"))?
+        .accepted_state_bytes();
+    let empty_commitment: [u8; 32] = Sha256::digest(
+        [
+            b"nostr-crdt/automerge/change-set/v1".as_slice(),
+            &[0],
+            &0_u64.to_be_bytes(),
+        ]
+        .concat(),
+    )
+    .into();
+    let empty_descriptor = sign_checkpoint_descriptor(
+        &writer,
+        2,
+        coordinate,
+        control_id,
+        &empty_snapshot,
+        &[],
+        empty_commitment,
+        None,
+    )?;
+    let empty_descriptor_id = event_id(&empty_descriptor)?;
+    let empty_chunk =
+        sign_checkpoint_chunk(&writer, 3, coordinate, empty_descriptor_id, &empty_snapshot)?;
+
+    let mut history = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+        .map_err(|error| format!("checkpoint history: {error:?}"))?;
+    let change = history
+        .author_change(&[Operation::PutString {
+            key: "checkpoint".to_owned(),
+            value: "history".to_owned(),
+        }])
+        .map_err(|error| format!("checkpoint change: {error:?}"))?;
+    let change_event = sign_change(
+        &writer,
+        4,
+        coordinate,
+        control_id,
+        change.change_hash(),
+        change.raw(),
+    )?;
+    let snapshot = history.accepted_state_bytes();
+    let mut commitment = Sha256::new();
+    commitment.update(b"nostr-crdt/automerge/change-set/v1");
+    commitment.update([0]);
+    commitment.update(1_u64.to_be_bytes());
+    commitment.update(change.change_hash().as_bytes());
+    let commitment: [u8; 32] = commitment.finalize().into();
+    let descriptor = sign_checkpoint_descriptor(
+        &writer,
+        5,
+        coordinate,
+        control_id,
+        &snapshot,
+        &[change.change_hash()],
+        commitment,
+        None,
+    )?;
+    let descriptor_id = event_id(&descriptor)?;
+    let chunk = sign_checkpoint_chunk(&writer, 6, coordinate, descriptor_id, &snapshot)?;
+    let (multichunk_descriptor, multichunks) = sign_multichunk_checkpoint(
+        &writer,
+        12,
+        coordinate,
+        control_id,
+        &snapshot,
+        change.change_hash(),
+        commitment,
+    )?;
+    let unauthorized_descriptor = sign_checkpoint_descriptor(
+        &other,
+        7,
+        coordinate,
+        control_id,
+        &snapshot,
+        &[change.change_hash()],
+        commitment,
+        None,
+    )?;
+    let mismatch_chunk = sign_checkpoint_chunk(&other, 8, coordinate, descriptor_id, &snapshot)?;
+    let merkle_descriptor = sign_checkpoint_descriptor(
+        &writer,
+        9,
+        coordinate,
+        control_id,
+        &snapshot,
+        &[change.change_hash()],
+        commitment,
+        Some([0; 32]),
+    )?;
+    let merkle_descriptor_id = event_id(&merkle_descriptor)?;
+    let merkle_chunk =
+        sign_checkpoint_chunk(&writer, 10, coordinate, merkle_descriptor_id, &snapshot)?;
+    let corrupted_snapshot = [snapshot.as_slice(), &[0]].concat();
+    let corrupted_chunk =
+        sign_checkpoint_chunk(&writer, 11, coordinate, descriptor_id, &corrupted_snapshot)?;
+    let cases = vec![
+        (
+            "checkpoints_empty_history",
+            vec![control.clone(), empty_descriptor, empty_chunk],
+        ),
+        (
+            "checkpoints_single_chunk",
+            vec![
+                control.clone(),
+                change_event.clone(),
+                descriptor.clone(),
+                chunk.clone(),
+            ],
+        ),
+        (
+            "checkpoints_multichunk",
+            vec![control.clone(), change_event.clone(), multichunk_descriptor]
+                .into_iter()
+                .chain(multichunks)
+                .collect(),
+        ),
+        (
+            "checkpoints_missing_chunk",
+            vec![control.clone(), change_event.clone(), descriptor.clone()],
+        ),
+        (
+            "checkpoints_unauthorized",
+            vec![
+                control.clone(),
+                change_event.clone(),
+                unauthorized_descriptor,
+            ],
+        ),
+        (
+            "checkpoints_chunk_author_mismatch",
+            vec![
+                control.clone(),
+                change_event.clone(),
+                descriptor.clone(),
+                mismatch_chunk,
+            ],
+        ),
+        (
+            "checkpoints_merkle_mismatch",
+            vec![
+                control.clone(),
+                change_event.clone(),
+                merkle_descriptor,
+                merkle_chunk,
+            ],
+        ),
+        (
+            "checkpoints_snapshot_mismatch",
+            vec![control, change_event, descriptor, corrupted_chunk],
+        ),
+    ];
+    let root = repository_root().join("fixtures/v1_draft/scenarios/checkpoints");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    for (fixture_id, events) in cases {
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            &[
+                "NCRDT-CHECKPOINT-001",
+                "NCRDT-CONF-002",
+                "NCRDT-CPTRUST-001",
+            ],
+            "checkpoints",
+        )?;
+    }
+    Ok(())
+}
+
+fn sign_multichunk_checkpoint(
+    signer: &Signer,
+    created_at: u64,
+    coordinate: DocumentCoordinate,
+    control: EventId,
+    snapshot: &[u8],
+    head: ChangeHash,
+    change_set_hash: [u8; 32],
+) -> Result<(RawEventBytes, Vec<RawEventBytes>), String> {
+    let chunk_size = 31_usize;
+    let pieces = snapshot.chunks(chunk_size).collect::<Vec<_>>();
+    let count = u32::try_from(pieces.len()).map_err(|_| "chunk count overflow")?;
+    let hashes = pieces
+        .iter()
+        .map(|piece| <[u8; 32]>::from(Sha256::digest(piece)))
+        .collect::<Vec<_>>();
+    let leaves = hashes
+        .iter()
+        .enumerate()
+        .map(|(index, hash)| {
+            nostr_automerge::checkpoint::leaf_hash(
+                u32::try_from(index).unwrap_or(u32::MAX),
+                count,
+                *hash,
+            )
+        })
+        .collect::<Vec<_>>();
+    let root = nostr_automerge::checkpoint::merkle_root(&leaves)
+        .map_err(|error| format!("multichunk Merkle tree: {error:?}"))?;
+    let snapshot_hash: [u8; 32] = Sha256::digest(snapshot).into();
+    let descriptor = sign_raw_event(
+        signer,
+        created_at,
+        1_626,
+        vec![
+            vec!["a".to_owned(), coordinate.to_address()],
+            vec!["e".to_owned(), control.to_hex()],
+            vec!["x".to_owned(), hex_array(snapshot_hash)],
+        ],
+        json!({
+            "change_count": 1,
+            "change_set_hash": hex_array(change_set_hash),
+            "chunk_count": count,
+            "chunk_root": hex_array(root),
+            "chunk_size": chunk_size,
+            "dependency_edges": 0,
+            "encoding": "automerge-save-v1",
+            "heads": [head.to_hex()],
+            "raw_size": snapshot.len(),
+            "total_ops": 1,
+            "v": 1,
+        })
+        .to_string(),
+    )?;
+    let descriptor_id = event_id(&descriptor)?;
+    let chunks = pieces
+        .iter()
+        .enumerate()
+        .map(|(index, piece)| {
+            let proof = checkpoint_proof(&leaves, index)?
+                .into_iter()
+                .map(|(side, hash)| json!({"hash":hex_array(hash), "side":side}))
+                .collect::<Vec<_>>();
+            sign_raw_event(
+                signer,
+                created_at.saturating_add(1 + u64::try_from(index).unwrap_or(u64::MAX)),
+                1_627,
+                vec![
+                    vec!["a".to_owned(), coordinate.to_address()],
+                    vec!["e".to_owned(), descriptor_id.to_hex()],
+                    vec!["x".to_owned(), hex_array(hashes[index])],
+                    vec!["part".to_owned(), index.to_string(), count.to_string()],
+                ],
+                json!({
+                    "data": base64::engine::general_purpose::STANDARD.encode(piece),
+                    "proof": proof,
+                    "v": 1,
+                })
+                .to_string(),
+            )
+        })
+        .collect::<Result<Vec<_>, String>>()?;
+    Ok((descriptor, chunks))
+}
+
+fn checkpoint_proof(
+    leaves: &[[u8; 32]],
+    index: usize,
+) -> Result<Vec<(&'static str, [u8; 32])>, String> {
+    if leaves.len() == 1 {
+        return Ok(Vec::new());
+    }
+    let split = leaves.len().next_power_of_two() / 2;
+    if index < split {
+        let mut proof = checkpoint_proof(&leaves[..split], index)?;
+        proof.push((
+            "right",
+            nostr_automerge::checkpoint::merkle_root(&leaves[split..])
+                .map_err(|error| format!("right Merkle root: {error:?}"))?,
+        ));
+        Ok(proof)
+    } else {
+        let mut proof = checkpoint_proof(&leaves[split..], index - split)?;
+        proof.push((
+            "left",
+            nostr_automerge::checkpoint::merkle_root(&leaves[..split])
+                .map_err(|error| format!("left Merkle root: {error:?}"))?,
+        ));
+        Ok(proof)
+    }
+}
+
+fn sign_checkpoint_descriptor(
+    signer: &Signer,
+    created_at: u64,
+    coordinate: DocumentCoordinate,
+    control: EventId,
+    snapshot: &[u8],
+    heads: &[ChangeHash],
+    change_set_hash: [u8; 32],
+    root_override: Option<[u8; 32]>,
+) -> Result<RawEventBytes, String> {
+    let snapshot_hash: [u8; 32] = Sha256::digest(snapshot).into();
+    let chunk_root = root_override
+        .unwrap_or_else(|| nostr_automerge::checkpoint::leaf_hash(0, 1, snapshot_hash));
+    let heads = heads.iter().map(|head| head.to_hex()).collect::<Vec<_>>();
+    sign_raw_event(
+        signer,
+        created_at,
+        1_626,
+        vec![
+            vec!["a".to_owned(), coordinate.to_address()],
+            vec!["e".to_owned(), control.to_hex()],
+            vec!["x".to_owned(), hex_array(snapshot_hash)],
+        ],
+        json!({
+            "change_count": heads.len(),
+            "change_set_hash": hex_array(change_set_hash),
+            "chunk_count": 1,
+            "chunk_root": hex_array(chunk_root),
+            "chunk_size": snapshot.len(),
+            "dependency_edges": if heads.is_empty() { 0 } else { heads.len().saturating_sub(1) },
+            "encoding": "automerge-save-v1",
+            "heads": heads,
+            "raw_size": snapshot.len(),
+            "total_ops": if heads.is_empty() { 0 } else { 1 },
+            "v": 1,
+        })
+        .to_string(),
+    )
+}
+
+fn sign_checkpoint_chunk(
+    signer: &Signer,
+    created_at: u64,
+    coordinate: DocumentCoordinate,
+    descriptor: EventId,
+    bytes: &[u8],
+) -> Result<RawEventBytes, String> {
+    let chunk_hash: [u8; 32] = Sha256::digest(bytes).into();
+    sign_raw_event(
+        signer,
+        created_at,
+        1_627,
+        vec![
+            vec!["a".to_owned(), coordinate.to_address()],
+            vec!["e".to_owned(), descriptor.to_hex()],
+            vec!["x".to_owned(), hex_array(chunk_hash)],
+            vec!["part".to_owned(), "0".to_owned(), "1".to_owned()],
+        ],
+        json!({
+            "data": base64::engine::general_purpose::STANDARD.encode(bytes),
+            "proof": [],
+            "v": 1,
+        })
+        .to_string(),
+    )
+}
+
+fn hex_array(bytes: [u8; 32]) -> String {
+    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+}
 
 fn generate_versioning_profile() -> Result<(), String> {
     let controller = Signer::from_byte(95)?;
