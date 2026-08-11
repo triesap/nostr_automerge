@@ -43,7 +43,10 @@
   ],
   "requirements": [
     "NCRDT-CONF-001",
-    "NCRDT-MANIFEST-001"
+    "NCRDT-DISPOSITION-001",
+    "NCRDT-MANIFEST-001",
+    "NCRDT-MANIFEST-002",
+    "NCRDT-OUTCOME-001"
   ],
   "revision": "draft_2026_08",
   "scenario_schema": "nostr_automerge.signed_scenario.v2"

@@ -13,6 +13,7 @@
     "raw_events": {
       "type": "array",
       "minItems": 1,
+      "description": "The complete signed event corpus. Implementations MUST derive dynamic validity and dispositions from these bytes; expected_report is an assertion, not an input to evaluation.",
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -26,19 +27,27 @@
     "budget": {
       "type": "object",
       "additionalProperties": false,
+      "description": "A deterministic inclusive ceiling for all evidence-derived byte and item work, including ingress and dynamically traversed protocol evidence.",
       "required": ["max_bytes", "max_items"],
       "properties": {
         "max_bytes": {"type": "integer", "minimum": 0},
         "max_items": {"type": "integer", "minimum": 0}
       }
     },
-    "cancel_after": {"type": ["integer", "null"], "minimum": 0},
+    "cancel_after": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "When non-null, request deterministic cancellation after this many charged work units. A value of zero stops before the first unit while preserving only already-conclusive output."
+    },
     "requirements": {
       "type": "array",
       "minItems": 1,
       "uniqueItems": true,
       "items": {"type": "string", "pattern": "^NCRDT-[A-Z0-9-]+$"}
     },
-    "expected_report": {"type": "object"}
+    "expected_report": {
+      "type": "object",
+      "description": "The byte-exact canonical report assertion. Runners MUST NOT use this value to derive their actual result."
+    }
   }
 }

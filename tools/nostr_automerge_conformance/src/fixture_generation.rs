@@ -34,6 +34,7 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "versioning" => generate_versioning_profile(),
         "checkpoints" => generate_checkpoint_profile(),
         "projection" => generate_projection_profile(),
+        "interrupted" => generate_interrupted_profile(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
 }
@@ -517,6 +518,25 @@ fn generate_checkpoint_profile() -> Result<(), String> {
     let corrupted_snapshot = [snapshot.as_slice(), &[0]].concat();
     let corrupted_chunk =
         sign_checkpoint_chunk(&writer, 11, coordinate, descriptor_id, &corrupted_snapshot)?;
+    let missing_control_id = EventId::from_bytes([0xee; 32]);
+    let missing_control_descriptor = sign_checkpoint_descriptor(
+        &writer,
+        30,
+        coordinate,
+        missing_control_id,
+        &snapshot,
+        &[change.change_hash()],
+        commitment,
+        None,
+    )?;
+    let missing_descriptor_id = EventId::from_bytes([0xdd; 32]);
+    let orphan_chunk =
+        sign_checkpoint_chunk(&writer, 31, coordinate, missing_descriptor_id, &snapshot)?;
+    let partial_multichunks = multichunks
+        .iter()
+        .take(multichunks.len().saturating_sub(1))
+        .cloned()
+        .collect::<Vec<_>>();
     let cases = vec![
         (
             "checkpoints_empty_history",
@@ -533,10 +553,14 @@ fn generate_checkpoint_profile() -> Result<(), String> {
         ),
         (
             "checkpoints_multichunk",
-            vec![control.clone(), change_event.clone(), multichunk_descriptor]
-                .into_iter()
-                .chain(multichunks)
-                .collect(),
+            vec![
+                control.clone(),
+                change_event.clone(),
+                multichunk_descriptor.clone(),
+            ]
+            .into_iter()
+            .chain(multichunks)
+            .collect(),
         ),
         (
             "checkpoints_missing_chunk",
@@ -570,7 +594,27 @@ fn generate_checkpoint_profile() -> Result<(), String> {
         ),
         (
             "checkpoints_snapshot_mismatch",
-            vec![control, change_event, descriptor, corrupted_chunk],
+            vec![
+                control.clone(),
+                change_event.clone(),
+                descriptor,
+                corrupted_chunk,
+            ],
+        ),
+        (
+            "checkpoints_missing_control_dynamic",
+            vec![change_event.clone(), missing_control_descriptor],
+        ),
+        (
+            "checkpoints_missing_descriptor_dynamic",
+            vec![control.clone(), change_event.clone(), orphan_chunk],
+        ),
+        (
+            "checkpoints_partial_multichunk_dynamic",
+            vec![control, change_event, multichunk_descriptor]
+                .into_iter()
+                .chain(partial_multichunks)
+                .collect(),
         ),
     ];
     let root = repository_root().join("fixtures/v1_draft/scenarios/checkpoints");
@@ -585,6 +629,8 @@ fn generate_checkpoint_profile() -> Result<(), String> {
                 "NCRDT-CHECKPOINT-001",
                 "NCRDT-CONF-002",
                 "NCRDT-CPTRUST-001",
+                "NCRDT-DISPOSITION-001",
+                "NCRDT-OUTCOME-001",
             ],
             "checkpoints",
         )?;
@@ -1038,6 +1084,15 @@ fn generate_equivocation_profile() -> Result<(), String> {
         first.change_hash(),
         first.raw(),
     )?;
+    let (bad_start_raw, bad_start_hash) = rewrite_first_change_start_op(second.raw().to_vec(), 2)?;
+    let bad_start_event = sign_change(
+        &writer,
+        9,
+        coordinate,
+        control_id,
+        bad_start_hash,
+        &bad_start_raw,
+    )?;
 
     let mut history = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit);
     history
@@ -1144,7 +1199,11 @@ fn generate_equivocation_profile() -> Result<(), String> {
         ),
         (
             "equivocation_duplicate_carriers",
-            vec![control, first_event, duplicate_event],
+            vec![control.clone(), first_event.clone(), duplicate_event],
+        ),
+        (
+            "equivocation_valid_vs_bad_start_op",
+            vec![control, first_event, bad_start_event],
         ),
     ];
     let root = repository_root().join("fixtures/v1_draft/scenarios/equivocation");
@@ -1155,7 +1214,7 @@ fn generate_equivocation_profile() -> Result<(), String> {
             fixture_id,
             coordinate,
             events,
-            &["NCRDT-CONF-002", "NCRDT-EQUIV-001"],
+            &["NCRDT-CONF-002", "NCRDT-EQUIV-001", "NCRDT-EVIDENCE-001"],
             "equivocation",
         )?;
     }
@@ -2383,6 +2442,7 @@ impl Signer {
 
 fn generate_manifest_profile() -> Result<(), String> {
     let signer = Signer::from_byte(71)?;
+    let writer = Signer::from_byte(72)?;
     let document_id = "71".repeat(32);
     let coordinate: DocumentCoordinate =
         format!("31624:{}:{document_id}", signer.public_key.to_hex())
@@ -2399,6 +2459,46 @@ fn generate_manifest_profile() -> Result<(), String> {
                 .map_err(|error| format!("manifest preimage: {error:?}"))?,
         )
     };
+    let members = vec![(&writer, None, &["write"][..])];
+    let left = sign_control(
+        &signer,
+        20,
+        coordinate,
+        None,
+        control_content_full(0, members.clone(), "automerge-change-v1"),
+    )?;
+    let right = sign_control(
+        &signer,
+        21,
+        coordinate,
+        None,
+        control_content_full(0, members.clone(), "automerge-change-v1"),
+    )?;
+    let left_id = event_id(&left)?;
+    let right_id = event_id(&right)?;
+    let canonical_control_id = left_id.min(right_id);
+    let noncanonical_control_id = left_id.max(right_id);
+    let other_coordinate: DocumentCoordinate =
+        format!("31624:{}:{}", signer.public_key.to_hex(), "72".repeat(32))
+            .parse()
+            .map_err(|_| "invalid other manifest coordinate".to_owned())?;
+    let wrong_coordinate = sign_control(
+        &signer,
+        22,
+        other_coordinate,
+        None,
+        control_content_full(0, members.clone(), "automerge-change-v1"),
+    )?;
+    let wrong_coordinate_id = event_id(&wrong_coordinate)?;
+    let invalid_control = sign_control(
+        &signer,
+        23,
+        coordinate,
+        None,
+        control_content_full(1, members, "automerge-change-v1"),
+    )?;
+    let invalid_control_id = event_id(&invalid_control)?;
+    let missing_control_id = EventId::from_bytes([0xee; 32]);
     let cases = vec![
         (
             "manifest_valid",
@@ -2458,11 +2558,95 @@ fn generate_manifest_profile() -> Result<(), String> {
                 Vec::new(),
             )?],
         ),
+        (
+            "manifest_dynamic_canonical_control",
+            vec![
+                left.clone(),
+                right.clone(),
+                sign(
+                    30,
+                    manifest_content(&canonical_control_id.to_hex(), "active", 1),
+                    Vec::new(),
+                )?,
+            ],
+        ),
+        (
+            "manifest_dynamic_noncanonical_control",
+            vec![
+                left.clone(),
+                right.clone(),
+                sign(
+                    31,
+                    manifest_content(&noncanonical_control_id.to_hex(), "active", 1),
+                    Vec::new(),
+                )?,
+            ],
+        ),
+        (
+            "manifest_dynamic_missing_control",
+            vec![sign(
+                32,
+                manifest_content(&missing_control_id.to_hex(), "active", 1),
+                Vec::new(),
+            )?],
+        ),
+        (
+            "manifest_dynamic_wrong_coordinate_control",
+            vec![
+                wrong_coordinate,
+                sign(
+                    33,
+                    manifest_content(&wrong_coordinate_id.to_hex(), "active", 1),
+                    Vec::new(),
+                )?,
+            ],
+        ),
+        (
+            "manifest_dynamic_invalid_control",
+            vec![
+                invalid_control,
+                sign(
+                    34,
+                    manifest_content(&invalid_control_id.to_hex(), "active", 1),
+                    Vec::new(),
+                )?,
+            ],
+        ),
+        (
+            "manifest_dynamic_no_fallback",
+            vec![
+                left,
+                right,
+                sign(
+                    35,
+                    manifest_content(&canonical_control_id.to_hex(), "active", 1),
+                    Vec::new(),
+                )?,
+                sign(
+                    36,
+                    manifest_content(&missing_control_id.to_hex(), "active", 1),
+                    Vec::new(),
+                )?,
+            ],
+        ),
     ];
     let root = repository_root().join("fixtures/v1_draft/scenarios/manifest");
     std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
     for (fixture_id, events) in cases {
-        write_fixture(&root, fixture_id, coordinate, events)?;
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            &[
+                "NCRDT-CONF-001",
+                "NCRDT-DISPOSITION-001",
+                "NCRDT-MANIFEST-001",
+                "NCRDT-MANIFEST-002",
+                "NCRDT-OUTCOME-001",
+            ],
+            "manifest",
+        )?;
     }
     Ok(())
 }
@@ -2473,20 +2657,60 @@ fn manifest_content(control: &str, status: &str, version: u64) -> String {
     )
 }
 
-fn write_fixture(
-    root: &Path,
-    fixture_id: &str,
-    coordinate: DocumentCoordinate,
-    events: Vec<RawEventBytes>,
-) -> Result<(), String> {
-    write_fixture_with_requirements(
-        root,
-        fixture_id,
-        coordinate,
-        events,
-        &["NCRDT-CONF-001", "NCRDT-MANIFEST-001"],
-        "manifest",
+fn generate_interrupted_profile() -> Result<(), String> {
+    let controller = Signer::from_byte(73)?;
+    let writer = Signer::from_byte(74)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "73".repeat(32)
     )
+    .parse()
+    .map_err(|_| "invalid interrupted coordinate".to_owned())?;
+    let control = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, vec![(&writer, None, &["write"])], "automerge-change-v1"),
+    )?;
+    let root = repository_root().join("fixtures/v1_draft/scenarios/interrupted");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    for (fixture_id, budget, cancel_after) in [
+        (
+            "interrupted_budget_at_ingress",
+            ScenarioBudget {
+                max_bytes: 1_000_000,
+                max_items: 0,
+            },
+            None,
+        ),
+        (
+            "interrupted_cancel_at_ingress",
+            ScenarioBudget {
+                max_bytes: 1_000_000,
+                max_items: 1_000_000,
+            },
+            Some(0),
+        ),
+    ] {
+        write_fixture_with_execution(
+            &root,
+            fixture_id,
+            coordinate,
+            vec![control.clone()],
+            &[
+                "NCRDT-COMPLETION-001",
+                "NCRDT-CONF-002",
+                "NCRDT-RESOURCE-001",
+            ],
+            "interrupted",
+            Vec::new(),
+            budget,
+            cancel_after,
+        )?;
+    }
+    Ok(())
 }
 
 fn write_fixture_with_requirements(
@@ -2517,6 +2741,34 @@ fn write_fixture_with_state_assertions(
     profile: &str,
     state_assertions: Vec<StateAssertion>,
 ) -> Result<(), String> {
+    write_fixture_with_execution(
+        root,
+        fixture_id,
+        coordinate,
+        events,
+        requirements,
+        profile,
+        state_assertions,
+        ScenarioBudget {
+            max_bytes: 1_000_000,
+            max_items: 1_000_000,
+        },
+        None,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn write_fixture_with_execution(
+    root: &Path,
+    fixture_id: &str,
+    coordinate: DocumentCoordinate,
+    events: Vec<RawEventBytes>,
+    requirements: &[&str],
+    profile: &str,
+    state_assertions: Vec<StateAssertion>,
+    budget: ScenarioBudget,
+    cancel_after: Option<u64>,
+) -> Result<(), String> {
     let coordinate_text = coordinate.to_address();
     let scenario = ScenarioInput {
         scenario_schema: "nostr_automerge.scenario.v1".to_owned(),
@@ -2525,11 +2777,8 @@ fn write_fixture_with_state_assertions(
             .iter()
             .map(|event| RawScenarioEvent::Utf8(event.as_str().to_owned()))
             .collect(),
-        budget: ScenarioBudget {
-            max_bytes: 1_000_000,
-            max_items: 1_000_000,
-        },
-        cancel_after: None,
+        budget,
+        cancel_after,
     };
     let mut template = ExpectedReport::empty(fixture_id, &coordinate_text);
     template.state_assertions = state_assertions;
@@ -2538,8 +2787,8 @@ fn write_fixture_with_state_assertions(
     let expected_value: Value =
         serde_json::from_slice(&expected_bytes).map_err(|error| error.to_string())?;
     let input_value = json!({
-        "budget": {"max_bytes": 1_000_000, "max_items": 1_000_000},
-        "cancel_after": null,
+        "budget": {"max_bytes": budget.max_bytes, "max_items": budget.max_items},
+        "cancel_after": cancel_after,
         "coordinate": coordinate_text,
         "expected_report": expected_value,
         "fixture_id": fixture_id,

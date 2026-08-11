@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "checkpoints_unauthorized.input.json",
-      "sha256": "93940bd1017cd5cab44f9305ffac3a6ea4c5b838116375508b181235fab98ced"
+      "sha256": "86998c65d869ecd823e51732dc8cd6bf6a9daa7573d4133f99af44cffa6e551f"
     }
   ],
   "provenance": {
@@ -24,7 +24,9 @@
   "requirements": [
     "NCRDT-CHECKPOINT-001",
     "NCRDT-CONF-002",
-    "NCRDT-CPTRUST-001"
+    "NCRDT-CPTRUST-001",
+    "NCRDT-DISPOSITION-001",
+    "NCRDT-OUTCOME-001"
   ],
   "revision": "draft_2026_08",
   "seed": null

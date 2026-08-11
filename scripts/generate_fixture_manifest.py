@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the canonical signed neutral fixture distribution v3."""
+"""Generate the canonical signed neutral fixture distribution v4."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "fixtures"
 SCENARIOS = FIXTURES / "v1_draft" / "scenarios"
-OUTPUT = FIXTURES / "distribution" / "manifest_v3.json"
+OUTPUT = FIXTURES / "distribution" / "manifest_v4.json"
 PROFILE_BY_FAMILY = {
     "checkpoints": "checkpoint",
     "projection": "property",
@@ -60,8 +60,8 @@ def main() -> int:
         for path in sorted(distributed_paths, key=lambda value: value.relative_to(ROOT).as_posix().encode())
     ]
     manifest = {
-        "distribution_schema": "nostr_automerge.fixture_distribution.v3",
-        "distribution_id": "draft_2026_08_signed_neutral_3",
+        "distribution_schema": "nostr_automerge.fixture_distribution.v4",
+        "distribution_id": "draft_2026_08_signed_neutral_4",
         "protocol_revision": "draft_2026_08",
         "status": "canonical_signed_neutral_corpus",
         "profiles": profiles,

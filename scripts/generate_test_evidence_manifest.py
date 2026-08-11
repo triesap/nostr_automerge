@@ -46,7 +46,7 @@ def collect_tests() -> list[str]:
 
 
 def collect_fixtures() -> list[str]:
-    manifest = json.loads((ROOT / "fixtures/distribution/manifest_v3.json").read_text())
+    manifest = json.loads((ROOT / "fixtures/distribution/manifest_v4.json").read_text())
     fixtures = sorted(entry["fixture_id"] for entry in manifest["fixtures"])
     if len(fixtures) != len(set(fixtures)):
         raise AssertionError("fixture distribution contains duplicate IDs")
@@ -62,7 +62,7 @@ def write_result(name: str, result: dict[str, object]) -> tuple[str, str]:
 
 
 def generate() -> dict[str, object]:
-    manifest_bytes = (ROOT / "fixtures/distribution/manifest_v3.json").read_bytes()
+    manifest_bytes = (ROOT / "fixtures/distribution/manifest_v4.json").read_bytes()
     source_commit = git("rev-parse", "HEAD")
     test_run = subprocess.run(
         ("cargo", "test", "--workspace", "--tests", "--locked"), cwd=ROOT,

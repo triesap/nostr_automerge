@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the canonical signed fixture distribution v3."""
+"""Validate the canonical signed fixture distribution v4."""
 
 from __future__ import annotations
 
@@ -11,9 +11,9 @@ from pathlib import Path, PurePosixPath
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = ROOT / "fixtures" / "distribution" / "manifest_v3.json"
+MANIFEST = ROOT / "fixtures" / "distribution" / "manifest_v4.json"
 PROFILES = {"checkpoint", "core", "malformed", "property"}
-SCHEMA = "nostr_automerge.fixture_distribution.v3"
+SCHEMA = "nostr_automerge.fixture_distribution.v4"
 SIGNED_SCHEMA = "nostr_automerge.signed_scenario.v2"
 
 
@@ -36,7 +36,7 @@ def validate(manifest: dict[str, object], root: Path = ROOT) -> None:
         "profiles", "fixtures", "files",
     }
     if set(manifest) != expected_keys or manifest["distribution_schema"] != SCHEMA:
-        fail("invalid distribution v3 shape")
+        fail("invalid distribution v4 shape")
     if manifest["status"] != "canonical_signed_neutral_corpus":
         fail("distribution is not canonical signed neutral corpus")
     profiles = manifest["profiles"]
@@ -152,7 +152,7 @@ def main() -> int:
         self_test(manifest)
     elif sys.argv[1:]:
         raise SystemExit("usage: validate_fixture_manifest.py [--self-test]")
-    print(f"PASS: signed fixture distribution v3 ({len(manifest['fixtures'])} fixtures)")
+    print(f"PASS: signed fixture distribution v4 ({len(manifest['fixtures'])} fixtures)")
     return 0
 
 

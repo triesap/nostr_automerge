@@ -97,7 +97,9 @@
   "requirements": [
     "NCRDT-CHECKPOINT-001",
     "NCRDT-CONF-002",
-    "NCRDT-CPTRUST-001"
+    "NCRDT-CPTRUST-001",
+    "NCRDT-DISPOSITION-001",
+    "NCRDT-OUTCOME-001"
   ],
   "revision": "draft_2026_08",
   "scenario_schema": "nostr_automerge.signed_scenario.v2"

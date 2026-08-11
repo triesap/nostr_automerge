@@ -1,0 +1,42 @@
+{
+  "budget": {
+    "max_bytes": 1000000,
+    "max_items": 0
+  },
+  "cancel_after": null,
+  "coordinate": "31624:1cf37eb561f80022293855860f47122025c0929a05f6f08c503ed7f2325cafd5:7373737373737373737373737373737373737373737373737373737373737373",
+  "expected_report": {
+    "accepted_changes": [],
+    "canonical_controls": [],
+    "completion": "budget_exhausted",
+    "coordinate": "31624:1cf37eb561f80022293855860f47122025c0929a05f6f08c503ed7f2325cafd5:7373737373737373737373737373737373737373737373737373737373737373",
+    "disposition_records": [],
+    "dispositions_digest": "380922728372cc98293a60cb3866d93062e91c05661a8fe9cb3b45555d9a23a7",
+    "excluded_changes": [],
+    "fixture_id": "interrupted_budget_at_ingress",
+    "heads": [],
+    "history_digest": "6a66afce65406b500a3d8e6fb60bf54c88a979065aa2a29a2bff6e6d9283d235",
+    "integrity_alerts": [],
+    "invalid_changes": [],
+    "invalid_events": [],
+    "pending_changes": [],
+    "report_schema": "nostr_automerge.report.v1",
+    "revision": "draft_2026_08",
+    "state_assertions": [],
+    "unsupported_events": []
+  },
+  "fixture_id": "interrupted_budget_at_ingress",
+  "raw_events": [
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"39277f08c34fac33c3b15e58a166a366897665419e5c3f214775ee6e4716717e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":0,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":1,\"id\":\"ebdf8e01bb948f951a533f799832e2ff99866b2898cb44dd420d9585b17c825e\",\"kind\":1625,\"pubkey\":\"1cf37eb561f80022293855860f47122025c0929a05f6f08c503ed7f2325cafd5\",\"sig\":\"dee9f38240c6523ffb30b9390dc4379fb821bde01f5642e7fe05047af1db5aa34004e62f00c4c0c0319ee974585e1585a2f23db4bf4f77a8ebb90529a02b5827\",\"tags\":[[\"a\",\"31624:1cf37eb561f80022293855860f47122025c0929a05f6f08c503ed7f2325cafd5:7373737373737373737373737373737373737373737373737373737373737373\"]]}",
+      "encoding": "utf8"
+    }
+  ],
+  "requirements": [
+    "NCRDT-COMPLETION-001",
+    "NCRDT-CONF-002",
+    "NCRDT-RESOURCE-001"
+  ],
+  "revision": "draft_2026_08",
+  "scenario_schema": "nostr_automerge.signed_scenario.v2"
+}

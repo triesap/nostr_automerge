@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "checkpoints_empty_history.input.json",
-      "sha256": "b5ef2722406fe315d300e93ae48cf3345976dab8dbf231f1925f863a2ae8d9be"
+      "sha256": "4a7d32e0a93ae956017175e0dc5e1235cef8d43ede62c2c00c324ccac4807c6c"
     }
   ],
   "provenance": {
@@ -24,7 +24,9 @@
   "requirements": [
     "NCRDT-CHECKPOINT-001",
     "NCRDT-CONF-002",
-    "NCRDT-CPTRUST-001"
+    "NCRDT-CPTRUST-001",
+    "NCRDT-DISPOSITION-001",
+    "NCRDT-OUTCOME-001"
   ],
   "revision": "draft_2026_08",
   "seed": null

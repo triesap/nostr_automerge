@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "equivocation_duplicate_carriers.input.json",
-      "sha256": "5bfde6f82698b05cb23ced6e0d8e08b44de0ba04e5a377204d0048baaee7505d"
+      "sha256": "1d624ad436b823690227b8768fd89def959bb95a9da6ae9f881c36a7d6166a7a"
     }
   ],
   "provenance": {
@@ -23,7 +23,8 @@
   },
   "requirements": [
     "NCRDT-CONF-002",
-    "NCRDT-EQUIV-001"
+    "NCRDT-EQUIV-001",
+    "NCRDT-EVIDENCE-001"
   ],
   "revision": "draft_2026_08",
   "seed": null

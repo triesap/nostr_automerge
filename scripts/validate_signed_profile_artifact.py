@@ -37,7 +37,7 @@ def main() -> int:
     manifest = json.loads(manifest_bytes)
     contract = json.loads(arguments.contract.read_text(encoding="utf-8"))
     profile = arguments.profile
-    if artifact["schema"] != "nostr_automerge.typescript_signed_profile.v3":
+    if artifact["schema"] != "nostr_automerge.typescript_signed_profile.v4":
         raise AssertionError("profile schema")
     if artifact["profile"] != profile or artifact["status"] != "pass":
         raise AssertionError("profile result")

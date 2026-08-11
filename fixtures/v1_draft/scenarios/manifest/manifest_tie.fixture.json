@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "manifest_tie.input.json",
-      "sha256": "197be3c54972765cf2e1da8019c95a8a3412352e795c84b88abe3682f83fa0a7"
+      "sha256": "cc5277d476d3ff1853fdd98e6e6d99c378643e91d5e12ad6cf7e2fcb489b0f53"
     }
   ],
   "provenance": {
@@ -23,7 +23,10 @@
   },
   "requirements": [
     "NCRDT-CONF-001",
-    "NCRDT-MANIFEST-001"
+    "NCRDT-DISPOSITION-001",
+    "NCRDT-MANIFEST-001",
+    "NCRDT-MANIFEST-002",
+    "NCRDT-OUTCOME-001"
   ],
   "revision": "draft_2026_08",
   "seed": null

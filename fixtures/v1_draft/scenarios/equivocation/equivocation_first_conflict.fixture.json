@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "equivocation_first_conflict.input.json",
-      "sha256": "1d28907161db38fe2680a6f6e8f65877a483ebabbe373f7f75750dd4f9ce0db1"
+      "sha256": "ea5f33ff9f8bf5089fa9a93d377dd77329d19b803f6970a2f9501962661a2034"
     }
   ],
   "provenance": {
@@ -23,7 +23,8 @@
   },
   "requirements": [
     "NCRDT-CONF-002",
-    "NCRDT-EQUIV-001"
+    "NCRDT-EQUIV-001",
+    "NCRDT-EVIDENCE-001"
   ],
   "revision": "draft_2026_08",
   "seed": null

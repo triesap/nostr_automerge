@@ -74,7 +74,8 @@
   ],
   "requirements": [
     "NCRDT-CONF-002",
-    "NCRDT-EQUIV-001"
+    "NCRDT-EQUIV-001",
+    "NCRDT-EVIDENCE-001"
   ],
   "revision": "draft_2026_08",
   "scenario_schema": "nostr_automerge.signed_scenario.v2"

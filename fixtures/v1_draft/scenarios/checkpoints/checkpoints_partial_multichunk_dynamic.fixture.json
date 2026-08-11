@@ -1,0 +1,33 @@
+{
+  "expected": {
+    "report_path": "checkpoints_partial_multichunk_dynamic.expected.json",
+    "sha256": "8e4d27426dce4beded2261047f044c5de970361635689551473879b52e2184c6"
+  },
+  "fixture_id": "checkpoints_partial_multichunk_dynamic",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "checkpoints_partial_multichunk_dynamic.input.json",
+      "sha256": "38dc2f1930dc94902446c4c7768e6b7ec4fb5a24c9ce70aa01a214eba8664e36"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile checkpoints",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CHECKPOINT-001",
+    "NCRDT-CONF-002",
+    "NCRDT-CPTRUST-001",
+    "NCRDT-DISPOSITION-001",
+    "NCRDT-OUTCOME-001"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}

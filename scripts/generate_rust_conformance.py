@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MANIFEST_PATH = ROOT / "fixtures" / "distribution" / "manifest_v3.json"
+MANIFEST_PATH = ROOT / "fixtures" / "distribution" / "manifest_v4.json"
 PROFILES = ("core", "checkpoint", "malformed", "property")
 
 
@@ -81,7 +81,7 @@ def main() -> int:
             "process_runs_per_fixture": 2,
             "profile": profile,
             "reports": results,
-            "schema": "nostr_automerge.rust_signed_profile.v3",
+            "schema": "nostr_automerge.rust_signed_profile.v4",
             "status": "pass",
         }
         output_path.write_text(

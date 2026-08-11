@@ -44,6 +44,7 @@
     "disposition_records": {
       "type": "array",
       "uniqueItems": true,
+      "description": "Canonical outcomes derived from complete protocol evaluation. Event records include selected manifests, checkpoint descriptors, and checkpoint chunks whose final status can differ from static carrier validity.",
       "items": {"$ref": "#/$defs/disposition_record"}
     },
     "accepted_changes": {
@@ -90,6 +91,7 @@
       }
     },
     "completion": {
+      "description": "Whether evaluation completed or stopped at the first deterministic budget or cancellation boundary. Interrupted reports retain only outcomes already proven conclusive.",
       "enum": [
         "complete",
         "budget_exhausted",

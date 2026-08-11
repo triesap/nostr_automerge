@@ -1,0 +1,69 @@
+{
+  "budget": {
+    "max_bytes": 1000000,
+    "max_items": 1000000
+  },
+  "cancel_after": null,
+  "coordinate": "31624:e5a018b3a2e155316109d9cdc5eab739759c0e07e0c00bf9fccb8237fe4d7f02:9797979797979797979797979797979797979797979797979797979797979797",
+  "expected_report": {
+    "accepted_changes": [],
+    "canonical_controls": [],
+    "checkpoints": [
+      {
+        "accepted_at_control": [],
+        "change_count": 1,
+        "change_set_hash": "3aa04e2aeb7233d5763a2c311f01f7b5030c63bddc3a860ff7d36be25bf00f87",
+        "chunk_events": [],
+        "descriptor_event": "e1aa168038cc70e73804e16bf1c9b38ef3ba29d92e9e62e3654b92ec2dbde079",
+        "heads": [
+          "66be06a76d30b453372abdd246e6ea8aecf8e2dd9c134264b3cce7d57bbda43f"
+        ],
+        "historical_carriers": [],
+        "snapshot_hash": "7dc5a98ffb3fa901d36b177d53fe27771e36676c41a62ed0775a1faa1f37e0c0",
+        "status": "pending_control"
+      }
+    ],
+    "completion": "complete",
+    "coordinate": "31624:e5a018b3a2e155316109d9cdc5eab739759c0e07e0c00bf9fccb8237fe4d7f02:9797979797979797979797979797979797979797979797979797979797979797",
+    "disposition_records": [
+      {
+        "disposition": "pending",
+        "identifier": "e1aa168038cc70e73804e16bf1c9b38ef3ba29d92e9e62e3654b92ec2dbde079",
+        "namespace": "event"
+      }
+    ],
+    "dispositions_digest": "9d958f0bb11488002ff0cb0eefe85986036809ed80b060da46d2e3ef2cd0603d",
+    "excluded_changes": [],
+    "fixture_id": "checkpoints_missing_control_dynamic",
+    "heads": [],
+    "history_digest": "04514e67ad361446257d5dc167609d9d98837cc1efceafc23d9fc736021c4015",
+    "integrity_alerts": [],
+    "invalid_changes": [],
+    "invalid_events": [],
+    "pending_changes": [],
+    "report_schema": "nostr_automerge.report.v1",
+    "revision": "draft_2026_08",
+    "state_assertions": [],
+    "unsupported_events": []
+  },
+  "fixture_id": "checkpoints_missing_control_dynamic",
+  "raw_events": [
+    {
+      "data": "{\"content\":\"hW9Kg2a+BqcBTgAgSfy6d8wLWoApxx0+fFDonKNtrQrzUMcgHoxv1ShcurkBAQAAAAYVDDQBQgJWAlcHcAJ/CmNoZWNrcG9pbnQBfwF/dmhpc3Rvcnl/AA==\",\"created_at\":4,\"id\":\"9a0701b37736afc4c28c82bfdc94ddf53a3b054fecfa191f18ed94c14982ac7f\",\"kind\":1624,\"pubkey\":\"cb144659ef300200912762786a173663150592d78f4408390c47e9956d9a6c31\",\"sig\":\"4e6600dcec74ad533ceff5f799db1d12aa9427dc4a651a87297714631e74ab92527796cfc2958e00de6abc274117d1433aa742c4edef8196d509775ea15960f6\",\"tags\":[[\"a\",\"31624:e5a018b3a2e155316109d9cdc5eab739759c0e07e0c00bf9fccb8237fe4d7f02:9797979797979797979797979797979797979797979797979797979797979797\"],[\"e\",\"502a1d0746ed5b95b9563b7435b389a5013f3f53529b46f3b7e6aa109037931b\"],[\"x\",\"66be06a76d30b453372abdd246e6ea8aecf8e2dd9c134264b3cce7d57bbda43f\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"change_count\\\":1,\\\"change_set_hash\\\":\\\"3aa04e2aeb7233d5763a2c311f01f7b5030c63bddc3a860ff7d36be25bf00f87\\\",\\\"chunk_count\\\":1,\\\"chunk_root\\\":\\\"0c513e31063ec96fea3969ae541a5e300c6241c2a813558c41c845a3040b54be\\\",\\\"chunk_size\\\":152,\\\"dependency_edges\\\":0,\\\"encoding\\\":\\\"automerge-save-v1\\\",\\\"heads\\\":[\\\"66be06a76d30b453372abdd246e6ea8aecf8e2dd9c134264b3cce7d57bbda43f\\\"],\\\"raw_size\\\":152,\\\"total_ops\\\":1,\\\"v\\\":1}\",\"created_at\":30,\"id\":\"e1aa168038cc70e73804e16bf1c9b38ef3ba29d92e9e62e3654b92ec2dbde079\",\"kind\":1626,\"pubkey\":\"cb144659ef300200912762786a173663150592d78f4408390c47e9956d9a6c31\",\"sig\":\"52e7ede602314ed48ebea36c8d323104e799b5587ef413b5aecdab379f25e5cc11207a5e60dd5fa82efeac91e72d7d5c67d0c02bd2d6c18ca5778d1611dcc55e\",\"tags\":[[\"a\",\"31624:e5a018b3a2e155316109d9cdc5eab739759c0e07e0c00bf9fccb8237fe4d7f02:9797979797979797979797979797979797979797979797979797979797979797\"],[\"e\",\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"],[\"x\",\"7dc5a98ffb3fa901d36b177d53fe27771e36676c41a62ed0775a1faa1f37e0c0\"]]}",
+      "encoding": "utf8"
+    }
+  ],
+  "requirements": [
+    "NCRDT-CHECKPOINT-001",
+    "NCRDT-CONF-002",
+    "NCRDT-CPTRUST-001",
+    "NCRDT-DISPOSITION-001",
+    "NCRDT-OUTCOME-001"
+  ],
+  "revision": "draft_2026_08",
+  "scenario_schema": "nostr_automerge.signed_scenario.v2"
+}
