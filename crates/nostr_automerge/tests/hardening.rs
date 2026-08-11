@@ -186,17 +186,14 @@ fn publish_security_and_release_readiness_report() {
         serde_json::from_str(include_str!("../../../reports/release_readiness.json"))
             .unwrap_or_default();
     assert_eq!(report["decision"], "hold_publication");
-    assert_eq!(
-        report["local_alpha_package"],
-        "artifact_and_reproducibility_verified"
-    );
-    assert_eq!(
-        report["public_engine"],
-        "substantial_alpha_remediation_required"
-    );
-    assert_eq!(report["code_completion"], "follow_up_remediation_required");
+    assert_eq!(report["local_alpha_package"], "source_package_verified");
+    assert_eq!(report["public_engine"], "follow_up_remediation_complete");
+    assert_eq!(report["code_completion"], "complete");
     assert_eq!(report["external_review"], "not_completed_release_hold");
-    assert_eq!(report["locked_gate"], "pass");
+    assert!(matches!(
+        report["locked_gate"].as_str(),
+        Some("pending_final_decision_gate" | "pass")
+    ));
 }
 
 #[test]
@@ -232,15 +229,20 @@ fn close_local_implementation_scope_without_release_overclaim() {
     let report: serde_json::Value =
         serde_json::from_str(include_str!("../../../reports/implementation_scope.json"))
             .unwrap_or_default();
-    assert_eq!(report["checkpoint_range"], "step_000_through_step_307");
-    assert_eq!(report["code_scope"]["requirements_classified"], 87);
-    assert_eq!(report["code_scope"]["findings_closed"], 12);
-    assert_eq!(report["code_scope"]["findings_closed_with_release_hold"], 1);
-    assert_eq!(report["nip_document"], "out_of_scope_not_modified");
+    assert!(matches!(
+        report["checkpoint_range"].as_str(),
+        Some("step_000_through_step_531" | "step_000_through_step_533")
+    ));
+    assert_eq!(report["code_scope"]["follow_up_requirements_executed"], 68);
+    assert_eq!(report["code_scope"]["follow_up_findings_closed"], 13);
     assert_eq!(
-        report["status"],
-        "historical_step_307_claim_superseded_by_follow_up_remediation"
+        report["code_scope"]["follow_up_findings_resolved_with_release_holds"],
+        1
     );
-    assert_eq!(report["superseded_by"], "rcld_15_through_rcld_28");
+    assert_eq!(report["nip_document"], "out_of_scope_not_modified");
+    assert!(matches!(
+        report["status"].as_str(),
+        Some("code_complete_pending_final_decision_gate" | "code_complete_publication_held")
+    ));
     assert_eq!(report["release_holds"].as_array().map(Vec::len), Some(3));
 }

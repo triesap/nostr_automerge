@@ -1,11 +1,11 @@
 {
-  "checkpoint_range": "step_000_through_step_307",
+  "checkpoint_range": "step_000_through_step_531",
   "code_scope": {
-    "findings_closed": 12,
-    "findings_closed_with_release_hold": 1,
-    "requirements_classified": 87,
-    "rust_evidence_through": "e96d0fb",
-    "typescript_evidence_through": "ceb1135"
+    "follow_up_findings_closed": 13,
+    "follow_up_findings_resolved_with_release_holds": 1,
+    "follow_up_requirements_executed": 68,
+    "rust_implementation_commit": "677f4bedf8af4d0f4ff45dca126e680a30b80228",
+    "typescript_implementation_commit": "ac49e7274e79079dd674ada28cd9ed602bd8b9ce"
   },
   "nip_document": "out_of_scope_not_modified",
   "non_claims": [
@@ -14,13 +14,12 @@
     "no hosted or repository-local workflow",
     "no package publication, tag, release, deployment, push, or NIP publication"
   ],
-  "private_runner_boundary": "operator_root_only",
+  "private_runner_boundary": "external_operator_only",
   "release_holds": [
     "sustained_native_rust_fuzz_execution",
     "independent_external_review",
     "separate_publication_authority"
   ],
-  "schema": "nostr_automerge.implementation_scope.v1",
-  "status": "historical_step_307_claim_superseded_by_follow_up_remediation",
-  "superseded_by": "rcld_15_through_rcld_28"
+  "schema": "nostr_automerge.implementation_scope.v2",
+  "status": "code_complete_pending_final_decision_gate"
 }
