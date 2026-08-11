@@ -4086,6 +4086,14 @@ fn unknown_change_tags_leave_canonical_report_unchanged() {
 #[test]
 #[allow(clippy::expect_used)]
 fn signed_single_chunk_checkpoint_verifies_real_automerge_history() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/checkpoints/cases.json"
+    ))
+    .expect("checkpoint fixture family");
+    assert_eq!(
+        fixture["accepted_state_source"].as_str(),
+        Some("exact_parent_epoch_closure_at_referenced_control")
+    );
     let scenario = signed_engine_scenario();
     let checkpoint_signer = TestSigner::from_byte(21);
     let snapshot_hash: [u8; 32] = Sha256::digest(&scenario.snapshot).into();

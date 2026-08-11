@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 23: Checkpoint Profile Completion
 
 Status: active
-Current checkpoint: `step_446`
+Current checkpoint: `step_447`
 Steps: `step_444` through `step_459`
 Primary findings: `FINDING_014`, `FINDING_018`, `FINDING_022`, `FINDING_024`, `FINDING_025`
 
@@ -36,4 +36,5 @@ state, heads, history digest, or materialized state.
 
 - `step_444`: `a366d4f` — descriptor parsing and arithmetic accept zero embedded changes and an empty head set while retaining nonempty snapshot/chunk commitments and all sealed maxima.
 - `step_445`: `edf05de` — the domain-separated, sorted change-set commitment explicitly covers the empty set and is published as a deterministic fixture constant.
-- `step_446`: this commit — exact raw signed control, descriptor, and chunk events prove that a nonempty serialized empty snapshot verifies while canonical history stays empty.
+- `step_446`: `49fbf5a` — exact raw signed control, descriptor, and chunk events prove that a nonempty serialized empty snapshot verifies while canonical history stays empty.
+- `step_447`: this commit — checkpoint verification binds its historical comparison to the exact parent-epoch closure captured at the referenced canonical control.
