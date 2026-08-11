@@ -72,6 +72,22 @@ impl SignedScenarioInput {
             cancel_after: self.cancel_after,
         }
     }
+
+    pub(crate) fn with_raw_events(mut self, raw_events: Vec<EncodedRawEventV2>) -> Self {
+        self.raw_events = raw_events;
+        self
+    }
+}
+
+impl EncodedRawEventV2 {
+    pub(crate) fn decoded(&self) -> Result<Vec<u8>, ScenarioError> {
+        match self.encoding {
+            RawEncodingV2::Utf8 => Ok(self.data.as_bytes().to_vec()),
+            RawEncodingV2::Base64 => base64::engine::general_purpose::STANDARD
+                .decode(&self.data)
+                .map_err(|_| ScenarioError),
+        }
+    }
 }
 
 fn is_identifier(value: &str) -> bool {

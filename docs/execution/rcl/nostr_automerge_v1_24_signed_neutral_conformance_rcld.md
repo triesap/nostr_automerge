@@ -57,3 +57,7 @@ selection answers.
 - `step_478`: `45d633d` — distribution v3 binds every signed fixture artifact, profile, requirement, schema, and checksum exactly once.
 - `step_479`: `9d25964` — fresh Rust processes reproduce every signed profile report and bind source, lock, toolchain, manifest, and output hashes.
 - `step_480`: this commit — exact canonical comparison detects a deliberate copied-report mutation without changing source evidence.
+
+## Corrective Checkpoints
+
+- `step_474a`: this commit — signed fixture execution now runs all eight generated delivery classes through the public engine and rejects any canonical mismatch.

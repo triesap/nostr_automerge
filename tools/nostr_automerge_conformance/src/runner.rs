@@ -17,6 +17,7 @@ use nostr_automerge::{
 use crate::checksum::verify_fixture_files;
 use crate::expected::{CheckpointResult, DispositionRecord, ExpectedReport, load_expected};
 use crate::fixture::{load_fixture, load_normative_fixture};
+use crate::permutations::required_delivery_permutations;
 use crate::report_json::write_canonical_report;
 use crate::scenario::{ScenarioInput, SignedScenarioInput};
 
@@ -86,7 +87,7 @@ pub(crate) fn run_fixture(path: &Path) -> Result<Vec<u8>, RunError> {
         {
             return Err(RunError::Expected);
         }
-        generic_report(signed.into_scenario(), expected.clone())?
+        signed_permutation_report(signed, expected.clone())?
     } else if fixture.fixture_id.starts_with("scenario_") {
         generic_report(
             ScenarioInput::parse(&input).map_err(|_| RunError::Input)?,
@@ -101,6 +102,59 @@ pub(crate) fn run_fixture(path: &Path) -> Result<Vec<u8>, RunError> {
     };
     compare_expected(&actual, &expected)?;
     write_canonical_report(&actual).map_err(|_| RunError::Expected)
+}
+
+fn signed_permutation_report(
+    signed: SignedScenarioInput,
+    expected: ExpectedReport,
+) -> Result<ExpectedReport, RunError> {
+    let invalid_ids = expected
+        .invalid_events
+        .iter()
+        .chain(expected.unsupported_events.iter())
+        .map(ToString::to_string)
+        .collect::<std::collections::BTreeSet<_>>();
+    let permutations = required_delivery_permutations(
+        &signed.raw_events,
+        |event| event_kind(event) == Some(1624),
+        |event| event_kind(event) == Some(1625),
+        |event| {
+            event_id_text(event)
+                .map(|identifier| invalid_ids.contains(&identifier))
+                .unwrap_or(true)
+        },
+    );
+    let mut baseline = None;
+    for permutation in permutations {
+        let report = generic_report(
+            signed
+                .clone()
+                .with_raw_events(permutation.events)
+                .into_scenario(),
+            expected.clone(),
+        )?;
+        compare_expected(&report, &expected)?;
+        if let Some(canonical) = &baseline {
+            if canonical != &report {
+                return Err(RunError::Mismatch);
+            }
+        } else {
+            baseline = Some(report);
+        }
+    }
+    baseline.ok_or(RunError::Input)
+}
+
+fn event_value(event: &crate::scenario::EncodedRawEventV2) -> Option<Value> {
+    serde_json::from_slice(&event.decoded().ok()?).ok()
+}
+
+fn event_kind(event: &crate::scenario::EncodedRawEventV2) -> Option<u64> {
+    event_value(event)?.get("kind")?.as_u64()
+}
+
+fn event_id_text(event: &crate::scenario::EncodedRawEventV2) -> Option<String> {
+    event_value(event)?.get("id")?.as_str().map(str::to_owned)
 }
 
 fn is_normative_signed_fixture(path: &Path) -> bool {
@@ -606,7 +660,7 @@ mod tests {
 
     use super::{
         RunError, compare_expected, discover_fixtures, exactly_one, generic_report,
-        materialized_path, run_corpus,
+        materialized_path, run_corpus, run_fixture,
     };
     use crate::fixture::load_fixture;
     use crate::scenario::SignedScenarioInput;
@@ -641,8 +695,18 @@ mod tests {
             .nth(1)
             .and_then(|tail| tail.split("} else if").next());
         assert!(signed_branch.is_some_and(|branch| {
-            branch.contains("generic_report") && !branch.contains("interop::evaluate")
+            branch.contains("signed_permutation_report") && !branch.contains("interop::evaluate")
         }));
+    }
+
+    #[test]
+    fn signed_fixtures_execute_all_delivery_permutations() {
+        let source = include_str!("runner.rs");
+        assert!(source.contains("required_delivery_permutations"));
+        assert!(source.contains("signed_permutation_report"));
+        let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../fixtures/v1_draft/scenarios/dependencies/dependencies_late_recovery.fixture.json");
+        assert!(run_fixture(&fixture).is_ok());
     }
     use crate::expected::load_expected;
     use crate::scenario::ScenarioInput;
