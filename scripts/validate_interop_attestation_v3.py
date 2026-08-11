@@ -89,8 +89,9 @@ def validate_attestation(value: dict[str, object], language: str) -> None:
 def rust_source_commit() -> str:
     return subprocess.run(
         (
-            "git", "log", "-1", "--format=%H", "--", "crates", "tools", "Cargo.toml",
-            "Cargo.lock", "rust-toolchain.toml", "fixtures",
+            "git", "log", "-1", "--format=%H", "--", "crates",
+            "tools/nostr_automerge_conformance", "Cargo.toml", "Cargo.lock",
+            "rust-toolchain.toml", "fixtures",
         ),
         cwd=ROOT,
         check=True,

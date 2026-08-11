@@ -37,7 +37,7 @@ def sha256(path: Path) -> str:
 
 def implementation_commit() -> str:
     return subprocess.run(
-        ("git", "log", "-1", "--format=%H", "--", "crates", "tools", "Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "fixtures"),
+        ("git", "log", "-1", "--format=%H", "--", "crates", "tools/nostr_automerge_conformance", "Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "fixtures"),
         cwd=ROOT, check=True, capture_output=True, text=True,
     ).stdout.strip()
 
