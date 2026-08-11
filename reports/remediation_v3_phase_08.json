@@ -1,0 +1,29 @@
+{
+  "schema": "nostr_automerge.remediation_v3_phase.v1",
+  "phase": "phase_08_requirement_evidence_reconciliation",
+  "rcld": 37,
+  "completed_steps": ["step_636", "step_637", "step_638", "step_639", "step_640", "step_641", "step_642", "step_643", "step_644", "step_645", "step_646", "step_647"],
+  "verified_evidence_commit": "aaa4baeffe2545b363db36158a662f990b4e8a14",
+  "rust_implementation_commit": "50c487f93556aa096d373d2ab357b3995932cd60",
+  "typescript_implementation_commit": "14a86b5b39b9498fd9691f5d9d6e422981b87ec3",
+  "requirements_coverage_sha256": "18787c7ec44eed600d62cfcbecda8e9189c1e5f28d83f9ccc96a370b8f6ed7fe",
+  "typescript_overlay_sha256": "819d5a0a84652242d3c3d7f23ac66f61dc1c0b497e3c5fae1a5dae53a7ccb759",
+  "test_evidence_manifest_sha256": "2fe1e66ec6448961751267dcae675fda32fdf861d66b0fd8b4f183ea28a5609b",
+  "authority_reconciliation_sha256": "abbb2e48286afb32f265edf04a6b51b4aa34cecfad63f13d59e89f5265c495c1",
+  "status": "pass",
+  "requirement_count": 87,
+  "cross_language_overlay_count": 59,
+  "rust_test_count": 341,
+  "signed_fixture_count": 103,
+  "finding_status": {"FINDING_028": "closed", "FINDING_029": "closed", "FINDING_030": "closed", "FINDING_031": "closed", "FINDING_032": "closed", "FINDING_033": "closed", "FINDING_034": "closed", "FINDING_035": "resolved_with_release_holds"},
+  "verification": [
+    {"command": "python3 scripts/validate_requirement_matrix_v4.py --self-test", "result": "pass"},
+    {"command": "python3 scripts/validate_final_evidence_v3.py --self-test", "result": "pass"},
+    {"command": "python3 scripts/validate_interop_attestation_v3.py --self-test", "result": "pass"},
+    {"command": "python3 scripts/validate_typescript_leak_boundary_v3.py --self-test", "result": "pass"},
+    {"command": "python3 scripts/validate_spec.py", "result": "pass"}
+  ],
+  "holds": ["sustained_native_fuzzing", "independent_external_review", "publication_authority"],
+  "next_rcld": 38,
+  "next_step": "step_648"
+}

@@ -1,8 +1,8 @@
 # Draft V1 Remediation V3 Execution Ledger
 
 Status: executing
-Active RCLD: 37
-Active checkpoint: `step_636`
+Active RCLD: 38
+Active checkpoint: `step_648`
 Range: `step_534` through `step_659`
 
 Exactly one RCLD and one checkpoint are active. Checkpoints remain contiguous,
@@ -18,8 +18,8 @@ unique, dependency ordered, and independently reviewable.
 | 34 | `step_597`–`step_612` | complete | Complete work budgeting and cancellation |
 | 35 | `step_613`–`step_621` | complete | Implementation-owned normative clarification |
 | 36 | `step_622`–`step_635` | complete | Signed conformance and independent TypeScript parity |
-| 37 | `step_636`–`step_647` | active | Final requirement evidence reconciliation |
-| 38 | `step_648`–`step_659` | pending | Final assurance and truthful closure |
+| 37 | `step_636`–`step_647` | complete | Final requirement evidence reconciliation |
+| 38 | `step_648`–`step_659` | active | Final assurance and truthful closure |
 
 ## Completed Checkpoints
 
@@ -48,6 +48,8 @@ unique, dependency ordered, and independently reviewable.
 - `step_622`–`step_629`: published and independently reviewed the 103-case signed-v4 distribution; the Rust public engine passed every fixture twice.
 - `step_630`–`step_634`: bound source-free execution contracts and exact Rust/TypeScript profile agreement to both implementation commits, locks, toolchains, and the v4 distribution; all mismatch and leakage mutations were caught.
 - `step_635`: closed signed protocol parity for Findings 028–031 and 034 and activated RCLD 37; Finding 033 remains open only for final requirement-row reconciliation.
+- `step_636`–`step_646`: bound all 87 requirement rows to exact final Rust evidence, attached opaque TypeScript overlays to all 59 cross-language rows, reconciled six authority changes, superseded legacy interoperability evidence, and caught every evidence substitution and leakage mutation.
+- `step_647`: closed Findings 028 through 034, preserved Finding 035 and publication authority as explicit holds, and activated RCLD 38.
 
 ## Scope Adaptations
 
