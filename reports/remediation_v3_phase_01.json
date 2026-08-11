@@ -1,0 +1,25 @@
+{
+  "schema": "nostr_automerge.remediation_v3_phase.v1",
+  "phase": "phase_01_equivocation_authority",
+  "rcld": 30,
+  "completed_steps": ["step_542", "step_543", "step_544", "step_545", "step_546", "step_547", "step_548", "step_549", "step_550", "step_551", "step_552", "step_553", "step_554", "step_555", "step_556", "step_557"],
+  "verified_source_commit": "d3760f5da4f7132677dd9d52d219188b90bff5b8",
+  "status": "pass",
+  "finding_status": {"FINDING_028": "rust_implementation_closed_signed_v4_and_typescript_pending_rcld_36"},
+  "verification": [
+    {"command": "cargo fmt --all --check", "result": "pass"},
+    {"command": "cargo check --workspace --all-targets --locked", "result": "pass"},
+    {"command": "cargo test --workspace --tests --locked", "result": "pass"},
+    {"command": "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings", "result": "pass"},
+    {"command": "python3 scripts/local_gate.py conformance", "result": "pass"},
+    {"command": "python3 scripts/mutation_campaign.py --index 8", "result": "pass"},
+    {"command": "python3 scripts/validate_fixture_manifest.py", "result": "pass"},
+    {"command": "python3 scripts/validate_distribution.py", "result": "pass"}
+  ],
+  "fixture_distribution_sha256": "d517a061b7c8168db38c048be9e9f336284d6f389919aad45b16df31c264e419",
+  "ignored_tests": 0,
+  "deviations": ["implementation/deviations/step_542.md"],
+  "holds": ["signed_distribution_v4", "independent_typescript_v3", "sustained_native_fuzzing", "independent_external_review", "publication_authority"],
+  "next_rcld": 31,
+  "next_step": "step_558"
+}

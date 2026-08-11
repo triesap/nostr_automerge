@@ -1,6 +1,6 @@
 # nostr_automerge Draft V1 Remediation V3 Multi-RCLD
 
-Status: executing; RCLD 30 and `step_542` are active
+Status: executing; RCLD 31 and `step_558` are active
 Created: 2026-08-11
 Mode: rcl-durable
 Rust workspace and Git repository: repository root
@@ -160,7 +160,7 @@ and repository boundaries are machine-checked; no protocol behavior changes.
 
 ## RCLD 30 — Authoritative Equivocation Composition
 
-Status: active at `step_542`
+Status: complete
 Steps: `step_542` through `step_557`
 Primary finding: 028
 
@@ -192,7 +192,7 @@ stable under delivery permutations and mutations.
 
 ## RCLD 31 — Interrupted Canonical Reports
 
-Status: pending RCLD 30
+Status: active at `step_558`
 Steps: `step_558` through `step_569`
 Primary finding: 029
 
@@ -465,8 +465,8 @@ deviations and holds are explicit. Completion does not mean:
 ## Ordered Child RCLDs
 
 1. RCLD 29 — Authority and baseline (`step_534`–`step_541`) — complete.
-2. RCLD 30 — Authoritative equivocation composition (`step_542`–`step_557`) — active.
-3. RCLD 31 — Interrupted canonical reports (`step_558`–`step_569`) — pending.
+2. RCLD 30 — Authoritative equivocation composition (`step_542`–`step_557`) — complete.
+3. RCLD 31 — Interrupted canonical reports (`step_558`–`step_569`) — active.
 4. RCLD 32 — Selected manifest dynamic validation (`step_570`–`step_582`) — pending.
 5. RCLD 33 — Dynamic manifest and checkpoint event dispositions (`step_583`–`step_596`) — pending.
 6. RCLD 34 — Complete work budgeting and cancellation (`step_597`–`step_612`) — pending.

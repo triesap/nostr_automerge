@@ -1,8 +1,8 @@
 # Draft V1 Remediation V3 Execution Ledger
 
 Status: executing
-Active RCLD: 30
-Active checkpoint: `step_542`
+Active RCLD: 31
+Active checkpoint: `step_558`
 Range: `step_534` through `step_659`
 
 Exactly one RCLD and one checkpoint are active. Checkpoints remain contiguous,
@@ -11,8 +11,8 @@ unique, dependency ordered, and independently reviewable.
 | RCLD | Steps | Status | Scope |
 | --- | --- | --- | --- |
 | 29 | `step_534`–`step_541` | complete | Authority and baseline |
-| 30 | `step_542`–`step_557` | active | Authoritative equivocation composition |
-| 31 | `step_558`–`step_569` | pending | Interrupted canonical reports |
+| 30 | `step_542`–`step_557` | complete | Authoritative equivocation composition |
+| 31 | `step_558`–`step_569` | active | Interrupted canonical reports |
 | 32 | `step_570`–`step_582` | pending | Selected manifest dynamic validation |
 | 33 | `step_583`–`step_596` | pending | Dynamic manifest and checkpoint event dispositions |
 | 34 | `step_597`–`step_612` | pending | Complete work budgeting and cancellation |
@@ -31,6 +31,10 @@ unique, dependency ordered, and independently reviewable.
 - `step_539`: added the fail-closed remediation v3 validator.
 - `step_540`: enforced the private TypeScript boundary.
 - `step_541`: closed the authority and baseline phase.
+- `step_542`–`step_553`: combined as one approved green TDD slice; made the complete epoch result authoritative and proved every poisoning class.
+- `step_554`–`step_555`: defined otherwise-valid and poisoning regression contracts; full signed-v4 distribution remains assigned to RCLD 36.
+- `step_556`: added and caught the authoritative-eligibility mutation.
+- `step_557`: closed the Rust implementation subgate for Finding 028 and activated RCLD 31.
 
 ## Scope Adaptations
 
