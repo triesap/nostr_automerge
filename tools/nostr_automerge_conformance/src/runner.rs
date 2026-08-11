@@ -18,7 +18,7 @@ use crate::checksum::verify_fixture_files;
 use crate::expected::{CheckpointResult, DispositionRecord, ExpectedReport, load_expected};
 use crate::fixture::load_fixture;
 use crate::report_json::write_canonical_report;
-use crate::scenario::ScenarioInput;
+use crate::scenario::{ScenarioInput, SignedScenarioInput};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum RunError {
@@ -68,7 +68,17 @@ pub(crate) fn run_fixture(path: &Path) -> Result<Vec<u8>, RunError> {
         return Err(RunError::Input);
     }
     let input = fs::read(base.join(&fixture.inputs[0].path)).map_err(|_| RunError::Input)?;
-    let actual = if fixture.fixture_id.starts_with("scenario_") {
+    let actual = if let Ok(signed) = SignedScenarioInput::parse(&input) {
+        if signed.fixture_id != fixture.fixture_id
+            || signed.revision != fixture.revision
+            || signed.requirements != fixture.requirements
+            || signed.expected_report
+                != serde_json::to_value(&expected).map_err(|_| RunError::Expected)?
+        {
+            return Err(RunError::Expected);
+        }
+        generic_report(signed.into_scenario(), expected.clone())?
+    } else if fixture.fixture_id.starts_with("scenario_") {
         generic_report(
             ScenarioInput::parse(&input).map_err(|_| RunError::Input)?,
             expected.clone(),

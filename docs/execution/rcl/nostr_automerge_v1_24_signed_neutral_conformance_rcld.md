@@ -33,3 +33,7 @@ fresh-process deterministic comparison, standard Rust gate, and
 Normative conformance input contains raw signed events, explicit local work
 controls, expected output, requirements, and checksums—never validity or
 selection answers.
+
+## Completed Checkpoints
+
+- `step_460`: this commit — signed scenario schema v2 contains only exact raw event encodings, local work controls, authority requirement IDs, and the expected canonical report; caller-declared protocol truth is rejected.
