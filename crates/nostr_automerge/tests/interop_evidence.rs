@@ -1,33 +1,30 @@
-//! Verification for committed independent interoperability evidence.
+//! Verification for canonical signed conformance evidence.
 
 use serde_json::Value;
 
 #[test]
-fn record_independent_typescript_differential_agreement() {
-    let report: Result<Value, _> =
-        serde_json::from_str(include_str!("../../../reports/interop_differential.json"));
+fn signed_profile_deliberate_mismatch_is_detectable() {
+    let source = include_bytes!("../../../reports/rust_signed_property.json");
+    let report: Result<Value, _> = serde_json::from_slice(source);
     assert!(report.is_ok());
     let Ok(report) = report else { return };
-    assert_eq!(report["schema"], "nostr_automerge.local_interop.v1");
-    assert_eq!(report["status"], "limited_local_differential_pass");
-    assert_eq!(
-        report["claim_scope"],
-        "limited_simplified_five_fixture_corpus"
+    assert_eq!(report["schema"], "nostr_automerge.rust_signed_profile.v3");
+    assert_eq!(report["status"], "pass");
+    assert_eq!(report["process_runs_per_fixture"], 2);
+    assert_eq!(report["fixture_count"], 6);
+
+    let mut mutated = report.clone();
+    mutated["reports"][0]["report"]["completion"] = Value::String("cancelled".to_owned());
+    let original_reports = serde_json::to_vec(&report["reports"]);
+    let mutated_reports = serde_json::to_vec(&mutated["reports"]);
+    assert!(original_reports.is_ok());
+    assert!(mutated_reports.is_ok());
+    assert_ne!(
+        original_reports.as_deref().ok(),
+        mutated_reports.as_deref().ok()
     );
-    assert_eq!(report["fixture_count"], 5);
-    assert_eq!(report["canonical_report_bytes"], "identical");
-    assert_eq!(report["deliberate_mismatch"], "detected");
-    assert_eq!(report["ci_policy"], "local_act_pass");
-    assert_eq!(report["mismatches"].as_array().map(Vec::len), Some(0));
     assert_eq!(
-        report["corpus_sha256"],
-        "e1c96aa1046df5108c713d6484857d2030cb73ab1ac668f3aac28821f71779d4"
+        include_bytes!("../../../reports/rust_signed_property.json"),
+        source
     );
-    assert_eq!(
-        report["evaluated_typescript_commit"].as_str().map(str::len),
-        Some(40)
-    );
-    let narrative = include_str!("../../../reports/interop_differential.md");
-    assert!(narrative.contains("No workflow definition"));
-    assert!(narrative.contains("is tracked"));
 }

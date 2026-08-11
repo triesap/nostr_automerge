@@ -1,64 +1,83 @@
 #!/usr/bin/env python3
-"""Compare independent canonical profile reports and detect a deliberate mismatch."""
+"""Compare canonical signed profile report arrays without normalization."""
 
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+PROFILES = ("core", "checkpoint", "malformed", "property")
+MISMATCH_CLASS = "canonical_report_bytes"
 
 
-def canonical(value: object) -> bytes:
-    return (json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n").encode()
+class CanonicalMismatch(ValueError):
+    """An exact canonical profile comparison failed."""
+
+    def __init__(self, classification: str) -> None:
+        super().__init__(classification)
+        self.classification = classification
+
+
+def canonical_reports(value: object) -> bytes:
+    if not isinstance(value, dict) or not isinstance(value.get("reports"), list):
+        raise ValueError("profile artifact has no canonical reports array")
+    return (json.dumps(value["reports"], sort_keys=True, separators=(",", ":")) + "\n").encode()
+
+
+def compare(left: object, right: object) -> str:
+    if canonical_reports(left) != canonical_reports(right):
+        raise CanonicalMismatch(MISMATCH_CLASS)
+    return hashlib.sha256(canonical_reports(left)).hexdigest()
+
+
+def self_test() -> None:
+    path = ROOT / "reports" / "rust_signed_property.json"
+    original_bytes = path.read_bytes()
+    original = json.loads(original_bytes)
+    mutated = copy.deepcopy(original)
+    mutated["reports"][0]["report"]["completion"] = "cancelled"
+    try:
+        compare(original, mutated)
+    except CanonicalMismatch as error:
+        if error.classification != MISMATCH_CLASS:
+            raise AssertionError("unexpected mismatch classification") from error
+    else:
+        raise AssertionError("deliberate canonical report mutation was not detected")
+    if path.read_bytes() != original_bytes:
+        raise AssertionError("mismatch self-test altered the source report")
+
+
+def compare_profile(profile: str, typescript_root: Path) -> None:
+    rust_path = ROOT / "reports" / f"rust_signed_{profile}.json"
+    typescript_path = typescript_root / "reports" / f"typescript_signed_{profile}.json"
+    rust = json.loads(rust_path.read_text(encoding="utf-8"))
+    typescript = json.loads(typescript_path.read_text(encoding="utf-8"))
+    digest = compare(rust, typescript)
+    if rust["fixture_manifest_sha256"] != typescript["fixture_manifest_sha256"]:
+        raise CanonicalMismatch("fixture_manifest_sha256")
+    print(f"PASS: {profile} signed profile canonical bytes {digest}")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("profile", choices=("core", "checkpoint"))
-    parser.add_argument("--typescript-root", required=True, type=Path)
+    parser.add_argument("profile", nargs="?", choices=PROFILES)
+    parser.add_argument("--typescript-root", type=Path)
+    parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
-    typescript = args.typescript_root.resolve(strict=True)
-    rust_report = json.loads((ROOT / f"reports/interop_rust_{args.profile}.canonical.json").read_text())
-    typescript_report = json.loads(
-        (typescript / f"reports/interop_typescript_{args.profile}.canonical.json").read_text()
-    )
-    rust_attestation = json.loads(
-        (ROOT / f"reports/interop_rust_{args.profile}.attestation.json").read_text()
-    )
-    typescript_attestation = json.loads(
-        (typescript / f"reports/interop_typescript_{args.profile}.attestation.json").read_text()
-    )
-    rust_bytes = canonical(rust_report)
-    typescript_bytes = canonical(typescript_report)
-    if rust_bytes != typescript_bytes:
-        raise AssertionError(f"{args.profile} canonical report mismatch")
-    mismatch = bytearray(typescript_bytes)
-    mismatch[-2] ^= 1
-    if rust_bytes == bytes(mismatch):
-        raise AssertionError("deliberate mismatch was not detected")
-    if rust_attestation["fixture_manifest_sha256"] != typescript_attestation["fixture_manifest_sha256"]:
-        raise AssertionError("attestations bind different fixture manifests")
-    result = {
-        "canonical_report_bytes": "identical",
-        "deliberate_mismatch": "detected",
-        "fixture_count": len(rust_report),
-        "fixture_manifest_sha256": rust_attestation["fixture_manifest_sha256"],
-        "profile": args.profile,
-        "report_sha256": hashlib.sha256(rust_bytes).hexdigest(),
-        "rust_commit": rust_attestation["commit"],
-        "schema": "nostr_automerge.interop_profile_agreement.v1",
-        "status": "pass",
-        "typescript_commit": typescript_attestation["commit"],
-    }
-    (ROOT / f"reports/interop_{args.profile}_agreement.json").write_text(
-        json.dumps(result, sort_keys=True, separators=(",", ":")) + "\n",
-        encoding="utf-8",
-    )
-    print(f"PASS: {args.profile} profile canonical report bytes are identical")
+    if args.self_test:
+        if args.profile is not None or args.typescript_root is not None:
+            parser.error("--self-test does not accept a profile or TypeScript root")
+        self_test()
+        print(f"PASS: deliberate mismatch classified as {MISMATCH_CLASS}")
+        return 0
+    if args.profile is None or args.typescript_root is None:
+        parser.error("profile and --typescript-root are required")
+    compare_profile(args.profile, args.typescript_root.resolve(strict=True))
     return 0
 
 
