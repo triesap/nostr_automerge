@@ -1,0 +1,47 @@
+{
+  "schema": "nostr_automerge.remediation_v3_source_manifest.v1",
+  "reviewed_commit": "cee7559b8bd7eb00f5f1e37b24c8f9c68e11049d",
+  "anchors": [
+    {
+      "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+      "baseline_git_object": "c9094ce6b2b254b29208b2b5962a2f34e37a0516",
+      "findings": ["FINDING_028", "FINDING_029", "FINDING_030", "FINDING_031", "FINDING_032"],
+      "symbols": ["evaluate", "event_disposition_records", "prepare_controls", "change_for_hash"],
+      "replacement_anchors": []
+    },
+    {
+      "path": "crates/nostr_automerge/src/evidence/corpus_builder.rs",
+      "baseline_git_object": "ca40e01db7816acfdbcf69b6e50fa3e223325c09",
+      "findings": ["FINDING_030", "FINDING_032"],
+      "symbols": ["selected_manifest", "selected_manifests"],
+      "replacement_anchors": []
+    },
+    {
+      "path": "crates/nostr_automerge/src/graph/actor_state.rs",
+      "baseline_git_object": "f504e1b75dcf02a8e66ef7eda53071b995f15005",
+      "findings": ["FINDING_034"],
+      "symbols": ["causal_next_op"],
+      "replacement_anchors": []
+    },
+    {
+      "path": "crates/nostr_automerge/src/reference/epoch_engine.rs",
+      "baseline_git_object": "aaf1906dba365143468b37c6994585725e6ec2e1",
+      "findings": ["FINDING_028"],
+      "symbols": ["evaluate_epoch", "quarantine_equivocation_descendants"],
+      "replacement_anchors": []
+    },
+    {
+      "path": "crates/nostr_automerge/src/reference/evaluate.rs",
+      "baseline_git_object": "40c26660611e3a81c5fdf43747031c9637b0913d",
+      "findings": ["FINDING_028", "FINDING_029", "FINDING_032"],
+      "symbols": ["evaluate", "incomplete_report", "quarantine_equivocation_descendants"],
+      "replacement_anchors": []
+    }
+  ],
+  "review_limits": [
+    "static_source_review",
+    "no_sustained_native_fuzzing",
+    "no_independent_external_review",
+    "typescript_opaque_attestation_only"
+  ]
+}
