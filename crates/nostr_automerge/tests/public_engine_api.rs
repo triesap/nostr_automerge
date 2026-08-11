@@ -3980,6 +3980,14 @@ fn signed_engine_scenario() -> SignedEngineScenario {
 
 #[allow(clippy::expect_used)]
 fn signed_engine_scenario_with_change_tags(extra_tags: Vec<Vec<String>>) -> SignedEngineScenario {
+    signed_engine_scenario_with_roles(extra_tags, r#"["checkpoint","write"]"#)
+}
+
+#[allow(clippy::expect_used)]
+fn signed_engine_scenario_with_roles(
+    extra_tags: Vec<Vec<String>>,
+    roles_json: &str,
+) -> SignedEngineScenario {
     let controller = TestSigner::from_byte(20);
     let device = TestSigner::from_byte(21);
     let coordinate: DocumentCoordinate = format!(
@@ -3999,8 +4007,9 @@ fn signed_engine_scenario_with_change_tags(extra_tags: Vec<Vec<String>>) -> Sign
         }])
         .expect("canonical authored change");
     let control_content = format!(
-        r#"{{"base_heads":[],"format":"automerge-change-v1","members":[{{"account":null,"pubkey":"{}","roles":["checkpoint","write"]}}],"policy":"controller-acl-v1","predecessor":null,"seq":0,"successor":null,"text_encoding":"utf16","v":1}}"#,
-        device.public_key().to_hex()
+        r#"{{"base_heads":[],"format":"automerge-change-v1","members":[{{"account":null,"pubkey":"{}","roles":{}}}],"policy":"controller-acl-v1","predecessor":null,"seq":0,"successor":null,"text_encoding":"utf16","v":1}}"#,
+        device.public_key().to_hex(),
+        roles_json,
     );
     let control = controller.sign(
         &UnsignedEventDraft::new(
@@ -4431,7 +4440,14 @@ struct CheckpointCommitmentVariant {
     total_ops: u64,
 }
 
-#[allow(clippy::expect_used)]
+#[derive(Clone, Copy)]
+enum CheckpointHistoryVariant {
+    Accepted,
+    MissingCarrier,
+    NotAccepted,
+}
+
+#[allow(clippy::expect_used, clippy::too_many_arguments)]
 fn evaluate_single_chunk_variant(
     chunk_signer: &TestSigner,
     chunk_coordinate: Option<DocumentCoordinate>,
@@ -4441,8 +4457,16 @@ fn evaluate_single_chunk_variant(
     snapshot_hash_override: Option<[u8; 32]>,
     chunk_root_override: Option<[u8; 32]>,
     commitments_override: Option<CheckpointCommitmentVariant>,
+    history_variant: CheckpointHistoryVariant,
 ) -> nostr_automerge::EvaluationReport {
-    let scenario = signed_engine_scenario();
+    let scenario = match history_variant {
+        CheckpointHistoryVariant::Accepted | CheckpointHistoryVariant::MissingCarrier => {
+            signed_engine_scenario()
+        }
+        CheckpointHistoryVariant::NotAccepted => {
+            signed_engine_scenario_with_roles(Vec::new(), r#"["checkpoint"]"#)
+        }
+    };
     let descriptor_signer = TestSigner::from_byte(21);
     let snapshot_hash: [u8; 32] = Sha256::digest(&scenario.snapshot).into();
     let chunk_hash = snapshot_hash;
@@ -4519,8 +4543,14 @@ fn evaluate_single_chunk_variant(
             .expect("chunk preimage"),
         )
     });
+    let mut events = chunks.collect::<Vec<_>>();
+    events.push(descriptor);
+    if !matches!(history_variant, CheckpointHistoryVariant::MissingCarrier) {
+        events.push(scenario.change);
+    }
+    events.push(scenario.control);
     let mut builder = CorpusBuilder::new();
-    for event in chunks.chain([descriptor, scenario.change, scenario.control]) {
+    for event in events {
         assert!(matches!(
             builder.ingest(event),
             IngestOutcome::Accepted { .. }
@@ -4551,6 +4581,7 @@ fn checkpoint_author_and_binding_refusals() {
         None,
         None,
         None,
+        CheckpointHistoryVariant::Accepted,
     );
     assert_eq!(
         wrong_author.checkpoints()[0].status(),
@@ -4573,6 +4604,7 @@ fn checkpoint_author_and_binding_refusals() {
         None,
         None,
         None,
+        CheckpointHistoryVariant::Accepted,
     );
     assert_eq!(
         wrong_coordinate.checkpoints()[0].status(),
@@ -4588,6 +4620,7 @@ fn checkpoint_author_and_binding_refusals() {
         None,
         None,
         None,
+        CheckpointHistoryVariant::Accepted,
     );
     assert_eq!(
         wrong_descriptor.checkpoints()[0].status(),
@@ -4612,12 +4645,23 @@ fn checkpoint_index_refusals() {
         None,
         None,
         None,
+        CheckpointHistoryVariant::Accepted,
     );
     assert_eq!(
         duplicate.checkpoints()[0].status(),
         CheckpointVerificationStatus::DuplicateChunk
     );
-    let missing = evaluate_single_chunk_variant(&signer, None, None, &[], None, None, None, None);
+    let missing = evaluate_single_chunk_variant(
+        &signer,
+        None,
+        None,
+        &[],
+        None,
+        None,
+        None,
+        None,
+        CheckpointHistoryVariant::Accepted,
+    );
     assert_eq!(
         missing.checkpoints()[0].status(),
         CheckpointVerificationStatus::MissingChunk
@@ -4631,6 +4675,7 @@ fn checkpoint_index_refusals() {
         None,
         None,
         None,
+        CheckpointHistoryVariant::Accepted,
     );
     assert_eq!(
         wrong_count.checkpoints()[0].status(),
@@ -4657,6 +4702,7 @@ fn checkpoint_size_refusals() {
         None,
         None,
         None,
+        CheckpointHistoryVariant::Accepted,
     );
     assert_eq!(
         report.checkpoints()[0].status(),
@@ -4685,6 +4731,7 @@ fn checkpoint_merkle_refusals() {
         None,
         None,
         None,
+        CheckpointHistoryVariant::Accepted,
     );
     assert_eq!(
         merkle.checkpoints()[0].status(),
@@ -4699,6 +4746,7 @@ fn checkpoint_merkle_refusals() {
         Some([0x88; 32]),
         None,
         None,
+        CheckpointHistoryVariant::Accepted,
     );
     assert_eq!(
         snapshot_hash.checkpoints()[0].status(),
@@ -4728,6 +4776,7 @@ fn checkpoint_snapshot_refusals() {
         Some(invalid_hash),
         Some(invalid_root),
         None,
+        CheckpointHistoryVariant::Accepted,
     );
     assert_eq!(
         load.checkpoints()[0].status(),
@@ -4758,6 +4807,7 @@ fn checkpoint_snapshot_refusals() {
             head: ChangeHash::from_bytes([0x99; 32]),
             ..base
         }),
+        CheckpointHistoryVariant::Accepted,
     );
     assert_eq!(
         head.checkpoints()[0].status(),
@@ -4790,12 +4840,52 @@ fn checkpoint_snapshot_refusals() {
             None,
             None,
             Some(commitments),
+            CheckpointHistoryVariant::Accepted,
         );
         assert_eq!(
             report.checkpoints()[0].status(),
             CheckpointVerificationStatus::CommitmentMismatch
         );
     }
+}
+
+#[test]
+fn checkpoint_history_refusals() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/checkpoints/negative_history.json"
+    ))
+    .unwrap_or_default();
+    assert_eq!(fixture["cases"].as_array().map(Vec::len), Some(2));
+    let missing = evaluate_single_chunk_variant(
+        &TestSigner::from_byte(21),
+        None,
+        None,
+        &[(4, "0", "1")],
+        None,
+        None,
+        None,
+        None,
+        CheckpointHistoryVariant::MissingCarrier,
+    );
+    assert_eq!(
+        missing.checkpoints()[0].status(),
+        CheckpointVerificationStatus::MissingHistoricalCarrier
+    );
+    let not_accepted = evaluate_single_chunk_variant(
+        &TestSigner::from_byte(21),
+        None,
+        None,
+        &[(4, "0", "1")],
+        None,
+        None,
+        None,
+        None,
+        CheckpointHistoryVariant::NotAccepted,
+    );
+    assert_eq!(
+        not_accepted.checkpoints()[0].status(),
+        CheckpointVerificationStatus::NotAcceptedAtControl
+    );
 }
 
 #[allow(clippy::expect_used)]
