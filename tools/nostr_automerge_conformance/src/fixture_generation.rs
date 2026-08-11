@@ -19,11 +19,134 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "manifest" => generate_manifest_profile(),
         "control_genesis" => generate_control_genesis_profile(),
         "control_transition" => generate_control_transition_profile(),
+        "control_fork" => generate_control_fork_profile(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
 }
 
 type Member<'a> = (&'a Signer, Option<String>, &'a [&'a str]);
+
+fn generate_control_fork_profile() -> Result<(), String> {
+    let controller = Signer::from_byte(78)?;
+    let writer = Signer::from_byte(79)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "78".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid fork coordinate".to_owned())?;
+    let parent_content =
+        control_content_full(0, vec![(&writer, None, &["write"])], "automerge-change-v1");
+    let child_content =
+        control_content_full(1, vec![(&writer, None, &["write"])], "automerge-change-v1");
+    let invalid_content = control_content_full(
+        1,
+        vec![(&writer, None, &["checkpoint", "write"])],
+        "automerge-change-v1",
+    );
+    let parent = sign_control(&controller, 1, coordinate, None, parent_content)?;
+    let parent_id = event_id(&parent)?;
+    let first = sign_control(
+        &controller,
+        2,
+        coordinate,
+        Some(parent_id),
+        child_content.clone(),
+    )?;
+    let second = sign_control(
+        &controller,
+        3,
+        coordinate,
+        Some(parent_id),
+        child_content.clone(),
+    )?;
+    let (lower, higher) = order_by_event_id(first, second)?;
+    let invalid_lower = sign_control_below(
+        &controller,
+        100,
+        coordinate,
+        parent_id,
+        invalid_content,
+        event_id(&higher)?,
+    )?;
+    let pending = sign_control(
+        &controller,
+        4,
+        coordinate,
+        Some("41".repeat(32).parse().map_err(|_| "invalid event id")?),
+        child_content,
+    )?;
+    let cases = vec![
+        (
+            "control_fork_valid_siblings",
+            vec![parent.clone(), higher.clone(), lower.clone()],
+        ),
+        (
+            "control_fork_lower_invalid_sibling",
+            vec![parent.clone(), higher.clone(), invalid_lower.clone()],
+        ),
+        (
+            "control_fork_pending_sibling",
+            vec![parent.clone(), higher.clone(), pending],
+        ),
+        (
+            "control_fork_late_lower_valid",
+            vec![parent.clone(), higher.clone(), lower],
+        ),
+        (
+            "control_fork_late_lower_invalid",
+            vec![parent, higher, invalid_lower],
+        ),
+    ];
+    let root = repository_root().join("fixtures/v1_draft/scenarios/control_fork");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    for (fixture_id, events) in cases {
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            &["NCRDT-CONF-002", "NCRDT-CONTROL-001"],
+            "control_fork",
+        )?;
+    }
+    Ok(())
+}
+
+fn order_by_event_id(
+    left: RawEventBytes,
+    right: RawEventBytes,
+) -> Result<(RawEventBytes, RawEventBytes), String> {
+    if event_id(&left)? < event_id(&right)? {
+        Ok((left, right))
+    } else {
+        Ok((right, left))
+    }
+}
+
+fn sign_control_below(
+    signer: &Signer,
+    start: u64,
+    coordinate: DocumentCoordinate,
+    parent: EventId,
+    content: String,
+    upper: EventId,
+) -> Result<RawEventBytes, String> {
+    for created_at in start..start.saturating_add(10_000) {
+        let candidate = sign_control(
+            signer,
+            created_at,
+            coordinate,
+            Some(parent),
+            content.clone(),
+        )?;
+        if event_id(&candidate)? < upper {
+            return Ok(candidate);
+        }
+    }
+    Err("could not generate lower control event id".to_owned())
+}
 
 fn generate_control_transition_profile() -> Result<(), String> {
     let controller = Signer::from_byte(75)?;
