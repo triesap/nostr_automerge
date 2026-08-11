@@ -30,15 +30,17 @@ def main() -> int:
     if steps != list(range(308, 534)):
         raise AssertionError("follow-up checkpoints are not contiguous and unique")
     current = re.search(r"Current checkpoint: `step_(\d{3})`", ledger)
-    if current is None or current.group(1) != "520":
-        raise AssertionError("unexpected active follow-up checkpoint")
+    if current is None or current.group(1) != "533":
+        raise AssertionError("unexpected final follow-up checkpoint")
     active = [line for line in ledger.splitlines() if "| active |" in line]
-    if len(active) != 1 or not active[0].startswith("| 28 |"):
-        raise AssertionError("exactly RCLD 28 must be active")
+    if active or "Current RCLD: none" not in ledger:
+        raise AssertionError("completed follow-up ledger cannot retain an active RCLD")
+    if "Completed checkpoints: `step_308` through `step_533`" not in ledger:
+        raise AssertionError("completed follow-up checkpoint range is incomplete")
     for phrase in ("Only one RCLD", "never", "cannot bypass", "Deviations"):
         if phrase.lower() not in ledger.lower():
             raise AssertionError(f"missing execution policy: {phrase}")
-    print("PASS: follow-up ledger covers 226 ordered checkpoints with one active slice")
+    print("PASS: follow-up ledger closes all 226 ordered checkpoints")
     return 0
 
 
