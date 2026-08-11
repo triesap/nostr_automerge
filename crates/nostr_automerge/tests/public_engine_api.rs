@@ -4178,6 +4178,120 @@ fn signed_single_chunk_checkpoint_verifies_real_automerge_history() {
 
 #[test]
 #[allow(clippy::expect_used)]
+fn signed_empty_history_checkpoint_verifies_without_redefining_history() {
+    let controller = TestSigner::from_byte(60);
+    let checkpoint_signer = TestSigner::from_byte(61);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "60".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let actor = ActorId::derive(coordinate, checkpoint_signer.public_key());
+    let snapshot = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
+        .expect("empty document")
+        .accepted_state_bytes();
+    assert!(!snapshot.is_empty());
+
+    let control = controller.sign(
+        &UnsignedEventDraft::new(
+            1,
+            1_625,
+            vec![vec!["a".to_owned(), coordinate.to_address()]],
+            format!(
+                r#"{{"base_heads":[],"format":"automerge-change-v1","members":[{{"account":null,"pubkey":"{}","roles":["checkpoint"]}}],"policy":"controller-acl-v1","predecessor":null,"seq":0,"successor":null,"text_encoding":"utf16","v":1}}"#,
+                checkpoint_signer.public_key().to_hex()
+            ),
+        )
+        .expect("control draft")
+        .prepare(controller.public_key())
+        .expect("control preimage"),
+    );
+    let control_id = VerifiedNip01Event::verify(control.clone())
+        .expect("signed control")
+        .event_id();
+    let snapshot_hash: [u8; 32] = Sha256::digest(&snapshot).into();
+    let chunk_hash = snapshot_hash;
+    let chunk_root = nostr_automerge::checkpoint::leaf_hash(0, 1, chunk_hash);
+    let empty_change_set_hash = Sha256::digest(
+        [
+            b"nostr-crdt/automerge/change-set/v1".as_slice(),
+            &[0],
+            &0_u64.to_be_bytes(),
+        ]
+        .concat(),
+    );
+    let descriptor = checkpoint_signer.sign(
+        &UnsignedEventDraft::new(
+            2,
+            1_626,
+            vec![
+                vec!["a".to_owned(), coordinate.to_address()],
+                vec!["e".to_owned(), control_id.to_hex()],
+                vec!["x".to_owned(), hex32(snapshot_hash)],
+            ],
+            format!(
+                r#"{{"change_count":0,"change_set_hash":"{}","chunk_count":1,"chunk_root":"{}","chunk_size":{},"dependency_edges":0,"encoding":"automerge-save-v1","heads":[],"raw_size":{},"total_ops":0,"v":1}}"#,
+                hex32(empty_change_set_hash.into()),
+                hex32(chunk_root),
+                snapshot.len(),
+                snapshot.len(),
+            ),
+        )
+        .expect("descriptor draft")
+        .prepare(checkpoint_signer.public_key())
+        .expect("descriptor preimage"),
+    );
+    let descriptor_id = VerifiedNip01Event::verify(descriptor.clone())
+        .expect("signed descriptor")
+        .event_id();
+    let chunk = checkpoint_signer.sign(
+        &UnsignedEventDraft::new(
+            3,
+            1_627,
+            vec![
+                vec!["a".to_owned(), coordinate.to_address()],
+                vec!["e".to_owned(), descriptor_id.to_hex()],
+                vec!["x".to_owned(), hex32(chunk_hash)],
+                vec!["part".to_owned(), "0".to_owned(), "1".to_owned()],
+            ],
+            format!(
+                r#"{{"data":"{}","proof":[],"v":1}}"#,
+                base64::engine::general_purpose::STANDARD.encode(&snapshot)
+            ),
+        )
+        .expect("chunk draft")
+        .prepare(checkpoint_signer.public_key())
+        .expect("chunk preimage"),
+    );
+    let mut builder = CorpusBuilder::new();
+    for event in [chunk, descriptor, control] {
+        let outcome = builder.ingest(event);
+        assert!(
+            matches!(outcome, IngestOutcome::Accepted { .. }),
+            "unexpected ingest outcome: {outcome:?}"
+        );
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000_000),
+        &NeverCancelled,
+    );
+    let checkpoint = report.checkpoints().first().expect("checkpoint result");
+    assert_eq!(checkpoint.descriptor_event(), descriptor_id);
+    assert_eq!(checkpoint.status(), CheckpointVerificationStatus::Verified);
+    assert!(checkpoint.heads().is_empty());
+    assert!(checkpoint.historical_carriers().is_empty());
+    assert!(checkpoint.accepted_at_control().is_empty());
+    assert!(report.accepted_changes().is_empty());
+    assert!(report.heads().is_empty());
+    assert!(report.document().is_some());
+}
+
+#[test]
+#[allow(clippy::expect_used)]
 fn signed_irregular_multichunk_checkpoint_reconstructs_exact_history() {
     let scenario = signed_engine_scenario();
     let signer = TestSigner::from_byte(21);
