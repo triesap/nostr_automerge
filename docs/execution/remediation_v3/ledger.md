@@ -1,8 +1,8 @@
 # Draft V1 Remediation V3 Execution Ledger
 
-Status: executing
-Active RCLD: 38
-Active checkpoint: `step_648`
+Status: complete — `code_complete_publication_held`
+Active RCLD: none
+Active checkpoint: none
 Range: `step_534` through `step_659`
 
 Exactly one RCLD and one checkpoint are active. Checkpoints remain contiguous,
@@ -19,7 +19,7 @@ unique, dependency ordered, and independently reviewable.
 | 35 | `step_613`–`step_621` | complete | Implementation-owned normative clarification |
 | 36 | `step_622`–`step_635` | complete | Signed conformance and independent TypeScript parity |
 | 37 | `step_636`–`step_647` | complete | Final requirement evidence reconciliation |
-| 38 | `step_648`–`step_659` | active | Final assurance and truthful closure |
+| 38 | `step_648`–`step_659` | complete | Final assurance and truthful closure |
 
 ## Completed Checkpoints
 
@@ -50,6 +50,10 @@ unique, dependency ordered, and independently reviewable.
 - `step_635`: closed signed protocol parity for Findings 028–031 and 034 and activated RCLD 37; Finding 033 remains open only for final requirement-row reconciliation.
 - `step_636`–`step_646`: bound all 87 requirement rows to exact final Rust evidence, attached opaque TypeScript overlays to all 59 cross-language rows, reconciled six authority changes, superseded legacy interoperability evidence, and caught every evidence substitution and leakage mutation.
 - `step_647`: closed Findings 028 through 034, preserved Finding 035 and publication authority as explicit holds, and activated RCLD 38.
+- `step_648`–`step_653`: reproduced the locked Rust standard, complete signed conformance, package, SBOM, supply-chain, mutation, coverage, and representative resource gates; the TypeScript source-package dry run also passed.
+- `step_654`: recorded the approved fuzz-build and sustained-execution policy deferral without executing or working around it.
+- `step_655`: preserved independent external review as an uncompleted release hold.
+- `step_656`–`step_659`: completed final source/evidence self-review, verified the source-only and no-publication boundaries, closed this ledger, and recorded `code_complete_publication_held`.
 
 ## Scope Adaptations
 

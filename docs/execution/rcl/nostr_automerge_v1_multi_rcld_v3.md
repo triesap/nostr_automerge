@@ -1,6 +1,6 @@
 # nostr_automerge Draft V1 Remediation V3 Multi-RCLD
 
-Status: executing; RCLD 38 and `step_648` are active
+Status: complete — `code_complete_publication_held`
 Created: 2026-08-11
 Mode: rcl-durable
 Rust workspace and Git repository: repository root
@@ -396,7 +396,7 @@ separate from code-completion status.
 
 ## RCLD 38 — Final Assurance And Truthful Closure
 
-Status: active at `step_648`
+Status: complete
 Steps: `step_648` through `step_659`
 Primary findings: 028–035
 
@@ -473,4 +473,4 @@ deviations and holds are explicit. Completion does not mean:
 7. RCLD 35 — Normative clarification (`step_613`–`step_621`) — complete.
 8. RCLD 36 — Signed conformance and independent TypeScript parity (`step_622`–`step_635`) — complete.
 9. RCLD 37 — Final requirement evidence reconciliation (`step_636`–`step_647`) — complete.
-10. RCLD 38 — Final assurance and truthful closure (`step_648`–`step_659`) — active.
+10. RCLD 38 — Final assurance and truthful closure (`step_648`–`step_659`) — complete.

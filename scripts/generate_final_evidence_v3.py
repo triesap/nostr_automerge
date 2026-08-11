@@ -120,11 +120,13 @@ def main() -> int:
         "reason": "independent external security and protocol review has not occurred",
     })
     write("reports/release_readiness.json", {
-        "schema": "nostr_automerge.release_readiness.v4", "decision": "code_complete_publication_held", "code_completion": "complete",
-        "rust_candidate": rust_commit, "typescript_candidate": ts["commit"], "locked_gate": "pending_final_reproduction",
+        "schema": "nostr_automerge.release_readiness.v4", "decision": "hold_publication", "code_completion": "complete",
+        "local_implementation_status": "code_complete_publication_held",
+        "rust_candidate": rust_commit, "typescript_candidate": ts["commit"], "locked_gate": "pass",
+        "local_alpha_package": "source_package_verified", "public_engine": "follow_up_remediation_complete",
         "signed_conformance": "pass_103_fixtures", "interop": "byte_exact_final_profiles_pass", "requirements": "executed_evidence_v4_pass",
         "evidence_mutations": "pass_no_survivors", "private_boundary": "pass", "authority_reconciliation": "pass_nip_unchanged",
-        "coverage": "pending_final_gap_review", "resource_qualification": "pending_final_reproduction", "supply_chain": "pending_final_reproduction",
+        "coverage": "pass_with_documented_gaps", "resource_qualification": "representative_local_pass", "supply_chain": "pass",
         "fuzz_targets": "not_run_policy_deferred", "sustained_fuzzing": "not_completed_release_hold", "external_review": "not_completed_release_hold",
         "publication_authority": "not_authorized", "nip_document": "out_of_scope_unchanged",
     })

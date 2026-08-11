@@ -69,7 +69,7 @@ def validate() -> None:
     if findings["FINDING_035"].get("result") != "resolved_with_release_holds" or set(findings["FINDING_035"].get("holds", [])) != {"sustained_native_fuzzing", "independent_external_review", "publication_authority"}:
         raise EvidenceError("release_holds")
     readiness = load("reports/release_readiness.json")
-    if readiness.get("decision") != "code_complete_publication_held" or readiness.get("sustained_fuzzing") != "not_completed_release_hold" or readiness.get("external_review") != "not_completed_release_hold" or readiness.get("publication_authority") != "not_authorized":
+    if readiness.get("decision") != "hold_publication" or readiness.get("local_implementation_status") != "code_complete_publication_held" or readiness.get("sustained_fuzzing") != "not_completed_release_hold" or readiness.get("external_review") != "not_completed_release_hold" or readiness.get("publication_authority") != "not_authorized":
         raise EvidenceError("readiness_claim")
     fuzz = load("reports/fuzz_campaign.json")
     review = load("reports/external_review.json")

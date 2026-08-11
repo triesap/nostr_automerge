@@ -1,0 +1,23 @@
+{
+  "schema": "nostr_automerge.remediation_v3_phase.v1",
+  "phase": "phase_09_final_assurance",
+  "rcld": 38,
+  "completed_steps": ["step_648", "step_649", "step_650", "step_651", "step_652", "step_653", "step_654", "step_655", "step_656", "step_657", "step_658", "step_659"],
+  "status": "code_complete_publication_held",
+  "rust_implementation_commit": "50c487f93556aa096d373d2ab357b3995932cd60",
+  "typescript_implementation_commit": "14a86b5b39b9498fd9691f5d9d6e422981b87ec3",
+  "verification": [
+    {"command": "python3 scripts/local_gate.py standard", "result": "pass"},
+    {"command": "python3 scripts/local_gate.py conformance", "result": "pass"},
+    {"command": "python3 scripts/local_gate.py supply_chain", "result": "pass_with_policy_warnings"},
+    {"command": "python3 scripts/local_gate.py release_evidence", "result": "pass"},
+    {"command": "python3 scripts/mutation_campaign.py --index 8 through 14", "result": "pass_all_caught"},
+    {"command": "python3 scripts/local_gate.py coverage", "result": "pass"},
+    {"command": "python3 scripts/local_gate.py resource", "result": "pass"},
+    {"command": "pnpm pack --dry-run", "result": "pass"}
+  ],
+  "deviations": ["Fuzz target build and sustained fuzz execution were not run under explicit operator direction; no workaround was attempted."],
+  "holds": ["sustained_native_fuzzing", "independent_external_review", "publication_authority"],
+  "publication_actions": [],
+  "final_decision": "code_complete_publication_held"
+}
