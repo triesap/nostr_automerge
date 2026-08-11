@@ -1,0 +1,31 @@
+{
+  "schema": "nostr_automerge.remediation_v3_phase.v1",
+  "phase": "phase_04_dynamic_event_dispositions",
+  "rcld": 33,
+  "completed_steps": ["step_583", "step_584", "step_585", "step_586", "step_587", "step_588", "step_589", "step_590", "step_591", "step_592", "step_593", "step_594", "step_595", "step_596"],
+  "verified_source_commit": "ef7cc61d94ebdf6b7e73620a11d52390d40f51ac",
+  "status": "pass",
+  "finding_status": {"FINDING_031": "closed"},
+  "verification": [
+    {"command": "cargo fmt --all -- --check", "result": "pass"},
+    {"command": "cargo test --workspace --tests --locked", "result": "pass"},
+    {"command": "cargo test -p nostr_automerge --test public_engine_api manifest --locked", "result": "pass"},
+    {"command": "cargo test -p nostr_automerge --test public_engine_api checkpoint --locked", "result": "pass"},
+    {"command": "cargo clippy -p nostr_automerge --all-targets --all-features --locked -- -D warnings", "result": "pass"},
+    {"command": "cargo doc -p nostr_automerge --no-deps --locked", "result": "pass"},
+    {"command": "python3 scripts/local_gate.py conformance", "result": "pass"},
+    {"command": "python3 scripts/mutation_campaign.py --index 12", "result": "pass"},
+    {"command": "python3 scripts/mutation_campaign.py --index 13", "result": "pass"},
+    {"command": "python3 scripts/mutation_campaign.py --index 14", "result": "pass"},
+    {"command": "python3 scripts/generate_rust_conformance.py", "result": "pass"},
+    {"command": "python3 scripts/generate_test_evidence_manifest.py --self-test", "result": "pass"},
+    {"command": "cargo run -p nostr_automerge_xtask --locked -- validate", "result": "pass"}
+  ],
+  "signed_fixture_count": 91,
+  "rust_test_count": 337,
+  "ignored_tests": 0,
+  "deviations": ["implementation/deviations/step_583.md"],
+  "holds": ["signed_distribution_v4", "independent_typescript_v3", "sustained_native_fuzzing", "independent_external_review", "publication_authority"],
+  "next_rcld": 34,
+  "next_step": "step_597"
+}
