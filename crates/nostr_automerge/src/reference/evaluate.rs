@@ -120,6 +120,7 @@ pub(crate) fn evaluate_batch(
     let mut statefully_valid_controls = BTreeSet::new();
     let mut parent_epoch_result: Option<EpochEvaluationResult> = None;
     let mut parent_id = None;
+    let mut canonical_ancestry = Vec::<ControlEnvelope>::new();
     while let Some(children) = by_parent.get(&parent_id) {
         if cancellation.is_cancelled() {
             completion = Completion::Cancelled;
@@ -133,20 +134,22 @@ pub(crate) fn evaluate_batch(
             .as_ref()
             .map(|result| ParentEpochView::from_accepted_state(result.accepted_state()));
         if let Some(view) = parent_view.as_ref()
-            && let Err(interruption) =
-                charge_control_closures(children, &controls, view, budget, cancellation)
+            && let Err(interruption) = charge_control_closures(
+                children,
+                &controls,
+                &canonical_ancestry,
+                view,
+                budget,
+                cancellation,
+            )
         {
             completion = interruption;
             break;
         }
-        let ancestry =
-            match collect_control_ancestry(&canonical_controls, &controls, budget, cancellation) {
-                Ok(ancestry) => ancestry,
-                Err(interruption) => {
-                    completion = interruption;
-                    break;
-                }
-            };
+        let ancestry = canonical_ancestry
+            .iter()
+            .map(ControlEnvelope::content)
+            .collect::<Vec<_>>();
         let parent_envelope = parent_id.and_then(|event_id| {
             controls
                 .get(&event_id)
@@ -261,11 +264,10 @@ pub(crate) fn evaluate_batch(
             dispositions.insert(*hash, ProtocolDisposition::Excluded);
         }
         accepted_changes = selected_base;
-        let control_index = canonical_controls.len() - 1;
         let epoch = resolve_authoritative_epoch(
             control,
             selected_state,
-            &canonical_controls[..control_index],
+            &canonical_ancestry,
             &controls,
             budget,
             cancellation,
@@ -290,6 +292,9 @@ pub(crate) fn evaluate_batch(
         accepted_changes = resolved.accepted_state().accepted_closure().clone();
         accepted_at_control.insert(selected, AcceptedAtControl::from_result(&resolved));
         parent_epoch_result = Some(resolved);
+        if let Some(envelope) = control.envelope.as_ref() {
+            canonical_ancestry.push(envelope.clone());
+        }
         if control.frozen {
             break;
         }
@@ -456,10 +461,45 @@ fn charge_control_transitions(
 fn charge_control_closures(
     children: &BTreeSet<EventId>,
     controls: &BTreeMap<EventId, BatchControl>,
+    ancestry: &[ControlEnvelope],
     view: &ParentEpochView,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<(), Completion> {
+    if cancellation.is_cancelled() {
+        return Err(Completion::Cancelled);
+    }
+    let comparison_work = children
+        .iter()
+        .filter_map(|event_id| controls.get(event_id)?.envelope.as_ref())
+        .try_fold(0_u64, |total, child| {
+            let child_members = u64::try_from(child.content().members.len()).unwrap_or(u64::MAX);
+            let parent_members = child
+                .parent()
+                .and_then(|parent| controls.get(&parent))
+                .and_then(|parent| parent.envelope.as_ref())
+                .map_or(0, |parent| {
+                    u64::try_from(parent.content().members.len()).unwrap_or(u64::MAX)
+                });
+            let ancestry_members = ancestry
+                .iter()
+                .try_fold(0_u64, |subtotal, control| {
+                    subtotal.checked_add(
+                        u64::try_from(control.content().members.len()).unwrap_or(u64::MAX),
+                    )
+                })
+                .unwrap_or(u64::MAX);
+            total.checked_add(
+                child_members
+                    .saturating_mul(parent_members.saturating_mul(2))
+                    .saturating_add(ancestry_members)
+                    .saturating_add(u64::try_from(ancestry.len()).unwrap_or(u64::MAX)),
+            )
+        })
+        .unwrap_or(u64::MAX);
+    budget
+        .charge(WorkCounter::Control, comparison_work)
+        .map_err(|_| Completion::BudgetExhausted)?;
     if cancellation.is_cancelled() {
         return Err(Completion::Cancelled);
     }
@@ -497,31 +537,6 @@ fn charge_control_closures(
         .map_err(|_| Completion::BudgetExhausted)
 }
 
-fn collect_control_ancestry<'a>(
-    canonical_controls: &[EventId],
-    controls: &'a BTreeMap<EventId, BatchControl>,
-    budget: &mut WorkBudget,
-    cancellation: &impl CancellationCheck,
-) -> Result<Vec<&'a crate::carrier::control::ValidatedControlContent>, Completion> {
-    let mut ancestry = Vec::new();
-    for event_id in canonical_controls {
-        if cancellation.is_cancelled() {
-            return Err(Completion::Cancelled);
-        }
-        budget
-            .charge(WorkCounter::Control, 1)
-            .map_err(|_| Completion::BudgetExhausted)?;
-        if let Some(content) = controls
-            .get(event_id)
-            .and_then(|control| control.envelope.as_ref())
-            .map(ControlEnvelope::content)
-        {
-            ancestry.push(content);
-        }
-    }
-    Ok(ancestry)
-}
-
 enum EpochResolutionError {
     Schedule(ScheduleError),
     InvalidState,
@@ -530,7 +545,7 @@ enum EpochResolutionError {
 fn resolve_authoritative_epoch(
     control: &BatchControl,
     accepted_base: AcceptedEpochState,
-    ancestry: &[EventId],
+    ancestry: &[ControlEnvelope],
     controls: &BTreeMap<EventId, BatchControl>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
@@ -609,14 +624,7 @@ fn resolve_authoritative_epoch(
         )
         .map_err(|_| EpochResolutionError::InvalidState);
     };
-    let canonical_ancestry = ancestry
-        .iter()
-        .filter_map(|event_id| {
-            controls
-                .get(event_id)
-                .and_then(|control| control.envelope.clone())
-        })
-        .collect();
+    let canonical_ancestry = ancestry.to_vec();
     let raw_changes = controls
         .values()
         .flat_map(|control| control.changes.iter())
@@ -824,6 +832,7 @@ mod tests {
             charge_control_closures(
                 &BTreeSet::from([event_id]),
                 &controls,
+                &[],
                 &view,
                 &mut budget,
                 &NeverCancelled

@@ -15,7 +15,9 @@ use crate::evidence::corpus_builder::ManifestSelectionState;
 use crate::evidence::event::EventEvidence;
 use crate::graph::change_candidate::{CandidateCarrier, ChangeCandidate};
 use crate::reference::epoch_engine::AcceptedAtControl;
-use crate::reference::evaluate::{BatchChange, BatchControl, evaluate_batch};
+use crate::reference::evaluate::{
+    BatchChange, BatchControl, BatchEvaluationReport, evaluate_batch,
+};
 use crate::types::role::Role;
 use crate::{
     CancellationCheck, ChangeHash, CheckpointVerificationResult, CheckpointVerificationStatus,
@@ -66,18 +68,17 @@ impl ReferenceEvaluator {
         budget: &mut WorkBudget,
         cancellation: &impl CancellationCheck,
     ) -> Result<EvaluationReport, EvaluationError> {
-        let ingress_complete = charge_ingress(corpus, budget);
-        let (controls, preliminary_control_dispositions) = if ingress_complete {
-            prepare_controls(corpus, coordinate)
-        } else {
-            (Vec::new(), std::collections::BTreeMap::new())
-        };
-        let mut batch = evaluate_batch(controls, budget, cancellation);
-        if !ingress_complete {
-            batch.completion = Completion::BudgetExhausted;
-            batch.failure = Some(EvaluationFailure::BudgetExhausted);
-            batch.materialized_document = None;
+        if let Err(completion) = charge_ingress(corpus, budget, cancellation) {
+            return compact_interrupted_report(self.revision, coordinate, completion);
         }
+        let (controls, preliminary_control_dispositions) =
+            match prepare_controls(corpus, coordinate, budget, cancellation) {
+                Ok(prepared) => prepared,
+                Err(completion) => {
+                    return compact_interrupted_report(self.revision, coordinate, completion);
+                }
+            };
+        let mut batch = evaluate_batch(controls, budget, cancellation);
         if !matches!(
             batch.failure,
             None | Some(EvaluationFailure::BudgetExhausted | EvaluationFailure::Cancelled)
@@ -95,16 +96,52 @@ impl ReferenceEvaluator {
                 | None => EvaluationError::ReportInvariant,
             });
         }
-        let canonical_controls = batch.canonical_controls;
         let mut control_disposition_map = preliminary_control_dispositions;
-        control_disposition_map.extend(batch.control_dispositions);
+        control_disposition_map.extend(core::mem::take(&mut batch.control_dispositions));
+        batch.control_dispositions = control_disposition_map;
+        if batch.completion != Completion::Complete {
+            return compact_batch_report(
+                self.revision,
+                coordinate,
+                batch,
+                ResolvedManifestAvailability::Missing,
+                Vec::new(),
+            );
+        }
+        if let Err(completion) =
+            charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)
+        {
+            interrupt_batch(&mut batch, completion);
+            return compact_batch_report(
+                self.revision,
+                coordinate,
+                batch,
+                ResolvedManifestAvailability::Missing,
+                Vec::new(),
+            );
+        }
         let manifest = resolve_selected_manifest(
             corpus,
             coordinate,
-            &control_disposition_map,
+            &batch.control_dispositions,
             &batch.statefully_valid_controls,
         );
-        let control_dispositions = control_disposition_map.into_iter().collect::<Vec<_>>();
+        let control_record_work =
+            u64::try_from(batch.control_dispositions.len()).unwrap_or(u64::MAX);
+        if let Err(completion) = charge_evaluation_work(
+            budget,
+            cancellation,
+            WorkCounter::Control,
+            control_record_work,
+        ) {
+            interrupt_batch(&mut batch, completion);
+            return compact_batch_report(self.revision, coordinate, batch, manifest, Vec::new());
+        }
+        let control_dispositions = batch
+            .control_dispositions
+            .iter()
+            .map(|(id, disposition)| (*id, *disposition))
+            .collect::<Vec<_>>();
         let mut disposition_records = control_dispositions
             .iter()
             .map(|(event_id, disposition)| {
@@ -115,51 +152,74 @@ impl ReferenceEvaluator {
                 )
             })
             .collect::<Vec<_>>();
-        let checkpoints = match batch.completion {
-            Completion::Complete => verify_checkpoints(
-                corpus,
-                coordinate,
-                &canonical_controls,
-                &batch.accepted_at_control,
-                budget,
-                cancellation,
-            ),
-            Completion::BudgetExhausted => checkpoint_refusals(
-                corpus,
-                coordinate,
-                CheckpointVerificationStatus::BudgetExhausted,
-            ),
-            Completion::Cancelled => {
-                checkpoint_refusals(corpus, coordinate, CheckpointVerificationStatus::Cancelled)
-            }
-        };
-        if checkpoints
-            .iter()
-            .any(|checkpoint| checkpoint.status() == CheckpointVerificationStatus::Cancelled)
-        {
-            batch.completion = Completion::Cancelled;
-            batch.failure = Some(EvaluationFailure::Cancelled);
-        } else if checkpoints
-            .iter()
-            .any(|checkpoint| checkpoint.status() == CheckpointVerificationStatus::BudgetExhausted)
-        {
-            batch.completion = Completion::BudgetExhausted;
-            batch.failure = Some(EvaluationFailure::BudgetExhausted);
+        let checkpoint_evaluation = verify_checkpoints(
+            corpus,
+            coordinate,
+            &batch.canonical_controls,
+            &batch.accepted_at_control,
+            budget,
+            cancellation,
+        );
+        let checkpoints = checkpoint_evaluation.results;
+        if let Some(stop) = checkpoint_evaluation.stop {
+            interrupt_batch(&mut batch, stop.completion());
         }
-        let dispositions = batch.dispositions.into_iter().collect::<Vec<_>>();
+        if batch.completion != Completion::Complete {
+            return compact_batch_report(self.revision, coordinate, batch, manifest, checkpoints);
+        }
+        let disposition_work = u64::try_from(batch.dispositions.len()).unwrap_or(u64::MAX);
+        if let Err(completion) = charge_evaluation_work(
+            budget,
+            cancellation,
+            WorkCounter::GraphNode,
+            disposition_work.saturating_mul(5),
+        ) {
+            interrupt_batch(&mut batch, completion);
+            return compact_batch_report(self.revision, coordinate, batch, manifest, checkpoints);
+        }
+        let dispositions = batch
+            .dispositions
+            .iter()
+            .map(|(hash, disposition)| (*hash, *disposition))
+            .collect::<Vec<_>>();
         disposition_records.extend(dispositions.iter().map(|(hash, disposition)| {
             DispositionRecord::new(ProtocolItemIdentifier::from(*hash), *disposition, None)
         }));
+        let event_record_work = u64::try_from(corpus.evaluation_event_count()).unwrap_or(u64::MAX);
+        if let Err(completion) = charge_evaluation_work(
+            budget,
+            cancellation,
+            WorkCounter::Carrier,
+            event_record_work.saturating_mul(3),
+        ) {
+            interrupt_batch(&mut batch, completion);
+            return compact_batch_report(self.revision, coordinate, batch, manifest, checkpoints);
+        }
         disposition_records.extend(event_disposition_records(corpus, &manifest, &checkpoints));
         let accepted_changes = disposition_hashes(&dispositions, ProtocolDisposition::Accepted);
-        let heads = batch.heads.into_iter().collect::<Vec<_>>();
+        let heads = batch.heads.iter().copied().collect::<Vec<_>>();
         let pending_changes = disposition_hashes(&dispositions, ProtocolDisposition::Pending);
         let excluded_changes = disposition_hashes(&dispositions, ProtocolDisposition::Excluded);
         let invalid_changes = disposition_hashes(&dispositions, ProtocolDisposition::Invalid);
+        let digest_work = u64::try_from(
+            batch
+                .canonical_controls
+                .len()
+                .saturating_add(accepted_changes.len())
+                .saturating_add(heads.len())
+                .saturating_add(disposition_records.len()),
+        )
+        .unwrap_or(u64::MAX);
+        if let Err(completion) =
+            charge_evaluation_work(budget, cancellation, WorkCounter::Assertion, digest_work)
+        {
+            interrupt_batch(&mut batch, completion);
+            return compact_batch_report(self.revision, coordinate, batch, manifest, checkpoints);
+        }
         let history_digest = history_digest(
             self.revision,
             coordinate,
-            &canonical_controls,
+            &batch.canonical_controls,
             &accepted_changes,
             &heads,
         )
@@ -169,36 +229,48 @@ impl ReferenceEvaluator {
         let dispositions_digest =
             dispositions_digest(self.revision, coordinate, &disposition_items)
                 .map_err(|_| EvaluationError::ReportInvariant)?;
-        let projection = match batch.completion {
-            Completion::Complete => {
-                project_document(batch.materialized_document, budget, cancellation)
-            }
-            Completion::BudgetExhausted => {
-                Err(crate::automerge_adapter::materialized_view::ProjectionError::Budget)
-            }
-            Completion::Cancelled => {
-                Err(crate::automerge_adapter::materialized_view::ProjectionError::Cancelled)
-            }
-        };
+        let projection = project_document(
+            core::mem::take(&mut batch.materialized_document),
+            budget,
+            cancellation,
+        );
         let document = match projection {
             Ok(document) => document,
             Err(crate::automerge_adapter::materialized_view::ProjectionError::Budget) => {
-                batch.completion = Completion::BudgetExhausted;
-                batch.failure = Some(EvaluationFailure::BudgetExhausted);
-                None
+                interrupt_batch(&mut batch, Completion::BudgetExhausted);
+                return compact_batch_report(
+                    self.revision,
+                    coordinate,
+                    batch,
+                    manifest,
+                    checkpoints,
+                );
             }
             Err(crate::automerge_adapter::materialized_view::ProjectionError::Cancelled) => {
-                batch.completion = Completion::Cancelled;
-                batch.failure = Some(EvaluationFailure::Cancelled);
-                None
+                interrupt_batch(&mut batch, Completion::Cancelled);
+                return compact_batch_report(
+                    self.revision,
+                    coordinate,
+                    batch,
+                    manifest,
+                    checkpoints,
+                );
             }
             Err(crate::automerge_adapter::materialized_view::ProjectionError::Invalid) => {
                 return Err(EvaluationError::Projection);
             }
         };
+        let evidence_work = u64::try_from(corpus.evaluation_event_count()).unwrap_or(u64::MAX);
+        if let Err(completion) =
+            charge_evaluation_work(budget, cancellation, WorkCounter::Event, evidence_work)
+        {
+            interrupt_batch(&mut batch, completion);
+            return compact_batch_report(self.revision, coordinate, batch, manifest, checkpoints);
+        }
+        let evidence = corpus.records().collect();
         EvaluationReport::from_parts(EvaluationReportParts {
             coordinate,
-            canonical_controls,
+            canonical_controls: batch.canonical_controls,
             disposition_records,
             control_dispositions,
             dispositions,
@@ -207,7 +279,7 @@ impl ReferenceEvaluator {
             excluded_changes,
             invalid_changes,
             heads,
-            evidence: corpus.records().collect(),
+            evidence,
             checkpoints,
             history_digest,
             dispositions_digest,
@@ -435,6 +507,35 @@ fn event_disposition_records(
         }
     }
 
+    for record in dynamic_event_disposition_records(manifest, checkpoints) {
+        records.insert(
+            match record.identifier() {
+                ProtocolItemIdentifier::Event(event_id) => event_id,
+                ProtocolItemIdentifier::ControlEvent(_) | ProtocolItemIdentifier::ChangeHash(_) => {
+                    continue;
+                }
+            },
+            (record.disposition(), record.diagnostic()),
+        );
+    }
+
+    records
+        .into_iter()
+        .map(|(event_id, (disposition, diagnostic))| {
+            DispositionRecord::new(
+                ProtocolItemIdentifier::event(event_id),
+                disposition,
+                diagnostic,
+            )
+        })
+        .collect()
+}
+
+fn dynamic_event_disposition_records(
+    manifest: &ResolvedManifestAvailability,
+    checkpoints: &[CheckpointVerificationResult],
+) -> Vec<DispositionRecord> {
+    let mut records = std::collections::BTreeMap::new();
     match manifest {
         ResolvedManifestAvailability::Missing => {}
         ResolvedManifestAvailability::Available { hints, .. } => {
@@ -535,6 +636,11 @@ fn checkpoint_event_diagnostic(
     Some(crate::DiagnosticCode::registered(code))
 }
 
+struct CheckpointEvaluation {
+    results: Vec<CheckpointVerificationResult>,
+    stop: Option<CheckpointWorkStop>,
+}
+
 fn verify_checkpoints(
     corpus: &EvidenceCorpus,
     coordinate: DocumentCoordinate,
@@ -542,7 +648,7 @@ fn verify_checkpoints(
     accepted_at_control: &std::collections::BTreeMap<crate::EventId, AcceptedAtControl>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
-) -> Vec<CheckpointVerificationResult> {
+) -> CheckpointEvaluation {
     let prepared = (|| {
         charge_checkpoint_work(
             budget,
@@ -576,82 +682,109 @@ fn verify_checkpoints(
     })();
     let (authorizations, chunk_sets, carrier_coverage, accepted_history) = match prepared {
         Ok(prepared) => prepared,
-        Err(stop) => return checkpoint_refusals(corpus, coordinate, stop.status()),
+        Err(stop) => {
+            return CheckpointEvaluation {
+                results: Vec::new(),
+                stop: Some(stop),
+            };
+        }
     };
-    let mut stopped: Option<CheckpointVerificationStatus> = None;
-    corpus
-        .events
-        .values()
-        .filter_map(|evidence| match evidence {
-            EventEvidence::VerifiedCarrier {
-                carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
-                ..
-            } if descriptor.coordinate() == coordinate => Some(descriptor.as_ref()),
-            _ => None,
-        })
-        .map(|descriptor| {
-            let descriptor_id = descriptor.event_id();
-            if let Some(status) = stopped {
-                let commitments = descriptor.descriptor();
-                return CheckpointVerificationResult::new(
-                    descriptor_id,
-                    Vec::new(),
-                    descriptor.snapshot_hash(),
-                    commitments.heads.iter().copied().collect(),
-                    commitments.change_count,
-                    commitments.change_set_hash,
-                    Vec::new(),
-                    Vec::new(),
-                    status,
-                );
-            }
-            let chunk_events = checkpoint_chunk_event_ids(corpus, descriptor_id);
-            let coverage_result = carrier_coverage.get(&descriptor_id);
-            let accepted_result = accepted_history.get(&descriptor_id);
-            let coverage = coverage_result
-                .and_then(|value| value.as_ref().ok())
-                .cloned()
-                .unwrap_or_default();
-            let accepted = accepted_result
-                .and_then(|value| value.as_ref().ok())
-                .cloned()
-                .unwrap_or_default();
-            let history_refusal = coverage_result
-                .and_then(|result| result.as_ref().err())
-                .or_else(|| accepted_result.and_then(|result| result.as_ref().err()))
-                .map(history_refusal_status);
-            let status = history_refusal.unwrap_or_else(|| {
-                verify_one_checkpoint(
-                    descriptor,
-                    authorizations.get(&descriptor_id).copied(),
-                    chunk_sets.get(&descriptor_id),
-                    &coverage,
-                    &accepted,
-                    budget,
-                    cancellation,
-                )
-            });
-            if matches!(
-                status,
-                CheckpointVerificationStatus::BudgetExhausted
-                    | CheckpointVerificationStatus::Cancelled
-            ) {
-                stopped = Some(status);
-            }
-            let commitments = descriptor.descriptor();
-            CheckpointVerificationResult::new(
-                descriptor_id,
-                chunk_events,
-                descriptor.snapshot_hash(),
-                commitments.heads.iter().copied().collect(),
-                commitments.change_count,
-                commitments.change_set_hash,
-                coverage.into_iter().collect(),
-                accepted.into_iter().collect(),
-                status,
+    let mut results = Vec::new();
+    for descriptor_id in corpus
+        .indexes
+        .checkpoints
+        .descriptors_by_coordinate
+        .get(&coordinate)
+        .into_iter()
+        .flatten()
+        .copied()
+    {
+        if let Err(stop) = charge_checkpoint_work(budget, cancellation, 1) {
+            return CheckpointEvaluation {
+                results,
+                stop: Some(stop),
+            };
+        }
+        let Some(EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
+            ..
+        }) = corpus.events.get(&descriptor_id)
+        else {
+            continue;
+        };
+        let chunk_events =
+            match checkpoint_chunk_event_ids(corpus, descriptor_id, budget, cancellation) {
+                Ok(events) => events,
+                Err(stop) => {
+                    return CheckpointEvaluation {
+                        results,
+                        stop: Some(stop),
+                    };
+                }
+            };
+        let coverage_result = carrier_coverage.get(&descriptor_id);
+        let accepted_result = accepted_history.get(&descriptor_id);
+        let coverage_ref = coverage_result.and_then(|value| value.as_ref().ok());
+        let accepted_ref = accepted_result.and_then(|value| value.as_ref().ok());
+        let commitments = descriptor.descriptor();
+        let result_work = coverage_ref
+            .map_or(0, std::collections::BTreeSet::len)
+            .saturating_add(accepted_ref.map_or(0, std::collections::BTreeSet::len))
+            .saturating_add(commitments.heads.len());
+        if let Err(stop) = charge_checkpoint_work(
+            budget,
+            cancellation,
+            u64::try_from(result_work).unwrap_or(u64::MAX),
+        ) {
+            return CheckpointEvaluation {
+                results,
+                stop: Some(stop),
+            };
+        }
+        let coverage = coverage_ref.cloned().unwrap_or_default();
+        let accepted = accepted_ref.cloned().unwrap_or_default();
+        let history_refusal = coverage_result
+            .and_then(|result| result.as_ref().err())
+            .or_else(|| accepted_result.and_then(|result| result.as_ref().err()))
+            .map(history_refusal_status);
+        let status = history_refusal.unwrap_or_else(|| {
+            verify_one_checkpoint(
+                descriptor,
+                authorizations.get(&descriptor_id).copied(),
+                chunk_sets.get(&descriptor_id),
+                &coverage,
+                &accepted,
+                budget,
+                cancellation,
             )
-        })
-        .collect()
+        });
+        let stop = match status {
+            CheckpointVerificationStatus::BudgetExhausted => Some(CheckpointWorkStop::Budget),
+            CheckpointVerificationStatus::Cancelled => Some(CheckpointWorkStop::Cancelled),
+            _ => None,
+        };
+        if let Some(stop) = stop {
+            return CheckpointEvaluation {
+                results,
+                stop: Some(stop),
+            };
+        }
+        results.push(CheckpointVerificationResult::new(
+            descriptor_id,
+            chunk_events,
+            descriptor.snapshot_hash(),
+            commitments.heads.iter().copied().collect(),
+            commitments.change_count,
+            commitments.change_set_hash,
+            coverage.into_iter().collect(),
+            accepted.into_iter().collect(),
+            status,
+        ));
+    }
+    CheckpointEvaluation {
+        results,
+        stop: None,
+    }
 }
 
 const fn history_refusal_status(error: &HistoryVerificationError) -> CheckpointVerificationStatus {
@@ -670,16 +803,23 @@ const fn history_refusal_status(error: &HistoryVerificationError) -> CheckpointV
 fn checkpoint_chunk_event_ids(
     corpus: &EvidenceCorpus,
     descriptor_id: crate::EventId,
-) -> Vec<crate::EventId> {
-    corpus
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<Vec<crate::EventId>, CheckpointWorkStop> {
+    let event_ids = corpus
         .indexes
         .checkpoints
         .chunks_by_descriptor
         .get(&descriptor_id)
         .into_iter()
         .flatten()
-        .copied()
-        .collect()
+        .copied();
+    let mut result = Vec::new();
+    for event_id in event_ids {
+        charge_checkpoint_work(budget, cancellation, 1)?;
+        result.push(event_id);
+    }
+    Ok(result)
 }
 
 fn verify_one_checkpoint(
@@ -1005,10 +1145,10 @@ enum CheckpointWorkStop {
 }
 
 impl CheckpointWorkStop {
-    const fn status(self) -> CheckpointVerificationStatus {
+    const fn completion(self) -> Completion {
         match self {
-            Self::Budget => CheckpointVerificationStatus::BudgetExhausted,
-            Self::Cancelled => CheckpointVerificationStatus::Cancelled,
+            Self::Budget => Completion::BudgetExhausted,
+            Self::Cancelled => Completion::Cancelled,
         }
     }
 }
@@ -1026,48 +1166,22 @@ fn charge_checkpoint_work(
         .map_err(|_| CheckpointWorkStop::Budget)
 }
 
-fn checkpoint_refusals(
+fn charge_ingress(
     corpus: &EvidenceCorpus,
-    coordinate: DocumentCoordinate,
-    status: CheckpointVerificationStatus,
-) -> Vec<CheckpointVerificationResult> {
-    corpus
-        .indexes
-        .checkpoints
-        .descriptors_by_coordinate
-        .get(&coordinate)
-        .into_iter()
-        .flatten()
-        .filter_map(|descriptor_id| match corpus.events.get(descriptor_id) {
-            Some(EventEvidence::VerifiedCarrier {
-                carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
-                ..
-            }) => {
-                let commitments = descriptor.descriptor();
-                Some(CheckpointVerificationResult::new(
-                    *descriptor_id,
-                    Vec::new(),
-                    descriptor.snapshot_hash(),
-                    commitments.heads.iter().copied().collect(),
-                    commitments.change_count,
-                    commitments.change_set_hash,
-                    Vec::new(),
-                    Vec::new(),
-                    status,
-                ))
-            }
-            _ => None,
-        })
-        .collect()
-}
-
-fn charge_ingress(corpus: &EvidenceCorpus, budget: &mut WorkBudget) -> bool {
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<(), Completion> {
     let event_count = u64::try_from(corpus.evaluation_event_count()).unwrap_or(u64::MAX);
     let carrier_count = u64::try_from(corpus.carrier_evidence_count()).unwrap_or(u64::MAX);
     let decode_bytes = corpus.decode_work_bytes().unwrap_or(u64::MAX);
-    budget.charge(WorkCounter::Event, event_count).is_ok()
-        && budget.charge(WorkCounter::Carrier, carrier_count).is_ok()
-        && budget.charge(WorkCounter::DecodeByte, decode_bytes).is_ok()
+    for (counter, amount) in [
+        (WorkCounter::Event, event_count),
+        (WorkCounter::Carrier, carrier_count),
+        (WorkCounter::DecodeByte, decode_bytes),
+    ] {
+        charge_evaluation_work(budget, cancellation, counter, amount)?;
+    }
+    Ok(())
 }
 
 fn disposition_hashes(
@@ -1080,237 +1194,516 @@ fn disposition_hashes(
         .collect()
 }
 
+fn compact_interrupted_report(
+    revision: ProtocolRevision,
+    coordinate: DocumentCoordinate,
+    completion: Completion,
+) -> Result<EvaluationReport, EvaluationError> {
+    let history_digest = history_digest(revision, coordinate, &[], &[], &[])
+        .map_err(|_| EvaluationError::ReportInvariant)?;
+    let disposition_items = disposition_items(&[]).map_err(|_| EvaluationError::ReportInvariant)?;
+    let dispositions_digest = dispositions_digest(revision, coordinate, &disposition_items)
+        .map_err(|_| EvaluationError::ReportInvariant)?;
+    let failure = match completion {
+        Completion::BudgetExhausted => EvaluationFailure::BudgetExhausted,
+        Completion::Cancelled => EvaluationFailure::Cancelled,
+        Completion::Complete => return Err(EvaluationError::ReportInvariant),
+    };
+    EvaluationReport::from_parts(EvaluationReportParts {
+        coordinate,
+        canonical_controls: Vec::new(),
+        disposition_records: Vec::new(),
+        control_dispositions: Vec::new(),
+        dispositions: Vec::new(),
+        accepted_changes: Vec::new(),
+        pending_changes: Vec::new(),
+        excluded_changes: Vec::new(),
+        invalid_changes: Vec::new(),
+        heads: Vec::new(),
+        evidence: Vec::new(),
+        checkpoints: Vec::new(),
+        history_digest,
+        dispositions_digest,
+        integrity_alerts: Vec::new(),
+        manifest: ResolvedManifestAvailability::Missing,
+        completion,
+        failure: Some(failure),
+        document: None,
+    })
+    .map_err(|_| EvaluationError::ReportInvariant)
+}
+
+fn compact_batch_report(
+    revision: ProtocolRevision,
+    coordinate: DocumentCoordinate,
+    batch: BatchEvaluationReport,
+    manifest: ResolvedManifestAvailability,
+    checkpoints: Vec<CheckpointVerificationResult>,
+) -> Result<EvaluationReport, EvaluationError> {
+    if batch.completion == Completion::Complete {
+        return Err(EvaluationError::ReportInvariant);
+    }
+    let control_dispositions = batch.control_dispositions.into_iter().collect::<Vec<_>>();
+    let dispositions = batch.dispositions.into_iter().collect::<Vec<_>>();
+    let mut disposition_records = control_dispositions
+        .iter()
+        .map(|(event_id, disposition)| {
+            DispositionRecord::new(
+                ProtocolItemIdentifier::control_event(*event_id),
+                *disposition,
+                None,
+            )
+        })
+        .collect::<Vec<_>>();
+    disposition_records.extend(dispositions.iter().map(|(hash, disposition)| {
+        DispositionRecord::new(ProtocolItemIdentifier::from(*hash), *disposition, None)
+    }));
+    disposition_records.extend(dynamic_event_disposition_records(&manifest, &checkpoints));
+    let accepted_changes = disposition_hashes(&dispositions, ProtocolDisposition::Accepted);
+    let pending_changes = disposition_hashes(&dispositions, ProtocolDisposition::Pending);
+    let excluded_changes = disposition_hashes(&dispositions, ProtocolDisposition::Excluded);
+    let invalid_changes = disposition_hashes(&dispositions, ProtocolDisposition::Invalid);
+    let heads = batch.heads.into_iter().collect::<Vec<_>>();
+    let history_digest = history_digest(
+        revision,
+        coordinate,
+        &batch.canonical_controls,
+        &accepted_changes,
+        &heads,
+    )
+    .map_err(|_| EvaluationError::ReportInvariant)?;
+    let disposition_items =
+        disposition_items(&disposition_records).map_err(|_| EvaluationError::ReportInvariant)?;
+    let dispositions_digest = dispositions_digest(revision, coordinate, &disposition_items)
+        .map_err(|_| EvaluationError::ReportInvariant)?;
+    EvaluationReport::from_parts(EvaluationReportParts {
+        coordinate,
+        canonical_controls: batch.canonical_controls,
+        disposition_records,
+        control_dispositions,
+        dispositions,
+        accepted_changes,
+        pending_changes,
+        excluded_changes,
+        invalid_changes,
+        heads,
+        evidence: Vec::new(),
+        checkpoints,
+        history_digest,
+        dispositions_digest,
+        integrity_alerts: batch.integrity_alerts,
+        manifest,
+        completion: batch.completion,
+        failure: batch.failure,
+        document: None,
+    })
+    .map_err(|_| EvaluationError::ReportInvariant)
+}
+
+fn interrupt_batch(batch: &mut BatchEvaluationReport, completion: Completion) {
+    batch.completion = completion;
+    batch.failure = Some(match completion {
+        Completion::BudgetExhausted => EvaluationFailure::BudgetExhausted,
+        Completion::Cancelled => EvaluationFailure::Cancelled,
+        Completion::Complete => EvaluationFailure::InvariantViolation,
+    });
+    batch.materialized_document = None;
+}
+
 fn prepare_controls(
     corpus: &EvidenceCorpus,
     coordinate: DocumentCoordinate,
-) -> (
-    Vec<BatchControl>,
-    std::collections::BTreeMap<crate::EventId, ProtocolDisposition>,
-) {
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<
+    (
+        Vec<BatchControl>,
+        std::collections::BTreeMap<crate::EventId, ProtocolDisposition>,
+    ),
+    Completion,
+> {
+    let ancestry_index = build_control_ancestry_index(corpus, budget, cancellation)?;
     let mut dispositions = std::collections::BTreeMap::new();
-    let controls = corpus
-        .events
-        .values()
-        .filter_map(|evidence| match evidence {
-            EventEvidence::VerifiedCarrier {
-                carrier: VerifiedCarrier::Control(control),
-                ..
-            } if control.coordinate() == coordinate => {
-                let envelope = ControlEnvelope::from_validated(control.as_ref().clone());
-                let disposition = if corpus
-                    .indexes
-                    .controls
-                    .pending
-                    .contains(&control.event_id())
-                {
-                    ProtocolDisposition::Pending
-                } else if control.parent().is_none() {
-                    let predecessor = control.predecessor().and_then(|link| {
-                        match corpus.events.get(&link.terminal_control) {
-                            Some(EventEvidence::VerifiedCarrier {
-                                carrier: VerifiedCarrier::Control(terminal),
-                                ..
-                            }) => Some(ControlEnvelope::from_validated(terminal.as_ref().clone())),
-                            _ => None,
-                        }
-                    });
-                    let outcome = classify_genesis(&envelope, predecessor.as_ref()).disposition();
-                    if outcome == ProtocolDisposition::Accepted {
-                        ProtocolDisposition::Excluded
-                    } else {
-                        outcome
-                    }
-                } else if !parent_continuity_is_valid(corpus, control)
-                    || !account_continuity_is_valid(corpus, control)
-                    || !role_continuity_is_valid(corpus, control)
-                    || !device_ancestry_is_valid(corpus, control)
-                    || !terminal_continuity_is_valid(corpus, control)
-                {
-                    ProtocolDisposition::Invalid
-                } else {
-                    ProtocolDisposition::Excluded
-                };
-                dispositions.insert(control.event_id(), disposition);
-                if disposition != ProtocolDisposition::Excluded {
-                    return None;
-                }
-                Some(BatchControl {
-                    event_id: control.event_id(),
-                    parent: control.parent(),
-                    accepted_base: control.base_heads().collect(),
-                    frozen: control.terminal(),
-                    changes: changes_for_control(corpus, control),
-                    envelope: Some(envelope),
-                })
-            }
-            _ => None,
-        })
-        .collect();
-    (controls, dispositions)
-}
-
-fn device_ancestry_is_valid(
-    corpus: &EvidenceCorpus,
-    child: &crate::carrier::control::ValidatedControlCarrier,
-) -> bool {
-    let mut ancestry = Vec::new();
-    let mut visited = std::collections::BTreeSet::new();
-    let mut current = child.parent();
-    while let Some(event_id) = current {
-        if !visited.insert(event_id) {
-            return false;
-        }
+    let mut controls = Vec::new();
+    for control_id in corpus.indexes.controls.controls_by_id.keys() {
+        charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
         let Some(EventEvidence::VerifiedCarrier {
             carrier: VerifiedCarrier::Control(control),
             ..
-        }) = corpus.events.get(&event_id)
+        }) = corpus.events.get(control_id)
         else {
-            return false;
+            continue;
         };
-        current = control.parent();
-        ancestry.push(ControlEnvelope::from_validated(control.as_ref().clone()));
+        if control.coordinate() != coordinate {
+            continue;
+        }
+        let envelope = ControlEnvelope::from_validated(control.as_ref().clone());
+        let disposition = if corpus
+            .indexes
+            .controls
+            .pending
+            .contains(&control.event_id())
+        {
+            ProtocolDisposition::Pending
+        } else if control.parent().is_none() {
+            let predecessor = if let Some(link) = control.predecessor() {
+                charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
+                match corpus.events.get(&link.terminal_control) {
+                    Some(EventEvidence::VerifiedCarrier {
+                        carrier: VerifiedCarrier::Control(terminal),
+                        ..
+                    }) => Some(ControlEnvelope::from_validated(terminal.as_ref().clone())),
+                    _ => None,
+                }
+            } else {
+                None
+            };
+            let outcome = classify_genesis(&envelope, predecessor.as_ref()).disposition();
+            if outcome == ProtocolDisposition::Accepted {
+                ProtocolDisposition::Excluded
+            } else {
+                outcome
+            }
+        } else if !parent_continuity_is_valid(corpus, control, budget, cancellation)?
+            || !account_continuity_is_valid(corpus, control, budget, cancellation)?
+            || !role_continuity_is_valid(corpus, control, budget, cancellation)?
+            || !device_ancestry_is_valid(&ancestry_index, control)
+            || !terminal_continuity_is_valid(corpus, control, budget, cancellation)?
+        {
+            ProtocolDisposition::Invalid
+        } else {
+            ProtocolDisposition::Excluded
+        };
+        dispositions.insert(control.event_id(), disposition);
+        if disposition != ProtocolDisposition::Excluded {
+            continue;
+        }
+        controls.push(BatchControl {
+            event_id: control.event_id(),
+            parent: control.parent(),
+            accepted_base: control.base_heads().collect(),
+            frozen: control.terminal(),
+            changes: changes_for_control(corpus, control, budget, cancellation)?,
+            envelope: Some(envelope),
+        });
     }
-    ancestry.reverse();
+    Ok((controls, dispositions))
+}
+
+fn device_ancestry_is_valid(
+    ancestry_index: &std::collections::BTreeMap<crate::EventId, Option<Vec<ControlEnvelope>>>,
+    child: &crate::carrier::control::ValidatedControlCarrier,
+) -> bool {
+    let Some(ancestry) = ancestry_index
+        .get(&child.event_id())
+        .and_then(Option::as_ref)
+    else {
+        return false;
+    };
     let child = ControlEnvelope::from_validated(child.clone());
-    evaluate_device_ancestry(&ancestry, &child) == CandidateResult::Valid
+    evaluate_device_ancestry(ancestry, &child) == CandidateResult::Valid
+}
+
+fn build_control_ancestry_index(
+    corpus: &EvidenceCorpus,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<std::collections::BTreeMap<crate::EventId, Option<Vec<ControlEnvelope>>>, Completion> {
+    let mut index =
+        std::collections::BTreeMap::<crate::EventId, Option<Vec<ControlEnvelope>>>::new();
+    for root in corpus.indexes.controls.controls_by_id.keys().copied() {
+        if index.contains_key(&root) {
+            continue;
+        }
+        let mut path = Vec::new();
+        let mut visited = std::collections::BTreeSet::new();
+        let mut current = Some(root);
+        let mut base = Vec::new();
+        let mut valid = true;
+        while let Some(event_id) = current {
+            if let Some(cached) = index.get(&event_id) {
+                match cached {
+                    Some(ancestry) => {
+                        base = ancestry.clone();
+                        let Some(EventEvidence::VerifiedCarrier {
+                            carrier: VerifiedCarrier::Control(control),
+                            ..
+                        }) = corpus.events.get(&event_id)
+                        else {
+                            valid = false;
+                            break;
+                        };
+                        base.push(ControlEnvelope::from_validated(control.as_ref().clone()));
+                    }
+                    None => valid = false,
+                }
+                break;
+            }
+            charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
+            if !visited.insert(event_id) {
+                valid = false;
+                break;
+            }
+            let Some(EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::Control(control),
+                ..
+            }) = corpus.events.get(&event_id)
+            else {
+                valid = false;
+                break;
+            };
+            path.push(event_id);
+            current = control.parent();
+        }
+        if !valid {
+            for event_id in path {
+                index.insert(event_id, None);
+            }
+            continue;
+        }
+        for event_id in path.into_iter().rev() {
+            charge_evaluation_work(
+                budget,
+                cancellation,
+                WorkCounter::Control,
+                u64::try_from(base.len()).unwrap_or(u64::MAX),
+            )?;
+            index.insert(event_id, Some(base.clone()));
+            let Some(EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::Control(control),
+                ..
+            }) = corpus.events.get(&event_id)
+            else {
+                index.insert(event_id, None);
+                break;
+            };
+            base.push(ControlEnvelope::from_validated(control.as_ref().clone()));
+        }
+    }
+    Ok(index)
 }
 
 fn role_continuity_is_valid(
     corpus: &EvidenceCorpus,
     child: &crate::carrier::control::ValidatedControlCarrier,
-) -> bool {
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<bool, Completion> {
     let Some(parent_id) = child.parent() else {
-        return true;
+        return Ok(true);
     };
+    charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
     let Some(EventEvidence::VerifiedCarrier {
         carrier: VerifiedCarrier::Control(parent),
         ..
     }) = corpus.events.get(&parent_id)
     else {
-        return false;
+        return Ok(false);
     };
+    charge_member_comparisons(parent, child, budget, cancellation)?;
     let parent = ControlEnvelope::from_validated(parent.as_ref().clone());
     let child = ControlEnvelope::from_validated(child.clone());
-    evaluate_role_continuity(&parent, &child) == CandidateResult::Valid
+    Ok(evaluate_role_continuity(&parent, &child) == CandidateResult::Valid)
 }
 
 fn account_continuity_is_valid(
     corpus: &EvidenceCorpus,
     child: &crate::carrier::control::ValidatedControlCarrier,
-) -> bool {
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<bool, Completion> {
     let Some(parent_id) = child.parent() else {
-        return true;
+        return Ok(true);
     };
+    charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
     let Some(EventEvidence::VerifiedCarrier {
         carrier: VerifiedCarrier::Control(parent),
         ..
     }) = corpus.events.get(&parent_id)
     else {
-        return false;
+        return Ok(false);
     };
+    charge_member_comparisons(parent, child, budget, cancellation)?;
     let parent = ControlEnvelope::from_validated(parent.as_ref().clone());
     let child = ControlEnvelope::from_validated(child.clone());
-    evaluate_account_continuity(&parent, &child) == CandidateResult::Valid
+    Ok(evaluate_account_continuity(&parent, &child) == CandidateResult::Valid)
 }
 
 fn parent_continuity_is_valid(
     corpus: &EvidenceCorpus,
     child: &crate::carrier::control::ValidatedControlCarrier,
-) -> bool {
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<bool, Completion> {
     let Some(parent_id) = child.parent() else {
-        return true;
+        return Ok(true);
     };
+    charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
     let Some(EventEvidence::VerifiedCarrier {
         carrier: VerifiedCarrier::Control(parent),
         ..
     }) = corpus.events.get(&parent_id)
     else {
-        return false;
+        return Ok(false);
     };
     let parent = ControlEnvelope::from_validated(parent.as_ref().clone());
     let child = ControlEnvelope::from_validated(child.clone());
-    evaluate_parent_continuity(&parent, &child) == CandidateResult::Valid
+    Ok(evaluate_parent_continuity(&parent, &child) == CandidateResult::Valid)
 }
 
 fn terminal_continuity_is_valid(
     corpus: &EvidenceCorpus,
     child: &crate::carrier::control::ValidatedControlCarrier,
-) -> bool {
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<bool, Completion> {
     let Some(parent_id) = child.parent() else {
-        return true;
+        return Ok(true);
     };
+    charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
     let Some(EventEvidence::VerifiedCarrier {
         carrier: VerifiedCarrier::Control(parent),
         ..
     }) = corpus.events.get(&parent_id)
     else {
-        return false;
+        return Ok(false);
     };
     let parent = ControlEnvelope::from_validated(parent.as_ref().clone());
     let child = ControlEnvelope::from_validated(child.clone());
-    evaluate_terminal_continuity(&parent, &child) == CandidateResult::Valid
+    Ok(evaluate_terminal_continuity(&parent, &child) == CandidateResult::Valid)
 }
 
 fn changes_for_control(
     corpus: &EvidenceCorpus,
     control: &crate::carrier::control::ValidatedControlCarrier,
-) -> Vec<BatchChange> {
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<Vec<BatchChange>, Completion> {
     let hashes = corpus
         .indexes
         .changes
         .hashes_by_control
-        .get(&control.event_id())
-        .cloned()
-        .unwrap_or_default();
-    hashes
-        .into_iter()
-        .filter_map(|hash| change_for_hash(corpus, control, hash))
-        .collect()
+        .get(&control.event_id());
+    let mut changes = Vec::new();
+    for hash in hashes.into_iter().flatten().copied() {
+        charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)?;
+        if let Some(change) = change_for_hash(corpus, control, hash, budget, cancellation)? {
+            changes.push(change);
+        }
+    }
+    Ok(changes)
 }
 
 fn change_for_hash(
     corpus: &EvidenceCorpus,
     control: &crate::carrier::control::ValidatedControlCarrier,
     hash: ChangeHash,
-) -> Option<BatchChange> {
-    let event_ids = corpus.indexes.changes.carriers_by_hash.get(&hash)?;
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<Option<BatchChange>, Completion> {
+    let Some(event_ids) = corpus.indexes.changes.carriers_by_hash.get(&hash) else {
+        return Ok(None);
+    };
     let mut raw = None;
-    let carriers = event_ids
-        .iter()
-        .filter_map(|event_id| match corpus.events.get(event_id) {
-            Some(EventEvidence::VerifiedCarrier {
-                carrier: VerifiedCarrier::Change(change),
-                ..
-            }) if change.control_id() == control.event_id()
-                && change.coordinate() == control.coordinate() =>
-            {
-                raw.get_or_insert_with(|| change.canonical_raw_bytes().to_vec());
-                Some(CandidateCarrier {
-                    event_id: change.event_id(),
-                    change_hash: change.change_hash(),
-                    actor: change.actor(),
-                    sequence: change.sequence(),
-                    start_op: change.start_op(),
-                    operation_count: change.operation_count(),
-                    dependencies: change.dependencies().collect(),
-                    control_id: change.control_id(),
-                    author: change.author_device(),
-                })
-            }
-            _ => None,
-        })
-        .collect::<Vec<_>>();
-    let candidate = ChangeCandidate::from_carriers(carriers).ok()?;
+    let mut carriers = Vec::new();
+    for event_id in event_ids {
+        charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)?;
+        if let Some(EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::Change(change),
+            ..
+        }) = corpus.events.get(event_id)
+            && change.control_id() == control.event_id()
+            && change.coordinate() == control.coordinate()
+        {
+            let raw_bytes = change.canonical_raw_bytes();
+            charge_evaluation_work(
+                budget,
+                cancellation,
+                WorkCounter::DecodeByte,
+                u64::try_from(raw_bytes.len()).unwrap_or(u64::MAX),
+            )?;
+            raw.get_or_insert_with(|| raw_bytes.to_vec());
+            let dependency_count = u64::try_from(change.dependencies().count()).unwrap_or(u64::MAX);
+            charge_evaluation_work(
+                budget,
+                cancellation,
+                WorkCounter::GraphEdge,
+                dependency_count,
+            )?;
+            carriers.push(CandidateCarrier {
+                event_id: change.event_id(),
+                change_hash: change.change_hash(),
+                actor: change.actor(),
+                sequence: change.sequence(),
+                start_op: change.start_op(),
+                operation_count: change.operation_count(),
+                dependencies: change.dependencies().collect(),
+                control_id: change.control_id(),
+                author: change.author_device(),
+            });
+        }
+    }
+    let Ok(candidate) = ChangeCandidate::from_carriers(carriers) else {
+        return Ok(None);
+    };
+    charge_evaluation_work(
+        budget,
+        cancellation,
+        WorkCounter::Control,
+        u64::try_from(control.members().len()).unwrap_or(u64::MAX),
+    )?;
     let authorized = control.members().iter().any(|member| {
         member.actor == candidate.actor
             && member.device == candidate.author
             && member.roles.contains(&Role::Write)
     });
-    Some(BatchChange {
+    Ok(Some(BatchChange {
         candidate,
         legacy_eligible: authorized && !control.terminal(),
         raw_change: raw,
-    })
+    }))
+}
+
+fn charge_member_comparisons(
+    parent: &crate::carrier::control::ValidatedControlCarrier,
+    child: &crate::carrier::control::ValidatedControlCarrier,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<(), Completion> {
+    let parent_members = u64::try_from(parent.members().len()).unwrap_or(u64::MAX);
+    let child_members = u64::try_from(child.members().len()).unwrap_or(u64::MAX);
+    let member_pairs = parent_members.saturating_mul(child_members);
+    let role_pairs = child
+        .members()
+        .iter()
+        .try_fold(0_u64, |total, grant| {
+            total.checked_add(
+                u64::try_from(grant.roles.len())
+                    .unwrap_or(u64::MAX)
+                    .saturating_mul(2),
+            )
+        })
+        .unwrap_or(u64::MAX);
+    charge_evaluation_work(
+        budget,
+        cancellation,
+        WorkCounter::Control,
+        member_pairs.saturating_add(role_pairs),
+    )
+}
+
+fn charge_evaluation_work(
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+    counter: WorkCounter,
+    amount: u64,
+) -> Result<(), Completion> {
+    if cancellation.is_cancelled() {
+        return Err(Completion::Cancelled);
+    }
+    budget
+        .charge(counter, amount)
+        .map_err(|_| Completion::BudgetExhausted)
 }
 
 #[cfg(test)]

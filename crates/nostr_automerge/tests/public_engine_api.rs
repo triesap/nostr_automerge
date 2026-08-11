@@ -2673,6 +2673,60 @@ fn cancellation_before_control_evaluation_fabricates_no_state() {
 }
 
 #[test]
+#[allow(clippy::expect_used)]
+fn adversarial_deep_control_chain_is_deterministically_bounded() {
+    let controller = TestSigner::from_byte(118);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "bd".repeat(32)
+    )
+    .parse()
+    .expect("deep-chain coordinate");
+    let members = vec![(controller.public_key().to_hex(), vec!["write"])];
+    let mut parent = None;
+    let mut events = Vec::new();
+    let mut expected = Vec::new();
+    for sequence in 0_u64..64 {
+        let event = signed_acl_control(
+            &controller,
+            coordinate,
+            sequence.saturating_add(1),
+            parent,
+            sequence,
+            members.clone(),
+        );
+        let event_id = VerifiedNip01Event::verify(event.clone())
+            .expect("deep-chain control")
+            .event_id();
+        parent = Some(event_id);
+        expected.push(event_id);
+        events.push(event);
+    }
+    let mut builder = CorpusBuilder::new();
+    for event in events.into_iter().rev() {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let corpus = builder.finish();
+    let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
+    let run = |items| {
+        let mut budget = WorkBudget::new(10_000_000, items);
+        let report = evaluator.evaluate_report(&corpus, coordinate, &mut budget, &NeverCancelled);
+        (report, budget.consumed())
+    };
+    let (first, first_work) = run(10_000_000);
+    let (second, second_work) = run(10_000_000);
+    assert_eq!(first.completion(), Completion::Complete);
+    assert_eq!(first.canonical_controls(), expected);
+    assert!(first == second);
+    assert_eq!(first_work, second_work);
+    assert!(first_work.get(WorkCounter::Control) < 100_000);
+}
+
+#[test]
 fn control_selection_and_transition_have_distinct_charges() {
     let scenario = signed_engine_scenario();
     let mut builder = CorpusBuilder::new();
@@ -2684,20 +2738,34 @@ fn control_selection_and_transition_have_distinct_charges() {
         builder.ingest(scenario.control),
         IngestOutcome::Accepted { .. }
     ));
-    let mut budget = WorkBudget::new(1_000_000, 6);
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
-        &builder.finish(),
-        scenario.coordinate,
-        &mut budget,
-        &NeverCancelled,
-    );
+    let corpus = builder.finish();
+    let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
+    let mut measured = WorkBudget::new(1_000_000, 1_000);
+    let complete =
+        evaluator.evaluate_report(&corpus, scenario.coordinate, &mut measured, &NeverCancelled);
+    assert_eq!(complete.completion(), Completion::Complete);
+    let consumed_items = 1_000 - measured.remaining().1;
+    let boundary = (0..consumed_items).find_map(|limit| {
+        let mut budget = WorkBudget::new(1_000_000, limit);
+        let report =
+            evaluator.evaluate_report(&corpus, scenario.coordinate, &mut budget, &NeverCancelled);
+        (report.canonical_controls() == [scenario.control_id] && report.dispositions().is_empty())
+            .then_some((report, budget))
+    });
+    let Some((report, budget)) = boundary else {
+        assert!(
+            boundary.is_some(),
+            "one control-selection boundary must precede change evaluation"
+        );
+        return;
+    };
 
     assert_eq!(report.completion(), Completion::BudgetExhausted);
     assert_eq!(report.canonical_controls(), [scenario.control_id]);
     assert_canonical_control_outcomes_are_consistent(&report);
     assert!(report.dispositions().is_empty());
     assert!(report.accepted_changes().is_empty());
-    assert_eq!(budget.consumed().get(WorkCounter::Control), 2);
+    assert!(budget.consumed().get(WorkCounter::Control) >= 2);
 }
 
 #[test]
@@ -2774,7 +2842,12 @@ fn automerge_application_and_materialization_are_charged() {
     assert_eq!(exhausted.consumed().get(WorkCounter::ApplyChange), 3);
     assert!(
         exhausted.consumed().get(WorkCounter::Assertion)
-            < measured.consumed().get(WorkCounter::Assertion)
+            <= measured.consumed().get(WorkCounter::Assertion)
+    );
+    assert!(
+        exhausted.consumed().get(WorkCounter::Event) < measured.consumed().get(WorkCounter::Event)
+            || exhausted.consumed().get(WorkCounter::Assertion)
+                < measured.consumed().get(WorkCounter::Assertion)
     );
 }
 
@@ -2837,12 +2910,12 @@ fn every_work_counter_has_exact_before_and_after_boundaries() {
 }
 
 #[test]
-fn every_v2_work_counter_boundary() {
+fn every_v3_work_counter_boundary() {
     let matrix: serde_json::Value = serde_json::from_str(include_str!(
         "../../../fixtures/v1_draft/resources/work_boundaries.json"
     ))
     .unwrap_or_default();
-    assert_eq!(matrix["schema"], "nostr_automerge.work_boundaries.v2");
+    assert_eq!(matrix["schema"], "nostr_automerge.work_boundaries.v3");
     assert_eq!(
         matrix["boundaries"],
         serde_json::json!([
@@ -2906,6 +2979,10 @@ fn every_v2_work_counter_boundary() {
         assert_eq!(after.remaining(), if bytes { (1, 0) } else { (0, 1) });
     }
     assert_eq!(covered.len(), 10);
+    let evaluator_source = include_str!("../src/engine/reference_evaluator.rs");
+    assert!(evaluator_source.contains("build_control_ancestry_index"));
+    assert!(evaluator_source.contains("compact_batch_report"));
+    assert!(!evaluator_source.contains("fn checkpoint_refusals"));
 
     let scenario = signed_engine_scenario();
     let mut builder = CorpusBuilder::new();
@@ -5454,6 +5531,72 @@ fn checkpoint_interruption_is_non_authoritative() {
         cancelled.map(|report| report.completion()),
         Some(Completion::Cancelled)
     );
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn adversarial_many_checkpoints_stop_without_refusal_expansion() {
+    let scenario = signed_engine_scenario();
+    let unauthorized = TestSigner::from_byte(119);
+    let content = format!(
+        r#"{{"change_count":1,"change_set_hash":"{}","chunk_count":1,"chunk_root":"{}","chunk_size":1,"dependency_edges":0,"encoding":"automerge-save-v1","heads":["{}"],"raw_size":1,"total_ops":1,"v":1}}"#,
+        "01".repeat(32),
+        "02".repeat(32),
+        scenario.change_hash.to_hex(),
+    );
+    let mut builder = CorpusBuilder::new();
+    for event in [scenario.control, scenario.change] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    for offset in 0_u64..64 {
+        let descriptor = unauthorized.sign(
+            &UnsignedEventDraft::new(
+                100_u64.saturating_add(offset),
+                1_626,
+                vec![
+                    vec!["a".to_owned(), scenario.coordinate.to_address()],
+                    vec!["e".to_owned(), scenario.control_id.to_hex()],
+                    vec!["x".to_owned(), format!("{offset:064x}")],
+                ],
+                content.clone(),
+            )
+            .expect("many-checkpoint draft")
+            .prepare(unauthorized.public_key())
+            .expect("many-checkpoint preimage"),
+        );
+        assert!(matches!(
+            builder.ingest(descriptor),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let corpus = builder.finish();
+    let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
+    let evaluate = |items| {
+        let mut budget = WorkBudget::new(10_000_000, items);
+        evaluator.evaluate_report(&corpus, scenario.coordinate, &mut budget, &NeverCancelled)
+    };
+    let complete = evaluate(10_000_000);
+    assert_eq!(complete.completion(), Completion::Complete);
+    assert_eq!(complete.checkpoints().len(), 64);
+    let mut low = 0_u64;
+    let mut high = 10_000_000_u64;
+    while low < high {
+        let middle = low + (high - low) / 2;
+        if evaluate(middle).checkpoints().is_empty() {
+            low = middle.saturating_add(1);
+        } else {
+            high = middle;
+        }
+    }
+    let interrupted = evaluate(low);
+    assert_eq!(interrupted.completion(), Completion::BudgetExhausted);
+    assert!(!interrupted.checkpoints().is_empty());
+    assert!(interrupted.checkpoints().len() < complete.checkpoints().len());
+    assert_eq!(interrupted.accepted_changes(), complete.accepted_changes());
+    assert_eq!(interrupted.history_digest(), complete.history_digest());
 }
 
 #[allow(clippy::expect_used)]

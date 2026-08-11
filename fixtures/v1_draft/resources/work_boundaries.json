@@ -1,17 +1,17 @@
 {
-  "schema": "nostr_automerge.work_boundaries.v2",
+  "schema": "nostr_automerge.work_boundaries.v3",
   "required_amount": 2,
   "rows": [
-    {"counter":"event","capacity":"items","phases":["ingress"]},
-    {"counter":"carrier","capacity":"items","phases":["ingress","classification"]},
-    {"counter":"control","capacity":"items","phases":["control_collection","transition","ancestry"]},
+    {"counter":"event","capacity":"items","phases":["ingress","evidence_report"]},
+    {"counter":"carrier","capacity":"items","phases":["ingress","classification","change_grouping","manifest_resolution","event_dispositions"]},
+    {"counter":"control","capacity":"items","phases":["control_collection","ancestry_index","member_comparison","transition","report"]},
     {"counter":"graph_node","capacity":"items","phases":["frontier","actor_state","dependency","equivocation"]},
     {"counter":"graph_edge","capacity":"items","phases":["frontier","actor_state","dependency","equivocation"]},
     {"counter":"decode_byte","capacity":"bytes","phases":["carrier_decode","projection_load"]},
     {"counter":"apply_change","capacity":"items","phases":["change_application","projection_load"]},
     {"counter":"checkpoint_byte","capacity":"bytes","phases":["checkpoint_assembly","snapshot_load"]},
     {"counter":"checkpoint_item","capacity":"items","phases":["checkpoint_preparation","checkpoint_history"]},
-    {"counter":"assertion","capacity":"items","phases":["projection","conformance"]}
+    {"counter":"assertion","capacity":"items","phases":["projection","conformance","history_digest","dispositions_digest"]}
   ],
   "boundaries": ["one_before", "exact", "one_after", "cancelled", "atomic_failure", "no_post_stop"]
 }
