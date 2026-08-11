@@ -1,0 +1,30 @@
+{
+  "schema": "nostr_automerge.remediation_v3_phase.v1",
+  "phase": "phase_02_interrupted_reports",
+  "rcld": 31,
+  "completed_steps": ["step_558", "step_559", "step_560", "step_561", "step_562", "step_563", "step_564", "step_565", "step_566", "step_567", "step_568", "step_569"],
+  "verified_source_commit": "cb5ad990adc0b3f87f604e187e7ae40c9ca5f8d1",
+  "status": "pass",
+  "finding_status": {"FINDING_029": "closed"},
+  "verification": [
+    {"command": "cargo fmt --all -- --check", "result": "pass"},
+    {"command": "cargo check --workspace --all-targets --locked", "result": "pass"},
+    {"command": "cargo test --workspace --tests --locked", "result": "pass"},
+    {"command": "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings", "result": "pass"},
+    {"command": "cargo doc --workspace --no-deps --locked", "result": "pass"},
+    {"command": "python3 scripts/local_gate.py conformance", "result": "pass"},
+    {"command": "python3 scripts/mutation_campaign.py --index 9", "result": "pass"},
+    {"command": "python3 scripts/mutation_campaign.py --index 10", "result": "pass"},
+    {"command": "python3 scripts/mutation_campaign.py --index 11", "result": "pass"},
+    {"command": "python3 scripts/generate_rust_conformance.py", "result": "pass"},
+    {"command": "python3 scripts/generate_test_evidence_manifest.py --self-test", "result": "pass"},
+    {"command": "cargo run -p nostr_automerge_xtask --locked -- validate", "result": "pass"}
+  ],
+  "signed_fixture_count": 91,
+  "rust_test_count": 336,
+  "ignored_tests": 0,
+  "deviations": ["implementation/deviations/step_558.md"],
+  "holds": ["sustained_native_fuzzing", "independent_external_review", "publication_authority"],
+  "next_rcld": 32,
+  "next_step": "step_570"
+}

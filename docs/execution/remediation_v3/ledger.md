@@ -1,8 +1,8 @@
 # Draft V1 Remediation V3 Execution Ledger
 
 Status: executing
-Active RCLD: 31
-Active checkpoint: `step_558`
+Active RCLD: 32
+Active checkpoint: `step_570`
 Range: `step_534` through `step_659`
 
 Exactly one RCLD and one checkpoint are active. Checkpoints remain contiguous,
@@ -12,8 +12,8 @@ unique, dependency ordered, and independently reviewable.
 | --- | --- | --- | --- |
 | 29 | `step_534`–`step_541` | complete | Authority and baseline |
 | 30 | `step_542`–`step_557` | complete | Authoritative equivocation composition |
-| 31 | `step_558`–`step_569` | active | Interrupted canonical reports |
-| 32 | `step_570`–`step_582` | pending | Selected manifest dynamic validation |
+| 31 | `step_558`–`step_569` | complete | Interrupted canonical reports |
+| 32 | `step_570`–`step_582` | active | Selected manifest dynamic validation |
 | 33 | `step_583`–`step_596` | pending | Dynamic manifest and checkpoint event dispositions |
 | 34 | `step_597`–`step_612` | pending | Complete work budgeting and cancellation |
 | 35 | `step_613`–`step_621` | pending | Implementation-owned normative clarification |
@@ -35,6 +35,8 @@ unique, dependency ordered, and independently reviewable.
 - `step_554`–`step_555`: defined otherwise-valid and poisoning regression contracts; full signed-v4 distribution remains assigned to RCLD 36.
 - `step_556`: added and caught the authoritative-eligibility mutation.
 - `step_557`: closed the Rust implementation subgate for Finding 028 and activated RCLD 31.
+- `step_558`–`step_568`: combined as one approved green TDD slice; preserved every conclusive interrupted-report outcome and proved all item-budget and cancellation boundaries.
+- `step_569`: refreshed commit-bound execution evidence, closed Finding 029, and activated RCLD 32.
 
 ## Scope Adaptations
 
