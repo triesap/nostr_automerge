@@ -204,7 +204,7 @@ fn publish_finding_by_finding_remediation_closure() {
     let report: serde_json::Value =
         serde_json::from_str(include_str!("../../../reports/remediation_closure.json"))
             .unwrap_or_default();
-    assert_eq!(report["findings"].as_array().map(Vec::len), Some(13));
+    assert_eq!(report["findings"].as_array().map(Vec::len), Some(14));
     let results = report["findings"]
         .as_array()
         .map(|findings| {
@@ -214,13 +214,9 @@ fn publish_finding_by_finding_remediation_closure() {
                 .collect::<Vec<_>>()
         })
         .unwrap_or_default();
-    assert_eq!(results[..11], ["closed"; 11]);
-    assert_eq!(results[11], "closed_locally_with_release_holds");
-    assert_eq!(results[12], "closed");
-    assert_eq!(
-        report["status"],
-        "historical_step_307_claim_superseded_by_follow_up_remediation"
-    );
+    assert_eq!(results[..13], ["closed"; 13]);
+    assert_eq!(results[13], "resolved_with_release_holds");
+    assert_eq!(report["status"], "code_complete_publication_held");
     assert!(report["non_claims"].as_array().is_some_and(|claims| {
         claims
             .iter()

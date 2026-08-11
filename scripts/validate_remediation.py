@@ -55,11 +55,11 @@ def main() -> int:
     closure_findings = closure.get("findings", [])
     closure_ids = [item.get("id") for item in closure_findings]
     closure_results = [item.get("result") for item in closure_findings]
-    if closure.get("schema") != "nostr_automerge.remediation_closure.v1":
+    if closure.get("schema") != "nostr_automerge.remediation_closure.v2":
         raise AssertionError("remediation closure schema is invalid")
-    if closure_ids != [f"FINDING_{index:03d}" for index in range(1, 14)]:
+    if closure_ids != [f"FINDING_{index:03d}" for index in range(14, 28)]:
         raise AssertionError("remediation closure findings are incomplete or reordered")
-    if closure_results != ["closed"] * 11 + ["closed_locally_with_release_holds", "closed"]:
+    if closure_results != ["closed"] * 13 + ["resolved_with_release_holds"]:
         raise AssertionError("remediation closure dispositions are invalid")
     for finding in closure_findings:
         if not finding.get("commits") or not finding.get("evidence"):
