@@ -1,6 +1,7 @@
 # nostr_automerge Draft V1 RCLD 26: Independent TypeScript Engine Parity
 
-Status: pending RCLD 25
+Status: active
+Current checkpoint: `step_494`
 Steps: `step_494` through `step_506`
 Implementation repository: independent internal TypeScript repository
 Coordination repository: `triesap/nostr_automerge`

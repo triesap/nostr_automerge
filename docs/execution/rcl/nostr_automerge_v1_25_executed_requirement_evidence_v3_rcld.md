@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 25: Executed Requirement Evidence V3
 
-Status: active
-Current checkpoint: `step_482`
+Status: complete with approved TypeScript evidence holds
+Current checkpoint: `step_493`
 Steps: `step_482` through `step_493`
 Primary findings: `FINDING_019`, `FINDING_026`
 
@@ -31,3 +31,22 @@ repository validation, standard Rust checks, and `git diff --check`.
 Covered rows bind implementation identity/commit/path, exact test or fixture
 ID, execution command/job, passing result artifact and SHA-256, and fixture
 distribution SHA-256.
+
+## Completed Checkpoints
+
+- `step_482`: `401ba1f` — requirement evidence schema v3 defines complete executable proof bindings.
+- `step_483`: `d8ae1e7` — all 87 requirements have explicit reviewed applicability.
+- `step_484`: `330e442` — the evidence manifest enumerates exact Cargo tests and signed fixtures.
+- `step_485`: `12682ab` — passing job results bind commands, commits, toolchains, and output hashes.
+- `step_486`: `5a5e3da` — artifact and distribution hashes fail closed on drift.
+- `step_487`: `05eb962` — signed fixture proofs resolve to passing canonical profile results.
+- `step_488`: `282482d` — Rust test proofs resolve to an unfiltered passing workspace job.
+- `step_489`: `5acce76` — opaque TypeScript metadata validates without disclosing source material.
+- `step_490`: `942af53` — all 87 evidence rows are generated in authority order with explicit TypeScript holds.
+- `step_491`: `e65114b` — 11 material evidence mutations are caught with zero survivors.
+- `step_492`: `677f4be` — repository validation requires current v3 executed evidence.
+- `step_493`: this commit — standard, conformance, matrix, mutation, and repository gates close the phase.
+
+## Corrective Checkpoints
+
+- `step_482a`: `6281175` — the controlled specification baseline includes the v3 authority documents.

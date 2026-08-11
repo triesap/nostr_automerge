@@ -1,0 +1,17 @@
+{
+  "schema":"nostr_automerge.remediation_phase.v2",
+  "phase":"phase_10_requirement_evidence",
+  "status":"pass_with_approved_holds",
+  "recorded":"2026-08-11",
+  "phase_input_head":"677f4bedf8af4d0f4ff45dca126e680a30b80228",
+  "findings":["FINDING_019","FINDING_026"],
+  "requirements":["R2_EVID_001","R2_EVID_002","R2_EVID_003","R2_INTEROP_003"],
+  "completed_steps":["step_482","step_483","step_484","step_485","step_486","step_487","step_488","step_489","step_490","step_491","step_492","step_493"],
+  "commits":{"step_482":"401ba1f","step_483":"d8ae1e7","step_484":"330e442","step_485":"12682ab","step_486":"5a5e3da","step_487":"05eb962","step_488":"282482d","step_489":"5acce76","step_490":"942af53","step_491":"e65114b","step_492":"677f4be","step_493":"self"},
+  "corrective_commits":{"step_482a":"6281175"},
+  "commands":[{"command":"cargo extbuild run -- python3 scripts/local_gate.py standard","result":"pass"},{"command":"cargo extbuild run -- python3 scripts/local_gate.py conformance","result":"pass"},{"command":"cargo extbuild run -- python3 scripts/validate_requirement_matrix_v3.py","result":"pass_with_approved_holds"},{"command":"cargo extbuild run -- python3 scripts/validate_requirement_matrix_v3.py --self-test","result":"pass"},{"command":"cargo extbuild run -- cargo run -p nostr_automerge_xtask --locked -- validate","result":"pass"},{"command":"git diff --check","result":"pass"}],
+  "artifact_sha256":{"reports/requirements_coverage_v3.json":"38cfb0c326412cc86bd29992d465650ca43f3093917c3fbb8cf4a04b587898e6","reports/test_evidence_manifest.json":"7c4500603a31008faadc5571cdce6ea69f36ec78a0409feff51f8f2d6557e704","reports/requirements_evidence_mutations_v3.json":"9de522c51fc84803eff24175eafd80e83334dfadc4858d077641adf9614b78eb","reports/results/rust_tests.json":"d2bb8b74f6b96b9af09414901039b66a0a1f64dab4effc8da7b7ab41ce78bfd7","reports/results/signed_conformance.json":"be9c98074003119c797e80b81a7f2cadfc25ac725ee340a17ab586c3eb6dd271","spec/requirements_applicability.json":"3d976e6ff62c24cec5e47bc0b3ba041b3d6075ca82d86417eac5f180b71b7bf2","fixtures/distribution/manifest_v3.json":"4c0ecaeb2fd53fad3268ac1bd2d02ec9355bcf34aa5d9c290219cb5ea4239e5b"},
+  "holds":["Rows requiring an independent TypeScript implementation remain held until RCLD 26 produces executed evidence."],
+  "next":{"rcld":26,"checkpoint":"step_494"},
+  "publication_authorized":false
+}

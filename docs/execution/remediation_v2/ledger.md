@@ -1,8 +1,8 @@
 # Draft V1 Follow-up Remediation Ledger
 
-Current RCLD: 25
-Current checkpoint: `step_482`
-Completed checkpoints: `step_308` through `step_481`
+Current RCLD: 26
+Current checkpoint: `step_494`
+Completed checkpoints: `step_308` through `step_493`
 
 ## Execution Policy
 
@@ -30,8 +30,8 @@ repositories.
 | 22 | `step_430`–`step_443` | complete | Conflict-aware projection v2 |
 | 23 | `step_444`–`step_459` | complete | Checkpoint completion |
 | 24 | `step_460`–`step_481` | complete | Signed neutral conformance |
-| 25 | `step_482`–`step_493` | active | Executed requirement evidence v3 |
-| 26 | `step_494`–`step_506` | pending | Independent TypeScript engine parity |
+| 25 | `step_482`–`step_493` | complete | Executed requirement evidence v3 |
+| 26 | `step_494`–`step_506` | active | Independent TypeScript engine parity |
 | 27 | `step_507`–`step_519` | pending | Final private TypeScript attestation |
 | 28 | `step_520`–`step_533` | pending | Final assurance and truthful closure |
 
