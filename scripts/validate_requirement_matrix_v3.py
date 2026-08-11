@@ -50,6 +50,42 @@ def validate_result_artifact(path: Path, expected_sha256: str) -> None:
         raise EvidenceError("result_artifact_incomplete")
 
 
+def sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def validate_manifest_hashes(manifest: dict[str, object]) -> None:
+    signed = manifest["jobs"]["signed-conformance"]
+    if signed["fixture_distribution_sha256"] != sha256(ROOT / "fixtures/distribution/manifest_v3.json"):
+        raise EvidenceError("fixture_distribution_hash")
+    for job in manifest["jobs"].values():
+        relative = Path(job["result_artifact"])
+        if relative.is_absolute() or ".." in relative.parts:
+            raise EvidenceError("unsafe_result_artifact_path")
+        validate_result_artifact(ROOT / relative, job["result_sha256"])
+
+
+def hash_self_test() -> None:
+    manifest = json.loads((ROOT / "reports/test_evidence_manifest.json").read_text())
+    validate_manifest_hashes(manifest)
+    mutations = []
+    stale_distribution = copy.deepcopy(manifest)
+    stale_distribution["jobs"]["signed-conformance"]["fixture_distribution_sha256"] = "00" * 32
+    mutations.append(stale_distribution)
+    stale_result = copy.deepcopy(manifest)
+    stale_result["jobs"]["rust-tests"]["result_sha256"] = "00" * 32
+    mutations.append(stale_result)
+    unsafe_path = copy.deepcopy(manifest)
+    unsafe_path["jobs"]["rust-tests"]["result_artifact"] = "../private.json"
+    mutations.append(unsafe_path)
+    for mutation in mutations:
+        try:
+            validate_manifest_hashes(mutation)
+        except EvidenceError:
+            continue
+        raise AssertionError("material artifact-hash mutation unexpectedly passed")
+
+
 def result_self_test() -> None:
     manifest = json.loads((ROOT / "reports/test_evidence_manifest.json").read_text())
     for job in manifest["jobs"].values():
@@ -99,6 +135,7 @@ def main() -> int:
     parser.add_argument("--report", type=Path, default=ROOT / "reports/requirements_coverage_v3.json")
     parser.add_argument("--schema-self-test", action="store_true")
     parser.add_argument("--result-self-test", action="store_true")
+    parser.add_argument("--hash-self-test", action="store_true")
     args = parser.parse_args()
     if args.schema_self_test:
         schema_self_test()
@@ -107,6 +144,10 @@ def main() -> int:
     if args.result_self_test:
         result_self_test()
         print("PASS: passing execution results are present and hash-bound")
+        return 0
+    if args.hash_self_test:
+        hash_self_test()
+        print("PASS: result and distribution hashes fail closed on drift")
         return 0
     validate_shape(json.loads(args.report.read_text()))
     print("PASS: requirement evidence v3 has a valid top-level shape")
