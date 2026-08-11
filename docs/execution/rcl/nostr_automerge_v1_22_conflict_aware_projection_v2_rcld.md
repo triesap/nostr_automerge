@@ -47,4 +47,5 @@ iterative, and implementable independently from the neutral contract.
 - `step_433`: `bad62c2` — descendants of concurrent maps with the same child key retain distinct deterministic branch paths.
 - `step_434`: `06c81f4` — concurrent list descendants preserve independent branch-qualified index paths.
 - `step_435`: `c592e87` — conflicting text values and their marks retain the exact branch-qualified text path.
-- `step_436`: this commit — persisted mark operations resolve to exact UTF-16 ranges and preserve none, before, after, and both expansion modes.
+- `step_436`: `7309eec` — persisted mark operations resolve to exact UTF-16 ranges and preserve none, before, after, and both expansion modes.
+- `step_437`: this commit — explicit variant ranks, UTF-16 key/name comparison, numeric indexes, and identity tuples define canonical projection order.

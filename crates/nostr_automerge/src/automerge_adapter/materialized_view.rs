@@ -1,4 +1,4 @@
-use core::fmt;
+use core::{cmp::Ordering, fmt};
 use std::collections::BTreeMap;
 
 use crate::{CancellationCheck, WorkBudget, WorkCounter};
@@ -8,7 +8,7 @@ use automerge::{
 };
 
 /// One deterministic element in a materialized document path.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum MaterializedPathElement {
     /// A map or table property.
     Key(String),
@@ -23,6 +23,40 @@ pub enum MaterializedPathElement {
         /// Stable identity of the selected child object.
         child_object_id: String,
     },
+}
+
+impl PartialOrd for MaterializedPathElement {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for MaterializedPathElement {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self, other) {
+            (Self::Key(left), Self::Key(right)) => utf16_cmp(left, right),
+            (Self::Index(left), Self::Index(right)) => left.cmp(right),
+            (
+                Self::Branch {
+                    parent_object_id: left_parent,
+                    operation_id: left_operation,
+                    child_object_id: left_child,
+                },
+                Self::Branch {
+                    parent_object_id: right_parent,
+                    operation_id: right_operation,
+                    child_object_id: right_child,
+                },
+            ) => (left_parent, left_operation, left_child).cmp(&(
+                right_parent,
+                right_operation,
+                right_child,
+            )),
+            (Self::Key(_), _) => Ordering::Less,
+            (Self::Index(_), Self::Branch { .. }) => Ordering::Less,
+            (Self::Index(_), Self::Key(_)) | (Self::Branch { .. }, _) => Ordering::Greater,
+        }
+    }
 }
 
 impl MaterializedPathElement {
@@ -168,7 +202,7 @@ impl MaterializedEntry {
 }
 
 /// One projected mark range on a UTF-16 text path.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct MaterializedMark {
     path: Vec<MaterializedPathElement>,
     name: String,
@@ -176,6 +210,28 @@ pub struct MaterializedMark {
     start: u64,
     end: u64,
     expansion: MaterializedMarkExpansion,
+}
+
+impl PartialOrd for MaterializedMark {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for MaterializedMark {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.path
+            .cmp(&other.path)
+            .then_with(|| utf16_cmp(&self.name, &other.name))
+            .then_with(|| self.start.cmp(&other.start))
+            .then_with(|| self.end.cmp(&other.end))
+            .then_with(|| self.expansion.cmp(&other.expansion))
+            .then_with(|| self.value.cmp(&other.value))
+    }
+}
+
+fn utf16_cmp(left: &str, right: &str) -> Ordering {
+    left.encode_utf16().cmp(right.encode_utf16())
 }
 
 impl MaterializedMark {
@@ -773,8 +829,8 @@ mod tests {
     };
 
     use super::{
-        MaterializedDocumentView, MaterializedMarkExpansion, MaterializedPathElement,
-        MaterializedScalar, MaterializedValue, ProjectionError,
+        MaterializedDocumentView, MaterializedMark, MaterializedMarkExpansion,
+        MaterializedPathElement, MaterializedScalar, MaterializedValue, ProjectionError,
     };
     use crate::{NeverCancelled, WorkBudget, WorkCounter};
 
@@ -1250,6 +1306,29 @@ mod tests {
             assert_eq!(view.marks()[0].expansion(), expected);
             assert_eq!((view.marks()[0].start(), view.marks()[0].end()), (1, 3));
         }
+    }
+
+    #[test]
+    fn projection_paths_and_marks_use_explicit_utf16_ordering() {
+        assert!(
+            MaterializedPathElement::Key("😀".to_owned())
+                < MaterializedPathElement::Key("\u{e000}".to_owned())
+        );
+        assert!(MaterializedPathElement::Key("z".to_owned()) < MaterializedPathElement::Index(0));
+        assert!(
+            MaterializedPathElement::Index(u64::MAX)
+                < MaterializedPathElement::branch("p", "o", "c")
+        );
+
+        let mark = |name: &str| MaterializedMark {
+            path: vec![MaterializedPathElement::Key("text".to_owned())],
+            name: name.to_owned(),
+            value: MaterializedScalar::Bool(true),
+            start: 0,
+            end: 1,
+            expansion: MaterializedMarkExpansion::None,
+        };
+        assert!(mark("😀") < mark("\u{e000}"));
     }
 
     #[test]
