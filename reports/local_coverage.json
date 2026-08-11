@@ -2,23 +2,26 @@
   "execution": "external_operator_local",
   "raw_evidence": "operator_private",
   "rust": {
-    "branch_percent": 67.91,
+    "branch_percent": 68.07,
     "command": "cargo +nightly-2026-07-16 llvm-cov --branch --workspace --all-targets --exclude nostr_automerge_xtask --locked --summary-only",
     "excluded": {
       "package": "nostr_automerge_xtask",
       "reason": "recursively invokes repository validators and Cargo; covered by the standard local gate"
     },
-    "function_percent": 90.57,
-    "line_percent": 91.62,
+    "function_percent": 82.61,
+    "implementation_commit": "677f4bedf8af4d0f4ff45dca126e680a30b80228",
+    "line_percent": 80.52,
+    "region_percent": 79.02,
     "status": "pass"
   },
-  "schema": "nostr_automerge.local_coverage.v1",
+  "schema": "nostr_automerge.local_coverage.v2",
   "typescript": {
-    "branch_percent": 75.22,
+    "branch_percent": 81.73,
     "command": "node --experimental-test-coverage --test dist/test/**/*.test.js",
     "excluded": {},
-    "function_percent": 97.42,
-    "line_percent": 92.73,
+    "function_percent": 93.39,
+    "implementation_commit": "ac49e7274e79079dd674ada28cd9ed602bd8b9ce",
+    "line_percent": 86.8,
     "status": "pass"
   }
 }
