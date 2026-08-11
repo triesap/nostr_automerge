@@ -1,15 +1,15 @@
 {
-  "execution": "root_private_local_runner",
+  "execution": "external_operator_local",
   "rust": {
     "advisories": "pass",
     "cargo_deny": "pass_with_duplicate_and_unused_allowance_warnings",
     "forbidden_sources": "pass",
     "license_policy": "pass",
-    "lock_sha256": "74aafde92cfcb35e7216dc847a75ca556ac9722a93147a9a6ccd61c3121a7e60",
+    "implementation_commit": "677f4bedf8af4d0f4ff45dca126e680a30b80228",
+    "lock_sha256": "6d1b886ff74637ba6682d349ab81424b0792f2cbc61cf0f213dfcf16af4f6744",
     "package": {
-      "file_count": 124,
-      "repeated_sha256": "d42e86116d96ac4e36477a57f0be4ff7de6c4d4f235c559c32e8fe9d1c92a9ca",
-      "reproducible_runs": 2,
+      "file_count": 129,
+      "sha256": "da74f52814962e8ea82197c0bd91e4dead8cebdb43d0e61d7d7632df779f5ae2",
       "status": "pass"
     },
     "sbom": {
@@ -19,10 +19,11 @@
       "status": "pass"
     }
   },
-  "schema": "nostr_automerge.supply_chain.v1",
-  "source_base": "f21e030",
+  "schema": "nostr_automerge.supply_chain.v2",
+  "source_only_policy": "pass",
   "typescript": {
     "audit": "no_known_high_or_critical_vulnerabilities",
+    "implementation_commit": "ac49e7274e79079dd674ada28cd9ed602bd8b9ce",
     "lock_sha256": "d881757529b805b8ae4da935127730fe901b8b13a71382023be161016cd35a7d",
     "package_dry_run": "pass",
     "production_dependency_tree": "pass"
