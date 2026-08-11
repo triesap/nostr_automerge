@@ -1,5 +1,5 @@
 {
-  "canonical_report_sha256": "ea2e0367a19fc402e0e4aa05c3f0a6171ed2a8bf65fd3bc8a52f18e009ae5a26",
+  "canonical_report_sha256": "65f8846ad6206e4e27879d0242fdfd4d1d914d9ed0c4d0a5e4aa39f6881afb28",
   "ceilings": {
     "checkpoint_chunks": 4096,
     "checkpoint_smoke_leaves": 4096,
@@ -7,10 +7,10 @@
   },
   "commands": [
     "cargo bench -p nostr_automerge --bench resource_smoke --locked",
-    "cargo test -p nostr_automerge --lib graph_scaling_regression_models --locked",
-    "cargo test -p nostr_automerge --test public_engine_api every_work_counter_has_exact_before_and_after_boundaries --locked"
+    "cargo test -p nostr_automerge --lib scaling --locked",
+    "cargo test -p nostr_automerge --test public_engine_api every_v2_work_counter_boundary --locked"
   ],
-  "execution": "root_private_local_runner",
+  "execution": "external_operator_local",
   "graph_models": {
     "chain_128": {"graph_edges": 254, "graph_nodes": 256},
     "cycle_2": {"graph_edges": 4, "graph_nodes": 6},
@@ -21,15 +21,16 @@
   "platform": "aarch64-apple-darwin",
   "result": "pass",
   "rust": {
-    "elapsed_ns": "23497025500",
-    "maximum_resident_set_bytes": 56344576,
+    "elapsed_ns": "85943411625",
+    "implementation_commit": "677f4bedf8af4d0f4ff45dca126e680a30b80228",
+    "maximum_resident_set_bytes": 469237760,
     "work_counter_boundary_status": "pass"
   },
-  "schema": "nostr_automerge.resource_benchmarks.v3",
-  "source_base": "96c64cb",
+  "schema": "nostr_automerge.resource_benchmarks.v4",
   "toolchain": "rustc 1.97.1",
   "typescript": {
-    "elapsed_ns": "2461437833",
+    "elapsed_ns": "4894480667",
+    "implementation_commit": "ac49e7274e79079dd674ada28cd9ed602bd8b9ce",
     "status": "pass"
   }
 }
