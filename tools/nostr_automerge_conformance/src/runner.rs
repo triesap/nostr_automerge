@@ -193,11 +193,7 @@ fn generic_report(
     for assertion in &mut output.state_assertions {
         let path = materialized_path(&assertion.path)?;
         let document = report.document().ok_or(RunError::Input)?;
-        let entry = document
-            .entries()
-            .iter()
-            .find(|entry| entry.path() == path)
-            .ok_or(RunError::Input)?;
+        let entry = exactly_one(document.entries(), |entry| entry.path() == path)?;
         assertion.expected = materialized_conflicts(entry.conflicts());
     }
     output.checkpoints = report
@@ -232,6 +228,15 @@ fn generic_report(
         })
         .collect();
     Ok(output)
+}
+
+fn exactly_one<T>(values: &[T], mut matches: impl FnMut(&T) -> bool) -> Result<&T, RunError> {
+    let mut found = values.iter().filter(|value| matches(value));
+    let value = found.next().ok_or(RunError::Input)?;
+    if found.next().is_some() {
+        return Err(RunError::Input);
+    }
+    Ok(value)
 }
 
 fn checkpoint_status(status: CheckpointVerificationStatus) -> &'static str {
@@ -529,9 +534,25 @@ pub(crate) fn write_corpus_summary(summary: &CorpusSummary) -> Result<Vec<u8>, R
 mod tests {
     use std::path::Path;
 
-    use super::{RunError, compare_expected, discover_fixtures, generic_report, run_corpus};
+    use super::{
+        RunError, compare_expected, discover_fixtures, exactly_one, generic_report, run_corpus,
+    };
     use crate::expected::load_expected;
     use crate::scenario::ScenarioInput;
+
+    #[test]
+    fn ambiguous_assertion_selection_is_rejected() {
+        let values = [1_u8, 1, 2];
+        assert_eq!(exactly_one(&values, |value| *value == 2), Ok(&2));
+        assert_eq!(
+            exactly_one(&values, |value| *value == 3),
+            Err(RunError::Input)
+        );
+        assert_eq!(
+            exactly_one(&values, |value| *value == 1),
+            Err(RunError::Input)
+        );
+    }
 
     #[test]
     fn expected_mismatch_has_stable_exit_code() {
