@@ -13,6 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = Path(os.environ.get("NOSTR_AUTOMERGE_OUTPUT_ROOT", ROOT / ".local/evidence"))
+COMMAND_TIMEOUT_SECONDS = int(os.environ.get("NOSTR_AUTOMERGE_MUTATION_TIMEOUT", "180"))
 
 
 @dataclass(frozen=True)
@@ -37,7 +38,7 @@ MUTATIONS = (
     Mutation("projection", "crates/nostr_automerge/src/automerge_adapter/materialized_view.rs", "find(|entry| entry.path == path)?", "find(|entry| entry.path != path)?", "automerge_adapter::materialized_view::tests"),
     Mutation("projection", "crates/nostr_automerge/src/automerge_adapter/materialized_view.rs", "pub const fn start(&self) -> u64 {\n        self.start\n    }", "pub const fn start(&self) -> u64 {\n        self.end\n    }", "automerge_adapter::materialized_view::tests"),
     Mutation("projection", "crates/nostr_automerge/src/automerge_adapter/materialized_view.rs", "for key in keys {", "for key in Vec::<String>::new() {", "automerge_adapter::materialized_view::tests"),
-    Mutation("projection", "crates/nostr_automerge/src/automerge_adapter/materialized_view.rs", "for index in 0..document.length(object) {", "for index in 0..0 {", "automerge_adapter::materialized_view::tests"),
+    Mutation("projection", "crates/nostr_automerge/src/automerge_adapter/materialized_view.rs", "for index in 0..document.length(&current.object) {", "for index in 0..0 {", "automerge_adapter::materialized_view::tests"),
 )
 
 
@@ -49,7 +50,7 @@ def cargo(*arguments: str) -> int | None:
             stdout=subprocess.DEVNULL,
             stderr=subprocess.STDOUT,
             check=False,
-            timeout=180,
+            timeout=COMMAND_TIMEOUT_SECONDS,
         ).returncode
     except subprocess.TimeoutExpired:
         return None
