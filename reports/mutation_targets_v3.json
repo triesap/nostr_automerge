@@ -1,0 +1,15 @@
+{
+  "schema": "nostr_automerge.mutation_targets.v3",
+  "campaign": "authoritative_equivocation",
+  "targets": [
+    {
+      "id": "equivocation_include_nonaccepted_candidate",
+      "path": "crates/nostr_automerge/src/reference/epoch_engine.rs",
+      "test_target": "public_engine_api",
+      "test_filter": "cannot_poison",
+      "expected": "caught",
+      "requirements": ["R3_EQUIV_001", "R3_EQUIV_002", "R3_EQUIV_006"]
+    }
+  ],
+  "status": "active"
+}

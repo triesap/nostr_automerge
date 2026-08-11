@@ -23,6 +23,7 @@ class Mutation:
     search: str
     replacement: str
     test_filter: str
+    test_target: str | None = None
 
 
 MUTATIONS = (
@@ -33,6 +34,7 @@ MUTATIONS = (
     Mutation("limit", "crates/nostr_automerge/src/checkpoint/merkle.rs", "if leaves.is_empty() || leaves.len() > super::MAX_CHUNK_COUNT as usize {", "if leaves.is_empty() && leaves.len() > super::MAX_CHUNK_COUNT as usize {", "checkpoint::merkle::tests"),
     Mutation("checkpoint", "crates/nostr_automerge/src/checkpoint/merkle.rs", "if expected.len() != proof.len() {", "if expected.len() == proof.len() {", "checkpoint::merkle::tests"),
     Mutation("consensus", "crates/nostr_automerge/src/control/select.rs", ".filter(|candidate| Some(*candidate) != selected)", ".filter(|candidate| Some(*candidate) == selected)", "control::select::tests"),
+    Mutation("equivocation", "crates/nostr_automerge/src/reference/epoch_engine.rs", "|| dispositions.get(&candidate.change_hash) == Some(&ProtocolDisposition::Accepted)", "|| dispositions.get(&candidate.change_hash) != Some(&ProtocolDisposition::Excluded)", "cannot_poison", "public_engine_api"),
     Mutation("graph", "crates/nostr_automerge/src/graph/topology.rs", "if !missing.is_empty() {", "if missing.is_empty() {", "graph::topology::tests"),
     Mutation("graph", "crates/nostr_automerge/src/graph/topology.rs", "if order.len() != graph.nodes.len() {", "if order.len() == graph.nodes.len() {", "graph::topology::tests"),
     Mutation("projection", "crates/nostr_automerge/src/automerge_adapter/materialized_view.rs", "find(|entry| entry.path == path)?", "find(|entry| entry.path != path)?", "automerge_adapter::materialized_view::tests"),
@@ -45,7 +47,7 @@ MUTATIONS = (
 def cargo(*arguments: str) -> int | None:
     try:
         return subprocess.run(
-            ["cargo", *arguments],
+            ["cargo", "extbuild", "run", "--", "cargo", *arguments],
             cwd=ROOT,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.STDOUT,
@@ -125,14 +127,13 @@ def main() -> int:
             if build != 0:
                 unviable.append(identity)
                 continue
-            result = cargo(
-                "test",
-                "-p",
-                "nostr_automerge",
-                "--lib",
-                mutation.test_filter,
-                "--locked",
-            )
+            test_arguments = ["test", "-p", "nostr_automerge"]
+            if mutation.test_target is None:
+                test_arguments.append("--lib")
+            else:
+                test_arguments.extend(["--test", mutation.test_target])
+            test_arguments.extend([mutation.test_filter, "--locked"])
+            result = cargo(*test_arguments)
             if result is None:
                 timeouts.append(identity)
             else:
