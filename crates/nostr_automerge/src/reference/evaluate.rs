@@ -10,8 +10,7 @@ use crate::control::parent_view::ParentEpochView;
 use crate::control::select::select_valid_outcomes_with_alert;
 use crate::control::validate::ControlEnvelope;
 use crate::graph::change_candidate::ChangeCandidate;
-use crate::graph::dependency_graph::build_graph;
-use crate::graph::equivocation::{QuarantineError, quarantine_equivocation_descendants};
+use crate::graph::equivocation::QuarantineError;
 use crate::graph::schedule::{ScheduleError, schedule_candidates};
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
 use crate::reference::epoch_engine::{
@@ -26,7 +25,9 @@ use crate::{
 #[derive(Clone, Debug)]
 pub(crate) struct BatchChange {
     pub(crate) candidate: ChangeCandidate,
-    pub(crate) semantically_valid: bool,
+    /// Eligibility hint used only by the envelope-free unit-test adapter.
+    /// Stateful public evaluation derives every semantic outcome independently.
+    pub(crate) legacy_eligible: bool,
     pub(crate) raw_change: Option<Vec<u8>>,
 }
 
@@ -258,24 +259,14 @@ pub(crate) fn evaluate_batch(
         }
         accepted_changes = selected_base;
         let control_index = canonical_controls.len() - 1;
-        let epoch = if control.envelope.is_some() {
-            resolve_authoritative_epoch(
-                control,
-                selected_state,
-                &canonical_controls[..control_index],
-                &controls,
-                budget,
-                cancellation,
-            )
-        } else {
-            let epoch_inputs = control.changes.iter().map(|change| EpochCandidate {
-                candidate: change.candidate.clone(),
-                semantically_valid: change.semantically_valid,
-                canonical_control: !control.frozen,
-            });
-            resolve_epoch(epoch_inputs, accepted_changes.clone(), budget, cancellation)
-                .map_err(EpochResolutionError::Schedule)
-        };
+        let epoch = resolve_authoritative_epoch(
+            control,
+            selected_state,
+            &canonical_controls[..control_index],
+            &controls,
+            budget,
+            cancellation,
+        );
         let resolved = match epoch {
             Ok(resolved) => resolved,
             Err(EpochResolutionError::Schedule(ScheduleError::BudgetExhausted)) => {
@@ -291,64 +282,11 @@ pub(crate) fn evaluate_batch(
                 break;
             }
         };
-        dispositions.extend(resolved);
-        let mut eligible = controls
-            .values()
-            .flat_map(|candidate_control| candidate_control.changes.iter())
-            .filter(|change| {
-                accepted_changes.contains(&change.candidate.change_hash)
-                    || (change.candidate.control_id == selected
-                        && change.semantically_valid
-                        && !control.frozen)
-            })
-            .map(|change| (change.candidate.change_hash, change.candidate.clone()))
-            .collect::<BTreeMap<_, _>>();
-        for change in &control.changes {
-            if change.semantically_valid && !control.frozen {
-                eligible
-                    .entry(change.candidate.change_hash)
-                    .or_insert_with(|| change.candidate.clone());
-            }
-        }
-        let eligible = eligible.into_values().collect::<Vec<_>>();
-        if let Ok(graph) = build_graph(eligible.clone(), accepted_changes.clone()) {
-            match quarantine_equivocation_descendants(eligible, &graph, budget, cancellation) {
-                Ok(quarantine) => {
-                    for hash in &quarantine.quarantined {
-                        dispositions.insert(*hash, ProtocolDisposition::Excluded);
-                    }
-                    integrity_alerts.extend(quarantine.alerts);
-                }
-                Err(QuarantineError::BudgetExhausted) => {
-                    completion = Completion::BudgetExhausted;
-                    break;
-                }
-                Err(QuarantineError::Cancelled) => {
-                    completion = Completion::Cancelled;
-                    break;
-                }
-                Err(QuarantineError::Alert(_)) => {
-                    failure = Some(EvaluationFailure::InvariantViolation);
-                    break;
-                }
-            }
-        }
-        accepted_changes.extend(dispositions.iter().filter_map(|(hash, disposition)| {
-            (*disposition == ProtocolDisposition::Accepted).then_some(*hash)
-        }));
-        accepted_changes
-            .retain(|hash| dispositions.get(hash) != Some(&ProtocolDisposition::Excluded));
-        let Some(epoch_result) = epoch_result_from_accepted(
-            &accepted_changes,
-            &controls,
-            dispositions.clone(),
-            Vec::new(),
-        ) else {
-            failure = Some(EvaluationFailure::InvariantViolation);
-            break;
-        };
-        accepted_at_control.insert(selected, AcceptedAtControl::from_result(&epoch_result));
-        parent_epoch_result = Some(epoch_result);
+        dispositions.extend(resolved.dispositions().clone());
+        integrity_alerts.extend_from_slice(resolved.integrity_alerts());
+        accepted_changes = resolved.accepted_state().accepted_closure().clone();
+        accepted_at_control.insert(selected, AcceptedAtControl::from_result(&resolved));
+        parent_epoch_result = Some(resolved);
         if control.frozen {
             break;
         }
@@ -567,20 +505,45 @@ fn resolve_authoritative_epoch(
     controls: &BTreeMap<EventId, BatchControl>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
-) -> Result<BTreeMap<ChangeHash, ProtocolDisposition>, EpochResolutionError> {
+) -> Result<EpochEvaluationResult, EpochResolutionError> {
     let Some(selected) = control.envelope.clone() else {
         let epoch_inputs = control.changes.iter().map(|change| EpochCandidate {
             candidate: change.candidate.clone(),
-            semantically_valid: change.semantically_valid,
+            semantically_valid: change.legacy_eligible,
             canonical_control: !control.frozen,
         });
-        return resolve_epoch(
+        let dispositions = resolve_epoch(
             epoch_inputs,
             accepted_base.accepted_closure().clone(),
             budget,
             cancellation,
         )
-        .map_err(EpochResolutionError::Schedule);
+        .map_err(EpochResolutionError::Schedule)?;
+        let mut accepted_candidates = accepted_base.accepted_candidates().clone();
+        accepted_candidates.extend(control.changes.iter().filter_map(|change| {
+            (dispositions.get(&change.candidate.change_hash)
+                == Some(&ProtocolDisposition::Accepted))
+            .then_some((change.candidate.change_hash, change.candidate.clone()))
+        }));
+        let accepted_closure = accepted_candidates.keys().copied().collect::<BTreeSet<_>>();
+        let depended_on = accepted_candidates
+            .values()
+            .flat_map(|candidate| candidate.dependencies.iter().copied())
+            .filter(|hash| accepted_closure.contains(hash))
+            .collect::<BTreeSet<_>>();
+        let frontier_heads = accepted_closure.difference(&depended_on).copied().collect();
+        let materialized = (accepted_closure == *accepted_base.accepted_closure())
+            .then(|| accepted_base.materialized().cloned())
+            .flatten();
+        return EpochEvaluationResult::new(
+            accepted_closure,
+            frontier_heads,
+            accepted_candidates,
+            dispositions,
+            Vec::new(),
+            materialized,
+        )
+        .map_err(|_| EpochResolutionError::InvalidState);
     };
     let canonical_ancestry = ancestry
         .iter()
@@ -611,20 +574,18 @@ fn resolve_authoritative_epoch(
         canonical_ancestry,
     )
     .map_err(|_| EpochResolutionError::InvalidState)?;
-    evaluate_epoch(&input, budget, cancellation)
-        .map(|result| result.dispositions().clone())
-        .map_err(|error| match error {
-            EpochEvaluationError::Schedule(error) => EpochResolutionError::Schedule(error),
-            EpochEvaluationError::Quarantine(QuarantineError::BudgetExhausted) => {
-                EpochResolutionError::Schedule(ScheduleError::BudgetExhausted)
-            }
-            EpochEvaluationError::Quarantine(QuarantineError::Cancelled) => {
-                EpochResolutionError::Schedule(ScheduleError::Cancelled)
-            }
-            EpochEvaluationError::Quarantine(QuarantineError::Alert(_))
-            | EpochEvaluationError::Graph(_)
-            | EpochEvaluationError::State(_) => EpochResolutionError::InvalidState,
-        })
+    evaluate_epoch(&input, budget, cancellation).map_err(|error| match error {
+        EpochEvaluationError::Schedule(error) => EpochResolutionError::Schedule(error),
+        EpochEvaluationError::Quarantine(QuarantineError::BudgetExhausted) => {
+            EpochResolutionError::Schedule(ScheduleError::BudgetExhausted)
+        }
+        EpochEvaluationError::Quarantine(QuarantineError::Cancelled) => {
+            EpochResolutionError::Schedule(ScheduleError::Cancelled)
+        }
+        EpochEvaluationError::Quarantine(QuarantineError::Alert(_))
+        | EpochEvaluationError::Graph(_)
+        | EpochEvaluationError::State(_) => EpochResolutionError::InvalidState,
+    })
 }
 
 fn accepted_state_for_closure(
@@ -658,38 +619,6 @@ fn accepted_state_for_closure(
         materialized
     };
     AcceptedEpochState::new(accepted.clone(), heads, candidates, materialized).ok()
-}
-
-fn epoch_result_from_accepted(
-    accepted: &BTreeSet<ChangeHash>,
-    controls: &BTreeMap<EventId, BatchControl>,
-    dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
-    integrity_alerts: Vec<IntegrityAlert>,
-) -> Option<EpochEvaluationResult> {
-    let candidates = controls
-        .values()
-        .flat_map(|control| control.changes.iter())
-        .filter(|change| accepted.contains(&change.candidate.change_hash))
-        .map(|change| (change.candidate.change_hash, change.candidate.clone()))
-        .collect::<BTreeMap<_, _>>();
-    if candidates.len() != accepted.len() {
-        return None;
-    }
-    let depended_on = candidates
-        .values()
-        .flat_map(|candidate| candidate.dependencies.iter().copied())
-        .filter(|hash| accepted.contains(hash))
-        .collect::<BTreeSet<_>>();
-    let heads = accepted.difference(&depended_on).copied().collect();
-    EpochEvaluationResult::new(
-        accepted.clone(),
-        heads,
-        candidates,
-        dispositions,
-        integrity_alerts,
-        None,
-    )
-    .ok()
 }
 
 fn applied_heads_agree(
@@ -800,7 +729,7 @@ mod tests {
         value.change_hash = ChangeHash::from_bytes([hash; 32]);
         BatchChange {
             candidate: value,
-            semantically_valid: true,
+            legacy_eligible: true,
             raw_change: None,
         }
     }
@@ -914,7 +843,7 @@ mod tests {
         assert_eq!(concurrent.accepted_changes.len(), 2);
 
         let mut invalid = change(3, 3, 1);
-        invalid.semantically_valid = false;
+        invalid.legacy_eligible = false;
         let revoked = evaluate_batch(
             [control(1, None, vec![invalid.clone()])],
             &mut WorkBudget::new(0, 200),

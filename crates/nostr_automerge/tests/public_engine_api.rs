@@ -3131,6 +3131,328 @@ fn change_start_op_must_equal_actor_next_op() {
 
 #[test]
 #[allow(clippy::expect_used)]
+fn invalid_start_op_cannot_poison_valid_same_sequence_change() {
+    let controller = TestSigner::from_byte(114);
+    let device = TestSigner::from_byte(115);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "b4".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let control = signed_acl_control(
+        &controller,
+        coordinate,
+        1,
+        None,
+        0,
+        vec![(device.public_key().to_hex(), vec!["write"])],
+    );
+    let control_id = VerifiedNip01Event::verify(control.clone())
+        .expect("signed control")
+        .event_id();
+    let actor = ActorId::derive(coordinate, device.public_key());
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
+        .expect("empty authoring document");
+    let valid = document
+        .author_change(&[Operation::PutString {
+            key: "winner".to_owned(),
+            value: "valid".to_owned(),
+        }])
+        .expect("valid change");
+    let (invalid_raw, invalid_hash) = rewrite_first_change_start_op(valid.raw().to_vec(), 2);
+    let sign_change = |created_at: u64, hash: ChangeHash, raw: &[u8]| {
+        device.sign(
+            &UnsignedEventDraft::new(
+                created_at,
+                1_624,
+                vec![
+                    vec!["a".to_owned(), coordinate.to_address()],
+                    vec!["e".to_owned(), control_id.to_hex()],
+                    vec!["x".to_owned(), hash.to_hex()],
+                ],
+                base64::engine::general_purpose::STANDARD.encode(raw),
+            )
+            .expect("change draft")
+            .prepare(device.public_key())
+            .expect("change preimage"),
+        )
+    };
+    let mut builder = CorpusBuilder::new();
+    for event in [
+        sign_change(2, valid.change_hash(), valid.raw()),
+        sign_change(3, invalid_hash, &invalid_raw),
+        control,
+    ] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(report.accepted_changes(), [valid.change_hash()]);
+    assert!(
+        report
+            .dispositions()
+            .contains(&(valid.change_hash(), ProtocolDisposition::Accepted))
+    );
+    assert!(
+        report
+            .dispositions()
+            .contains(&(invalid_hash, ProtocolDisposition::Invalid))
+    );
+    assert!(report.integrity_alerts().is_empty());
+    let view = report.document().expect("valid materialized document");
+    assert!(view.entries().iter().any(|entry| {
+        entry.path() == [MaterializedPathElement::Key("winner".to_owned())]
+            && matches!(
+                entry.conflicts(),
+                [conflict]
+                    if conflict.value()
+                        == &MaterializedValue::Scalar(MaterializedScalar::String(
+                            "valid".to_owned()
+                        ))
+            )
+    }));
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn missing_predecessor_cannot_poison_valid_same_sequence_change() {
+    let controller = TestSigner::from_byte(116);
+    let device = TestSigner::from_byte(117);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "b6".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let control = signed_acl_control(
+        &controller,
+        coordinate,
+        1,
+        None,
+        0,
+        vec![(device.public_key().to_hex(), vec!["write"])],
+    );
+    let control_id = VerifiedNip01Event::verify(control.clone())
+        .expect("signed control")
+        .event_id();
+    let actor = ActorId::derive(coordinate, device.public_key());
+    let state = ActorState::initial(actor, BTreeSet::new());
+    let mut valid_document =
+        AuthoringDocument::empty(state.clone()).expect("valid authoring document");
+    let first = valid_document
+        .author_change(&[Operation::PutString {
+            key: "first".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .expect("first change");
+    let valid = valid_document
+        .author_change(&[Operation::PutString {
+            key: "second".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .expect("valid second change");
+    let mut missing_document =
+        AuthoringDocument::empty(state).expect("missing predecessor document");
+    let missing = missing_document
+        .author_change(&[Operation::PutString {
+            key: "poison".to_owned(),
+            value: "invalid".to_owned(),
+        }])
+        .expect("candidate without predecessor");
+    let (missing_raw, missing_hash) = rewrite_change_sequence(missing.raw().to_vec(), 1, 2);
+    let sign_change = |created_at: u64, hash: ChangeHash, raw: &[u8]| {
+        device.sign(
+            &UnsignedEventDraft::new(
+                created_at,
+                1_624,
+                vec![
+                    vec!["a".to_owned(), coordinate.to_address()],
+                    vec!["e".to_owned(), control_id.to_hex()],
+                    vec!["x".to_owned(), hash.to_hex()],
+                ],
+                base64::engine::general_purpose::STANDARD.encode(raw),
+            )
+            .expect("change draft")
+            .prepare(device.public_key())
+            .expect("change preimage"),
+        )
+    };
+    let mut builder = CorpusBuilder::new();
+    for event in [
+        sign_change(2, first.change_hash(), first.raw()),
+        sign_change(3, valid.change_hash(), valid.raw()),
+        sign_change(4, missing_hash, &missing_raw),
+        control,
+    ] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(
+        report
+            .accepted_changes()
+            .iter()
+            .copied()
+            .collect::<BTreeSet<_>>(),
+        BTreeSet::from([first.change_hash(), valid.change_hash()])
+    );
+    assert!(
+        report
+            .dispositions()
+            .contains(&(missing_hash, ProtocolDisposition::Invalid))
+    );
+    assert!(report.integrity_alerts().is_empty());
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn base_omission_cannot_poison_valid_same_sequence_change() {
+    let controller = TestSigner::from_byte(118);
+    let left_device = TestSigner::from_byte(119);
+    let right_device = TestSigner::from_byte(120);
+    let target_device = TestSigner::from_byte(121);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "b8".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let members = vec![
+        (left_device.public_key().to_hex(), vec!["write"]),
+        (right_device.public_key().to_hex(), vec!["write"]),
+        (target_device.public_key().to_hex(), vec!["write"]),
+    ];
+    let genesis = signed_acl_control(&controller, coordinate, 1, None, 0, members.clone());
+    let genesis_id = VerifiedNip01Event::verify(genesis.clone())
+        .expect("signed genesis")
+        .event_id();
+    let make_base = |device: &TestSigner, key: &str| {
+        let actor = ActorId::derive(coordinate, device.public_key());
+        let mut document = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit)
+            .with_actor(automerge::ActorId::from(actor.as_bytes().to_vec()));
+        document.put(ROOT, key, "base").expect("base operation");
+        let hash = document.commit().expect("base hash");
+        let raw = document
+            .get_change_by_hash(&hash)
+            .expect("base change")
+            .raw_bytes()
+            .to_vec();
+        (ChangeHash::from_bytes(hash.0), raw)
+    };
+    let (left_hash, left_raw) = make_base(&left_device, "left");
+    let (right_hash, right_raw) = make_base(&right_device, "right");
+    let child = signed_acl_control_with_base(
+        &controller,
+        coordinate,
+        6,
+        Some(genesis_id),
+        1,
+        members,
+        &[left_hash, right_hash],
+    );
+    let child_id = VerifiedNip01Event::verify(child.clone())
+        .expect("signed child")
+        .event_id();
+    let target_actor = ActorId::derive(coordinate, target_device.public_key());
+    let decoded_left = automerge::Change::from_bytes(left_raw.clone()).expect("decoded left");
+    let decoded_right = automerge::Change::from_bytes(right_raw.clone()).expect("decoded right");
+    let make_target = |bases: Vec<automerge::Change>, key: &str| {
+        let mut document = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit);
+        document.apply_changes(bases).expect("apply bases");
+        document.set_actor(automerge::ActorId::from(target_actor.as_bytes().to_vec()));
+        document
+            .put(ROOT, key, "candidate")
+            .expect("target operation");
+        let hash = document.commit().expect("target hash");
+        let raw = document
+            .get_change_by_hash(&hash)
+            .expect("target change")
+            .raw_bytes()
+            .to_vec();
+        (ChangeHash::from_bytes(hash.0), raw)
+    };
+    let (valid_hash, valid_raw) = make_target(
+        vec![decoded_left.clone(), decoded_right],
+        "valid-descendant",
+    );
+    let (omitting_hash, omitting_raw) = make_target(vec![decoded_left], "omits-right");
+    let sign_change = |device: &TestSigner,
+                       created_at: u64,
+                       control_id: EventId,
+                       hash: ChangeHash,
+                       raw: &[u8]| {
+        device.sign(
+            &UnsignedEventDraft::new(
+                created_at,
+                1_624,
+                vec![
+                    vec!["a".to_owned(), coordinate.to_address()],
+                    vec!["e".to_owned(), control_id.to_hex()],
+                    vec!["x".to_owned(), hash.to_hex()],
+                ],
+                base64::engine::general_purpose::STANDARD.encode(raw),
+            )
+            .expect("change draft")
+            .prepare(device.public_key())
+            .expect("change preimage"),
+        )
+    };
+    let mut builder = CorpusBuilder::new();
+    for event in [
+        sign_change(&left_device, 2, genesis_id, left_hash, &left_raw),
+        sign_change(&right_device, 3, genesis_id, right_hash, &right_raw),
+        sign_change(&target_device, 4, child_id, valid_hash, &valid_raw),
+        sign_change(&target_device, 5, child_id, omitting_hash, &omitting_raw),
+        genesis,
+        child,
+    ] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(
+        report
+            .accepted_changes()
+            .iter()
+            .copied()
+            .collect::<BTreeSet<_>>(),
+        BTreeSet::from([left_hash, right_hash, valid_hash])
+    );
+    assert!(
+        report
+            .dispositions()
+            .contains(&(omitting_hash, ProtocolDisposition::Invalid))
+    );
+    assert!(report.integrity_alerts().is_empty());
+}
+
+#[test]
+#[allow(clippy::expect_used)]
 fn empty_change_consumes_only_sequence() {
     let controller = TestSigner::from_byte(94);
     let device = TestSigner::from_byte(95);
@@ -3548,16 +3870,16 @@ fn actor_sequence_rollback_and_replay() {
         &mut WorkBudget::new(1_000_000, 1_000),
         &NeverCancelled,
     );
-    assert!(report.accepted_changes().is_empty());
+    assert_eq!(report.accepted_changes(), [first.change_hash()]);
     assert!(
         report
             .dispositions()
-            .contains(&(first.change_hash(), ProtocolDisposition::Excluded))
+            .contains(&(first.change_hash(), ProtocolDisposition::Accepted))
     );
     assert!(
         report
             .dispositions()
-            .contains(&(rollback_hash, ProtocolDisposition::Excluded))
+            .contains(&(rollback_hash, ProtocolDisposition::Invalid))
     );
     assert_eq!(
         report
@@ -3567,14 +3889,11 @@ fn actor_sequence_rollback_and_replay() {
             .count(),
         1
     );
-    assert!(report.integrity_alerts().iter().any(|alert| matches!(
-        alert,
-        nostr_automerge::IntegrityAlert::DeviceEquivocation(_)
-    )));
+    assert!(report.integrity_alerts().is_empty());
 }
 
 #[test]
-fn base_sequence_equivocation_is_detected() {
+fn accepted_base_is_not_quarantined_by_invalid_sequence_reuse() {
     actor_sequence_rollback_and_replay();
 }
 
@@ -3958,7 +4277,7 @@ fn signed_causal_change_matrix() {
     candidate_applies_to_exact_dependency_closure();
     apply_failure_invalidates_only_candidate();
     change_admission_order_is_hash_canonical();
-    base_sequence_equivocation_is_detected();
+    accepted_base_is_not_quarantined_by_invalid_sequence_reuse();
     equivocation_quarantines_transitive_dependants();
     equivocation_preserves_prior_actor_history();
     duplicate_valid_carriers_are_not_equivocation();

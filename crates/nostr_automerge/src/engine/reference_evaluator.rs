@@ -1068,7 +1068,7 @@ fn change_for_hash(
     });
     Some(BatchChange {
         candidate,
-        semantically_valid: authorized && !control.terminal(),
+        legacy_eligible: authorized && !control.terminal(),
         raw_change: raw,
     })
 }
