@@ -1,8 +1,19 @@
 {
+  "candidate": {
+    "rust_commit": "6b29a037aa0ce18651e87e74db28040f88d5a444",
+    "typescript_commit": "ac49e7274e79079dd674ada28cd9ed602bd8b9ce"
+  },
   "code_completion_effect": "none",
   "decision": "hold_publication",
   "evidence": [],
-  "reason": "independent external security and protocol review not completed",
-  "schema": "nostr_automerge.external_review.v1",
+  "reason": "independent external security and protocol review was not available during local implementation",
+  "requested_scope": [
+    "signed ingress and canonical wire handling",
+    "control and causal change consensus",
+    "checkpoint verification and history nonauthorization",
+    "bounded work cancellation and panic safety",
+    "Rust and TypeScript independent parity"
+  ],
+  "schema": "nostr_automerge.external_review.v2",
   "status": "not_completed_release_hold"
 }
