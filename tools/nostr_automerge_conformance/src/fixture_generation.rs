@@ -27,11 +27,228 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "control_fork" => generate_control_fork_profile(),
         "actor_counters" => generate_actor_counter_profile(),
         "dependencies" => generate_dependency_profile(),
+        "multi_epoch" => generate_multi_epoch_profile(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
 }
 
 type Member<'a> = (&'a Signer, Option<String>, &'a [&'a str]);
+
+fn generate_multi_epoch_profile() -> Result<(), String> {
+    let controller = Signer::from_byte(87)?;
+    let writer = Signer::from_byte(88)?;
+    let successor_controller = Signer::from_byte(89)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "87".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid multi-epoch coordinate".to_owned())?;
+    let successor_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        successor_controller.public_key.to_hex(),
+        "89".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid successor coordinate".to_owned())?;
+    let writer_member = || vec![(&writer, None, &["checkpoint", "write"][..])];
+    let checkpoint_member = || vec![(&writer, None, &["checkpoint"][..])];
+    let genesis = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, writer_member(), "automerge-change-v1"),
+    )?;
+    let genesis_id = event_id(&genesis)?;
+    let actor = ActorId::derive(coordinate, writer.public_key);
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+        .map_err(|error| format!("multi-epoch document: {error:?}"))?;
+    let first = document
+        .author_change(&[Operation::PutString {
+            key: "first".to_owned(),
+            value: "parent".to_owned(),
+        }])
+        .map_err(|error| format!("first epoch change: {error:?}"))?;
+    let second = document
+        .author_change(&[Operation::PutString {
+            key: "second".to_owned(),
+            value: "parent".to_owned(),
+        }])
+        .map_err(|error| format!("second epoch change: {error:?}"))?;
+    let first_event = sign_change(
+        &writer,
+        2,
+        coordinate,
+        genesis_id,
+        first.change_hash(),
+        first.raw(),
+    )?;
+    let second_event = sign_change(
+        &writer,
+        3,
+        coordinate,
+        genesis_id,
+        second.change_hash(),
+        second.raw(),
+    )?;
+    let child = sign_control(
+        &controller,
+        4,
+        coordinate,
+        Some(genesis_id),
+        control_content_with_links(1, writer_member(), &[second.change_hash()], None, None),
+    )?;
+    let child_id = event_id(&child)?;
+    let pruned = sign_control(
+        &controller,
+        5,
+        coordinate,
+        Some(genesis_id),
+        control_content_with_links(1, writer_member(), &[first.change_hash()], None, None),
+    )?;
+    let third = document
+        .author_change(&[Operation::PutString {
+            key: "third".to_owned(),
+            value: "child".to_owned(),
+        }])
+        .map_err(|error| format!("child epoch change: {error:?}"))?;
+    let third_event = sign_change(
+        &writer,
+        6,
+        coordinate,
+        child_id,
+        third.change_hash(),
+        third.raw(),
+    )?;
+    let terminal = sign_control(
+        &controller,
+        7,
+        coordinate,
+        Some(child_id),
+        control_content_with_links(
+            2,
+            checkpoint_member(),
+            &[third.change_hash()],
+            None,
+            Some(successor_coordinate),
+        ),
+    )?;
+    let terminal_id = event_id(&terminal)?;
+    let successor = sign_control(
+        &successor_controller,
+        8,
+        successor_coordinate,
+        None,
+        control_content_with_links(
+            0,
+            vec![(&successor_controller, None, &["write"])],
+            &[],
+            Some((coordinate, terminal_id)),
+            None,
+        ),
+    )?;
+    let parent_events = || vec![genesis.clone(), first_event.clone(), second_event.clone()];
+    let child_events = || {
+        vec![
+            genesis.clone(),
+            first_event.clone(),
+            second_event.clone(),
+            child.clone(),
+            third_event.clone(),
+        ]
+    };
+    let cases = vec![
+        ("multi_epoch_parent_closure", parent_events()),
+        (
+            "multi_epoch_pruned_branch",
+            vec![
+                genesis.clone(),
+                first_event.clone(),
+                second_event.clone(),
+                pruned,
+            ],
+        ),
+        (
+            "multi_epoch_retained_writer",
+            vec![
+                genesis.clone(),
+                first_event.clone(),
+                second_event.clone(),
+                child.clone(),
+            ],
+        ),
+        ("multi_epoch_child_epoch", child_events()),
+        (
+            "multi_epoch_terminal",
+            child_events()
+                .into_iter()
+                .chain([terminal.clone()])
+                .collect(),
+        ),
+        (
+            "multi_epoch_successor",
+            child_events()
+                .into_iter()
+                .chain([terminal, successor])
+                .collect(),
+        ),
+    ];
+    let root = repository_root().join("fixtures/v1_draft/scenarios/multi_epoch");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    for (fixture_id, events) in cases {
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            &["NCRDT-CHAIN-001", "NCRDT-CONF-002", "NCRDT-STATE-001"],
+            "multi_epoch",
+        )?;
+    }
+    Ok(())
+}
+
+fn control_content_with_links(
+    sequence: u64,
+    mut members: Vec<Member<'_>>,
+    base_heads: &[ChangeHash],
+    predecessor: Option<(DocumentCoordinate, EventId)>,
+    successor: Option<DocumentCoordinate>,
+) -> String {
+    members.sort_by_key(|(signer, _, _)| signer.public_key);
+    let members = members
+        .into_iter()
+        .map(|(signer, account, roles)| {
+            let mut roles = roles.to_vec();
+            roles.sort_unstable();
+            json!({
+                "account": account,
+                "pubkey": signer.public_key.to_hex(),
+                "roles": roles,
+            })
+        })
+        .collect::<Vec<_>>();
+    let predecessor = predecessor.map(|(coordinate, terminal_control)| {
+        json!({
+            "coordinate": coordinate.to_address(),
+            "terminal_control": terminal_control.to_hex(),
+        })
+    });
+    json!({
+        "base_heads": base_heads.iter().map(|head| head.to_hex()).collect::<Vec<_>>(),
+        "format": "automerge-change-v1",
+        "members": members,
+        "policy": "controller-acl-v1",
+        "predecessor": predecessor,
+        "seq": sequence,
+        "successor": successor.map(DocumentCoordinate::to_address),
+        "text_encoding": "utf16",
+        "v": 1,
+    })
+    .to_string()
+}
 
 fn generate_dependency_profile() -> Result<(), String> {
     let controller = Signer::from_byte(82)?;
