@@ -86,6 +86,38 @@ def hash_self_test() -> None:
         raise AssertionError("material artifact-hash mutation unexpectedly passed")
 
 
+def fixture_execution_index() -> dict[str, tuple[str, str]]:
+    distribution = json.loads((ROOT / "fixtures/distribution/manifest_v3.json").read_text())
+    declared = {
+        entry["fixture_id"]: (entry["profile"], sha256(ROOT / entry["expected_path"]))
+        for entry in distribution["fixtures"]
+    }
+    executed: dict[str, tuple[str, str]] = {}
+    for path in sorted(ROOT.glob("reports/rust_signed_*.json")):
+        profile = json.loads(path.read_text())
+        if profile.get("status") != "pass":
+            raise EvidenceError(f"fixture_profile_not_passing:{path.name}")
+        for result in profile["reports"]:
+            fixture_id = result["fixture_id"]
+            if fixture_id in executed:
+                raise EvidenceError(f"duplicate_fixture_execution:{fixture_id}")
+            executed[fixture_id] = (profile["profile"], result["report_sha256"])
+    if declared != executed:
+        raise EvidenceError("fixture_distribution_execution_mismatch")
+    return executed
+
+
+def fixture_self_test() -> None:
+    executed = fixture_execution_index()
+    if "nonexistent-fixture" in executed:
+        raise AssertionError("nonexistent fixture unexpectedly executed")
+    fixture_id, (profile, digest) = next(iter(executed.items()))
+    if not profile or not SHA256.fullmatch(digest):
+        raise AssertionError(f"invalid fixture execution entry: {fixture_id}")
+    if digest == "00" * 32:
+        raise AssertionError("mutated fixture digest unexpectedly matched")
+
+
 def result_self_test() -> None:
     manifest = json.loads((ROOT / "reports/test_evidence_manifest.json").read_text())
     for job in manifest["jobs"].values():
@@ -136,6 +168,7 @@ def main() -> int:
     parser.add_argument("--schema-self-test", action="store_true")
     parser.add_argument("--result-self-test", action="store_true")
     parser.add_argument("--hash-self-test", action="store_true")
+    parser.add_argument("--fixture-self-test", action="store_true")
     args = parser.parse_args()
     if args.schema_self_test:
         schema_self_test()
@@ -148,6 +181,10 @@ def main() -> int:
     if args.hash_self_test:
         hash_self_test()
         print("PASS: result and distribution hashes fail closed on drift")
+        return 0
+    if args.fixture_self_test:
+        fixture_self_test()
+        print("PASS: every distributed fixture occurs in one passing profile")
         return 0
     validate_shape(json.loads(args.report.read_text()))
     print("PASS: requirement evidence v3 has a valid top-level shape")
