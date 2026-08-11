@@ -2,9 +2,9 @@ use core::fmt;
 use std::collections::BTreeSet;
 
 use crate::{
-    ChangeHash, CheckpointVerificationResult, Completion, DispositionsDigest, DocumentCoordinate,
-    EventId, EvidenceRecord, HistoryDigest, IntegrityAlert, ProtocolDisposition,
-    ResolvedManifestAvailability,
+    ChangeHash, CheckpointVerificationResult, CheckpointVerificationStatus, Completion,
+    DispositionsDigest, DocumentCoordinate, EventId, EvidenceRecord, HistoryDigest, IntegrityAlert,
+    ProtocolDisposition, ResolvedManifestAvailability,
 };
 
 /// Stable category explaining why an evaluation did not complete.
@@ -266,6 +266,46 @@ impl EvaluationReport {
         }) {
             return Err(EvaluationError::ReportInvariant);
         }
+        let event_disposition = |event_id| {
+            let identifier = ProtocolItemIdentifier::event(event_id);
+            parts
+                .disposition_records
+                .binary_search_by_key(&identifier, DispositionRecord::identifier)
+                .ok()
+                .map(|index| parts.disposition_records[index].disposition())
+        };
+        let manifest_consistent = match &parts.manifest {
+            ResolvedManifestAvailability::Missing => true,
+            ResolvedManifestAvailability::Available { hints, .. } => {
+                event_disposition(hints.event_id()) == Some(ProtocolDisposition::Accepted)
+            }
+            ResolvedManifestAvailability::Pending { hints, .. } => {
+                event_disposition(hints.event_id()) == Some(ProtocolDisposition::Pending)
+            }
+            ResolvedManifestAvailability::Unavailable {
+                event_id,
+                diagnostic,
+                ..
+            } => {
+                event_disposition(*event_id)
+                    == Some(if diagnostic.as_str() == "carrier.revision" {
+                        ProtocolDisposition::UnsupportedRevision
+                    } else {
+                        ProtocolDisposition::Invalid
+                    })
+            }
+        };
+        let checkpoints_consistent = parts.checkpoints.iter().all(|checkpoint| {
+            let expected = checkpoint_event_disposition(checkpoint.status());
+            event_disposition(checkpoint.descriptor_event()) == Some(expected)
+                && checkpoint
+                    .chunk_events()
+                    .iter()
+                    .all(|event_id| event_disposition(*event_id) == Some(expected))
+        });
+        if !manifest_consistent || !checkpoints_consistent {
+            return Err(EvaluationError::ReportInvariant);
+        }
         let completion_matches_failure = matches!(
             (parts.completion, parts.failure),
             (Completion::Complete, None)
@@ -422,6 +462,18 @@ impl EvaluationReport {
     #[must_use]
     pub const fn document(&self) -> Option<&MaterializedDocumentView> {
         self.document.as_ref()
+    }
+}
+
+fn checkpoint_event_disposition(status: CheckpointVerificationStatus) -> ProtocolDisposition {
+    match status {
+        CheckpointVerificationStatus::Verified => ProtocolDisposition::Accepted,
+        CheckpointVerificationStatus::PendingControl
+        | CheckpointVerificationStatus::MissingChunk
+        | CheckpointVerificationStatus::MissingHistoricalCarrier
+        | CheckpointVerificationStatus::BudgetExhausted
+        | CheckpointVerificationStatus::Cancelled => ProtocolDisposition::Pending,
+        _ => ProtocolDisposition::Invalid,
     }
 }
 

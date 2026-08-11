@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "checkpoints_unauthorized.expected.json",
-    "sha256": "7d98eb04bc54da4f52c1cb225e69f68dcaecd823961ff8fc936c7cc0ab6c0f4b"
+    "sha256": "0800a8e7a3d05dede91baae01110f25503163db19387b51d0d40b32e19790d15"
   },
   "fixture_id": "checkpoints_unauthorized",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "checkpoints_unauthorized.input.json",
-      "sha256": "aa729c964560bbcd504eccc8aa3e6a58a527a7db77ce20195ba553603173cba2"
+      "sha256": "93940bd1017cd5cab44f9305ffac3a6ea4c5b838116375508b181235fab98ced"
     }
   ],
   "provenance": {

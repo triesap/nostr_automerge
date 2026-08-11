@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "tags_manifest_unknown.expected.json",
-    "sha256": "a7b72b15379dad8d9e27f2c0328e4b75b0b1c7fe9002fcb44883a991c5860d07"
+    "sha256": "4237ade7913683d330b80bdebcb51791f24d154b0bb003c09b4cc35eddb778da"
   },
   "fixture_id": "tags_manifest_unknown",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "tags_manifest_unknown.input.json",
-      "sha256": "b853259f751ebd052c7ca25ef65a104a2384fa934d33a2a70926017bd88a36cd"
+      "sha256": "fa6728ceb61f3ea73622abac7a5dd3327ffd8860edb8c03dfbeab33c2320e9e9"
     }
   ],
   "provenance": {

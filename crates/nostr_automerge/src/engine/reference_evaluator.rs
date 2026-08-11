@@ -150,7 +150,7 @@ impl ReferenceEvaluator {
         disposition_records.extend(dispositions.iter().map(|(hash, disposition)| {
             DispositionRecord::new(ProtocolItemIdentifier::from(*hash), *disposition, None)
         }));
-        disposition_records.extend(event_disposition_records(corpus));
+        disposition_records.extend(event_disposition_records(corpus, &manifest, &checkpoints));
         let accepted_changes = disposition_hashes(&dispositions, ProtocolDisposition::Accepted);
         let heads = batch.heads.into_iter().collect::<Vec<_>>();
         let pending_changes = disposition_hashes(&dispositions, ProtocolDisposition::Pending);
@@ -348,7 +348,11 @@ fn project_document(
         .transpose()
 }
 
-fn event_disposition_records(corpus: &EvidenceCorpus) -> Vec<DispositionRecord> {
+fn event_disposition_records(
+    corpus: &EvidenceCorpus,
+    manifest: &ResolvedManifestAvailability,
+    checkpoints: &[CheckpointVerificationResult],
+) -> Vec<DispositionRecord> {
     let represented_events = corpus
         .control_ids()
         .chain(
@@ -360,13 +364,24 @@ fn event_disposition_records(corpus: &EvidenceCorpus) -> Vec<DispositionRecord> 
                 .flat_map(|event_ids| event_ids.iter().copied()),
         )
         .collect::<std::collections::BTreeSet<_>>();
-    corpus
+    let mut records = corpus
         .records()
         .filter_map(|record| {
             let EvidenceIdentifier::Event(event_id) = record.identifier() else {
                 return None;
             };
             if represented_events.contains(&event_id) {
+                return None;
+            }
+            if matches!(
+                corpus.events.get(&event_id),
+                Some(EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::Manifest(_)
+                        | VerifiedCarrier::CheckpointDescriptor(_)
+                        | VerifiedCarrier::CheckpointChunk(_),
+                    ..
+                })
+            ) {
                 return None;
             }
             let disposition = match record.status() {
@@ -376,13 +391,148 @@ fn event_disposition_records(corpus: &EvidenceCorpus) -> Vec<DispositionRecord> 
                 EvidenceStatus::Unsupported => ProtocolDisposition::UnsupportedRevision,
                 EvidenceStatus::Irrelevant | EvidenceStatus::Duplicate => return None,
             };
-            Some(DispositionRecord::new(
+            Some((event_id, (disposition, record.diagnostic())))
+        })
+        .collect::<std::collections::BTreeMap<_, _>>();
+
+    for evidence in corpus.events.values() {
+        let EventEvidence::VerifiedCarrier { carrier, .. } = evidence else {
+            continue;
+        };
+        match carrier {
+            VerifiedCarrier::Manifest(manifest) => {
+                records.insert(manifest.event_id, (ProtocolDisposition::Excluded, None));
+            }
+            VerifiedCarrier::CheckpointDescriptor(descriptor) => {
+                let disposition = if corpus
+                    .indexes
+                    .checkpoints
+                    .pending_descriptors
+                    .contains(&descriptor.event_id())
+                {
+                    ProtocolDisposition::Pending
+                } else {
+                    ProtocolDisposition::Excluded
+                };
+                records.insert(descriptor.event_id(), (disposition, None));
+            }
+            VerifiedCarrier::CheckpointChunk(chunk) => {
+                let disposition = if corpus
+                    .indexes
+                    .checkpoints
+                    .pending_chunks
+                    .contains(&chunk.event_id())
+                {
+                    ProtocolDisposition::Pending
+                } else {
+                    ProtocolDisposition::Excluded
+                };
+                records.insert(chunk.event_id(), (disposition, None));
+            }
+            VerifiedCarrier::Control(_)
+            | VerifiedCarrier::Change(_)
+            | VerifiedCarrier::UnsupportedRevision { .. } => {}
+        }
+    }
+
+    match manifest {
+        ResolvedManifestAvailability::Missing => {}
+        ResolvedManifestAvailability::Available { hints, .. } => {
+            records.insert(hints.event_id(), (ProtocolDisposition::Accepted, None));
+        }
+        ResolvedManifestAvailability::Pending { hints, .. } => {
+            records.insert(hints.event_id(), (ProtocolDisposition::Pending, None));
+        }
+        ResolvedManifestAvailability::Unavailable {
+            event_id,
+            diagnostic,
+            ..
+        } => {
+            let disposition = if diagnostic.as_str() == "carrier.revision" {
+                ProtocolDisposition::UnsupportedRevision
+            } else {
+                ProtocolDisposition::Invalid
+            };
+            records.insert(*event_id, (disposition, Some(*diagnostic)));
+        }
+    }
+
+    for checkpoint in checkpoints {
+        let disposition = checkpoint_event_disposition(checkpoint.status());
+        let diagnostic = checkpoint_event_diagnostic(checkpoint.status());
+        records.insert(checkpoint.descriptor_event(), (disposition, diagnostic));
+        for event_id in checkpoint.chunk_events() {
+            records.insert(*event_id, (disposition, diagnostic));
+        }
+    }
+
+    records
+        .into_iter()
+        .map(|(event_id, (disposition, diagnostic))| {
+            DispositionRecord::new(
                 ProtocolItemIdentifier::event(event_id),
                 disposition,
-                record.diagnostic(),
-            ))
+                diagnostic,
+            )
         })
         .collect()
+}
+
+fn checkpoint_event_disposition(status: CheckpointVerificationStatus) -> ProtocolDisposition {
+    match status {
+        CheckpointVerificationStatus::Verified => ProtocolDisposition::Accepted,
+        CheckpointVerificationStatus::PendingControl
+        | CheckpointVerificationStatus::MissingChunk
+        | CheckpointVerificationStatus::MissingHistoricalCarrier
+        | CheckpointVerificationStatus::BudgetExhausted
+        | CheckpointVerificationStatus::Cancelled => ProtocolDisposition::Pending,
+        CheckpointVerificationStatus::Unauthorized
+        | CheckpointVerificationStatus::ChunkAuthorMismatch
+        | CheckpointVerificationStatus::ChunkCoordinateMismatch
+        | CheckpointVerificationStatus::ChunkDescriptorMismatch
+        | CheckpointVerificationStatus::ChunkCountMismatch
+        | CheckpointVerificationStatus::DuplicateChunk
+        | CheckpointVerificationStatus::ChunkSizeMismatch
+        | CheckpointVerificationStatus::ChunkAssemblyMismatch
+        | CheckpointVerificationStatus::MerkleMismatch
+        | CheckpointVerificationStatus::SnapshotSizeMismatch
+        | CheckpointVerificationStatus::SnapshotHashMismatch
+        | CheckpointVerificationStatus::SnapshotLoad
+        | CheckpointVerificationStatus::HeadMismatch
+        | CheckpointVerificationStatus::CommitmentMismatch
+        | CheckpointVerificationStatus::ClosureMismatch
+        | CheckpointVerificationStatus::NotAcceptedAtControl => ProtocolDisposition::Invalid,
+    }
+}
+
+fn checkpoint_event_diagnostic(
+    status: CheckpointVerificationStatus,
+) -> Option<crate::DiagnosticCode> {
+    let code = match status {
+        CheckpointVerificationStatus::Verified
+        | CheckpointVerificationStatus::PendingControl
+        | CheckpointVerificationStatus::MissingChunk
+        | CheckpointVerificationStatus::BudgetExhausted
+        | CheckpointVerificationStatus::Cancelled => return None,
+        CheckpointVerificationStatus::ChunkAuthorMismatch
+        | CheckpointVerificationStatus::ChunkCoordinateMismatch
+        | CheckpointVerificationStatus::ChunkDescriptorMismatch
+        | CheckpointVerificationStatus::ChunkCountMismatch
+        | CheckpointVerificationStatus::DuplicateChunk
+        | CheckpointVerificationStatus::ChunkSizeMismatch
+        | CheckpointVerificationStatus::ChunkAssemblyMismatch => "checkpoint.chunk",
+        CheckpointVerificationStatus::MerkleMismatch => "checkpoint.merkle",
+        CheckpointVerificationStatus::SnapshotSizeMismatch
+        | CheckpointVerificationStatus::SnapshotHashMismatch
+        | CheckpointVerificationStatus::SnapshotLoad => "checkpoint.snapshot",
+        CheckpointVerificationStatus::HeadMismatch => "checkpoint.heads",
+        CheckpointVerificationStatus::Unauthorized
+        | CheckpointVerificationStatus::CommitmentMismatch
+        | CheckpointVerificationStatus::ClosureMismatch
+        | CheckpointVerificationStatus::MissingHistoricalCarrier
+        | CheckpointVerificationStatus::NotAcceptedAtControl => "checkpoint.history",
+    };
+    Some(crate::DiagnosticCode::registered(code))
 }
 
 fn verify_checkpoints(

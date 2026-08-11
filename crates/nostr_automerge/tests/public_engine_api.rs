@@ -54,6 +54,26 @@ fn assert_canonical_control_outcomes_are_consistent(report: &EvaluationReport) {
     }
 }
 
+fn event_disposition(report: &EvaluationReport, event_id: EventId) -> Option<ProtocolDisposition> {
+    report
+        .disposition_records()
+        .iter()
+        .find(|record| record.identifier() == ProtocolItemIdentifier::event(event_id))
+        .map(|record| record.disposition())
+}
+
+fn assert_checkpoint_event_dispositions(report: &EvaluationReport, expected: ProtocolDisposition) {
+    for checkpoint in report.checkpoints() {
+        assert_eq!(
+            event_disposition(report, checkpoint.descriptor_event()),
+            Some(expected)
+        );
+        for event_id in checkpoint.chunk_events() {
+            assert_eq!(event_disposition(report, *event_id), Some(expected));
+        }
+    }
+}
+
 #[test]
 #[allow(clippy::expect_used)]
 fn evaluation_errors_are_noncanonical() {
@@ -4607,6 +4627,7 @@ fn signed_single_chunk_checkpoint_verifies_real_automerge_history() {
     assert_eq!(checkpoint.descriptor_event(), descriptor_id);
     assert_eq!(checkpoint.chunk_events(), [chunk_id]);
     assert_eq!(checkpoint.status(), CheckpointVerificationStatus::Verified);
+    assert_checkpoint_event_dispositions(&report, ProtocolDisposition::Accepted);
     assert_eq!(checkpoint.completion(), Completion::Complete);
     assert_eq!(checkpoint.historical_carriers(), [scenario.change_hash]);
     assert_eq!(checkpoint.accepted_at_control(), [scenario.change_hash]);
@@ -4720,6 +4741,7 @@ fn signed_empty_history_checkpoint_verifies_without_redefining_history() {
     let checkpoint = report.checkpoints().first().expect("checkpoint result");
     assert_eq!(checkpoint.descriptor_event(), descriptor_id);
     assert_eq!(checkpoint.status(), CheckpointVerificationStatus::Verified);
+    assert_checkpoint_event_dispositions(&report, ProtocolDisposition::Accepted);
     assert!(checkpoint.heads().is_empty());
     assert!(checkpoint.historical_carriers().is_empty());
     assert!(checkpoint.accepted_at_control().is_empty());
@@ -4843,6 +4865,7 @@ fn signed_irregular_multichunk_checkpoint_reconstructs_exact_history() {
     );
     let checkpoint = report.checkpoints().first().expect("checkpoint result");
     assert_eq!(checkpoint.status(), CheckpointVerificationStatus::Verified);
+    assert_checkpoint_event_dispositions(&report, ProtocolDisposition::Accepted);
     assert_eq!(checkpoint.chunk_events().len(), count as usize);
     assert_eq!(checkpoint.snapshot_hash().as_bytes(), &snapshot_hash);
     assert_eq!(checkpoint.heads(), [scenario.change_hash]);
@@ -5064,6 +5087,7 @@ fn checkpoint_author_and_binding_refusals() {
         wrong_author.checkpoints()[0].status(),
         CheckpointVerificationStatus::ChunkAuthorMismatch
     );
+    assert_checkpoint_event_dispositions(&wrong_author, ProtocolDisposition::Invalid);
 
     let other_coordinate: DocumentCoordinate = format!(
         "31624:{}:{}",
@@ -5087,6 +5111,7 @@ fn checkpoint_author_and_binding_refusals() {
         wrong_coordinate.checkpoints()[0].status(),
         CheckpointVerificationStatus::ChunkCoordinateMismatch
     );
+    assert_checkpoint_event_dispositions(&wrong_coordinate, ProtocolDisposition::Invalid);
 
     let wrong_descriptor = evaluate_single_chunk_variant(
         &TestSigner::from_byte(21),
@@ -5103,6 +5128,7 @@ fn checkpoint_author_and_binding_refusals() {
         wrong_descriptor.checkpoints()[0].status(),
         CheckpointVerificationStatus::MissingChunk
     );
+    assert_checkpoint_event_dispositions(&wrong_descriptor, ProtocolDisposition::Pending);
 }
 
 #[test]
@@ -5128,6 +5154,7 @@ fn checkpoint_index_refusals() {
         duplicate.checkpoints()[0].status(),
         CheckpointVerificationStatus::DuplicateChunk
     );
+    assert_checkpoint_event_dispositions(&duplicate, ProtocolDisposition::Invalid);
     let missing = evaluate_single_chunk_variant(
         &signer,
         None,
@@ -5143,6 +5170,7 @@ fn checkpoint_index_refusals() {
         missing.checkpoints()[0].status(),
         CheckpointVerificationStatus::MissingChunk
     );
+    assert_checkpoint_event_dispositions(&missing, ProtocolDisposition::Pending);
     let wrong_count = evaluate_single_chunk_variant(
         &signer,
         None,
@@ -5158,6 +5186,7 @@ fn checkpoint_index_refusals() {
         wrong_count.checkpoints()[0].status(),
         CheckpointVerificationStatus::ChunkCountMismatch
     );
+    assert_checkpoint_event_dispositions(&wrong_count, ProtocolDisposition::Invalid);
     validated_checkpoint_chunk_carrier_enters_corpus();
 }
 
@@ -5508,6 +5537,7 @@ fn checkpoints_never_authorize_or_redefine_history() {
         report.checkpoints()[0].status(),
         CheckpointVerificationStatus::Unauthorized
     );
+    assert_checkpoint_event_dispositions(&report, ProtocolDisposition::Invalid);
     assert_eq!(report.canonical_controls(), baseline.canonical_controls());
     assert_eq!(report.dispositions(), baseline.dispositions());
     assert_eq!(report.accepted_changes(), baseline.accepted_changes());
@@ -5755,6 +5785,9 @@ fn selected_manifest_control_references_are_resolved_after_replacement() {
 
     let baseline = evaluate(vec![left.clone(), right.clone()]);
     let canonical_manifest = signed_manifest_hint(&controller, coordinate, 3, canonical_id);
+    let canonical_manifest_id = VerifiedNip01Event::verify(canonical_manifest.clone())
+        .expect("canonical manifest")
+        .event_id();
     let canonical = evaluate(vec![
         canonical_manifest.clone(),
         right.clone(),
@@ -5771,8 +5804,15 @@ fn selected_manifest_control_references_are_resolved_after_replacement() {
     let manifest_debug = format!("{:?}", canonical.manifest());
     assert!(manifest_debug.contains("Canonical"));
     assert!(!manifest_debug.contains(&canonical_id.to_hex()));
+    assert_eq!(
+        event_disposition(&canonical, canonical_manifest_id),
+        Some(ProtocolDisposition::Accepted)
+    );
 
     let noncanonical_manifest = signed_manifest_hint(&controller, coordinate, 3, noncanonical_id);
+    let noncanonical_manifest_id = VerifiedNip01Event::verify(noncanonical_manifest.clone())
+        .expect("noncanonical manifest")
+        .event_id();
     let orders = [
         vec![left.clone(), right.clone(), noncanonical_manifest.clone()],
         vec![noncanonical_manifest.clone(), right.clone(), left.clone()],
@@ -5791,9 +5831,16 @@ fn selected_manifest_control_references_are_resolved_after_replacement() {
             .windows(2)
             .all(|pair| pair[0] == pair[1])
     );
+    assert_eq!(
+        event_disposition(&noncanonical_reports[0], noncanonical_manifest_id),
+        Some(ProtocolDisposition::Accepted)
+    );
 
     let missing_id = EventId::from_bytes([0xee; 32]);
     let older = signed_manifest_hint(&controller, coordinate, 3, canonical_id);
+    let older_id = VerifiedNip01Event::verify(older.clone())
+        .expect("older manifest")
+        .event_id();
     let selected_missing = signed_manifest_hint(&controller, coordinate, 4, missing_id);
     let selected_missing_id = VerifiedNip01Event::verify(selected_missing.clone())
         .expect("missing-control manifest")
@@ -5806,6 +5853,14 @@ fn selected_manifest_control_references_are_resolved_after_replacement() {
             reason: ManifestPendingReason::MissingControl,
         } if hints.event_id() == selected_missing_id && hints.control() == missing_id
     ));
+    assert_eq!(
+        event_disposition(&missing, selected_missing_id),
+        Some(ProtocolDisposition::Pending)
+    );
+    assert_eq!(
+        event_disposition(&missing, older_id),
+        Some(ProtocolDisposition::Excluded)
+    );
 
     let other_coordinate: DocumentCoordinate = format!(
         "31624:{}:{}",
@@ -5819,34 +5874,45 @@ fn selected_manifest_control_references_are_resolved_after_replacement() {
     let other_control_id = VerifiedNip01Event::verify(other_control.clone())
         .expect("other control")
         .event_id();
+    let wrong_manifest = signed_manifest_hint(&controller, coordinate, 3, other_control_id);
+    let wrong_manifest_id = VerifiedNip01Event::verify(wrong_manifest.clone())
+        .expect("wrong-coordinate manifest")
+        .event_id();
     let wrong_coordinate = evaluate(vec![
         left.clone(),
         right.clone(),
         other_control,
-        signed_manifest_hint(&controller, coordinate, 3, other_control_id),
+        wrong_manifest,
     ]);
     assert!(matches!(
         wrong_coordinate.manifest(),
         ResolvedManifestAvailability::Unavailable { control: Some(control), diagnostic, .. }
             if *control == other_control_id && diagnostic.as_str() == "carrier.coordinate"
     ));
+    assert_eq!(
+        event_disposition(&wrong_coordinate, wrong_manifest_id),
+        Some(ProtocolDisposition::Invalid)
+    );
 
     let invalid_child =
         signed_acl_control(&controller, coordinate, 2, Some(canonical_id), 2, members);
     let invalid_child_id = VerifiedNip01Event::verify(invalid_child.clone())
         .expect("invalid child")
         .event_id();
-    let invalid = evaluate(vec![
-        left,
-        right,
-        invalid_child,
-        signed_manifest_hint(&controller, coordinate, 3, invalid_child_id),
-    ]);
+    let invalid_manifest = signed_manifest_hint(&controller, coordinate, 3, invalid_child_id);
+    let invalid_manifest_id = VerifiedNip01Event::verify(invalid_manifest.clone())
+        .expect("invalid-control manifest")
+        .event_id();
+    let invalid = evaluate(vec![left, right, invalid_child, invalid_manifest]);
     assert!(matches!(
         invalid.manifest(),
         ResolvedManifestAvailability::Unavailable { control: Some(control), .. }
             if *control == invalid_child_id
     ));
+    assert_eq!(
+        event_disposition(&invalid, invalid_manifest_id),
+        Some(ProtocolDisposition::Invalid)
+    );
 
     for report in [
         &canonical,
@@ -5931,6 +5997,10 @@ fn validated_checkpoint_descriptor_carrier_enters_corpus() {
     assert_eq!(
         checkpoint.status(),
         CheckpointVerificationStatus::PendingControl
+    );
+    assert_eq!(
+        event_disposition(&report, event_id),
+        Some(ProtocolDisposition::Pending)
     );
     assert_eq!(checkpoint.completion(), Completion::Complete);
 

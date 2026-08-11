@@ -47,17 +47,19 @@
         "namespace": "change_hash"
       },
       {
-        "disposition": "accepted",
+        "diagnostic": "checkpoint.merkle",
+        "disposition": "invalid",
         "identifier": "697d612e2e9bb39905bbf2cd4bcca1de87f90e1a829fd932184369231eb8da44",
         "namespace": "event"
       },
       {
-        "disposition": "accepted",
+        "diagnostic": "checkpoint.merkle",
+        "disposition": "invalid",
         "identifier": "f95405deeca0eefb2ad381456396ccd8b88b332b9d275906bf387e7f68be9743",
         "namespace": "event"
       }
     ],
-    "dispositions_digest": "e059cbc5cab578d74362420cf58718dc29a26b89676cfdc001641122ef17770a",
+    "dispositions_digest": "e1771d5c11b34dd3b0edf541fbca79eb10515b2284cabe1a9fc60aacd602c745",
     "excluded_changes": [],
     "fixture_id": "checkpoints_merkle_mismatch",
     "heads": [

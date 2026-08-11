@@ -30,6 +30,30 @@
       "test_filter": "implement_full_batch_reference_evaluator",
       "expected": "caught",
       "requirements": ["R3_REPORT_003", "R3_REPORT_004"]
+    },
+    {
+      "id": "exclude_selected_valid_manifest",
+      "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+      "test_target": "public_engine_api",
+      "test_filter": "selected_manifest_control_references_are_resolved_after_replacement",
+      "expected": "caught",
+      "requirements": ["R3_EVENT_001", "R3_EVENT_002"]
+    },
+    {
+      "id": "exclude_verified_checkpoint_events",
+      "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+      "test_target": "public_engine_api",
+      "test_filter": "signed_single_chunk_checkpoint_verifies_real_automerge_history",
+      "expected": "caught",
+      "requirements": ["R3_EVENT_003", "R3_EVENT_004"]
+    },
+    {
+      "id": "accept_pending_checkpoint_events",
+      "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+      "test_target": "public_engine_api",
+      "test_filter": "validated_checkpoint_descriptor_carrier_enters_corpus",
+      "expected": "caught",
+      "requirements": ["R3_EVENT_003", "R3_EVENT_005"]
     }
   ],
   "status": "active"

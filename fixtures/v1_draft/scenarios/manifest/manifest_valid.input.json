@@ -12,12 +12,12 @@
     "coordinate": "31624:1492bc6a132ac91cb8b9f57d2b809dd2bdb8e1a294d3edbb6c6f7fc03bf11cac:7171717171717171717171717171717171717171717171717171717171717171",
     "disposition_records": [
       {
-        "disposition": "accepted",
+        "disposition": "pending",
         "identifier": "444fbb0dae4c8e3f74c42363bd9a728d3bc37eec87f45e264fda1d9a086bb26f",
         "namespace": "event"
       }
     ],
-    "dispositions_digest": "f8254f1ce49e62650068887ec961b994eda1db8c3d4caf81823402bc5ee5b1b9",
+    "dispositions_digest": "164e3483045c005b21b911d3c9c8b3de9521b44410f3f437a6f225a51ad33540",
     "excluded_changes": [],
     "fixture_id": "manifest_valid",
     "heads": [],

@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "manifest_invalid_latest.expected.json",
-    "sha256": "eea7bb0932eba810da2a9f6a9bf6e00b2e2c8b5146de30a147189fe99d10fca1"
+    "sha256": "ae2da8d94097ce7dfc9100a59566ed3a2890ca2e06ae40316106172020ed5fbc"
   },
   "fixture_id": "manifest_invalid_latest",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "manifest_invalid_latest.input.json",
-      "sha256": "77be143ac5d46fed39b5ca2d12bc4826de61a077a6bcf5a4c872e34aa3e78f22"
+      "sha256": "6c4383e8bda685f168fe1aab43e112822b8a67fe3dfc7e3655aeb4ffe2fd741f"
     }
   ],
   "provenance": {
