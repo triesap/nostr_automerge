@@ -177,6 +177,33 @@ pub fn verify_snapshot_heads<C: CancellationCheck>(
         .semantic_heads()
         .map_err(|_| VerifyError::Load)?;
     if heads != descriptor.heads {
+        let changes = loaded
+            .document
+            .embedded_changes()
+            .map_err(|_| VerifyError::Load)?;
+        let work = changes
+            .iter()
+            .try_fold(0_u64, |total, change| {
+                total
+                    .checked_add(1)?
+                    .checked_add(u64::try_from(change.dependencies.len()).unwrap_or(u64::MAX))
+            })
+            .ok_or(VerifyError::Budget)?;
+        budget
+            .charge_checkpoint_items(work)
+            .map_err(|_| VerifyError::Budget)?;
+        if cancellation.is_cancelled() {
+            return Err(VerifyError::Cancelled);
+        }
+        let map = changes
+            .iter()
+            .map(|change| (change.hash, change.dependencies.clone()))
+            .collect::<std::collections::BTreeMap<_, _>>();
+        if descriptor.heads.iter().all(|head| map.contains_key(head))
+            && exact_closure(&map, &descriptor.heads).is_err()
+        {
+            return Err(VerifyError::Closure);
+        }
         return Err(VerifyError::Heads);
     }
     Ok(VerifiedSnapshot { loaded, heads })

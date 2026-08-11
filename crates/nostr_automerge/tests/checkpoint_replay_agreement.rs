@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 use automerge::{Automerge, Change, TextEncoding};
 use nostr_automerge::authoring::{ActorState, AuthoringDocument, Operation};
 use nostr_automerge::checkpoint::{
-    CheckpointDescriptor, verify_full_history, verify_snapshot_heads,
+    CheckpointDescriptor, VerifyError, verify_full_history, verify_snapshot_heads,
 };
 use nostr_automerge::{ActorId, ChangeHash, NeverCancelled, SnapshotHash, WorkBudget};
 use sha2::{Digest, Sha256};
@@ -91,6 +91,55 @@ fn revoked_and_equivocated_candidates_do_not_enter_checkpoint_history() {
     assert!(!checkpoint.heads().contains(&revoked.change_hash()));
     assert!(!checkpoint.heads().contains(&left.change_hash()));
     assert!(!checkpoint.heads().contains(&right.change_hash()));
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn checkpoint_closure_refusals() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/checkpoints/negative_closure.json"
+    ))
+    .expect("closure refusal fixture");
+    assert_eq!(fixture["cases"].as_array().map(Vec::len), Some(1));
+    let (left_raw, left_hash) = independent_change(7, "left", "retained");
+    let (right_raw, right_hash) = independent_change(8, "right", "disconnected");
+    let mut replay = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+    replay
+        .apply_changes([
+            Change::try_from(left_raw.as_slice()).expect("left change"),
+            Change::try_from(right_raw.as_slice()).expect("right change"),
+        ])
+        .expect("concurrent replay");
+    let bytes = replay.save_nocompress();
+    assert_eq!(
+        replay
+            .get_heads()
+            .into_iter()
+            .map(|hash| ChangeHash::from_bytes(hash.0))
+            .collect::<BTreeSet<_>>(),
+        BTreeSet::from([left_hash, right_hash])
+    );
+    let descriptor = CheckpointDescriptor {
+        snapshot_hash: SnapshotHash::from_bytes(Sha256::digest(&bytes).into()),
+        heads: BTreeSet::from([left_hash]),
+        raw_size: bytes.len() as u64,
+        chunk_size: bytes.len() as u32,
+        chunk_count: 1,
+        chunk_root: [0; 32],
+        change_count: 2,
+        change_set_hash: [0; 32],
+        dependency_edges: 0,
+        total_ops: 2,
+    };
+    assert!(matches!(
+        verify_snapshot_heads(
+            &bytes,
+            &descriptor,
+            &mut WorkBudget::new(u64::MAX, u64::MAX),
+            &NeverCancelled,
+        ),
+        Err(VerifyError::Closure)
+    ));
 }
 
 #[allow(clippy::expect_used)]

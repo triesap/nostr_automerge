@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 23: Checkpoint Profile Completion
 
 Status: active
-Current checkpoint: `step_454`
+Current checkpoint: `step_455`
 Steps: `step_444` through `step_459`
 Primary findings: `FINDING_014`, `FINDING_018`, `FINDING_022`, `FINDING_024`, `FINDING_025`
 
@@ -44,4 +44,5 @@ state, heads, history digest, or materialized state.
 - `step_451`: `d61cd19` — signed duplicate, missing, mismatched-count, leading-zero, and out-of-range chunk cases prove deterministic indexing refusal.
 - `step_452`: `281cbaf` — signed wrong-size data and statically invalid arithmetic/oversize carriers prove all size boundaries before allocation and assembly.
 - `step_453`: `bbebc21` — signed raw-hash, Merkle-root, snapshot-hash, and reverse multichunk cases prove ordered byte commitments end to end.
-- `step_454`: this commit — signed invalid-save, wrong-head, and every embedded commitment mutation reach their stable public refusal statuses.
+- `step_454`: `d4b3270` — signed invalid-save, wrong-head, and every embedded commitment mutation reach their stable public refusal statuses.
+- `step_455`: this commit — an existing declared head that omits a disconnected embedded branch reaches `closure_mismatch` before any checkpoint can affect replay state.

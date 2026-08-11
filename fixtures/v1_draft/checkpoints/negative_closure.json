@@ -1,0 +1,1 @@
+{"schema":"nostr_automerge.signed_checkpoint_refusals.v1","public_engine_test":"checkpoint_closure_refusals","cases":[{"id":"checkpoint.disconnected_embedded_branch.signed","status":"closure_mismatch"}]}
