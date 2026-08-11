@@ -64,6 +64,26 @@ fn projection_v2_vectors_cover_the_complete_neutral_model() {
 }
 
 #[test]
+fn projection_v2_typescript_contract_is_independent_and_complete() {
+    let contract = include_str!("../../../implementation/TYPESCRIPT_INTEROP_PLAN.md");
+    for required in [
+        "fixtures/v1_draft/projection/v2_vectors.json",
+        "must not copy generated Rust code or call the Rust projector",
+        "parent_object_id",
+        "operation_id",
+        "child_object_id",
+        "none`, `before`, `after`, or `both",
+        "exactly one entry or mark",
+        "deep-traversal vectors",
+    ] {
+        assert!(
+            contract.contains(required),
+            "missing contract clause: {required}"
+        );
+    }
+}
+
+#[test]
 fn initialize_cargo_fuzz_harness() {
     let manifest = include_str!("../../../fuzz/Cargo.toml");
     assert!(manifest.contains("cargo-fuzz"));

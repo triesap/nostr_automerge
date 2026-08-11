@@ -85,8 +85,8 @@
     {
       "path": "implementation/TYPESCRIPT_INTEROP_PLAN.md",
       "source_sha256": "ad65330fe9ec4d94c157595f881d510e05ae511e55451cc64b2ac7efd164b6cf",
-      "target_sha256": "ad65330fe9ec4d94c157595f881d510e05ae511e55451cc64b2ac7efd164b6cf",
-      "adapted": false
+      "target_sha256": "c6c68e99775ec275fe572bc4b4e85c870aaac37432d2e5904d8cee56310ebcc0",
+      "adapted": true
     },
     {
       "path": "docs/provenance/source_package_manifest.json",
