@@ -6,8 +6,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 
+sys.dont_write_bytecode = True
 from compare_interop_profile import compare
 from validate_interop_attestation_v2 import validate
 

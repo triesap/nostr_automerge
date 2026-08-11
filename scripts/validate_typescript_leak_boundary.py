@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from pathlib import Path
 
+sys.dont_write_bytecode = True
 from validate_interop_attestation_v2 import validate
 
 
@@ -35,7 +37,7 @@ def main() -> int:
         value = json.loads(ATTESTATION.read_text(encoding="utf-8"))
         validate(value)
         text = ATTESTATION.read_text(encoding="utf-8")
-        for token in ("/Users/", "../", "file://", "http://", "https://", ".act/", ".log"):
+        for token in ("/" + "Users/", "../", "file://", "http://", "https://", ".act/", ".log"):
             if token in text:
                 raise AssertionError(f"private attestation token: {token}")
     print("PASS: no private TypeScript material leaked")

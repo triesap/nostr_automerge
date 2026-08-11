@@ -1,6 +1,7 @@
 # nostr_automerge Draft V1 RCLD 27: Private TypeScript Interop Attestation V2
 
-Status: pending RCLD 26
+Status: complete
+Current checkpoint: `step_519`
 Steps: `step_507` through `step_519`
 Primary findings: `FINDING_017`, `FINDING_023`, `FINDING_026`
 

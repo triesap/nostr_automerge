@@ -1,8 +1,8 @@
 # Draft V1 Follow-up Remediation Ledger
 
-Current RCLD: 26
-Current checkpoint: `step_494`
-Completed checkpoints: `step_308` through `step_493`
+Current RCLD: 28
+Current checkpoint: `step_520`
+Completed checkpoints: `step_308` through `step_519`
 
 ## Execution Policy
 
@@ -31,9 +31,9 @@ repositories.
 | 23 | `step_444`–`step_459` | complete | Checkpoint completion |
 | 24 | `step_460`–`step_481` | complete | Signed neutral conformance |
 | 25 | `step_482`–`step_493` | complete | Executed requirement evidence v3 |
-| 26 | `step_494`–`step_506` | active | Independent TypeScript engine parity |
-| 27 | `step_507`–`step_519` | pending | Final private TypeScript attestation |
-| 28 | `step_520`–`step_533` | pending | Final assurance and truthful closure |
+| 26 | `step_494`–`step_506` | complete | Independent TypeScript engine parity |
+| 27 | `step_507`–`step_519` | complete | Final private TypeScript attestation |
+| 28 | `step_520`–`step_533` | active | Final assurance and truthful closure |
 
 The ranges are contiguous and contain 226 checkpoints. Checkpoint scope, green
 criteria, and verification lanes are defined by the governing multi-RCLD and

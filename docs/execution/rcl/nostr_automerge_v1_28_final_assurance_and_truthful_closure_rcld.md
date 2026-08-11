@@ -1,6 +1,7 @@
 # nostr_automerge Draft V1 RCLD 28: Final Assurance And Truthful Closure
 
-Status: pending RCLD 27
+Status: active
+Current checkpoint: `step_520`
 Steps: `step_520` through `step_533`
 Primary findings: `FINDING_014`, `FINDING_016`, `FINDING_017`, `FINDING_018`, `FINDING_023`, `FINDING_026`, `FINDING_027`
 
