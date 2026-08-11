@@ -10,7 +10,18 @@ from pathlib import Path
 
 
 def canonical(value: object) -> bytes:
-    return (json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    return (canonical_value(value) + "\n").encode()
+
+
+def canonical_value(value: object) -> str:
+    if isinstance(value, dict):
+        keys = sorted(value, key=lambda item: item.encode("utf-16-be", "surrogatepass"))
+        return "{" + ",".join(
+            json.dumps(key, ensure_ascii=False) + ":" + canonical_value(value[key]) for key in keys
+        ) + "}"
+    if isinstance(value, list):
+        return "[" + ",".join(canonical_value(item) for item in value) + "]"
+    return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
 
 
 def main() -> int:
