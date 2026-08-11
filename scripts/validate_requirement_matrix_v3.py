@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -34,6 +35,31 @@ def validate_shape(report: dict[str, object]) -> None:
             raise EvidenceError(f"invalid_digest:{field}")
     if report["requirement_count"] != 87 or not isinstance(report["rows"], list) or len(report["rows"]) != 87:
         raise EvidenceError("requirement_count")
+
+
+def validate_result_artifact(path: Path, expected_sha256: str) -> None:
+    if not path.is_file():
+        raise EvidenceError("missing_result_artifact")
+    data = path.read_bytes()
+    if hashlib.sha256(data).hexdigest() != expected_sha256:
+        raise EvidenceError("result_artifact_hash")
+    result = json.loads(data)
+    if result.get("status") != "pass" or not COMMIT.fullmatch(result.get("source_commit", "")):
+        raise EvidenceError("result_artifact_not_passing")
+    if not result.get("executed_ids") or not result.get("command") or not result.get("output_sha256"):
+        raise EvidenceError("result_artifact_incomplete")
+
+
+def result_self_test() -> None:
+    manifest = json.loads((ROOT / "reports/test_evidence_manifest.json").read_text())
+    for job in manifest["jobs"].values():
+        validate_result_artifact(ROOT / job["result_artifact"], job["result_sha256"])
+        try:
+            validate_result_artifact(ROOT / job["result_artifact"], "00" * 32)
+        except EvidenceError as error:
+            if str(error) == "result_artifact_hash":
+                continue
+        raise AssertionError("tampered result digest unexpectedly passed")
 
 
 def schema_self_test() -> None:
@@ -72,10 +98,15 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--report", type=Path, default=ROOT / "reports/requirements_coverage_v3.json")
     parser.add_argument("--schema-self-test", action="store_true")
+    parser.add_argument("--result-self-test", action="store_true")
     args = parser.parse_args()
     if args.schema_self_test:
         schema_self_test()
         print("PASS: requirement evidence schema v3 is complete and fail-closed")
+        return 0
+    if args.result_self_test:
+        result_self_test()
+        print("PASS: passing execution results are present and hash-bound")
         return 0
     validate_shape(json.loads(args.report.read_text()))
     print("PASS: requirement evidence v3 has a valid top-level shape")
