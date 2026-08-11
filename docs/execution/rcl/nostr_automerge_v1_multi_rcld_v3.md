@@ -1,6 +1,6 @@
 # nostr_automerge Draft V1 Remediation V3 Multi-RCLD
 
-Status: executing; RCLD 32 and `step_570` are active
+Status: executing; RCLD 33 and `step_583` are active
 Created: 2026-08-11
 Mode: rcl-durable
 Rust workspace and Git repository: repository root
@@ -220,7 +220,7 @@ because local completion differs.
 
 ## RCLD 32 — Selected Manifest Dynamic Validation
 
-Status: active at `step_570`
+Status: complete
 Steps: `step_570` through `step_582`
 Primary finding: 030
 
@@ -249,7 +249,7 @@ no-fallback, and advisory-only semantics remain unchanged.
 
 ## RCLD 33 — Dynamic Manifest And Checkpoint Event Dispositions
 
-Status: pending RCLD 32
+Status: active at `step_583`
 Steps: `step_583` through `step_596`
 Primary finding: 031
 
@@ -467,8 +467,8 @@ deviations and holds are explicit. Completion does not mean:
 1. RCLD 29 — Authority and baseline (`step_534`–`step_541`) — complete.
 2. RCLD 30 — Authoritative equivocation composition (`step_542`–`step_557`) — complete.
 3. RCLD 31 — Interrupted canonical reports (`step_558`–`step_569`) — complete.
-4. RCLD 32 — Selected manifest dynamic validation (`step_570`–`step_582`) — active.
-5. RCLD 33 — Dynamic manifest and checkpoint event dispositions (`step_583`–`step_596`) — pending.
+4. RCLD 32 — Selected manifest dynamic validation (`step_570`–`step_582`) — complete.
+5. RCLD 33 — Dynamic manifest and checkpoint event dispositions (`step_583`–`step_596`) — active.
 6. RCLD 34 — Complete work budgeting and cancellation (`step_597`–`step_612`) — pending.
 7. RCLD 35 — Normative clarification (`step_613`–`step_621`) — pending.
 8. RCLD 36 — Signed conformance and independent TypeScript parity (`step_622`–`step_635`) — pending.

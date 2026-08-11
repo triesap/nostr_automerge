@@ -1,0 +1,27 @@
+{
+  "schema": "nostr_automerge.remediation_v3_phase.v1",
+  "phase": "phase_03_manifest_dynamic_validation",
+  "rcld": 32,
+  "completed_steps": ["step_570", "step_571", "step_572", "step_573", "step_574", "step_575", "step_576", "step_577", "step_578", "step_579", "step_580", "step_581", "step_582"],
+  "verified_source_commit": "e659f8a5e04ab39ea4d9197d80c66213df28e8a2",
+  "status": "pass",
+  "finding_status": {"FINDING_030": "closed"},
+  "verification": [
+    {"command": "cargo fmt --all -- --check", "result": "pass"},
+    {"command": "cargo check --workspace --all-targets --locked", "result": "pass"},
+    {"command": "cargo test --workspace --tests --locked", "result": "pass"},
+    {"command": "cargo test -p nostr_automerge --test public_engine_api manifest --locked", "result": "pass"},
+    {"command": "cargo clippy -p nostr_automerge --all-targets --all-features --locked -- -D warnings", "result": "pass"},
+    {"command": "cargo doc -p nostr_automerge --no-deps --locked", "result": "pass"},
+    {"command": "python3 scripts/generate_rust_conformance.py", "result": "pass"},
+    {"command": "python3 scripts/generate_test_evidence_manifest.py --self-test", "result": "pass"},
+    {"command": "cargo run -p nostr_automerge_xtask --locked -- validate", "result": "pass"}
+  ],
+  "signed_fixture_count": 91,
+  "rust_test_count": 337,
+  "ignored_tests": 0,
+  "deviations": ["implementation/deviations/step_570.md"],
+  "holds": ["signed_manifest_distribution_v4", "independent_typescript_v3", "sustained_native_fuzzing", "independent_external_review", "publication_authority"],
+  "next_rcld": 33,
+  "next_step": "step_583"
+}
