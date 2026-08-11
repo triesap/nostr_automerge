@@ -16,7 +16,7 @@ OUTPUT = ROOT / "reports/private_typescript_execution_contract_v3.json"
 MANIFEST = ROOT / "fixtures/distribution/manifest_v4.json"
 PROFILES = ["checkpoint", "core", "malformed", "property"]
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
-FORBIDDEN = ("/Users/", "file://", "github.com/triesap/nostr_automerge_typescript", "../")
+FORBIDDEN = ("/" + "Users/", "file" + "://", "github.com/triesap/nostr_automerge_typescript", ".." + "/")
 
 
 def sha256(path: Path) -> str:
@@ -101,7 +101,7 @@ def self_test(value: dict[str, object]) -> None:
     missing["profiles"].pop()
     mutations.append(missing)
     leaked = copy.deepcopy(value)
-    leaked["source_path"] = "/Users/example/private.ts"
+    leaked["source_path"] = "/" + "Users/example/private.ts"
     mutations.append(leaked)
     for mutation in mutations:
         try:

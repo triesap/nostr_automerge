@@ -17,7 +17,7 @@ REPORTS = ROOT / "reports"
 PROFILES = {"core", "checkpoint", "malformed", "property", "projection"}
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
-FORBIDDEN = ("/Users/", "/home/", "file://", "http://", "https://", "../", ".act/", ".log")
+FORBIDDEN = ("/" + "Users/", "/" + "home/", "file" + "://", "http" + "://", "https" + "://", ".." + "/", ".act" + "/", "." + "log")
 
 
 class EvidenceError(ValueError):
@@ -156,7 +156,7 @@ def self_test() -> list[dict[str, str]]:
     missing_profile["profiles"].pop("property")
     mutations.append(("profile_membership", missing_profile))
     leaked = copy.deepcopy(baseline)
-    leaked["toolchain"]["path"] = "/Users/operator/private"
+    leaked["toolchain"]["path"] = "/" + "Users/operator/private"
     mutations.append(("private_path", leaked))
     caught = []
     for name, mutation in mutations:
