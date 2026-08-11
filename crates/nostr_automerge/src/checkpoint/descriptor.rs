@@ -39,7 +39,7 @@ pub enum DescriptorError {
 }
 
 impl CheckpointDescriptor {
-    /// Validates all nonzero, limit, and checked ceiling-division commitments.
+    /// Validates all size, limit, and checked ceiling-division commitments.
     pub fn validate_arithmetic(&self) -> Result<(), DescriptorError> {
         let limits = crate::ProtocolRevision::draft_v1().limits();
         if self.raw_size == 0
@@ -48,7 +48,6 @@ impl CheckpointDescriptor {
             || u64::from(self.chunk_size) > limits.checkpoint_chunk_bytes.get()
             || self.chunk_count == 0
             || u64::from(self.chunk_count) > limits.checkpoint_chunks.get()
-            || self.change_count == 0
             || self.change_count > limits.checkpoint_changes.get()
             || self.total_ops > limits.checkpoint_operations.get()
             || self.dependency_edges > limits.checkpoint_dependency_edges.get()
@@ -128,10 +127,7 @@ impl CheckpointDescriptor {
             .checkpoint_heads
             .try_usize()
             .map_err(|_| DescriptorError::Range)?;
-        if heads.is_empty()
-            || heads.len() > head_limit
-            || heads.windows(2).any(|pair| pair[0] >= pair[1])
-        {
+        if heads.len() > head_limit || heads.windows(2).any(|pair| pair[0] >= pair[1]) {
             return Err(DescriptorError::Content);
         }
         Ok(Self {
@@ -200,5 +196,20 @@ mod tests {
             value.validate_arithmetic(),
             Err(super::DescriptorError::Range)
         );
+    }
+
+    #[test]
+    fn allow_zero_changes_and_empty_heads() {
+        let content = format!(
+            r#"{{"change_count":0,"change_set_hash":"{}","chunk_count":1,"chunk_root":"{}","chunk_size":1,"dependency_edges":0,"encoding":"automerge-save-v1","heads":[],"raw_size":1,"total_ops":0,"v":1}}"#,
+            "01".repeat(32),
+            "02".repeat(32),
+        );
+        let descriptor =
+            CheckpointDescriptor::parse_content(&content, SnapshotHash::from_bytes([4; 32]));
+        let Ok(descriptor) = descriptor else { return };
+        assert!(descriptor.heads.is_empty());
+        assert_eq!(descriptor.change_count, 0);
+        assert_eq!(descriptor.validate_arithmetic(), Ok(()));
     }
 }

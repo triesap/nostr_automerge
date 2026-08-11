@@ -31,3 +31,7 @@ properties, generated report validation, standard Rust gate, and
 
 Checkpoint evidence never selects controls, changes dispositions, accepted
 state, heads, history digest, or materialized state.
+
+## Completed Checkpoints
+
+- `step_444`: this commit — descriptor parsing and arithmetic accept zero embedded changes and an empty head set while retaining nonempty snapshot/chunk commitments and all sealed maxima.
