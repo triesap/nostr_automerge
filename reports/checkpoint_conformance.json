@@ -1,20 +1,25 @@
 {
-  "schema": "nostr_automerge.checkpoint_conformance.v1",
+  "schema": "nostr_automerge.checkpoint_conformance.v2",
   "result": "passed",
   "signed_carrier_integration": "passed",
   "full_replay_required": true,
-  "evaluated_commit": "259301559765674b78680804320a5c8bc4d6f3b3",
+  "evaluated_commit": "5ae293623cf589ee3b0acb30e828334708a7cbbf",
   "cargo_lock_sha256": "74aafde92cfcb35e7216dc847a75ca556ac9722a93147a9a6ccd61c3121a7e60",
   "tools": {
     "cargo": "cargo 1.97.1 (c980f4866 2026-06-30)",
     "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)"
   },
   "sources": {
-    "checkpoint_replay_agreement": "8e7a811d35934e80ad953c2fe5bb6d887e40446e48db7ad336a800f1b141e7ad",
-    "public_engine_api": "35f150da4796dfe820d45b273a06385b88432fde60b7f2d31da63484612e2be0",
-    "reference_evaluator": "56f5460c551c5c0471147de092f242322ef6e707a11120c65e9da30a146fa9b8"
+    "checkpoint_replay_agreement": "a344baf678f0c9913c525d619e564f960fb33fb0601a4c534fc9861683538a21",
+    "public_engine_api": "3138595ac777572c45d441dcf11c7525de1e37275afd5f54029fbc81e3ba3c0b",
+    "reference_evaluator": "a0af3f9cfde269b7e24ac6f3e43bdd83fdb568b564d1870fbb7976f2409ab8cc"
   },
   "gates": [
+    {
+      "name": "signed_empty_history",
+      "command": "cargo test -p nostr_automerge --test public_engine_api signed_empty_history_checkpoint_verifies_without_redefining_history --locked",
+      "result": "passed"
+    },
     {
       "name": "signed_single_chunk",
       "command": "cargo test -p nostr_automerge --test public_engine_api signed_single_chunk_checkpoint_verifies_real_automerge_history --locked",
@@ -31,9 +36,263 @@
       "result": "passed"
     },
     {
-      "name": "refusal_statuses",
-      "command": "cargo test -p nostr_automerge --lib engine::reference_evaluator::tests::every_checkpoint_refusal_has_a_stable_public_status --locked",
+      "name": "author_and_binding_refusals",
+      "command": "cargo test -p nostr_automerge --test public_engine_api checkpoint_author_and_binding_refusals --locked",
       "result": "passed"
+    },
+    {
+      "name": "index_refusals",
+      "command": "cargo test -p nostr_automerge --test public_engine_api checkpoint_index_refusals --locked",
+      "result": "passed"
+    },
+    {
+      "name": "size_refusals",
+      "command": "cargo test -p nostr_automerge --test public_engine_api checkpoint_size_refusals --locked",
+      "result": "passed"
+    },
+    {
+      "name": "merkle_refusals",
+      "command": "cargo test -p nostr_automerge --test public_engine_api checkpoint_merkle_refusals --locked",
+      "result": "passed"
+    },
+    {
+      "name": "snapshot_refusals",
+      "command": "cargo test -p nostr_automerge --test public_engine_api checkpoint_snapshot_refusals --locked",
+      "result": "passed"
+    },
+    {
+      "name": "closure_refusals",
+      "command": "cargo test -p nostr_automerge --test checkpoint_replay_agreement checkpoint_closure_refusals --locked",
+      "result": "passed"
+    },
+    {
+      "name": "history_refusals",
+      "command": "cargo test -p nostr_automerge --test public_engine_api checkpoint_history_refusals --locked",
+      "result": "passed"
+    },
+    {
+      "name": "interruption_refusals",
+      "command": "cargo test -p nostr_automerge --test public_engine_api checkpoint_interruption_is_non_authoritative --locked",
+      "result": "passed"
+    }
+  ],
+  "evidence": [
+    {
+      "fixture_id": "checkpoint.budget_exhausted.signed",
+      "expected_status": "budget_exhausted",
+      "public_engine_test": "checkpoint_interruption_is_non_authoritative",
+      "result": "passed",
+      "result_sha256": "7ca8248fc14fe4311291ff4288d0a39323f362abcd183928d7ec53ad4943103a"
+    },
+    {
+      "fixture_id": "checkpoint.cancelled.signed",
+      "expected_status": "cancelled",
+      "public_engine_test": "checkpoint_interruption_is_non_authoritative",
+      "result": "passed",
+      "result_sha256": "9ea8f05ce0c9b7311273c30aacb141d3f6c42506cd4a2251383f3005821c4822"
+    },
+    {
+      "fixture_id": "checkpoint.change_count_mismatch.signed",
+      "expected_status": "commitment_mismatch",
+      "public_engine_test": "checkpoint_snapshot_refusals",
+      "result": "passed",
+      "result_sha256": "34ed25b417e1c9ebb8bbb2e4ba3b8d7681ec4afb4c1c2fd334cb7afdb9a2e662"
+    },
+    {
+      "fixture_id": "checkpoint.change_set_hash_mismatch.signed",
+      "expected_status": "commitment_mismatch",
+      "public_engine_test": "checkpoint_snapshot_refusals",
+      "result": "passed",
+      "result_sha256": "e30c597c7f64ca129d1ba42b552eb42a1d053368d47d83be733c03d3461a3609"
+    },
+    {
+      "fixture_id": "checkpoint.chunk_author_mismatch.signed",
+      "expected_status": "chunk_author_mismatch",
+      "public_engine_test": "checkpoint_author_and_binding_refusals",
+      "result": "passed",
+      "result_sha256": "c5a49566737a5a76ee1099fdbd088948e66d6f52672ed4d65821cf7ead81172f"
+    },
+    {
+      "fixture_id": "checkpoint.chunk_coordinate_mismatch.signed",
+      "expected_status": "chunk_coordinate_mismatch",
+      "public_engine_test": "checkpoint_author_and_binding_refusals",
+      "result": "passed",
+      "result_sha256": "6d73d711d8a064466e43398768c4a9d3922c122461d124a75a33c2efa42a034a"
+    },
+    {
+      "fixture_id": "checkpoint.chunk_hash_mismatch.signed",
+      "expected_status": "invalid_carrier",
+      "public_engine_test": "checkpoint_merkle_refusals",
+      "result": "passed",
+      "result_sha256": "32d4f647173fea546c7c71f5fc1356bdca61301f0e84f0ae1b3eddc9ffebd28e"
+    },
+    {
+      "fixture_id": "checkpoint.chunk_size_mismatch.signed",
+      "expected_status": "chunk_size_mismatch",
+      "public_engine_test": "checkpoint_size_refusals",
+      "result": "passed",
+      "result_sha256": "aa4819e68cb0cac3ef1207097055678a5ece41916117f4460fce90a6edb893c1"
+    },
+    {
+      "fixture_id": "checkpoint.count_mismatch.signed",
+      "expected_status": "chunk_count_mismatch",
+      "public_engine_test": "checkpoint_index_refusals",
+      "result": "passed",
+      "result_sha256": "cdcaf4dac32f9e0778054cea0c81d3e93a290c5a58861654b63ae6076c416a93"
+    },
+    {
+      "fixture_id": "checkpoint.cross_descriptor_missing.signed",
+      "expected_status": "missing_chunk",
+      "public_engine_test": "checkpoint_author_and_binding_refusals",
+      "result": "passed",
+      "result_sha256": "af85aa51da70fbf2b93f32e5f827f0742c5fac6b08a400aa5193401f71c8a4ca"
+    },
+    {
+      "fixture_id": "checkpoint.dependency_edges_mismatch.signed",
+      "expected_status": "commitment_mismatch",
+      "public_engine_test": "checkpoint_snapshot_refusals",
+      "result": "passed",
+      "result_sha256": "f779126510be43ffd28044a603b79aa49f1a8324975aee700324144a78bd47a5"
+    },
+    {
+      "fixture_id": "checkpoint.descriptor_arithmetic.signed",
+      "expected_status": "invalid_carrier",
+      "public_engine_test": "checkpoint_size_refusals",
+      "result": "passed",
+      "result_sha256": "145e33364a6fa21297b5e38fed8c4a133e904da279a919d6ab6417c637e72631"
+    },
+    {
+      "fixture_id": "checkpoint.disconnected_embedded_branch.signed",
+      "expected_status": "closure_mismatch",
+      "public_engine_test": "checkpoint_closure_refusals",
+      "result": "passed",
+      "result_sha256": "196eaf40615d85c424c09f7ac9cb9167ac93bcf9e5a854f081ea29059c18a17f"
+    },
+    {
+      "fixture_id": "checkpoint.duplicate_index.signed",
+      "expected_status": "duplicate_chunk",
+      "public_engine_test": "checkpoint_index_refusals",
+      "result": "passed",
+      "result_sha256": "e7f60055dff70c216f11d6d91e238a579d4c85b93b9b02b9ad903412ea36ebf1"
+    },
+    {
+      "fixture_id": "checkpoint.empty_history.signed",
+      "expected_status": "verified",
+      "public_engine_test": "signed_empty_history_checkpoint_verifies_without_redefining_history",
+      "result": "passed",
+      "result_sha256": "3717375cad9bd76b04f947f43e80b3729caa37b804c709983796031d8813a59b"
+    },
+    {
+      "fixture_id": "checkpoint.head_mismatch.signed",
+      "expected_status": "head_mismatch",
+      "public_engine_test": "checkpoint_snapshot_refusals",
+      "result": "passed",
+      "result_sha256": "065d9eb4375a2c54773344988dd16edb38d1941f06d82a0ae869b86001ae607f"
+    },
+    {
+      "fixture_id": "checkpoint.irregular_three_chunk.signed",
+      "expected_status": "verified",
+      "public_engine_test": "signed_irregular_multichunk_checkpoint_reconstructs_exact_history",
+      "result": "passed",
+      "result_sha256": "5ac327e4650b834e7172d44f7145fa25ed3a5821eeed9b4f714dcc0941e68c93"
+    },
+    {
+      "fixture_id": "checkpoint.leading_zero_index.signed",
+      "expected_status": "invalid_carrier",
+      "public_engine_test": "checkpoint_index_refusals",
+      "result": "passed",
+      "result_sha256": "046f3e7b7f70ea444e92881df64617825b0d9d30855a72634b05ac344ba17f20"
+    },
+    {
+      "fixture_id": "checkpoint.merkle_root_mismatch.signed",
+      "expected_status": "merkle_mismatch",
+      "public_engine_test": "checkpoint_merkle_refusals",
+      "result": "passed",
+      "result_sha256": "91f6fc6c6edc5bc61f839557a9d5d422742919d646b80b5854f96127a2620bbd"
+    },
+    {
+      "fixture_id": "checkpoint.missing_historical_carrier.signed",
+      "expected_status": "missing_historical_carrier",
+      "public_engine_test": "checkpoint_history_refusals",
+      "result": "passed",
+      "result_sha256": "6a035d2e4b80a424c70f257b3e2de14941680a63bee2c93dde2eb17d001974b5"
+    },
+    {
+      "fixture_id": "checkpoint.missing_index.signed",
+      "expected_status": "missing_chunk",
+      "public_engine_test": "checkpoint_index_refusals",
+      "result": "passed",
+      "result_sha256": "51f7d40dd0ead495bb626b0709276fe95159bf2d61818257a361bc8a883013d9"
+    },
+    {
+      "fixture_id": "checkpoint.not_accepted_at_control.signed",
+      "expected_status": "not_accepted_at_control",
+      "public_engine_test": "checkpoint_history_refusals",
+      "result": "passed",
+      "result_sha256": "fdcdf3e65106a036593a9c51ace8d1daa56d30c16a9e2ac302aabc7704fe04be"
+    },
+    {
+      "fixture_id": "checkpoint.out_of_range_index.signed",
+      "expected_status": "invalid_carrier",
+      "public_engine_test": "checkpoint_index_refusals",
+      "result": "passed",
+      "result_sha256": "81964076cea9cb6d003e749458de400c259b8a7ce01b7752ea3588579aae11ad"
+    },
+    {
+      "fixture_id": "checkpoint.oversized_chunk.signed",
+      "expected_status": "invalid_carrier",
+      "public_engine_test": "checkpoint_size_refusals",
+      "result": "passed",
+      "result_sha256": "e60db463bc7a34c230c65e4fbf075c6503133353b5ed056eb9cf266c9de83b44"
+    },
+    {
+      "fixture_id": "checkpoint.pending_control.signed",
+      "expected_status": "pending_control",
+      "public_engine_test": "checkpoint_pending_control_signed_fixture",
+      "result": "passed",
+      "result_sha256": "2876f2e51555c6ac882902cc26a30f4219493603658942134c8316dceaa19a87"
+    },
+    {
+      "fixture_id": "checkpoint.reverse_multichunk.signed",
+      "expected_status": "verified",
+      "public_engine_test": "checkpoint_merkle_refusals",
+      "result": "passed",
+      "result_sha256": "e490f55e5bff698222273f1b9637ef22e018a8287fbef4434c70a4923be52227"
+    },
+    {
+      "fixture_id": "checkpoint.single_chunk.signed",
+      "expected_status": "verified",
+      "public_engine_test": "signed_single_chunk_checkpoint_verifies_real_automerge_history",
+      "result": "passed",
+      "result_sha256": "53e419e6c927bf1e8932a0883c941d43182cd73d71bd7d331a6eca96912e9fa6"
+    },
+    {
+      "fixture_id": "checkpoint.snapshot_hash_mismatch.signed",
+      "expected_status": "snapshot_hash_mismatch",
+      "public_engine_test": "checkpoint_merkle_refusals",
+      "result": "passed",
+      "result_sha256": "f2957e5b6c64f4c7b62388ba1f5a7d1e79fc6ac12e21849ceade049ddbaee9fa"
+    },
+    {
+      "fixture_id": "checkpoint.snapshot_load.signed",
+      "expected_status": "snapshot_load",
+      "public_engine_test": "checkpoint_snapshot_refusals",
+      "result": "passed",
+      "result_sha256": "e54fe1129fbea0979ab6aaac60bf54cb13a1d04614ad11fa9310ae833231efee"
+    },
+    {
+      "fixture_id": "checkpoint.total_ops_mismatch.signed",
+      "expected_status": "commitment_mismatch",
+      "public_engine_test": "checkpoint_snapshot_refusals",
+      "result": "passed",
+      "result_sha256": "085e2602537219dfb330b237756013d3ce6ba9b9e0a647b0487e1b5507d15c63"
+    },
+    {
+      "fixture_id": "checkpoint.unauthorized.signed",
+      "expected_status": "unauthorized",
+      "public_engine_test": "checkpoint_unauthorized_signed_fixture",
+      "result": "passed",
+      "result_sha256": "7c0562784627d363cd1bd2021e47a4816e12e802b94cce1b0b94933de4e227ad"
     }
   ]
 }

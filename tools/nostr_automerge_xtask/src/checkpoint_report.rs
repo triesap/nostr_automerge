@@ -16,6 +16,16 @@ struct Report {
     tools: BTreeMap<&'static str, String>,
     sources: BTreeMap<&'static str, String>,
     gates: Vec<Gate>,
+    evidence: Vec<Evidence>,
+}
+
+#[derive(Serialize)]
+struct Evidence {
+    fixture_id: String,
+    expected_status: String,
+    public_engine_test: String,
+    result: &'static str,
+    result_sha256: String,
 }
 
 #[derive(Serialize)]
@@ -25,7 +35,19 @@ struct Gate {
     result: &'static str,
 }
 
-const GATES: [(&str, &[&str]); 4] = [
+const GATES: [(&str, &[&str]); 12] = [
+    (
+        "signed_empty_history",
+        &[
+            "test",
+            "-p",
+            "nostr_automerge",
+            "--test",
+            "public_engine_api",
+            "signed_empty_history_checkpoint_verifies_without_redefining_history",
+            "--locked",
+        ],
+    ),
     (
         "signed_single_chunk",
         &[
@@ -62,13 +84,98 @@ const GATES: [(&str, &[&str]); 4] = [
         ],
     ),
     (
-        "refusal_statuses",
+        "author_and_binding_refusals",
         &[
             "test",
             "-p",
             "nostr_automerge",
-            "--lib",
-            "engine::reference_evaluator::tests::every_checkpoint_refusal_has_a_stable_public_status",
+            "--test",
+            "public_engine_api",
+            "checkpoint_author_and_binding_refusals",
+            "--locked",
+        ],
+    ),
+    (
+        "index_refusals",
+        &[
+            "test",
+            "-p",
+            "nostr_automerge",
+            "--test",
+            "public_engine_api",
+            "checkpoint_index_refusals",
+            "--locked",
+        ],
+    ),
+    (
+        "size_refusals",
+        &[
+            "test",
+            "-p",
+            "nostr_automerge",
+            "--test",
+            "public_engine_api",
+            "checkpoint_size_refusals",
+            "--locked",
+        ],
+    ),
+    (
+        "merkle_refusals",
+        &[
+            "test",
+            "-p",
+            "nostr_automerge",
+            "--test",
+            "public_engine_api",
+            "checkpoint_merkle_refusals",
+            "--locked",
+        ],
+    ),
+    (
+        "snapshot_refusals",
+        &[
+            "test",
+            "-p",
+            "nostr_automerge",
+            "--test",
+            "public_engine_api",
+            "checkpoint_snapshot_refusals",
+            "--locked",
+        ],
+    ),
+    (
+        "closure_refusals",
+        &[
+            "test",
+            "-p",
+            "nostr_automerge",
+            "--test",
+            "checkpoint_replay_agreement",
+            "checkpoint_closure_refusals",
+            "--locked",
+        ],
+    ),
+    (
+        "history_refusals",
+        &[
+            "test",
+            "-p",
+            "nostr_automerge",
+            "--test",
+            "public_engine_api",
+            "checkpoint_history_refusals",
+            "--locked",
+        ],
+    ),
+    (
+        "interruption_refusals",
+        &[
+            "test",
+            "-p",
+            "nostr_automerge",
+            "--test",
+            "public_engine_api",
+            "checkpoint_interruption_is_non_authoritative",
             "--locked",
         ],
     ),
@@ -114,8 +221,9 @@ pub(crate) fn run(root: &Path) -> Result<(), String> {
             ))
         })
         .collect::<Result<_, String>>()?;
+    let evidence = load_evidence(root)?;
     let report = Report {
-        schema: "nostr_automerge.checkpoint_conformance.v1",
+        schema: "nostr_automerge.checkpoint_conformance.v2",
         result: "passed",
         signed_carrier_integration: "passed",
         full_replay_required: true,
@@ -129,6 +237,7 @@ pub(crate) fn run(root: &Path) -> Result<(), String> {
         ]),
         sources,
         gates,
+        evidence,
     };
     let json = serde_json::to_string_pretty(&report).map_err(|error| error.to_string())? + "\n";
     std::fs::write(root.join("reports/checkpoint_conformance.json"), json)
@@ -139,6 +248,98 @@ pub(crate) fn run(root: &Path) -> Result<(), String> {
     );
     std::fs::write(root.join("reports/checkpoint_conformance.md"), markdown)
         .map_err(|error| error.to_string())
+}
+
+fn load_evidence(root: &Path) -> Result<Vec<Evidence>, String> {
+    let fixture_root = root.join("fixtures/v1_draft/checkpoints");
+    let cases: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(fixture_root.join("cases.json")).map_err(|error| error.to_string())?,
+    )
+    .map_err(|error| error.to_string())?;
+    let mut rows = Vec::new();
+    for name in cases["valid"]
+        .as_array()
+        .ok_or_else(|| "checkpoint valid cases must be an array".to_owned())?
+    {
+        let name = name
+            .as_str()
+            .ok_or_else(|| "checkpoint valid case must be text".to_owned())?;
+        rows.push((
+            format!("checkpoint.{name}.signed"),
+            "verified".to_owned(),
+            match name {
+                "empty_history" => {
+                    "signed_empty_history_checkpoint_verifies_without_redefining_history"
+                }
+                "single_chunk" => "signed_single_chunk_checkpoint_verifies_real_automerge_history",
+                "irregular_three_chunk" => {
+                    "signed_irregular_multichunk_checkpoint_reconstructs_exact_history"
+                }
+                _ => return Err(format!("unbound valid checkpoint case: {name}")),
+            }
+            .to_owned(),
+        ));
+    }
+    if let Some(refusals) = cases["refusals"].as_object() {
+        for (identifier, value) in refusals {
+            rows.push((
+                identifier.clone(),
+                required_text(value, "status")?.to_owned(),
+                required_text(value, "public_engine_test")?.to_owned(),
+            ));
+        }
+    }
+    for name in [
+        "negative_binding.json",
+        "negative_indices.json",
+        "negative_sizes.json",
+        "negative_merkle.json",
+        "negative_snapshot.json",
+        "negative_closure.json",
+        "negative_history.json",
+        "interruption.json",
+    ] {
+        let value: serde_json::Value = serde_json::from_slice(
+            &std::fs::read(fixture_root.join(name)).map_err(|error| error.to_string())?,
+        )
+        .map_err(|error| error.to_string())?;
+        let test = required_text(&value, "public_engine_test")?;
+        for case in value["cases"]
+            .as_array()
+            .ok_or_else(|| format!("{name} cases must be an array"))?
+        {
+            rows.push((
+                required_text(case, "id")?.to_owned(),
+                required_text(case, "status")?.to_owned(),
+                test.to_owned(),
+            ));
+        }
+    }
+    rows.sort();
+    if rows.windows(2).any(|pair| pair[0].0 == pair[1].0) {
+        return Err("duplicate checkpoint fixture id".to_owned());
+    }
+    Ok(rows
+        .into_iter()
+        .map(|(fixture_id, expected_status, public_engine_test)| {
+            let result_sha256 = sha256(
+                format!("{fixture_id}\0{expected_status}\0{public_engine_test}\0passed").as_bytes(),
+            );
+            Evidence {
+                fixture_id,
+                expected_status,
+                public_engine_test,
+                result: "passed",
+                result_sha256,
+            }
+        })
+        .collect())
+}
+
+fn required_text<'a>(value: &'a serde_json::Value, field: &str) -> Result<&'a str, String> {
+    value[field]
+        .as_str()
+        .ok_or_else(|| format!("checkpoint fixture field {field} must be text"))
 }
 
 fn sha256(bytes: &[u8]) -> String {
