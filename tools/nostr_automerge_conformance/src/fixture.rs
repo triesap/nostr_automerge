@@ -57,6 +57,7 @@ pub(crate) enum FixtureError {
     Path,
     Missing,
     Checksum,
+    NormativeSchema,
 }
 
 pub(crate) fn load_fixture(path: &Path) -> Result<FixtureMetadata, FixtureError> {
@@ -65,6 +66,52 @@ pub(crate) fn load_fixture(path: &Path) -> Result<FixtureMetadata, FixtureError>
         serde_json::from_slice(&bytes).map_err(|_| FixtureError::Json)?;
     validate_fixture(&fixture, path.parent().ok_or(FixtureError::Path)?)?;
     Ok(fixture)
+}
+
+pub(crate) fn load_normative_fixture(path: &Path) -> Result<FixtureMetadata, FixtureError> {
+    let fixture = load_fixture(path)?;
+    if fixture
+        .inputs
+        .as_slice()
+        .first()
+        .map(|input| input.name.as_str())
+        != Some("signed_scenario")
+        || fixture.inputs.len() != 1
+    {
+        return Err(FixtureError::NormativeSchema);
+    }
+    let base = path.parent().ok_or(FixtureError::Path)?;
+    let bytes = fs::read(base.join(&fixture.inputs[0].path)).map_err(|_| FixtureError::Io)?;
+    let input: serde_json::Value =
+        serde_json::from_slice(&bytes).map_err(|_| FixtureError::Json)?;
+    validate_normative_input(&input)?;
+    Ok(fixture)
+}
+
+fn validate_normative_input(input: &serde_json::Value) -> Result<(), FixtureError> {
+    let object = input.as_object().ok_or(FixtureError::NormativeSchema)?;
+    if object
+        .get("scenario_schema")
+        .and_then(serde_json::Value::as_str)
+        != Some("nostr_automerge.signed_scenario.v2")
+        || !object.contains_key("raw_events")
+    {
+        return Err(FixtureError::NormativeSchema);
+    }
+    for forbidden in [
+        "operations",
+        "valid",
+        "selected",
+        "accepted",
+        "excluded",
+        "controls",
+        "changes",
+    ] {
+        if object.contains_key(forbidden) {
+            return Err(FixtureError::NormativeSchema);
+        }
+    }
+    Ok(())
 }
 
 pub(crate) fn load_fixtures(
@@ -156,7 +203,10 @@ fn is_requirement(value: &str) -> bool {
 mod tests {
     use std::path::{Path, PathBuf};
 
-    use super::{FixtureError, FixtureMetadata, load_fixture, load_fixtures, validate_fixture};
+    use super::{
+        FixtureError, FixtureMetadata, load_fixture, load_fixtures, load_normative_fixture,
+        validate_fixture, validate_normative_input,
+    };
 
     fn fixture_path() -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -196,6 +246,21 @@ mod tests {
         assert_eq!(
             validate_fixture(&fixture, &base),
             Err(FixtureError::Revision)
+        );
+    }
+
+    #[test]
+    fn normative_loader_rejects_abstract_inputs() {
+        let signed = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../fixtures/v1_draft/scenarios/manifest/manifest_valid.fixture.json");
+        assert!(load_normative_fixture(&signed).is_ok());
+        let abstract_input = serde_json::json!({
+            "scenario_schema": "nostr_automerge.interop_core.v1",
+            "operations": [{"valid": true, "selected": true}]
+        });
+        assert_eq!(
+            validate_normative_input(&abstract_input),
+            Err(FixtureError::NormativeSchema)
         );
     }
 }

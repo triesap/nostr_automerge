@@ -16,7 +16,7 @@ use nostr_automerge::{
 
 use crate::checksum::verify_fixture_files;
 use crate::expected::{CheckpointResult, DispositionRecord, ExpectedReport, load_expected};
-use crate::fixture::load_fixture;
+use crate::fixture::{load_fixture, load_normative_fixture};
 use crate::report_json::write_canonical_report;
 use crate::scenario::{ScenarioInput, SignedScenarioInput};
 
@@ -59,7 +59,12 @@ struct ActorDerivationInput {
 }
 
 pub(crate) fn run_fixture(path: &Path) -> Result<Vec<u8>, RunError> {
-    let fixture = load_fixture(path).map_err(|_| RunError::Fixture)?;
+    let fixture = if is_normative_signed_fixture(path) {
+        load_normative_fixture(path)
+    } else {
+        load_fixture(path)
+    }
+    .map_err(|_| RunError::Fixture)?;
     let base = path.parent().ok_or(RunError::Fixture)?;
     verify_fixture_files(&fixture, base).map_err(|_| RunError::Checksum)?;
     let expected =
