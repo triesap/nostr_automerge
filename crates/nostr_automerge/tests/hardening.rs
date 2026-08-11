@@ -166,6 +166,8 @@ fn complete_public_documentation_and_examples() {
 #[test]
 fn review_public_api_and_semver_surface() {
     let report = include_str!("../../../reports/api_review.md");
+    assert!(report.contains("## Alpha migration"));
+    assert!(report.contains("No previously published crate exists"));
     for forbidden in ["pub automerge::", "pub secp256k1::", "pub serde_json::"] {
         assert!(!report.contains(forbidden));
     }
