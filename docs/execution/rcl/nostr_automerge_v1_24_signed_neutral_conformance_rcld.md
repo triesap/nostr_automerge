@@ -1,7 +1,7 @@
 # nostr_automerge Draft V1 RCLD 24: Signed Neutral Conformance
 
-Status: active
-Current checkpoint: `step_480`
+Status: complete
+Current checkpoint: `step_481`
 Steps: `step_460` through `step_481`
 Primary findings: `FINDING_014`, `FINDING_015`, `FINDING_016`, `FINDING_017`, `FINDING_020`, `FINDING_021`, `FINDING_023`, `FINDING_025`, `FINDING_026`
 
@@ -57,8 +57,9 @@ selection answers.
 - `step_478`: `45d633d` — distribution v3 binds every signed fixture artifact, profile, requirement, schema, and checksum exactly once.
 - `step_479`: `9d25964` — fresh Rust processes reproduce every signed profile report and bind source, lock, toolchain, manifest, and output hashes.
 - `step_480`: `29b9c4d` — exact canonical comparison detects a deliberate copied-report mutation without changing source evidence.
+- `step_481`: this commit — the full signed corpus, deterministic report generation, mismatch detection, standard Rust gate, and repository validators pass against the pinned phase evidence.
 
 ## Corrective Checkpoints
 
 - `step_474a`: `7b0ccf3` — signed fixture execution now runs all eight generated delivery classes through the public engine and rejects any canonical mismatch.
-- `step_473a`: this commit — accepted multiwriter diamonds, transitive equivocation quarantine, all scalar families, nested conflicting branches, every mark expansion, and deep projection now execute as signed evidence. Automerge's exact causal operation clock is reconstructed from each dependency closure while sequence and equivocation state remains actor-local.
+- `step_473a`: `3217924` — accepted multiwriter diamonds, transitive equivocation quarantine, all scalar families, nested conflicting branches, every mark expansion, and deep projection now execute as signed evidence. Automerge's exact causal operation clock is reconstructed from each dependency closure while sequence and equivocation state remains actor-local.

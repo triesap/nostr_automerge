@@ -11,7 +11,7 @@ fn signed_profile_deliberate_mismatch_is_detectable() {
     assert_eq!(report["schema"], "nostr_automerge.rust_signed_profile.v3");
     assert_eq!(report["status"], "pass");
     assert_eq!(report["process_runs_per_fixture"], 2);
-    assert_eq!(report["fixture_count"], 6);
+    assert_eq!(report["fixture_count"], 14);
 
     let mut mutated = report.clone();
     mutated["reports"][0]["report"]["completion"] = Value::String("cancelled".to_owned());

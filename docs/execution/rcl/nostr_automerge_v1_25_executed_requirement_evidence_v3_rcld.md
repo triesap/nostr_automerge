@@ -1,6 +1,7 @@
 # nostr_automerge Draft V1 RCLD 25: Executed Requirement Evidence V3
 
-Status: pending RCLD 24
+Status: active
+Current checkpoint: `step_482`
 Steps: `step_482` through `step_493`
 Primary findings: `FINDING_019`, `FINDING_026`
 

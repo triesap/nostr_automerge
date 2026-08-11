@@ -52,7 +52,7 @@ def standard() -> None:
 def conformance() -> None:
     command = (
         "cargo", "run", "--quiet", "-p", "nostr_automerge_conformance",
-        "--locked", "--", "run_corpus", "fixtures",
+        "--locked", "--", "run_corpus", "fixtures/v1_draft/scenarios",
     )
     first = run(*command, capture=True).stdout
     second = run(*command, capture=True).stdout

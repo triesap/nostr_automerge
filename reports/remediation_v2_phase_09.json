@@ -1,0 +1,16 @@
+{
+  "schema":"nostr_automerge.remediation_phase.v2",
+  "phase":"phase_09_signed_neutral_conformance",
+  "status":"pass",
+  "recorded":"2026-08-11",
+  "phase_input_head":"3217924892997faa6be40596e6b063ef20d1e416",
+  "findings":["FINDING_014","FINDING_015","FINDING_016","FINDING_017","FINDING_020","FINDING_021","FINDING_023","FINDING_025","FINDING_026"],
+  "requirements":["R2_CONF_001","R2_CONF_002","R2_CONF_003","R2_CONF_004","R2_INTEROP_002","R2_INTEROP_004"],
+  "completed_steps":["step_460","step_461","step_462","step_463","step_464","step_465","step_466","step_467","step_468","step_469","step_470","step_471","step_472","step_473","step_474","step_475","step_476","step_477","step_478","step_479","step_480","step_481"],
+  "commits":{"step_460":"efee313","step_461":"b8b3440","step_462":"7cf5b7e","step_463":"4272759","step_464":"016946b","step_465":"ec0495d","step_466":"cd4226c","step_467":"cda49fd","step_468":"b6312b4","step_469":"2008c2b","step_470":"87cf2d5","step_471":"51279c9","step_472":"bbbcdfa","step_473":"0c55f5c","step_474":"e11a881","step_475":"f16fd38","step_476":"edb2b90","step_477":"f689ab5","step_478":"45d633d","step_479":"9d25964","step_480":"29b9c4d","step_481":"self"},
+  "corrective_commits":{"step_473a":"3217924","step_474a":"7b0ccf3"},
+  "commands":[{"command":"cargo extbuild run -- python3 scripts/local_gate.py standard","result":"pass"},{"command":"cargo extbuild run -- python3 scripts/local_gate.py conformance","result":"pass"},{"command":"cargo extbuild run -- python3 scripts/validate_fixture_manifest.py --self-test","result":"pass"},{"command":"cargo extbuild run -- python3 scripts/validate_distribution.py","result":"pass"},{"command":"cargo extbuild run -- python3 scripts/compare_conformance.py --self-test-mismatch","result":"pass"},{"command":"git diff --check","result":"pass"}],
+  "artifact_sha256":{"fixtures/distribution/manifest_v3.json":"4c0ecaeb2fd53fad3268ac1bd2d02ec9355bcf34aa5d9c290219cb5ea4239e5b","reports/rust_signed_core.json":"d027b38aba6befeab5cc227016f87649c144162b06dfdf8aa4dacdf260ec26a9","reports/rust_signed_checkpoint.json":"82a4059566cdfd59500c8e685fffb3870f2df28d13f35ba9c238faba919689fd","reports/rust_signed_malformed.json":"e057d911dcae1aeaf447bf695effdd4116b70cc97f5ff0ec2b5183bbc0912490","reports/rust_signed_property.json":"ddc5c6db1e50cef53a291b74b3df741451ddea5d7b8dd0fff462374c36aad3ae","tools/nostr_automerge_conformance/src/runner.rs":"bb139cdfbdcf0225a7b2388c515849dae70342329ceef799c035764a1ba2f136","crates/nostr_automerge/src/graph/actor_state.rs":"87bc6730bed5675ac04b2a8e57a42df3f128f5002e10992d35cb320a43b707f2","Cargo.lock":"6d1b886ff74637ba6682d349ab81424b0792f2cbc61cf0f213dfcf16af4f6744"},
+  "next":{"rcld":25,"checkpoint":"step_482"},
+  "publication_authorized":false
+}
