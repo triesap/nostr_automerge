@@ -4422,6 +4422,15 @@ fn hex32(bytes: [u8; 32]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
+#[derive(Clone, Copy)]
+struct CheckpointCommitmentVariant {
+    head: ChangeHash,
+    change_count: u64,
+    change_set_hash: [u8; 32],
+    dependency_edges: u64,
+    total_ops: u64,
+}
+
 #[allow(clippy::expect_used)]
 fn evaluate_single_chunk_variant(
     chunk_signer: &TestSigner,
@@ -4431,6 +4440,7 @@ fn evaluate_single_chunk_variant(
     chunk_data: Option<&[u8]>,
     snapshot_hash_override: Option<[u8; 32]>,
     chunk_root_override: Option<[u8; 32]>,
+    commitments_override: Option<CheckpointCommitmentVariant>,
 ) -> nostr_automerge::EvaluationReport {
     let scenario = signed_engine_scenario();
     let descriptor_signer = TestSigner::from_byte(21);
@@ -4442,6 +4452,13 @@ fn evaluate_single_chunk_variant(
     change_set.update([0]);
     change_set.update(1_u64.to_be_bytes());
     change_set.update(scenario.change_hash.as_bytes());
+    let commitments = commitments_override.unwrap_or(CheckpointCommitmentVariant {
+        head: scenario.change_hash,
+        change_count: 1,
+        change_set_hash: change_set.finalize().into(),
+        dependency_edges: 0,
+        total_ops: 1,
+    });
     let descriptor = descriptor_signer.sign(
         &UnsignedEventDraft::new(
             3,
@@ -4455,12 +4472,15 @@ fn evaluate_single_chunk_variant(
                 ],
             ],
             format!(
-                r#"{{"change_count":1,"change_set_hash":"{}","chunk_count":1,"chunk_root":"{}","chunk_size":{},"dependency_edges":0,"encoding":"automerge-save-v1","heads":["{}"],"raw_size":{},"total_ops":1,"v":1}}"#,
-                hex32(change_set.finalize().into()),
+                r#"{{"change_count":{},"change_set_hash":"{}","chunk_count":1,"chunk_root":"{}","chunk_size":{},"dependency_edges":{},"encoding":"automerge-save-v1","heads":["{}"],"raw_size":{},"total_ops":{},"v":1}}"#,
+                commitments.change_count,
+                hex32(commitments.change_set_hash),
                 hex32(chunk_root_override.unwrap_or(chunk_root)),
                 scenario.snapshot.len(),
-                scenario.change_hash.to_hex(),
+                commitments.dependency_edges,
+                commitments.head.to_hex(),
                 scenario.snapshot.len(),
+                commitments.total_ops,
             ),
         )
         .expect("descriptor draft")
@@ -4530,6 +4550,7 @@ fn checkpoint_author_and_binding_refusals() {
         None,
         None,
         None,
+        None,
     );
     assert_eq!(
         wrong_author.checkpoints()[0].status(),
@@ -4551,6 +4572,7 @@ fn checkpoint_author_and_binding_refusals() {
         None,
         None,
         None,
+        None,
     );
     assert_eq!(
         wrong_coordinate.checkpoints()[0].status(),
@@ -4562,6 +4584,7 @@ fn checkpoint_author_and_binding_refusals() {
         None,
         Some(EventId::from_bytes([0x77; 32])),
         &[(4, "0", "1")],
+        None,
         None,
         None,
         None,
@@ -4588,18 +4611,27 @@ fn checkpoint_index_refusals() {
         None,
         None,
         None,
+        None,
     );
     assert_eq!(
         duplicate.checkpoints()[0].status(),
         CheckpointVerificationStatus::DuplicateChunk
     );
-    let missing = evaluate_single_chunk_variant(&signer, None, None, &[], None, None, None);
+    let missing = evaluate_single_chunk_variant(&signer, None, None, &[], None, None, None, None);
     assert_eq!(
         missing.checkpoints()[0].status(),
         CheckpointVerificationStatus::MissingChunk
     );
-    let wrong_count =
-        evaluate_single_chunk_variant(&signer, None, None, &[(4, "0", "2")], None, None, None);
+    let wrong_count = evaluate_single_chunk_variant(
+        &signer,
+        None,
+        None,
+        &[(4, "0", "2")],
+        None,
+        None,
+        None,
+        None,
+    );
     assert_eq!(
         wrong_count.checkpoints()[0].status(),
         CheckpointVerificationStatus::ChunkCountMismatch
@@ -4622,6 +4654,7 @@ fn checkpoint_size_refusals() {
         None,
         &[(4, "0", "1")],
         Some(shortened),
+        None,
         None,
         None,
     );
@@ -4651,6 +4684,7 @@ fn checkpoint_merkle_refusals() {
         Some(&mutated),
         None,
         None,
+        None,
     );
     assert_eq!(
         merkle.checkpoints()[0].status(),
@@ -4664,6 +4698,7 @@ fn checkpoint_merkle_refusals() {
         None,
         Some([0x88; 32]),
         None,
+        None,
     );
     assert_eq!(
         snapshot_hash.checkpoints()[0].status(),
@@ -4671,6 +4706,96 @@ fn checkpoint_merkle_refusals() {
     );
     validated_checkpoint_chunk_carrier_enters_corpus();
     signed_irregular_multichunk_checkpoint_reconstructs_exact_history();
+}
+
+#[test]
+fn checkpoint_snapshot_refusals() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/checkpoints/negative_snapshot.json"
+    ))
+    .unwrap_or_default();
+    assert_eq!(fixture["cases"].as_array().map(Vec::len), Some(6));
+    let scenario = signed_engine_scenario();
+    let invalid_bytes = vec![0xff; scenario.snapshot.len()];
+    let invalid_hash: [u8; 32] = Sha256::digest(&invalid_bytes).into();
+    let invalid_root = nostr_automerge::checkpoint::leaf_hash(0, 1, invalid_hash);
+    let load = evaluate_single_chunk_variant(
+        &TestSigner::from_byte(21),
+        None,
+        None,
+        &[(4, "0", "1")],
+        Some(&invalid_bytes),
+        Some(invalid_hash),
+        Some(invalid_root),
+        None,
+    );
+    assert_eq!(
+        load.checkpoints()[0].status(),
+        CheckpointVerificationStatus::SnapshotLoad
+    );
+
+    let mut digest = Sha256::new();
+    digest.update(b"nostr-crdt/automerge/change-set/v1");
+    digest.update([0]);
+    digest.update(1_u64.to_be_bytes());
+    digest.update(scenario.change_hash.as_bytes());
+    let base = CheckpointCommitmentVariant {
+        head: scenario.change_hash,
+        change_count: 1,
+        change_set_hash: digest.finalize().into(),
+        dependency_edges: 0,
+        total_ops: 1,
+    };
+    let head = evaluate_single_chunk_variant(
+        &TestSigner::from_byte(21),
+        None,
+        None,
+        &[(4, "0", "1")],
+        None,
+        None,
+        None,
+        Some(CheckpointCommitmentVariant {
+            head: ChangeHash::from_bytes([0x99; 32]),
+            ..base
+        }),
+    );
+    assert_eq!(
+        head.checkpoints()[0].status(),
+        CheckpointVerificationStatus::HeadMismatch
+    );
+    for commitments in [
+        CheckpointCommitmentVariant {
+            change_count: 2,
+            ..base
+        },
+        CheckpointCommitmentVariant {
+            change_set_hash: [0x77; 32],
+            ..base
+        },
+        CheckpointCommitmentVariant {
+            dependency_edges: 1,
+            ..base
+        },
+        CheckpointCommitmentVariant {
+            total_ops: 2,
+            ..base
+        },
+    ] {
+        let report = evaluate_single_chunk_variant(
+            &TestSigner::from_byte(21),
+            None,
+            None,
+            &[(4, "0", "1")],
+            None,
+            None,
+            None,
+            Some(commitments),
+        );
+        assert_eq!(
+            report.checkpoints()[0].status(),
+            CheckpointVerificationStatus::CommitmentMismatch
+        );
+    }
 }
 
 #[allow(clippy::expect_used)]
