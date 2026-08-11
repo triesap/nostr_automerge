@@ -1,0 +1,44 @@
+{
+  "schema": "nostr_automerge.remediation_v3_baseline.v1",
+  "recorded": "2026-08-11",
+  "status": "recorded_with_authorized_planning_work",
+  "rust": {
+    "repository": "triesap/nostr_automerge",
+    "branch": "master",
+    "head": "cee7559b8bd7eb00f5f1e37b24c8f9c68e11049d",
+    "reviewed_public_head": "cee7559b8bd7eb00f5f1e37b24c8f9c68e11049d",
+    "implementation_candidate": "cee7559b8bd7eb00f5f1e37b24c8f9c68e11049d",
+    "cargo_lock_sha256": "6d1b886ff74637ba6682d349ab81424b0792f2cbc61cf0f213dfcf16af4f6744",
+    "fixture_manifest_sha256": "4c0ecaeb2fd53fad3268ac1bd2d02ec9355bcf34aa5d9c290219cb5ea4239e5b"
+  },
+  "typescript": {
+    "implementation_id": "typescript_v1_internal",
+    "candidate": "ac49e7274e79079dd674ada28cd9ed602bd8b9ce"
+  },
+  "toolchains": {
+    "rustc": "1.97.1",
+    "cargo": "1.97.1"
+  },
+  "authority": {
+    "nip_draft_sha256": "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3",
+    "companion_spec_sha256": "f8a2e53c66fff9b61cab1b1c22074dd513e6525fea4c298b73a91e905c097de7",
+    "requirements_sha256": "6db34703bc37ac52d57bc92235d311674cfc259cadf54fe6f55f73ee5d4bfd9e"
+  },
+  "reports": {
+    "reports/requirements_coverage_v3.json": "5f3c9ab2a3c4fefc9629e37c68a89c70b2a14ed02b488eceb563b845d34fa15c",
+    "reports/interop_typescript_v2.json": "3272099330234c434317a0da81718d0b71889291ee1f4ffa7316482f9d1a5c88",
+    "reports/interop_combined.json": "4db60726b29cdeb24715027c7de5958ed84291c2776689f02610373feb2c68c4",
+    "reports/release_readiness.json": "ee6db7d738af41a4d2176625ec1f69d300acad5e043f308a6f0993641d5b0daa",
+    "reports/remediation_closure.json": "6efb10a0ac889b5c7b8db58edb9dd79e7981423fcd3b24f3521609dde6a86647"
+  },
+  "finding_range": "FINDING_028_through_FINDING_035",
+  "rcld_range": "rcld_29_through_rcld_38",
+  "step_range": "step_534_through_step_659",
+  "active_rcld": 29,
+  "active_step": "step_534",
+  "authorized_preexisting_paths": [
+    "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v3.md"
+  ],
+  "publication_authorized": false,
+  "nip_edit_authorized": false
+}
