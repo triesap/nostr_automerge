@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import subprocess
 from pathlib import Path
 
 
@@ -34,6 +35,16 @@ def digest(path: str) -> str:
     return hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
 
 
+def digest_at_commit(commit: str, path: str) -> str:
+    value = subprocess.run(
+        ["git", "show", f"{commit}:{path}"],
+        cwd=ROOT,
+        check=True,
+        stdout=subprocess.PIPE,
+    ).stdout
+    return hashlib.sha256(value).hexdigest()
+
+
 def main() -> int:
     report = json.loads((ROOT / "reports/remediation_v2_baseline.json").read_text())
     if report["schema"] != "nostr_automerge.remediation_v2_baseline.v1":
@@ -46,13 +57,17 @@ def main() -> int:
         head = report[section]["head"]
         if not isinstance(head, str) or GIT_ID.fullmatch(head) is None:
             raise AssertionError(f"invalid {section} head")
+    reviewed = report["rust"]["head"]
     expected_hashes = {
-        ("rust", "cargo_lock_sha256"): digest("Cargo.lock"),
-        ("authority", "nip_draft_sha256"): digest("spec/NIP_DRAFT.md"),
-        ("authority", "companion_spec_sha256"): digest(
+        ("rust", "cargo_lock_sha256"): digest_at_commit(reviewed, "Cargo.lock"),
+        ("authority", "nip_draft_sha256"): digest_at_commit(reviewed, "spec/NIP_DRAFT.md"),
+        ("authority", "companion_spec_sha256"): digest_at_commit(
+            reviewed,
             "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
         ),
-        ("authority", "requirements_sha256"): digest("spec/requirements.json"),
+        ("authority", "requirements_sha256"): digest_at_commit(
+            reviewed, "spec/requirements.json"
+        ),
     }
     for (section, field), expected in expected_hashes.items():
         value = report[section][field]

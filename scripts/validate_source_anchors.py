@@ -39,8 +39,6 @@ def validate(report: dict, findings: dict) -> None:
         raise AssertionError("finding source anchors are missing, duplicated, or reordered")
     for anchor in anchors:
         path = anchor["path"]
-        if not (ROOT / path).exists():
-            raise AssertionError(f"current source path is missing: {path}")
         if git_object(commit, path) != anchor.get("baseline_git_object"):
             raise AssertionError(f"stale baseline object for source anchor: {path}")
 

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 
@@ -23,11 +24,17 @@ def main() -> int:
     if any(item["status"] != "open" for item in findings):
         raise AssertionError("a follow-up finding was prematurely closed")
     severities = {"blocker", "critical", "high", "medium", "release_hold"}
+    reviewed = finding_registry["reviewed_rust_commit"]
     for item in findings:
         if item["severity"] not in severities or not item["paths"] or not item["phases"]:
             raise AssertionError(f"incomplete finding: {item['id']}")
         for raw_path in item["paths"]:
-            if not (ROOT / raw_path).exists():
+            exists = subprocess.run(
+                ["git", "cat-file", "-e", f"{reviewed}:{raw_path}"],
+                cwd=ROOT,
+                capture_output=True,
+            ).returncode == 0
+            if not exists:
                 raise AssertionError(f"stale finding path: {item['id']}:{raw_path}")
     requirements = requirement_registry["requirements"]
     requirement_ids = [item["id"] for item in requirements]

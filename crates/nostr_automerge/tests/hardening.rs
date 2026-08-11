@@ -132,7 +132,7 @@ fn add_resource_and_performance_benchmarks() {
     let report: serde_json::Value =
         serde_json::from_str(include_str!("../../../reports/resource_benchmarks.json"))
             .unwrap_or_default();
-    assert_eq!(report["schema"], "nostr_automerge.resource_benchmarks.v3");
+    assert_eq!(report["schema"], "nostr_automerge.resource_benchmarks.v4");
     assert_eq!(report["ceilings"]["checkpoint_smoke_leaves"], 4096);
     assert_eq!(report["graph_models"]["chain_128"]["graph_nodes"], 256);
     assert_eq!(report["graph_models"]["fan_in_128"]["graph_edges"], 254);
@@ -231,7 +231,7 @@ fn close_local_implementation_scope_without_release_overclaim() {
             .unwrap_or_default();
     assert!(matches!(
         report["checkpoint_range"].as_str(),
-        Some("step_000_through_step_531" | "step_000_through_step_533")
+        Some("step_000_through_step_532" | "step_000_through_step_533")
     ));
     assert_eq!(report["code_scope"]["follow_up_requirements_executed"], 68);
     assert_eq!(report["code_scope"]["follow_up_findings_closed"], 13);

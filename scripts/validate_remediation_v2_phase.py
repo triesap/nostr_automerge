@@ -29,7 +29,10 @@ def sha256_at_commit(commit: str, relative: str) -> str:
 def artifact_matches(
     report: dict[str, object], report_path: str, relative: str, expected: str
 ) -> bool:
-    candidates = [sha256(ROOT / relative), sha256_at_commit(str(report["phase_input_head"]), relative)]
+    candidates = [sha256_at_commit(str(report["phase_input_head"]), relative)]
+    current = ROOT / relative
+    if current.exists():
+        candidates.append(sha256(current))
     report_commit = subprocess.run(
         ["git", "log", "--diff-filter=A", "-1", "--format=%H", "--", report_path],
         cwd=ROOT,
@@ -38,7 +41,13 @@ def artifact_matches(
         text=True,
     ).stdout.strip()
     if report_commit:
-        candidates.append(sha256_at_commit(report_commit, relative))
+        present = subprocess.run(
+            ["git", "cat-file", "-e", f"{report_commit}:{relative}"],
+            cwd=ROOT,
+            capture_output=True,
+        ).returncode == 0
+        if present:
+            candidates.append(sha256_at_commit(report_commit, relative))
     return expected in candidates
 
 
