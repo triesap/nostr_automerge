@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import subprocess
@@ -11,12 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = ROOT / "fixtures" / "distribution" / "manifest_v3.json"
-PROFILE_OUTPUTS = {
-    "core": ROOT / "reports" / "rust_signed_core.json",
-    "checkpoint": ROOT / "reports" / "rust_signed_checkpoint.json",
-    "malformed": ROOT / "reports" / "rust_signed_malformed.json",
-    "property": ROOT / "reports" / "rust_signed_property.json",
-}
+PROFILES = ("core", "checkpoint", "malformed", "property")
 
 
 def sha256(data: bytes) -> str:
@@ -37,6 +33,11 @@ def fixture_report(path: str) -> bytes:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output-root", type=Path, default=ROOT / "reports")
+    arguments = parser.parse_args()
+    output_root = arguments.output_root.resolve()
+    output_root.mkdir(parents=True, exist_ok=True)
     manifest_bytes = MANIFEST_PATH.read_bytes()
     manifest = json.loads(manifest_bytes)
     entries = {entry["fixture_id"]: entry for entry in manifest["fixtures"]}
@@ -44,13 +45,17 @@ def main() -> int:
         "cargo_lock_sha256": sha256(ROOT.joinpath("Cargo.lock").read_bytes()),
         "fixture_manifest_sha256": sha256(manifest_bytes),
         "rust_toolchain_sha256": sha256(ROOT.joinpath("rust-toolchain.toml").read_bytes()),
-        "source_commit": command("git", "rev-parse", "HEAD").decode().strip(),
+        "source_commit": command(
+            "git", "log", "-1", "--format=%H", "--", "crates", "tools", "Cargo.toml",
+            "Cargo.lock", "rust-toolchain.toml", "fixtures",
+        ).decode().strip(),
         "toolchain": {
             "cargo": command("cargo", "--version").decode().strip(),
             "rustc": command("rustc", "--version").decode().strip(),
         },
     }
-    for profile, output_path in PROFILE_OUTPUTS.items():
+    for profile in PROFILES:
+        output_path = output_root / f"rust_signed_{profile}.json"
         results = []
         for fixture_id in manifest["profiles"][profile]:
             metadata_path = entries[fixture_id]["metadata_path"]
