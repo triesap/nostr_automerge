@@ -1,9 +1,14 @@
 use std::path::{Path, PathBuf};
 
-use nostr_automerge::authoring::{PreparedEvent, UnsignedEventDraft};
+use automerge::transaction::{CommitOptions, Transactable};
+use automerge::{AutoCommit, ROOT, TextEncoding};
+use base64::Engine as _;
+use nostr_automerge::authoring::{
+    ActorState, AuthoringDocument, Operation, PreparedEvent, UnsignedEventDraft,
+};
 use nostr_automerge::{
-    DevicePublicKey, DocumentCoordinate, EventId, ProtocolRevision, RawEventBytes,
-    VerifiedNip01Event,
+    ActorId, ChangeHash, DevicePublicKey, DocumentCoordinate, EventId, ProtocolRevision,
+    RawEventBytes, VerifiedNip01Event,
 };
 use secp256k1::{Keypair, Secp256k1, SecretKey};
 use serde_json::{Value, json};
@@ -20,11 +25,234 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "control_genesis" => generate_control_genesis_profile(),
         "control_transition" => generate_control_transition_profile(),
         "control_fork" => generate_control_fork_profile(),
+        "actor_counters" => generate_actor_counter_profile(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
 }
 
 type Member<'a> = (&'a Signer, Option<String>, &'a [&'a str]);
+
+fn generate_actor_counter_profile() -> Result<(), String> {
+    let controller = Signer::from_byte(80)?;
+    let writer = Signer::from_byte(81)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "80".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid counter coordinate".to_owned())?;
+    let control = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, vec![(&writer, None, &["write"])], "automerge-change-v1"),
+    )?;
+    let control_id = event_id(&control)?;
+    let actor = ActorId::derive(coordinate, writer.public_key);
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+        .map_err(|error| format!("counter document: {error:?}"))?;
+    let first = document
+        .author_change(&[Operation::PutString {
+            key: "first".to_owned(),
+            value: "one".to_owned(),
+        }])
+        .map_err(|error| format!("first counter change: {error:?}"))?;
+    let second = document
+        .author_change(&[Operation::PutString {
+            key: "second".to_owned(),
+            value: "two".to_owned(),
+        }])
+        .map_err(|error| format!("second counter change: {error:?}"))?;
+    let first_event = sign_change(
+        &writer,
+        2,
+        coordinate,
+        control_id,
+        first.change_hash(),
+        first.raw(),
+    )?;
+    let second_event = sign_change(
+        &writer,
+        3,
+        coordinate,
+        control_id,
+        second.change_hash(),
+        second.raw(),
+    )?;
+    let (gap_raw, gap_hash) = rewrite_change_sequence(first.raw().to_vec(), 1, 2)?;
+    let gap_event = sign_change(&writer, 4, coordinate, control_id, gap_hash, &gap_raw)?;
+    let (rollback_raw, rollback_hash) = rewrite_change_sequence(second.raw().to_vec(), 2, 1)?;
+    let rollback_event = sign_change(
+        &writer,
+        5,
+        coordinate,
+        control_id,
+        rollback_hash,
+        &rollback_raw,
+    )?;
+    let (start_raw, start_hash) = rewrite_first_change_start_op(first.raw().to_vec(), 2)?;
+    let start_event = sign_change(&writer, 6, coordinate, control_id, start_hash, &start_raw)?;
+
+    let mut empty_document = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit)
+        .with_actor(automerge::ActorId::from(actor.as_bytes().to_vec()));
+    let empty_hash = empty_document.empty_change(CommitOptions::default());
+    let empty_raw = empty_document
+        .get_change_by_hash(&empty_hash)
+        .ok_or_else(|| "missing authored empty change".to_owned())?
+        .raw_bytes()
+        .to_vec();
+    empty_document
+        .put(ROOT, "after-empty", "accepted")
+        .map_err(|error| format!("post-empty operation: {error:?}"))?;
+    let after_empty_hash = empty_document
+        .commit()
+        .ok_or_else(|| "missing post-empty change".to_owned())?;
+    let after_empty_raw = empty_document
+        .get_change_by_hash(&after_empty_hash)
+        .ok_or_else(|| "missing post-empty bytes".to_owned())?
+        .raw_bytes()
+        .to_vec();
+    let empty_hash = ChangeHash::from_bytes(empty_hash.0);
+    let after_empty_hash = ChangeHash::from_bytes(after_empty_hash.0);
+    let empty_event = sign_change(&writer, 7, coordinate, control_id, empty_hash, &empty_raw)?;
+    let after_empty_event = sign_change(
+        &writer,
+        8,
+        coordinate,
+        control_id,
+        after_empty_hash,
+        &after_empty_raw,
+    )?;
+
+    let cases = vec![
+        (
+            "actor_counter_sequence_start",
+            vec![control.clone(), first_event.clone()],
+        ),
+        (
+            "actor_counter_exact_predecessor",
+            vec![control.clone(), first_event.clone(), second_event.clone()],
+        ),
+        (
+            "actor_counter_missing_predecessor",
+            vec![control.clone(), second_event],
+        ),
+        (
+            "actor_counter_sequence_gap",
+            vec![control.clone(), gap_event],
+        ),
+        (
+            "actor_counter_sequence_rollback",
+            vec![control.clone(), first_event, rollback_event],
+        ),
+        ("actor_counter_start_op", vec![control.clone(), start_event]),
+        (
+            "actor_counter_empty_preservation",
+            vec![control.clone(), empty_event.clone(), after_empty_event],
+        ),
+        ("actor_counter_empty_frontier", vec![control, empty_event]),
+    ];
+    let root = repository_root().join("fixtures/v1_draft/scenarios/actor_counters");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    for (fixture_id, events) in cases {
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            &["NCRDT-CONF-002", "NCRDT-SEQ-001", "NCRDT-SEQ-002"],
+            "actor_counters",
+        )?;
+    }
+    Ok(())
+}
+
+fn sign_change(
+    signer: &Signer,
+    created_at: u64,
+    coordinate: DocumentCoordinate,
+    control: EventId,
+    change_hash: ChangeHash,
+    raw: &[u8],
+) -> Result<RawEventBytes, String> {
+    signer.sign(
+        &UnsignedEventDraft::new(
+            created_at,
+            1_624,
+            vec![
+                vec!["a".to_owned(), coordinate.to_address()],
+                vec!["e".to_owned(), control.to_hex()],
+                vec!["x".to_owned(), change_hash.to_hex()],
+            ],
+            base64::engine::general_purpose::STANDARD.encode(raw),
+        )
+        .map_err(|error| format!("change draft: {error:?}"))?
+        .prepare(signer.public_key)
+        .map_err(|error| format!("change preimage: {error:?}"))?,
+    )
+}
+
+fn rewrite_change_sequence(
+    mut raw: Vec<u8>,
+    expected_sequence: u8,
+    sequence: u8,
+) -> Result<(Vec<u8>, ChangeHash), String> {
+    let mut data_start = 9_usize;
+    while raw.get(data_start).is_some_and(|byte| byte & 0x80 != 0) {
+        data_start += 1;
+    }
+    data_start += 1;
+    let dependency_count = usize::from(
+        *raw.get(data_start)
+            .ok_or_else(|| "missing dependency count".to_owned())?,
+    );
+    let actor_len_offset = data_start + 1 + dependency_count * 32;
+    let actor_len = usize::from(
+        *raw.get(actor_len_offset)
+            .ok_or_else(|| "missing actor length".to_owned())?,
+    );
+    let sequence_offset = actor_len_offset + 1 + actor_len;
+    if raw.get(sequence_offset) != Some(&expected_sequence) {
+        return Err("unexpected source change sequence".to_owned());
+    }
+    raw[sequence_offset] = sequence;
+    rehash_change(raw)
+}
+
+fn rewrite_first_change_start_op(
+    mut raw: Vec<u8>,
+    start_op: u8,
+) -> Result<(Vec<u8>, ChangeHash), String> {
+    let mut data_start = 9_usize;
+    while raw.get(data_start).is_some_and(|byte| byte & 0x80 != 0) {
+        data_start += 1;
+    }
+    data_start += 1;
+    if raw.get(data_start) != Some(&0) {
+        return Err("first change unexpectedly has dependencies".to_owned());
+    }
+    let actor_len = usize::from(
+        *raw.get(data_start + 1)
+            .ok_or_else(|| "missing actor length".to_owned())?,
+    );
+    let sequence_offset = data_start + 2 + actor_len;
+    if raw.get(sequence_offset) != Some(&1) || raw.get(sequence_offset + 1) != Some(&1) {
+        return Err("unexpected first change counters".to_owned());
+    }
+    raw[sequence_offset + 1] = start_op;
+    rehash_change(raw)
+}
+
+fn rehash_change(mut raw: Vec<u8>) -> Result<(Vec<u8>, ChangeHash), String> {
+    if raw.len() < 9 {
+        return Err("change framing is too short".to_owned());
+    }
+    let digest: [u8; 32] = Sha256::digest(&raw[8..]).into();
+    raw[4..8].copy_from_slice(&digest[..4]);
+    Ok((raw, ChangeHash::from_bytes(digest)))
+}
 
 fn generate_control_fork_profile() -> Result<(), String> {
     let controller = Signer::from_byte(78)?;
