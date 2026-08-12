@@ -1080,6 +1080,15 @@ mod tests {
     }
 
     #[test]
+    fn accepted_base_candidates_are_filtered_from_both_epoch_paths() {
+        let source = include_str!("evaluate.rs");
+        let exclusion = "!accepted_base\n                    .accepted_closure()\n                    .contains(&change.candidate.change_hash)";
+        assert_eq!(source.matches(exclusion).count(), 1);
+        let selected_exclusion = "!accepted_base\n                .accepted_closure()\n                .contains(&change.candidate.change_hash)";
+        assert_eq!(source.matches(selected_exclusion).count(), 2);
+    }
+
+    #[test]
     fn pruned_prior_dependency_is_invalid_not_pending() {
         let first = change(1, 1, 1);
         let second = change(2, 2, 1);
