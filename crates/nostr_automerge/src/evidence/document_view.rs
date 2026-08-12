@@ -72,6 +72,35 @@ impl<'a> DocumentEvidenceView<'a> {
             .copied()
     }
 
+    pub(crate) fn change_hashes(&self) -> impl Iterator<Item = ChangeHash> + '_ {
+        self.corpus
+            .indexes
+            .changes
+            .claims_by_hash
+            .iter()
+            .filter(|(_, claims)| {
+                claims
+                    .keys()
+                    .any(|event_id| self.reportable_event_ids.contains(event_id))
+            })
+            .map(|(hash, _)| *hash)
+    }
+
+    pub(crate) fn change_claim_event_ids(
+        &self,
+        hash: ChangeHash,
+    ) -> impl Iterator<Item = EventId> + '_ {
+        self.corpus
+            .indexes
+            .changes
+            .claims_by_hash
+            .get(&hash)
+            .into_iter()
+            .flat_map(|claims| claims.keys())
+            .filter(|event_id| self.reportable_event_ids.contains(event_id))
+            .copied()
+    }
+
     pub(crate) fn evaluation_event_count(&self) -> usize {
         self.input_event_ids().count().saturating_add(
             self.corpus

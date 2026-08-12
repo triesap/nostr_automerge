@@ -2618,6 +2618,75 @@ fn duplicate_delayed_and_invalid_evidence_converges() {
 }
 
 #[test]
+#[allow(clippy::expect_used)]
+fn change_before_control_has_a_pending_hash_outcome() {
+    let scenario = signed_engine_scenario();
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(scenario.change),
+        IngestOutcome::Accepted { .. }
+    ));
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+        &builder.finish(),
+        scenario.coordinate,
+        &mut WorkBudget::new(1_000_000, 10_000),
+        &NeverCancelled,
+    );
+    assert_eq!(
+        report.dispositions(),
+        [(scenario.change_hash, ProtocolDisposition::Pending)]
+    );
+    assert_eq!(report.pending_changes(), [scenario.change_hash]);
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn valid_claim_dominates_a_missing_control_duplicate() {
+    let scenario = signed_engine_scenario();
+    let device = TestSigner::from_byte(21);
+    let verified = VerifiedNip01Event::verify(scenario.change.clone()).expect("valid change");
+    let duplicate = device.sign(
+        &UnsignedEventDraft::new(
+            3,
+            1_624,
+            verified
+                .tags()
+                .iter()
+                .map(|tag| {
+                    if tag.first().is_some_and(|name| name == "e") {
+                        vec!["e".to_owned(), "ee".repeat(32)]
+                    } else {
+                        tag.clone()
+                    }
+                })
+                .collect(),
+            verified.content().to_owned(),
+        )
+        .expect("duplicate claim")
+        .prepare(device.public_key())
+        .expect("duplicate preimage"),
+    );
+    let mut builder = CorpusBuilder::new();
+    for event in [scenario.control, scenario.change, duplicate] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+        &builder.finish(),
+        scenario.coordinate,
+        &mut WorkBudget::new(2_000_000, 20_000),
+        &NeverCancelled,
+    );
+    assert_eq!(report.accepted_changes(), [scenario.change_hash]);
+    assert_eq!(
+        report.dispositions(),
+        [(scenario.change_hash, ProtocolDisposition::Accepted)]
+    );
+}
+
+#[test]
 fn event_and_carrier_work_exhaustion_precedes_state() {
     let scenario = signed_engine_scenario();
     let mut builder = CorpusBuilder::new();

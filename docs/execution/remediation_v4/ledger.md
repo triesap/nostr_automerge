@@ -1,8 +1,8 @@
 # Draft V1 Remediation V4 Execution Ledger
 
 Status: active — `implementation_remediation_required`
-Active RCLD: 42
-Active checkpoint: `step_685`
+Active RCLD: 43
+Active checkpoint: `step_699`
 Range: `step_660` through `step_737`
 
 | RCLD | Steps | Status | Scope |
@@ -10,8 +10,8 @@ Range: `step_660` through `step_737`
 | 39 | `step_660`–`step_667` | complete | Authority and decisions |
 | 40 | `step_668`–`step_675` | complete | Companion authority and registry v2 |
 | 41 | `step_676`–`step_684` | complete | Coordinate-scoped evidence |
-| 42 | `step_685`–`step_698` | active | Global ChangeHash carrier claims |
-| 43 | `step_699`–`step_706` | pending | Prior dependency knowledge |
+| 42 | `step_685`–`step_698` | complete | Global ChangeHash carrier claims |
+| 43 | `step_699`–`step_706` | active | Prior dependency knowledge |
 | 44 | `step_707`–`step_715` | pending | Bounded interruption finalization |
 | 45 | `step_716`–`step_727` | pending | Signed conformance and private TypeScript parity |
 | 46 | `step_728`–`step_737` | pending | Evidence reconciliation and final decision |
@@ -27,6 +27,10 @@ Range: `step_660` through `step_737`
   reportable and lifecycle-support evidence, scoped ingress and evaluator
   traversal, implemented manifest prevalidation attribution, and proved that
   unrelated signed, duplicate, and invalid evidence is report and budget inert.
+- `step_685`–`step_698`: separated semantic changes from event-level claims,
+  indexed all claims, bypassed accepted-base duplicates, reduced every target
+  hash against dynamic control state and final lineage, and proved pending and
+  non-poisoning duplicate behavior.
 
 ## Scope adaptations
 

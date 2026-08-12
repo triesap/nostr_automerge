@@ -101,6 +101,7 @@ impl ReferenceEvaluator {
         let mut control_disposition_map = preliminary_control_dispositions;
         control_disposition_map.extend(core::mem::take(&mut batch.control_dispositions));
         batch.control_dispositions = control_disposition_map;
+        reduce_change_dispositions(&view, &mut batch);
         if batch.completion != Completion::Complete {
             return compact_batch_report(
                 self.revision,
@@ -321,6 +322,103 @@ impl ReferenceEvaluator {
             current.push_integrity_alert(alert);
         }
         Ok(current)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ClaimState {
+    Pending,
+    Excluded,
+    Invalid,
+    Unsupported,
+    Canonical,
+}
+
+fn reduce_change_dispositions(view: &DocumentEvidenceView<'_>, batch: &mut BatchEvaluationReport) {
+    let corpus = view.corpus();
+    let final_accepted = batch.accepted_changes.clone();
+    for hash in view.change_hashes() {
+        if final_accepted.contains(&hash) {
+            batch
+                .dispositions
+                .insert(hash, ProtocolDisposition::Accepted);
+            continue;
+        }
+        if batch.dispositions.get(&hash) == Some(&ProtocolDisposition::Accepted) {
+            batch
+                .dispositions
+                .insert(hash, ProtocolDisposition::Excluded);
+            continue;
+        }
+        let existing = batch.dispositions.get(&hash).copied();
+        let states = view
+            .change_claim_event_ids(hash)
+            .filter_map(|event_id| {
+                let claim = corpus.indexes.changes.claims_by_event.get(&event_id)?;
+                let semantic = corpus.indexes.changes.semantic_by_hash.get(&hash)?;
+                Some(match corpus.events.get(&claim.control_id) {
+                    None => ClaimState::Pending,
+                    Some(EventEvidence::VerifiedCarrier {
+                        carrier: VerifiedCarrier::Control(control),
+                        ..
+                    }) if control.coordinate() != view.coordinate() => ClaimState::Invalid,
+                    Some(EventEvidence::VerifiedCarrier {
+                        carrier: VerifiedCarrier::Control(control),
+                        ..
+                    }) => {
+                        let disposition =
+                            batch.control_dispositions.get(&claim.control_id).copied();
+                        let authorized = !control.terminal()
+                            && control.members().iter().any(|member| {
+                                member.actor == semantic.actor
+                                    && member.device == claim.author
+                                    && member.roles.contains(&Role::Write)
+                            });
+                        match disposition {
+                            Some(ProtocolDisposition::Accepted) if authorized => {
+                                ClaimState::Canonical
+                            }
+                            Some(ProtocolDisposition::Pending) => ClaimState::Pending,
+                            Some(ProtocolDisposition::Excluded)
+                                if batch.statefully_valid_controls.contains(&claim.control_id) =>
+                            {
+                                ClaimState::Excluded
+                            }
+                            Some(ProtocolDisposition::UnsupportedRevision) => {
+                                ClaimState::Unsupported
+                            }
+                            Some(
+                                ProtocolDisposition::Invalid
+                                | ProtocolDisposition::Excluded
+                                | ProtocolDisposition::Accepted,
+                            )
+                            | None => ClaimState::Invalid,
+                        }
+                    }
+                    Some(EventEvidence::UnsupportedRevision { .. }) => ClaimState::Unsupported,
+                    Some(EventEvidence::InvalidCarrier { .. })
+                    | Some(EventEvidence::VerifiedCarrier { .. })
+                    | Some(EventEvidence::InvalidEvent { .. })
+                    | Some(EventEvidence::IrrelevantEvent { .. })
+                    | Some(EventEvidence::DuplicateEvent { .. }) => ClaimState::Invalid,
+                })
+            })
+            .collect::<Vec<_>>();
+        let disposition = if existing == Some(ProtocolDisposition::Excluded) {
+            ProtocolDisposition::Excluded
+        } else if states.contains(&ClaimState::Pending) {
+            ProtocolDisposition::Pending
+        } else if states.contains(&ClaimState::Excluded) {
+            ProtocolDisposition::Excluded
+        } else if !states.is_empty() && states.iter().all(|state| *state == ClaimState::Unsupported)
+        {
+            ProtocolDisposition::UnsupportedRevision
+        } else if states.contains(&ClaimState::Canonical) {
+            existing.unwrap_or(ProtocolDisposition::Invalid)
+        } else {
+            ProtocolDisposition::Invalid
+        };
+        batch.dispositions.insert(hash, disposition);
     }
 }
 

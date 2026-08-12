@@ -254,7 +254,9 @@ pub(crate) fn evaluate_batch(
             integrity_alerts.push(alert);
         }
         for change in &control.changes {
-            dispositions.remove(&change.candidate.change_hash);
+            if !selected_base.contains(&change.candidate.change_hash) {
+                dispositions.remove(&change.candidate.change_hash);
+            }
         }
         if budget.charge(WorkCounter::Control, 1).is_err() {
             completion = Completion::BudgetExhausted;
@@ -551,11 +553,19 @@ fn resolve_authoritative_epoch(
     cancellation: &impl CancellationCheck,
 ) -> Result<EpochEvaluationResult, EpochResolutionError> {
     let Some(selected) = control.envelope.clone() else {
-        let epoch_inputs = control.changes.iter().map(|change| EpochCandidate {
-            candidate: change.candidate.clone(),
-            semantically_valid: change.legacy_eligible,
-            canonical_control: !control.frozen,
-        });
+        let epoch_inputs = control
+            .changes
+            .iter()
+            .filter(|change| {
+                !accepted_base
+                    .accepted_closure()
+                    .contains(&change.candidate.change_hash)
+            })
+            .map(|change| EpochCandidate {
+                candidate: change.candidate.clone(),
+                semantically_valid: change.legacy_eligible,
+                canonical_control: !control.frozen,
+            });
         let mut dispositions = resolve_epoch(
             epoch_inputs,
             accepted_base.accepted_closure().clone(),
@@ -564,12 +574,12 @@ fn resolve_authoritative_epoch(
         )
         .map_err(EpochResolutionError::Schedule)?;
         let mut all_candidates = accepted_base.accepted_candidates().clone();
-        all_candidates.extend(
-            control
-                .changes
-                .iter()
-                .map(|change| (change.candidate.change_hash, change.candidate.clone())),
-        );
+        all_candidates.extend(control.changes.iter().filter_map(|change| {
+            (!accepted_base
+                .accepted_closure()
+                .contains(&change.candidate.change_hash))
+            .then_some((change.candidate.change_hash, change.candidate.clone()))
+        }));
         let eligible = all_candidates
             .values()
             .filter(|candidate| {
@@ -600,6 +610,12 @@ fn resolve_authoritative_epoch(
         }
         let mut accepted_candidates = accepted_base.accepted_candidates().clone();
         accepted_candidates.extend(control.changes.iter().filter_map(|change| {
+            if accepted_base
+                .accepted_closure()
+                .contains(&change.candidate.change_hash)
+            {
+                return None;
+            }
             (dispositions.get(&change.candidate.change_hash)
                 == Some(&ProtocolDisposition::Accepted))
             .then_some((change.candidate.change_hash, change.candidate.clone()))
@@ -635,13 +651,20 @@ fn resolve_authoritative_epoch(
                 .map(|raw| (change.candidate.change_hash, raw))
         })
         .collect();
+    let epoch_changes = control
+        .changes
+        .iter()
+        .filter(|change| {
+            !accepted_base
+                .accepted_closure()
+                .contains(&change.candidate.change_hash)
+        })
+        .map(|change| (change.candidate.clone(), change.raw_change.clone()))
+        .collect::<Vec<_>>();
     let input = EpochEvaluationInput::new_with_raw(
         selected,
         accepted_base,
-        control
-            .changes
-            .iter()
-            .map(|change| (change.candidate.clone(), change.raw_change.clone())),
+        epoch_changes,
         raw_changes,
         canonical_ancestry,
     )
@@ -1005,5 +1028,25 @@ mod tests {
             &derived,
             &BTreeSet::from([ChangeHash::from_bytes([9; 32])])
         ));
+    }
+
+    #[test]
+    fn accepted_base_duplicate_is_not_readmitted() {
+        let accepted = change(1, 1, 1);
+        let hash = accepted.candidate.change_hash;
+        let parent = control(1, None, vec![accepted.clone()]);
+        let mut child = control(2, Some(1), vec![accepted]);
+        child.accepted_base = BTreeSet::from([hash]);
+        let report = evaluate_batch(
+            [parent, child],
+            &mut WorkBudget::new(0, 500),
+            &NeverCancelled,
+        );
+        assert_eq!(report.completion, Completion::Complete);
+        assert_eq!(report.accepted_changes, BTreeSet::from([hash]));
+        assert_eq!(
+            report.dispositions.get(&hash),
+            Some(&ProtocolDisposition::Accepted)
+        );
     }
 }

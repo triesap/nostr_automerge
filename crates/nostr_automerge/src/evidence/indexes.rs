@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::carrier::VerifiedCarrier;
 use crate::evidence::event::EventEvidence;
-use crate::{ActorId, ChangeHash, DocumentCoordinate, EventId};
+use crate::{ActorId, ChangeHash, DevicePublicKey, DocumentCoordinate, EventId};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct ControlIndexRecord {
@@ -28,8 +28,30 @@ pub(crate) struct ChangeIndexRecord {
     pub(crate) dependencies: BTreeSet<ChangeHash>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct SemanticChangeRecord {
+    pub(crate) actor: ActorId,
+    pub(crate) sequence: u64,
+    pub(crate) start_op: u64,
+    pub(crate) operation_count: u64,
+    pub(crate) dependencies: BTreeSet<ChangeHash>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct ChangeCarrierClaim {
+    pub(crate) event_id: EventId,
+    pub(crate) coordinate: DocumentCoordinate,
+    pub(crate) change_hash: ChangeHash,
+    pub(crate) control_id: EventId,
+    pub(crate) author: DevicePublicKey,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct ChangeIndexes {
+    pub(crate) semantic_by_hash: BTreeMap<ChangeHash, SemanticChangeRecord>,
+    pub(crate) claims_by_hash: BTreeMap<ChangeHash, BTreeMap<EventId, ChangeCarrierClaim>>,
+    pub(crate) claims_by_event: BTreeMap<EventId, ChangeCarrierClaim>,
+    pub(crate) claims_by_control: BTreeMap<EventId, BTreeMap<ChangeHash, BTreeSet<EventId>>>,
     pub(crate) carriers_by_hash: BTreeMap<ChangeHash, BTreeSet<EventId>>,
     pub(crate) preferred_carrier: BTreeMap<ChangeHash, EventId>,
     pub(crate) hashes_by_control: BTreeMap<EventId, BTreeSet<ChangeHash>>,
@@ -188,6 +210,38 @@ fn derive_pending_controls(indexes: &mut TrustedIndexes) {
 fn index_change(indexes: &mut ChangeIndexes, change: &crate::carrier::change::ChangeCarrier) {
     let event_id = change.event_id();
     let change_hash = change.change_hash();
+    let semantic = SemanticChangeRecord {
+        actor: change.actor(),
+        sequence: change.sequence(),
+        start_op: change.start_op(),
+        operation_count: change.operation_count(),
+        dependencies: change.dependencies().collect(),
+    };
+    indexes
+        .semantic_by_hash
+        .entry(change_hash)
+        .and_modify(|existing| debug_assert_eq!(existing, &semantic))
+        .or_insert(semantic);
+    let claim = ChangeCarrierClaim {
+        event_id,
+        coordinate: change.coordinate(),
+        change_hash,
+        control_id: change.control_id(),
+        author: change.author_device(),
+    };
+    indexes
+        .claims_by_hash
+        .entry(change_hash)
+        .or_default()
+        .insert(event_id, claim.clone());
+    indexes.claims_by_event.insert(event_id, claim);
+    indexes
+        .claims_by_control
+        .entry(change.control_id())
+        .or_default()
+        .entry(change_hash)
+        .or_default()
+        .insert(event_id);
     indexes
         .carriers_by_hash
         .entry(change_hash)

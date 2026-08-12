@@ -336,7 +336,7 @@ still works without support evidence leaking into output.
 
 ## RCLD 42 — Global ChangeHash Carrier Claims
 
-Status: active
+Status: complete
 Steps: `step_685` through `step_698`
 Primary findings: 036, 042
 
@@ -366,7 +366,7 @@ shortcut or static precedence substitutes for final-lineage reduction.
 
 ## RCLD 43 — Prior Dependency Knowledge
 
-Status: pending
+Status: active
 Steps: `step_699` through `step_706`
 Primary finding: 037
 
