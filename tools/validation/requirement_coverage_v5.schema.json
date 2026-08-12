@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/tools/validation/requirement_coverage_v5.schema.json",
+  "title": "Final executed normative requirement evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "requirements_sha256", "applicability_sha256", "fixture_distribution_sha256", "rust_evidence_manifest_sha256", "typescript_overlay_sha256", "requirement_count", "rows"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.requirement_coverage.v5"},
+    "requirements_sha256": {"$ref": "#/$defs/sha256"},
+    "applicability_sha256": {"$ref": "#/$defs/sha256"},
+    "fixture_distribution_sha256": {"$ref": "#/$defs/sha256"},
+    "rust_evidence_manifest_sha256": {"$ref": "#/$defs/sha256"},
+    "typescript_overlay_sha256": {"$ref": "#/$defs/sha256"},
+    "requirement_count": {"const": 96},
+    "rows": {"type": "array", "minItems": 96, "maxItems": 96, "items": {"$ref": "#/$defs/row"}}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "authority": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source", "section", "text_sha256"],
+      "properties": {"source": {"type": "string"}, "section": {"type": "string"}, "text_sha256": {"$ref": "#/$defs/sha256"}}
+    },
+    "rust_proof": {
+      "type": "object", "additionalProperties": false,
+      "required": ["language", "implementation_identity", "implementation_commit", "implementation_path", "evidence_kind", "evidence_id", "execution_command", "runner_job", "result_artifact", "result_sha256", "result"],
+      "properties": {
+        "language": {"const": "rust"}, "implementation_identity": {"const": "triesap/nostr_automerge"},
+        "implementation_commit": {"$ref": "#/$defs/commit"}, "implementation_path": {"type": "string", "minLength": 1},
+        "evidence_kind": {"enum": ["cargo_test", "signed_fixture", "policy"]}, "evidence_id": {"type": "string", "minLength": 1},
+        "execution_command": {"type": "string"}, "runner_job": {"type": "string"}, "result_artifact": {"type": "string"},
+        "result_sha256": {"$ref": "#/$defs/sha256"}, "result": {"const": "pass"}
+      }
+    },
+    "typescript_overlay": {
+      "type": "object", "additionalProperties": false,
+      "required": ["language", "implementation_identity", "implementation_commit", "attestation_path", "attestation_sha256", "dependency_lock_sha256", "fixture_distribution_sha256", "profiles", "fixture_ids", "scope", "result"],
+      "properties": {
+        "language": {"const": "typescript"}, "implementation_identity": {"const": "triesap/nostr_automerge_typescript"},
+        "implementation_commit": {"$ref": "#/$defs/commit"}, "attestation_path": {"const": "reports/interop_typescript_v4.json"},
+        "attestation_sha256": {"$ref": "#/$defs/sha256"}, "dependency_lock_sha256": {"$ref": "#/$defs/sha256"},
+        "fixture_distribution_sha256": {"$ref": "#/$defs/sha256"},
+        "profiles": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["checkpoint", "core", "malformed", "projection", "property"]}},
+        "fixture_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "scope": {"enum": ["direct_signed_fixtures", "complete_signed_profiles"]}, "result": {"const": "pass"}
+      }
+    },
+    "row": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "applicability", "authority", "status"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^NCRDT-[A-Z0-9-]+$"},
+        "applicability": {"enum": ["rust-and-typescript", "rust-only", "out-of-core", "explicitly-deferred"]},
+        "authority": {"$ref": "#/$defs/authority"}, "status": {"enum": ["pass", "not-applicable"]},
+        "rust_proof": {"$ref": "#/$defs/rust_proof"}, "typescript_overlay": {"$ref": "#/$defs/typescript_overlay"},
+        "rationale": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}
