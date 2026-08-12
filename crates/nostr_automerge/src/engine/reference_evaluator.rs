@@ -125,7 +125,6 @@ impl ReferenceEvaluator {
         let mut control_disposition_map = preliminary_control_dispositions;
         control_disposition_map.extend(core::mem::take(&mut batch.control_dispositions));
         batch.control_dispositions = control_disposition_map;
-        reduce_change_dispositions(&view, &mut batch);
         if batch.completion != Completion::Complete {
             return reserved_batch_report(
                 self.revision,
@@ -136,6 +135,7 @@ impl ReferenceEvaluator {
                 &mut finalization,
             );
         }
+        reduce_change_dispositions(&view, &mut batch);
         if let Err(completion) =
             charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)
         {
