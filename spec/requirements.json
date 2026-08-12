@@ -1,7 +1,7 @@
 {
-  "schema": "nostr_automerge.requirements.v1",
+  "schema": "nostr_automerge.requirements.v2",
   "project": "nostr_automerge_v1_spec",
-  "requirement_count": 87,
+  "requirement_count": 96,
   "requirements": [
     {
       "id": "NCRDT-SCOPE-001",
@@ -523,6 +523,60 @@
       "id": "NCRDT-TS-001",
       "section": "Independent implementation",
       "text": "The TypeScript implementation MUST be independently written and MUST NOT import or call the Rust implementation.",
+      "source": "implementation/TYPESCRIPT_INTEROP_PLAN.md"
+    },
+    {
+      "id": "NCRDT-DUP-002",
+      "section": "Duplicate carriers",
+      "text": "Document state and final change disposition MUST be keyed by ChangeHash across every carrier attributable to the evaluated coordinate. One dynamically valid carrier is sufficient. Invalid, pending, unsupported, or noncanonical carrier claims MUST NOT poison a hash accepted through a valid claim, and a hash already present in the selected accepted base MUST NOT be re-admitted as a new epoch candidate.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-DISPOSITION-002",
+      "section": "Protocol dispositions",
+      "text": "Every validated change carrier attributable to the evaluated coordinate MUST produce a represented ChangeHash outcome. A missing or pending referenced control produces pending; a wrong-kind, wrong-coordinate, statically invalid, dynamically invalid, or unauthorized referenced control produces invalid; and an otherwise-valid claim on a statefully valid noncanonical control produces excluded.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-EPOCH-001",
+      "section": "Causal epoch boundary",
+      "text": "A current-epoch candidate that depends on a known earlier-epoch change outside the referenced control's accepted base closure is invalid. Only a dependency whose required evidence is genuinely absent or unresolved may keep the candidate pending.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-SCOPE-002",
+      "section": "Deterministic state construction",
+      "text": "Evaluation for one document coordinate MUST derive canonical controls, change and event dispositions, digests, checkpoint results, evidence output, and local work accounting only from evidence attributable to that coordinate, except that explicitly referenced predecessor or successor lifecycle evidence MAY be read as non-reportable support. Adding unrelated-document evidence MUST NOT change the target report or completion.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-RESOURCE-002",
+      "section": "Resource limits and interruption",
+      "text": "Every traversal, allocation, canonical-vector construction, and digest encoding whose cost depends on retained evidence, including interruption-report finalization after budget exhaustion or cancellation, MUST be covered by a deterministic work budget reservation or a sealed constant bound. No unreserved evidence-proportional work may begin after local execution has stopped.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-MANIFEST-003",
+      "section": "Document manifest: kind 31624",
+      "text": "Before full manifest validation, a validly signed kind-31624 event is attributable to a document coordinate for replacement selection when all syntactically valid d-tag document-id values collapse to exactly one distinct value and at least one such value exists. The event then participates in NIP-01 replacement ordering, but full validation still rejects missing, repeated, malformed, or extra-element d tags and no older manifest is used. An event with zero or multiple distinct valid document-id values is invalid and unattributable.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-CONF-005",
+      "section": "Conformance",
+      "text": "The canonical signed conformance distribution MUST include adversarial cases for change-before-control, pending and invalid referenced controls, cross-control duplicate carriers, accepted-base duplicate carriers, invalid-claim non-poisoning, pruned earlier-epoch dependencies, unrelated-coordinate isolation, malformed manifest replacement attribution, and exact interruption-report work boundaries.",
+      "source": "spec/CONFORMANCE.md"
+    },
+    {
+      "id": "NCRDT-EVIDENCE-002",
+      "section": "Release evidence",
+      "text": "Public final assurance MUST bind detailed test, coverage, mutation, resource, package, supply-chain, and interoperability artifacts to the exact final Rust implementation commit, opaque private TypeScript implementation commit, dependency locks, authority hashes, and signed fixture distribution. Older artifacts MUST be machine-marked as superseded.",
+      "source": "spec/CONFORMANCE.md"
+    },
+    {
+      "id": "NCRDT-TS-002",
+      "section": "Independent implementation",
+      "text": "The independent private TypeScript implementation MUST implement NCRDT-DUP-002, NCRDT-DISPOSITION-002, NCRDT-EPOCH-001, NCRDT-SCOPE-002, NCRDT-RESOURCE-002, NCRDT-MANIFEST-003, and NCRDT-CONF-005 without calling the Rust implementation, and MUST produce byte-identical canonical reports for the expanded signed distribution.",
       "source": "implementation/TYPESCRIPT_INTEROP_PLAN.md"
     }
   ]

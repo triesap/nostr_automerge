@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": ["schema", "project", "requirement_count", "requirements"],
   "properties": {
-    "schema": {"const": "nostr_automerge.requirements.v1"},
+    "schema": {"const": "nostr_automerge.requirements.v2"},
     "project": {"const": "nostr_automerge_v1_spec"},
     "requirement_count": {"type": "integer", "minimum": 1},
     "requirements": {

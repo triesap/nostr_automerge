@@ -169,3 +169,69 @@ protocol limits requires:
 - Rust update;
 - TypeScript update;
 - differential and migration analysis.
+
+## Remediation v4 execution rules
+
+These implementation-owned rules are normative for this repository while the
+external NIP prose is reconciled separately.
+
+### Coordinate scope
+
+Evaluation is performed for exactly one document coordinate. Canonical
+controls, change and event dispositions, digests, checkpoint results, public
+evidence, and local work accounting derive only from attributable target
+evidence. Explicitly referenced predecessor or successor lifecycle evidence may
+be read and charged as non-reportable support. Unattributable invalid raw bytes
+and unrelated documents do not affect the target report or completion.
+
+### Semantic changes and carrier claims
+
+`ChangeHash` is the semantic identity across every target carrier. Each signed
+carrier remains a distinct claim naming an event, control, author, and
+coordinate. All carriers for one hash must expose identical canonical Change
+Chunk bytes and semantic metadata; control and event identifiers are claim
+metadata rather than semantic identity.
+
+A claim naming a missing or pending control is pending. A claim naming a
+wrong-kind, wrong-coordinate, statically invalid, dynamically invalid, or
+unauthorized control is invalid. An otherwise-valid claim naming a statefully
+valid noncanonical control is excluded. A canonical eligible claim participates
+in epoch evaluation. One dynamically valid claim is sufficient, and other
+invalid, pending, unsupported, or noncanonical claims cannot poison it.
+
+A hash already in the selected accepted base is not a current-epoch candidate.
+Final hash disposition is reduced against the final canonical lineage: final
+accepted closure is accepted; state accepted at a canonical ancestor but pruned
+from the final lineage is excluded; otherwise unresolved claims are pending,
+noncanonical valid claims are excluded, all-unsupported claims are unsupported,
+and remaining conclusive failures are invalid. Every attributable validated
+change carrier yields exactly one represented hash outcome.
+
+### Prior epoch knowledge
+
+Epoch evaluation distinguishes selected accepted base, known canonical-ancestor
+state outside that base, known invalid earlier state, same-epoch candidates,
+and genuinely absent evidence. A dependency on known earlier state outside the
+fixed signed base or known invalid earlier state is invalid. Truly absent or
+unresolved evidence remains pending and may promote after delivery. Same-epoch
+equivocation and descendants remain excluded through quarantine rather than
+being recategorized as invalid dependencies.
+
+### Manifest prevalidation attribution
+
+Before full validation of a validly signed kind-31624 event, collect every
+syntactically valid document-ID value from its `d` tags. If the set contains
+exactly one distinct value, the event is attributable to that coordinate for
+replacement ordering. Full validation still rejects missing, repeated,
+malformed, or extra-element tags, and a selected invalid event suppresses older
+fallback. Zero or multiple distinct valid values makes the event invalid and
+unattributable.
+
+### Reserved report finalization
+
+Every evidence-proportional traversal, allocation, vector construction, and
+digest encoding required after budget exhaustion or cancellation is planned
+and atomically reserved before canonical state work. A failed reservation
+returns a constant-size interrupted report before state evaluation and without
+fabricated canonical progress. After a stop, optional work ceases and only
+bounded mandatory finalization may consume the reservation.

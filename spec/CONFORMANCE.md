@@ -115,3 +115,13 @@ TypeScript:
 - production-qualified.
 
 These claims are distinct.
+
+## Remediation v4 signed coverage
+
+The canonical signed distribution additionally covers change-before-control,
+pending and invalid referenced controls, cross-control and accepted-base
+duplicate carriers, invalid-claim non-poisoning, pruned prior dependencies,
+unrelated-coordinate isolation, malformed manifest prevalidation attribution,
+and exact interrupted-finalization boundaries. Complete scenarios run under all
+required delivery permutations through the public engine. The independent
+TypeScript implementation must produce byte-identical canonical reports.

@@ -286,7 +286,7 @@ changed.
 
 ## RCLD 40 — Companion Authority And Registry V2
 
-Status: active
+Status: complete
 Steps: `step_668` through `step_675`
 Primary findings: 040–042
 
@@ -311,7 +311,7 @@ remains held because the NIP itself is unchanged.
 
 ## RCLD 41 — Coordinate-Scoped Evidence
 
-Status: pending
+Status: active
 Steps: `step_676` through `step_684`
 Primary finding: 038
 

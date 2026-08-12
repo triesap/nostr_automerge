@@ -103,6 +103,22 @@ def anchors(value: dict) -> None:
             raise AssertionError(f"missing source symbol: {row['path']}")
 
 
+def authority(value: dict) -> None:
+    if value.get("schema") != "nostr_automerge.remediation_v4_authority.v1":
+        raise AssertionError("unexpected authority schema")
+    if value.get("status") != "local_authority_pass_external_nip_hold":
+        raise AssertionError("authority status overclaims")
+    registry = load("spec/requirements.json")
+    rows = registry.get("requirements", [])
+    if value.get("requirement_count") != 96 or len(rows) != 96:
+        raise AssertionError("v2 registry count is inconsistent")
+    appended = [row.get("id") for row in rows[87:]]
+    if appended != value.get("appended_requirement_ids"):
+        raise AssertionError("v2 registry append order is inconsistent")
+    if value.get("holds") != ["external_nip_reconciliation"]:
+        raise AssertionError("external NIP hold is missing")
+
+
 def self_test() -> None:
     value = load("spec/remediation_findings_v4.json")
     mutated = copy.deepcopy(value)
@@ -123,6 +139,9 @@ def main() -> int:
     ledger()
     adrs()
     anchors(load("reports/remediation_v4_source_manifest.json"))
+    authority_path = ROOT / "reports/remediation_v4_authority.json"
+    if authority_path.exists():
+        authority(load("reports/remediation_v4_authority.json"))
     if args.self_test:
         self_test()
     print("PASS: remediation v4 authority")

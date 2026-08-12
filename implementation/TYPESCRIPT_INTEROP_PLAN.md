@@ -73,3 +73,12 @@ No implementation-specific exception is acceptable.
 - checkpoints;
 - malformed/property permutations.
 - projection-v2 vectors and ambiguous-path negatives.
+
+## Remediation v4 parity
+
+The independent implementation must separately implement coordinate-scoped
+evidence, global semantic changes with event-level carrier claims, final-lineage
+hash reduction, explicit prior dependency knowledge, malformed manifest
+prevalidation attribution, and reserved interrupted-report finalization. It may
+not call or copy the Rust implementation. Public evidence remains limited to
+opaque commit-, lock-, authority-, distribution-, and report-hash attestations.

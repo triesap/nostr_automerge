@@ -49,7 +49,13 @@
     {
       "path": "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
       "source_sha256": "f8a2e53c66fff9b61cab1b1c22074dd513e6525fea4c298b73a91e905c097de7",
-      "target_sha256": "e99322cddb749f53bc6d6d98b42f32922f928c8595138d2296984b1b252bc015",
+      "target_sha256": "f9beba2f332a5de18e37f5f120eea9f22a3f9a5e9760802c1177f270c7f7803a",
+      "adapted": true
+    },
+    {
+      "path": "spec/CONFORMANCE.md",
+      "source_sha256": "805e0e52d6e7018160664f00d9b84ff92e38ab73ab772d764b9d4c9d49b754b7",
+      "target_sha256": "7d0773ef3a597566d7cccfaeb7ac01cf9ebec0e54e8da9e530e7777d152cb01e",
       "adapted": true
     },
     {
@@ -61,7 +67,7 @@
     {
       "path": "spec/requirements.json",
       "source_sha256": "19e09e9862fd3a22051a43eec6329a9015e8ea24628fd93d83fca2e2376849c3",
-      "target_sha256": "ef9fe4dd87723619f45444c7fb95a7b83e5af80604f272541a26737f7d3033f8",
+      "target_sha256": "abbf06db08fecb2b3e46e96caf05c2281cf5cdab16d833c776871885c24d27b3",
       "adapted": true
     },
     {
@@ -97,7 +103,7 @@
     {
       "path": "implementation/TYPESCRIPT_INTEROP_PLAN.md",
       "source_sha256": "ad65330fe9ec4d94c157595f881d510e05ae511e55451cc64b2ac7efd164b6cf",
-      "target_sha256": "c6c68e99775ec275fe572bc4b4e85c870aaac37432d2e5904d8cee56310ebcc0",
+      "target_sha256": "be2149542fdc1259db3fd0976ee2c9d72b0b97f2b4a720ec0f47cc90380f1b05",
       "adapted": true
     },
     {
