@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::carrier::change::ChangeCarrierError;
 use crate::carrier::classify::classify;
@@ -463,6 +463,24 @@ impl EvidenceCorpus {
         selected_manifests(&self.events).remove(&coordinate)
     }
 
+    pub(crate) fn selected_manifest_selection_in(
+        &self,
+        coordinate: crate::DocumentCoordinate,
+        event_ids: &std::collections::BTreeSet<EventId>,
+    ) -> Option<ManifestSelection> {
+        selected_manifests_in(&self.events, event_ids).remove(&coordinate)
+    }
+
+    pub(crate) fn record_for_event(&self, event_id: &EventId) -> Option<EvidenceRecord> {
+        self.events
+            .get_key_value(event_id)
+            .map(|entry| event_record(entry, &self.indexes))
+    }
+
+    pub(crate) fn record_for_duplicate(&self, evidence: &EventEvidence) -> Option<EvidenceRecord> {
+        duplicate_record(evidence)
+    }
+
     /// Returns true when no evidence of any class was retained.
     #[must_use]
     pub fn is_empty(&self) -> bool {
@@ -786,12 +804,32 @@ fn selected_manifests(
     selected
 }
 
-fn manifest_coordinate(event: &VerifiedNip01Event) -> Option<crate::DocumentCoordinate> {
+fn selected_manifests_in(
+    events: &BTreeMap<EventId, EventEvidence>,
+    event_ids: &std::collections::BTreeSet<EventId>,
+) -> BTreeMap<crate::DocumentCoordinate, ManifestSelection> {
+    let events = events
+        .iter()
+        .filter(|(event_id, _)| event_ids.contains(event_id))
+        .map(|(event_id, evidence)| (*event_id, evidence.clone()))
+        .collect();
+    selected_manifests(&events)
+}
+
+pub(crate) fn manifest_coordinate(event: &VerifiedNip01Event) -> Option<crate::DocumentCoordinate> {
     if event.kind() != 31_624 {
         return None;
     }
-    let tag = crate::wire::tags::required_tag(event.tags(), "d", 2).ok()?;
-    let document_id = tag.get(1)?.parse().ok()?;
+    let document_ids = event
+        .tags()
+        .iter()
+        .filter(|tag| tag.first().is_some_and(|value| value == "d"))
+        .filter_map(|tag| tag.get(1)?.parse().ok())
+        .collect::<BTreeSet<_>>();
+    if document_ids.len() != 1 {
+        return None;
+    }
+    let document_id = document_ids.into_iter().next()?;
     Some(crate::DocumentCoordinate::new(
         crate::ControllerPublicKey::from_bytes(*event.author_bytes()),
         document_id,

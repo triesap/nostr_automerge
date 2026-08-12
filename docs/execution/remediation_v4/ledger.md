@@ -1,16 +1,16 @@
 # Draft V1 Remediation V4 Execution Ledger
 
 Status: active — `implementation_remediation_required`
-Active RCLD: 41
-Active checkpoint: `step_676`
+Active RCLD: 42
+Active checkpoint: `step_685`
 Range: `step_660` through `step_737`
 
 | RCLD | Steps | Status | Scope |
 | --- | --- | --- | --- |
 | 39 | `step_660`–`step_667` | complete | Authority and decisions |
 | 40 | `step_668`–`step_675` | complete | Companion authority and registry v2 |
-| 41 | `step_676`–`step_684` | active | Coordinate-scoped evidence |
-| 42 | `step_685`–`step_698` | pending | Global ChangeHash carrier claims |
+| 41 | `step_676`–`step_684` | complete | Coordinate-scoped evidence |
+| 42 | `step_685`–`step_698` | active | Global ChangeHash carrier claims |
 | 43 | `step_699`–`step_706` | pending | Prior dependency knowledge |
 | 44 | `step_707`–`step_715` | pending | Bounded interruption finalization |
 | 45 | `step_716`–`step_727` | pending | Signed conformance and private TypeScript parity |
@@ -23,6 +23,10 @@ Range: `step_660` through `step_737`
 - `step_668`–`step_675`: appended nine requirements without disturbing the
   original 87, encoded complete companion authority, preserved the read-only
   NIP snapshot, and marked dependent evidence stale pending regeneration.
+- `step_676`–`step_684`: introduced an immutable coordinate view, separated
+  reportable and lifecycle-support evidence, scoped ingress and evaluator
+  traversal, implemented manifest prevalidation attribution, and proved that
+  unrelated signed, duplicate, and invalid evidence is report and budget inert.
 
 ## Scope adaptations
 

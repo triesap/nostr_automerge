@@ -12,6 +12,7 @@ use crate::control::genesis::classify_genesis;
 use crate::control::reorganization::{ControlChainSummary, detect_reorganization};
 use crate::control::validate::ControlEnvelope;
 use crate::evidence::corpus_builder::ManifestSelectionState;
+use crate::evidence::document_view::DocumentEvidenceView;
 use crate::evidence::event::EventEvidence;
 use crate::graph::change_candidate::{CandidateCarrier, ChangeCandidate};
 use crate::reference::epoch_engine::AcceptedAtControl;
@@ -68,11 +69,12 @@ impl ReferenceEvaluator {
         budget: &mut WorkBudget,
         cancellation: &impl CancellationCheck,
     ) -> Result<EvaluationReport, EvaluationError> {
-        if let Err(completion) = charge_ingress(corpus, budget, cancellation) {
+        let view = DocumentEvidenceView::derive(corpus, coordinate);
+        if let Err(completion) = charge_ingress(&view, budget, cancellation) {
             return compact_interrupted_report(self.revision, coordinate, completion);
         }
         let (controls, preliminary_control_dispositions) =
-            match prepare_controls(corpus, coordinate, budget, cancellation) {
+            match prepare_controls(&view, budget, cancellation) {
                 Ok(prepared) => prepared,
                 Err(completion) => {
                     return compact_interrupted_report(self.revision, coordinate, completion);
@@ -121,8 +123,7 @@ impl ReferenceEvaluator {
             );
         }
         let manifest = resolve_selected_manifest(
-            corpus,
-            coordinate,
+            &view,
             &batch.control_dispositions,
             &batch.statefully_valid_controls,
         );
@@ -153,8 +154,7 @@ impl ReferenceEvaluator {
             })
             .collect::<Vec<_>>();
         let checkpoint_evaluation = verify_checkpoints(
-            corpus,
-            coordinate,
+            &view,
             &batch.canonical_controls,
             &batch.accepted_at_control,
             budget,
@@ -185,7 +185,7 @@ impl ReferenceEvaluator {
         disposition_records.extend(dispositions.iter().map(|(hash, disposition)| {
             DispositionRecord::new(ProtocolItemIdentifier::from(*hash), *disposition, None)
         }));
-        let event_record_work = u64::try_from(corpus.evaluation_event_count()).unwrap_or(u64::MAX);
+        let event_record_work = u64::try_from(view.evaluation_event_count()).unwrap_or(u64::MAX);
         if let Err(completion) = charge_evaluation_work(
             budget,
             cancellation,
@@ -195,7 +195,7 @@ impl ReferenceEvaluator {
             interrupt_batch(&mut batch, completion);
             return compact_batch_report(self.revision, coordinate, batch, manifest, checkpoints);
         }
-        disposition_records.extend(event_disposition_records(corpus, &manifest, &checkpoints));
+        disposition_records.extend(event_disposition_records(&view, &manifest, &checkpoints));
         let accepted_changes = disposition_hashes(&dispositions, ProtocolDisposition::Accepted);
         let heads = batch.heads.iter().copied().collect::<Vec<_>>();
         let pending_changes = disposition_hashes(&dispositions, ProtocolDisposition::Pending);
@@ -260,14 +260,14 @@ impl ReferenceEvaluator {
                 return Err(EvaluationError::Projection);
             }
         };
-        let evidence_work = u64::try_from(corpus.evaluation_event_count()).unwrap_or(u64::MAX);
+        let evidence_work = u64::try_from(view.evaluation_event_count()).unwrap_or(u64::MAX);
         if let Err(completion) =
             charge_evaluation_work(budget, cancellation, WorkCounter::Event, evidence_work)
         {
             interrupt_batch(&mut batch, completion);
             return compact_batch_report(self.revision, coordinate, batch, manifest, checkpoints);
         }
-        let evidence = corpus.records().collect();
+        let evidence = view.records().collect();
         EvaluationReport::from_parts(EvaluationReportParts {
             coordinate,
             canonical_controls: batch.canonical_controls,
@@ -325,12 +325,13 @@ impl ReferenceEvaluator {
 }
 
 fn resolve_selected_manifest(
-    corpus: &EvidenceCorpus,
-    coordinate: DocumentCoordinate,
+    view: &DocumentEvidenceView<'_>,
     control_dispositions: &std::collections::BTreeMap<crate::EventId, ProtocolDisposition>,
     statefully_valid_controls: &std::collections::BTreeSet<crate::EventId>,
 ) -> ResolvedManifestAvailability {
-    let Some(selection) = corpus.selected_manifest_selection(coordinate) else {
+    let corpus = view.corpus();
+    let coordinate = view.coordinate();
+    let Some(selection) = view.selected_manifest() else {
         return ResolvedManifestAvailability::Missing;
     };
     let hints = match selection.state {
@@ -421,22 +422,26 @@ fn project_document(
 }
 
 fn event_disposition_records(
-    corpus: &EvidenceCorpus,
+    view: &DocumentEvidenceView<'_>,
     manifest: &ResolvedManifestAvailability,
     checkpoints: &[CheckpointVerificationResult],
 ) -> Vec<DispositionRecord> {
-    let represented_events = corpus
-        .control_ids()
-        .chain(
-            corpus
-                .indexes
-                .changes
-                .carriers_by_hash
-                .values()
-                .flat_map(|event_ids| event_ids.iter().copied()),
-        )
+    let corpus = view.corpus();
+    let represented_events = view
+        .reportable_event_ids()
+        .iter()
+        .filter(|event_id| {
+            matches!(
+                corpus.events.get(event_id),
+                Some(EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::Control(_) | VerifiedCarrier::Change(_),
+                    ..
+                })
+            )
+        })
+        .copied()
         .collect::<std::collections::BTreeSet<_>>();
-    let mut records = corpus
+    let mut records = view
         .records()
         .filter_map(|record| {
             let EvidenceIdentifier::Event(event_id) = record.identifier() else {
@@ -467,7 +472,10 @@ fn event_disposition_records(
         })
         .collect::<std::collections::BTreeMap<_, _>>();
 
-    for evidence in corpus.events.values() {
+    for event_id in view.reportable_event_ids() {
+        let Some(evidence) = corpus.events.get(event_id) else {
+            continue;
+        };
         let EventEvidence::VerifiedCarrier { carrier, .. } = evidence else {
             continue;
         };
@@ -642,13 +650,14 @@ struct CheckpointEvaluation {
 }
 
 fn verify_checkpoints(
-    corpus: &EvidenceCorpus,
-    coordinate: DocumentCoordinate,
+    view: &DocumentEvidenceView<'_>,
     canonical_controls: &[crate::EventId],
     accepted_at_control: &std::collections::BTreeMap<crate::EventId, AcceptedAtControl>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> CheckpointEvaluation {
+    let corpus = view.corpus();
+    let coordinate = view.coordinate();
     let prepared = (|| {
         charge_checkpoint_work(
             budget,
@@ -656,8 +665,7 @@ fn verify_checkpoints(
             u64::try_from(canonical_controls.len()).unwrap_or(u64::MAX),
         )?;
         let canonical_set = canonical_controls.iter().copied().collect();
-        let authorizations =
-            checkpoint_authorizations(corpus, coordinate, &canonical_set, budget, cancellation)?;
+        let authorizations = checkpoint_authorizations(view, &canonical_set, budget, cancellation)?;
         let chunk_sets = checkpoint_chunk_sets(corpus, coordinate, budget, cancellation)?;
         let carrier_coverage = checkpoint_carrier_coverage(
             corpus,
@@ -1092,15 +1100,22 @@ fn checkpoint_chunk_sets(
 }
 
 fn checkpoint_authorizations(
-    corpus: &EvidenceCorpus,
-    coordinate: DocumentCoordinate,
+    view: &DocumentEvidenceView<'_>,
     canonical_controls: &std::collections::BTreeSet<crate::EventId>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<std::collections::BTreeMap<crate::EventId, DescriptorAuthorization>, CheckpointWorkStop>
 {
+    let corpus = view.corpus();
+    let coordinate = view.coordinate();
     let mut controls = std::collections::BTreeMap::new();
-    for control_id in corpus.indexes.controls.controls_by_id.keys() {
+    for control_id in corpus
+        .indexes
+        .controls
+        .controls_by_id
+        .keys()
+        .filter(|event_id| view.contains_input(event_id))
+    {
         charge_checkpoint_work(budget, cancellation, 1)?;
         if let Some(EventEvidence::VerifiedCarrier {
             carrier: VerifiedCarrier::Control(control),
@@ -1167,13 +1182,13 @@ fn charge_checkpoint_work(
 }
 
 fn charge_ingress(
-    corpus: &EvidenceCorpus,
+    view: &DocumentEvidenceView<'_>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<(), Completion> {
-    let event_count = u64::try_from(corpus.evaluation_event_count()).unwrap_or(u64::MAX);
-    let carrier_count = u64::try_from(corpus.carrier_evidence_count()).unwrap_or(u64::MAX);
-    let decode_bytes = corpus.decode_work_bytes().unwrap_or(u64::MAX);
+    let event_count = u64::try_from(view.evaluation_event_count()).unwrap_or(u64::MAX);
+    let carrier_count = u64::try_from(view.carrier_evidence_count()).unwrap_or(u64::MAX);
+    let decode_bytes = view.decode_work_bytes().unwrap_or(u64::MAX);
     for (counter, amount) in [
         (WorkCounter::Event, event_count),
         (WorkCounter::Carrier, carrier_count),
@@ -1311,8 +1326,7 @@ fn interrupt_batch(batch: &mut BatchEvaluationReport, completion: Completion) {
 }
 
 fn prepare_controls(
-    corpus: &EvidenceCorpus,
-    coordinate: DocumentCoordinate,
+    view: &DocumentEvidenceView<'_>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<
@@ -1322,10 +1336,18 @@ fn prepare_controls(
     ),
     Completion,
 > {
-    let ancestry_index = build_control_ancestry_index(corpus, budget, cancellation)?;
+    let corpus = view.corpus();
+    let coordinate = view.coordinate();
+    let ancestry_index = build_control_ancestry_index(view, budget, cancellation)?;
     let mut dispositions = std::collections::BTreeMap::new();
     let mut controls = Vec::new();
-    for control_id in corpus.indexes.controls.controls_by_id.keys() {
+    for control_id in corpus
+        .indexes
+        .controls
+        .controls_by_id
+        .keys()
+        .filter(|event_id| view.contains_reportable(event_id))
+    {
         charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
         let Some(EventEvidence::VerifiedCarrier {
             carrier: VerifiedCarrier::Control(control),
@@ -1405,13 +1427,21 @@ fn device_ancestry_is_valid(
 }
 
 fn build_control_ancestry_index(
-    corpus: &EvidenceCorpus,
+    view: &DocumentEvidenceView<'_>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<std::collections::BTreeMap<crate::EventId, Option<Vec<ControlEnvelope>>>, Completion> {
+    let corpus = view.corpus();
     let mut index =
         std::collections::BTreeMap::<crate::EventId, Option<Vec<ControlEnvelope>>>::new();
-    for root in corpus.indexes.controls.controls_by_id.keys().copied() {
+    for root in corpus
+        .indexes
+        .controls
+        .controls_by_id
+        .keys()
+        .filter(|event_id| view.contains_reportable(event_id))
+        .copied()
+    {
         if index.contains_key(&root) {
             continue;
         }
@@ -1421,6 +1451,10 @@ fn build_control_ancestry_index(
         let mut base = Vec::new();
         let mut valid = true;
         while let Some(event_id) = current {
+            if !view.contains_input(&event_id) {
+                valid = false;
+                break;
+            }
             if let Some(cached) = index.get(&event_id) {
                 match cached {
                     Some(ancestry) => {

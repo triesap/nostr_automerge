@@ -4491,6 +4491,96 @@ struct SignedEngineScenario {
     snapshot: Vec<u8>,
 }
 
+#[test]
+#[allow(clippy::expect_used)]
+fn unrelated_coordinate_evidence_is_report_and_budget_inert() {
+    let target = signed_engine_scenario();
+    let unrelated = TestSigner::from_byte(122);
+    let unrelated_document = "d1".repeat(32);
+    let unrelated_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{unrelated_document}",
+        unrelated.public_key().to_hex()
+    )
+    .parse()
+    .expect("unrelated coordinate");
+    assert_ne!(target.coordinate, unrelated_coordinate);
+    let unrelated_manifest = unrelated.sign(
+        &UnsignedEventDraft::new(
+            9,
+            31_624,
+            vec![vec!["d".to_owned(), unrelated_document]],
+            format!(
+                r#"{{"application":null,"checkpoint":null,"control":"{}","description":null,"format":"automerge-change-v1","name":null,"relays":[],"status":"active","successor":null,"text_encoding":"utf16","v":2}}"#,
+                "d2".repeat(32)
+            ),
+        )
+        .expect("unrelated manifest")
+        .prepare(unrelated.public_key())
+        .expect("unrelated preimage"),
+    );
+    let evaluate = |include_unrelated: bool| {
+        let mut builder = CorpusBuilder::new();
+        assert!(matches!(
+            builder.ingest(target.control.clone()),
+            IngestOutcome::Accepted { .. }
+        ));
+        assert!(matches!(
+            builder.ingest(target.change.clone()),
+            IngestOutcome::Accepted { .. }
+        ));
+        if include_unrelated {
+            assert!(matches!(
+                builder.ingest(unrelated_manifest.clone()),
+                IngestOutcome::UnsupportedRevision { .. }
+            ));
+            assert!(matches!(
+                builder.ingest(unrelated_manifest.clone()),
+                IngestOutcome::Duplicate { .. }
+            ));
+            assert!(matches!(
+                builder.ingest_bytes(b"{}"),
+                IngestOutcome::Invalid { .. }
+            ));
+        }
+        let corpus = builder.finish();
+        if include_unrelated {
+            assert!(matches!(
+                corpus.selected_manifest(target.coordinate),
+                nostr_automerge::ManifestAvailability::Missing
+            ));
+            assert!(matches!(
+                corpus.selected_manifest(unrelated_coordinate),
+                nostr_automerge::ManifestAvailability::Unavailable { .. }
+            ));
+        }
+        let mut budget = WorkBudget::new(10_000_000, 10_000_000);
+        let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+            &corpus,
+            target.coordinate,
+            &mut budget,
+            &NeverCancelled,
+        );
+        (report, budget.consumed())
+    };
+    let (target_only, target_work) = evaluate(false);
+    let (with_unrelated, unrelated_work) = evaluate(true);
+    assert_eq!(target_only.completion(), with_unrelated.completion());
+    assert_eq!(
+        target_only.history_digest(),
+        with_unrelated.history_digest()
+    );
+    assert_eq!(
+        target_only.disposition_records(),
+        with_unrelated.disposition_records()
+    );
+    assert_eq!(
+        target_only.dispositions_digest(),
+        with_unrelated.dispositions_digest()
+    );
+    assert_eq!(target_only.evidence(), with_unrelated.evidence());
+    assert_eq!(target_work, unrelated_work);
+}
+
 #[allow(clippy::expect_used)]
 fn signed_engine_scenario() -> SignedEngineScenario {
     signed_engine_scenario_with_change_tags(Vec::new())

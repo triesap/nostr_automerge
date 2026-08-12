@@ -311,7 +311,7 @@ remains held because the NIP itself is unchanged.
 
 ## RCLD 41 — Coordinate-Scoped Evidence
 
-Status: active
+Status: complete
 Steps: `step_676` through `step_684`
 Primary finding: 038
 
@@ -336,7 +336,7 @@ still works without support evidence leaking into output.
 
 ## RCLD 42 — Global ChangeHash Carrier Claims
 
-Status: pending
+Status: active
 Steps: `step_685` through `step_698`
 Primary findings: 036, 042
 
