@@ -1,8 +1,8 @@
 # Draft V1 Remediation V4 Execution Ledger
 
 Status: active — `implementation_remediation_required`
-Active RCLD: 43
-Active checkpoint: `step_699`
+Active RCLD: 44
+Active checkpoint: `step_707`
 Range: `step_660` through `step_737`
 
 | RCLD | Steps | Status | Scope |
@@ -11,8 +11,8 @@ Range: `step_660` through `step_737`
 | 40 | `step_668`–`step_675` | complete | Companion authority and registry v2 |
 | 41 | `step_676`–`step_684` | complete | Coordinate-scoped evidence |
 | 42 | `step_685`–`step_698` | complete | Global ChangeHash carrier claims |
-| 43 | `step_699`–`step_706` | active | Prior dependency knowledge |
-| 44 | `step_707`–`step_715` | pending | Bounded interruption finalization |
+| 43 | `step_699`–`step_706` | complete | Prior dependency knowledge |
+| 44 | `step_707`–`step_715` | active | Bounded interruption finalization |
 | 45 | `step_716`–`step_727` | pending | Signed conformance and private TypeScript parity |
 | 46 | `step_728`–`step_737` | pending | Evidence reconciliation and final decision |
 
@@ -31,6 +31,9 @@ Range: `step_660` through `step_737`
   indexed all claims, bypassed accepted-base duplicates, reduced every target
   hash against dynamic control state and final lineage, and proved pending and
   non-poisoning duplicate behavior.
+- `step_699`–`step_706`: passed explicit pruned and invalid prior-change
+  knowledge into epoch validation, made fixed-base impossible dependencies
+  invalid, and retained pending-to-accepted promotion for truly absent evidence.
 
 ## Scope adaptations
 

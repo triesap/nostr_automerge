@@ -17,7 +17,7 @@ use crate::graph::schedule::{ScheduleError, schedule_candidates};
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
 use crate::reference::epoch_engine::{
     AcceptedAtControl, EpochEvaluationError, EpochEvaluationInput, EpochEvaluationResult,
-    evaluate_epoch,
+    PriorChangeKnowledge, evaluate_epoch,
 };
 use crate::{
     CancellationCheck, ChangeHash, Completion, EvaluationFailure, EventId, IntegrityAlert,
@@ -265,10 +265,13 @@ pub(crate) fn evaluate_batch(
         for hash in accepted_changes.difference(&selected_base) {
             dispositions.insert(*hash, ProtocolDisposition::Excluded);
         }
+        let prior_change_knowledge =
+            prior_change_knowledge(parent_epoch_result.as_ref(), &selected_base, &dispositions);
         accepted_changes = selected_base;
         let epoch = resolve_authoritative_epoch(
             control,
             selected_state,
+            prior_change_knowledge,
             &canonical_ancestry,
             &controls,
             budget,
@@ -547,6 +550,7 @@ enum EpochResolutionError {
 fn resolve_authoritative_epoch(
     control: &BatchControl,
     accepted_base: AcceptedEpochState,
+    prior_change_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
     ancestry: &[ControlEnvelope],
     controls: &BTreeMap<EventId, BatchControl>,
     budget: &mut WorkBudget,
@@ -563,7 +567,12 @@ fn resolve_authoritative_epoch(
             })
             .map(|change| EpochCandidate {
                 candidate: change.candidate.clone(),
-                semantically_valid: change.legacy_eligible,
+                semantically_valid: change.legacy_eligible
+                    && change
+                        .candidate
+                        .dependencies
+                        .iter()
+                        .all(|dependency| !prior_change_knowledge.contains_key(dependency)),
                 canonical_control: !control.frozen,
             });
         let mut dispositions = resolve_epoch(
@@ -661,12 +670,13 @@ fn resolve_authoritative_epoch(
         })
         .map(|change| (change.candidate.clone(), change.raw_change.clone()))
         .collect::<Vec<_>>();
-    let input = EpochEvaluationInput::new_with_raw(
+    let input = EpochEvaluationInput::new_with_raw_and_prior(
         selected,
         accepted_base,
         epoch_changes,
         raw_changes,
         canonical_ancestry,
+        prior_change_knowledge,
     )
     .map_err(|_| EpochResolutionError::InvalidState)?;
     evaluate_epoch(&input, budget, cancellation).map_err(|error| match error {
@@ -681,6 +691,25 @@ fn resolve_authoritative_epoch(
         | EpochEvaluationError::Graph(_)
         | EpochEvaluationError::State(_) => EpochResolutionError::InvalidState,
     })
+}
+
+fn prior_change_knowledge(
+    parent: Option<&EpochEvaluationResult>,
+    selected_base: &BTreeSet<ChangeHash>,
+    dispositions: &BTreeMap<ChangeHash, ProtocolDisposition>,
+) -> BTreeMap<ChangeHash, PriorChangeKnowledge> {
+    let mut knowledge = parent
+        .into_iter()
+        .flat_map(|result| result.accepted_state().accepted_closure())
+        .filter(|hash| !selected_base.contains(hash))
+        .map(|hash| (*hash, PriorChangeKnowledge::PrunedCanonicalAncestor))
+        .collect::<BTreeMap<_, _>>();
+    for (hash, disposition) in dispositions {
+        if *disposition == ProtocolDisposition::Invalid && !selected_base.contains(hash) {
+            knowledge.insert(*hash, PriorChangeKnowledge::KnownInvalid);
+        }
+    }
+    knowledge
 }
 
 fn accepted_state_for_closure(
@@ -1047,6 +1076,35 @@ mod tests {
         assert_eq!(
             report.dispositions.get(&hash),
             Some(&ProtocolDisposition::Accepted)
+        );
+    }
+
+    #[test]
+    fn pruned_prior_dependency_is_invalid_not_pending() {
+        let first = change(1, 1, 1);
+        let second = change(2, 2, 1);
+        let first_hash = first.candidate.change_hash;
+        let second_hash = second.candidate.change_hash;
+        let parent = control(1, None, vec![first, second]);
+        let mut dependant = change(3, 3, 1);
+        dependant.candidate.dependencies = vec![second_hash];
+        let dependant_hash = dependant.candidate.change_hash;
+        let mut child = control(2, Some(1), vec![dependant]);
+        child.accepted_base = BTreeSet::from([first_hash]);
+        let report = evaluate_batch(
+            [parent, child],
+            &mut WorkBudget::new(0, 1_000),
+            &NeverCancelled,
+        );
+        assert_eq!(report.completion, Completion::Complete);
+        assert_eq!(report.accepted_changes, BTreeSet::from([first_hash]));
+        assert_eq!(
+            report.dispositions.get(&second_hash),
+            Some(&ProtocolDisposition::Excluded)
+        );
+        assert_eq!(
+            report.dispositions.get(&dependant_hash),
+            Some(&ProtocolDisposition::Invalid)
         );
     }
 }

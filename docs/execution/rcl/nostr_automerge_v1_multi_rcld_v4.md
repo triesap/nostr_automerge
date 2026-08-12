@@ -366,7 +366,7 @@ shortcut or static precedence substitutes for final-lineage reduction.
 
 ## RCLD 43 — Prior Dependency Knowledge
 
-Status: active
+Status: complete
 Steps: `step_699` through `step_706`
 Primary finding: 037
 
@@ -389,7 +389,7 @@ recoverable, and equivocation quarantine retains its separate excluded meaning.
 
 ## RCLD 44 — Bounded Interruption Finalization
 
-Status: pending
+Status: active
 Steps: `step_707` through `step_715`
 Primary finding: 039
 

@@ -36,6 +36,12 @@ pub(crate) enum EpochEvaluationError {
     State(crate::control::epoch_state::AcceptedEpochStateError),
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum PriorChangeKnowledge {
+    PrunedCanonicalAncestor,
+    KnownInvalid,
+}
+
 /// Complete trusted input for evaluating one selected control epoch.
 ///
 /// The accepted base is carried as one invariant-checked state object. Change
@@ -47,6 +53,7 @@ pub(crate) struct EpochEvaluationInput {
     candidate_changes: BTreeMap<ChangeHash, ChangeCandidate>,
     raw_changes: BTreeMap<ChangeHash, Vec<u8>>,
     canonical_ancestry: Vec<ControlEnvelope>,
+    prior_change_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
 }
 
 impl EpochEvaluationInput {
@@ -71,8 +78,26 @@ impl EpochEvaluationInput {
         selected_control: ControlEnvelope,
         accepted_base: AcceptedEpochState,
         candidate_changes: impl IntoIterator<Item = (ChangeCandidate, Option<Vec<u8>>)>,
+        raw_changes: BTreeMap<ChangeHash, Vec<u8>>,
+        canonical_ancestry: Vec<ControlEnvelope>,
+    ) -> Result<Self, EpochEvaluationInputError> {
+        Self::new_with_raw_and_prior(
+            selected_control,
+            accepted_base,
+            candidate_changes,
+            raw_changes,
+            canonical_ancestry,
+            BTreeMap::new(),
+        )
+    }
+
+    pub(crate) fn new_with_raw_and_prior(
+        selected_control: ControlEnvelope,
+        accepted_base: AcceptedEpochState,
+        candidate_changes: impl IntoIterator<Item = (ChangeCandidate, Option<Vec<u8>>)>,
         mut raw_changes: BTreeMap<ChangeHash, Vec<u8>>,
         canonical_ancestry: Vec<ControlEnvelope>,
+        prior_change_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
     ) -> Result<Self, EpochEvaluationInputError> {
         let declared_heads = selected_control.base_heads().collect::<BTreeSet<_>>();
         if declared_heads != *accepted_base.frontier_heads() {
@@ -110,6 +135,7 @@ impl EpochEvaluationInput {
             candidate_changes: candidates,
             raw_changes,
             canonical_ancestry,
+            prior_change_knowledge,
         })
     }
 
@@ -131,6 +157,12 @@ impl EpochEvaluationInput {
 
     pub(crate) fn canonical_ancestry(&self) -> &[ControlEnvelope] {
         &self.canonical_ancestry
+    }
+
+    pub(crate) const fn prior_change_knowledge(
+        &self,
+    ) -> &BTreeMap<ChangeHash, PriorChangeKnowledge> {
+        &self.prior_change_knowledge
     }
 }
 
@@ -280,8 +312,20 @@ pub(crate) fn evaluate_epoch(
             ),
             EpochAncestry::InvalidOmission(_)
         );
-        let prior_semantics_valid =
-            authorized && actor_sequence_valid && actor_counter_valid && ancestry_valid;
+        let prior_dependencies_valid = !candidate.dependencies.iter().any(|dependency| {
+            matches!(
+                input.prior_change_knowledge().get(dependency),
+                Some(
+                    PriorChangeKnowledge::PrunedCanonicalAncestor
+                        | PriorChangeKnowledge::KnownInvalid
+                )
+            )
+        });
+        let prior_semantics_valid = authorized
+            && actor_sequence_valid
+            && actor_counter_valid
+            && ancestry_valid
+            && prior_dependencies_valid;
         let application_valid = if !prior_semantics_valid {
             false
         } else if !closure.missing.is_empty() {
