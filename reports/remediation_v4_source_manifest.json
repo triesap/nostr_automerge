@@ -1,0 +1,13 @@
+{"schema":"nostr_automerge.remediation_v4_source_manifest.v1","reviewed_commit":"b34d52929c5f13eeff829c911f5f75b0db76e7c8","anchors":[
+{"path":"crates/nostr_automerge/src/checkpoint/verify_history.rs","baseline_git_object":"8094921255b327b6ad693f2274a343adb9ad858c","findings":["FINDING_036"],"symbols":["historical_carrier_coverage"]},
+{"path":"crates/nostr_automerge/src/engine/reference_evaluator.rs","baseline_git_object":"87b5c8cd4d6b804421e654b1d11110d91339ba9e","findings":["FINDING_036","FINDING_038","FINDING_039"],"symbols":["ReferenceEvaluator","prepare_controls","changes_for_control","compact_batch_report"]},
+{"path":"crates/nostr_automerge/src/evidence/corpus_builder.rs","baseline_git_object":"ff82da4c22954172e9f77469ed28a2b92fcbcd0c","findings":["FINDING_038","FINDING_042"],"symbols":["EvidenceCorpus","selected_manifests","manifest_coordinate"]},
+{"path":"crates/nostr_automerge/src/evidence/indexes.rs","baseline_git_object":"12b31032bae889bc05b745564c31ccd5a6d66558","findings":["FINDING_036"],"symbols":["ChangeIndexes","index_change"]},
+{"path":"crates/nostr_automerge/src/graph/epoch.rs","baseline_git_object":"084fb2b1966955e037757895ee7e0db97ef2704b","findings":["FINDING_037"],"symbols":["EpochAncestry","validate_epoch_ancestry"]},
+{"path":"crates/nostr_automerge/src/reference/epoch_engine.rs","baseline_git_object":"aaf1906dba365143468b37c6994585725e6ec2e1","findings":["FINDING_037"],"symbols":["EpochEvaluationInput","evaluate_epoch"]},
+{"path":"crates/nostr_automerge/src/reference/evaluate.rs","baseline_git_object":"bdb7e0e67eb97bd4e6b3955c77a868f0246d0641","findings":["FINDING_036","FINDING_037"],"symbols":["evaluate_batch","resolve_authoritative_epoch"]},
+{"path":"crates/nostr_automerge/src/work_budget.rs","baseline_git_object":"1a10e33b65e4a902cb97c4ec044c997469f32ac1","findings":["FINDING_039"],"symbols":["WorkBudget","WorkCounter"]},
+{"path":"reports/resource_benchmarks.json","baseline_git_object":"4a8ab8a00ce7e7b39938e041994df9b820aa9dcb","findings":["FINDING_043"],"symbols":["implementation_commit"]},
+{"path":"spec/NIP_DRAFT.md","baseline_git_object":"53a89c2ae86828a15383e8950c1f8cf0a98a5f3d","findings":["FINDING_040","FINDING_042"],"symbols":["Protocol dispositions"]},
+{"path":"spec/requirements.json","baseline_git_object":"7d4c74bba69040aeec466e4963616b18cf825468","findings":["FINDING_041"],"symbols":["NCRDT-TS-001"]}
+]}

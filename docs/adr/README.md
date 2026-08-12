@@ -46,3 +46,10 @@ change-control process.
 | [0038](adr_0038_causal_operation_counter.md) | Approved | `R3_SPEC_001`, `R3_SPEC_002`, `R3_SPEC_004` |
 | [0039](adr_0039_private_typescript_attestation_v3.md) | Approved | `R3_INTEROP_003`, `R3_INTEROP_005`, `R3_EVID_002` |
 | [0040](adr_0040_release_assurance_separate.md) | Approved | `R3_RELEASE_001`, `R3_RELEASE_002`, `R3_RELEASE_003` |
+| [0041](adr_0041_coordinate_scoped_evidence.md) | Approved | `R4_SCOPE_001`, `R4_SCOPE_005` |
+| [0042](adr_0042_global_changehash_claims.md) | Approved | `R4_CLAIM_001`, `R4_CLAIM_010` |
+| [0043](adr_0043_prior_dependency_knowledge.md) | Approved | `R4_EPOCH_001`, `R4_EPOCH_004` |
+| [0044](adr_0044_reserved_report_finalization.md) | Approved | `R4_INT_001`, `R4_INT_005` |
+| [0045](adr_0045_registry_v2_external_nip_hold.md) | Approved | `R4_SPEC_001`, `R4_REQ_002` |
+| [0046](adr_0046_private_typescript_attestation_v4.md) | Approved | `R4_CONF_003`, `R4_TS_001` |
+| [0047](adr_0047_remediation_v4_release_holds.md) | Approved | `R4_RELEASE_001`, `R4_RELEASE_003` |
