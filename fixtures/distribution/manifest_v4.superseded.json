@@ -1,0 +1,7 @@
+{
+  "schema": "nostr_automerge.fixture_distribution_supersession.v1",
+  "superseded_manifest": "fixtures/distribution/manifest_v4.json",
+  "superseded_sha256": "34bafb476a70dd28f02a036b97b5a978f686fbeea3278681e8804298457c268c",
+  "superseded_by": "fixtures/distribution/manifest_v5.json",
+  "reason": "remediation_v4_signed_corpus_expansion"
+}

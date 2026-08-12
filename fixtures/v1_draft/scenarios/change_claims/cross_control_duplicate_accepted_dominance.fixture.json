@@ -1,0 +1,31 @@
+{
+  "expected": {
+    "report_path": "cross_control_duplicate_accepted_dominance.expected.json",
+    "sha256": "ef3a0e534aa0764fa75f51dd1db7c73e1c829882bec455d21ffe0b1a6cceef1a"
+  },
+  "fixture_id": "cross_control_duplicate_accepted_dominance",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "cross_control_duplicate_accepted_dominance.input.json",
+      "sha256": "07ea4af660fe98fa77d634deacc0ce5d7eb1131cdea10a9da09ca0ba648f0034"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile remediation_v4",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CONF-005",
+    "NCRDT-DISPOSITION-002",
+    "NCRDT-DUP-002"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}

@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/fixtures/schema/report.schema.v2.json",
+  "title": "nostr_automerge remediation-v4 canonical conformance report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "report_schema",
+    "fixture_id",
+    "revision",
+    "coordinate",
+    "canonical_controls",
+    "disposition_records",
+    "accepted_changes",
+    "pending_changes",
+    "excluded_changes",
+    "invalid_changes",
+    "invalid_events",
+    "unsupported_events",
+    "heads",
+    "history_digest",
+    "dispositions_digest",
+    "integrity_alerts",
+    "state_assertions",
+    "completion"
+  ],
+  "properties": {
+    "report_schema": {
+      "const": "nostr_automerge.report.v1"
+    },
+    "fixture_id": {
+      "type": "string"
+    },
+    "revision": {
+      "const": "draft_2026_08"
+    },
+    "coordinate": {
+      "type": "string",
+      "pattern": "^31624:[0-9a-f]{64}:[0-9a-f]{64}$"
+    },
+    "canonical_controls": {
+      "$ref": "#/$defs/id_list"
+    },
+    "disposition_records": {
+      "type": "array",
+      "uniqueItems": true,
+      "description": "Canonical outcomes derived from complete protocol evaluation. Event records include selected manifests, checkpoint descriptors, and checkpoint chunks whose final status can differ from static carrier validity.",
+      "items": {"$ref": "#/$defs/disposition_record"}
+    },
+    "accepted_changes": {
+      "$ref": "#/$defs/id_list"
+    },
+    "pending_changes": {
+      "$ref": "#/$defs/id_list"
+    },
+    "excluded_changes": {
+      "$ref": "#/$defs/id_list"
+    },
+    "invalid_changes": {
+      "$ref": "#/$defs/id_list"
+    },
+    "invalid_events": {
+      "$ref": "#/$defs/id_list"
+    },
+    "unsupported_events": {
+      "$ref": "#/$defs/id_list"
+    },
+    "heads": {
+      "$ref": "#/$defs/id_list"
+    },
+    "history_digest": {
+      "$ref": "#/$defs/hex32"
+    },
+    "dispositions_digest": {
+      "$ref": "#/$defs/hex32"
+    },
+    "integrity_alerts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/integrity_alert"
+      }
+    },
+    "checkpoints": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/checkpoint_result"}
+    },
+    "state_assertions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/assertion"
+      }
+    },
+    "completion": {
+      "description": "Whether evaluation completed or stopped at the first deterministic budget or cancellation boundary. Interrupted reports retain only outcomes already proven conclusive.",
+      "enum": [
+        "complete",
+        "budget_exhausted",
+        "cancelled"
+      ]
+    }
+  },
+  "$defs": {
+    "hex32": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "id_list": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/hex32"
+      }
+    },
+    "disposition_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["namespace", "identifier", "disposition"],
+      "properties": {
+        "namespace": {"enum": ["control_event", "change_hash", "event"]},
+        "identifier": {"$ref": "#/$defs/hex32"},
+        "disposition": {"enum": ["accepted", "pending", "excluded", "invalid", "unsupported_revision"]},
+        "diagnostic": {"type": "string", "pattern": "^[a-z][a-z0-9_.]+$"}
+      }
+    },
+    "assertion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "expected"
+      ],
+      "properties": {
+        "path": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {"type": "string"},
+              {"type": "integer", "minimum": 0},
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["type", "parent_object_id", "operation_id", "child_object_id"],
+                "properties": {
+                  "type": {"const": "branch"},
+                  "parent_object_id": {"type": "string", "minLength": 1},
+                  "operation_id": {"type": "string", "minLength": 1},
+                  "child_object_id": {"type": "string", "minLength": 1}
+                }
+              }
+            ]
+          }
+        },
+        "expected": {
+          "$ref": "#/$defs/expected_value"
+        }
+      }
+    },
+    "expected_value": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["type"], "properties": {"type": {"const": "null"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"const": "bool"}, "value": {"type": "boolean"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"enum": ["i64", "u64", "counter", "timestamp"]}, "value": {"type": "string", "pattern": "^-?[0-9]+$"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"const": "f64_bits"}, "value": {"type": "string", "pattern": "^[0-9a-f]{16}$"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"enum": ["bytes32", "change_hash", "event_id"]}, "value": {"$ref": "#/$defs/hex32"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"enum": ["string", "bytes_base64"]}, "value": {"type": "string"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "object_id", "value"], "properties": {"type": {"const": "text"}, "object_id": {"type": "string", "minLength": 1}, "value": {"type": "string"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "object_id"], "properties": {"type": {"enum": ["map", "list", "table"]}, "object_id": {"type": "string", "minLength": 1}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "name", "value", "start", "end", "expansion"], "properties": {"type": {"const": "mark"}, "name": {"type": "string"}, "value": {"type": "object"}, "start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 0}, "expansion": {"enum": ["none", "before", "after", "both"]}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "values"], "properties": {"type": {"const": "conflicts"}, "values": {"type": "array", "minItems": 2, "items": {"type": "object"}}}}
+      ]
+    },
+    "integrity_alert": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["type", "parent_control", "candidate_controls", "selected_control"], "properties": {"type": {"const": "controller_equivocation"}, "parent_control": {"oneOf": [{"$ref": "#/$defs/hex32"}, {"type": "null"}]}, "candidate_controls": {"$ref": "#/$defs/id_list"}, "selected_control": {"$ref": "#/$defs/hex32"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "previous_tip", "new_tip", "affected_changes"], "properties": {"type": {"const": "canonical_control_reorganization"}, "previous_tip": {"$ref": "#/$defs/hex32"}, "new_tip": {"$ref": "#/$defs/hex32"}, "affected_changes": {"$ref": "#/$defs/id_list"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "actor_id", "first_sequence", "conflicting_changes", "affected_descendants"], "properties": {"type": {"const": "device_equivocation"}, "actor_id": {"$ref": "#/$defs/hex32"}, "first_sequence": {"type": "integer", "minimum": 1}, "conflicting_changes": {"$ref": "#/$defs/id_list"}, "affected_descendants": {"$ref": "#/$defs/id_list"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "actor_id", "first_sequence", "carrier_event_ids"], "properties": {"type": {"const": "potential_cloned_device_key"}, "actor_id": {"$ref": "#/$defs/hex32"}, "first_sequence": {"type": "integer", "minimum": 1}, "carrier_event_ids": {"$ref": "#/$defs/id_list"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "descriptor_event_id", "code"], "properties": {"type": {"const": "checkpoint_mismatch"}, "descriptor_event_id": {"$ref": "#/$defs/hex32"}, "code": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"}}}
+      ]
+    },
+    "checkpoint_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["descriptor_event", "chunk_events", "snapshot_hash", "heads", "change_count", "change_set_hash", "historical_carriers", "accepted_at_control", "status"],
+      "properties": {
+        "descriptor_event": {"$ref": "#/$defs/hex32"},
+        "chunk_events": {"$ref": "#/$defs/id_list"},
+        "snapshot_hash": {"$ref": "#/$defs/hex32"},
+        "heads": {"$ref": "#/$defs/id_list"},
+        "change_count": {"type": "integer", "minimum": 0},
+        "change_set_hash": {"$ref": "#/$defs/hex32"},
+        "historical_carriers": {"$ref": "#/$defs/id_list"},
+        "accepted_at_control": {"$ref": "#/$defs/id_list"},
+        "status": {"type": "string"}
+      }
+    }
+  }
+}

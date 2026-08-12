@@ -1,0 +1,31 @@
+{
+  "expected": {
+    "report_path": "change_under_wrong_coordinate_control.expected.json",
+    "sha256": "8d504398face9331efae65e7893b387562b38fb826eb9e5bc408d8d149bf2350"
+  },
+  "fixture_id": "change_under_wrong_coordinate_control",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "change_under_wrong_coordinate_control.input.json",
+      "sha256": "bbea50a0d834dbdd74ad63a01b433891995083c248616fb773b4479824a43556"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile remediation_v4",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CONF-005",
+    "NCRDT-DISPOSITION-002",
+    "NCRDT-DUP-002"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}

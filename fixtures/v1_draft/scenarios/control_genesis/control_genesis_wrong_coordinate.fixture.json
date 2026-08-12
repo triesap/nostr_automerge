@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "control_genesis_wrong_coordinate.expected.json",
-    "sha256": "b88c6b5bcacffdc57a77ef60aba3e12961d004a37ec34adf494eeab21d8f40ec"
+    "sha256": "0645ac4c1fb97742e28db839bf0d9751fc47ddecd2e697803a556979c15fe6b9"
   },
   "fixture_id": "control_genesis_wrong_coordinate",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "control_genesis_wrong_coordinate.input.json",
-      "sha256": "15a6d696729fa3ea58c776266a661e512a9bf834d5f913a5191598e263e5fe7e"
+      "sha256": "f4f50c94a79d98da11ecd687bb9f97372e79dd9f86fe35b059d6e9032cbf1590"
     }
   ],
   "provenance": {

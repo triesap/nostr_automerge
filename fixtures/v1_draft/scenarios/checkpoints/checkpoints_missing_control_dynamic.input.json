@@ -28,11 +28,16 @@
     "disposition_records": [
       {
         "disposition": "pending",
+        "identifier": "66be06a76d30b453372abdd246e6ea8aecf8e2dd9c134264b3cce7d57bbda43f",
+        "namespace": "change_hash"
+      },
+      {
+        "disposition": "pending",
         "identifier": "e1aa168038cc70e73804e16bf1c9b38ef3ba29d92e9e62e3654b92ec2dbde079",
         "namespace": "event"
       }
     ],
-    "dispositions_digest": "9d958f0bb11488002ff0cb0eefe85986036809ed80b060da46d2e3ef2cd0603d",
+    "dispositions_digest": "1985f51639786f016e44bc41145c68244b0005bcb4037a5a63e772498a8135fb",
     "excluded_changes": [],
     "fixture_id": "checkpoints_missing_control_dynamic",
     "heads": [],
@@ -40,7 +45,9 @@
     "integrity_alerts": [],
     "invalid_changes": [],
     "invalid_events": [],
-    "pending_changes": [],
+    "pending_changes": [
+      "66be06a76d30b453372abdd246e6ea8aecf8e2dd9c134264b3cce7d57bbda43f"
+    ],
     "report_schema": "nostr_automerge.report.v1",
     "revision": "draft_2026_08",
     "state_assertions": [],

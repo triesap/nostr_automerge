@@ -35,6 +35,7 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "checkpoints" => generate_checkpoint_profile(),
         "projection" => generate_projection_profile(),
         "interrupted" => generate_interrupted_profile(),
+        "remediation_v4" => generate_remediation_v4_profile(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
 }
@@ -2646,6 +2647,579 @@ fn generate_manifest_profile() -> Result<(), String> {
                 "NCRDT-OUTCOME-001",
             ],
             "manifest",
+        )?;
+    }
+    Ok(())
+}
+
+fn generate_remediation_v4_profile() -> Result<(), String> {
+    generate_remediation_v4_change_claims()?;
+    generate_remediation_v4_dependency()?;
+    generate_remediation_v4_isolation()?;
+    generate_remediation_v4_manifests()?;
+    generate_remediation_v4_interruptions()
+}
+
+fn generate_remediation_v4_change_claims() -> Result<(), String> {
+    let controller = Signer::from_byte(111)?;
+    let writer = Signer::from_byte(112)?;
+    let other_controller = Signer::from_byte(113)?;
+    let document_id = "b1".repeat(32);
+    let coordinate: DocumentCoordinate =
+        format!("31624:{}:{document_id}", controller.public_key.to_hex())
+            .parse()
+            .map_err(|_| "invalid remediation claim coordinate".to_owned())?;
+    let members = || vec![(&writer, None, &["write"][..])];
+    let control = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let control_id = event_id(&control)?;
+    let actor = ActorId::derive(coordinate, writer.public_key);
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+        .map_err(|error| format!("remediation claim document: {error:?}"))?;
+    let change = document
+        .author_change(&[Operation::PutString {
+            key: "claim".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .map_err(|error| format!("remediation claim change: {error:?}"))?;
+    let valid_change = sign_change(
+        &writer,
+        2,
+        coordinate,
+        control_id,
+        change.change_hash(),
+        change.raw(),
+    )?;
+    let missing_control = EventId::from_bytes([0xb2; 32]);
+    let missing_claim = sign_change(
+        &writer,
+        3,
+        coordinate,
+        missing_control,
+        change.change_hash(),
+        change.raw(),
+    )?;
+    let pending_control = sign_control(
+        &controller,
+        4,
+        coordinate,
+        Some(EventId::from_bytes([0xb3; 32])),
+        control_content_full(1, members(), "automerge-change-v1"),
+    )?;
+    let pending_control_id = event_id(&pending_control)?;
+    let pending_claim = sign_change(
+        &writer,
+        5,
+        coordinate,
+        pending_control_id,
+        change.change_hash(),
+        change.raw(),
+    )?;
+    let invalid_control = sign_control(
+        &controller,
+        6,
+        coordinate,
+        None,
+        control_content_full(1, members(), "automerge-change-v1"),
+    )?;
+    let invalid_control_id = event_id(&invalid_control)?;
+    let invalid_control_claim = sign_change(
+        &writer,
+        7,
+        coordinate,
+        invalid_control_id,
+        change.change_hash(),
+        change.raw(),
+    )?;
+    let other_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        other_controller.public_key.to_hex(),
+        "b4".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation alternate coordinate".to_owned())?;
+    let wrong_coordinate_control = sign_control(
+        &other_controller,
+        8,
+        other_coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let wrong_coordinate_control_id = event_id(&wrong_coordinate_control)?;
+    let wrong_coordinate_claim = sign_change(
+        &writer,
+        9,
+        coordinate,
+        wrong_coordinate_control_id,
+        change.change_hash(),
+        change.raw(),
+    )?;
+    let wrong_kind = sign_raw_event(
+        &controller,
+        10,
+        31_624,
+        vec![vec!["d".to_owned(), document_id]],
+        manifest_content(&control_id.to_hex(), "active", 1),
+    )?;
+    let wrong_kind_id = event_id(&wrong_kind)?;
+    let wrong_kind_claim = sign_change(
+        &writer,
+        11,
+        coordinate,
+        wrong_kind_id,
+        change.change_hash(),
+        change.raw(),
+    )?;
+    let competing = sign_control(
+        &controller,
+        12,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let noncanonical_id = control_id.max(event_id(&competing)?);
+    let noncanonical_claim = sign_change(
+        &writer,
+        13,
+        coordinate,
+        noncanonical_id,
+        change.change_hash(),
+        change.raw(),
+    )?;
+    let child = sign_control(
+        &controller,
+        14,
+        coordinate,
+        Some(control_id),
+        control_content_with_links(1, members(), &[change.change_hash()], None, None),
+    )?;
+    let child_id = event_id(&child)?;
+    let child_duplicate = sign_change(
+        &writer,
+        15,
+        coordinate,
+        child_id,
+        change.change_hash(),
+        change.raw(),
+    )?;
+    let pruned_child = sign_control(
+        &controller,
+        16,
+        coordinate,
+        Some(control_id),
+        control_content_with_links(1, vec![(&controller, None, &["write"])], &[], None, None),
+    )?;
+    let pruned_child_id = event_id(&pruned_child)?;
+    let pruned_duplicate = sign_change(
+        &writer,
+        17,
+        coordinate,
+        pruned_child_id,
+        change.change_hash(),
+        change.raw(),
+    )?;
+    let requirements = ["NCRDT-CONF-005", "NCRDT-DISPOSITION-002", "NCRDT-DUP-002"];
+    let cases = vec![
+        (
+            "change_before_control",
+            vec![valid_change.clone(), control.clone()],
+        ),
+        (
+            "change_before_pending_control",
+            vec![pending_claim, pending_control],
+        ),
+        (
+            "change_under_invalid_control",
+            vec![invalid_control_claim.clone(), invalid_control.clone()],
+        ),
+        (
+            "change_under_wrong_kind_control",
+            vec![wrong_kind_claim, wrong_kind],
+        ),
+        (
+            "change_under_wrong_coordinate_control",
+            vec![wrong_coordinate_claim, wrong_coordinate_control],
+        ),
+        (
+            "change_under_noncanonical_control",
+            vec![control.clone(), competing, noncanonical_claim],
+        ),
+        (
+            "cross_control_duplicate_accepted_dominance",
+            vec![missing_claim.clone(), valid_change.clone(), control.clone()],
+        ),
+        (
+            "invalid_claim_does_not_poison_valid_hash",
+            vec![
+                invalid_control_claim,
+                invalid_control,
+                valid_change.clone(),
+                control.clone(),
+            ],
+        ),
+        (
+            "accepted_base_later_duplicate_carrier",
+            vec![
+                control.clone(),
+                valid_change.clone(),
+                child,
+                child_duplicate,
+            ],
+        ),
+        (
+            "accepted_base_pruned_duplicate_carrier",
+            vec![control, valid_change, pruned_child, pruned_duplicate],
+        ),
+        ("change_with_missing_control", vec![missing_claim]),
+    ];
+    let root = repository_root().join("fixtures/v1_draft/scenarios/change_claims");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    for (fixture_id, events) in cases {
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            &requirements,
+            "remediation_v4",
+        )?;
+    }
+    Ok(())
+}
+
+fn generate_remediation_v4_dependency() -> Result<(), String> {
+    let controller = Signer::from_byte(114)?;
+    let retained_writer = Signer::from_byte(115)?;
+    let pruned_writer = Signer::from_byte(116)?;
+    let child_writer = Signer::from_byte(117)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "b5".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation dependency coordinate".to_owned())?;
+    let members = || {
+        vec![
+            (&retained_writer, None, &["write"][..]),
+            (&pruned_writer, None, &["write"][..]),
+            (&child_writer, None, &["write"][..]),
+        ]
+    };
+    let parent = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let parent_id = event_id(&parent)?;
+    let author_root = |signer: &Signer, key: &str| -> Result<_, String> {
+        let actor = ActorId::derive(coordinate, signer.public_key);
+        let mut document = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+            .map_err(|error| format!("remediation dependency document: {error:?}"))?;
+        document
+            .author_change(&[Operation::PutString {
+                key: key.to_owned(),
+                value: "parent".to_owned(),
+            }])
+            .map_err(|error| format!("remediation dependency change: {error:?}"))
+    };
+    let retained = author_root(&retained_writer, "retained")?;
+    let pruned = author_root(&pruned_writer, "pruned")?;
+    let child_seed = author_root(&child_writer, "child")?;
+    let (child_raw, child_hash) =
+        with_change_dependencies(child_seed.raw(), &[pruned.change_hash()], 2)?;
+    let retained_event = sign_change(
+        &retained_writer,
+        2,
+        coordinate,
+        parent_id,
+        retained.change_hash(),
+        retained.raw(),
+    )?;
+    let pruned_event = sign_change(
+        &pruned_writer,
+        3,
+        coordinate,
+        parent_id,
+        pruned.change_hash(),
+        pruned.raw(),
+    )?;
+    let child_control = sign_control(
+        &controller,
+        4,
+        coordinate,
+        Some(parent_id),
+        control_content_with_links(
+            1,
+            vec![
+                (&retained_writer, None, &["write"]),
+                (&child_writer, None, &["write"]),
+            ],
+            &[retained.change_hash()],
+            None,
+            None,
+        ),
+    )?;
+    let child_event = sign_change(
+        &child_writer,
+        5,
+        coordinate,
+        event_id(&child_control)?,
+        child_hash,
+        &child_raw,
+    )?;
+    let root = repository_root().join("fixtures/v1_draft/scenarios/dependencies");
+    write_fixture_with_requirements(
+        &root,
+        "child_change_depends_on_pruned_parent_change",
+        coordinate,
+        vec![
+            parent,
+            retained_event,
+            pruned_event,
+            child_control,
+            child_event,
+        ],
+        &["NCRDT-CONF-005", "NCRDT-EPOCH-001"],
+        "remediation_v4",
+    )
+}
+
+fn generate_remediation_v4_isolation() -> Result<(), String> {
+    let target_controller = Signer::from_byte(118)?;
+    let target_writer = Signer::from_byte(119)?;
+    let other_controller = Signer::from_byte(120)?;
+    let other_writer = Signer::from_byte(121)?;
+    let target: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        target_controller.public_key.to_hex(),
+        "b6".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid target isolation coordinate".to_owned())?;
+    let other: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        other_controller.public_key.to_hex(),
+        "b7".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid unrelated isolation coordinate".to_owned())?;
+    let target_control = sign_control(
+        &target_controller,
+        1,
+        target,
+        None,
+        control_content_full(
+            0,
+            vec![(&target_writer, None, &["write"])],
+            "automerge-change-v1",
+        ),
+    )?;
+    let target_actor = ActorId::derive(target, target_writer.public_key);
+    let mut target_document =
+        AuthoringDocument::empty(ActorState::initial(target_actor, Default::default()))
+            .map_err(|error| format!("target isolation document: {error:?}"))?;
+    let target_change = target_document
+        .author_change(&[Operation::PutString {
+            key: "target".to_owned(),
+            value: "stable".to_owned(),
+        }])
+        .map_err(|error| format!("target isolation change: {error:?}"))?;
+    let target_change_event = sign_change(
+        &target_writer,
+        2,
+        target,
+        event_id(&target_control)?,
+        target_change.change_hash(),
+        target_change.raw(),
+    )?;
+    let other_control = sign_control(
+        &other_controller,
+        3,
+        other,
+        None,
+        control_content_full(
+            0,
+            vec![(&other_writer, None, &["write"])],
+            "automerge-change-v1",
+        ),
+    )?;
+    let other_actor = ActorId::derive(other, other_writer.public_key);
+    let mut other_document =
+        AuthoringDocument::empty(ActorState::initial(other_actor, Default::default()))
+            .map_err(|error| format!("unrelated isolation document: {error:?}"))?;
+    let other_change = other_document
+        .author_change(&[Operation::PutString {
+            key: "other".to_owned(),
+            value: "ignored".to_owned(),
+        }])
+        .map_err(|error| format!("unrelated isolation change: {error:?}"))?;
+    let other_change_event = sign_change(
+        &other_writer,
+        4,
+        other,
+        event_id(&other_control)?,
+        other_change.change_hash(),
+        other_change.raw(),
+    )?;
+    let other_manifest = sign_raw_event(
+        &other_controller,
+        5,
+        31_624,
+        vec![vec!["d".to_owned(), "b7".repeat(32)]],
+        manifest_content(&event_id(&other_control)?.to_hex(), "active", 1),
+    )?;
+    let other_checkpoint = sign_raw_event(
+        &other_writer,
+        6,
+        1_626,
+        vec![vec!["a".to_owned(), other.to_address()]],
+        "{}".to_owned(),
+    )?;
+    let requirements = ["NCRDT-CONF-005", "NCRDT-SCOPE-002"];
+    let root = repository_root().join("fixtures/v1_draft/scenarios/isolation");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    for (fixture_id, extra) in [
+        (
+            "unrelated_manifest_does_not_change_target",
+            vec![other_manifest],
+        ),
+        (
+            "unrelated_checkpoint_does_not_change_target",
+            vec![other_checkpoint],
+        ),
+        (
+            "unrelated_changes_do_not_consume_target_budget",
+            vec![other_control, other_change_event],
+        ),
+    ] {
+        let mut events = vec![target_control.clone(), target_change_event.clone()];
+        events.extend(extra);
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            target,
+            events,
+            &requirements,
+            "remediation_v4",
+        )?;
+    }
+    Ok(())
+}
+
+fn generate_remediation_v4_manifests() -> Result<(), String> {
+    let controller = Signer::from_byte(122)?;
+    let writer = Signer::from_byte(123)?;
+    let document_id = "b8".repeat(32);
+    let coordinate: DocumentCoordinate =
+        format!("31624:{}:{document_id}", controller.public_key.to_hex())
+            .parse()
+            .map_err(|_| "invalid remediation manifest coordinate".to_owned())?;
+    let control = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, vec![(&writer, None, &["write"])], "automerge-change-v1"),
+    )?;
+    let content = manifest_content(&event_id(&control)?.to_hex(), "active", 1);
+    let sign_manifest = |created_at: u64, tags: Vec<Vec<String>>| {
+        sign_raw_event(&controller, created_at, 31_624, tags, content.clone())
+    };
+    let older = sign_manifest(2, vec![vec!["d".to_owned(), document_id.clone()]])?;
+    let other_valid = "b9".repeat(32);
+    let cases = vec![
+        (
+            "manifest_duplicate_same_d_no_fallback",
+            sign_manifest(
+                3,
+                vec![
+                    vec!["d".to_owned(), document_id.clone()],
+                    vec!["d".to_owned(), document_id.clone()],
+                ],
+            )?,
+        ),
+        (
+            "manifest_valid_plus_malformed_d_no_fallback",
+            sign_manifest(
+                4,
+                vec![
+                    vec!["d".to_owned(), document_id.clone()],
+                    vec!["d".to_owned(), "not-a-document-id".to_owned()],
+                ],
+            )?,
+        ),
+        (
+            "manifest_distinct_d_unattributable",
+            sign_manifest(
+                5,
+                vec![
+                    vec!["d".to_owned(), document_id.clone()],
+                    vec!["d".to_owned(), other_valid],
+                ],
+            )?,
+        ),
+        (
+            "manifest_missing_valid_d_unattributable",
+            sign_manifest(6, vec![vec!["d".to_owned(), "invalid".to_owned()]])?,
+        ),
+    ];
+    let root = repository_root().join("fixtures/v1_draft/scenarios/manifest");
+    for (fixture_id, latest) in cases {
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            coordinate,
+            vec![control.clone(), older.clone(), latest],
+            &["NCRDT-CONF-005", "NCRDT-MANIFEST-003"],
+            "remediation_v4",
+        )?;
+    }
+    Ok(())
+}
+
+fn generate_remediation_v4_interruptions() -> Result<(), String> {
+    let controller = Signer::from_byte(124)?;
+    let writer = Signer::from_byte(125)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "ba".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation interruption coordinate".to_owned())?;
+    let control = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, vec![(&writer, None, &["write"])], "automerge-change-v1"),
+    )?;
+    let root = repository_root().join("fixtures/v1_draft/scenarios/interrupted");
+    for (fixture_id, max_items) in [
+        ("interrupted_report_reservation_before", 13),
+        ("interrupted_report_reservation_after", 14),
+    ] {
+        write_fixture_with_execution(
+            &root,
+            fixture_id,
+            coordinate,
+            vec![control.clone()],
+            &["NCRDT-CONF-005", "NCRDT-RESOURCE-002"],
+            "remediation_v4",
+            Vec::new(),
+            ScenarioBudget {
+                max_bytes: 1_000_000,
+                max_items,
+            },
+            None,
         )?;
     }
     Ok(())

@@ -1,0 +1,31 @@
+{
+  "expected": {
+    "report_path": "change_under_wrong_kind_control.expected.json",
+    "sha256": "e3d820483fd053a18014417bb08d96539fb803726335c5e4544f0a647e5fb961"
+  },
+  "fixture_id": "change_under_wrong_kind_control",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "change_under_wrong_kind_control.input.json",
+      "sha256": "8a95cb50e0538a919c321047ccfd1f5babd7c3d8845a374822ec561d6c17718e"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile remediation_v4",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CONF-005",
+    "NCRDT-DISPOSITION-002",
+    "NCRDT-DUP-002"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}

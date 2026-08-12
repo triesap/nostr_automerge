@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the canonical remediation-v4 fixture distribution."""
+"""Validate the remediation-v4 signed fixture distribution v5."""
 
 from __future__ import annotations
 

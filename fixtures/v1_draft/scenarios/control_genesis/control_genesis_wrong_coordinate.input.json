@@ -10,24 +10,15 @@
     "canonical_controls": [],
     "completion": "complete",
     "coordinate": "31624:dbcfa1c73674cba4aa1b6992ebdc6a77008d38f6c6ec068c3c862b9ff6d287f2:7272727272727272727272727272727272727272727272727272727272727272",
-    "disposition_records": [
-      {
-        "diagnostic": "carrier.coordinate",
-        "disposition": "invalid",
-        "identifier": "aaf7920696c2f3c8cf9accfa179ae0f7361e7d867fb49dee2fe4ec5e565aa840",
-        "namespace": "event"
-      }
-    ],
-    "dispositions_digest": "108dbd8d213f3f8f9a57e332204661bcdcedfdfe6ae2cdea2151091e98efb3f2",
+    "disposition_records": [],
+    "dispositions_digest": "4e81fe5aed39c6f52a9d5bbbbccf65a9a54c1570fe7c1f4d4a924f3dc6a919d7",
     "excluded_changes": [],
     "fixture_id": "control_genesis_wrong_coordinate",
     "heads": [],
     "history_digest": "4032b0786fe702fb2fab426f8ce8644a604b8cc228da0326c5de584d6c896881",
     "integrity_alerts": [],
     "invalid_changes": [],
-    "invalid_events": [
-      "aaf7920696c2f3c8cf9accfa179ae0f7361e7d867fb49dee2fe4ec5e565aa840"
-    ],
+    "invalid_events": [],
     "pending_changes": [],
     "report_schema": "nostr_automerge.report.v1",
     "revision": "draft_2026_08",

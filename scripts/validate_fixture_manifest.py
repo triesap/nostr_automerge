@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the canonical signed fixture distribution v4."""
+"""Validate the canonical signed fixture distribution v5."""
 
 from __future__ import annotations
 
@@ -11,9 +11,9 @@ from pathlib import Path, PurePosixPath
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = ROOT / "fixtures" / "distribution" / "manifest_v4.json"
+MANIFEST = ROOT / "fixtures" / "distribution" / "manifest_v5.json"
 PROFILES = {"checkpoint", "core", "malformed", "property"}
-SCHEMA = "nostr_automerge.fixture_distribution.v4"
+SCHEMA = "nostr_automerge.fixture_distribution.v5"
 SIGNED_SCHEMA = "nostr_automerge.signed_scenario.v2"
 
 
@@ -33,12 +33,21 @@ def safe_path(root: Path, relative: object) -> Path:
 def validate(manifest: dict[str, object], root: Path = ROOT) -> None:
     expected_keys = {
         "distribution_schema", "distribution_id", "protocol_revision", "status",
-        "profiles", "fixtures", "files",
+        "profiles", "fixtures", "files", "requirements_sha256", "authority_sha256",
+        "supersedes",
     }
     if set(manifest) != expected_keys or manifest["distribution_schema"] != SCHEMA:
-        fail("invalid distribution v4 shape")
+        fail("invalid distribution v5 shape")
     if manifest["status"] != "canonical_signed_neutral_corpus":
         fail("distribution is not canonical signed neutral corpus")
+    for field, relative in [
+        ("requirements_sha256", "spec/requirements.json"),
+        ("authority_sha256", "spec/NOSTR_AUTOMERGE_V1_SPEC.md"),
+    ]:
+        if manifest[field] != hashlib.sha256(safe_path(root, relative).read_bytes()).hexdigest():
+            fail(f"stale {field}")
+    if manifest["supersedes"] != "fixtures/distribution/manifest_v4.json":
+        fail("distribution does not supersede v4")
     profiles = manifest["profiles"]
     if not isinstance(profiles, dict) or set(profiles) != PROFILES:
         fail("fixture profiles are incomplete")
@@ -108,6 +117,8 @@ def validate(manifest: dict[str, object], root: Path = ROOT) -> None:
     required_schemas = {
         "fixtures/schema/fixture.schema.json", "fixtures/schema/report.schema.json",
         "fixtures/schema/scenario.schema.json", "fixtures/schema/scenario_v2.schema.json",
+        "fixtures/schema/fixture.schema.v5.json", "fixtures/schema/report.schema.v2.json",
+        "fixtures/schema/scenario_v3.schema.json",
     }
     if not required_schemas.issubset(hashes):
         fail("required fixture schemas are absent")
@@ -152,7 +163,7 @@ def main() -> int:
         self_test(manifest)
     elif sys.argv[1:]:
         raise SystemExit("usage: validate_fixture_manifest.py [--self-test]")
-    print(f"PASS: signed fixture distribution v4 ({len(manifest['fixtures'])} fixtures)")
+    print(f"PASS: signed fixture distribution v5 ({len(manifest['fixtures'])} fixtures)")
     return 0
 
 

@@ -417,7 +417,11 @@ fn reduce_change_dispositions(view: &DocumentEvidenceView<'_>, batch: &mut Batch
                 .insert(hash, ProtocolDisposition::Accepted);
             continue;
         }
-        if batch.dispositions.get(&hash) == Some(&ProtocolDisposition::Accepted) {
+        if batch
+            .accepted_at_control
+            .values()
+            .any(|accepted| accepted.accepted_closure().contains(&hash))
+        {
             batch
                 .dispositions
                 .insert(hash, ProtocolDisposition::Excluded);
