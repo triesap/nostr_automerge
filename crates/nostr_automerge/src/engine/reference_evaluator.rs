@@ -2096,4 +2096,28 @@ mod tests {
         assert_eq!(exact.remaining(), (0, 8));
         assert_eq!(exact.consumed().get(WorkCounter::Assertion), 0);
     }
+
+    #[test]
+    fn reserved_report_wrappers_consume_without_optional_expansion() {
+        let source = include_str!("reference_evaluator.rs");
+        for (start, end) in [
+            (
+                "fn reserved_interrupted_report(",
+                "fn reserved_batch_report(",
+            ),
+            (
+                "fn reserved_batch_report(",
+                "fn compact_interrupted_report(",
+            ),
+        ] {
+            let wrapper = source
+                .split_once(start)
+                .and_then(|(_, rest)| rest.split_once(end))
+                .map(|(body, _)| body)
+                .unwrap_or_default();
+            assert!(wrapper.contains("permit.consume();"));
+            assert!(!wrapper.contains(".iter()"));
+            assert!(!wrapper.contains("view."));
+        }
+    }
 }
