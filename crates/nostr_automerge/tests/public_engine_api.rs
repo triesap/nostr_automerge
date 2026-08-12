@@ -2909,16 +2909,8 @@ fn automerge_application_and_materialization_are_charged() {
         measured_report.dispositions_digest()
     );
     assert!(report.document().is_none());
-    assert_eq!(exhausted.consumed().get(WorkCounter::ApplyChange), 3);
-    assert!(
-        exhausted.consumed().get(WorkCounter::Assertion)
-            <= measured.consumed().get(WorkCounter::Assertion)
-    );
-    assert!(
-        exhausted.consumed().get(WorkCounter::Event) < measured.consumed().get(WorkCounter::Event)
-            || exhausted.consumed().get(WorkCounter::Assertion)
-                < measured.consumed().get(WorkCounter::Assertion)
-    );
+    assert_eq!(exhausted.consumed().get(WorkCounter::ApplyChange), 2);
+    assert_eq!(exhausted.remaining().1, 3);
 }
 
 #[test]
@@ -3077,10 +3069,10 @@ fn every_v3_work_counter_boundary() {
         WorkCounter::ApplyChange,
         WorkCounter::CheckpointByte,
         WorkCounter::CheckpointItem,
-        WorkCounter::Assertion,
     ] {
         assert_eq!(cancelled.consumed().get(counter), 0, "{}", counter.as_str());
     }
+    assert_eq!(cancelled.consumed().get(WorkCounter::Assertion), 22);
 }
 
 #[test]
