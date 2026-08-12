@@ -1,12 +1,14 @@
 # nostr_automerge Draft V1 Remediation V4 Multi-RCLD
 
-Status: planned — `implementation_remediation_required`
+Status: complete — `implementation_remediation_required`
 Created: 2026-08-12
 Mode: rcl-durable
 Rust workspace and Git repository: repository root
 Reviewed Rust implementation candidate: `50c487f93556aa096d373d2ab357b3995932cd60`
 Reviewed public evidence head: `b34d52929c5f13eeff829c911f5f75b0db76e7c8`
 Reviewed opaque independent TypeScript candidate: `14a86b5b39b9498fd9691f5d9d6e422981b87ec3`
+Final Rust implementation candidate: `e9d2e65991c1552ade0cb7d7f77bfffbff95d0eb`
+Final opaque independent TypeScript candidate: `436891eeb4054d397a5485edd4ee74ccf6937965`
 Steps: `step_660` through `step_737` (78 contiguous checkpoints)
 
 ## Outcome
