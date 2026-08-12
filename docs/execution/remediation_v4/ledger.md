@@ -1,8 +1,8 @@
 # Draft V1 Remediation V4 Execution Ledger
 
 Status: active — `implementation_remediation_required`
-Active RCLD: 45
-Active checkpoint: `step_716`
+Active RCLD: 46
+Active checkpoint: `step_728`
 Range: `step_660` through `step_737`
 
 | RCLD | Steps | Status | Scope |
@@ -13,8 +13,8 @@ Range: `step_660` through `step_737`
 | 42 | `step_685`–`step_698` | complete | Global ChangeHash carrier claims |
 | 43 | `step_699`–`step_706` | complete | Prior dependency knowledge |
 | 44 | `step_707`–`step_715` | complete | Bounded interruption finalization |
-| 45 | `step_716`–`step_727` | active | Signed conformance and private TypeScript parity |
-| 46 | `step_728`–`step_737` | pending | Evidence reconciliation and final decision |
+| 45 | `step_716`–`step_727` | complete | Signed conformance and private TypeScript parity |
+| 46 | `step_728`–`step_737` | active | Evidence reconciliation and final decision |
 
 ## Completed checkpoints
 
@@ -38,6 +38,21 @@ Range: `step_660` through `step_737`
   atomically reserved mandatory work before evaluation, returned a constant
   fallback on reservation failure, consumed the permit after stops, and
   refunded it on complete paths to avoid double accounting.
+- `step_716`–`step_727`: published signed distribution v5 with 124 fixtures,
+  corrected final-lineage reduction, implemented the same scoped claim,
+  dependency, interruption, and manifest rules independently in TypeScript,
+  and proved all four profiles byte-identical in two fresh executions. The Rust
+  fixture commit is `e3b6fd034ac8e06752542485c8a0147ed89c2e6f`; the opaque TypeScript
+  candidate is `436891eeb4054d397a5485edd4ee74ccf6937965`.
+
+## RCLD 45 verification
+
+- `cargo extbuild run -- cargo run -p nostr_automerge_conformance --locked -- run_corpus fixtures/v1_draft/scenarios` — 124 passed, 0 failed.
+- `cargo extbuild run -- cargo test -p nostr_automerge_conformance --locked` — 17 passed, 0 failed.
+- `python3 scripts/validate_fixture_manifest.py --self-test` — passed distribution-v5 mutations.
+- `cargo extbuild run -- pnpm check` — TypeScript formatting, typecheck, policy, locks, 96-row coverage, and unit tests passed.
+- TypeScript signed-v5 execution — 44 passed, 0 failed with all 124 fixtures enabled.
+- `python3 scripts/validate_interop_attestation_v4.py --self-test` — four byte-identical profiles and deliberate mismatch detection passed without private-source disclosure.
 
 ## Scope adaptations
 

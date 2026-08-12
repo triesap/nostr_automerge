@@ -414,7 +414,7 @@ optional work after the stop.
 
 ## RCLD 45 — Signed Conformance And Private TypeScript Parity
 
-Status: active
+Status: complete
 Steps: `step_716` through `step_727`
 Primary findings: 036–039, 042
 
@@ -444,7 +444,7 @@ is exposed.
 
 ## RCLD 46 — Evidence Reconciliation And Final Decision
 
-Status: pending
+Status: active
 Steps: `step_728` through `step_737`
 Primary findings: 036–043
 
@@ -513,11 +513,4 @@ uncompleted holds rather than passing checks.
 
 The full unfinished sequence is:
 
-1. RCLD 39 — Authority And Decisions (`step_660`–`step_667`).
-2. RCLD 40 — Companion Authority And Registry V2 (`step_668`–`step_675`).
-3. RCLD 41 — Coordinate-Scoped Evidence (`step_676`–`step_684`).
-4. RCLD 42 — Global ChangeHash Carrier Claims (`step_685`–`step_698`).
-5. RCLD 43 — Prior Dependency Knowledge (`step_699`–`step_706`).
-6. RCLD 44 — Bounded Interruption Finalization (`step_707`–`step_715`).
-7. RCLD 45 — Signed Conformance And Private TypeScript Parity (`step_716`–`step_727`).
-8. RCLD 46 — Evidence Reconciliation And Final Decision (`step_728`–`step_737`).
+1. RCLD 46 — Evidence Reconciliation And Final Decision (`step_728`–`step_737`).
