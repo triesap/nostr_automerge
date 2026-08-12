@@ -444,7 +444,7 @@ is exposed.
 
 ## RCLD 46 — Evidence Reconciliation And Final Decision
 
-Status: active
+Status: complete
 Steps: `step_728` through `step_737`
 Primary findings: 036–043
 
@@ -511,6 +511,6 @@ uncompleted holds rather than passing checks.
 
 ## Unfinished RCLDs
 
-The full unfinished sequence is:
-
-1. RCLD 46 — Evidence Reconciliation And Final Decision (`step_728`–`step_737`).
+There are no unfinished RCLDs in this sequence. External NIP reconciliation,
+sustained native fuzzing, independent external review, publication, and
+production-readiness claims remain release holds rather than unfinished RCLDs.
