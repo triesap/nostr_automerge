@@ -101,6 +101,25 @@ impl<'a> DocumentEvidenceView<'a> {
             .copied()
     }
 
+    pub(crate) fn control_count(&self) -> usize {
+        self.reportable_event_ids
+            .iter()
+            .filter(|event_id| {
+                matches!(
+                    self.corpus.events.get(event_id),
+                    Some(EventEvidence::VerifiedCarrier {
+                        carrier: VerifiedCarrier::Control(_),
+                        ..
+                    })
+                )
+            })
+            .count()
+    }
+
+    pub(crate) fn change_hash_count(&self) -> usize {
+        self.change_hashes().count()
+    }
+
     pub(crate) fn evaluation_event_count(&self) -> usize {
         self.input_event_ids().count().saturating_add(
             self.corpus

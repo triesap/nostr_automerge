@@ -1,8 +1,8 @@
 # Draft V1 Remediation V4 Execution Ledger
 
 Status: active — `implementation_remediation_required`
-Active RCLD: 44
-Active checkpoint: `step_707`
+Active RCLD: 45
+Active checkpoint: `step_716`
 Range: `step_660` through `step_737`
 
 | RCLD | Steps | Status | Scope |
@@ -12,8 +12,8 @@ Range: `step_660` through `step_737`
 | 41 | `step_676`–`step_684` | complete | Coordinate-scoped evidence |
 | 42 | `step_685`–`step_698` | complete | Global ChangeHash carrier claims |
 | 43 | `step_699`–`step_706` | complete | Prior dependency knowledge |
-| 44 | `step_707`–`step_715` | active | Bounded interruption finalization |
-| 45 | `step_716`–`step_727` | pending | Signed conformance and private TypeScript parity |
+| 44 | `step_707`–`step_715` | complete | Bounded interruption finalization |
+| 45 | `step_716`–`step_727` | active | Signed conformance and private TypeScript parity |
 | 46 | `step_728`–`step_737` | pending | Evidence reconciliation and final decision |
 
 ## Completed checkpoints
@@ -34,6 +34,10 @@ Range: `step_660` through `step_737`
 - `step_699`–`step_706`: passed explicit pruned and invalid prior-change
   knowledge into epoch validation, made fixed-base impossible dependencies
   invalid, and retained pending-to-accepted promotion for truly absent evidence.
+- `step_707`–`step_715`: added a checked coordinate-scoped finalization plan,
+  atomically reserved mandatory work before evaluation, returned a constant
+  fallback on reservation failure, consumed the permit after stops, and
+  refunded it on complete paths to avoid double accounting.
 
 ## Scope adaptations
 

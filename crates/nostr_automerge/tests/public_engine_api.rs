@@ -2710,8 +2710,9 @@ fn event_and_carrier_work_exhaustion_precedes_state() {
     assert_eq!(report.failure(), Some(EvaluationFailure::BudgetExhausted));
     assert!(report.canonical_controls().is_empty());
     assert!(report.accepted_changes().is_empty());
-    assert_eq!(budget.consumed().get(WorkCounter::Event), 2);
+    assert_eq!(budget.consumed().get(WorkCounter::Event), 0);
     assert_eq!(budget.consumed().get(WorkCounter::Carrier), 0);
+    assert_eq!(budget.consumed().get(WorkCounter::Assertion), 0);
 }
 
 #[test]

@@ -196,6 +196,31 @@ impl WorkBudget {
         self.charge(WorkCounter::CheckpointItem, amount)
     }
 
+    pub(crate) fn refund(
+        &mut self,
+        counter: WorkCounter,
+        amount: u64,
+    ) -> Result<(), BudgetExhausted> {
+        let next_count = self
+            .consumed
+            .get(counter)
+            .checked_sub(amount)
+            .ok_or(BudgetExhausted { counter })?;
+        if counter.capacity() == WorkCapacity::Bytes {
+            self.remaining_bytes = self
+                .remaining_bytes
+                .checked_add(amount)
+                .ok_or(BudgetExhausted { counter })?;
+        } else {
+            self.remaining_items = self
+                .remaining_items
+                .checked_add(amount)
+                .ok_or(BudgetExhausted { counter })?;
+        }
+        self.consumed.set(counter, next_count);
+        Ok(())
+    }
+
     /// Returns the remaining byte and item counters.
     #[must_use]
     pub const fn remaining(self) -> (u64, u64) {

@@ -389,7 +389,7 @@ recoverable, and equivocation quarantine retains its separate excluded meaning.
 
 ## RCLD 44 — Bounded Interruption Finalization
 
-Status: active
+Status: complete
 Steps: `step_707` through `step_715`
 Primary finding: 039
 
@@ -414,7 +414,7 @@ optional work after the stop.
 
 ## RCLD 45 — Signed Conformance And Private TypeScript Parity
 
-Status: pending
+Status: active
 Steps: `step_716` through `step_727`
 Primary findings: 036–039, 042
 
