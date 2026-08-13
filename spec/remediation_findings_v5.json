@@ -1,0 +1,79 @@
+{
+  "schema": "nostr_automerge.remediation_v5.findings.v1",
+  "review_head": "7becc35f5f3a19a7f744da494341e178e05bd639",
+  "implementation_candidate": "e9d2e65991c1552ade0cb7d7f77bfffbff95d0eb",
+  "status": "implementation_remediation_required",
+  "findings": [
+    {
+      "id": "FINDING_044",
+      "severity": "high",
+      "class": "consensus",
+      "title": "Prior-epoch dependency knowledge is incomplete",
+      "paths": ["crates/nostr_automerge/src/reference/evaluate.rs", "crates/nostr_automerge/src/reference/epoch_engine.rs", "crates/nostr_automerge/src/engine/reference_evaluator.rs"],
+      "symbols": ["PriorChangeKnowledge", "prior_change_knowledge", "evaluate_epoch"],
+      "reproductions": ["dependency_known_under_other_control", "unsupported_dependency", "prior_equivocation_dependency", "unknown_dependency_promotion"],
+      "closure": "Every dependency has a complete knowledge state; known-impossible dependencies invalidate dependants and only genuinely unknown evidence remains pending."
+    },
+    {
+      "id": "FINDING_045",
+      "severity": "high",
+      "class": "consensus",
+      "title": "Mixed carrier-claim precedence is incorrect",
+      "paths": ["crates/nostr_automerge/src/engine/reference_evaluator.rs", "crates/nostr_automerge/src/evidence/indexes.rs", "crates/nostr_automerge/src/reference/evaluate.rs"],
+      "symbols": ["ChangeCarrierClaim", "ClaimState", "reduce_change_dispositions"],
+      "reproductions": ["pending_and_noncanonical", "pending_and_invalid", "pruned_and_pending", "equivocation_and_pending"],
+      "closure": "Reasoned claim and final-lineage reduction implements accepted, pruned, pending, excluded, all-unsupported, then invalid precedence."
+    },
+    {
+      "id": "FINDING_046",
+      "severity": "high",
+      "class": "authorization",
+      "title": "Checkpoint referenced-control states are collapsed",
+      "paths": ["crates/nostr_automerge/src/checkpoint/authorize.rs", "crates/nostr_automerge/src/engine/reference_evaluator.rs", "crates/nostr_automerge/src/engine/evaluation_report.rs"],
+      "symbols": ["DescriptorAuthorization", "authorize_descriptor", "verify_checkpoints"],
+      "reproductions": ["checkpoint_control_resolution_matrix"],
+      "closure": "Checkpoint authorization consumes the shared resolver; missing and pending remain pending and known unusable references are invalid."
+    },
+    {
+      "id": "FINDING_047",
+      "severity": "high",
+      "class": "resource",
+      "title": "Coordinate-scoped evaluation still performs unscoped work",
+      "paths": ["crates/nostr_automerge/src/evidence/document_view.rs", "crates/nostr_automerge/src/evidence/indexes.rs", "crates/nostr_automerge/src/evidence/corpus_builder.rs", "crates/nostr_automerge/src/engine/reference_evaluator.rs"],
+      "symbols": ["DocumentEvidenceView::derive", "selected_manifests_in", "reduce_change_dispositions"],
+      "reproductions": ["coordinate_resource_isolation", "cancellation_before_coordinate_lookup", "claim_reduction_budget"],
+      "closure": "Corpus-finalized coordinate indexes eliminate unrelated evaluation scans and all target lookup and claim work is metered."
+    },
+    {
+      "id": "FINDING_048",
+      "severity": "high",
+      "class": "resource",
+      "title": "Finalization reservation is not mechanically consumed",
+      "paths": ["crates/nostr_automerge/src/engine/reference_evaluator.rs", "crates/nostr_automerge/src/engine/evaluation_report.rs", "crates/nostr_automerge/src/work_budget.rs"],
+      "symbols": ["ReportFinalizationPlan", "ReportFinalizationPermit", "reserved_batch_report"],
+      "reproductions": ["finalization_dimension_boundaries", "finalization_underestimation_mutations"],
+      "closure": "Typed dimensions are atomically reserved and mechanically consumed; underflow, overrun, double consumption, and unaccounted work fail closed."
+    },
+    {
+      "id": "FINDING_049",
+      "severity": "high",
+      "class": "specification",
+      "title": "The proposed NIP remains non-self-contained",
+      "paths": ["spec/NIP_DRAFT.md", "spec/NOSTR_AUTOMERGE_V1_SPEC.md", "spec/requirements.json"],
+      "symbols": ["NIP_DRAFT", "companion specification", "requirements registry"],
+      "reproductions": ["authority_source_validation"],
+      "closure": "The externally authored NIP is reconciled with every interoperability-critical companion rule and evidence is regenerated against its exact hash.",
+      "external_hold": true
+    },
+    {
+      "id": "FINDING_050",
+      "severity": "medium",
+      "class": "evidence",
+      "title": "Candidate identity and repository status documentation are stale",
+      "paths": ["README.md", "reports/final_candidate_identity_v4.json", "reports/final_assurance_v4.json"],
+      "symbols": ["candidate identity", "README status", "evidence supersession"],
+      "reproductions": ["stale_candidate_rejection"],
+      "closure": "One candidate identity binds corrected commits, locks, authority, fixtures, reports, and holds while stale evidence is machine-superseded."
+    }
+  ]
+}
