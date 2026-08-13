@@ -10,7 +10,10 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "fixture_schema_checksum_snake_case",
         "scripts/validate_fixtures.py",
     ),
-    ("fixture_distribution", "scripts/validate_distribution.py"),
+    (
+        "fixture_distribution",
+        "scripts/validate_fixture_distribution_v6.py",
+    ),
     ("sealed_constants", "scripts/validate_protocol_revision.py"),
     ("automerge_boundary", "scripts/validate_architecture.py"),
     ("diagnostic_registry", "scripts/validate_diagnostics.py"),
