@@ -235,3 +235,72 @@ and atomically reserved before canonical state work. A failed reservation
 returns a constant-size interrupted report before state evaluation and without
 fabricated canonical progress. After a stop, optional work ceases and only
 bounded mandatory finalization may consume the reservation.
+
+## Remediation v5 execution rules
+
+These implementation-owned rules refine the preceding sections while the
+external NIP remains read-only and separately reconciled.
+
+### Shared referenced-control resolution
+
+Every manifest, change claim, dependency, and checkpoint resolves a referenced
+control through the same state machine: canonical, statefully valid
+noncanonical, pending, missing, wrong kind, wrong coordinate, statically
+invalid, dynamically invalid, or unsupported. Missing and pending remain
+recoverable. A known unusable referenced control makes a dependent draft-v1
+carrier invalid; the dependent carrier does not inherit an unsupported revision.
+
+Manifest hints are available for canonical and valid noncanonical controls,
+pending for missing or pending controls, and unavailable for every known
+unusable control. Change claims additionally require write authorization.
+Checkpoint descriptors additionally require checkpoint authorization;
+noncanonical and every known unusable control is invalid.
+
+### Reasoned final ChangeHash reduction
+
+Semantic change data, signed carrier metadata, per-claim reason, and final
+lineage state are separate. A generic prior protocol disposition is not a claim
+reason. For every target `ChangeHash`, apply the first matching rule:
+
+1. final accepted closure is `accepted`;
+2. a canonical ancestor accepted and later pruned is `excluded`;
+3. any genuinely unresolved claim or selected-epoch dependency is `pending`;
+4. any otherwise-valid noncanonical or current-branch excluded result is
+   `excluded`;
+5. a nonempty set containing only unsupported claims is
+   `unsupported_revision`;
+6. every remaining conclusive known-v1 failure is `invalid`.
+
+Accepted state cannot be poisoned, and canonical pruning outranks a later
+pending duplicate.
+
+### Complete dependency knowledge
+
+For a selected signed epoch, classify every dependency as accepted in base,
+same-epoch candidate, pruned canonical ancestor, known through another control,
+known invalid, known unsupported, prior-equivocation-excluded, or unknown.
+Accepted-base state is usable and same-epoch state is resolved in the selected
+graph. Every other known state is impossible under that epoch and invalidates
+the dependant transitively. Only genuinely absent or unresolved
+selected-control evidence remains pending. A selected-control claim takes
+same-epoch priority over duplicate claims naming other controls.
+
+### Indexed coordinate work
+
+Corpus finalization derives deterministic indexes for reportable events,
+semantic hashes and claims, manifests, checkpoints, attributable invalid or
+unsupported carriers, and direct lifecycle support by coordinate. Evaluation
+checks cancellation before target lookup and does not scan unrelated documents.
+Manifest selection iterates indexed candidates without cloning evidence.
+Every target hash, claim, referenced-control lookup, role comparison, and
+lifecycle-support access consumes deterministic local work capacity.
+
+### Mechanically enforced finalization
+
+Before interruptible canonical work, reserve checked conservative dimensions
+for controls, changes, events, checkpoints, digests, evidence, invariant
+validation, and fixed report overhead. Each finalization pass consumes its own
+dimension. Cross-dimension borrowing, underflow, overrun, double consumption,
+or unexplained remainder is a noncanonical invariant failure. Failed reservation
+returns a constant-size no-progress interruption report. Completed evaluation
+refunds unused optional capacity exactly once.

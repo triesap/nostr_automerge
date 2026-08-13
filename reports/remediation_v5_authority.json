@@ -1,0 +1,33 @@
+{
+  "schema": "nostr_automerge.remediation_v5_authority.v1",
+  "status": "local_companion_authority_pass_external_nip_hold",
+  "requirement_count": 106,
+  "original_requirement_count": 96,
+  "appended_requirement_ids": [
+    "NCRDT-DUP-003",
+    "NCRDT-DISPOSITION-003",
+    "NCRDT-EPOCH-002",
+    "NCRDT-EPOCH-003",
+    "NCRDT-CPTRUST-003",
+    "NCRDT-SCOPE-003",
+    "NCRDT-RESOURCE-003",
+    "NCRDT-RESOURCE-004",
+    "NCRDT-NIP-001",
+    "NCRDT-CONF-006"
+  ],
+  "hashes": {
+    "read_only_nip_sha256": "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3",
+    "companion_spec_sha256": "a9b4fc72d7ab25c5195575ac4b2d2921c7a90b26782ff76251e4ec022ac55501",
+    "external_nip_delta_sha256": "d89f06cbfe326a58ecd4fb85d42c08b3036193df65a6c480f6a3e9c69f889d66",
+    "requirements_sha256": "ecb56fb0a5696a717b5096018a188a340d3e7691cc9174e1781162f1d0cad1ae",
+    "applicability_sha256": "d4686ba398b5ed4968b6ab9e477778508e6511fe714c67bb93e59672efabcc9f"
+  },
+  "deviations": [
+    "NCRDT-CPTRUST-003 replaces the proposed duplicate NCRDT-CPTRUST-002 identifier"
+  ],
+  "holds": [
+    "external_nip_reconciliation"
+  ],
+  "nip_edited": false,
+  "wire_constants_changed": false
+}

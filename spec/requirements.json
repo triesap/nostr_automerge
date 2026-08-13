@@ -1,7 +1,7 @@
 {
-  "schema": "nostr_automerge.requirements.v2",
+  "schema": "nostr_automerge.requirements.v3",
   "project": "nostr_automerge_v1_spec",
-  "requirement_count": 96,
+  "requirement_count": 106,
   "requirements": [
     {
       "id": "NCRDT-SCOPE-001",
@@ -578,6 +578,66 @@
       "section": "Independent implementation",
       "text": "The independent private TypeScript implementation MUST implement NCRDT-DUP-002, NCRDT-DISPOSITION-002, NCRDT-EPOCH-001, NCRDT-SCOPE-002, NCRDT-RESOURCE-002, NCRDT-MANIFEST-003, and NCRDT-CONF-005 without calling the Rust implementation, and MUST produce byte-identical canonical reports for the expanded signed distribution.",
       "source": "implementation/TYPESCRIPT_INTEROP_PLAN.md"
+    },
+    {
+      "id": "NCRDT-DUP-003",
+      "section": "Duplicate carriers",
+      "text": "After final accepted and canonical-ancestor-pruned rules, any genuinely unresolved claim MUST yield pending before otherwise-valid noncanonical or conclusive-failure claims.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-DISPOSITION-003",
+      "section": "Protocol dispositions",
+      "text": "Implementations MUST retain reasoned per-claim and final-lineage state; a generic prior disposition MUST NOT replace the canonical ChangeHash reduction table.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-EPOCH-002",
+      "section": "Causal epoch boundary",
+      "text": "A dependency known through another control, unusable control evidence, or prior equivocation-excluded history MUST be invalid for the selected signed epoch.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-EPOCH-003",
+      "section": "Causal epoch boundary",
+      "text": "Only genuinely absent or unresolved selected-control dependency evidence MUST remain pending and MAY promote after delivery.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-CPTRUST-003",
+      "section": "Checkpoint authorization",
+      "text": "Checkpoint control resolution MUST distinguish canonical authorization, pending or missing evidence, noncanonical controls, and every known unusable control; only missing or pending control evidence yields a pending checkpoint.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-SCOPE-003",
+      "section": "Deterministic state construction",
+      "text": "One-coordinate evaluation MUST derive canonical output and local work only from attributable target evidence and explicit lifecycle support.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-RESOURCE-003",
+      "section": "Resource limits and interruption",
+      "text": "Every evidence-proportional operation after interruption MUST be conservatively reserved before canonical work and mechanically consumed.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-RESOURCE-004",
+      "section": "Resource limits and interruption",
+      "text": "When finalization capacity cannot be reserved, a client MAY return a constant-size interrupted report with no fabricated canonical progress.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-NIP-001",
+      "section": "Conformance authority",
+      "text": "The externally authored NIP MUST eventually contain every interoperability-critical rule required to reproduce language-neutral conformance without companion-only prose; this remains an explicit external reconciliation hold.",
+      "source": "spec/NIP_V5_PATCH_PROPOSAL.md"
+    },
+    {
+      "id": "NCRDT-CONF-006",
+      "section": "Conformance",
+      "text": "The mandatory signed corpus MUST cover mixed claims, complete dependency knowledge, checkpoint control states, coordinate resource isolation, and finalization boundaries.",
+      "source": "spec/CONFORMANCE.md"
     }
   ]
 }

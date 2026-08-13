@@ -199,7 +199,7 @@ The remediation authority comprises 89 corrective requirements:
 
 Preserve the existing 96 requirement IDs in exact order and append ten new rows,
 `NCRDT-DUP-003`, `NCRDT-DISPOSITION-003`, `NCRDT-EPOCH-002`,
-`NCRDT-EPOCH-003`, `NCRDT-CPTRUST-002`, `NCRDT-SCOPE-003`,
+`NCRDT-EPOCH-003`, `NCRDT-CPTRUST-003`, `NCRDT-SCOPE-003`,
 `NCRDT-RESOURCE-003`, `NCRDT-RESOURCE-004`, `NCRDT-NIP-001`, and
 `NCRDT-CONF-006`. Until the NIP is reconciled, rows whose normative prose is
 companion-owned cite that companion source and explicitly retain the external

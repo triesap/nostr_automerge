@@ -1,6 +1,6 @@
 {
-  "schema": "nostr_automerge.requirements_applicability.v2",
-  "reviewed": "2026-08-12",
+  "schema": "nostr_automerge.requirements_applicability.v3",
+  "reviewed": "2026-08-13",
   "classifications": {
     "NCRDT-SCOPE-001": "out-of-core",
     "NCRDT-NIP01-001": "rust-and-typescript",
@@ -97,6 +97,16 @@
     "NCRDT-MANIFEST-003": "rust-and-typescript",
     "NCRDT-CONF-005": "rust-and-typescript",
     "NCRDT-EVIDENCE-002": "rust-only",
-    "NCRDT-TS-002": "rust-and-typescript"
+    "NCRDT-TS-002": "rust-and-typescript",
+    "NCRDT-DUP-003": "rust-and-typescript",
+    "NCRDT-DISPOSITION-003": "rust-and-typescript",
+    "NCRDT-EPOCH-002": "rust-and-typescript",
+    "NCRDT-EPOCH-003": "rust-and-typescript",
+    "NCRDT-CPTRUST-003": "rust-and-typescript",
+    "NCRDT-SCOPE-003": "rust-and-typescript",
+    "NCRDT-RESOURCE-003": "rust-and-typescript",
+    "NCRDT-RESOURCE-004": "rust-and-typescript",
+    "NCRDT-NIP-001": "explicitly-deferred",
+    "NCRDT-CONF-006": "rust-and-typescript"
   }
 }

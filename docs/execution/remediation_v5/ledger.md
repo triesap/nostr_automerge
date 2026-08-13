@@ -1,8 +1,8 @@
 # Remediation V5 Execution Ledger
 
 Status: active — `implementation_remediation_required`
-Active RCLD: 54
-Active step: `step_829`
+Active RCLD: 55
+Active step: `step_840`
 Range: `step_738` through `step_860`
 
 | RCLD | Steps | Status | Scope |
@@ -14,8 +14,8 @@ Range: `step_738` through `step_860`
 | 51 | 791–802 | complete | checkpoint control resolution |
 | 52 | 803–816 | complete | coordinate indexes and resource isolation |
 | 53 | 817–828 | complete | mechanical finalization accounting |
-| 54 | 829–839 | active | companion authority, external NIP delta, and registry v3 |
-| 55 | 840–860 | pending | signed conformance, independent parity, and assurance |
+| 54 | 829–839 | complete | companion authority, external NIP delta, and registry v3 |
+| 55 | 840–860 | active | signed conformance, independent parity, and assurance |
 
 ## Completed Checkpoints
 
@@ -36,6 +36,7 @@ Range: `step_738` through `step_860`
 | `step_791`–`step_802` | current commit | Checkpoint resolver mapping, descriptor/chunk consistency, state matrix, and phase tests completed. |
 | `step_803`–`step_816` | current commit | Coordinate indexes, indexed views, pre-cancellation, direct manifest selection, metered claims, and isolation tests completed. |
 | `step_817`–`step_828` | current commit | Typed finalization planning, atomic reservation, checked consumption/refund, wrapper enforcement, and boundary tests completed. |
+| `step_829`–`step_839` | current commit | Companion authority, portable external-NIP delta, unique 106-row registry, deviation, hashes, and local authority validation completed. |
 
 ## Execution Rules
 
