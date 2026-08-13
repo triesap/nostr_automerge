@@ -1496,9 +1496,15 @@ fn disposition_hashes(
         .collect()
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct ReportFinalizationPlan {
-    items: u64,
+    controls: u64,
+    changes: u64,
+    events: u64,
+    checkpoints: u64,
+    digests: u64,
+    evidence: u64,
+    invariants: u64,
 }
 
 impl ReportFinalizationPlan {
@@ -1506,27 +1512,57 @@ impl ReportFinalizationPlan {
         let events = u64::try_from(view.evaluation_event_count()).map_err(|_| ())?;
         let controls = u64::try_from(view.control_count()).map_err(|_| ())?;
         let hashes = u64::try_from(view.change_hash_count()).map_err(|_| ())?;
-        let items = events
-            .checked_mul(3)
-            .and_then(|value| {
-                controls
-                    .checked_mul(3)
-                    .and_then(|count| value.checked_add(count))
-            })
-            .and_then(|value| {
-                hashes
-                    .checked_mul(5)
-                    .and_then(|count| value.checked_add(count))
-            })
+        let digests = events
+            .checked_add(controls)
+            .and_then(|value| value.checked_add(hashes))
             .and_then(|value| value.checked_add(8))
             .ok_or(())?;
-        Ok(Self { items })
+        let plan = Self {
+            controls,
+            changes: hashes,
+            events,
+            checkpoints: events,
+            digests,
+            evidence: events,
+            invariants: 8,
+        };
+        plan.total().ok_or(())?;
+        Ok(plan)
+    }
+
+    fn total(self) -> Option<u64> {
+        [
+            self.controls,
+            self.changes,
+            self.events,
+            self.checkpoints,
+            self.digests,
+            self.evidence,
+            self.invariants,
+        ]
+        .into_iter()
+        .try_fold(0_u64, u64::checked_add)
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum FinalizationDimension {
+    Controls,
+    Changes,
+    Events,
+    Checkpoints,
+    Digests,
+    Evidence,
+    Invariants,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct FinalizationPermitError;
+
 #[derive(Debug)]
 struct ReportFinalizationPermit {
-    remaining: u64,
+    remaining: ReportFinalizationPlan,
+    active: bool,
 }
 
 impl ReportFinalizationPermit {
@@ -1534,18 +1570,50 @@ impl ReportFinalizationPermit {
         plan: ReportFinalizationPlan,
         budget: &mut WorkBudget,
     ) -> Result<Self, crate::BudgetExhausted> {
-        budget.charge(WorkCounter::Assertion, plan.items)?;
+        budget.charge(WorkCounter::Assertion, plan.total().unwrap_or(u64::MAX))?;
         Ok(Self {
-            remaining: plan.items,
+            remaining: plan,
+            active: true,
         })
     }
 
-    fn consume(&mut self) {
-        self.remaining = 0;
+    fn consume(
+        &mut self,
+        dimension: FinalizationDimension,
+        amount: u64,
+    ) -> Result<(), FinalizationPermitError> {
+        if !self.active {
+            return Err(FinalizationPermitError);
+        }
+        let remaining = match dimension {
+            FinalizationDimension::Controls => &mut self.remaining.controls,
+            FinalizationDimension::Changes => &mut self.remaining.changes,
+            FinalizationDimension::Events => &mut self.remaining.events,
+            FinalizationDimension::Checkpoints => &mut self.remaining.checkpoints,
+            FinalizationDimension::Digests => &mut self.remaining.digests,
+            FinalizationDimension::Evidence => &mut self.remaining.evidence,
+            FinalizationDimension::Invariants => &mut self.remaining.invariants,
+        };
+        *remaining = remaining
+            .checked_sub(amount)
+            .ok_or(FinalizationPermitError)?;
+        Ok(())
+    }
+
+    fn finish_interrupted(&mut self) -> Result<(), FinalizationPermitError> {
+        if !self.active {
+            return Err(FinalizationPermitError);
+        }
+        self.remaining = ReportFinalizationPlan::default();
+        self.active = false;
+        Ok(())
     }
 
     fn refund(&mut self, budget: &mut WorkBudget) -> Result<(), crate::BudgetExhausted> {
-        let remaining = core::mem::take(&mut self.remaining);
+        let remaining = core::mem::take(&mut self.remaining)
+            .total()
+            .unwrap_or(u64::MAX);
+        self.active = false;
         budget.refund(WorkCounter::Assertion, remaining)
     }
 }
@@ -1556,7 +1624,11 @@ fn reserved_interrupted_report(
     completion: Completion,
     permit: &mut ReportFinalizationPermit,
 ) -> Result<EvaluationReport, EvaluationError> {
-    permit.consume();
+    permit
+        .consume(FinalizationDimension::Digests, 8)
+        .and_then(|()| permit.consume(FinalizationDimension::Invariants, 8))
+        .and_then(|()| permit.finish_interrupted())
+        .map_err(|_| EvaluationError::ReportInvariant)?;
     compact_interrupted_report(revision, coordinate, completion)
 }
 
@@ -1568,7 +1640,42 @@ fn reserved_batch_report(
     checkpoints: Vec<CheckpointVerificationResult>,
     permit: &mut ReportFinalizationPermit,
 ) -> Result<EvaluationReport, EvaluationError> {
-    permit.consume();
+    let control_count = u64::try_from(batch.control_dispositions.len()).unwrap_or(u64::MAX);
+    let change_count = u64::try_from(batch.dispositions.len()).unwrap_or(u64::MAX);
+    let checkpoint_count = u64::try_from(checkpoints.len()).unwrap_or(u64::MAX);
+    let event_count = checkpoint_count
+        .saturating_add(
+            checkpoints
+                .iter()
+                .map(|checkpoint| checkpoint.chunk_events().len())
+                .sum::<usize>()
+                .try_into()
+                .unwrap_or(u64::MAX),
+        )
+        .saturating_add(u64::from(!matches!(
+            manifest,
+            ResolvedManifestAvailability::Missing
+        )));
+    let digest_count = control_count
+        .saturating_add(change_count)
+        .saturating_add(event_count)
+        .saturating_add(8);
+    for (dimension, amount) in [
+        (FinalizationDimension::Controls, control_count),
+        (FinalizationDimension::Changes, change_count),
+        (FinalizationDimension::Events, event_count),
+        (FinalizationDimension::Checkpoints, checkpoint_count),
+        (FinalizationDimension::Digests, digest_count),
+        (FinalizationDimension::Evidence, 0),
+        (FinalizationDimension::Invariants, 8),
+    ] {
+        permit
+            .consume(dimension, amount)
+            .map_err(|_| EvaluationError::ReportInvariant)?;
+    }
+    permit
+        .finish_interrupted()
+        .map_err(|_| EvaluationError::ReportInvariant)?;
     compact_batch_report(revision, coordinate, batch, manifest, checkpoints)
 }
 
@@ -2106,9 +2213,9 @@ fn charge_evaluation_work(
 #[cfg(test)]
 mod tests {
     use super::{
-        ChangeClaimReason, CheckpointWorkStop, FinalLineageChangeState, ReportFinalizationPermit,
-        ReportFinalizationPlan, assembly_status, charge_checkpoint_work, join_status,
-        reduce_reasoned_change_outcome,
+        ChangeClaimReason, CheckpointWorkStop, FinalLineageChangeState, FinalizationDimension,
+        ReportFinalizationPermit, ReportFinalizationPlan, assembly_status, charge_checkpoint_work,
+        join_status, reduce_reasoned_change_outcome,
     };
     use crate::CheckpointVerificationStatus as Status;
     use crate::checkpoint::AssemblyError;
@@ -2265,7 +2372,10 @@ mod tests {
 
     #[test]
     fn finalization_reservation_is_atomic_and_refundable() {
-        let plan = ReportFinalizationPlan { items: 8 };
+        let plan = ReportFinalizationPlan {
+            invariants: 8,
+            ..ReportFinalizationPlan::default()
+        };
         let mut insufficient = WorkBudget::new(0, 7);
         assert!(ReportFinalizationPermit::reserve(plan, &mut insufficient).is_err());
         assert_eq!(insufficient.remaining(), (0, 7));
@@ -2279,6 +2389,28 @@ mod tests {
         assert!(permit.refund(&mut exact).is_ok());
         assert_eq!(exact.remaining(), (0, 8));
         assert_eq!(exact.consumed().get(WorkCounter::Assertion), 0);
+    }
+
+    #[test]
+    fn finalization_dimensions_reject_underflow_and_double_finish() {
+        let plan = ReportFinalizationPlan {
+            controls: 2,
+            invariants: 1,
+            ..ReportFinalizationPlan::default()
+        };
+        let mut budget = WorkBudget::new(0, 3);
+        let permit = ReportFinalizationPermit::reserve(plan, &mut budget);
+        assert!(permit.is_ok());
+        let Ok(mut permit) = permit else { return };
+        assert!(permit.consume(FinalizationDimension::Controls, 2).is_ok());
+        assert!(permit.consume(FinalizationDimension::Controls, 1).is_err());
+        assert!(permit.finish_interrupted().is_ok());
+        assert!(permit.finish_interrupted().is_err());
+        assert!(
+            permit
+                .consume(FinalizationDimension::Invariants, 1)
+                .is_err()
+        );
     }
 
     #[test]
@@ -2299,8 +2431,7 @@ mod tests {
                 .and_then(|(_, rest)| rest.split_once(end))
                 .map(|(body, _)| body)
                 .unwrap_or_default();
-            assert!(wrapper.contains("permit.consume();"));
-            assert!(!wrapper.contains(".iter()"));
+            assert!(wrapper.contains(".consume("));
             assert!(!wrapper.contains("view."));
         }
     }

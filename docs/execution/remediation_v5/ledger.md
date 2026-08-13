@@ -1,8 +1,8 @@
 # Remediation V5 Execution Ledger
 
 Status: active — `implementation_remediation_required`
-Active RCLD: 53
-Active step: `step_817`
+Active RCLD: 54
+Active step: `step_829`
 Range: `step_738` through `step_860`
 
 | RCLD | Steps | Status | Scope |
@@ -13,8 +13,8 @@ Range: `step_738` through `step_860`
 | 50 | 776–790 | complete | complete prior dependency knowledge |
 | 51 | 791–802 | complete | checkpoint control resolution |
 | 52 | 803–816 | complete | coordinate indexes and resource isolation |
-| 53 | 817–828 | active | mechanical finalization accounting |
-| 54 | 829–839 | pending | companion authority, external NIP delta, and registry v3 |
+| 53 | 817–828 | complete | mechanical finalization accounting |
+| 54 | 829–839 | active | companion authority, external NIP delta, and registry v3 |
 | 55 | 840–860 | pending | signed conformance, independent parity, and assurance |
 
 ## Completed Checkpoints
@@ -35,6 +35,7 @@ Range: `step_738` through `step_860`
 | `step_776`–`step_790` | current commit | Complete dependency knowledge, selected-control priority, transitive invalidation, and phase tests completed. |
 | `step_791`–`step_802` | current commit | Checkpoint resolver mapping, descriptor/chunk consistency, state matrix, and phase tests completed. |
 | `step_803`–`step_816` | current commit | Coordinate indexes, indexed views, pre-cancellation, direct manifest selection, metered claims, and isolation tests completed. |
+| `step_817`–`step_828` | current commit | Typed finalization planning, atomic reservation, checked consumption/refund, wrapper enforcement, and boundary tests completed. |
 
 ## Execution Rules
 
