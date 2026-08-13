@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/fixtures/schema/fixture.schema.v6.json",
+  "title": "nostr_automerge remediation-v5 signed fixture coverage",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["fixture_id", "control_reference_states", "change_claim_reasons", "dependency_knowledge", "finalization_dimensions"],
+  "properties": {
+    "fixture_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_]{2,127}$"},
+    "control_reference_states": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"enum": ["canonical", "noncanonical_valid", "pending", "missing", "wrong_kind", "wrong_coordinate", "static_invalid", "dynamic_invalid", "unsupported_revision"]}
+    },
+    "change_claim_reasons": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"enum": ["canonical_eligible", "pending", "noncanonical_valid", "current_excluded", "invalid_control", "unauthorized", "unsupported"]}
+    },
+    "dependency_knowledge": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"enum": ["accepted_base", "same_epoch_candidate", "pruned_canonical_ancestor", "known_other_control", "known_invalid", "known_unsupported", "prior_equivocation_excluded", "unknown"]}
+    },
+    "finalization_dimensions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"enum": ["controls", "changes", "events", "checkpoints", "digests", "evidence", "invariants"]}
+    }
+  }
+}

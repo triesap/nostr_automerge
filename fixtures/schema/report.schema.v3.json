@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/fixtures/schema/report.schema.v3.json",
+  "title": "nostr_automerge remediation-v5 report outcome vocabulary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["completion", "control_reference_state", "change_claim_outcome", "dependency_outcome", "finalization"],
+  "properties": {
+    "completion": {"enum": ["complete", "budget_exhausted", "cancelled"]},
+    "control_reference_state": {"enum": ["canonical", "noncanonical_valid", "pending", "missing", "wrong_kind", "wrong_coordinate", "static_invalid", "dynamic_invalid", "unsupported_revision"]},
+    "change_claim_outcome": {"enum": ["accepted", "pending", "excluded", "invalid", "unsupported_revision"]},
+    "dependency_outcome": {"enum": ["eligible", "pending", "invalid"]},
+    "finalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["controls", "changes", "events", "checkpoints", "digests", "evidence", "invariants"],
+      "properties": {
+        "controls": {"type": "integer", "minimum": 0},
+        "changes": {"type": "integer", "minimum": 0},
+        "events": {"type": "integer", "minimum": 0},
+        "checkpoints": {"type": "integer", "minimum": 0},
+        "digests": {"type": "integer", "minimum": 0},
+        "evidence": {"type": "integer", "minimum": 0},
+        "invariants": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}
