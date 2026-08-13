@@ -616,7 +616,13 @@ pub(crate) struct FixtureSummary {
 }
 
 pub(crate) fn discover_fixtures(root: &Path) -> Result<Vec<PathBuf>, RunError> {
-    let mut pending = vec![root.to_path_buf()];
+    let signed_scenarios = root.join("v1_draft/scenarios");
+    let discovery_root = if signed_scenarios.is_dir() {
+        signed_scenarios
+    } else {
+        root.to_path_buf()
+    };
+    let mut pending = vec![discovery_root];
     let mut fixtures = Vec::new();
     while let Some(path) = pending.pop() {
         let entries = fs::read_dir(path).map_err(|_| RunError::Fixture)?;
@@ -813,10 +819,15 @@ mod tests {
             run_corpus(paths.clone(), None, None),
             run_corpus(reversed, None, None)
         );
-        let filtered = run_corpus(paths.clone(), Some("actor_derivation"), None);
+        let actor = root.join("examples/actor_derivation_001.fixture.json");
+        let filtered = run_corpus([actor.clone()], Some("actor_derivation"), None);
         assert_eq!(filtered.total, 1);
         assert_eq!(filtered.failed, 0);
-        let requirement = run_corpus(paths.clone(), None, Some("NCRDT-ACTOR-001"));
+        let requirement = run_corpus(
+            paths.iter().cloned().chain([actor]),
+            None,
+            Some("NCRDT-ACTOR-001"),
+        );
         assert_eq!(requirement.total, 1);
         assert_eq!(requirement.failed, 0);
         let failures = run_corpus(
