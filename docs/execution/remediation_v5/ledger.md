@@ -1,14 +1,14 @@
 # Remediation V5 Execution Ledger
 
 Status: active — `implementation_remediation_required`
-Active RCLD: 47
-Active step: `step_740`
+Active RCLD: 48
+Active step: `step_747`
 Range: `step_738` through `step_860`
 
 | RCLD | Steps | Status | Scope |
 | ---: | ---: | --- | --- |
-| 47 | 738–746 | active | authority and decisions |
-| 48 | 747–758 | pending | shared control-reference resolution |
+| 47 | 738–746 | complete | authority and decisions |
+| 48 | 747–758 | active | shared control-reference resolution |
 | 49 | 759–775 | pending | reasoned `ChangeHash` claims |
 | 50 | 776–790 | pending | complete prior dependency knowledge |
 | 51 | 791–802 | pending | checkpoint control resolution |
@@ -23,6 +23,13 @@ Range: `step_738` through `step_860`
 | --- | --- | --- |
 | `step_738` | `b1bd289` | Exact remediation-v5 baseline and holds recorded. |
 | `step_739` | `6f41d5e` | Findings 044 through 050 registered in stable order. |
+| `step_740` | `dab5739` | RCLD 47 through 55 authority and continuation ledger installed. |
+| `step_741` | `53eb6fe` | Shared referenced-control resolution approved. |
+| `step_742` | `164f3fd` | Reasoned `ChangeHash` outcomes approved. |
+| `step_743` | `2d65620` | Complete dependency knowledge approved. |
+| `step_744` | `c5a197e` | Coordinate indexes and resource isolation approved. |
+| `step_745` | `ba3a6c3` | Typed finalization permits approved. |
+| `step_746` | current commit | Remediation-v5 authority validator installed and RCLD 47 closed. |
 
 ## Execution Rules
 
