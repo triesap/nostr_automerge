@@ -105,6 +105,22 @@ mod tests {
             authorize_descriptor(&descriptor, ReferencedControlState::Missing),
             DescriptorAuthorization::PendingControl
         );
+        assert_eq!(
+            authorize_descriptor(&descriptor, ReferencedControlState::Pending(&control)),
+            DescriptorAuthorization::PendingControl
+        );
+        for unusable in [
+            ReferencedControlState::WrongKind,
+            ReferencedControlState::WrongCoordinate,
+            ReferencedControlState::StaticInvalid,
+            ReferencedControlState::DynamicInvalid(&control),
+            ReferencedControlState::UnsupportedRevision,
+        ] {
+            assert_eq!(
+                authorize_descriptor(&descriptor, unusable),
+                DescriptorAuthorization::Invalid
+            );
+        }
 
         let mut write_only = control.clone();
         write_only.set_test_roles(vec![Role::Write]);
