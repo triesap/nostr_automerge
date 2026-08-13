@@ -17,8 +17,9 @@ use crate::evidence::document_view::DocumentEvidenceView;
 use crate::evidence::event::EventEvidence;
 use crate::graph::change_candidate::{CandidateCarrier, ChangeCandidate};
 use crate::reference::epoch_engine::AcceptedAtControl;
+use crate::reference::epoch_engine::PriorChangeKnowledge;
 use crate::reference::evaluate::{
-    BatchChange, BatchControl, BatchEvaluationReport, evaluate_batch,
+    BatchChange, BatchControl, BatchEvaluationReport, evaluate_batch_with_prior,
 };
 use crate::types::role::Role;
 use crate::{
@@ -105,7 +106,9 @@ impl ReferenceEvaluator {
                     );
                 }
             };
-        let mut batch = evaluate_batch(controls, budget, cancellation);
+        let additional_prior = additional_prior_knowledge(&view, &controls);
+        let mut batch =
+            evaluate_batch_with_prior(controls, &additional_prior, budget, cancellation);
         if !matches!(
             batch.failure,
             None | Some(EvaluationFailure::BudgetExhausted | EvaluationFailure::Cancelled)
@@ -399,6 +402,85 @@ impl ReferenceEvaluator {
         }
         Ok(current)
     }
+}
+
+fn additional_prior_knowledge(
+    view: &DocumentEvidenceView<'_>,
+    controls: &[BatchControl],
+) -> std::collections::BTreeMap<
+    crate::EventId,
+    std::collections::BTreeMap<ChangeHash, PriorChangeKnowledge>,
+> {
+    let corpus = view.corpus();
+    controls
+        .iter()
+        .map(|selected| {
+            let selected_hashes = corpus
+                .indexes
+                .changes
+                .claims_by_control
+                .get(&selected.event_id);
+            let mut knowledge = selected
+                .accepted_base
+                .iter()
+                .map(|hash| (*hash, PriorChangeKnowledge::AcceptedInBase))
+                .collect::<std::collections::BTreeMap<_, _>>();
+            for hash in view.change_hashes() {
+                if knowledge.contains_key(&hash) {
+                    continue;
+                }
+                if selected_hashes.is_some_and(|hashes| hashes.contains_key(&hash)) {
+                    knowledge.insert(hash, PriorChangeKnowledge::SameEpochCandidate);
+                    continue;
+                }
+                let mut saw_claim = false;
+                let mut all_unsupported = true;
+                let mut all_invalid = true;
+                for event_id in view.change_claim_event_ids(hash) {
+                    let Some(claim) = corpus.indexes.changes.claims_by_event.get(&event_id) else {
+                        continue;
+                    };
+                    saw_claim = true;
+                    match corpus.events.get(&claim.control_id) {
+                        Some(EventEvidence::UnsupportedRevision { .. }) => {
+                            all_invalid = false;
+                        }
+                        Some(EventEvidence::VerifiedCarrier {
+                            carrier: VerifiedCarrier::UnsupportedRevision { .. },
+                            ..
+                        }) => {
+                            all_invalid = false;
+                        }
+                        Some(EventEvidence::VerifiedCarrier {
+                            carrier: VerifiedCarrier::Control(control),
+                            ..
+                        }) if control.coordinate() == view.coordinate() => {
+                            all_unsupported = false;
+                            all_invalid = false;
+                        }
+                        None => {
+                            all_unsupported = false;
+                            all_invalid = false;
+                        }
+                        Some(_) => {
+                            all_unsupported = false;
+                        }
+                    }
+                }
+                if saw_claim {
+                    let state = if all_unsupported {
+                        PriorChangeKnowledge::KnownUnsupported
+                    } else if all_invalid {
+                        PriorChangeKnowledge::KnownInvalid
+                    } else {
+                        PriorChangeKnowledge::KnownOtherControl
+                    };
+                    knowledge.insert(hash, state);
+                }
+            }
+            (selected.event_id, knowledge)
+        })
+        .collect()
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

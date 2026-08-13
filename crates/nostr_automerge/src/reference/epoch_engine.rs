@@ -38,8 +38,27 @@ pub(crate) enum EpochEvaluationError {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum PriorChangeKnowledge {
+    AcceptedInBase,
+    SameEpochCandidate,
     PrunedCanonicalAncestor,
+    KnownOtherControl,
     KnownInvalid,
+    KnownUnsupported,
+    PriorEquivocationExcluded,
+    Unknown,
+}
+
+impl PriorChangeKnowledge {
+    pub(crate) const fn is_known_impossible(self) -> bool {
+        matches!(
+            self,
+            Self::PrunedCanonicalAncestor
+                | Self::KnownOtherControl
+                | Self::KnownInvalid
+                | Self::KnownUnsupported
+                | Self::PriorEquivocationExcluded
+        )
+    }
 }
 
 /// Complete trusted input for evaluating one selected control epoch.
@@ -312,15 +331,17 @@ pub(crate) fn evaluate_epoch(
             ),
             EpochAncestry::InvalidOmission(_)
         );
-        let prior_dependencies_valid = !candidate.dependencies.iter().any(|dependency| {
-            matches!(
-                input.prior_change_knowledge().get(dependency),
-                Some(
-                    PriorChangeKnowledge::PrunedCanonicalAncestor
-                        | PriorChangeKnowledge::KnownInvalid
-                )
-            )
-        });
+        let prior_dependencies_valid =
+            !candidate
+                .dependencies
+                .iter()
+                .chain(&closure.missing)
+                .any(|dependency| {
+                    input
+                        .prior_change_knowledge()
+                        .get(dependency)
+                        .is_some_and(|knowledge| knowledge.is_known_impossible())
+                });
         let prior_semantics_valid = authorized
             && actor_sequence_valid
             && actor_counter_valid
@@ -478,7 +499,7 @@ mod tests {
 
     use super::{
         AcceptedAtControl, EpochEvaluationInput, EpochEvaluationInputError, EpochEvaluationResult,
-        charge_actor_reconstruction, evaluate_epoch,
+        PriorChangeKnowledge, charge_actor_reconstruction, evaluate_epoch,
     };
     use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
     use crate::carrier::control::{ValidatedControlCarrier, ValidatedControlContent};
@@ -545,6 +566,26 @@ mod tests {
             EpochEvaluationInput::new(control(vec![head]), empty_state(), [], Vec::new()),
             Err(EpochEvaluationInputError::BaseFrontierMismatch)
         ));
+    }
+
+    #[test]
+    fn only_known_impossible_dependency_states_invalidate() {
+        for usable in [
+            PriorChangeKnowledge::AcceptedInBase,
+            PriorChangeKnowledge::SameEpochCandidate,
+            PriorChangeKnowledge::Unknown,
+        ] {
+            assert!(!usable.is_known_impossible());
+        }
+        for impossible in [
+            PriorChangeKnowledge::PrunedCanonicalAncestor,
+            PriorChangeKnowledge::KnownOtherControl,
+            PriorChangeKnowledge::KnownInvalid,
+            PriorChangeKnowledge::KnownUnsupported,
+            PriorChangeKnowledge::PriorEquivocationExcluded,
+        ] {
+            assert!(impossible.is_known_impossible());
+        }
     }
 
     #[test]

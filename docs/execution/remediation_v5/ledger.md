@@ -1,8 +1,8 @@
 # Remediation V5 Execution Ledger
 
 Status: active — `implementation_remediation_required`
-Active RCLD: 50
-Active step: `step_776`
+Active RCLD: 51
+Active step: `step_791`
 Range: `step_738` through `step_860`
 
 | RCLD | Steps | Status | Scope |
@@ -10,8 +10,8 @@ Range: `step_738` through `step_860`
 | 47 | 738–746 | complete | authority and decisions |
 | 48 | 747–758 | complete | shared control-reference resolution |
 | 49 | 759–775 | complete | reasoned `ChangeHash` claims |
-| 50 | 776–790 | active | complete prior dependency knowledge |
-| 51 | 791–802 | pending | checkpoint control resolution |
+| 50 | 776–790 | complete | complete prior dependency knowledge |
+| 51 | 791–802 | active | checkpoint control resolution |
 | 52 | 803–816 | pending | coordinate indexes and resource isolation |
 | 53 | 817–828 | pending | mechanical finalization accounting |
 | 54 | 829–839 | pending | companion authority, external NIP delta, and registry v3 |
@@ -32,6 +32,7 @@ Range: `step_738` through `step_860`
 | `step_746` | current commit | Remediation-v5 authority validator installed and RCLD 47 closed. |
 | `step_747`–`step_758` | current commit | Shared control resolver, consumer integration, diagnostics, tests, and phase validation completed. |
 | `step_759`–`step_775` | current commit | Reasoned claims, final-lineage precedence, mixed outcomes, and phase tests completed. |
+| `step_776`–`step_790` | current commit | Complete dependency knowledge, selected-control priority, transitive invalidation, and phase tests completed. |
 
 ## Execution Rules
 

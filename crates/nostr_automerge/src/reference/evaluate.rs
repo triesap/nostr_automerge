@@ -74,6 +74,15 @@ pub(crate) fn evaluate_batch(
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> BatchEvaluationReport {
+    evaluate_batch_with_prior(controls, &BTreeMap::new(), budget, cancellation)
+}
+
+pub(crate) fn evaluate_batch_with_prior(
+    controls: impl IntoIterator<Item = BatchControl>,
+    additional_prior: &BTreeMap<EventId, BTreeMap<ChangeHash, PriorChangeKnowledge>>,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> BatchEvaluationReport {
     if cancellation.is_cancelled() {
         return incomplete_report(PreservedBatchProgress::default(), Completion::Cancelled);
     }
@@ -265,8 +274,18 @@ pub(crate) fn evaluate_batch(
         for hash in accepted_changes.difference(&selected_base) {
             dispositions.insert(*hash, ProtocolDisposition::Excluded);
         }
-        let prior_change_knowledge =
-            prior_change_knowledge(parent_epoch_result.as_ref(), &selected_base, &dispositions);
+        let mut prior_change_knowledge = prior_change_knowledge(
+            parent_epoch_result.as_ref(),
+            &selected_base,
+            &dispositions,
+            selected,
+            &controls,
+        );
+        if let Some(additional) = additional_prior.get(&selected) {
+            for (hash, knowledge) in additional {
+                prior_change_knowledge.entry(*hash).or_insert(*knowledge);
+            }
+        }
         accepted_changes = selected_base;
         let epoch = resolve_authoritative_epoch(
             control,
@@ -568,11 +587,11 @@ fn resolve_authoritative_epoch(
             .map(|change| EpochCandidate {
                 candidate: change.candidate.clone(),
                 semantically_valid: change.legacy_eligible
-                    && change
-                        .candidate
-                        .dependencies
-                        .iter()
-                        .all(|dependency| !prior_change_knowledge.contains_key(dependency)),
+                    && change.candidate.dependencies.iter().all(|dependency| {
+                        !prior_change_knowledge
+                            .get(dependency)
+                            .is_some_and(|knowledge| knowledge.is_known_impossible())
+                    }),
                 canonical_control: !control.frozen,
             });
         let mut dispositions = resolve_epoch(
@@ -697,16 +716,47 @@ fn prior_change_knowledge(
     parent: Option<&EpochEvaluationResult>,
     selected_base: &BTreeSet<ChangeHash>,
     dispositions: &BTreeMap<ChangeHash, ProtocolDisposition>,
+    selected_control: EventId,
+    controls: &BTreeMap<EventId, BatchControl>,
 ) -> BTreeMap<ChangeHash, PriorChangeKnowledge> {
-    let mut knowledge = parent
-        .into_iter()
-        .flat_map(|result| result.accepted_state().accepted_closure())
-        .filter(|hash| !selected_base.contains(hash))
-        .map(|hash| (*hash, PriorChangeKnowledge::PrunedCanonicalAncestor))
+    let mut knowledge = selected_base
+        .iter()
+        .map(|hash| (*hash, PriorChangeKnowledge::AcceptedInBase))
         .collect::<BTreeMap<_, _>>();
+    if let Some(control) = controls.get(&selected_control) {
+        for change in &control.changes {
+            knowledge
+                .entry(change.candidate.change_hash)
+                .or_insert(PriorChangeKnowledge::SameEpochCandidate);
+        }
+    }
+    knowledge.extend(
+        parent
+            .into_iter()
+            .flat_map(|result| result.accepted_state().accepted_closure())
+            .filter(|hash| !selected_base.contains(hash))
+            .map(|hash| (*hash, PriorChangeKnowledge::PrunedCanonicalAncestor)),
+    );
+    for (control_id, control) in controls {
+        if *control_id == selected_control {
+            continue;
+        }
+        for change in &control.changes {
+            knowledge
+                .entry(change.candidate.change_hash)
+                .or_insert(PriorChangeKnowledge::KnownOtherControl);
+        }
+    }
     for (hash, disposition) in dispositions {
         if *disposition == ProtocolDisposition::Invalid && !selected_base.contains(hash) {
-            knowledge.insert(*hash, PriorChangeKnowledge::KnownInvalid);
+            knowledge
+                .entry(*hash)
+                .or_insert(PriorChangeKnowledge::KnownInvalid);
+        } else if *disposition == ProtocolDisposition::Excluded
+            && !selected_base.contains(hash)
+            && !knowledge.contains_key(hash)
+        {
+            knowledge.insert(*hash, PriorChangeKnowledge::PriorEquivocationExcluded);
         }
     }
     knowledge
