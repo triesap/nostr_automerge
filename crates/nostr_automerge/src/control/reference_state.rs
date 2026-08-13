@@ -1,0 +1,115 @@
+use std::collections::{BTreeMap, BTreeSet};
+
+use crate::carrier::VerifiedCarrier;
+use crate::carrier::control::ValidatedControlCarrier;
+use crate::evidence::corpus_builder::EvidenceCorpus;
+use crate::evidence::event::EventEvidence;
+use crate::{DiagnosticCode, DocumentCoordinate, EventId, ProtocolDisposition};
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ReferencedControlState<'a> {
+    Canonical(&'a ValidatedControlCarrier),
+    NoncanonicalValid(&'a ValidatedControlCarrier),
+    Pending(&'a ValidatedControlCarrier),
+    Missing,
+    WrongKind,
+    WrongCoordinate,
+    StaticInvalid,
+    DynamicInvalid(&'a ValidatedControlCarrier),
+    UnsupportedRevision,
+}
+
+impl ReferencedControlState<'_> {
+    pub(crate) const fn diagnostic(self) -> DiagnosticCode {
+        let code = match self {
+            Self::Canonical(_) | Self::NoncanonicalValid(_) => "control.reference.valid",
+            Self::Pending(_) => "control.reference.pending",
+            Self::Missing => "control.reference.missing",
+            Self::WrongKind => "carrier.kind",
+            Self::WrongCoordinate => "carrier.coordinate",
+            Self::StaticInvalid => "control.structure",
+            Self::DynamicInvalid(_) => "control.state",
+            Self::UnsupportedRevision => "control.reference.unsupported",
+        };
+        DiagnosticCode::registered(code)
+    }
+}
+
+pub(crate) fn resolve_referenced_control<'a>(
+    corpus: &'a EvidenceCorpus,
+    event_id: EventId,
+    coordinate: DocumentCoordinate,
+    dispositions: &BTreeMap<EventId, ProtocolDisposition>,
+    statefully_valid: &BTreeSet<EventId>,
+) -> ReferencedControlState<'a> {
+    let Some(evidence) = corpus.events.get(&event_id) else {
+        return ReferencedControlState::Missing;
+    };
+    let control = match evidence {
+        EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::Control(control),
+            ..
+        } => control.as_ref(),
+        EventEvidence::UnsupportedRevision { .. }
+        | EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::UnsupportedRevision { .. },
+            ..
+        } => return ReferencedControlState::UnsupportedRevision,
+        EventEvidence::InvalidCarrier { event, .. } if event.kind() == 1_625 => {
+            return ReferencedControlState::StaticInvalid;
+        }
+        EventEvidence::InvalidCarrier { .. }
+        | EventEvidence::VerifiedCarrier { .. }
+        | EventEvidence::IrrelevantEvent { .. }
+        | EventEvidence::InvalidEvent { .. }
+        | EventEvidence::DuplicateEvent { .. } => return ReferencedControlState::WrongKind,
+    };
+    if control.coordinate() != coordinate {
+        return ReferencedControlState::WrongCoordinate;
+    }
+    match dispositions.get(&event_id).copied() {
+        Some(ProtocolDisposition::Accepted) => ReferencedControlState::Canonical(control),
+        Some(ProtocolDisposition::Excluded) if statefully_valid.contains(&event_id) => {
+            ReferencedControlState::NoncanonicalValid(control)
+        }
+        Some(ProtocolDisposition::Pending) | None => ReferencedControlState::Pending(control),
+        Some(
+            ProtocolDisposition::Invalid
+            | ProtocolDisposition::Excluded
+            | ProtocolDisposition::UnsupportedRevision,
+        ) => ReferencedControlState::DynamicInvalid(control),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ReferencedControlState;
+
+    #[test]
+    fn every_state_has_a_stable_diagnostic() {
+        assert_eq!(
+            ReferencedControlState::Missing.diagnostic().as_str(),
+            "control.reference.missing"
+        );
+        assert_eq!(
+            ReferencedControlState::WrongKind.diagnostic().as_str(),
+            "carrier.kind"
+        );
+        assert_eq!(
+            ReferencedControlState::WrongCoordinate
+                .diagnostic()
+                .as_str(),
+            "carrier.coordinate"
+        );
+        assert_eq!(
+            ReferencedControlState::StaticInvalid.diagnostic().as_str(),
+            "control.structure"
+        );
+        assert_eq!(
+            ReferencedControlState::UnsupportedRevision
+                .diagnostic()
+                .as_str(),
+            "control.reference.unsupported"
+        );
+    }
+}

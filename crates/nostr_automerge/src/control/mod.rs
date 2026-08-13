@@ -4,6 +4,7 @@ pub(crate) mod epoch_state;
 pub(crate) mod frontier;
 pub(crate) mod genesis;
 pub(crate) mod parent_view;
+pub(crate) mod reference_state;
 pub(crate) mod reorganization;
 pub(crate) mod select;
 pub(crate) mod state;

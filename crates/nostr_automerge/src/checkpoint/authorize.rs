@@ -1,8 +1,5 @@
-use std::collections::{BTreeMap, BTreeSet};
-
-use crate::EventId;
 use crate::carrier::checkpoint_descriptor::ValidatedCheckpointDescriptorCarrier;
-use crate::carrier::control::ValidatedControlCarrier;
+use crate::control::reference_state::ReferencedControlState;
 use crate::types::role::Role;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -14,17 +11,16 @@ pub(crate) enum DescriptorAuthorization {
 
 pub(crate) fn authorize_descriptor(
     descriptor: &ValidatedCheckpointDescriptorCarrier,
-    canonical_controls: &BTreeSet<EventId>,
-    controls: &BTreeMap<EventId, &ValidatedControlCarrier>,
+    state: ReferencedControlState<'_>,
 ) -> DescriptorAuthorization {
-    let Some(control) = controls.get(&descriptor.control_id()) else {
-        return DescriptorAuthorization::PendingControl;
+    let ReferencedControlState::Canonical(control) = state else {
+        return match state {
+            ReferencedControlState::Pending(_) | ReferencedControlState::Missing => {
+                DescriptorAuthorization::PendingControl
+            }
+            _ => DescriptorAuthorization::Invalid,
+        };
     };
-    if !canonical_controls.contains(&descriptor.control_id())
-        || control.coordinate() != descriptor.coordinate()
-    {
-        return DescriptorAuthorization::Invalid;
-    }
     if control
         .members()
         .iter()
@@ -38,12 +34,13 @@ pub(crate) fn authorize_descriptor(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{BTreeMap, BTreeSet};
+    use std::collections::BTreeSet;
 
     use super::{DescriptorAuthorization, authorize_descriptor};
     use crate::carrier::checkpoint_descriptor::ValidatedCheckpointDescriptorCarrier;
     use crate::carrier::control::{DeviceGrant, ValidatedControlCarrier, ValidatedControlContent};
     use crate::checkpoint::CheckpointDescriptor;
+    use crate::control::reference_state::ReferencedControlState;
     use crate::types::role::Role;
     use crate::{
         ActorId, ChangeHash, ControllerPublicKey, DevicePublicKey, DocumentCoordinate, DocumentId,
@@ -93,28 +90,26 @@ mod tests {
                 total_ops: 1,
             },
         );
-        let controls = BTreeMap::from([(control_id, &control)]);
         assert_eq!(
-            authorize_descriptor(&descriptor, &BTreeSet::from([control_id]), &controls),
+            authorize_descriptor(&descriptor, ReferencedControlState::Canonical(&control)),
             DescriptorAuthorization::Authorized
         );
         assert_eq!(
-            authorize_descriptor(&descriptor, &BTreeSet::new(), &controls),
+            authorize_descriptor(
+                &descriptor,
+                ReferencedControlState::NoncanonicalValid(&control)
+            ),
             DescriptorAuthorization::Invalid
         );
         assert_eq!(
-            authorize_descriptor(&descriptor, &BTreeSet::from([control_id]), &BTreeMap::new()),
+            authorize_descriptor(&descriptor, ReferencedControlState::Missing),
             DescriptorAuthorization::PendingControl
         );
 
         let mut write_only = control.clone();
         write_only.set_test_roles(vec![Role::Write]);
         assert_eq!(
-            authorize_descriptor(
-                &descriptor,
-                &BTreeSet::from([control_id]),
-                &BTreeMap::from([(control_id, &write_only)])
-            ),
+            authorize_descriptor(&descriptor, ReferencedControlState::Canonical(&write_only)),
             DescriptorAuthorization::Invalid
         );
     }

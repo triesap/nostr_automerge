@@ -9,6 +9,7 @@ use crate::control::candidate::{
     evaluate_parent_continuity, evaluate_role_continuity, evaluate_terminal_continuity,
 };
 use crate::control::genesis::classify_genesis;
+use crate::control::reference_state::{ReferencedControlState, resolve_referenced_control};
 use crate::control::reorganization::{ControlChainSummary, detect_reorganization};
 use crate::control::validate::ControlEnvelope;
 use crate::evidence::corpus_builder::ManifestSelectionState;
@@ -190,6 +191,8 @@ impl ReferenceEvaluator {
         let checkpoint_evaluation = verify_checkpoints(
             &view,
             &batch.canonical_controls,
+            &batch.control_dispositions,
+            &batch.statefully_valid_controls,
             &batch.accepted_at_control,
             budget,
             cancellation,
@@ -399,99 +402,104 @@ impl ReferenceEvaluator {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum ClaimState {
+enum ChangeClaimReason {
+    CanonicalEligible,
     Pending,
-    Excluded,
-    Invalid,
+    NoncanonicalValid,
+    InvalidControl,
+    Unauthorized,
     Unsupported,
-    Canonical,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum FinalLineageChangeState {
+    Accepted,
+    CanonicalPruned,
+    Current,
 }
 
 fn reduce_change_dispositions(view: &DocumentEvidenceView<'_>, batch: &mut BatchEvaluationReport) {
     let corpus = view.corpus();
     let final_accepted = batch.accepted_changes.clone();
     for hash in view.change_hashes() {
-        if final_accepted.contains(&hash) {
+        let lineage = if final_accepted.contains(&hash) {
+            FinalLineageChangeState::Accepted
+        } else if batch
+            .accepted_at_control
+            .values()
+            .any(|accepted| accepted.accepted_closure().contains(&hash))
+        {
+            FinalLineageChangeState::CanonicalPruned
+        } else {
+            FinalLineageChangeState::Current
+        };
+        if lineage == FinalLineageChangeState::Accepted {
             batch
                 .dispositions
                 .insert(hash, ProtocolDisposition::Accepted);
             continue;
         }
-        if batch
-            .accepted_at_control
-            .values()
-            .any(|accepted| accepted.accepted_closure().contains(&hash))
-        {
+        if lineage == FinalLineageChangeState::CanonicalPruned {
             batch
                 .dispositions
                 .insert(hash, ProtocolDisposition::Excluded);
             continue;
         }
-        let existing = batch.dispositions.get(&hash).copied();
         let states = view
             .change_claim_event_ids(hash)
             .filter_map(|event_id| {
                 let claim = corpus.indexes.changes.claims_by_event.get(&event_id)?;
                 let semantic = corpus.indexes.changes.semantic_by_hash.get(&hash)?;
-                Some(match corpus.events.get(&claim.control_id) {
-                    None => ClaimState::Pending,
-                    Some(EventEvidence::VerifiedCarrier {
-                        carrier: VerifiedCarrier::Control(control),
-                        ..
-                    }) if control.coordinate() != view.coordinate() => ClaimState::Invalid,
-                    Some(EventEvidence::VerifiedCarrier {
-                        carrier: VerifiedCarrier::Control(control),
-                        ..
-                    }) => {
-                        let disposition =
-                            batch.control_dispositions.get(&claim.control_id).copied();
+                let state = resolve_referenced_control(
+                    corpus,
+                    claim.control_id,
+                    view.coordinate(),
+                    &batch.control_dispositions,
+                    &batch.statefully_valid_controls,
+                );
+                Some(match state {
+                    ReferencedControlState::Canonical(control) => {
                         let authorized = !control.terminal()
                             && control.members().iter().any(|member| {
                                 member.actor == semantic.actor
                                     && member.device == claim.author
                                     && member.roles.contains(&Role::Write)
                             });
-                        match disposition {
-                            Some(ProtocolDisposition::Accepted) if authorized => {
-                                ClaimState::Canonical
-                            }
-                            Some(ProtocolDisposition::Pending) => ClaimState::Pending,
-                            Some(ProtocolDisposition::Excluded)
-                                if batch.statefully_valid_controls.contains(&claim.control_id) =>
-                            {
-                                ClaimState::Excluded
-                            }
-                            Some(ProtocolDisposition::UnsupportedRevision) => {
-                                ClaimState::Unsupported
-                            }
-                            Some(
-                                ProtocolDisposition::Invalid
-                                | ProtocolDisposition::Excluded
-                                | ProtocolDisposition::Accepted,
-                            )
-                            | None => ClaimState::Invalid,
+                        if authorized {
+                            ChangeClaimReason::CanonicalEligible
+                        } else {
+                            ChangeClaimReason::Unauthorized
                         }
                     }
-                    Some(EventEvidence::UnsupportedRevision { .. }) => ClaimState::Unsupported,
-                    Some(EventEvidence::InvalidCarrier { .. })
-                    | Some(EventEvidence::VerifiedCarrier { .. })
-                    | Some(EventEvidence::InvalidEvent { .. })
-                    | Some(EventEvidence::IrrelevantEvent { .. })
-                    | Some(EventEvidence::DuplicateEvent { .. }) => ClaimState::Invalid,
+                    ReferencedControlState::NoncanonicalValid(_) => {
+                        ChangeClaimReason::NoncanonicalValid
+                    }
+                    ReferencedControlState::Pending(_) | ReferencedControlState::Missing => {
+                        ChangeClaimReason::Pending
+                    }
+                    ReferencedControlState::UnsupportedRevision => ChangeClaimReason::Unsupported,
+                    ReferencedControlState::WrongKind
+                    | ReferencedControlState::WrongCoordinate
+                    | ReferencedControlState::StaticInvalid
+                    | ReferencedControlState::DynamicInvalid(_) => {
+                        ChangeClaimReason::InvalidControl
+                    }
                 })
             })
             .collect::<Vec<_>>();
-        let disposition = if existing == Some(ProtocolDisposition::Excluded) {
-            ProtocolDisposition::Excluded
-        } else if states.contains(&ClaimState::Pending) {
+        let disposition = if states.contains(&ChangeClaimReason::Pending) {
             ProtocolDisposition::Pending
-        } else if states.contains(&ClaimState::Excluded) {
+        } else if states.contains(&ChangeClaimReason::NoncanonicalValid)
+            || (states.contains(&ChangeClaimReason::CanonicalEligible)
+                && batch.dispositions.get(&hash) == Some(&ProtocolDisposition::Excluded))
+        {
             ProtocolDisposition::Excluded
-        } else if !states.is_empty() && states.iter().all(|state| *state == ClaimState::Unsupported)
+        } else if !states.is_empty()
+            && states
+                .iter()
+                .all(|state| *state == ChangeClaimReason::Unsupported)
         {
             ProtocolDisposition::UnsupportedRevision
-        } else if states.contains(&ClaimState::Canonical) {
-            existing.unwrap_or(ProtocolDisposition::Invalid)
         } else {
             ProtocolDisposition::Invalid
         };
@@ -520,64 +528,35 @@ fn resolve_selected_manifest(
         }
     };
     let control_id = hints.control();
-    let control = match corpus.events.get(&control_id) {
-        Some(EventEvidence::VerifiedCarrier {
-            carrier: VerifiedCarrier::Control(control),
-            ..
-        }) => control,
-        Some(EventEvidence::InvalidCarrier { diagnostic, .. })
-        | Some(EventEvidence::UnsupportedRevision { diagnostic, .. }) => {
-            return ResolvedManifestAvailability::Unavailable {
-                event_id: selection.event_id,
-                control: Some(control_id),
-                diagnostic: *diagnostic,
-            };
-        }
-        Some(_) => {
-            return ResolvedManifestAvailability::Unavailable {
-                event_id: selection.event_id,
-                control: Some(control_id),
-                diagnostic: crate::DiagnosticCode::registered("carrier.kind"),
-            };
-        }
-        None => {
-            return ResolvedManifestAvailability::Pending {
-                hints,
-                reason: ManifestPendingReason::MissingControl,
-            };
-        }
-    };
-    if control.coordinate() != coordinate {
-        return ResolvedManifestAvailability::Unavailable {
-            event_id: selection.event_id,
-            control: Some(control_id),
-            diagnostic: crate::DiagnosticCode::registered("carrier.coordinate"),
-        };
-    }
-    match control_dispositions.get(&control_id).copied() {
-        Some(ProtocolDisposition::Accepted) => ResolvedManifestAvailability::Available {
+    let state = resolve_referenced_control(
+        corpus,
+        control_id,
+        coordinate,
+        control_dispositions,
+        statefully_valid_controls,
+    );
+    match state {
+        ReferencedControlState::Canonical(_) => ResolvedManifestAvailability::Available {
             hints,
             control_status: ManifestControlStatus::Canonical,
         },
-        Some(ProtocolDisposition::Excluded) if statefully_valid_controls.contains(&control_id) => {
-            ResolvedManifestAvailability::Available {
-                hints,
-                control_status: ManifestControlStatus::Noncanonical,
-            }
-        }
-        Some(ProtocolDisposition::Invalid | ProtocolDisposition::UnsupportedRevision) => {
-            ResolvedManifestAvailability::Unavailable {
-                event_id: selection.event_id,
-                control: Some(control_id),
-                diagnostic: crate::DiagnosticCode::registered("control.structure"),
-            }
-        }
-        Some(ProtocolDisposition::Pending | ProtocolDisposition::Excluded) | None => {
-            ResolvedManifestAvailability::Pending {
-                hints,
-                reason: ManifestPendingReason::ControlPending,
-            }
-        }
+        ReferencedControlState::NoncanonicalValid(_) => ResolvedManifestAvailability::Available {
+            hints,
+            control_status: ManifestControlStatus::Noncanonical,
+        },
+        ReferencedControlState::Missing => ResolvedManifestAvailability::Pending {
+            hints,
+            reason: ManifestPendingReason::MissingControl,
+        },
+        ReferencedControlState::Pending(_) => ResolvedManifestAvailability::Pending {
+            hints,
+            reason: ManifestPendingReason::ControlPending,
+        },
+        state => ResolvedManifestAvailability::Unavailable {
+            event_id: selection.event_id,
+            control: Some(control_id),
+            diagnostic: state.diagnostic(),
+        },
     }
 }
 
@@ -827,6 +806,8 @@ struct CheckpointEvaluation {
 fn verify_checkpoints(
     view: &DocumentEvidenceView<'_>,
     canonical_controls: &[crate::EventId],
+    control_dispositions: &std::collections::BTreeMap<crate::EventId, ProtocolDisposition>,
+    statefully_valid_controls: &std::collections::BTreeSet<crate::EventId>,
     accepted_at_control: &std::collections::BTreeMap<crate::EventId, AcceptedAtControl>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
@@ -839,8 +820,13 @@ fn verify_checkpoints(
             cancellation,
             u64::try_from(canonical_controls.len()).unwrap_or(u64::MAX),
         )?;
-        let canonical_set = canonical_controls.iter().copied().collect();
-        let authorizations = checkpoint_authorizations(view, &canonical_set, budget, cancellation)?;
+        let authorizations = checkpoint_authorizations(
+            view,
+            control_dispositions,
+            statefully_valid_controls,
+            budget,
+            cancellation,
+        )?;
         let chunk_sets = checkpoint_chunk_sets(corpus, coordinate, budget, cancellation)?;
         let carrier_coverage = checkpoint_carrier_coverage(
             corpus,
@@ -1276,30 +1262,14 @@ fn checkpoint_chunk_sets(
 
 fn checkpoint_authorizations(
     view: &DocumentEvidenceView<'_>,
-    canonical_controls: &std::collections::BTreeSet<crate::EventId>,
+    control_dispositions: &std::collections::BTreeMap<crate::EventId, ProtocolDisposition>,
+    statefully_valid_controls: &std::collections::BTreeSet<crate::EventId>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<std::collections::BTreeMap<crate::EventId, DescriptorAuthorization>, CheckpointWorkStop>
 {
     let corpus = view.corpus();
     let coordinate = view.coordinate();
-    let mut controls = std::collections::BTreeMap::new();
-    for control_id in corpus
-        .indexes
-        .controls
-        .controls_by_id
-        .keys()
-        .filter(|event_id| view.contains_input(event_id))
-    {
-        charge_checkpoint_work(budget, cancellation, 1)?;
-        if let Some(EventEvidence::VerifiedCarrier {
-            carrier: VerifiedCarrier::Control(control),
-            ..
-        }) = corpus.events.get(control_id)
-        {
-            controls.insert(*control_id, control.as_ref());
-        }
-    }
     let mut authorizations = std::collections::BTreeMap::new();
     for descriptor_id in corpus
         .indexes
@@ -1315,14 +1285,21 @@ fn checkpoint_authorizations(
             ..
         }) = corpus.events.get(descriptor_id)
         {
-            let member_work = controls.get(&descriptor.control_id()).map_or(0, |control| {
-                u64::try_from(control.members().len()).unwrap_or(u64::MAX)
-            });
-            charge_checkpoint_work(budget, cancellation, member_work)?;
-            authorizations.insert(
-                *descriptor_id,
-                authorize_descriptor(descriptor, canonical_controls, &controls),
+            let state = resolve_referenced_control(
+                corpus,
+                descriptor.control_id(),
+                coordinate,
+                control_dispositions,
+                statefully_valid_controls,
             );
+            let member_work = match state {
+                ReferencedControlState::Canonical(control) => {
+                    u64::try_from(control.members().len()).unwrap_or(u64::MAX)
+                }
+                _ => 0,
+            };
+            charge_checkpoint_work(budget, cancellation, member_work)?;
+            authorizations.insert(*descriptor_id, authorize_descriptor(descriptor, state));
         }
     }
     Ok(authorizations)
