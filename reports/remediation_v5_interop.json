@@ -1,0 +1,18 @@
+{
+  "schema": "nostr_automerge.remediation_v5_interop.v1",
+  "status": "pass",
+  "distribution_id": "nostr_automerge_signed_v6",
+  "fixture_count": 124,
+  "passed": 124,
+  "failed": 0,
+  "canonical_output_bytes": 7997,
+  "corpus_sha256": "caca86a08ef5e17768cf10e46760290ea6b4bb47902d6ee76db6ddefef3ebe4b",
+  "manifest_sha256": "ff817b4dcadd63e0e6b32f31d38fcbdf82fae785b94fab8e9b416b915a32436d",
+  "rust_candidate": "e77c6b603b39e6efd7dda2492718f472c8f478fb",
+  "typescript_candidate": "d0325117dcadc456b12a880c397225335944fd75",
+  "rust_repeat": "byte-identical",
+  "typescript_repeat": "byte-identical",
+  "cross_language": "byte-identical",
+  "deliberate_mismatch": "detected",
+  "provenance": "operator-local"
+}

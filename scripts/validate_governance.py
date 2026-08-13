@@ -28,8 +28,8 @@ def main() -> int:
         "README.md",
         (
             "## Status",
-            "full implementation",
-            "are not currently claimed",
+            "remediation-v5 implementation",
+            "publication is not authorized",
             "does not currently claim",
             "## Architecture Boundary",
             "spec/NIP_DRAFT.md",

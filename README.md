@@ -5,13 +5,13 @@ Automerge document protocol carried by signed Nostr events.
 
 ## Status
 
-The repository contains a substantial draft-v1 Rust core, deterministic
+The repository contains a locally qualified draft-v1 Rust core, deterministic
 conformance tooling, pure authoring primitives, and optional verified-history
-checkpoint validation. A follow-up source review found remaining consensus-path,
-reporting, signed-conformance, checkpoint-evidence, and interoperability gaps.
-RCLDs 15 through 28 are active remediation authority; full implementation,
-conformance, and interoperability are not currently claimed. The API remains
-alpha and the event kinds provisional.
+checkpoint validation. The remediation-v5 implementation, signed conformance,
+and independent byte-exact interoperability work are complete. The external NIP
+has not yet been reconciled, sustained fuzzing and independent review remain
+held, and publication is not authorized. The API remains alpha and the event
+kinds provisional.
 
 This repository does not currently claim:
 

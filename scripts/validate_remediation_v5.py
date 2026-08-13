@@ -10,6 +10,8 @@ import re
 import subprocess
 from pathlib import Path
 
+from validate_requirement_matrix_v6 import validate as validate_requirement_evidence
+
 
 ROOT = Path(__file__).resolve().parents[1]
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
@@ -129,6 +131,67 @@ def validate_registry() -> None:
         raise AssertionError("authority claims a prohibited change")
 
 
+def sha256(relative: str) -> str:
+    import hashlib
+
+    return hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()
+
+
+def validate_final(value: dict) -> None:
+    if value.get("schema") != "nostr_automerge.remediation_v5_final.v1":
+        raise AssertionError("unexpected final evidence schema")
+    if value.get("status") != "implementation_remediation_required" or value.get("local_implementation") != "pass":
+        raise AssertionError("final status is inconsistent")
+    if value.get("publication_authorized") is not False or value.get("nip_edited") is not False:
+        raise AssertionError("final evidence grants forbidden authority")
+    rust = value.get("rust", {})
+    typescript = value.get("typescript", {})
+    for commit in (rust.get("candidate"), rust.get("source_candidate")):
+        if not isinstance(commit, str) or not HEX40.fullmatch(commit) or git("cat-file", "-t", commit) != "commit":
+            raise AssertionError("invalid Rust final candidate")
+    if not isinstance(typescript.get("candidate"), str) or not HEX40.fullmatch(typescript["candidate"]):
+        raise AssertionError("invalid opaque TypeScript candidate")
+    if typescript.get("dependency_lock_sha256") != "d881757529b805b8ae4da935127730fe901b8b13a71382023be161016cd35a7d":
+        raise AssertionError("stale opaque TypeScript lock binding")
+    if rust.get("cargo_lock_sha256") != sha256("Cargo.lock"):
+        raise AssertionError("stale Rust lock binding")
+    authority = value.get("authority", {})
+    expected = {
+        "nip_draft_sha256": sha256("spec/NIP_DRAFT.md"),
+        "companion_spec_sha256": sha256("spec/NOSTR_AUTOMERGE_V1_SPEC.md"),
+        "requirements_sha256": sha256("spec/requirements.json"),
+        "fixture_distribution_sha256": sha256("fixtures/distribution/manifest_v6.json"),
+    }
+    if authority != expected:
+        raise AssertionError("stale final authority binding")
+    evidence = value.get("evidence", {})
+    for field in ("requirements", "interop", "resource", "rust_mutation"):
+        relative = evidence.get(field)
+        if not isinstance(relative, str) or not (ROOT / relative).is_file():
+            raise AssertionError(f"missing final evidence: {field}")
+    validate_requirement_evidence(load(evidence["requirements"]))
+    interop = load(evidence["interop"])
+    if interop.get("status") != "pass" or interop.get("fixture_count") != 124 or interop.get("passed") != 124 or interop.get("failed") != 0:
+        raise AssertionError("invalid final interop result")
+    if interop.get("cross_language") != "byte-identical" or interop.get("deliberate_mismatch") != "detected":
+        raise AssertionError("interop comparison is incomplete")
+    if interop.get("rust_candidate") != rust.get("candidate") or interop.get("typescript_candidate") != typescript.get("candidate"):
+        raise AssertionError("interop candidates are stale")
+    resource = load(evidence["resource"])
+    if resource.get("status") != "pass" or set(resource.get("qualifications", {}).values()) != {"pass"}:
+        raise AssertionError("resource qualification is incomplete")
+    if evidence.get("rust_mutations_caught") != 6 or evidence.get("typescript_mutations_caught") != 10:
+        raise AssertionError("mutation evidence is incomplete")
+    gates = value.get("ordinary_gates", {})
+    if len(gates) != 6 or gates.get("source_only_and_private_boundaries") != "pass":
+        raise AssertionError("ordinary gates are incomplete")
+    if any(result not in {"pass", "pass_with_documented_warnings"} for result in gates.values()):
+        raise AssertionError("ordinary gate failed")
+    holds = value.get("external_holds", [])
+    if not isinstance(holds, list) or len(holds) != 4:
+        raise AssertionError("external holds are incomplete")
+
+
 def self_test() -> None:
     findings = load("spec/remediation_findings_v5.json")
     mutated = copy.deepcopy(findings)
@@ -139,6 +202,30 @@ def self_test() -> None:
         pass
     else:
         raise AssertionError("reordered findings mutation survived")
+    final = load("reports/remediation_v5_final.json")
+    mutations = []
+    for path, replacement in (
+        (("authority", "requirements_sha256"), "0" * 64),
+        (("rust", "candidate"), "0" * 40),
+        (("rust", "cargo_lock_sha256"), "0" * 64),
+        (("authority", "fixture_distribution_sha256"), "0" * 64),
+        (("evidence", "requirements"), "reports/missing.json"),
+        (("ordinary_gates", "source_only_and_private_boundaries"), "fail"),
+    ):
+        mutation = copy.deepcopy(final)
+        mutation[path[0]][path[1]] = replacement
+        mutations.append(mutation)
+    mutation = copy.deepcopy(final); mutation["publication_authorized"] = True; mutations.append(mutation)
+    caught = 0
+    for mutation in mutations:
+        try:
+            validate_final(mutation)
+        except (AssertionError, ValueError):
+            caught += 1
+        else:
+            raise AssertionError("final evidence mutation survived")
+    if caught != len(mutations):
+        raise AssertionError("final mutation count is inconsistent")
 
 
 def main() -> int:
@@ -160,6 +247,7 @@ def main() -> int:
         validate_adrs()
         validate_boundaries()
         validate_registry()
+        validate_final(load("reports/remediation_v5_final.json"))
     if args.self_test:
         self_test()
     print("PASS: remediation v5 authority")

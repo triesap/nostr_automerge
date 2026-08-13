@@ -1,0 +1,21 @@
+{
+  "schema": "nostr_automerge.remediation_v5_resource.v1",
+  "status": "pass",
+  "rust_candidate": "e77c6b603b39e6efd7dda2492718f472c8f478fb",
+  "typescript_candidate": "d0325117dcadc456b12a880c397225335944fd75",
+  "qualifications": {
+    "coordinate_isolation": "pass",
+    "pre_cancellation": "pass",
+    "duplicate_claims": "pass",
+    "deep_control_chains": "pass",
+    "checkpoint_resolution": "pass",
+    "typed_finalization": "pass",
+    "work_counter_boundaries": "pass"
+  },
+  "commands": [
+    "cargo bench -p nostr_automerge --bench resource_smoke --locked",
+    "cargo test --workspace --all-targets --locked",
+    "pnpm check"
+  ],
+  "provenance": "operator-local"
+}

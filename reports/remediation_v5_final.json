@@ -1,0 +1,47 @@
+{
+  "schema": "nostr_automerge.remediation_v5_final.v1",
+  "status": "implementation_remediation_required",
+  "local_implementation": "pass",
+  "publication_authorized": false,
+  "nip_edited": false,
+  "rust": {
+    "candidate": "e77c6b603b39e6efd7dda2492718f472c8f478fb",
+    "source_candidate": "b9d014b7b917ac1923e290b6367f135758627e51",
+    "cargo_lock_sha256": "6d1b886ff74637ba6682d349ab81424b0792f2cbc61cf0f213dfcf16af4f6744"
+  },
+  "typescript": {
+    "implementation_identity": "triesap/nostr_automerge_typescript",
+    "candidate": "d0325117dcadc456b12a880c397225335944fd75",
+    "source_candidate": "f82ab48b595d4b7af08e693469cbf39de58c8f47",
+    "dependency_lock_sha256": "d881757529b805b8ae4da935127730fe901b8b13a71382023be161016cd35a7d"
+  },
+  "authority": {
+    "nip_draft_sha256": "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3",
+    "companion_spec_sha256": "a9b4fc72d7ab25c5195575ac4b2d2921c7a90b26782ff76251e4ec022ac55501",
+    "requirements_sha256": "ecb56fb0a5696a717b5096018a188a340d3e7691cc9174e1781162f1d0cad1ae",
+    "fixture_distribution_sha256": "ff817b4dcadd63e0e6b32f31d38fcbdf82fae785b94fab8e9b416b915a32436d"
+  },
+  "evidence": {
+    "requirements": "reports/requirements_coverage_v6.json",
+    "interop": "reports/remediation_v5_interop.json",
+    "resource": "reports/remediation_v5_resource.json",
+    "rust_mutation": "reports/mutation_campaign_v5.json",
+    "rust_mutations_caught": 6,
+    "typescript_mutations_caught": 10,
+    "typescript_mutation_sha256": "24e7cba000240a2fbaad2c54032a2b8e536e6e1fe604e704096b4eb9976b70d0"
+  },
+  "ordinary_gates": {
+    "rust_format_check_test_clippy_docs_xtask": "pass",
+    "rust_package_sbom_supply_chain": "pass_with_documented_warnings",
+    "typescript_format_typecheck_policy_tests": "pass",
+    "typescript_package_and_dependency_audit": "pass",
+    "signed_distribution_and_permutations": "pass",
+    "source_only_and_private_boundaries": "pass"
+  },
+  "external_holds": [
+    "externally-authored NIP reconciliation",
+    "sustained native fuzzing in an authorized environment",
+    "independent external security and protocol review",
+    "publication and production-readiness authorization"
+  ]
+}

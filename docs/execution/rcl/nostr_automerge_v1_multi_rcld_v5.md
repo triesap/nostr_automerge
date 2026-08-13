@@ -1,14 +1,14 @@
 # nostr_automerge Draft V1 Remediation V5 Multi-RCLD
 
-Status: active — `implementation_remediation_required`
+Status: complete — `implementation_remediation_required`
 Created: 2026-08-13
 Mode: rcl-durable
 Rust workspace and Git repository: repository root
 Reviewed Rust source head: `7becc35f5f3a19a7f744da494341e178e05bd639`
-Reviewed Rust implementation candidate: `e9d2e65991c1552ade0cb7d7f77bfffbff95d0eb`
-Reviewed opaque independent TypeScript candidate: `436891eeb4054d397a5485edd4ee74ccf6937965`
+Evaluated Rust candidate: `e77c6b603b39e6efd7dda2492718f472c8f478fb`
+Evaluated opaque independent TypeScript candidate: `d0325117dcadc456b12a880c397225335944fd75`
 Steps: `step_738` through `step_860` (123 contiguous checkpoints)
-Active checkpoint: `step_738`
+Active checkpoint: none; complete through `step_860`
 
 ## Outcome
 
@@ -255,7 +255,7 @@ machine-checked; the standard Rust gate is green; no protocol behavior changed.
 
 ## RCLD 48 — Shared Control-Reference Resolution
 
-Status: pending
+Status: complete
 Steps: `step_747` through `step_758`
 Primary findings: 044–046
 
@@ -479,6 +479,15 @@ an explicit NIP hold; both implementations repeat identically and agree byte for
 byte; deterministic mutations, resource, package, supply-chain, and boundary
 gates pass; stale reports are machine-superseded; both worktrees are clean.
 
+Execution closed RCLD 55 at the evaluated candidates above. Distribution v6
+contains 124 signed fixtures; Rust and TypeScript each reproduced the corpus
+twice and emitted the same 7,997 canonical bytes with corpus SHA-256
+`caca86a08ef5e17768cf10e46760290ea6b4bb47902d6ee76db6ddefef3ebe4b`.
+All 106 requirement rows are bound in
+`reports/requirements_coverage_v6.json`, and final local evidence is bound in
+`reports/remediation_v5_final.json` without changing the NIP or granting
+publication authority.
+
 Final status rule:
 
 ```text
@@ -562,17 +571,7 @@ to begin serially under the adaptations above.
 
 ## Unfinished RCLDs
 
-- RCLD 47 — authority and decisions (`step_738`–`step_746`), active.
-- RCLD 48 — shared control-reference resolution (`step_747`–`step_758`).
-- RCLD 49 — reasoned `ChangeHash` claim reduction (`step_759`–`step_775`).
-- RCLD 50 — complete prior dependency knowledge (`step_776`–`step_790`).
-- RCLD 51 — checkpoint control resolution (`step_791`–`step_802`).
-- RCLD 52 — coordinate indexes and resource isolation (`step_803`–`step_816`).
-- RCLD 53 — mechanical finalization accounting (`step_817`–`step_828`).
-- RCLD 54 — companion authority, external NIP delta, and registry v3
-  (`step_829`–`step_839`).
-- RCLD 55 — signed conformance, independent parity, and final assurance
-  (`step_840`–`step_860`).
+None. RCLDs 47 through 55 and `step_738` through `step_860` are complete.
 
 External NIP reconciliation, sustained native fuzzing, independent review,
 publication, and production-readiness qualification remain explicit holds and
