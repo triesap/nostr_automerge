@@ -2910,7 +2910,7 @@ fn automerge_application_and_materialization_are_charged() {
     );
     assert!(report.document().is_none());
     assert_eq!(exhausted.consumed().get(WorkCounter::ApplyChange), 2);
-    assert_eq!(exhausted.remaining().1, 3);
+    assert_eq!(exhausted.remaining().1, 0);
 }
 
 #[test]
@@ -3072,7 +3072,7 @@ fn every_v3_work_counter_boundary() {
     ] {
         assert_eq!(cancelled.consumed().get(counter), 0, "{}", counter.as_str());
     }
-    assert_eq!(cancelled.consumed().get(WorkCounter::Assertion), 22);
+    assert_eq!(cancelled.consumed().get(WorkCounter::Assertion), 0);
 }
 
 #[test]
@@ -5652,6 +5652,7 @@ fn checkpoint_interruption_is_non_authoritative() {
         WorkCounter::GraphNode,
         WorkCounter::GraphEdge,
         WorkCounter::ApplyChange,
+        WorkCounter::Assertion,
     ]
     .into_iter()
     .map(|counter| counters.get(counter))

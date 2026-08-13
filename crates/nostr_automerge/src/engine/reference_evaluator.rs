@@ -553,6 +553,13 @@ fn reduce_change_dispositions(
                 );
                 Some(Ok(match state {
                     ReferencedControlState::Canonical(control) => {
+                        if matches!(
+                            batch.dispositions.get(&hash),
+                            Some(ProtocolDisposition::Excluded)
+                        ) && control.terminal()
+                        {
+                            return Some(Ok(ChangeClaimReason::CurrentExcluded));
+                        }
                         if charge_evaluation_work(
                             budget,
                             cancellation,
@@ -595,6 +602,14 @@ fn reduce_change_dispositions(
                         ChangeClaimReason::Pending
                     }
                     ReferencedControlState::UnsupportedRevision => ChangeClaimReason::Unsupported,
+                    ReferencedControlState::DynamicInvalid(_)
+                        if matches!(
+                            batch.dispositions.get(&hash),
+                            Some(ProtocolDisposition::Excluded)
+                        ) =>
+                    {
+                        ChangeClaimReason::CurrentExcluded
+                    }
                     ReferencedControlState::WrongKind
                     | ReferencedControlState::WrongCoordinate
                     | ReferencedControlState::StaticInvalid
