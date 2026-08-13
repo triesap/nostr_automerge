@@ -53,3 +53,4 @@ change-control process.
 | [0045](adr_0045_registry_v2_external_nip_hold.md) | Approved | `R4_SPEC_001`, `R4_REQ_002` |
 | [0046](adr_0046_private_typescript_attestation_v4.md) | Approved | `R4_CONF_003`, `R4_TS_001` |
 | [0047](adr_0047_remediation_v4_release_holds.md) | Approved | `R4_RELEASE_001`, `R4_RELEASE_003` |
+| [0048](adr_0048_shared_control_reference_resolution.md) | Approved | `R5_REF_001`, `R5_REF_010` |
