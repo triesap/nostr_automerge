@@ -54,3 +54,4 @@ change-control process.
 | [0046](adr_0046_private_typescript_attestation_v4.md) | Approved | `R4_CONF_003`, `R4_TS_001` |
 | [0047](adr_0047_remediation_v4_release_holds.md) | Approved | `R4_RELEASE_001`, `R4_RELEASE_003` |
 | [0048](adr_0048_shared_control_reference_resolution.md) | Approved | `R5_REF_001`, `R5_REF_010` |
+| [0049](adr_0049_reasoned_changehash_outcomes.md) | Approved | `R5_CLAIM_001`, `R5_CLAIM_014` |
