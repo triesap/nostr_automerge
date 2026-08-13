@@ -1,0 +1,39 @@
+{
+  "schema": "nostr_automerge.remediation_v5_baseline.v1",
+  "recorded": "2026-08-13",
+  "status": "implementation_remediation_required",
+  "rust": {
+    "repository": "triesap/nostr_automerge",
+    "branch": "master",
+    "review_head": "7becc35f5f3a19a7f744da494341e178e05bd639",
+    "implementation_candidate": "e9d2e65991c1552ade0cb7d7f77bfffbff95d0eb",
+    "cargo_lock_sha256": "6d1b886ff74637ba6682d349ab81424b0792f2cbc61cf0f213dfcf16af4f6744",
+    "fixture_manifest_sha256": "a0109a38f37e15266e2afe6ae5a15c6336f63f1fb85d8692b934d019414e68d9"
+  },
+  "typescript": {
+    "implementation_id": "typescript_v1_independent",
+    "candidate": "436891eeb4054d397a5485edd4ee74ccf6937965",
+    "lock_sha256": "d881757529b805b8ae4da935127730fe901b8b13a71382023be161016cd35a7d"
+  },
+  "authority": {
+    "nip_draft_sha256": "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3",
+    "companion_spec_sha256": "f9beba2f332a5de18e37f5f120eea9f22a3f9a5e9760802c1177f270c7f7803a",
+    "requirements_sha256": "abbf06db08fecb2b3e46e96caf05c2281cf5cdab16d833c776871885c24d27b3"
+  },
+  "finding_range": "FINDING_044_through_FINDING_050",
+  "rcld_range": "rcld_47_through_rcld_55",
+  "step_range": "step_738_through_step_860",
+  "active_rcld": 47,
+  "active_step": "step_738",
+  "authorized_preexisting_paths": [
+    "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v5.md"
+  ],
+  "holds": [
+    "external_nip_reconciliation",
+    "sustained_native_fuzzing",
+    "independent_review",
+    "publication"
+  ],
+  "publication_authorized": false,
+  "nip_edit_authorized": false
+}
