@@ -406,6 +406,7 @@ enum ChangeClaimReason {
     CanonicalEligible,
     Pending,
     NoncanonicalValid,
+    CurrentExcluded,
     InvalidControl,
     Unauthorized,
     Unsupported,
@@ -433,18 +434,6 @@ fn reduce_change_dispositions(view: &DocumentEvidenceView<'_>, batch: &mut Batch
         } else {
             FinalLineageChangeState::Current
         };
-        if lineage == FinalLineageChangeState::Accepted {
-            batch
-                .dispositions
-                .insert(hash, ProtocolDisposition::Accepted);
-            continue;
-        }
-        if lineage == FinalLineageChangeState::CanonicalPruned {
-            batch
-                .dispositions
-                .insert(hash, ProtocolDisposition::Excluded);
-            continue;
-        }
         let states = view
             .change_claim_event_ids(hash)
             .filter_map(|event_id| {
@@ -465,10 +454,23 @@ fn reduce_change_dispositions(view: &DocumentEvidenceView<'_>, batch: &mut Batch
                                     && member.device == claim.author
                                     && member.roles.contains(&Role::Write)
                             });
-                        if authorized {
-                            ChangeClaimReason::CanonicalEligible
-                        } else {
+                        if !authorized {
                             ChangeClaimReason::Unauthorized
+                        } else {
+                            match batch.dispositions.get(&hash).copied() {
+                                Some(ProtocolDisposition::Pending) => ChangeClaimReason::Pending,
+                                Some(ProtocolDisposition::Excluded) => {
+                                    ChangeClaimReason::CurrentExcluded
+                                }
+                                Some(ProtocolDisposition::Accepted) => {
+                                    ChangeClaimReason::CanonicalEligible
+                                }
+                                Some(
+                                    ProtocolDisposition::Invalid
+                                    | ProtocolDisposition::UnsupportedRevision,
+                                )
+                                | None => ChangeClaimReason::InvalidControl,
+                            }
                         }
                     }
                     ReferencedControlState::NoncanonicalValid(_) => {
@@ -487,23 +489,33 @@ fn reduce_change_dispositions(view: &DocumentEvidenceView<'_>, batch: &mut Batch
                 })
             })
             .collect::<Vec<_>>();
-        let disposition = if states.contains(&ChangeClaimReason::Pending) {
-            ProtocolDisposition::Pending
-        } else if states.contains(&ChangeClaimReason::NoncanonicalValid)
-            || (states.contains(&ChangeClaimReason::CanonicalEligible)
-                && batch.dispositions.get(&hash) == Some(&ProtocolDisposition::Excluded))
-        {
-            ProtocolDisposition::Excluded
-        } else if !states.is_empty()
-            && states
-                .iter()
-                .all(|state| *state == ChangeClaimReason::Unsupported)
-        {
-            ProtocolDisposition::UnsupportedRevision
-        } else {
-            ProtocolDisposition::Invalid
-        };
+        let disposition = reduce_reasoned_change_outcome(lineage, &states);
         batch.dispositions.insert(hash, disposition);
+    }
+}
+
+fn reduce_reasoned_change_outcome(
+    lineage: FinalLineageChangeState,
+    claims: &[ChangeClaimReason],
+) -> ProtocolDisposition {
+    if lineage == FinalLineageChangeState::Accepted {
+        ProtocolDisposition::Accepted
+    } else if lineage == FinalLineageChangeState::CanonicalPruned {
+        ProtocolDisposition::Excluded
+    } else if claims.contains(&ChangeClaimReason::Pending) {
+        ProtocolDisposition::Pending
+    } else if claims.contains(&ChangeClaimReason::NoncanonicalValid)
+        || claims.contains(&ChangeClaimReason::CurrentExcluded)
+    {
+        ProtocolDisposition::Excluded
+    } else if !claims.is_empty()
+        && claims
+            .iter()
+            .all(|state| *state == ChangeClaimReason::Unsupported)
+    {
+        ProtocolDisposition::UnsupportedRevision
+    } else {
+        ProtocolDisposition::Invalid
     }
 }
 
@@ -1971,13 +1983,85 @@ fn charge_evaluation_work(
 #[cfg(test)]
 mod tests {
     use super::{
-        CheckpointWorkStop, ReportFinalizationPermit, ReportFinalizationPlan, assembly_status,
-        charge_checkpoint_work, join_status,
+        ChangeClaimReason, CheckpointWorkStop, FinalLineageChangeState, ReportFinalizationPermit,
+        ReportFinalizationPlan, assembly_status, charge_checkpoint_work, join_status,
+        reduce_reasoned_change_outcome,
     };
     use crate::CheckpointVerificationStatus as Status;
     use crate::checkpoint::AssemblyError;
     use crate::checkpoint::join::JoinError;
     use crate::{WorkBudget, WorkCounter};
+
+    #[test]
+    fn reasoned_change_outcome_uses_final_precedence() {
+        use crate::ProtocolDisposition::{
+            Accepted, Excluded, Invalid, Pending, UnsupportedRevision,
+        };
+        assert_eq!(
+            reduce_reasoned_change_outcome(
+                FinalLineageChangeState::Accepted,
+                &[ChangeClaimReason::Pending]
+            ),
+            Accepted
+        );
+        assert_eq!(
+            reduce_reasoned_change_outcome(
+                FinalLineageChangeState::CanonicalPruned,
+                &[ChangeClaimReason::Pending]
+            ),
+            Excluded
+        );
+        assert_eq!(
+            reduce_reasoned_change_outcome(
+                FinalLineageChangeState::Current,
+                &[
+                    ChangeClaimReason::NoncanonicalValid,
+                    ChangeClaimReason::Pending
+                ]
+            ),
+            Pending
+        );
+        assert_eq!(
+            reduce_reasoned_change_outcome(
+                FinalLineageChangeState::Current,
+                &[
+                    ChangeClaimReason::InvalidControl,
+                    ChangeClaimReason::Pending
+                ]
+            ),
+            Pending
+        );
+        assert_eq!(
+            reduce_reasoned_change_outcome(
+                FinalLineageChangeState::Current,
+                &[
+                    ChangeClaimReason::NoncanonicalValid,
+                    ChangeClaimReason::InvalidControl
+                ]
+            ),
+            Excluded
+        );
+        assert_eq!(
+            reduce_reasoned_change_outcome(
+                FinalLineageChangeState::Current,
+                &[
+                    ChangeClaimReason::Unsupported,
+                    ChangeClaimReason::Unsupported
+                ]
+            ),
+            UnsupportedRevision
+        );
+        assert_eq!(
+            reduce_reasoned_change_outcome(
+                FinalLineageChangeState::Current,
+                &[
+                    ChangeClaimReason::Unsupported,
+                    ChangeClaimReason::InvalidControl
+                ]
+            ),
+            Invalid
+        );
+    }
 
     #[test]
     fn checkpoint_preparation_charge_stops_before_optional_work() {
