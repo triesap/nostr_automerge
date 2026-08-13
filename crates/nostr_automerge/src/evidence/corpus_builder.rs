@@ -243,7 +243,8 @@ impl CorpusBuilder {
     #[must_use]
     pub fn finish(mut self) -> EvidenceCorpus {
         self.duplicates.sort_by_key(evidence_checksum);
-        let indexes = crate::evidence::indexes::derive_trusted_indexes(&self.events);
+        let indexes =
+            crate::evidence::indexes::derive_trusted_indexes(&self.events, &self.duplicates);
         EvidenceCorpus {
             events: self.events,
             invalid: self.invalid,
@@ -468,7 +469,7 @@ impl EvidenceCorpus {
         coordinate: crate::DocumentCoordinate,
         event_ids: &std::collections::BTreeSet<EventId>,
     ) -> Option<ManifestSelection> {
-        selected_manifests_in(&self.events, event_ids).remove(&coordinate)
+        selected_manifest_in(&self.events, event_ids, coordinate)
     }
 
     pub(crate) fn record_for_event(&self, event_id: &EventId) -> Option<EvidenceRecord> {
@@ -746,74 +747,103 @@ fn selected_manifests(
 ) -> BTreeMap<crate::DocumentCoordinate, ManifestSelection> {
     let mut selected = BTreeMap::new();
     for evidence in events.values() {
-        let candidate = match evidence {
-            EventEvidence::VerifiedCarrier {
-                carrier: VerifiedCarrier::Manifest(manifest),
-                ..
-            } => Some((
-                manifest.coordinate(),
-                ManifestSelection {
-                    created_at: manifest.created_at(),
-                    event_id: manifest.event_id,
-                    state: ManifestSelectionState::Available(manifest.acquisition_hints()),
-                },
-            )),
-            EventEvidence::InvalidCarrier {
-                event, diagnostic, ..
-            } => manifest_coordinate(event).map(|coordinate| {
-                (
-                    coordinate,
-                    ManifestSelection {
-                        created_at: event.created_at(),
-                        event_id: event.event_id(),
-                        state: ManifestSelectionState::Unavailable(*diagnostic),
-                    },
-                )
-            }),
-            EventEvidence::UnsupportedRevision {
-                carrier: VerifiedCarrier::UnsupportedRevision { event, .. },
-                diagnostic,
-                ..
-            } => manifest_coordinate(event).map(|coordinate| {
-                (
-                    coordinate,
-                    ManifestSelection {
-                        created_at: event.created_at(),
-                        event_id: event.event_id(),
-                        state: ManifestSelectionState::Unavailable(*diagnostic),
-                    },
-                )
-            }),
-            _ => None,
-        };
+        let candidate = manifest_selection_candidate(evidence);
         let Some((coordinate, candidate)) = candidate else {
             continue;
         };
-        selected
-            .entry(coordinate)
-            .and_modify(|current: &mut ManifestSelection| {
-                if candidate.created_at > current.created_at
-                    || candidate.created_at == current.created_at
-                        && candidate.event_id < current.event_id
-                {
-                    *current = candidate.clone();
-                }
-            })
-            .or_insert(candidate);
+        select_manifest_candidate(&mut selected, coordinate, candidate);
     }
     selected
 }
 
-fn selected_manifests_in(
+fn manifest_selection_candidate(
+    evidence: &EventEvidence,
+) -> Option<(crate::DocumentCoordinate, ManifestSelection)> {
+    match evidence {
+        EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::Manifest(manifest),
+            ..
+        } => Some((
+            manifest.coordinate(),
+            ManifestSelection {
+                created_at: manifest.created_at(),
+                event_id: manifest.event_id,
+                state: ManifestSelectionState::Available(manifest.acquisition_hints()),
+            },
+        )),
+        EventEvidence::InvalidCarrier {
+            event, diagnostic, ..
+        } => manifest_coordinate(event).map(|coordinate| {
+            (
+                coordinate,
+                ManifestSelection {
+                    created_at: event.created_at(),
+                    event_id: event.event_id(),
+                    state: ManifestSelectionState::Unavailable(*diagnostic),
+                },
+            )
+        }),
+        EventEvidence::UnsupportedRevision {
+            carrier: VerifiedCarrier::UnsupportedRevision { event, .. },
+            diagnostic,
+            ..
+        } => manifest_coordinate(event).map(|coordinate| {
+            (
+                coordinate,
+                ManifestSelection {
+                    created_at: event.created_at(),
+                    event_id: event.event_id(),
+                    state: ManifestSelectionState::Unavailable(*diagnostic),
+                },
+            )
+        }),
+        _ => None,
+    }
+}
+
+fn select_manifest_candidate(
+    selected: &mut BTreeMap<crate::DocumentCoordinate, ManifestSelection>,
+    coordinate: crate::DocumentCoordinate,
+    candidate: ManifestSelection,
+) {
+    selected
+        .entry(coordinate)
+        .and_modify(|current| {
+            if candidate.created_at > current.created_at
+                || candidate.created_at == current.created_at
+                    && candidate.event_id < current.event_id
+            {
+                *current = candidate.clone();
+            }
+        })
+        .or_insert(candidate);
+}
+
+fn selected_manifest_in(
     events: &BTreeMap<EventId, EventEvidence>,
     event_ids: &std::collections::BTreeSet<EventId>,
-) -> BTreeMap<crate::DocumentCoordinate, ManifestSelection> {
-    let events = events
-        .iter()
-        .filter(|(event_id, _)| event_ids.contains(event_id))
-        .map(|(event_id, evidence)| (*event_id, evidence.clone()))
-        .collect();
-    selected_manifests(&events)
+    coordinate: crate::DocumentCoordinate,
+) -> Option<ManifestSelection> {
+    let mut selected = None;
+    for event_id in event_ids {
+        let Some((candidate_coordinate, candidate)) =
+            events.get(event_id).and_then(manifest_selection_candidate)
+        else {
+            continue;
+        };
+        if candidate_coordinate != coordinate {
+            continue;
+        }
+        let replace = selected.as_ref().is_none_or(|current: &ManifestSelection| {
+            candidate.created_at > current.created_at
+                || candidate.created_at == current.created_at
+                    && candidate.event_id < current.event_id
+        });
+        if replace {
+            selected = Some(candidate);
+        }
+    }
+    selected
 }
 
 pub(crate) fn manifest_coordinate(event: &VerifiedNip01Event) -> Option<crate::DocumentCoordinate> {

@@ -84,33 +84,166 @@ pub(crate) struct CheckpointIndexes {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct CoordinateEvidenceIndexes {
+    pub(crate) events: BTreeMap<DocumentCoordinate, BTreeSet<EventId>>,
+    pub(crate) controls: BTreeMap<DocumentCoordinate, BTreeSet<EventId>>,
+    pub(crate) change_hashes: BTreeMap<DocumentCoordinate, BTreeSet<ChangeHash>>,
+    pub(crate) manifests: BTreeMap<DocumentCoordinate, BTreeSet<EventId>>,
+    pub(crate) lifecycle_support: BTreeMap<DocumentCoordinate, BTreeSet<EventId>>,
+    pub(crate) duplicates: BTreeMap<DocumentCoordinate, Vec<usize>>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct TrustedIndexes {
     pub(crate) controls: ControlIndexes,
     pub(crate) changes: ChangeIndexes,
     pub(crate) checkpoints: CheckpointIndexes,
+    pub(crate) coordinates: CoordinateEvidenceIndexes,
 }
 
-pub(crate) fn derive_trusted_indexes(events: &BTreeMap<EventId, EventEvidence>) -> TrustedIndexes {
+pub(crate) fn derive_trusted_indexes(
+    events: &BTreeMap<EventId, EventEvidence>,
+    duplicates: &[EventEvidence],
+) -> TrustedIndexes {
     let mut indexes = TrustedIndexes::default();
-    for evidence in events.values() {
+    for (event_id, evidence) in events {
+        if let Some(coordinate) = evidence_coordinate(evidence) {
+            indexes
+                .coordinates
+                .events
+                .entry(coordinate)
+                .or_default()
+                .insert(*event_id);
+        }
         let EventEvidence::VerifiedCarrier { carrier, .. } = evidence else {
             continue;
         };
         match carrier {
-            VerifiedCarrier::Control(control) => index_control(&mut indexes.controls, control),
-            VerifiedCarrier::Change(change) => index_change(&mut indexes.changes, change),
+            VerifiedCarrier::Control(control) => {
+                indexes
+                    .coordinates
+                    .controls
+                    .entry(control.coordinate())
+                    .or_default()
+                    .insert(control.event_id());
+                index_control(&mut indexes.controls, control);
+            }
+            VerifiedCarrier::Change(change) => {
+                indexes
+                    .coordinates
+                    .change_hashes
+                    .entry(change.coordinate())
+                    .or_default()
+                    .insert(change.change_hash());
+                index_change(&mut indexes.changes, change);
+            }
             VerifiedCarrier::CheckpointDescriptor(descriptor) => {
                 index_checkpoint_descriptor(&mut indexes.checkpoints, descriptor);
             }
             VerifiedCarrier::CheckpointChunk(chunk) => {
                 index_checkpoint_chunk(&mut indexes.checkpoints, chunk);
             }
-            VerifiedCarrier::Manifest(_) | VerifiedCarrier::UnsupportedRevision { .. } => {}
+            VerifiedCarrier::Manifest(manifest) => {
+                indexes
+                    .coordinates
+                    .manifests
+                    .entry(manifest.coordinate())
+                    .or_default()
+                    .insert(manifest.event_id);
+            }
+            VerifiedCarrier::UnsupportedRevision { .. } => {}
+        }
+    }
+    for (index, duplicate) in duplicates.iter().enumerate() {
+        let EventEvidence::DuplicateEvent { event_id, .. } = duplicate else {
+            continue;
+        };
+        if let Some(coordinate) = events.get(event_id).and_then(evidence_coordinate) {
+            indexes
+                .coordinates
+                .duplicates
+                .entry(coordinate)
+                .or_default()
+                .push(index);
         }
     }
     derive_pending_controls(&mut indexes);
     derive_pending_checkpoints(&mut indexes);
+    derive_lifecycle_support(&mut indexes, events);
     indexes
+}
+
+fn derive_lifecycle_support(
+    indexes: &mut TrustedIndexes,
+    events: &BTreeMap<EventId, EventEvidence>,
+) {
+    for (coordinate, control_ids) in &indexes.coordinates.controls {
+        for event_id in control_ids {
+            let Some(EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::Control(control),
+                ..
+            }) = events.get(event_id)
+            else {
+                continue;
+            };
+            if control.parent().is_none()
+                && let Some(link) = control.predecessor()
+                && !indexes
+                    .coordinates
+                    .events
+                    .get(coordinate)
+                    .is_some_and(|ids| ids.contains(&link.terminal_control))
+                && events.contains_key(&link.terminal_control)
+            {
+                indexes
+                    .coordinates
+                    .lifecycle_support
+                    .entry(*coordinate)
+                    .or_default()
+                    .insert(link.terminal_control);
+            }
+        }
+    }
+}
+
+pub(crate) fn evidence_coordinate(evidence: &EventEvidence) -> Option<DocumentCoordinate> {
+    match evidence {
+        EventEvidence::VerifiedCarrier { carrier, .. } => match carrier {
+            VerifiedCarrier::Manifest(value) => Some(value.coordinate()),
+            VerifiedCarrier::Control(value) => Some(value.coordinate()),
+            VerifiedCarrier::Change(value) => Some(value.coordinate()),
+            VerifiedCarrier::CheckpointDescriptor(value) => Some(value.coordinate()),
+            VerifiedCarrier::CheckpointChunk(value) => Some(value.coordinate()),
+            VerifiedCarrier::UnsupportedRevision { event, .. } => signed_coordinate(event),
+        },
+        EventEvidence::InvalidCarrier { event, .. }
+        | EventEvidence::IrrelevantEvent { event, .. } => signed_coordinate(event),
+        EventEvidence::UnsupportedRevision {
+            carrier: VerifiedCarrier::UnsupportedRevision { event, .. },
+            ..
+        } => signed_coordinate(event),
+        EventEvidence::UnsupportedRevision { .. }
+        | EventEvidence::InvalidEvent { .. }
+        | EventEvidence::DuplicateEvent { .. } => None,
+    }
+}
+
+fn signed_coordinate(event: &crate::VerifiedNip01Event) -> Option<DocumentCoordinate> {
+    if event.kind() == 31_624 {
+        return super::corpus_builder::manifest_coordinate(event);
+    }
+    if !matches!(event.kind(), 1_624..=1_627) {
+        return None;
+    }
+    let values = event
+        .tags()
+        .iter()
+        .filter(|tag| tag.first().is_some_and(|value| value == "a"))
+        .filter_map(|tag| tag.get(1)?.parse().ok())
+        .collect::<BTreeSet<_>>();
+    (values.len() == 1)
+        .then(|| values.into_iter().next())
+        .flatten()
 }
 
 fn index_checkpoint_descriptor(
@@ -305,7 +438,7 @@ mod tests {
                 raw_checksum: RawChecksum::test_only([4; 32]),
             },
         )]);
-        let indexes = derive_trusted_indexes(&events);
+        let indexes = derive_trusted_indexes(&events, &[]);
         assert_eq!(
             indexes.controls.genesis.into_iter().collect::<Vec<_>>(),
             vec![event_id]

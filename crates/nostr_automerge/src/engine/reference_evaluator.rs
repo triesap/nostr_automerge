@@ -71,6 +71,9 @@ impl ReferenceEvaluator {
         budget: &mut WorkBudget,
         cancellation: &impl CancellationCheck,
     ) -> Result<EvaluationReport, EvaluationError> {
+        if cancellation.is_cancelled() {
+            return compact_interrupted_report(self.revision, coordinate, Completion::Cancelled);
+        }
         let view = DocumentEvidenceView::derive(corpus, coordinate);
         let plan = ReportFinalizationPlan::from_view(&view);
         let mut finalization = match plan
@@ -139,7 +142,18 @@ impl ReferenceEvaluator {
                 &mut finalization,
             );
         }
-        reduce_change_dispositions(&view, &mut batch);
+        if let Err(completion) = reduce_change_dispositions(&view, &mut batch, budget, cancellation)
+        {
+            interrupt_batch(&mut batch, completion);
+            return reserved_batch_report(
+                self.revision,
+                coordinate,
+                batch,
+                ResolvedManifestAvailability::Missing,
+                Vec::new(),
+                &mut finalization,
+            );
+        }
         if let Err(completion) =
             charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)
         {
@@ -501,10 +515,16 @@ enum FinalLineageChangeState {
     Current,
 }
 
-fn reduce_change_dispositions(view: &DocumentEvidenceView<'_>, batch: &mut BatchEvaluationReport) {
+fn reduce_change_dispositions(
+    view: &DocumentEvidenceView<'_>,
+    batch: &mut BatchEvaluationReport,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<(), Completion> {
     let corpus = view.corpus();
     let final_accepted = batch.accepted_changes.clone();
     for hash in view.change_hashes() {
+        charge_evaluation_work(budget, cancellation, WorkCounter::GraphNode, 1)?;
         let lineage = if final_accepted.contains(&hash) {
             FinalLineageChangeState::Accepted
         } else if batch
@@ -519,6 +539,9 @@ fn reduce_change_dispositions(view: &DocumentEvidenceView<'_>, batch: &mut Batch
         let states = view
             .change_claim_event_ids(hash)
             .filter_map(|event_id| {
+                if charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1).is_err() {
+                    return Some(Err(()));
+                }
                 let claim = corpus.indexes.changes.claims_by_event.get(&event_id)?;
                 let semantic = corpus.indexes.changes.semantic_by_hash.get(&hash)?;
                 let state = resolve_referenced_control(
@@ -528,8 +551,18 @@ fn reduce_change_dispositions(view: &DocumentEvidenceView<'_>, batch: &mut Batch
                     &batch.control_dispositions,
                     &batch.statefully_valid_controls,
                 );
-                Some(match state {
+                Some(Ok(match state {
                     ReferencedControlState::Canonical(control) => {
+                        if charge_evaluation_work(
+                            budget,
+                            cancellation,
+                            WorkCounter::Control,
+                            u64::try_from(control.members().len()).unwrap_or(u64::MAX),
+                        )
+                        .is_err()
+                        {
+                            return Some(Err(()));
+                        }
                         let authorized = !control.terminal()
                             && control.members().iter().any(|member| {
                                 member.actor == semantic.actor
@@ -568,12 +601,20 @@ fn reduce_change_dispositions(view: &DocumentEvidenceView<'_>, batch: &mut Batch
                     | ReferencedControlState::DynamicInvalid(_) => {
                         ChangeClaimReason::InvalidControl
                     }
-                })
+                }))
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|()| {
+                if cancellation.is_cancelled() {
+                    Completion::Cancelled
+                } else {
+                    Completion::BudgetExhausted
+                }
+            })?;
         let disposition = reduce_reasoned_change_outcome(lineage, &states);
         batch.dispositions.insert(hash, disposition);
     }
+    Ok(())
 }
 
 fn reduce_reasoned_change_outcome(
