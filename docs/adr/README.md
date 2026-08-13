@@ -56,3 +56,4 @@ change-control process.
 | [0048](adr_0048_shared_control_reference_resolution.md) | Approved | `R5_REF_001`, `R5_REF_010` |
 | [0049](adr_0049_reasoned_changehash_outcomes.md) | Approved | `R5_CLAIM_001`, `R5_CLAIM_014` |
 | [0050](adr_0050_complete_dependency_knowledge.md) | Approved | `R5_DEP_001`, `R5_DEP_011` |
+| [0051](adr_0051_coordinate_indexes_and_resource_isolation.md) | Approved | `R5_SCOPE_001`, `R5_SCOPE_009` |
