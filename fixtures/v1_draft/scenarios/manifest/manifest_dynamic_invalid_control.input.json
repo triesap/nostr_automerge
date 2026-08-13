@@ -18,7 +18,7 @@
         "namespace": "event"
       },
       {
-        "diagnostic": "tag.required",
+        "diagnostic": "control.structure",
         "disposition": "invalid",
         "identifier": "fcd46c01afc04d139aa4c795aa6d89dc3a8137adb27017e410fc352edf36a954",
         "namespace": "event"
