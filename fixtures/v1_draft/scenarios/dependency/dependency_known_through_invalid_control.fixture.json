@@ -1,0 +1,31 @@
+{
+  "expected": {
+    "report_path": "dependency_known_through_invalid_control.expected.json",
+    "sha256": "d43f72466f06dca586674ea955a97a469c9d8707f5ff89780ac4c4996c48795f"
+  },
+  "fixture_id": "dependency_known_through_invalid_control",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "dependency_known_through_invalid_control.input.json",
+      "sha256": "d832b586ba2b59995187a17cabad3069d834a3e1a899449c613302139d014862"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile remediation_v6_dependency_knowledge",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CONF-002",
+    "NCRDT-EPOCH-001",
+    "NCRDT-STATE-001"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}
