@@ -156,4 +156,12 @@ mod tests {
             assert_eq!(state.dependent_disposition(), expected);
         }
     }
+
+    #[test]
+    fn parent_accepted_head_continues_closure_validation() {
+        assert_eq!(
+            ParentFrontierReference::AcceptedUnderParent.dependent_disposition(),
+            None
+        );
+    }
 }
