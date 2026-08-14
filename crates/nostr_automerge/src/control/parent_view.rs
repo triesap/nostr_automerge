@@ -4,6 +4,7 @@ use crate::control::epoch_state::AcceptedEpochState;
 use crate::control::frontier::ParentFrontierReference;
 use crate::graph::actor_state::EpochActorState;
 use crate::reference::epoch_engine::EpochEvaluationResult;
+use crate::reference::epoch_engine::PriorChangeKnowledge;
 use crate::{ActorId, ChangeHash};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -53,6 +54,30 @@ impl ParentEpochView {
             view.frontier_knowledge.insert(*hash, knowledge);
         }
         view
+    }
+
+    pub(crate) fn extend_prior_knowledge(
+        &mut self,
+        knowledge: &BTreeMap<ChangeHash, PriorChangeKnowledge>,
+    ) {
+        for (hash, state) in knowledge {
+            let frontier = match state {
+                PriorChangeKnowledge::AcceptedInBase => {
+                    ParentFrontierReference::AcceptedUnderParent
+                }
+                PriorChangeKnowledge::PrunedCanonicalAncestor
+                | PriorChangeKnowledge::PriorEquivocationExcluded => {
+                    ParentFrontierReference::ExcludedUnderParent
+                }
+                PriorChangeKnowledge::KnownOtherControl => ParentFrontierReference::OtherControl,
+                PriorChangeKnowledge::KnownInvalid => ParentFrontierReference::InvalidUnderParent,
+                PriorChangeKnowledge::KnownUnsupported => ParentFrontierReference::Unsupported,
+                PriorChangeKnowledge::SameEpochCandidate | PriorChangeKnowledge::Unknown => {
+                    continue;
+                }
+            };
+            self.frontier_knowledge.entry(*hash).or_insert(frontier);
+        }
     }
 
     #[cfg(test)]

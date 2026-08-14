@@ -139,9 +139,15 @@ pub(crate) fn evaluate_batch_with_prior(
             completion = Completion::BudgetExhausted;
             break;
         }
-        let parent_view = parent_epoch_result
-            .as_ref()
-            .map(ParentEpochView::from_result);
+        let parent_view = parent_epoch_result.as_ref().map(|result| {
+            let mut view = ParentEpochView::from_result(result);
+            if let Some(parent_id) = parent_id
+                && let Some(knowledge) = additional_prior.get(&parent_id)
+            {
+                view.extend_prior_knowledge(knowledge);
+            }
+            view
+        });
         if let Some(view) = parent_view.as_ref()
             && let Err(interruption) = charge_control_closures(
                 children,

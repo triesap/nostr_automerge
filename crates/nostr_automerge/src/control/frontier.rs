@@ -236,4 +236,14 @@ mod tests {
             Some(ProtocolDisposition::Invalid)
         );
     }
+
+    #[test]
+    fn other_control_head_rejects_the_frontier() {
+        assert_eq!(
+            reasoned_frontier_disposition([hash(25)], |_| {
+                ParentFrontierReference::OtherControl
+            }),
+            Some(ProtocolDisposition::Invalid)
+        );
+    }
 }
