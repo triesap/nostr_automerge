@@ -61,3 +61,12 @@ pending, missing, invalid, excluded, unsupported, and other-control frontier
 states with the same absent-versus-known distinction. Propagate pending and
 invalid ancestry, and validate noncanonical branches relative to their own
 ancestry before exclusion.
+
+## Descriptor and chunk references
+
+Require every target chunk to resolve its referenced descriptor. Missing or
+pending descriptor evidence is pending; wrong-kind, wrong-coordinate, invalid,
+unsupported, or dynamically unusable evidence is invalid. Require complete
+binding and set verification before acceptance, consistent event dispositions
+for a verified set, and promotion of a retained orphan after descriptor
+delivery.

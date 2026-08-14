@@ -379,3 +379,14 @@ to its own ancestry before exclusion. For each base head, accepted-under-parent
 is usable, missing or pending is pending, and invalid-under-parent,
 excluded-under-parent, unsupported, or other-control is invalid. Pending and
 invalid ancestry propagate their respective state to descendants.
+
+### Descriptor and chunk references
+
+Resolve every target chunk's descriptor reference even when no valid target
+descriptor was selected. A verified descriptor with a complete coherent set is
+accepted; a verified incomplete set, pending descriptor, or missing descriptor
+is pending. Wrong-kind, wrong-coordinate, statically invalid, dynamically
+invalid, or unsupported descriptor evidence makes the dependent draft-v1 chunk
+invalid. Binding, author, index, count, hash, proof, or set mismatch is invalid.
+An orphan chunk remains pending and promotes after its descriptor arrives; all
+events in one verified set receive mutually consistent dispositions.
