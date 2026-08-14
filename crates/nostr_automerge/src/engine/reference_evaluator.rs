@@ -2369,6 +2369,72 @@ mod tests {
     }
 
     #[test]
+    fn reasoned_change_precedence_matrix_is_complete() {
+        use crate::ProtocolDisposition::{
+            Accepted, Excluded, Invalid, Pending, UnsupportedRevision,
+        };
+        use ChangeClaimReason::{
+            AuthorizedCanonical, AuthorizedCurrentExcluded, AuthorizedNoncanonical,
+            InvalidReferencedControl, Unauthorized, UnresolvedControl, UnsupportedCarrier,
+        };
+        let cases = [
+            (
+                FinalLineageChangeState::Accepted,
+                vec![UnresolvedControl],
+                Accepted,
+            ),
+            (
+                FinalLineageChangeState::CanonicalPruned,
+                vec![UnresolvedControl, InvalidReferencedControl],
+                Excluded,
+            ),
+            (
+                FinalLineageChangeState::Current,
+                vec![UnresolvedControl, AuthorizedNoncanonical],
+                Pending,
+            ),
+            (
+                FinalLineageChangeState::Current,
+                vec![UnresolvedControl, InvalidReferencedControl],
+                Pending,
+            ),
+            (
+                FinalLineageChangeState::Current,
+                vec![AuthorizedNoncanonical, InvalidReferencedControl],
+                Excluded,
+            ),
+            (
+                FinalLineageChangeState::Current,
+                vec![AuthorizedCurrentExcluded, Unauthorized],
+                Excluded,
+            ),
+            (
+                FinalLineageChangeState::Current,
+                vec![UnsupportedCarrier, UnsupportedCarrier],
+                UnsupportedRevision,
+            ),
+            (
+                FinalLineageChangeState::Current,
+                vec![UnsupportedCarrier, InvalidReferencedControl],
+                Invalid,
+            ),
+            (
+                FinalLineageChangeState::Current,
+                vec![Unauthorized],
+                Invalid,
+            ),
+            (
+                FinalLineageChangeState::Current,
+                vec![AuthorizedCanonical],
+                Invalid,
+            ),
+        ];
+        for (lineage, claims, expected) in cases {
+            assert_eq!(reduce_reasoned_change_outcome(lineage, &claims), expected);
+        }
+    }
+
+    #[test]
     fn checkpoint_preparation_charge_stops_before_optional_work() {
         let mut exhausted = WorkBudget::new(0, 1);
         assert_eq!(
