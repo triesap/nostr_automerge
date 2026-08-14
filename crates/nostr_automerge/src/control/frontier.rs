@@ -164,4 +164,12 @@ mod tests {
             None
         );
     }
+
+    #[test]
+    fn genuinely_missing_head_remains_pending() {
+        assert_eq!(
+            ParentFrontierReference::Missing.dependent_disposition(),
+            Some(ProtocolDisposition::Pending)
+        );
+    }
 }
