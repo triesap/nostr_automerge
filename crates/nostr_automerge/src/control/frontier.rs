@@ -208,4 +208,14 @@ mod tests {
             Some(ProtocolDisposition::Pending)
         );
     }
+
+    #[test]
+    fn invalid_head_rejects_the_frontier() {
+        assert_eq!(
+            reasoned_frontier_disposition([hash(22)], |_| {
+                ParentFrontierReference::InvalidUnderParent
+            }),
+            Some(ProtocolDisposition::Invalid)
+        );
+    }
 }
