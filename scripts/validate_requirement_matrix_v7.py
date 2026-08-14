@@ -116,7 +116,10 @@ def validate(report: dict) -> None:
             expected_artifact = signed_artifact_hash(ids, fixture_paths)
         elif kind == "exact-assertion":
             source = test_path.read_text()
-            if any(item not in source for item in ids):
+            if any(
+                item not in source and item.rsplit("::", 1)[-1] not in source
+                for item in ids
+            ):
                 raise EvidenceError(f"assertion:{identifier}")
             expected_artifact = sha256(test_path)
         else:

@@ -157,6 +157,22 @@ def canonical_write(path: Path, value: object) -> None:
     )
 
 
+def exact_assertion_path(preferred: str, evidence_ids: list[str]) -> str:
+    preferred_path = ROOT / preferred
+    preferred_source = preferred_path.read_text(encoding="utf-8")
+    names = [identifier.rsplit("::", 1)[-1] for identifier in evidence_ids]
+    if all(name in preferred_source for name in names):
+        return preferred
+    matches = []
+    for path in sorted((ROOT / "crates").rglob("*.rs")):
+        source = path.read_text(encoding="utf-8")
+        if all(name in source for name in names):
+            matches.append(path)
+    if len(matches) != 1:
+        raise AssertionError(f"exact assertion source is ambiguous: {evidence_ids}")
+    return matches[0].relative_to(ROOT).as_posix()
+
+
 def main() -> int:
     requirements_path = ROOT / "spec/requirements.json"
     applicability_path = ROOT / "spec/requirements_applicability.json"
@@ -216,12 +232,13 @@ def main() -> int:
         elif identifier in EXACT_ASSERTIONS:
             test_path, evidence_ids = EXACT_ASSERTIONS[identifier]
             evidence_kind = "exact-assertion"
+            test_path = exact_assertion_path(test_path, evidence_ids)
             artifact_hash = sha256(ROOT / test_path)
             command = "cargo test --workspace --all-targets --locked"
         else:
             evidence_kind = "exact-assertion"
             evidence_ids = [test_id(identifier)]
-            test_path = source["test"]
+            test_path = exact_assertion_path(source["test"], evidence_ids)
             artifact_hash = sha256(ROOT / test_path)
             command = "cargo test --workspace --all-targets --locked"
         row["rust_proof"] = {

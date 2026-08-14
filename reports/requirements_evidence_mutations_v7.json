@@ -1,0 +1,16 @@
+{
+  "caught": 7,
+  "generated": 7,
+  "mutations": [
+    {"diagnostic": "row-order", "mutation": "missing_row", "result": "caught"},
+    {"diagnostic": "row-order", "mutation": "reordered_rows", "result": "caught"},
+    {"diagnostic": "authority-hash", "mutation": "authority_hash", "result": "caught"},
+    {"diagnostic": "rust-candidate", "mutation": "rust_candidate", "result": "caught"},
+    {"diagnostic": "fixture:NCRDT-CLAIM-001", "mutation": "generic_proof", "result": "caught"},
+    {"diagnostic": "artifact:NCRDT-CLAIM-001", "mutation": "artifact_hash", "result": "caught"},
+    {"diagnostic": "typescript-exact:NCRDT-CLAIM-001", "mutation": "typescript_fixture", "result": "caught"}
+  ],
+  "schema": "nostr_automerge.requirement_evidence_mutations.v7",
+  "status": "pass",
+  "survived": 0
+}
