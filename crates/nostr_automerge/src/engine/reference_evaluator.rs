@@ -499,13 +499,13 @@ fn additional_prior_knowledge(
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ChangeClaimReason {
-    CanonicalEligible,
-    Pending,
-    NoncanonicalValid,
-    CurrentExcluded,
-    InvalidControl,
+    AuthorizedCanonical,
+    UnresolvedControl,
+    AuthorizedNoncanonical,
+    AuthorizedCurrentExcluded,
+    InvalidReferencedControl,
     Unauthorized,
-    Unsupported,
+    UnsupportedCarrier,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -573,18 +573,20 @@ fn reduce_change_dispositions(
                             ChangeClaimReason::Unauthorized
                         } else {
                             match batch.dispositions.get(&hash).copied() {
-                                Some(ProtocolDisposition::Pending) => ChangeClaimReason::Pending,
+                                Some(ProtocolDisposition::Pending) => {
+                                    ChangeClaimReason::UnresolvedControl
+                                }
                                 Some(ProtocolDisposition::Excluded) => {
-                                    ChangeClaimReason::CurrentExcluded
+                                    ChangeClaimReason::AuthorizedCurrentExcluded
                                 }
                                 Some(ProtocolDisposition::Accepted) => {
-                                    ChangeClaimReason::CanonicalEligible
+                                    ChangeClaimReason::AuthorizedCanonical
                                 }
                                 Some(
                                     ProtocolDisposition::Invalid
                                     | ProtocolDisposition::UnsupportedRevision,
                                 )
-                                | None => ChangeClaimReason::InvalidControl,
+                                | None => ChangeClaimReason::InvalidReferencedControl,
                             }
                         }
                     }
@@ -606,16 +608,16 @@ fn reduce_change_dispositions(
                                     && member.roles.contains(&Role::Write)
                             });
                         if authorized {
-                            ChangeClaimReason::NoncanonicalValid
+                            ChangeClaimReason::AuthorizedNoncanonical
                         } else {
                             ChangeClaimReason::Unauthorized
                         }
                     }
                     ReferencedControlState::Pending(_) | ReferencedControlState::Missing => {
-                        ChangeClaimReason::Pending
+                        ChangeClaimReason::UnresolvedControl
                     }
                     ReferencedControlState::UnsupportedRevision => {
-                        ChangeClaimReason::InvalidControl
+                        ChangeClaimReason::InvalidReferencedControl
                     }
                     ReferencedControlState::DynamicInvalid(_)
                         if matches!(
@@ -623,13 +625,13 @@ fn reduce_change_dispositions(
                             Some(ProtocolDisposition::Excluded)
                         ) =>
                     {
-                        ChangeClaimReason::CurrentExcluded
+                        ChangeClaimReason::AuthorizedCurrentExcluded
                     }
                     ReferencedControlState::WrongKind
                     | ReferencedControlState::WrongCoordinate
                     | ReferencedControlState::StaticInvalid
                     | ReferencedControlState::DynamicInvalid(_) => {
-                        ChangeClaimReason::InvalidControl
+                        ChangeClaimReason::InvalidReferencedControl
                     }
                 }))
             })
@@ -655,16 +657,16 @@ fn reduce_reasoned_change_outcome(
         ProtocolDisposition::Accepted
     } else if lineage == FinalLineageChangeState::CanonicalPruned {
         ProtocolDisposition::Excluded
-    } else if claims.contains(&ChangeClaimReason::Pending) {
+    } else if claims.contains(&ChangeClaimReason::UnresolvedControl) {
         ProtocolDisposition::Pending
-    } else if claims.contains(&ChangeClaimReason::NoncanonicalValid)
-        || claims.contains(&ChangeClaimReason::CurrentExcluded)
+    } else if claims.contains(&ChangeClaimReason::AuthorizedNoncanonical)
+        || claims.contains(&ChangeClaimReason::AuthorizedCurrentExcluded)
     {
         ProtocolDisposition::Excluded
     } else if !claims.is_empty()
         && claims
             .iter()
-            .all(|state| *state == ChangeClaimReason::Unsupported)
+            .all(|state| *state == ChangeClaimReason::UnsupportedCarrier)
     {
         ProtocolDisposition::UnsupportedRevision
     } else {
@@ -2260,14 +2262,14 @@ mod tests {
         assert_eq!(
             reduce_reasoned_change_outcome(
                 FinalLineageChangeState::Accepted,
-                &[ChangeClaimReason::Pending]
+                &[ChangeClaimReason::UnresolvedControl]
             ),
             Accepted
         );
         assert_eq!(
             reduce_reasoned_change_outcome(
                 FinalLineageChangeState::CanonicalPruned,
-                &[ChangeClaimReason::Pending]
+                &[ChangeClaimReason::UnresolvedControl]
             ),
             Excluded
         );
@@ -2275,8 +2277,8 @@ mod tests {
             reduce_reasoned_change_outcome(
                 FinalLineageChangeState::Current,
                 &[
-                    ChangeClaimReason::NoncanonicalValid,
-                    ChangeClaimReason::Pending
+                    ChangeClaimReason::AuthorizedNoncanonical,
+                    ChangeClaimReason::UnresolvedControl
                 ]
             ),
             Pending
@@ -2285,8 +2287,8 @@ mod tests {
             reduce_reasoned_change_outcome(
                 FinalLineageChangeState::Current,
                 &[
-                    ChangeClaimReason::InvalidControl,
-                    ChangeClaimReason::Pending
+                    ChangeClaimReason::InvalidReferencedControl,
+                    ChangeClaimReason::UnresolvedControl
                 ]
             ),
             Pending
@@ -2295,8 +2297,8 @@ mod tests {
             reduce_reasoned_change_outcome(
                 FinalLineageChangeState::Current,
                 &[
-                    ChangeClaimReason::NoncanonicalValid,
-                    ChangeClaimReason::InvalidControl
+                    ChangeClaimReason::AuthorizedNoncanonical,
+                    ChangeClaimReason::InvalidReferencedControl
                 ]
             ),
             Excluded
@@ -2305,8 +2307,8 @@ mod tests {
             reduce_reasoned_change_outcome(
                 FinalLineageChangeState::Current,
                 &[
-                    ChangeClaimReason::Unsupported,
-                    ChangeClaimReason::Unsupported
+                    ChangeClaimReason::UnsupportedCarrier,
+                    ChangeClaimReason::UnsupportedCarrier
                 ]
             ),
             UnsupportedRevision
@@ -2315,8 +2317,8 @@ mod tests {
             reduce_reasoned_change_outcome(
                 FinalLineageChangeState::Current,
                 &[
-                    ChangeClaimReason::Unsupported,
-                    ChangeClaimReason::InvalidControl
+                    ChangeClaimReason::UnsupportedCarrier,
+                    ChangeClaimReason::InvalidReferencedControl
                 ]
             ),
             Invalid
