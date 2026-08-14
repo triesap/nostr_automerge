@@ -178,4 +178,12 @@ mod tests {
             Some(ProtocolDisposition::Pending)
         );
     }
+
+    #[test]
+    fn wrong_kind_descriptor_invalidates_dependent_chunk() {
+        assert_eq!(
+            ReferencedDescriptorState::WrongKind.dependent_disposition(),
+            Some(ProtocolDisposition::Invalid)
+        );
+    }
 }
