@@ -1,5 +1,7 @@
 //! Sealed-limit resource benchmark smoke.
 
+#![allow(clippy::expect_used)]
+
 use nostr_automerge::checkpoint::{leaf_hash, merkle_root};
 use nostr_automerge::{
     Completion, CorpusBuilder, DocumentCoordinate, NeverCancelled, ProtocolRevision,

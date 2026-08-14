@@ -66,3 +66,13 @@ assertion now records the actual completed application count. The checkpoint
 test deterministically searches the finite measured item range for the exact
 checkpoint-exhaustion boundary, as its cancellation counterpart already did.
 No evaluator behavior, protocol disposition, or budget capacity mapping changed.
+
+## Benchmark fixture assertion lint repair
+
+Recorded during the `step_964` exact-resource focused gate.
+
+Strict all-target Clippy correctly applied the workspace's production panic lint
+to the new repository-owned benchmark fixture loader. The benchmark is an
+assertion-only executable over checked-in trusted data, matching the existing
+test policy, so its module now explicitly allows `expect_used`. Production
+library code and runtime error handling were unchanged.
