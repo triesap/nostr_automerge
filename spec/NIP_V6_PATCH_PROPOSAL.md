@@ -37,3 +37,11 @@ Make a draft-v1 change invalid when it references known unusable or unsupported
 control evidence; do not propagate `unsupported_revision` to the dependant.
 Require device, ActorId, and write-role authorization before branch disposition.
 An unauthorized noncanonical claim and every terminal-control claim are invalid.
+
+## Final claim precedence
+
+Specify the ordered hash reduction table: accepted closure, canonical-ancestor
+pruning, genuinely unresolved claims, otherwise-valid noncanonical claims,
+all-unsupported carriers, then conclusive invalidity. State explicitly that
+accepted and pruned lineage cannot be poisoned and pending outranks
+noncanonical or invalid duplicate claims.

@@ -348,3 +348,13 @@ inherit `unsupported_revision`. After resolving a valid control, compare the
 signed device, derived ActorId, and `write` role before considering canonical
 versus noncanonical branch disposition. An unauthorized noncanonical claim is
 invalid, and a terminal control authorizes no change.
+
+### Final claim precedence
+
+Reduce each target `ChangeHash` by the first matching rule: final accepted
+closure is `accepted`; a canonical ancestor accepted then pruned is `excluded`;
+any genuinely unresolved claim is `pending`; an otherwise-valid noncanonical
+or current-branch-excluded claim is `excluded`; a nonempty claim set containing
+only unsupported carriers is `unsupported_revision`; every remaining conclusive
+failure is `invalid`. Accepted and canonical-pruned lineage outrank later
+duplicate claims, while pending outranks noncanonical and conclusive failures.
