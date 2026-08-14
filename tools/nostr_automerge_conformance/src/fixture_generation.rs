@@ -39,6 +39,9 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "remediation_v6_change_references_unsupported_control" => {
             generate_remediation_v6_unsupported_control_change()
         }
+        "remediation_v6_unauthorized_noncanonical_change" => {
+            generate_remediation_v6_unauthorized_noncanonical_change()
+        }
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
 }
@@ -90,6 +93,62 @@ fn generate_remediation_v6_unsupported_control_change() -> Result<(), String> {
             "NCRDT-VERSION-001",
         ],
         "remediation_v6_change_references_unsupported_control",
+    )
+}
+
+fn generate_remediation_v6_unauthorized_noncanonical_change() -> Result<(), String> {
+    let controller = Signer::from_byte(142)?;
+    let permitted = Signer::from_byte(143)?;
+    let unauthorized = Signer::from_byte(144)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "c5".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid unauthorized noncanonical coordinate".to_owned())?;
+    let make_control = |created_at| {
+        sign_control(
+            &controller,
+            created_at,
+            coordinate,
+            None,
+            control_content_full(
+                0,
+                vec![(&permitted, None, &["write"])],
+                "automerge-change-v1",
+            ),
+        )
+    };
+    let left = make_control(1)?;
+    let right = make_control(2)?;
+    let noncanonical = event_id(&left)?.max(event_id(&right)?);
+    let actor = ActorId::derive(coordinate, unauthorized.public_key);
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+        .map_err(|error| format!("unauthorized claim document: {error:?}"))?;
+    let change = document
+        .author_change(&[Operation::PutString {
+            key: "claim".to_owned(),
+            value: "unauthorized".to_owned(),
+        }])
+        .map_err(|error| format!("unauthorized claim change: {error:?}"))?;
+    let claim = sign_change(
+        &unauthorized,
+        3,
+        coordinate,
+        noncanonical,
+        change.change_hash(),
+        change.raw(),
+    )?;
+    let root = repository_root().join("fixtures/v1_draft/scenarios/change_claims");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    write_fixture_with_requirements(
+        &root,
+        "unauthorized_change_under_noncanonical_control",
+        coordinate,
+        vec![left, right, claim],
+        &["NCRDT-ACTOR-001", "NCRDT-CONF-005", "NCRDT-DISPOSITION-002"],
+        "remediation_v6_unauthorized_noncanonical_change",
     )
 }
 
