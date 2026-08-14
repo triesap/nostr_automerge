@@ -53,11 +53,767 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "remediation_v6_equivocation_pending_claims" => {
             generate_remediation_v6_equivocation_pending_claims()
         }
+        "remediation_v6_control_relationships" => generate_remediation_v6_control_relationships(),
+        "remediation_v6_dependency_knowledge" => generate_remediation_v6_dependency_knowledge(),
+        "remediation_v6_checkpoint_references" => generate_remediation_v6_checkpoint_references(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
 }
 
 type Member<'a> = (&'a Signer, Option<String>, &'a [&'a str]);
+
+fn author_root_change(
+    coordinate: DocumentCoordinate,
+    signer: &Signer,
+    key: &str,
+) -> Result<(Vec<u8>, ChangeHash), String> {
+    let actor = ActorId::derive(coordinate, signer.public_key);
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+        .map_err(|error| format!("remediation-v6 authored document: {error:?}"))?;
+    let change = document
+        .author_change(&[Operation::PutString {
+            key: key.to_owned(),
+            value: "evidence".to_owned(),
+        }])
+        .map_err(|error| format!("remediation-v6 authored change: {error:?}"))?;
+    Ok((change.raw().to_vec(), change.change_hash()))
+}
+
+fn generate_remediation_v6_control_relationships() -> Result<(), String> {
+    let controller = Signer::from_byte(160)?;
+    let writer = Signer::from_byte(161)?;
+    let other_controller = Signer::from_byte(162)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "d0".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation-v6 control coordinate".to_owned())?;
+    let other_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        other_controller.public_key.to_hex(),
+        "d1".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation-v6 alternate coordinate".to_owned())?;
+    let members = || vec![(&writer, None, &["checkpoint", "write"][..])];
+    let genesis = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let genesis_id = event_id(&genesis)?;
+    let child = |created_at: u64, parent: EventId, sequence: u64, base_heads: &[ChangeHash]| {
+        sign_control(
+            &controller,
+            created_at,
+            coordinate,
+            Some(parent),
+            control_content_with_links(sequence, members(), base_heads, None, None),
+        )
+    };
+
+    let unsupported_parent = sign_control(
+        &controller,
+        10,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1").replace("\"v\":1", "\"v\":2"),
+    )?;
+    let unsupported_child = child(11, event_id(&unsupported_parent)?, 1, &[])?;
+
+    let wrong_kind_parent = sign_raw_event(
+        &controller,
+        12,
+        31_624,
+        vec![vec!["d".to_owned(), "d0".repeat(32)]],
+        "{}".to_owned(),
+    )?;
+    let wrong_kind_child = child(13, event_id(&wrong_kind_parent)?, 1, &[])?;
+
+    let static_invalid_parent = sign_raw_event(
+        &controller,
+        14,
+        1_625,
+        vec![vec!["a".to_owned(), coordinate.to_address()]],
+        "{}".to_owned(),
+    )?;
+    let static_invalid_child = child(15, event_id(&static_invalid_parent)?, 1, &[])?;
+
+    let wrong_coordinate_parent = sign_control(
+        &other_controller,
+        16,
+        other_coordinate,
+        None,
+        control_content_full(0, vec![(&writer, None, &["write"])], "automerge-change-v1"),
+    )?;
+    let wrong_coordinate_child = child(17, event_id(&wrong_coordinate_parent)?, 1, &[])?;
+
+    let (invalid_raw, invalid_hash) = author_root_change(coordinate, &writer, "invalid")?;
+    let invalid_control = sign_control(
+        &controller,
+        18,
+        coordinate,
+        None,
+        control_content_full(1, members(), "automerge-change-v1"),
+    )?;
+    let invalid_claim = sign_change(
+        &writer,
+        19,
+        coordinate,
+        event_id(&invalid_control)?,
+        invalid_hash,
+        &invalid_raw,
+    )?;
+    let invalid_base_child = child(20, genesis_id, 1, &[invalid_hash])?;
+
+    let (excluded_left_raw, excluded_left_hash) =
+        author_root_change(coordinate, &writer, "excluded-left")?;
+    let (excluded_right_raw, excluded_right_hash) =
+        author_root_change(coordinate, &writer, "excluded-right")?;
+    let excluded_left = sign_change(
+        &writer,
+        21,
+        coordinate,
+        genesis_id,
+        excluded_left_hash,
+        &excluded_left_raw,
+    )?;
+    let excluded_right = sign_change(
+        &writer,
+        22,
+        coordinate,
+        genesis_id,
+        excluded_right_hash,
+        &excluded_right_raw,
+    )?;
+    let excluded_base_child = child(23, genesis_id, 1, &[excluded_left_hash])?;
+
+    let (unsupported_raw, unsupported_hash) =
+        author_root_change(coordinate, &writer, "unsupported")?;
+    let unsupported_claim = sign_change(
+        &writer,
+        24,
+        coordinate,
+        event_id(&unsupported_parent)?,
+        unsupported_hash,
+        &unsupported_raw,
+    )?;
+    let unsupported_base_child = child(25, genesis_id, 1, &[unsupported_hash])?;
+
+    let competing = sign_control(
+        &controller,
+        26,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let other_control_id = genesis_id.max(event_id(&competing)?);
+    let canonical_control_id = genesis_id.min(event_id(&competing)?);
+    let (other_raw, other_hash) = author_root_change(coordinate, &writer, "other-control")?;
+    let other_claim = sign_change(
+        &writer,
+        27,
+        coordinate,
+        other_control_id,
+        other_hash,
+        &other_raw,
+    )?;
+    let other_base_child = child(28, canonical_control_id, 1, &[other_hash])?;
+
+    let pending_parent = child(29, EventId::from_bytes([0xd2; 32]), 1, &[])?;
+    let pending_descendant = child(30, event_id(&pending_parent)?, 2, &[])?;
+
+    let invalid_parent = child(31, genesis_id, 2, &[])?;
+    let invalid_descendant = child(32, event_id(&invalid_parent)?, 3, &[])?;
+
+    let noncanonical_id = genesis_id.max(event_id(&competing)?);
+    let noncanonical_child = child(33, noncanonical_id, 1, &[])?;
+    let noncanonical_grandchild = child(34, event_id(&noncanonical_child)?, 2, &[])?;
+
+    let root = repository_root().join("fixtures/v1_draft/scenarios/control");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    let cases = vec![
+        (
+            "child_references_unsupported_parent_control",
+            vec![unsupported_parent.clone(), unsupported_child],
+        ),
+        (
+            "child_references_wrong_kind_parent",
+            vec![wrong_kind_parent, wrong_kind_child],
+        ),
+        (
+            "child_references_static_invalid_parent",
+            vec![static_invalid_parent, static_invalid_child],
+        ),
+        (
+            "child_references_wrong_coordinate_parent",
+            vec![wrong_coordinate_parent, wrong_coordinate_child],
+        ),
+        (
+            "child_base_head_is_known_invalid",
+            vec![
+                genesis.clone(),
+                invalid_control,
+                invalid_claim,
+                invalid_base_child,
+            ],
+        ),
+        (
+            "child_base_head_is_known_excluded",
+            vec![
+                genesis.clone(),
+                excluded_left,
+                excluded_right,
+                excluded_base_child,
+            ],
+        ),
+        (
+            "child_base_head_is_known_unsupported",
+            vec![
+                genesis.clone(),
+                unsupported_parent,
+                unsupported_claim,
+                unsupported_base_child,
+            ],
+        ),
+        (
+            "child_base_head_is_known_other_control",
+            vec![
+                genesis.clone(),
+                competing.clone(),
+                other_claim,
+                other_base_child,
+            ],
+        ),
+        (
+            "descendant_of_pending_control_is_pending",
+            vec![pending_parent, pending_descendant],
+        ),
+        (
+            "descendant_of_invalid_control_is_invalid",
+            vec![genesis.clone(), invalid_parent, invalid_descendant],
+        ),
+        (
+            "deep_noncanonical_branch_control_validation",
+            vec![
+                genesis,
+                competing,
+                noncanonical_child,
+                noncanonical_grandchild,
+            ],
+        ),
+    ];
+    for (fixture_id, events) in cases {
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            &["NCRDT-CONF-002", "NCRDT-CONTROL-001", "NCRDT-EPOCH-001"],
+            "remediation_v6_control_relationships",
+        )?;
+    }
+    Ok(())
+}
+
+fn generate_remediation_v6_dependency_knowledge() -> Result<(), String> {
+    let controller = Signer::from_byte(164)?;
+    let dependency_writer = Signer::from_byte(165)?;
+    let child_writer = Signer::from_byte(166)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "d3".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation-v6 dependency coordinate".to_owned())?;
+    let members = || {
+        vec![
+            (&dependency_writer, None, &["write"][..]),
+            (&child_writer, None, &["write"][..]),
+        ]
+    };
+    let left = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let right = sign_control(
+        &controller,
+        2,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let left_id = event_id(&left)?;
+    let right_id = event_id(&right)?;
+    let canonical_id = left_id.min(right_id);
+    let other_id = left_id.max(right_id);
+
+    let make_dependent = |key: &str, dependency: ChangeHash, control: EventId, created_at| {
+        let (seed, _) = author_root_change(coordinate, &child_writer, key)?;
+        let (raw, hash) = with_change_dependencies(&seed, &[dependency], 2)?;
+        sign_change(&child_writer, created_at, coordinate, control, hash, &raw)
+    };
+
+    let (other_raw, other_hash) =
+        author_root_change(coordinate, &dependency_writer, "other-control-dependency")?;
+    let other_claim = sign_change(
+        &dependency_writer,
+        3,
+        coordinate,
+        other_id,
+        other_hash,
+        &other_raw,
+    )?;
+    let other_dependent = make_dependent("depends-other", other_hash, canonical_id, 4)?;
+
+    let unsupported_control = sign_control(
+        &controller,
+        5,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1").replace("\"v\":1", "\"v\":2"),
+    )?;
+    let (unsupported_raw, unsupported_hash) =
+        author_root_change(coordinate, &dependency_writer, "unsupported-dependency")?;
+    let unsupported_claim = sign_change(
+        &dependency_writer,
+        6,
+        coordinate,
+        event_id(&unsupported_control)?,
+        unsupported_hash,
+        &unsupported_raw,
+    )?;
+    let unsupported_dependent =
+        make_dependent("depends-unsupported", unsupported_hash, canonical_id, 7)?;
+
+    let invalid_control = sign_control(
+        &controller,
+        8,
+        coordinate,
+        None,
+        control_content_full(1, members(), "automerge-change-v1"),
+    )?;
+    let (invalid_raw, invalid_hash) =
+        author_root_change(coordinate, &dependency_writer, "invalid-dependency")?;
+    let invalid_claim = sign_change(
+        &dependency_writer,
+        9,
+        coordinate,
+        event_id(&invalid_control)?,
+        invalid_hash,
+        &invalid_raw,
+    )?;
+    let invalid_dependent = make_dependent("depends-invalid", invalid_hash, canonical_id, 10)?;
+
+    let parent = sign_control(
+        &controller,
+        11,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let parent_id = event_id(&parent)?;
+    let (conflict_left_raw, conflict_left_hash) =
+        author_root_change(coordinate, &dependency_writer, "prior-conflict-left")?;
+    let (conflict_right_raw, conflict_right_hash) =
+        author_root_change(coordinate, &dependency_writer, "prior-conflict-right")?;
+    let conflict_left = sign_change(
+        &dependency_writer,
+        12,
+        coordinate,
+        parent_id,
+        conflict_left_hash,
+        &conflict_left_raw,
+    )?;
+    let conflict_right = sign_change(
+        &dependency_writer,
+        13,
+        coordinate,
+        parent_id,
+        conflict_right_hash,
+        &conflict_right_raw,
+    )?;
+    let child_control = sign_control(
+        &controller,
+        14,
+        coordinate,
+        Some(parent_id),
+        control_content_with_links(1, members(), &[], None, None),
+    )?;
+    let equivocation_dependent = make_dependent(
+        "depends-prior-equivocation",
+        conflict_left_hash,
+        event_id(&child_control)?,
+        15,
+    )?;
+
+    let root = repository_root().join("fixtures/v1_draft/scenarios/dependency");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    let cases = vec![
+        (
+            "dependency_known_through_other_control",
+            vec![left.clone(), right.clone(), other_claim, other_dependent],
+        ),
+        (
+            "dependency_known_through_unsupported_control",
+            vec![
+                left.clone(),
+                right.clone(),
+                unsupported_control,
+                unsupported_claim,
+                unsupported_dependent,
+            ],
+        ),
+        (
+            "dependency_known_through_prior_equivocation_exclusion",
+            vec![
+                parent,
+                conflict_left,
+                conflict_right,
+                child_control,
+                equivocation_dependent,
+            ],
+        ),
+        (
+            "dependency_known_through_invalid_control",
+            vec![
+                left,
+                right,
+                invalid_control,
+                invalid_claim,
+                invalid_dependent,
+            ],
+        ),
+    ];
+    for (fixture_id, events) in cases {
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            &["NCRDT-CONF-002", "NCRDT-EPOCH-001", "NCRDT-STATE-001"],
+            "remediation_v6_dependency_knowledge",
+        )?;
+    }
+    Ok(())
+}
+
+fn generate_remediation_v6_checkpoint_references() -> Result<(), String> {
+    let controller = Signer::from_byte(167)?;
+    let writer = Signer::from_byte(168)?;
+    let other_controller = Signer::from_byte(169)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "d4".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation-v6 checkpoint coordinate".to_owned())?;
+    let other_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        other_controller.public_key.to_hex(),
+        "d5".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation-v6 alternate checkpoint coordinate".to_owned())?;
+    let members = || vec![(&writer, None, &["checkpoint", "write"][..])];
+    let control = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let control_id = event_id(&control)?;
+    let actor = ActorId::derive(coordinate, writer.public_key);
+    let snapshot = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+        .map_err(|error| format!("remediation-v6 checkpoint document: {error:?}"))?
+        .accepted_state_bytes();
+    let commitment: [u8; 32] = Sha256::digest(
+        [
+            b"nostr-crdt/automerge/change-set/v1".as_slice(),
+            &[0],
+            &0_u64.to_be_bytes(),
+        ]
+        .concat(),
+    )
+    .into();
+    let descriptor_for = |created_at, control_reference| {
+        sign_checkpoint_descriptor_revision(
+            &writer,
+            created_at,
+            coordinate,
+            control_reference,
+            &snapshot,
+            &[],
+            commitment,
+            None,
+            1,
+        )
+    };
+
+    let pending_descriptor = descriptor_for(2, EventId::from_bytes([0xd6; 32]))?;
+    let pending_control_chunk = sign_checkpoint_chunk(
+        &writer,
+        3,
+        coordinate,
+        event_id(&pending_descriptor)?,
+        &snapshot,
+    )?;
+
+    let wrong_kind_control = sign_raw_event(
+        &controller,
+        4,
+        31_624,
+        vec![vec!["d".to_owned(), "d4".repeat(32)]],
+        "{}".to_owned(),
+    )?;
+    let wrong_kind_control_descriptor = descriptor_for(5, event_id(&wrong_kind_control)?)?;
+    let wrong_kind_control_chunk = sign_checkpoint_chunk(
+        &writer,
+        6,
+        coordinate,
+        event_id(&wrong_kind_control_descriptor)?,
+        &snapshot,
+    )?;
+
+    let wrong_coordinate_control = sign_control(
+        &other_controller,
+        7,
+        other_coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let wrong_coordinate_control_descriptor =
+        descriptor_for(8, event_id(&wrong_coordinate_control)?)?;
+    let wrong_coordinate_control_chunk = sign_checkpoint_chunk(
+        &writer,
+        9,
+        coordinate,
+        event_id(&wrong_coordinate_control_descriptor)?,
+        &snapshot,
+    )?;
+
+    let unsupported_control = sign_control(
+        &controller,
+        10,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1").replace("\"v\":1", "\"v\":2"),
+    )?;
+    let unsupported_control_descriptor = descriptor_for(11, event_id(&unsupported_control)?)?;
+    let unsupported_control_chunk = sign_checkpoint_chunk(
+        &writer,
+        12,
+        coordinate,
+        event_id(&unsupported_control_descriptor)?,
+        &snapshot,
+    )?;
+
+    let invalid_control = sign_control(
+        &controller,
+        13,
+        coordinate,
+        None,
+        control_content_full(1, members(), "automerge-change-v1"),
+    )?;
+    let invalid_control_descriptor = descriptor_for(14, event_id(&invalid_control)?)?;
+    let invalid_control_chunk = sign_checkpoint_chunk(
+        &writer,
+        15,
+        coordinate,
+        event_id(&invalid_control_descriptor)?,
+        &snapshot,
+    )?;
+
+    let wrong_kind_descriptor_chunk =
+        sign_checkpoint_chunk(&writer, 16, coordinate, control_id, &snapshot)?;
+
+    let other_control = sign_control(
+        &other_controller,
+        17,
+        other_coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let other_actor = ActorId::derive(other_coordinate, writer.public_key);
+    let other_snapshot =
+        AuthoringDocument::empty(ActorState::initial(other_actor, Default::default()))
+            .map_err(|error| format!("alternate checkpoint document: {error:?}"))?
+            .accepted_state_bytes();
+    let wrong_coordinate_descriptor = sign_checkpoint_descriptor_revision(
+        &writer,
+        18,
+        other_coordinate,
+        event_id(&other_control)?,
+        &other_snapshot,
+        &[],
+        commitment,
+        None,
+        1,
+    )?;
+    let wrong_coordinate_descriptor_chunk = sign_checkpoint_chunk(
+        &writer,
+        19,
+        coordinate,
+        event_id(&wrong_coordinate_descriptor)?,
+        &other_snapshot,
+    )?;
+
+    let invalid_descriptor = sign_raw_event(
+        &writer,
+        20,
+        1_626,
+        vec![
+            vec!["a".to_owned(), coordinate.to_address()],
+            vec!["e".to_owned(), control_id.to_hex()],
+        ],
+        "{}".to_owned(),
+    )?;
+    let invalid_descriptor_chunk = sign_checkpoint_chunk(
+        &writer,
+        21,
+        coordinate,
+        event_id(&invalid_descriptor)?,
+        &snapshot,
+    )?;
+
+    let unsupported_descriptor = sign_checkpoint_descriptor_revision(
+        &writer,
+        22,
+        coordinate,
+        control_id,
+        &snapshot,
+        &[],
+        commitment,
+        None,
+        2,
+    )?;
+    let unsupported_descriptor_chunk = sign_checkpoint_chunk(
+        &writer,
+        23,
+        coordinate,
+        event_id(&unsupported_descriptor)?,
+        &snapshot,
+    )?;
+
+    let pending_chunk = sign_checkpoint_chunk(
+        &writer,
+        24,
+        coordinate,
+        event_id(&pending_descriptor)?,
+        &snapshot,
+    )?;
+
+    let valid_descriptor = descriptor_for(25, control_id)?;
+    let valid_chunk = sign_checkpoint_chunk(
+        &writer,
+        26,
+        coordinate,
+        event_id(&valid_descriptor)?,
+        &snapshot,
+    )?;
+
+    let root = repository_root().join("fixtures/v1_draft/scenarios/checkpoint");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    let cases = vec![
+        (
+            "checkpoint_descriptor_references_pending_control",
+            vec![pending_descriptor.clone(), pending_control_chunk],
+        ),
+        (
+            "checkpoint_descriptor_references_wrong_kind_control",
+            vec![
+                wrong_kind_control,
+                wrong_kind_control_descriptor,
+                wrong_kind_control_chunk,
+            ],
+        ),
+        (
+            "checkpoint_descriptor_references_wrong_coordinate_control",
+            vec![
+                wrong_coordinate_control,
+                wrong_coordinate_control_descriptor,
+                wrong_coordinate_control_chunk,
+            ],
+        ),
+        (
+            "checkpoint_descriptor_references_unsupported_control",
+            vec![
+                unsupported_control,
+                unsupported_control_descriptor,
+                unsupported_control_chunk,
+            ],
+        ),
+        (
+            "checkpoint_descriptor_references_invalid_control",
+            vec![
+                invalid_control,
+                invalid_control_descriptor,
+                invalid_control_chunk,
+            ],
+        ),
+        (
+            "chunk_references_wrong_kind_descriptor",
+            vec![control.clone(), wrong_kind_descriptor_chunk],
+        ),
+        (
+            "chunk_references_wrong_coordinate_descriptor",
+            vec![
+                other_control,
+                wrong_coordinate_descriptor,
+                wrong_coordinate_descriptor_chunk,
+            ],
+        ),
+        (
+            "chunk_references_invalid_descriptor",
+            vec![
+                control.clone(),
+                invalid_descriptor,
+                invalid_descriptor_chunk,
+            ],
+        ),
+        (
+            "chunk_references_unsupported_descriptor",
+            vec![
+                control.clone(),
+                unsupported_descriptor,
+                unsupported_descriptor_chunk,
+            ],
+        ),
+        (
+            "chunk_references_pending_descriptor",
+            vec![pending_descriptor, pending_chunk],
+        ),
+        (
+            "orphan_chunk_promotes_after_descriptor_delivery",
+            vec![control, valid_chunk, valid_descriptor],
+        ),
+    ];
+    for (fixture_id, events) in cases {
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            &[
+                "NCRDT-CHECKPOINT-001",
+                "NCRDT-CONF-002",
+                "NCRDT-DISPOSITION-001",
+            ],
+            "remediation_v6_checkpoint_references",
+        )?;
+    }
+    Ok(())
+}
 
 fn generate_remediation_v6_unsupported_control_change() -> Result<(), String> {
     let controller = Signer::from_byte(140)?;
@@ -1180,6 +1936,31 @@ fn sign_checkpoint_descriptor(
     change_set_hash: [u8; 32],
     root_override: Option<[u8; 32]>,
 ) -> Result<RawEventBytes, String> {
+    sign_checkpoint_descriptor_revision(
+        signer,
+        created_at,
+        coordinate,
+        control,
+        snapshot,
+        heads,
+        change_set_hash,
+        root_override,
+        1,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn sign_checkpoint_descriptor_revision(
+    signer: &Signer,
+    created_at: u64,
+    coordinate: DocumentCoordinate,
+    control: EventId,
+    snapshot: &[u8],
+    heads: &[ChangeHash],
+    change_set_hash: [u8; 32],
+    root_override: Option<[u8; 32]>,
+    revision: u64,
+) -> Result<RawEventBytes, String> {
     let snapshot_hash: [u8; 32] = Sha256::digest(snapshot).into();
     let chunk_root = root_override
         .unwrap_or_else(|| nostr_automerge::checkpoint::leaf_hash(0, 1, snapshot_hash));
@@ -1204,7 +1985,7 @@ fn sign_checkpoint_descriptor(
             "heads": heads,
             "raw_size": snapshot.len(),
             "total_ops": if heads.is_empty() { 0 } else { 1 },
-            "v": 1,
+            "v": revision,
         })
         .to_string(),
     )
