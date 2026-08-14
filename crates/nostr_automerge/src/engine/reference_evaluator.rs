@@ -406,6 +406,12 @@ impl ReferenceEvaluator {
             )
             .map_err(|_| EvaluationError::ReportInvariant)?;
         finalization
+            .consume(
+                FinalizationDimension::Changes,
+                u64::try_from(dispositions.len()).unwrap_or(u64::MAX),
+            )
+            .map_err(|_| EvaluationError::ReportInvariant)?;
+        finalization
             .refund(budget)
             .map_err(|_| EvaluationError::ReportInvariant)?;
         EvaluationReport::from_parts(EvaluationReportParts {
