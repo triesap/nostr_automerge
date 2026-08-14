@@ -101,3 +101,10 @@ remediation-v6 claim, relationship, dependency, checkpoint-reference, orphan,
 isolation, and resource cases. Require two complete runs, declared delivery
 permutations, and byte-identical Rust/independent-TypeScript canonical reports.
 Exclude examples and synthetic inputs from conformance evidence.
+
+## Checkpoint trust boundary
+
+State that checkpoints are optional acceleration only. Require causal control
+authorization, coherent signed-set binding, full cryptographic and snapshot
+verification, and equality with ordinary replay. A checkpoint never authorizes,
+selects, repairs, or redefines history, and ordinary replay remains mandatory.

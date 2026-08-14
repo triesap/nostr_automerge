@@ -433,3 +433,12 @@ independent private TypeScript implementation must replay every fixture twice,
 apply the declared delivery permutations, and emit byte-identical canonical
 reports. Examples and synthetic non-distribution inputs are not conformance
 evidence.
+
+### Checkpoint trust boundary
+
+Checkpoints are optional acceleration artifacts. A descriptor and its chunks
+are accepted only after causal control authorization, complete signed-set
+binding, Merkle and snapshot verification, and equality with ordinary replay of
+the exact authorized ancestor closure. A verified checkpoint never authorizes,
+selects, repairs, or redefines history. Clients must support ordinary replay
+when no acceptable checkpoint exists.
