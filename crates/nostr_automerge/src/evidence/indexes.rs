@@ -82,12 +82,21 @@ pub(crate) struct CheckpointChunkIndexRecord {
     pub(crate) descriptor_id: EventId,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum IndexedDescriptorEvidence {
+    ValidatedDescriptor,
+    UnsupportedRevision,
+    StaticInvalidDescriptor,
+    WrongKind,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct CheckpointIndexes {
     pub(crate) descriptors_by_id: BTreeMap<EventId, CheckpointDescriptorIndexRecord>,
     pub(crate) descriptors_by_coordinate: BTreeMap<DocumentCoordinate, BTreeSet<EventId>>,
     pub(crate) chunks_by_id: BTreeMap<EventId, CheckpointChunkIndexRecord>,
     pub(crate) chunks_by_descriptor: BTreeMap<EventId, BTreeSet<EventId>>,
+    pub(crate) descriptor_evidence: BTreeMap<EventId, IndexedDescriptorEvidence>,
     pub(crate) pending_descriptors: BTreeSet<EventId>,
     pub(crate) pending_chunks: BTreeSet<EventId>,
 }
@@ -178,6 +187,7 @@ pub(crate) fn derive_trusted_indexes(
     }
     derive_parent_evidence(&mut indexes, events);
     derive_pending_controls(&mut indexes);
+    derive_descriptor_evidence(&mut indexes, events);
     derive_pending_checkpoints(&mut indexes);
     derive_lifecycle_support(&mut indexes, events);
     indexes
@@ -306,11 +316,45 @@ fn derive_pending_checkpoints(indexes: &mut TrustedIndexes) {
     for chunk in indexes.checkpoints.chunks_by_id.values() {
         if !indexes
             .checkpoints
-            .descriptors_by_id
+            .descriptor_evidence
             .contains_key(&chunk.descriptor_id)
         {
             indexes.checkpoints.pending_chunks.insert(chunk.event_id);
         }
+    }
+}
+
+fn derive_descriptor_evidence(
+    indexes: &mut TrustedIndexes,
+    events: &BTreeMap<EventId, EventEvidence>,
+) {
+    for descriptor_id in indexes.checkpoints.chunks_by_descriptor.keys().copied() {
+        let Some(evidence) = events.get(&descriptor_id) else {
+            continue;
+        };
+        let state = match evidence {
+            EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::CheckpointDescriptor(_),
+                ..
+            } => IndexedDescriptorEvidence::ValidatedDescriptor,
+            EventEvidence::UnsupportedRevision { .. }
+            | EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::UnsupportedRevision { .. },
+                ..
+            } => IndexedDescriptorEvidence::UnsupportedRevision,
+            EventEvidence::InvalidCarrier { event, .. } if event.kind() == 1_626 => {
+                IndexedDescriptorEvidence::StaticInvalidDescriptor
+            }
+            EventEvidence::VerifiedCarrier { .. }
+            | EventEvidence::InvalidCarrier { .. }
+            | EventEvidence::InvalidEvent { .. }
+            | EventEvidence::IrrelevantEvent { .. }
+            | EventEvidence::DuplicateEvent { .. } => IndexedDescriptorEvidence::WrongKind,
+        };
+        indexes
+            .checkpoints
+            .descriptor_evidence
+            .insert(descriptor_id, state);
     }
 }
 
@@ -482,6 +526,7 @@ mod tests {
             vec![event_id]
         );
         assert!(indexes.changes.carriers_by_hash.is_empty());
+        assert!(indexes.checkpoints.descriptor_evidence.is_empty());
     }
 
     #[test]
