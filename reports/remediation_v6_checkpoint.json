@@ -1,0 +1,23 @@
+{
+  "schema": "nostr_automerge.remediation_v6_checkpoint.v1",
+  "status": "pass",
+  "scope": "checkpoint_descriptor_reference_resolution",
+  "through_commit": "3f472c9",
+  "descriptor_reference_states": 8,
+  "mutation_anchors": 9,
+  "checkpoint_unit_tests": 31,
+  "public_checkpoint_tests": 17,
+  "checkpoint_conformance_tests": 1,
+  "checkpoint_replay_tests": 3,
+  "orphan_chunk_promotion": "pass",
+  "delivery_permutations": "pass",
+  "event_result_consistency": "pass",
+  "descriptor_reference_metering": "pass",
+  "package_all_targets": "pass",
+  "package_clippy": "pass",
+  "authority_validation": "pass",
+  "fixture_validation": "pass",
+  "mutation_anchor_validation": "pass",
+  "sustained_mutation_execution": "deferred_external_hold",
+  "provenance": "operator-local"
+}
