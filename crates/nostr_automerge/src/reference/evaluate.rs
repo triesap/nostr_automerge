@@ -1019,6 +1019,29 @@ mod tests {
     }
 
     #[test]
+    fn deep_invalid_chain_reaches_a_fixed_point_independent_of_id_order() {
+        let parent = EventId::from_bytes([12; 32]);
+        let child = EventId::from_bytes([11; 32]);
+        let grandchild = EventId::from_bytes([10; 32]);
+        let parents = BTreeMap::from([
+            (parent, Some(EventId::from_bytes([13; 32]))),
+            (child, Some(parent)),
+            (grandchild, Some(child)),
+        ]);
+        let mut dispositions = BTreeMap::from([
+            (parent, ProtocolDisposition::Invalid),
+            (child, ProtocolDisposition::Excluded),
+            (grandchild, ProtocolDisposition::Pending),
+        ]);
+        propagate_control_parent_dispositions(&parents, &mut dispositions);
+        assert!(
+            [parent, child, grandchild]
+                .into_iter()
+                .all(|id| dispositions.get(&id) == Some(&ProtocolDisposition::Invalid))
+        );
+    }
+
+    #[test]
     fn control_closure_precharge_exhaustion_is_atomic() {
         let envelope = crate::control::validate::tests::genesis();
         let event_id = envelope.event_id();
