@@ -2991,6 +2991,40 @@ fn cancellation_before_control_evaluation_fabricates_no_state() {
 }
 
 #[test]
+fn zero_budget_target_entry_consumes_no_work() {
+    let scenario = signed_engine_scenario();
+    let mut builder = CorpusBuilder::new();
+    for event in [scenario.change, scenario.control] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let mut budget = WorkBudget::new(0, 0);
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+        &builder.finish(),
+        scenario.coordinate,
+        &mut budget,
+        &NeverCancelled,
+    );
+    assert_eq!(report.completion(), Completion::BudgetExhausted);
+    for counter in [
+        WorkCounter::Event,
+        WorkCounter::Carrier,
+        WorkCounter::Control,
+        WorkCounter::GraphNode,
+        WorkCounter::GraphEdge,
+        WorkCounter::DecodeByte,
+        WorkCounter::ApplyChange,
+        WorkCounter::CheckpointByte,
+        WorkCounter::CheckpointItem,
+        WorkCounter::Assertion,
+    ] {
+        assert_eq!(budget.consumed().get(counter), 0, "{counter:?}");
+    }
+}
+
+#[test]
 #[allow(clippy::expect_used)]
 fn adversarial_deep_control_chain_is_deterministically_bounded() {
     let controller = TestSigner::from_byte(118);
