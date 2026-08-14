@@ -9,7 +9,9 @@ use crate::control::candidate::{
     evaluate_parent_continuity, evaluate_role_continuity, evaluate_terminal_continuity,
 };
 use crate::control::genesis::classify_genesis;
-use crate::control::reference_state::{ReferencedControlState, resolve_referenced_control};
+use crate::control::reference_state::{
+    ControlParentState, ReferencedControlState, resolve_referenced_control,
+};
 use crate::control::reorganization::{ControlChainSummary, detect_reorganization};
 use crate::control::validate::ControlEnvelope;
 use crate::evidence::corpus_builder::ManifestSelectionState;
@@ -1857,6 +1859,21 @@ fn prepare_controls(
     let corpus = view.corpus();
     let coordinate = view.coordinate();
     let ancestry_index = build_control_ancestry_index(view, budget, cancellation)?;
+    let assumed_control_dispositions = corpus
+        .indexes
+        .controls
+        .controls_by_id
+        .keys()
+        .copied()
+        .map(|event_id| (event_id, ProtocolDisposition::Accepted))
+        .collect::<std::collections::BTreeMap<_, _>>();
+    let assumed_statefully_valid = corpus
+        .indexes
+        .controls
+        .controls_by_id
+        .keys()
+        .copied()
+        .collect::<std::collections::BTreeSet<_>>();
     let mut dispositions = std::collections::BTreeMap::new();
     let mut controls = Vec::new();
     for control_id in corpus
@@ -1878,12 +1895,22 @@ fn prepare_controls(
             continue;
         }
         let envelope = ControlEnvelope::from_validated(control.as_ref().clone());
-        let disposition = if corpus
-            .indexes
-            .controls
-            .pending
-            .contains(&control.event_id())
-        {
+        let parent_disposition = control.parent().and_then(|parent_id| {
+            ControlParentState::from(resolve_referenced_control(
+                corpus,
+                parent_id,
+                coordinate,
+                &assumed_control_dispositions,
+                &assumed_statefully_valid,
+            ))
+            .dependent_disposition()
+        });
+        let frontier_missing = control
+            .base_heads()
+            .any(|head| !corpus.indexes.changes.carriers_by_hash.contains_key(&head));
+        let disposition = if let Some(disposition) = parent_disposition {
+            disposition
+        } else if frontier_missing {
             ProtocolDisposition::Pending
         } else if control.parent().is_none() {
             let predecessor = if let Some(link) = control.predecessor() {
