@@ -114,10 +114,15 @@ impl<'a> DocumentEvidenceView<'a> {
     }
 
     pub(crate) fn selected_manifest(&self) -> Option<ManifestSelection> {
-        self.reportable_event_ids.and_then(|event_ids| {
-            self.corpus
-                .selected_manifest_selection_in(self.coordinate, event_ids)
-        })
+        self.corpus
+            .indexes
+            .coordinates
+            .manifests
+            .get(&self.coordinate)
+            .and_then(|event_ids| {
+                self.corpus
+                    .selected_manifest_selection_in(self.coordinate, event_ids)
+            })
     }
 
     pub(crate) fn records(&self) -> impl Iterator<Item = EvidenceRecord> + '_ {

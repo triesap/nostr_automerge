@@ -142,6 +142,14 @@ pub(crate) fn derive_trusted_indexes(
                 .entry(coordinate)
                 .or_default()
                 .insert(*event_id);
+            if is_manifest_candidate(evidence) {
+                indexes
+                    .coordinates
+                    .manifests
+                    .entry(coordinate)
+                    .or_default()
+                    .insert(*event_id);
+            }
         }
         let EventEvidence::VerifiedCarrier { carrier, .. } = evidence else {
             continue;
@@ -202,6 +210,29 @@ pub(crate) fn derive_trusted_indexes(
     derive_lifecycle_support(&mut indexes, events);
     derive_coordinate_work_metadata(&mut indexes, events);
     indexes
+}
+
+fn is_manifest_candidate(evidence: &EventEvidence) -> bool {
+    match evidence {
+        EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::Manifest(_),
+            ..
+        } => true,
+        EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::UnsupportedRevision { event, .. },
+            ..
+        }
+        | EventEvidence::UnsupportedRevision {
+            carrier: VerifiedCarrier::UnsupportedRevision { event, .. },
+            ..
+        }
+        | EventEvidence::InvalidCarrier { event, .. }
+        | EventEvidence::IrrelevantEvent { event, .. } => event.kind() == 31_624,
+        EventEvidence::VerifiedCarrier { .. }
+        | EventEvidence::UnsupportedRevision { .. }
+        | EventEvidence::InvalidEvent { .. }
+        | EventEvidence::DuplicateEvent { .. } => false,
+    }
 }
 
 fn derive_coordinate_work_metadata(
