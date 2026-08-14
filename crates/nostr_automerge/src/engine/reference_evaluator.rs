@@ -132,6 +132,13 @@ impl ReferenceEvaluator {
                 | None => EvaluationError::ReportInvariant,
             });
         }
+        batch
+            .statefully_valid_controls
+            .extend(preliminary_control_dispositions.iter().filter_map(
+                |(event_id, disposition)| {
+                    (*disposition == ProtocolDisposition::Excluded).then_some(*event_id)
+                },
+            ));
         let mut control_disposition_map = preliminary_control_dispositions;
         control_disposition_map.extend(core::mem::take(&mut batch.control_dispositions));
         batch.control_dispositions = control_disposition_map;
