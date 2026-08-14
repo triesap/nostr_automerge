@@ -363,6 +363,104 @@ fn pending_child_does_not_block_valid_sibling() {
 }
 
 #[test]
+#[allow(clippy::expect_used)]
+fn deep_noncanonical_branch_is_validated_before_exclusion() {
+    let controller = TestSigner::from_byte(155);
+    let writer = TestSigner::from_byte(156);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "cb".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let members = vec![(writer.public_key().to_hex(), vec!["write"])];
+    let genesis = signed_acl_control(&controller, coordinate, 1, None, 0, members.clone());
+    let genesis_id = VerifiedNip01Event::verify(genesis.clone())
+        .expect("signed genesis")
+        .event_id();
+    let first = signed_acl_control(
+        &controller,
+        coordinate,
+        2,
+        Some(genesis_id),
+        1,
+        members.clone(),
+    );
+    let second = signed_acl_control(
+        &controller,
+        coordinate,
+        3,
+        Some(genesis_id),
+        1,
+        members.clone(),
+    );
+    let first_id = VerifiedNip01Event::verify(first.clone())
+        .expect("signed first fork")
+        .event_id();
+    let second_id = VerifiedNip01Event::verify(second.clone())
+        .expect("signed second fork")
+        .event_id();
+    let noncanonical_id = first_id.max(second_id);
+    let grandchild = signed_acl_control(
+        &controller,
+        coordinate,
+        4,
+        Some(noncanonical_id),
+        2,
+        members,
+    );
+    let grandchild_id = VerifiedNip01Event::verify(grandchild.clone())
+        .expect("signed noncanonical grandchild")
+        .event_id();
+    let actor = ActorId::derive(coordinate, writer.public_key());
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
+        .expect("empty authoring document");
+    let authored = document
+        .author_change(&[Operation::PutString {
+            key: "branch".to_owned(),
+            value: "noncanonical".to_owned(),
+        }])
+        .expect("canonical authored change");
+    let change_hash = authored.change_hash();
+    let claim = writer.sign(
+        &UnsignedEventDraft::new(
+            5,
+            1_624,
+            vec![
+                vec!["a".to_owned(), coordinate.to_address()],
+                vec!["e".to_owned(), grandchild_id.to_hex()],
+                vec!["x".to_owned(), change_hash.to_hex()],
+            ],
+            base64::engine::general_purpose::STANDARD.encode(authored.raw()),
+        )
+        .expect("change draft")
+        .prepare(writer.public_key())
+        .expect("change preimage"),
+    );
+    let mut builder = CorpusBuilder::new();
+    for event in [genesis, first, second, grandchild, claim] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert!(
+        report
+            .control_dispositions()
+            .contains(&(grandchild_id, ProtocolDisposition::Excluded))
+    );
+    assert_eq!(report.excluded_changes(), [change_hash]);
+    assert!(report.invalid_changes().is_empty());
+}
+
+#[test]
 fn build_immutable_evidence_corpus_through_public_api() {
     let valid = include_bytes!("../../../fixtures/v1_draft/nip01/valid_event.json");
 
