@@ -52,3 +52,12 @@ Define all eight prior states: accepted base, same-epoch candidate, pruned
 canonical ancestor, other control, invalid, unsupported,
 prior-equivocation-excluded, and unknown. Only absent or unresolved evidence is
 pending; every known-impossible state invalidates the dependant transitively.
+
+## Control parent and frontier references
+
+Define exhaustive parent states and map only missing or pending evidence to a
+pending child. Make every known-unusable parent invalid. Define accepted,
+pending, missing, invalid, excluded, unsupported, and other-control frontier
+states with the same absent-versus-known distinction. Propagate pending and
+invalid ancestry, and validate noncanonical branches relative to their own
+ancestry before exclusion.

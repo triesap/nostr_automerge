@@ -368,3 +368,14 @@ Accepted-base dependencies are usable and same-epoch candidates resolve in the
 selected graph. Every other known state is impossible under that epoch and
 invalidates the dependant and its descendants. Only genuinely absent or
 unresolved selected-control evidence remains pending and may promote.
+
+### Control parent and frontier references
+
+Resolve a child control parent as canonical, valid noncanonical, pending,
+missing, wrong kind, wrong coordinate, statically invalid, dynamically invalid,
+or unsupported. Missing or pending makes the child pending; every known
+unusable state makes it invalid. Validate a valid noncanonical child relative
+to its own ancestry before exclusion. For each base head, accepted-under-parent
+is usable, missing or pending is pending, and invalid-under-parent,
+excluded-under-parent, unsupported, or other-control is invalid. Pending and
+invalid ancestry propagate their respective state to descendants.
