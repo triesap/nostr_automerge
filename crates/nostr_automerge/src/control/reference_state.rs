@@ -225,4 +225,12 @@ mod tests {
             Some(ProtocolDisposition::Invalid)
         );
     }
+
+    #[test]
+    fn present_wrong_coordinate_parent_is_invalid() {
+        assert_eq!(
+            ControlParentState::WrongCoordinate.dependent_disposition(),
+            Some(ProtocolDisposition::Invalid)
+        );
+    }
 }
