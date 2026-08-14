@@ -896,15 +896,32 @@ fn event_disposition_records(
             view.coordinate(),
             &descriptor_dispositions,
         );
-        if let Some(disposition) = state.dependent_disposition() {
-            records.insert(chunk.event_id, (disposition, None));
-        } else if records
-            .get(&chunk.event_id)
-            .is_none_or(|(disposition, _)| *disposition == ProtocolDisposition::Excluded)
-        {
-            records.insert(chunk.event_id, (ProtocolDisposition::Pending, None));
-        }
+        let prior = records.get(&chunk.event_id).copied();
+        let final_record = state
+            .dependent_disposition()
+            .map(|disposition| (disposition, None))
+            .or_else(|| {
+                prior.filter(|(disposition, _)| *disposition != ProtocolDisposition::Excluded)
+            })
+            .unwrap_or((ProtocolDisposition::Pending, None));
+        records.insert(chunk.event_id, final_record);
     }
+
+    debug_assert!(
+        corpus
+            .indexes
+            .checkpoints
+            .chunks_by_id
+            .values()
+            .all(|chunk| {
+                !view.contains_reportable(&chunk.event_id)
+                    || records
+                        .get(&chunk.event_id)
+                        .is_some_and(|(disposition, _)| {
+                            *disposition != ProtocolDisposition::Excluded
+                        })
+            })
+    );
 
     records
         .into_iter()
