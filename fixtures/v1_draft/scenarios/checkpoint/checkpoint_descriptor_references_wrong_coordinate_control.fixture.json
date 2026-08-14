@@ -1,0 +1,31 @@
+{
+  "expected": {
+    "report_path": "checkpoint_descriptor_references_wrong_coordinate_control.expected.json",
+    "sha256": "81d73336b0358d53deb30e3865833be319f9d019db801d624fafbedd72f0ec3c"
+  },
+  "fixture_id": "checkpoint_descriptor_references_wrong_coordinate_control",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "checkpoint_descriptor_references_wrong_coordinate_control.input.json",
+      "sha256": "e0948a4296a8c0c568c8c5354feca9ba09a8e0dd1676cf50f561846f89bc2896"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile remediation_v6_checkpoint_references",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CHECKPOINT-001",
+    "NCRDT-CONF-002",
+    "NCRDT-DISPOSITION-001"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}
