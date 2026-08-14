@@ -27,6 +27,15 @@ def git(root: Path, *arguments: str) -> str:
     return run(["git", *arguments], root, capture=True).strip()
 
 
+def path_scoped_candidate(target: Path) -> str:
+    if git(target, "status", "--porcelain", "--", "."):
+        raise AssertionError("interop target has uncommitted source changes")
+    candidate = git(target, "log", "-1", "--format=%H", "--", ".")
+    if len(candidate) != 40:
+        raise AssertionError("interop target has no exact path-scoped candidate")
+    return candidate
+
+
 def load_json(path: Path) -> dict[str, object]:
     value = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
@@ -110,7 +119,7 @@ def main() -> int:
         "deliberate_mismatch": "detected",
         "distribution_id": manifest["distribution_id"],
         "evaluated_rust_commit": git(rust, "rev-parse", "HEAD"),
-        "evaluated_typescript_commit": git(typescript, "rev-parse", "HEAD"),
+        "evaluated_typescript_commit": path_scoped_candidate(typescript),
         "fixture_count": corpus["total"],
         "manifest_sha256": manifest_sha,
         "mismatch_classifications": ["specification", "fixture", "rust", "typescript", "upstream_automerge"],
