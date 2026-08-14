@@ -228,4 +228,12 @@ mod tests {
             Some(ProtocolDisposition::Invalid)
         );
     }
+
+    #[test]
+    fn unsupported_head_rejects_the_frontier() {
+        assert_eq!(
+            reasoned_frontier_disposition([hash(24)], |_| { ParentFrontierReference::Unsupported }),
+            Some(ProtocolDisposition::Invalid)
+        );
+    }
 }
