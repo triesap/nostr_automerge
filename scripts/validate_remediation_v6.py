@@ -142,6 +142,23 @@ def validate_boundaries() -> None:
         raise AssertionError("private evidence boundary is missing")
 
 
+def validate_authority_report() -> None:
+    relative = "reports/remediation_v6_authority.json"
+    path = ROOT / relative
+    if not path.exists():
+        return
+    value = load(relative)
+    if value.get("schema") != "nostr_automerge.remediation_v6_authority.v1":
+        raise AssertionError("unexpected authority report schema")
+    through_commit = value.get("through_commit")
+    if not isinstance(through_commit, str) or not HEX40.fullmatch(through_commit):
+        raise AssertionError("invalid authority report commit")
+    if git("cat-file", "-t", through_commit) != "commit":
+        raise AssertionError("missing authority report commit")
+    if value.get("completed_steps") != [f"step_{number}" for number in range(861, 871)]:
+        raise AssertionError("authority report step range is inconsistent")
+
+
 def self_test() -> None:
     baseline = load("reports/remediation_v6_baseline.json")
     mutations = []
@@ -193,6 +210,7 @@ def main() -> int:
     if selected:
         validate_adrs()
         validate_boundaries()
+        validate_authority_report()
     if args.self_test:
         self_test()
     print("PASS: remediation v6 authority")
