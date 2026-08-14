@@ -2,6 +2,33 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::ChangeHash;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ParentFrontierReference {
+    AcceptedUnderParent,
+    PendingUnderParent,
+    Missing,
+    InvalidUnderParent,
+    ExcludedUnderParent,
+    Unsupported,
+    OtherControl,
+    Unknown,
+}
+
+impl ParentFrontierReference {
+    pub(crate) const fn dependent_disposition(self) -> Option<crate::ProtocolDisposition> {
+        match self {
+            Self::AcceptedUnderParent => None,
+            Self::PendingUnderParent | Self::Missing | Self::Unknown => {
+                Some(crate::ProtocolDisposition::Pending)
+            }
+            Self::InvalidUnderParent
+            | Self::ExcludedUnderParent
+            | Self::Unsupported
+            | Self::OtherControl => Some(crate::ProtocolDisposition::Invalid),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct FrontierClosure {
     pub(crate) accepted: BTreeSet<ChangeHash>,
@@ -40,8 +67,8 @@ pub(crate) fn accepted_frontier_closure(
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
-    use super::{FrontierClosure, accepted_frontier_closure};
-    use crate::ChangeHash;
+    use super::{FrontierClosure, ParentFrontierReference, accepted_frontier_closure};
+    use crate::{ChangeHash, ProtocolDisposition};
 
     fn hash(value: u8) -> ChangeHash {
         ChangeHash::from_bytes([value; 32])
@@ -90,5 +117,43 @@ mod tests {
                 out_of_parent: BTreeSet::from([hash(8)]),
             }
         );
+    }
+
+    #[test]
+    fn base_head_knowledge_has_exhaustive_dependent_outcomes() {
+        let cases = [
+            (ParentFrontierReference::AcceptedUnderParent, None),
+            (
+                ParentFrontierReference::PendingUnderParent,
+                Some(ProtocolDisposition::Pending),
+            ),
+            (
+                ParentFrontierReference::Missing,
+                Some(ProtocolDisposition::Pending),
+            ),
+            (
+                ParentFrontierReference::InvalidUnderParent,
+                Some(ProtocolDisposition::Invalid),
+            ),
+            (
+                ParentFrontierReference::ExcludedUnderParent,
+                Some(ProtocolDisposition::Invalid),
+            ),
+            (
+                ParentFrontierReference::Unsupported,
+                Some(ProtocolDisposition::Invalid),
+            ),
+            (
+                ParentFrontierReference::OtherControl,
+                Some(ProtocolDisposition::Invalid),
+            ),
+            (
+                ParentFrontierReference::Unknown,
+                Some(ProtocolDisposition::Pending),
+            ),
+        ];
+        for (state, expected) in cases {
+            assert_eq!(state.dependent_disposition(), expected);
+        }
     }
 }
