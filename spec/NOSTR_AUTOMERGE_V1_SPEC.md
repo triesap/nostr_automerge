@@ -408,3 +408,16 @@ Final dispositions derive from complete replacement, control selection,
 authorization, binding, set completeness, and verification rather than static
 ingress validity. Event identifiers, dispositions, and stable diagnostics are
 canonically ordered and included in the namespaced dispositions digest.
+
+### Resource completion and finalization
+
+Local cancellation or budget exhaustion is non-authoritative and fabricates no
+canonical progress. Every retained-evidence traversal, target allocation,
+prior-knowledge control/hash/claim lookup, authorization comparison, canonical
+vector, digest encoding, and report invariant check is deterministically
+charged or conservatively reserved. Finalization reserves and mechanically
+consumes controls, changes, events, checkpoints, digests, evidence, invariants,
+and fixed overhead. Underflow, overrun, cross-dimension borrowing, double
+finish, or unexplained remainder is an invariant failure. Validate a completed
+report before refunding unused capacity; failed reservation returns a constant
+no-progress interruption report.

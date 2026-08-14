@@ -84,3 +84,12 @@ Require exactly one final disposition for every attributable target carrier.
 Derive it from complete dynamic replacement, selection, authorization, binding,
 completeness, and verification. Canonically order event results and include
 their namespaced records in the dispositions digest.
+
+## Resource completion and finalization
+
+Define cancellation and budget exhaustion as non-authoritative. Require
+pre-allocation checks and deterministic accounting for every evidence-dependent
+entry, prior-knowledge, evaluation, digest, and report operation. Reserve and
+mechanically consume all eight finalization dimensions, reject any accounting
+invariant violation, validate reports before refunds, and permit only a
+constant no-progress report when reservation fails.
