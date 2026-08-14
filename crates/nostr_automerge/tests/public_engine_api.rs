@@ -5112,6 +5112,88 @@ fn signed_single_chunk_checkpoint_verifies_real_automerge_history() {
 
 #[test]
 #[allow(clippy::expect_used)]
+fn orphan_checkpoint_chunk_promotes_after_descriptor_arrival() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/scenarios/checkpoints/checkpoints_single_chunk.input.json"
+    ))
+    .expect("signed checkpoint scenario");
+    let coordinate: DocumentCoordinate = fixture["coordinate"]
+        .as_str()
+        .expect("fixture coordinate")
+        .parse()
+        .expect("valid fixture coordinate");
+    let raw_events = fixture["raw_events"]
+        .as_array()
+        .expect("fixture raw events");
+    let chunk = raw_events
+        .iter()
+        .find(|entry| {
+            entry["data"]
+                .as_str()
+                .and_then(|data| serde_json::from_str::<serde_json::Value>(data).ok())
+                .and_then(|event| event["kind"].as_u64())
+                == Some(1_627)
+        })
+        .and_then(|entry| entry["data"].as_str())
+        .expect("signed chunk");
+    let chunk_id = serde_json::from_str::<serde_json::Value>(chunk)
+        .expect("chunk event")
+        .get("id")
+        .and_then(serde_json::Value::as_str)
+        .expect("chunk identifier")
+        .parse()
+        .expect("valid chunk identifier");
+
+    let build = |include_descriptor: bool| {
+        let mut builder = CorpusBuilder::new();
+        for entry in raw_events {
+            let data = entry["data"].as_str().expect("signed event bytes");
+            let kind = serde_json::from_str::<serde_json::Value>(data)
+                .expect("signed event")
+                .get("kind")
+                .and_then(serde_json::Value::as_u64)
+                .expect("event kind");
+            if include_descriptor || kind != 1_626 {
+                assert!(matches!(
+                    builder.ingest_bytes(data.as_bytes()),
+                    IngestOutcome::Accepted { .. }
+                ));
+            }
+        }
+        builder.finish()
+    };
+    let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
+    let initial = evaluator.evaluate_report(
+        &build(false),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000_000),
+        &NeverCancelled,
+    );
+    assert_eq!(
+        event_disposition(&initial, chunk_id),
+        Some(ProtocolDisposition::Pending)
+    );
+    assert!(initial.checkpoints().is_empty());
+
+    let promoted = evaluator.reevaluate_report(
+        &build(true),
+        coordinate,
+        &initial,
+        &mut WorkBudget::new(1_000_000, 1_000_000),
+        &NeverCancelled,
+    );
+    assert_eq!(
+        event_disposition(&promoted, chunk_id),
+        Some(ProtocolDisposition::Accepted)
+    );
+    assert_eq!(
+        promoted.checkpoints().first().map(|result| result.status()),
+        Some(CheckpointVerificationStatus::Verified)
+    );
+}
+
+#[test]
+#[allow(clippy::expect_used)]
 fn signed_empty_history_checkpoint_verifies_without_redefining_history() {
     let controller = TestSigner::from_byte(60);
     let checkpoint_signer = TestSigner::from_byte(61);
