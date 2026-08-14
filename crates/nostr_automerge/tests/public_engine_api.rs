@@ -3465,6 +3465,19 @@ fn every_item_budget_boundary_preserves_canonical_control_outcomes() {
     }
 }
 
+#[test]
+fn prior_knowledge_exhaustion_is_deterministic_at_every_item_boundary() {
+    every_item_budget_boundary_preserves_canonical_control_outcomes();
+    let evaluator = include_str!("../src/engine/reference_evaluator.rs");
+    let prior = evaluator
+        .split_once("fn additional_prior_knowledge(")
+        .and_then(|(_, source)| source.split_once("enum ChangeClaimReason"))
+        .map(|(source, _)| source)
+        .unwrap_or_default();
+    assert!(prior.contains("Completion"));
+    assert!(prior.contains("Result<"));
+}
+
 fn rewrite_change_sequence(
     mut raw: Vec<u8>,
     expected_sequence: u8,
