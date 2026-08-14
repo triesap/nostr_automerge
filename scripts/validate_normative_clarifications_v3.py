@@ -27,8 +27,8 @@ def main() -> int:
 
     registry = json.loads((ROOT / "spec/requirements.json").read_text(encoding="utf-8"))
     requirements = registry.get("requirements")
-    if registry.get("requirement_count") != 106 or not isinstance(requirements, list):
-        raise AssertionError("the normative registry must contain 106 entries")
+    if registry.get("requirement_count") != 119 or not isinstance(requirements, list):
+        raise AssertionError("the normative registry must contain 119 entries")
     identifiers = [item.get("id") for item in requirements]
     identifier_digest = sha256_bytes("\n".join(identifiers[:87]).encode())
     if identifier_digest != REQUIREMENT_ID_SHA256:
@@ -85,7 +85,7 @@ def main() -> int:
         raise AssertionError("sealed protocol revision changed")
     print("PASS: normative clarification v3")
     print("- nip_snapshot=unchanged")
-    print("- requirement_ids=87_stable_plus_19_append_only")
+    print("- requirement_ids=87_stable_plus_32_append_only")
     print(f"- causal_counter_cases={len(case_ids)}")
     return 0
 

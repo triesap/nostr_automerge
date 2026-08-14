@@ -20,7 +20,7 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
     ),
     (
         "fixture_distribution",
-        "scripts/validate_fixture_distribution_v6.py",
+        "scripts/validate_fixture_distribution_v7.py",
     ),
     ("sealed_constants", "scripts/validate_protocol_revision.py"),
     ("automerge_boundary", "scripts/validate_architecture.py"),

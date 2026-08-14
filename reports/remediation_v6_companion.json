@@ -1,0 +1,14 @@
+{
+  "schema": "nostr_automerge.remediation_v6_companion.v1",
+  "status": "local_pass_external_nip_hold",
+  "synchronized_sections": 13,
+  "companion_authority": "pass",
+  "portable_delta": "pass_not_submitted",
+  "requirement_sources": "truthful",
+  "wire_constants": "unchanged",
+  "nip_snapshot": "read_only_unchanged",
+  "nip_reconciliation": "external_hold",
+  "publication_authorized": false,
+  "submission_authorized": false,
+  "overall_remediation_status": "implementation_remediation_required"
+}

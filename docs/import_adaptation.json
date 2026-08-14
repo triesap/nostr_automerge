@@ -49,7 +49,7 @@
     {
       "path": "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
       "source_sha256": "f8a2e53c66fff9b61cab1b1c22074dd513e6525fea4c298b73a91e905c097de7",
-      "target_sha256": "a9b4fc72d7ab25c5195575ac4b2d2921c7a90b26782ff76251e4ec022ac55501",
+      "target_sha256": "8d7fe07de3ba699d7a944003c9fbf4f52e7e865945f0c11d1bd13db5937da5f4",
       "adapted": true
     },
     {
@@ -67,7 +67,7 @@
     {
       "path": "spec/requirements.json",
       "source_sha256": "19e09e9862fd3a22051a43eec6329a9015e8ea24628fd93d83fca2e2376849c3",
-      "target_sha256": "ecb56fb0a5696a717b5096018a188a340d3e7691cc9174e1781162f1d0cad1ae",
+      "target_sha256": "dc86a3c713166e4137693254e111dd51932a0b0659dafe95695a22241997aded",
       "adapted": true
     },
     {

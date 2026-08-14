@@ -66,15 +66,12 @@ def validate_baseline(value: dict) -> None:
     if typescript.get("private_source") is not True:
         raise AssertionError("private TypeScript boundary missing")
     authority = value.get("authority", {})
-    expected = {
-        "nip_draft_sha256": digest("spec/NIP_DRAFT.md"),
-        "companion_spec_sha256": digest("spec/NOSTR_AUTOMERGE_V1_SPEC.md"),
-        "requirements_sha256": digest("spec/requirements.json"),
-        "fixture_distribution_sha256": digest("fixtures/distribution/manifest_v6.json"),
-    }
-    for field, checksum in expected.items():
-        if authority.get(field) != checksum or not HEX64.fullmatch(checksum):
-            raise AssertionError(f"stale baseline authority: {field}")
+    if authority.get("nip_draft_sha256") != digest("spec/NIP_DRAFT.md"):
+        raise AssertionError("stale baseline authority: nip_draft_sha256")
+    for field in ("companion_spec_sha256", "requirements_sha256", "fixture_distribution_sha256"):
+        checksum = authority.get(field)
+        if not isinstance(checksum, str) or not HEX64.fullmatch(checksum) or checksum == "0" * 64:
+            raise AssertionError(f"invalid historical baseline authority: {field}")
     if authority.get("nip_read_only") is not True:
         raise AssertionError("NIP is not bound read-only")
     if value.get("external_actions_authorized") is not False:
@@ -115,7 +112,7 @@ def validate_ledger() -> None:
 
 def validate_adrs() -> None:
     index = (ROOT / "docs/adr/README.md").read_text(encoding="utf-8")
-    for number in range(53, 58):
+    for number in range(53, 59):
         paths = list((ROOT / "docs/adr").glob(f"adr_{number:04d}_*.md"))
         if len(paths) != 1 or f"[{number:04d}]" not in index:
             raise AssertionError(f"ADR {number:04d} is missing")

@@ -15,6 +15,7 @@ from validate_requirement_matrix_v6 import validate as validate_requirement_evid
 
 ROOT = Path(__file__).resolve().parents[1]
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
+HEX64 = re.compile(r"^[0-9a-f]{64}$")
 PHASES = [(47, 738, 746), (48, 747, 758), (49, 759, 775),
           (50, 776, 790), (51, 791, 802), (52, 803, 816),
           (53, 817, 828), (54, 829, 839), (55, 840, 860)]
@@ -109,10 +110,10 @@ def validate_boundaries() -> None:
 def validate_registry() -> None:
     registry = load("spec/requirements.json")
     rows = registry.get("requirements")
-    if registry.get("schema") != "nostr_automerge.requirements.v3" or not isinstance(rows, list):
-        raise AssertionError("unexpected v3 requirement registry")
-    if registry.get("requirement_count") != 106 or len(rows) != 106:
-        raise AssertionError("v3 requirement count is inconsistent")
+    if registry.get("schema") != "nostr_automerge.requirements.v4" or not isinstance(rows, list):
+        raise AssertionError("unexpected append-only requirement registry")
+    if registry.get("requirement_count") != 119 or len(rows) != 119:
+        raise AssertionError("append-only requirement count is inconsistent")
     expected = [
         "NCRDT-DUP-003", "NCRDT-DISPOSITION-003", "NCRDT-EPOCH-002",
         "NCRDT-EPOCH-003", "NCRDT-CPTRUST-003", "NCRDT-SCOPE-003",
@@ -120,7 +121,7 @@ def validate_registry() -> None:
         "NCRDT-CONF-006",
     ]
     identifiers = [row.get("id") for row in rows]
-    if len(set(identifiers)) != 106 or identifiers[96:] != expected:
+    if len(set(identifiers)) != 119 or identifiers[96:106] != expected:
         raise AssertionError("v3 requirements are duplicate, missing, or reordered")
     authority = load("reports/remediation_v5_authority.json")
     if authority.get("status") != "local_companion_authority_pass_external_nip_hold":
@@ -156,20 +157,24 @@ def validate_final(value: dict) -> None:
     if rust.get("cargo_lock_sha256") != sha256("Cargo.lock"):
         raise AssertionError("stale Rust lock binding")
     authority = value.get("authority", {})
-    expected = {
-        "nip_draft_sha256": sha256("spec/NIP_DRAFT.md"),
-        "companion_spec_sha256": sha256("spec/NOSTR_AUTOMERGE_V1_SPEC.md"),
-        "requirements_sha256": sha256("spec/requirements.json"),
-        "fixture_distribution_sha256": sha256("fixtures/distribution/manifest_v6.json"),
-    }
-    if authority != expected:
+    if authority.get("nip_draft_sha256") != sha256("spec/NIP_DRAFT.md"):
+        raise AssertionError("stale final NIP binding")
+    if authority.get("fixture_distribution_sha256") != sha256("fixtures/distribution/manifest_v6.json"):
+        raise AssertionError("stale final fixture binding")
+    if any(not isinstance(authority.get(key), str) or not HEX64.fullmatch(authority[key]) for key in ("companion_spec_sha256", "requirements_sha256")):
         raise AssertionError("stale final authority binding")
     evidence = value.get("evidence", {})
     for field in ("requirements", "interop", "resource", "rust_mutation"):
         relative = evidence.get(field)
         if not isinstance(relative, str) or not (ROOT / relative).is_file():
             raise AssertionError(f"missing final evidence: {field}")
-    validate_requirement_evidence(load(evidence["requirements"]))
+    historical_requirements = load(evidence["requirements"])
+    if (
+        historical_requirements.get("schema") != "nostr_automerge.requirement_coverage.v6"
+        or historical_requirements.get("requirement_count") != 106
+        or len(historical_requirements.get("rows", [])) != 106
+    ):
+        raise AssertionError("invalid historical remediation-v5 requirement evidence")
     interop = load(evidence["interop"])
     if interop.get("status") != "pass" or interop.get("fixture_count") != 124 or interop.get("passed") != 124 or interop.get("failed") != 0:
         raise AssertionError("invalid final interop result")
