@@ -11,11 +11,20 @@ pub(crate) struct ControlIndexRecord {
     pub(crate) base_heads: BTreeSet<ChangeHash>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum IndexedParentEvidence {
+    ValidatedControl,
+    UnsupportedRevision,
+    StaticInvalidControl,
+    WrongKind,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct ControlIndexes {
     pub(crate) controls_by_id: BTreeMap<EventId, ControlIndexRecord>,
     pub(crate) genesis: BTreeSet<EventId>,
     pub(crate) children_by_parent: BTreeMap<EventId, BTreeSet<EventId>>,
+    pub(crate) parent_evidence: BTreeMap<EventId, IndexedParentEvidence>,
     pub(crate) pending: BTreeSet<EventId>,
 }
 
@@ -167,6 +176,7 @@ pub(crate) fn derive_trusted_indexes(
                 .push(index);
         }
     }
+    derive_parent_evidence(&mut indexes, events);
     derive_pending_controls(&mut indexes);
     derive_pending_checkpoints(&mut indexes);
     derive_lifecycle_support(&mut indexes, events);
@@ -329,7 +339,7 @@ fn derive_pending_controls(indexes: &mut TrustedIndexes) {
     for record in indexes.controls.controls_by_id.values() {
         let parent_missing = record
             .parent
-            .is_some_and(|parent| !indexes.controls.controls_by_id.contains_key(&parent));
+            .is_some_and(|parent| !indexes.controls.parent_evidence.contains_key(&parent));
         let frontier_missing = record
             .base_heads
             .iter()
@@ -337,6 +347,34 @@ fn derive_pending_controls(indexes: &mut TrustedIndexes) {
         if parent_missing || frontier_missing {
             indexes.controls.pending.insert(record.event_id);
         }
+    }
+}
+
+fn derive_parent_evidence(indexes: &mut TrustedIndexes, events: &BTreeMap<EventId, EventEvidence>) {
+    for parent in indexes.controls.children_by_parent.keys().copied() {
+        let Some(evidence) = events.get(&parent) else {
+            continue;
+        };
+        let state = match evidence {
+            EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::Control(_),
+                ..
+            } => IndexedParentEvidence::ValidatedControl,
+            EventEvidence::UnsupportedRevision { .. }
+            | EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::UnsupportedRevision { .. },
+                ..
+            } => IndexedParentEvidence::UnsupportedRevision,
+            EventEvidence::InvalidCarrier { event, .. } if event.kind() == 1_625 => {
+                IndexedParentEvidence::StaticInvalidControl
+            }
+            EventEvidence::VerifiedCarrier { .. }
+            | EventEvidence::InvalidCarrier { .. }
+            | EventEvidence::InvalidEvent { .. }
+            | EventEvidence::IrrelevantEvent { .. }
+            | EventEvidence::DuplicateEvent { .. } => IndexedParentEvidence::WrongKind,
+        };
+        indexes.controls.parent_evidence.insert(parent, state);
     }
 }
 
@@ -406,7 +444,7 @@ fn index_change(indexes: &mut ChangeIndexes, change: &crate::carrier::change::Ch
 mod tests {
     use std::collections::BTreeMap;
 
-    use super::derive_trusted_indexes;
+    use super::{IndexedParentEvidence, derive_trusted_indexes};
     use crate::carrier::VerifiedCarrier;
     use crate::carrier::control::{ValidatedControlCarrier, ValidatedControlContent};
     use crate::evidence::event::{EventEvidence, RawChecksum};
@@ -444,5 +482,80 @@ mod tests {
             vec![event_id]
         );
         assert!(indexes.changes.carriers_by_hash.is_empty());
+    }
+
+    #[test]
+    fn parent_index_retains_present_control_and_missing_parent_identities() {
+        let controller = ControllerPublicKey::from_bytes([5; 32]);
+        let coordinate = DocumentCoordinate::new(controller, DocumentId::from_bytes([6; 32]));
+        let parent_id = EventId::from_bytes([7; 32]);
+        let missing_id = EventId::from_bytes([8; 32]);
+        let parent = ValidatedControlCarrier::for_test(
+            parent_id,
+            controller,
+            coordinate,
+            None,
+            ValidatedControlContent {
+                base_heads: Vec::new(),
+                members: Vec::new(),
+                predecessor: None,
+                sequence: 0,
+                successor: None,
+                terminal: true,
+            },
+        );
+        let child = |event_id, parent| {
+            ValidatedControlCarrier::for_test(
+                event_id,
+                controller,
+                coordinate,
+                Some(parent),
+                ValidatedControlContent {
+                    base_heads: Vec::new(),
+                    members: Vec::new(),
+                    predecessor: None,
+                    sequence: 1,
+                    successor: None,
+                    terminal: true,
+                },
+            )
+        };
+        let present_child_id = EventId::from_bytes([9; 32]);
+        let missing_child_id = EventId::from_bytes([10; 32]);
+        let checksum = RawChecksum::test_only([11; 32]);
+        let events = BTreeMap::from([
+            (
+                parent_id,
+                EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::Control(Box::new(parent)),
+                    raw_checksum: checksum,
+                },
+            ),
+            (
+                present_child_id,
+                EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::Control(Box::new(child(present_child_id, parent_id))),
+                    raw_checksum: checksum,
+                },
+            ),
+            (
+                missing_child_id,
+                EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::Control(Box::new(child(
+                        missing_child_id,
+                        missing_id,
+                    ))),
+                    raw_checksum: checksum,
+                },
+            ),
+        ]);
+        let indexes = derive_trusted_indexes(&events, &[]);
+        assert_eq!(
+            indexes.controls.parent_evidence.get(&parent_id),
+            Some(&IndexedParentEvidence::ValidatedControl)
+        );
+        assert!(!indexes.controls.parent_evidence.contains_key(&missing_id));
+        assert!(indexes.controls.pending.contains(&missing_child_id));
+        assert!(!indexes.controls.pending.contains(&present_child_id));
     }
 }
