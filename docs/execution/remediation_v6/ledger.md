@@ -1,8 +1,8 @@
 # Remediation V6 Execution Ledger
 
 Status: active — `implementation_remediation_required`
-Active RCLD: 59
-Active step: `step_917`
+Active RCLD: 60
+Active step: `step_937`
 Range: `step_861` through `step_1058`
 
 | RCLD | Steps | Status | Scope |
@@ -10,8 +10,8 @@ Range: `step_861` through `step_1058`
 | 56 | 861–870 | complete | authority and baseline |
 | 57 | 871–888 | complete | change-claim authorization |
 | 58 | 889–916 | complete | control-relationship resolution |
-| 59 | 917–936 | active | checkpoint descriptor-reference resolution |
-| 60 | 937–964 | pending | exact resource accounting |
+| 59 | 917–936 | complete | checkpoint descriptor-reference resolution |
+| 60 | 937–964 | active | exact resource accounting |
 | 61 | 965–1001 | pending | signed conformance v7 |
 | 62 | 1002–1018 | pending | semantic requirement evidence v7 |
 | 63 | 1019–1035 | pending | companion authority and external NIP reconciliation delta |
@@ -77,6 +77,26 @@ Range: `step_861` through `step_1058`
 | `step_914` | `7d20066` | Control outcomes are stable across reversed and duplicate deliveries. |
 | `step_915` | `f5e4392` | Six deterministic control-relationship mutation anchors are validated. |
 | `step_916` | current commit | The full Rust control-relationship gate passed, closing RCLD 58. |
+| `step_917` | `438e526` | Exhaustive checkpoint descriptor-reference states were defined. |
+| `step_918` | `a28a8ee` | Every descriptor-reference state has a table-driven dependent outcome. |
+| `step_919` | `030ef76` | Descriptor identities and retained evidence classes are indexed separately from absence. |
+| `step_920` | `33e33b9` | Checkpoint chunk evaluation resolves referenced descriptor evidence through a shared boundary. |
+| `step_921` | `ded1d41` | Truly absent descriptor evidence keeps dependent chunks pending. |
+| `step_922` | `975b179` | Dynamically pending descriptor state propagates to dependent chunks. |
+| `step_923` | `1f4b10f` | Present wrong-kind descriptor evidence invalidates dependent chunks. |
+| `step_924` | `7ecb310` | Present wrong-coordinate descriptor evidence invalidates dependent chunks. |
+| `step_925` | `da8b250` | Present statically invalid descriptor evidence invalidates dependent chunks. |
+| `step_926` | `a179b8c` | Unsupported descriptor revisions invalidate draft-v1 dependent chunks. |
+| `step_927` | `9f902af` | Dynamically invalid descriptor outcomes propagate to dependent chunks. |
+| `step_928` | `54306e0` | Complete chunk-to-descriptor index, count, author, coordinate, and commitment binding is enforced. |
+| `step_929` | `f038790` | A signed orphan chunk promotes from pending after its descriptor arrives. |
+| `step_930` | `bd6adbd` | Every target-coordinate chunk receives one non-excluded final event disposition. |
+| `step_931` | `4d9f0b0` | Report construction rejects checkpoint result and event-disposition disagreement. |
+| `step_932` | `ff24f87` | Descriptor resolution and dependent-chunk mapping consume checkpoint work units. |
+| `step_933` | `d8e3cbb` | Descriptor and chunk delivery permutations converge on identical semantic reports. |
+| `step_934` | `3f472c9` | Nine deterministic reference-resolution mutation anchors are validated. |
+| `step_935` | `833e7ad` | The focused checkpoint descriptor-reference matrix passed. |
+| `step_936` | current commit | Refusal diagnostics were preserved, the full Rust gate passed, and RCLD 59 closed. |
 
 ## Execution Rules
 

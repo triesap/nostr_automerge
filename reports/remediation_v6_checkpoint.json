@@ -2,7 +2,7 @@
   "schema": "nostr_automerge.remediation_v6_checkpoint.v1",
   "status": "pass",
   "scope": "checkpoint_descriptor_reference_resolution",
-  "through_commit": "3f472c9",
+  "through_commit": "d1f1ec294930c01635fe5fa2a5c494fe3d00cba6",
   "descriptor_reference_states": 8,
   "mutation_anchors": 9,
   "checkpoint_unit_tests": 31,
@@ -18,6 +18,10 @@
   "authority_validation": "pass",
   "fixture_validation": "pass",
   "mutation_anchor_validation": "pass",
+  "workspace_check": "pass",
+  "workspace_all_targets": "pass",
+  "workspace_clippy": "pass",
+  "workspace_docs": "pass",
   "sustained_mutation_execution": "deferred_external_hold",
   "provenance": "operator-local"
 }
