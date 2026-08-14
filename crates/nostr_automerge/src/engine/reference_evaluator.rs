@@ -113,7 +113,18 @@ impl ReferenceEvaluator {
                     );
                 }
             };
-        let additional_prior = additional_prior_knowledge(&view, &controls);
+        let additional_prior =
+            match additional_prior_knowledge(&view, &controls, budget, cancellation) {
+                Ok(knowledge) => knowledge,
+                Err(completion) => {
+                    return reserved_interrupted_report(
+                        self.revision,
+                        coordinate,
+                        completion,
+                        &mut finalization,
+                    );
+                }
+            };
         let mut batch =
             evaluate_batch_with_prior(controls, &additional_prior, budget, cancellation);
         if !matches!(
@@ -450,12 +461,18 @@ impl ReferenceEvaluator {
 fn additional_prior_knowledge(
     view: &DocumentEvidenceView<'_>,
     controls: &[BatchControl],
-) -> std::collections::BTreeMap<
-    crate::EventId,
-    std::collections::BTreeMap<ChangeHash, PriorChangeKnowledge>,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<
+    std::collections::BTreeMap<
+        crate::EventId,
+        std::collections::BTreeMap<ChangeHash, PriorChangeKnowledge>,
+    >,
+    Completion,
 > {
+    charge_evaluation_work(budget, cancellation, WorkCounter::Control, 0)?;
     let corpus = view.corpus();
-    controls
+    Ok(controls
         .iter()
         .map(|selected| {
             let selected_hashes = corpus
@@ -523,7 +540,7 @@ fn additional_prior_knowledge(
             }
             (selected.event_id, knowledge)
         })
-        .collect()
+        .collect())
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
