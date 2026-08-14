@@ -472,6 +472,36 @@ pub(crate) fn evaluate_batch_with_prior(
     }
 }
 
+pub(crate) fn propagate_control_parent_dispositions(
+    parents: &BTreeMap<EventId, Option<EventId>>,
+    dispositions: &mut BTreeMap<EventId, ProtocolDisposition>,
+) {
+    for _ in 0..parents.len() {
+        let mut changed = false;
+        for (child, parent) in parents {
+            let Some(parent) = parent else {
+                continue;
+            };
+            let inherited = match dispositions.get(parent) {
+                Some(ProtocolDisposition::Pending) => ProtocolDisposition::Pending,
+                Some(ProtocolDisposition::Invalid | ProtocolDisposition::UnsupportedRevision) => {
+                    ProtocolDisposition::Invalid
+                }
+                Some(ProtocolDisposition::Accepted | ProtocolDisposition::Excluded) | None => {
+                    continue;
+                }
+            };
+            if dispositions.get(child) != Some(&inherited) {
+                dispositions.insert(*child, inherited);
+                changed = true;
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+}
+
 fn charge_control_transitions(
     candidate_count: usize,
     budget: &mut WorkBudget,
@@ -877,6 +907,7 @@ mod tests {
 
     use super::{
         AcceptedAtControl, BatchChange, BatchControl, charge_control_closures, evaluate_batch,
+        propagate_control_parent_dispositions,
     };
     use crate::automerge_adapter::decode::decode_change;
     use crate::graph::actor_state::tests::candidate;
@@ -904,6 +935,32 @@ mod tests {
             legacy_eligible: true,
             raw_change: None,
         }
+    }
+
+    #[test]
+    fn pending_parent_state_propagates_through_descendants() {
+        let parent = EventId::from_bytes([1; 32]);
+        let child = EventId::from_bytes([2; 32]);
+        let grandchild = EventId::from_bytes([3; 32]);
+        let parents = BTreeMap::from([
+            (parent, Some(EventId::from_bytes([9; 32]))),
+            (child, Some(parent)),
+            (grandchild, Some(child)),
+        ]);
+        let mut dispositions = BTreeMap::from([
+            (parent, ProtocolDisposition::Pending),
+            (child, ProtocolDisposition::Invalid),
+            (grandchild, ProtocolDisposition::Excluded),
+        ]);
+        propagate_control_parent_dispositions(&parents, &mut dispositions);
+        assert_eq!(
+            dispositions.get(&child),
+            Some(&ProtocolDisposition::Pending)
+        );
+        assert_eq!(
+            dispositions.get(&grandchild),
+            Some(&ProtocolDisposition::Pending)
+        );
     }
 
     #[test]

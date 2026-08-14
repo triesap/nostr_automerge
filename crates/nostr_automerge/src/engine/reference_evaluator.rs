@@ -22,6 +22,7 @@ use crate::reference::epoch_engine::AcceptedAtControl;
 use crate::reference::epoch_engine::PriorChangeKnowledge;
 use crate::reference::evaluate::{
     BatchChange, BatchControl, BatchEvaluationReport, evaluate_batch_with_prior,
+    propagate_control_parent_dispositions,
 };
 use crate::types::role::Role;
 use crate::{
@@ -1954,6 +1955,18 @@ fn prepare_controls(
             envelope: Some(envelope),
         });
     }
+    let parents = corpus
+        .indexes
+        .controls
+        .controls_by_id
+        .values()
+        .filter(|record| view.contains_reportable(&record.event_id))
+        .map(|record| (record.event_id, record.parent))
+        .collect::<std::collections::BTreeMap<_, _>>();
+    propagate_control_parent_dispositions(&parents, &mut dispositions);
+    controls.retain(|control| {
+        dispositions.get(&control.event_id) == Some(&ProtocolDisposition::Excluded)
+    });
     Ok((controls, dispositions))
 }
 
