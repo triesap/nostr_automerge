@@ -42,6 +42,9 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "remediation_v6_unauthorized_noncanonical_change" => {
             generate_remediation_v6_unauthorized_noncanonical_change()
         }
+        "remediation_v6_terminal_control_change" => {
+            generate_remediation_v6_terminal_control_change()
+        }
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
 }
@@ -149,6 +152,61 @@ fn generate_remediation_v6_unauthorized_noncanonical_change() -> Result<(), Stri
         vec![left, right, claim],
         &["NCRDT-ACTOR-001", "NCRDT-CONF-005", "NCRDT-DISPOSITION-002"],
         "remediation_v6_unauthorized_noncanonical_change",
+    )
+}
+
+fn generate_remediation_v6_terminal_control_change() -> Result<(), String> {
+    let controller = Signer::from_byte(145)?;
+    let writer = Signer::from_byte(146)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "c6".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid terminal-control change coordinate".to_owned())?;
+    let terminal = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(
+            0,
+            vec![(&writer, None, &["checkpoint"])],
+            "automerge-change-v1",
+        ),
+    )?;
+    let terminal_id = event_id(&terminal)?;
+    let actor = ActorId::derive(coordinate, writer.public_key);
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+        .map_err(|error| format!("terminal claim document: {error:?}"))?;
+    let change = document
+        .author_change(&[Operation::PutString {
+            key: "claim".to_owned(),
+            value: "terminal".to_owned(),
+        }])
+        .map_err(|error| format!("terminal claim change: {error:?}"))?;
+    let claim = sign_change(
+        &writer,
+        2,
+        coordinate,
+        terminal_id,
+        change.change_hash(),
+        change.raw(),
+    )?;
+    let root = repository_root().join("fixtures/v1_draft/scenarios/change_claims");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    write_fixture_with_requirements(
+        &root,
+        "change_under_terminal_control",
+        coordinate,
+        vec![terminal, claim],
+        &[
+            "NCRDT-CONF-005",
+            "NCRDT-CONTROL-001",
+            "NCRDT-DISPOSITION-002",
+        ],
+        "remediation_v6_terminal_control_change",
     )
 }
 
