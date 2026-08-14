@@ -329,3 +329,13 @@ lifecycle evidence may be read only as nonreportable support. Unattributable or
 unrelated-coordinate evidence cannot affect the target report, completion, or
 target work counters. Cancellation and capacity checks precede target lookup
 and every target-proportional allocation.
+
+### Semantic ChangeHash claims
+
+`ChangeHash` is semantic change identity; each signed kind-1624 carrier is an
+independent claim about its bytes, author, coordinate, and control. Evaluation
+retains reasoned per-claim state, groups every attributable carrier by semantic
+hash, and admits a hash when any claim is dynamically valid. Invalid, pending,
+unsupported, unauthorized, terminal-control, or noncanonical claims cannot
+poison a valid claim. A hash already in the selected accepted base is not
+readmitted as a new epoch candidate.

@@ -22,3 +22,11 @@ unattributable evidence, and unrelated-coordinate evidence. Require every
 target output and target-local work counter to depend only on attributable
 target evidence and explicit lifecycle support. Require cancellation and
 capacity checks before target lookup or target-proportional allocation.
+
+## Semantic ChangeHash claims
+
+Define `ChangeHash` as semantic identity and signed change carriers as
+independent claims. Group all attributable claims by hash, retain each claim's
+reasoned state, accept one dynamically valid claim as sufficient, prevent
+invalid or unresolved claims from poisoning it, and filter hashes already in
+the selected accepted base from new epoch admission.
