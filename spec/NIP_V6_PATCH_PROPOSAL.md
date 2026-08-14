@@ -14,3 +14,11 @@ no operations. Require the candidate `start_op` to equal that value with
 checked arithmetic. Keep actor-local sequence distinct: sequence starts at one
 and increments exactly, while an empty change consumes sequence without
 advancing the causal operation counter.
+
+## Coordinate-scoped evaluation
+
+Define reportable target evidence, direct nonreportable lifecycle support,
+unattributable evidence, and unrelated-coordinate evidence. Require every
+target output and target-local work counter to depend only on attributable
+target evidence and explicit lifecycle support. Require cancellation and
+capacity checks before target lookup or target-proportional allocation.

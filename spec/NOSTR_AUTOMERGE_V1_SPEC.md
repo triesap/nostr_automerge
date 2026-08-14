@@ -319,3 +319,13 @@ the greatest operation counter visible in `D(C)`. `C.start_op` must equal
 `next_op(C)`, with checked arithmetic and conversions. Actor sequence is a
 separate actor-local rule: it starts at one, increments exactly, and an empty
 change consumes sequence without advancing the causal operation counter.
+
+### Coordinate-scoped evaluation
+
+Evaluation for one coordinate derives all reportable controls, changes, event
+dispositions, checkpoints, digests, evidence, output, and local work from
+evidence attributable to that coordinate. Explicit predecessor or successor
+lifecycle evidence may be read only as nonreportable support. Unattributable or
+unrelated-coordinate evidence cannot affect the target report, completion, or
+target work counters. Cancellation and capacity checks precede target lookup
+and every target-proportional allocation.
