@@ -1,0 +1,31 @@
+{
+  "expected": {
+    "report_path": "chunk_references_wrong_coordinate_descriptor.expected.json",
+    "sha256": "ad2f11ee2df5a827fa5cd62cfe504701bd92187d90c97a1c7d0f4ec0b6ec7b60"
+  },
+  "fixture_id": "chunk_references_wrong_coordinate_descriptor",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "chunk_references_wrong_coordinate_descriptor.input.json",
+      "sha256": "f7acf13057d103e87d87f3aaaf9016eabf56c5c41447840b47c6cdaabee6d752"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile remediation_v6_checkpoint_references",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CHECKPOINT-001",
+    "NCRDT-CONF-002",
+    "NCRDT-DISPOSITION-001"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}
