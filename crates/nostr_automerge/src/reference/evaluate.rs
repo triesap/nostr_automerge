@@ -964,6 +964,32 @@ mod tests {
     }
 
     #[test]
+    fn invalid_parent_state_propagates_through_descendants() {
+        let parent = EventId::from_bytes([4; 32]);
+        let child = EventId::from_bytes([5; 32]);
+        let grandchild = EventId::from_bytes([6; 32]);
+        let parents = BTreeMap::from([
+            (parent, Some(EventId::from_bytes([8; 32]))),
+            (child, Some(parent)),
+            (grandchild, Some(child)),
+        ]);
+        let mut dispositions = BTreeMap::from([
+            (parent, ProtocolDisposition::Invalid),
+            (child, ProtocolDisposition::Excluded),
+            (grandchild, ProtocolDisposition::Pending),
+        ]);
+        propagate_control_parent_dispositions(&parents, &mut dispositions);
+        assert_eq!(
+            dispositions.get(&child),
+            Some(&ProtocolDisposition::Invalid)
+        );
+        assert_eq!(
+            dispositions.get(&grandchild),
+            Some(&ProtocolDisposition::Invalid)
+        );
+    }
+
+    #[test]
     fn control_closure_precharge_exhaustion_is_atomic() {
         let envelope = crate::control::validate::tests::genesis();
         let event_id = envelope.event_id();
