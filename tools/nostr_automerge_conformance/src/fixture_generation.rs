@@ -48,6 +48,7 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "remediation_v6_pending_noncanonical_claims" => {
             generate_remediation_v6_pending_noncanonical_claims()
         }
+        "remediation_v6_pending_invalid_claims" => generate_remediation_v6_pending_invalid_claims(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
 }
@@ -269,6 +270,61 @@ fn generate_remediation_v6_pending_noncanonical_claims() -> Result<(), String> {
         vec![left, right, noncanonical_claim, pending_claim],
         &["NCRDT-CONF-005", "NCRDT-DISPOSITION-002", "NCRDT-DUP-003"],
         "remediation_v6_pending_noncanonical_claims",
+    )
+}
+
+fn generate_remediation_v6_pending_invalid_claims() -> Result<(), String> {
+    let controller = Signer::from_byte(149)?;
+    let writer = Signer::from_byte(150)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "c8".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid mixed invalid-claim coordinate".to_owned())?;
+    let invalid_control = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(1, vec![(&writer, None, &["write"])], "automerge-change-v1"),
+    )?;
+    let invalid_control_id = event_id(&invalid_control)?;
+    let actor = ActorId::derive(coordinate, writer.public_key);
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+        .map_err(|error| format!("mixed invalid document: {error:?}"))?;
+    let change = document
+        .author_change(&[Operation::PutString {
+            key: "claim".to_owned(),
+            value: "mixed-invalid".to_owned(),
+        }])
+        .map_err(|error| format!("mixed invalid change: {error:?}"))?;
+    let invalid_claim = sign_change(
+        &writer,
+        2,
+        coordinate,
+        invalid_control_id,
+        change.change_hash(),
+        change.raw(),
+    )?;
+    let pending_claim = sign_change(
+        &writer,
+        3,
+        coordinate,
+        EventId::from_bytes([0xc8; 32]),
+        change.change_hash(),
+        change.raw(),
+    )?;
+    let root = repository_root().join("fixtures/v1_draft/scenarios/change_claims");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    write_fixture_with_requirements(
+        &root,
+        "pending_and_invalid_claims_same_hash",
+        coordinate,
+        vec![invalid_control, invalid_claim, pending_claim],
+        &["NCRDT-CONF-005", "NCRDT-DISPOSITION-002", "NCRDT-DUP-003"],
+        "remediation_v6_pending_invalid_claims",
     )
 }
 
