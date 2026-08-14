@@ -398,7 +398,7 @@ impl ReferenceEvaluator {
                 &mut finalization,
             );
         }
-        let evidence = view.records().collect();
+        let evidence = view.records().collect::<Vec<_>>();
         finalization
             .consume(
                 FinalizationDimension::Controls,
@@ -442,6 +442,12 @@ impl ReferenceEvaluator {
             .consume(
                 FinalizationDimension::Digests,
                 u64::try_from(finalized_digests).unwrap_or(u64::MAX),
+            )
+            .map_err(|_| EvaluationError::ReportInvariant)?;
+        finalization
+            .consume(
+                FinalizationDimension::Evidence,
+                u64::try_from(evidence.len()).unwrap_or(u64::MAX),
             )
             .map_err(|_| EvaluationError::ReportInvariant)?;
         finalization
