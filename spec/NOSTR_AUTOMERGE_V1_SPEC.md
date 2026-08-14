@@ -421,3 +421,15 @@ and fixed overhead. Underflow, overrun, cross-dimension borrowing, double
 finish, or unexplained remainder is an invariant failure. Validate a completed
 report before refunding unused capacity; failed reservation returns a constant
 no-progress interruption report.
+
+### Mandatory signed conformance
+
+Conforming engines execute the checksum-bound signed v7 distribution of exactly
+157 scenarios. It includes mixed claim precedence, unsupported and terminal
+controls, unauthorized noncanonical claims, exhaustive parent/frontier and
+dependency knowledge, descriptor/chunk reference states, orphan promotion,
+coordinate isolation, and exact resource/finalization boundaries. Rust and an
+independent private TypeScript implementation must replay every fixture twice,
+apply the declared delivery permutations, and emit byte-identical canonical
+reports. Examples and synthetic non-distribution inputs are not conformance
+evidence.

@@ -93,3 +93,11 @@ entry, prior-knowledge, evaluation, digest, and report operation. Reserve and
 mechanically consume all eight finalization dimensions, reject any accounting
 invariant violation, validate reports before refunds, and permit only a
 constant no-progress report when reservation fails.
+
+## Mandatory signed conformance
+
+Require the checksum-bound 157-scenario signed v7 distribution, including all
+remediation-v6 claim, relationship, dependency, checkpoint-reference, orphan,
+isolation, and resource cases. Require two complete runs, declared delivery
+permutations, and byte-identical Rust/independent-TypeScript canonical reports.
+Exclude examples and synthetic inputs from conformance evidence.
