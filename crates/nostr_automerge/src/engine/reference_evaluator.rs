@@ -519,6 +519,12 @@ fn additional_prior_knowledge(
                             carrier: VerifiedCarrier::Control(control),
                             ..
                         }) if control.coordinate() == view.coordinate() => {
+                            charge_evaluation_work(
+                                budget,
+                                cancellation,
+                                WorkCounter::Control,
+                                u64::try_from(control.members().len()).unwrap_or(u64::MAX),
+                            )?;
                             all_unsupported = false;
                             all_invalid = false;
                         }
