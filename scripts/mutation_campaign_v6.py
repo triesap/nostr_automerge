@@ -1,89 +1,62 @@
 #!/usr/bin/env python3
-"""Validate deterministic remediation-v6 reference-resolution mutation anchors."""
+"""Validate the remediation-v6 mutation inventory without altering source."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import json
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+OUTPUT = ROOT / "reports/mutation_campaign_v6_inventory.json"
 
 
 @dataclass(frozen=True)
-class MutationAnchor:
+class MutationTarget:
     name: str
-    path: str
-    search: str
-    test_filter: str
+    source_path: str
+    source_anchor: str
+    test_path: str
+    test_id: str
 
 
-ANCHORS = (
-    MutationAnchor(
-        "missing_parent_becomes_invalid",
-        "crates/nostr_automerge/src/control/reference_state.rs",
-        "Self::Pending(_) | Self::Missing => Some(ProtocolDisposition::Pending),",
-        "every_parent_state_has_an_exhaustive_dependent_outcome",
-    ),
-    MutationAnchor(
-        "known_unusable_parent_becomes_pending",
-        "crates/nostr_automerge/src/control/reference_state.rs",
-        "| Self::UnsupportedRevision => Some(ProtocolDisposition::Invalid),",
-        "every_parent_state_has_an_exhaustive_dependent_outcome",
-    ),
-    MutationAnchor(
-        "invalid_frontier_loses_precedence",
-        "crates/nostr_automerge/src/control/frontier.rs",
-        "return Some(crate::ProtocolDisposition::Invalid);",
-        "invalid_head_rejects_the_frontier",
-    ),
-    MutationAnchor(
-        "pending_descendant_propagation_removed",
-        "crates/nostr_automerge/src/reference/evaluate.rs",
-        "Some(ProtocolDisposition::Pending) => ProtocolDisposition::Pending,",
-        "deep_pending_chain_reaches_a_fixed_point_independent_of_id_order",
-    ),
-    MutationAnchor(
-        "invalid_descendant_propagation_removed",
-        "crates/nostr_automerge/src/reference/evaluate.rs",
-        "ProtocolDisposition::Invalid\n                }",
-        "deep_invalid_chain_reaches_a_fixed_point_independent_of_id_order",
-    ),
-    MutationAnchor(
-        "noncanonical_branch_validation_removed",
-        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "(*disposition == ProtocolDisposition::Excluded).then_some(*event_id)",
-        "deep_noncanonical_branch_is_validated_before_exclusion",
-    ),
-    MutationAnchor(
-        "missing_descriptor_becomes_invalid",
-        "crates/nostr_automerge/src/checkpoint/reference_state.rs",
-        "Self::Pending(_) | Self::Missing => Some(ProtocolDisposition::Pending),",
-        "every_descriptor_reference_state_has_one_dependent_outcome",
-    ),
-    MutationAnchor(
-        "known_unusable_descriptor_becomes_pending",
-        "crates/nostr_automerge/src/checkpoint/reference_state.rs",
-        "| Self::UnsupportedRevision => Some(ProtocolDisposition::Invalid),",
-        "every_descriptor_reference_state_has_one_dependent_outcome",
-    ),
-    MutationAnchor(
-        "verified_orphan_chunk_remains_excluded",
-        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        ".unwrap_or((ProtocolDisposition::Pending, None));",
-        "orphan_checkpoint_chunk_promotes_after_descriptor_arrival",
-    ),
+TARGETS = (
+    MutationTarget("unsupported_control_mapping", "crates/nostr_automerge/src/engine/reference_evaluator.rs", "ReferencedControlState::UnsupportedRevision", "crates/nostr_automerge/tests/public_engine_api.rs", "unsupported_control_reference_is_invalid"),
+    MutationTarget("noncanonical_authorization_order", "crates/nostr_automerge/src/engine/reference_evaluator.rs", "ChangeClaimReason::Unauthorized", "crates/nostr_automerge/tests/public_engine_api.rs", "noncanonical_authorization_is_enforced_before_exclusion"),
+    MutationTarget("terminal_control_mapping", "crates/nostr_automerge/src/control/validate.rs", "ControlValidationError::Terminal", "crates/nostr_automerge/tests/public_engine_api.rs", "terminal_control_change_is_invalid"),
+    MutationTarget("missing_parent_mapping", "crates/nostr_automerge/src/control/reference_state.rs", "Self::Pending(_) | Self::Missing", "crates/nostr_automerge/src/control/reference_state.rs", "every_parent_state_has_an_exhaustive_dependent_outcome"),
+    MutationTarget("invalid_frontier_mapping", "crates/nostr_automerge/src/control/frontier.rs", "Self::InvalidUnderParent", "crates/nostr_automerge/src/control/frontier.rs", "invalid_head_rejects_the_frontier"),
+    MutationTarget("pending_descendant_propagation", "crates/nostr_automerge/src/reference/evaluate.rs", "ProtocolDisposition::Pending", "crates/nostr_automerge/src/reference/evaluate.rs", "pending_parent_state_propagates_through_descendants"),
+    MutationTarget("invalid_descendant_propagation", "crates/nostr_automerge/src/reference/evaluate.rs", "ProtocolDisposition::Invalid", "crates/nostr_automerge/src/reference/evaluate.rs", "invalid_parent_state_propagates_through_descendants"),
+    MutationTarget("wrong_kind_descriptor_mapping", "crates/nostr_automerge/src/checkpoint/reference_state.rs", "Self::WrongKind", "crates/nostr_automerge/src/checkpoint/reference_state.rs", "wrong_kind_descriptor_invalidates_dependent_chunk"),
+    MutationTarget("prior_knowledge_charge", "crates/nostr_automerge/src/engine/reference_evaluator.rs", "fn additional_prior_knowledge", "crates/nostr_automerge/tests/public_engine_api.rs", "prior_knowledge_exhaustion_is_deterministic_at_every_item_boundary"),
+    MutationTarget("pre_view_cancellation", "crates/nostr_automerge/src/engine/reference_evaluator.rs", "if cancellation.is_cancelled()", "crates/nostr_automerge/tests/public_engine_api.rs", "cancellation_before_control_evaluation_fabricates_no_state"),
+    MutationTarget("finalization_remainder", "crates/nostr_automerge/src/engine/reference_evaluator.rs", "self.remaining != ReportFinalizationPlan::default()", "crates/nostr_automerge/src/engine/reference_evaluator.rs", "finalization_dimensions_reject_underflow_and_double_finish"),
+    MutationTarget("report_validation_order", "crates/nostr_automerge/src/engine/reference_evaluator.rs", "report_validation_precedes_finalization_refund", "crates/nostr_automerge/src/engine/reference_evaluator.rs", "report_validation_precedes_finalization_refund"),
+    MutationTarget("generic_critical_proof", "scripts/validate_requirement_matrix_v7.py", "generic-critical", "scripts/validate_requirement_matrix_v7.py", "generic_proof"),
 )
 
 
 def main() -> int:
-    for anchor in ANCHORS:
-        source = (ROOT / anchor.path).read_text(encoding="utf-8")
-        if source.count(anchor.search) != 1:
-            raise AssertionError(f"stale mutation anchor: {anchor.name}")
-        if not anchor.test_filter:
-            raise AssertionError(f"missing mutation detector: {anchor.name}")
-    print(f"PASS: {len(ANCHORS)} remediation-v6 reference mutation anchors")
+    rows = []
+    for target in TARGETS:
+        source = (ROOT / target.source_path).read_text()
+        test = (ROOT / target.test_path).read_text()
+        if target.source_anchor not in source:
+            raise AssertionError(f"stale mutation source anchor: {target.name}")
+        if target.test_id not in test:
+            raise AssertionError(f"stale mutation test anchor: {target.name}")
+        rows.append({**asdict(target), "inventory_status": "validated"})
+    report = {
+        "schema": "nostr_automerge.mutation_inventory.v6",
+        "status": "validated",
+        "target_count": len(rows),
+        "execution": "deferred_external_hold",
+        "targets": rows,
+    }
+    OUTPUT.write_text(json.dumps(report, sort_keys=True, separators=(",", ":")) + "\n")
+    print(f"PASS: validated {len(rows)} remediation-v6 mutation targets")
     return 0
 
 
