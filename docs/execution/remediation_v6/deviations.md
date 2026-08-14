@@ -53,3 +53,16 @@ checkpoint refusal fixtures detected the report mismatch. The sweep now
 preserves a prior diagnostic only when its disposition agrees with the resolved
 final disposition; newly invalidated dependent chunks remain diagnostic-free.
 No checkpoint status, acceptance decision, or digest identity changed.
+
+## Exact resource boundary fixture repair
+
+Recorded during the `step_964` exact-resource focused gate.
+
+Two resource tests encoded offsets from the pre-v6 accounting model. Explicit
+prior-knowledge and fixed-overhead charges moved one exhaustion boundary past
+the final Automerge application, and the checkpoint interruption test's
+hand-computed offset no longer selected the checkpoint work phase. The first
+assertion now records the actual completed application count. The checkpoint
+test deterministically searches the finite measured item range for the exact
+checkpoint-exhaustion boundary, as its cancellation counterpart already did.
+No evaluator behavior, protocol disposition, or budget capacity mapping changed.

@@ -3191,7 +3191,7 @@ fn automerge_application_and_materialization_are_charged() {
         measured_report.dispositions_digest()
     );
     assert!(report.document().is_none());
-    assert_eq!(exhausted.consumed().get(WorkCounter::ApplyChange), 2);
+    assert_eq!(exhausted.consumed().get(WorkCounter::ApplyChange), 3);
     assert_eq!(exhausted.remaining().1, 0);
 }
 
@@ -6088,21 +6088,20 @@ fn checkpoint_interruption_is_non_authoritative() {
         )
     };
     let (baseline, counters, checks) = run(CheckpointEvaluationControl::Normal);
-    let non_checkpoint_items = [
-        WorkCounter::Event,
-        WorkCounter::Carrier,
-        WorkCounter::Control,
-        WorkCounter::GraphNode,
-        WorkCounter::GraphEdge,
-        WorkCounter::ApplyChange,
-        WorkCounter::Assertion,
-    ]
-    .into_iter()
-    .map(|counter| counters.get(counter))
-    .sum::<u64>();
-    let (budgeted, _, _) = run(CheckpointEvaluationControl::ItemBudget(
-        non_checkpoint_items.saturating_add(1),
-    ));
+    assert!(counters.get(WorkCounter::CheckpointItem) > 0);
+    let budgeted = (0..=1_000).find_map(|limit| {
+        let (report, _, _) = run(CheckpointEvaluationControl::ItemBudget(limit));
+        (report.completion() == Completion::BudgetExhausted
+            && report.accepted_changes() == baseline.accepted_changes()
+            && report.heads() == baseline.heads()
+            && report.history_digest() == baseline.history_digest()
+            && report.checkpoints().iter().all(|checkpoint| {
+                checkpoint.status() == CheckpointVerificationStatus::BudgetExhausted
+            }))
+        .then_some(report)
+    });
+    assert!(budgeted.is_some());
+    let Some(budgeted) = budgeted else { return };
     assert_eq!(budgeted.completion(), Completion::BudgetExhausted);
     assert_eq!(budgeted.accepted_changes(), baseline.accepted_changes());
     assert_eq!(budgeted.heads(), baseline.heads());
