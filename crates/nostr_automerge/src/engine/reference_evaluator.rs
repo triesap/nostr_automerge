@@ -281,6 +281,24 @@ impl ReferenceEvaluator {
                 &mut finalization,
             );
         }
+        let descriptor_reference_work =
+            u64::try_from(view.corpus().indexes.checkpoints.descriptors_by_id.len())
+                .unwrap_or(u64::MAX)
+                .saturating_add(
+                    u64::try_from(view.corpus().indexes.checkpoints.chunks_by_id.len())
+                        .unwrap_or(u64::MAX),
+                );
+        if let Err(stop) = charge_checkpoint_work(budget, cancellation, descriptor_reference_work) {
+            interrupt_batch(&mut batch, stop.completion());
+            return reserved_batch_report(
+                self.revision,
+                coordinate,
+                batch,
+                manifest,
+                checkpoints,
+                &mut finalization,
+            );
+        }
         disposition_records.extend(event_disposition_records(&view, &manifest, &checkpoints));
         let accepted_changes = disposition_hashes(&dispositions, ProtocolDisposition::Accepted);
         let heads = batch.heads.iter().copied().collect::<Vec<_>>();
