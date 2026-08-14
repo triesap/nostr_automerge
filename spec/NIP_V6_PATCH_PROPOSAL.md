@@ -77,3 +77,10 @@ Attribute a signed kind-31624 event before full validation only when its valid
 `d` values identify exactly one document. Include it in replacement ordering,
 retain strict tag validation afterward, prohibit fallback from the selected
 event, and make zero or multiple distinct valid IDs unattributable.
+
+## Dynamic event dispositions
+
+Require exactly one final disposition for every attributable target carrier.
+Derive it from complete dynamic replacement, selection, authorization, binding,
+completeness, and verification. Canonically order event results and include
+their namespaced records in the dispositions digest.

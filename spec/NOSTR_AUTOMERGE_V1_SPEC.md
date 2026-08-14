@@ -399,3 +399,12 @@ participates in NIP-01 replacement ordering. Full validation still rejects a
 missing, repeated, malformed, or extra-element `d` tag, and a selected invalid,
 pending, unsupported, or unavailable event suppresses fallback to older
 manifests. Zero or multiple distinct valid document IDs is unattributable.
+
+### Dynamic event dispositions
+
+Every attributable target manifest, control, change carrier, checkpoint
+descriptor, and checkpoint chunk receives exactly one final event disposition.
+Final dispositions derive from complete replacement, control selection,
+authorization, binding, set completeness, and verification rather than static
+ingress validity. Event identifiers, dispositions, and stable diagnostics are
+canonically ordered and included in the namespaced dispositions digest.
