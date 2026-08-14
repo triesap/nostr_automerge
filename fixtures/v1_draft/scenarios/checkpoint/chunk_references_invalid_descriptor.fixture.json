@@ -1,0 +1,31 @@
+{
+  "expected": {
+    "report_path": "chunk_references_invalid_descriptor.expected.json",
+    "sha256": "92e96c8b7a77daea97bd84a32def1cbc9032db7d724f3534c2cc7e4331ba0954"
+  },
+  "fixture_id": "chunk_references_invalid_descriptor",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "chunk_references_invalid_descriptor.input.json",
+      "sha256": "c6738985a27dbd0c645033e57311c8774282d5b4f9e0688346d9e50816f91c76"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile remediation_v6_checkpoint_references",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CHECKPOINT-001",
+    "NCRDT-CONF-002",
+    "NCRDT-DISPOSITION-001"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}
