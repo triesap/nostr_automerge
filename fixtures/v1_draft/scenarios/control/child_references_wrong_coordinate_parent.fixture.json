@@ -1,0 +1,31 @@
+{
+  "expected": {
+    "report_path": "child_references_wrong_coordinate_parent.expected.json",
+    "sha256": "24676b9faeab45d83f00177f20469bb87ee8d5ad7228b9918740c8caf9a4211b"
+  },
+  "fixture_id": "child_references_wrong_coordinate_parent",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "child_references_wrong_coordinate_parent.input.json",
+      "sha256": "090e67764bad6f8db3263b9395af89424b61644bc4c39026082c2332c4a7619a"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile remediation_v6_control_relationships",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CONF-002",
+    "NCRDT-CONTROL-001",
+    "NCRDT-EPOCH-001"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}
