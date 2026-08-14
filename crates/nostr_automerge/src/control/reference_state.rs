@@ -217,4 +217,12 @@ mod tests {
             assert_eq!(state.dependent_disposition(), expected);
         }
     }
+
+    #[test]
+    fn present_wrong_kind_parent_is_invalid() {
+        assert_eq!(
+            ControlParentState::WrongKind.dependent_disposition(),
+            Some(ProtocolDisposition::Invalid)
+        );
+    }
 }
