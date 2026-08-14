@@ -48,6 +48,20 @@ impl<'a> From<ReferencedControlState<'a>> for ControlParentState<'a> {
     }
 }
 
+impl ControlParentState<'_> {
+    pub(crate) const fn dependent_disposition(self) -> Option<ProtocolDisposition> {
+        match self {
+            Self::Canonical(_) | Self::NoncanonicalValid(_) => None,
+            Self::Pending(_) | Self::Missing => Some(ProtocolDisposition::Pending),
+            Self::WrongKind
+            | Self::WrongCoordinate
+            | Self::StaticInvalid
+            | Self::DynamicInvalid(_)
+            | Self::UnsupportedRevision => Some(ProtocolDisposition::Invalid),
+        }
+    }
+}
+
 impl ReferencedControlState<'_> {
     pub(crate) const fn diagnostic(self) -> DiagnosticCode {
         let code = match self {
@@ -112,7 +126,29 @@ pub(crate) fn resolve_referenced_control<'a>(
 
 #[cfg(test)]
 mod tests {
-    use super::ReferencedControlState;
+    use super::{ControlParentState, ReferencedControlState};
+    use crate::carrier::control::{ValidatedControlCarrier, ValidatedControlContent};
+    use crate::{
+        ControllerPublicKey, DocumentCoordinate, DocumentId, EventId, ProtocolDisposition,
+    };
+
+    fn control() -> ValidatedControlCarrier {
+        let controller = ControllerPublicKey::from_bytes([1; 32]);
+        ValidatedControlCarrier::for_test(
+            EventId::from_bytes([3; 32]),
+            controller,
+            DocumentCoordinate::new(controller, DocumentId::from_bytes([2; 32])),
+            None,
+            ValidatedControlContent {
+                base_heads: Vec::new(),
+                members: Vec::new(),
+                predecessor: None,
+                sequence: 0,
+                successor: None,
+                terminal: true,
+            },
+        )
+    }
 
     #[test]
     fn every_state_has_a_stable_diagnostic() {
@@ -140,5 +176,45 @@ mod tests {
                 .as_str(),
             "control.reference.unsupported"
         );
+    }
+
+    #[test]
+    fn every_parent_state_has_an_exhaustive_dependent_outcome() {
+        let control = control();
+        let cases = [
+            (ControlParentState::Canonical(&control), None),
+            (ControlParentState::NoncanonicalValid(&control), None),
+            (
+                ControlParentState::Pending(&control),
+                Some(ProtocolDisposition::Pending),
+            ),
+            (
+                ControlParentState::Missing,
+                Some(ProtocolDisposition::Pending),
+            ),
+            (
+                ControlParentState::WrongKind,
+                Some(ProtocolDisposition::Invalid),
+            ),
+            (
+                ControlParentState::WrongCoordinate,
+                Some(ProtocolDisposition::Invalid),
+            ),
+            (
+                ControlParentState::StaticInvalid,
+                Some(ProtocolDisposition::Invalid),
+            ),
+            (
+                ControlParentState::DynamicInvalid(&control),
+                Some(ProtocolDisposition::Invalid),
+            ),
+            (
+                ControlParentState::UnsupportedRevision,
+                Some(ProtocolDisposition::Invalid),
+            ),
+        ];
+        for (state, expected) in cases {
+            assert_eq!(state.dependent_disposition(), expected);
+        }
     }
 }
