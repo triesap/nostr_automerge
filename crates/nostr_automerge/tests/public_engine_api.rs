@@ -2746,7 +2746,10 @@ fn unsupported_control_reference_currently_inherits_revision() {
     );
     assert_eq!(
         report.dispositions(),
-        [(scenario.change_hash, ProtocolDisposition::UnsupportedRevision)]
+        [(
+            scenario.change_hash,
+            ProtocolDisposition::UnsupportedRevision
+        )]
     );
 }
 

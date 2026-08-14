@@ -10,3 +10,14 @@ but an incorrectly transcribed full `through_commit` value in
 or checkpoint ordering changed. The evidence value was corrected to the exact
 commit returned by `git rev-parse b0adc1e` in a dedicated repair commit, and
 validation now requires the bound object to exist.
+
+## Test formatting repair
+
+Recorded after `step_871` and before `step_872`.
+
+The focused regression test passed, but the initial checkpoint command did not
+stop after `cargo fmt --all --check` reported a mechanical formatting diff.
+The exact test file was formatted through the repository build router, the
+format and diff checks were rerun successfully, and the repair was committed
+before any behavior change. No semantics, test assertion, or checkpoint order
+changed.
