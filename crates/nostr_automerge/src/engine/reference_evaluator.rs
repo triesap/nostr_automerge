@@ -499,6 +499,7 @@ fn additional_prior_knowledge(
                 let mut all_unsupported = true;
                 let mut all_invalid = true;
                 for event_id in view.change_claim_event_ids(hash) {
+                    charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)?;
                     let Some(claim) = corpus.indexes.changes.claims_by_event.get(&event_id) else {
                         continue;
                     };
