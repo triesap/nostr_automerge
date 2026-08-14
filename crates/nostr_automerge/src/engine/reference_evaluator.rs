@@ -1923,17 +1923,33 @@ fn prepare_controls(
         } else if control.parent().is_none() {
             let predecessor = if let Some(link) = control.predecessor() {
                 charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
-                match corpus.events.get(&link.terminal_control) {
-                    Some(EventEvidence::VerifiedCarrier {
-                        carrier: VerifiedCarrier::Control(terminal),
-                        ..
-                    }) => Some(ControlEnvelope::from_validated(terminal.as_ref().clone())),
-                    _ => None,
+                match ControlParentState::from(resolve_referenced_control(
+                    corpus,
+                    link.terminal_control,
+                    link.coordinate,
+                    &assumed_control_dispositions,
+                    &assumed_statefully_valid,
+                )) {
+                    ControlParentState::Canonical(terminal)
+                    | ControlParentState::NoncanonicalValid(terminal) => {
+                        Ok(Some(ControlEnvelope::from_validated(terminal.clone())))
+                    }
+                    ControlParentState::Pending(_) | ControlParentState::Missing => {
+                        Err(ProtocolDisposition::Pending)
+                    }
+                    ControlParentState::WrongKind
+                    | ControlParentState::WrongCoordinate
+                    | ControlParentState::StaticInvalid
+                    | ControlParentState::DynamicInvalid(_)
+                    | ControlParentState::UnsupportedRevision => Err(ProtocolDisposition::Invalid),
                 }
             } else {
-                None
+                Ok(None)
             };
-            let outcome = classify_genesis(&envelope, predecessor.as_ref()).disposition();
+            let outcome = match predecessor {
+                Ok(predecessor) => classify_genesis(&envelope, predecessor.as_ref()).disposition(),
+                Err(disposition) => disposition,
+            };
             if outcome == ProtocolDisposition::Accepted {
                 ProtocolDisposition::Excluded
             } else {
