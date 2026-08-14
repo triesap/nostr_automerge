@@ -1821,11 +1821,30 @@ impl ReportFinalizationPermit {
     }
 
     fn finish_interrupted(&mut self) -> Result<(), FinalizationPermitError> {
-        if !self.active {
+        if !self.active || self.remaining != ReportFinalizationPlan::default() {
             return Err(FinalizationPermitError);
         }
-        self.remaining = ReportFinalizationPlan::default();
         self.active = false;
+        Ok(())
+    }
+
+    fn consume_interrupted_omissions(&mut self) -> Result<(), FinalizationPermitError> {
+        let remaining = self.remaining;
+        for (dimension, amount) in [
+            (FinalizationDimension::Controls, remaining.controls),
+            (FinalizationDimension::Changes, remaining.changes),
+            (FinalizationDimension::Events, remaining.events),
+            (FinalizationDimension::Checkpoints, remaining.checkpoints),
+            (FinalizationDimension::Digests, remaining.digests),
+            (FinalizationDimension::Evidence, remaining.evidence),
+            (FinalizationDimension::Invariants, remaining.invariants),
+            (
+                FinalizationDimension::FixedOverhead,
+                remaining.fixed_overhead,
+            ),
+        ] {
+            self.consume(dimension, amount)?;
+        }
         Ok(())
     }
 
@@ -1848,6 +1867,7 @@ fn reserved_interrupted_report(
         .consume(FinalizationDimension::Digests, 8)
         .and_then(|()| permit.consume(FinalizationDimension::Invariants, REPORT_INVARIANT_ITEMS))
         .and_then(|()| permit.consume(FinalizationDimension::FixedOverhead, 8))
+        .and_then(|()| permit.consume_interrupted_omissions())
         .and_then(|()| permit.finish_interrupted())
         .map_err(|_| EvaluationError::ReportInvariant)?;
     compact_interrupted_report(revision, coordinate, completion)
@@ -1896,7 +1916,8 @@ fn reserved_batch_report(
             .map_err(|_| EvaluationError::ReportInvariant)?;
     }
     permit
-        .finish_interrupted()
+        .consume_interrupted_omissions()
+        .and_then(|()| permit.finish_interrupted())
         .map_err(|_| EvaluationError::ReportInvariant)?;
     compact_batch_report(revision, coordinate, batch, manifest, checkpoints)
 }
@@ -2773,6 +2794,8 @@ mod tests {
         let Ok(mut permit) = permit else { return };
         assert!(permit.consume(FinalizationDimension::Controls, 2).is_ok());
         assert!(permit.consume(FinalizationDimension::Controls, 1).is_err());
+        assert!(permit.finish_interrupted().is_err());
+        assert!(permit.consume_interrupted_omissions().is_ok());
         assert!(permit.finish_interrupted().is_ok());
         assert!(permit.finish_interrupted().is_err());
         assert!(
