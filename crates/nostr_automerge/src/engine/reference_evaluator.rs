@@ -487,6 +487,7 @@ fn additional_prior_knowledge(
                 .map(|hash| (*hash, PriorChangeKnowledge::AcceptedInBase))
                 .collect::<std::collections::BTreeMap<_, _>>();
             for hash in view.change_hashes() {
+                charge_evaluation_work(budget, cancellation, WorkCounter::GraphNode, 1)?;
                 if knowledge.contains_key(&hash) {
                     continue;
                 }
