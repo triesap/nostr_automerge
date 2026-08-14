@@ -996,6 +996,29 @@ mod tests {
     }
 
     #[test]
+    fn deep_pending_chain_reaches_a_fixed_point_independent_of_id_order() {
+        let parent = EventId::from_bytes([9; 32]);
+        let child = EventId::from_bytes([8; 32]);
+        let grandchild = EventId::from_bytes([7; 32]);
+        let parents = BTreeMap::from([
+            (parent, Some(EventId::from_bytes([10; 32]))),
+            (child, Some(parent)),
+            (grandchild, Some(child)),
+        ]);
+        let mut dispositions = BTreeMap::from([
+            (parent, ProtocolDisposition::Pending),
+            (child, ProtocolDisposition::Excluded),
+            (grandchild, ProtocolDisposition::Excluded),
+        ]);
+        propagate_control_parent_dispositions(&parents, &mut dispositions);
+        assert!(
+            [parent, child, grandchild]
+                .into_iter()
+                .all(|id| dispositions.get(&id) == Some(&ProtocolDisposition::Pending))
+        );
+    }
+
+    #[test]
     fn control_closure_precharge_exhaustion_is_atomic() {
         let envelope = crate::control::validate::tests::genesis();
         let event_id = envelope.event_id();
