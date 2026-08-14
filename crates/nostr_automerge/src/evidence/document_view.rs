@@ -1,8 +1,7 @@
 use std::collections::BTreeSet;
 
-use crate::carrier::VerifiedCarrier;
 use crate::evidence::corpus_builder::{EvidenceCorpus, EvidenceRecord, ManifestSelection};
-use crate::evidence::event::EventEvidence;
+use crate::evidence::indexes::CoordinateWorkMetadata;
 use crate::{ChangeHash, DocumentCoordinate, EventId};
 
 /// Immutable evidence boundary for evaluating exactly one document coordinate.
@@ -11,6 +10,7 @@ pub(crate) struct DocumentEvidenceView<'a> {
     coordinate: DocumentCoordinate,
     reportable_event_ids: Option<&'a BTreeSet<EventId>>,
     support_event_ids: Option<&'a BTreeSet<EventId>>,
+    work: Option<&'a CoordinateWorkMetadata>,
 }
 
 impl<'a> DocumentEvidenceView<'a> {
@@ -21,11 +21,13 @@ impl<'a> DocumentEvidenceView<'a> {
             .coordinates
             .lifecycle_support
             .get(&coordinate);
+        let work = corpus.indexes.coordinates.work.get(&coordinate);
         Self {
             corpus,
             coordinate,
             reportable_event_ids,
             support_event_ids,
+            work,
         }
     }
 
@@ -92,69 +94,23 @@ impl<'a> DocumentEvidenceView<'a> {
     }
 
     pub(crate) fn control_count(&self) -> usize {
-        self.reportable_event_ids
-            .into_iter()
-            .flatten()
-            .filter(|event_id| {
-                matches!(
-                    self.corpus.events.get(event_id),
-                    Some(EventEvidence::VerifiedCarrier {
-                        carrier: VerifiedCarrier::Control(_),
-                        ..
-                    })
-                )
-            })
-            .count()
+        self.work.map_or(0, |work| work.control_count)
     }
 
     pub(crate) fn change_hash_count(&self) -> usize {
-        self.change_hashes().count()
+        self.work.map_or(0, |work| work.change_hash_count)
     }
 
     pub(crate) fn evaluation_event_count(&self) -> usize {
-        self.input_event_ids().count().saturating_add(
-            self.corpus
-                .indexes
-                .coordinates
-                .duplicates
-                .get(&self.coordinate)
-                .map_or(0, Vec::len),
-        )
+        self.work.map_or(0, |work| work.evaluation_event_count)
     }
 
     pub(crate) fn carrier_evidence_count(&self) -> usize {
-        self.input_event_ids()
-            .filter(|event_id| {
-                matches!(
-                    self.corpus.events.get(event_id),
-                    Some(
-                        EventEvidence::VerifiedCarrier { .. }
-                            | EventEvidence::InvalidCarrier { .. }
-                            | EventEvidence::UnsupportedRevision { .. }
-                    )
-                )
-            })
-            .count()
+        self.work.map_or(0, |work| work.carrier_evidence_count)
     }
 
     pub(crate) fn decode_work_bytes(&self) -> Option<u64> {
-        let mut seen = BTreeSet::<ChangeHash>::new();
-        self.reportable_event_ids
-            .into_iter()
-            .flatten()
-            .try_fold(0_u64, |total, event_id| {
-                let Some(EventEvidence::VerifiedCarrier {
-                    carrier: VerifiedCarrier::Change(change),
-                    ..
-                }) = self.corpus.events.get(event_id)
-                else {
-                    return Some(total);
-                };
-                if !seen.insert(change.change_hash()) {
-                    return Some(total);
-                }
-                total.checked_add(change.decode_work_bytes()?)
-            })
+        self.work.map_or(Some(0), |work| work.decode_work_bytes)
     }
 
     pub(crate) fn selected_manifest(&self) -> Option<ManifestSelection> {
