@@ -60,3 +60,4 @@ change-control process.
 | [0052](adr_0052_typed_finalization_permits.md) | Approved | `R5_FINAL_001`, `R5_FINAL_010` |
 | [0053](adr_0053_dependent_carrier_control_mapping.md) | Approved | `R6_CLAIM_001`, `R6_CLAIM_014` |
 | [0054](adr_0054_reasoned_control_relationships.md) | Approved | `R6_CONTROL_001`, `R6_CONTROL_018` |
+| [0055](adr_0055_descriptor_reference_resolution.md) | Approved | `R6_CHECKPOINT_001`, `R6_CHECKPOINT_012` |
