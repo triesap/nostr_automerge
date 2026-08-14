@@ -16,8 +16,8 @@ def main() -> int:
 
     index = (ADR_ROOT / "README.md").read_text(encoding="utf-8")
     paths = sorted(ADR_ROOT.glob("adr_[0-9][0-9][0-9][0-9]_*.md"))
-    if len(paths) != 53:
-        raise AssertionError(f"expected 53 ADRs, found {len(paths)}")
+    if len(paths) != 54:
+        raise AssertionError(f"expected 54 ADRs, found {len(paths)}")
 
     for number, path in enumerate(paths, 1):
         expected_prefix = f"adr_{number:04d}_"

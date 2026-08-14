@@ -59,3 +59,4 @@ change-control process.
 | [0051](adr_0051_coordinate_indexes_and_resource_isolation.md) | Approved | `R5_SCOPE_001`, `R5_SCOPE_009` |
 | [0052](adr_0052_typed_finalization_permits.md) | Approved | `R5_FINAL_001`, `R5_FINAL_010` |
 | [0053](adr_0053_dependent_carrier_control_mapping.md) | Approved | `R6_CLAIM_001`, `R6_CLAIM_014` |
+| [0054](adr_0054_reasoned_control_relationships.md) | Approved | `R6_CONTROL_001`, `R6_CONTROL_018` |
