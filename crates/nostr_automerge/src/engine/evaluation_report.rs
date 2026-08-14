@@ -514,7 +514,8 @@ mod tests {
         disposition_records_are_canonical,
     };
     use crate::{
-        ChangeHash, Completion, DispositionsDigest, DocumentCoordinate, EventId, HistoryDigest,
+        ChangeHash, CheckpointVerificationResult, CheckpointVerificationStatus, Completion,
+        DispositionsDigest, DocumentCoordinate, EventId, HistoryDigest, SnapshotHash,
     };
 
     #[test]
@@ -655,6 +656,51 @@ mod tests {
         document_mismatch.completion = Completion::Complete;
         document_mismatch.failure = None;
         assert_invariant(document_mismatch);
+
+        let descriptor = EventId::from_bytes([10; 32]);
+        let chunk = EventId::from_bytes([11; 32]);
+        let checkpoint = CheckpointVerificationResult::new(
+            descriptor,
+            vec![chunk],
+            SnapshotHash::from_bytes([12; 32]),
+            vec![],
+            0,
+            [13; 32],
+            vec![],
+            vec![],
+            CheckpointVerificationStatus::Verified,
+        );
+        let mut inconsistent_checkpoint = parts();
+        inconsistent_checkpoint.checkpoints.push(checkpoint.clone());
+        inconsistent_checkpoint.disposition_records = vec![
+            DispositionRecord::new(
+                ProtocolItemIdentifier::event(descriptor),
+                crate::ProtocolDisposition::Accepted,
+                None,
+            ),
+            DispositionRecord::new(
+                ProtocolItemIdentifier::event(chunk),
+                crate::ProtocolDisposition::Pending,
+                None,
+            ),
+        ];
+        assert_invariant(inconsistent_checkpoint);
+
+        let mut consistent_checkpoint = parts();
+        consistent_checkpoint.checkpoints.push(checkpoint);
+        consistent_checkpoint.disposition_records = vec![
+            DispositionRecord::new(
+                ProtocolItemIdentifier::event(descriptor),
+                crate::ProtocolDisposition::Accepted,
+                None,
+            ),
+            DispositionRecord::new(
+                ProtocolItemIdentifier::event(chunk),
+                crate::ProtocolDisposition::Accepted,
+                None,
+            ),
+        ];
+        assert!(EvaluationReport::from_parts(consistent_checkpoint).is_ok());
     }
 
     #[test]
