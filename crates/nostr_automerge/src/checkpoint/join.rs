@@ -210,5 +210,10 @@ mod tests {
             join_chunks(&descriptor, [&first, &wrong_count]),
             Err(JoinError::Count)
         );
+        let out_of_range = make(20, 2, vec![3, 4]);
+        assert_eq!(
+            join_chunks(&descriptor, [&first, &out_of_range]),
+            Err(JoinError::MissingIndex)
+        );
     }
 }
