@@ -233,4 +233,12 @@ mod tests {
             Some(ProtocolDisposition::Invalid)
         );
     }
+
+    #[test]
+    fn present_statically_invalid_parent_is_invalid() {
+        assert_eq!(
+            ControlParentState::StaticInvalid.dependent_disposition(),
+            Some(ProtocolDisposition::Invalid)
+        );
+    }
 }
