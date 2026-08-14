@@ -553,13 +553,6 @@ fn reduce_change_dispositions(
                 );
                 Some(Ok(match state {
                     ReferencedControlState::Canonical(control) => {
-                        if matches!(
-                            batch.dispositions.get(&hash),
-                            Some(ProtocolDisposition::Excluded)
-                        ) && control.terminal()
-                        {
-                            return Some(Ok(ChangeClaimReason::CurrentExcluded));
-                        }
                         if charge_evaluation_work(
                             budget,
                             cancellation,

@@ -784,7 +784,7 @@ fn terminal_control_stops_document_extension() {
 }
 
 #[test]
-fn terminal_control_change_is_currently_excluded() {
+fn terminal_control_change_is_invalid() {
     signed_terminal_genesis_rejects_children();
 }
 
@@ -1225,7 +1225,7 @@ fn signed_terminal_genesis_rejects_children() {
     assert!(report.heads().is_empty());
     assert_eq!(
         report.dispositions(),
-        [(change_hash, ProtocolDisposition::Excluded)]
+        [(change_hash, ProtocolDisposition::Invalid)]
     );
 }
 
