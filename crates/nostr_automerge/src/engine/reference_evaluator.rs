@@ -421,6 +421,16 @@ impl ReferenceEvaluator {
                 u64::try_from(finalized_events).unwrap_or(u64::MAX),
             )
             .map_err(|_| EvaluationError::ReportInvariant)?;
+        let finalized_checkpoints = checkpoints
+            .iter()
+            .map(|checkpoint| 1_usize.saturating_add(checkpoint.chunk_events().len()))
+            .sum::<usize>();
+        finalization
+            .consume(
+                FinalizationDimension::Checkpoints,
+                u64::try_from(finalized_checkpoints).unwrap_or(u64::MAX),
+            )
+            .map_err(|_| EvaluationError::ReportInvariant)?;
         finalization
             .refund(budget)
             .map_err(|_| EvaluationError::ReportInvariant)?;
