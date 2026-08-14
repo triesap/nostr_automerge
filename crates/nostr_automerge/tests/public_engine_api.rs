@@ -6677,9 +6677,21 @@ fn pending_controls_converge_after_signed_parent_delivery() {
         pending.ingest(child.clone()),
         IngestOutcome::Accepted { .. }
     ));
+    let pending = pending.finish();
     assert_eq!(
-        pending.finish().pending_control_ids().collect::<Vec<_>>(),
+        pending.pending_control_ids().collect::<Vec<_>>(),
         vec![child_id]
+    );
+    let parsed_coordinate: DocumentCoordinate = coordinate.parse().expect("fixed coordinate");
+    let pending_report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+        &pending,
+        parsed_coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000),
+        &NeverCancelled,
+    );
+    assert_eq!(
+        pending_report.control_dispositions(),
+        [(child_id, ProtocolDisposition::Pending)]
     );
 
     let mut builder = CorpusBuilder::new();
