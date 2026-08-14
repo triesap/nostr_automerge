@@ -1,0 +1,31 @@
+{
+  "expected": {
+    "report_path": "child_base_head_is_known_invalid.expected.json",
+    "sha256": "17560627ec4234c39f351b84a7dd3df9d8555a7d5685d40f5889655c21b0370a"
+  },
+  "fixture_id": "child_base_head_is_known_invalid",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "child_base_head_is_known_invalid.input.json",
+      "sha256": "9a27ab1193e6bbfefa9b6b391abd1ab3b5003e28a7acacf33faad2e675cca2ef"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile remediation_v6_control_relationships",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CONF-002",
+    "NCRDT-CONTROL-001",
+    "NCRDT-EPOCH-001"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}
