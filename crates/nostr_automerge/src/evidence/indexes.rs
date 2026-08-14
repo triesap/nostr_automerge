@@ -109,6 +109,16 @@ pub(crate) struct CoordinateEvidenceIndexes {
     pub(crate) manifests: BTreeMap<DocumentCoordinate, BTreeSet<EventId>>,
     pub(crate) lifecycle_support: BTreeMap<DocumentCoordinate, BTreeSet<EventId>>,
     pub(crate) duplicates: BTreeMap<DocumentCoordinate, Vec<usize>>,
+    pub(crate) work: BTreeMap<DocumentCoordinate, CoordinateWorkMetadata>,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) struct CoordinateWorkMetadata {
+    pub(crate) control_count: usize,
+    pub(crate) change_hash_count: usize,
+    pub(crate) evaluation_event_count: usize,
+    pub(crate) carrier_evidence_count: usize,
+    pub(crate) decode_work_bytes: Option<u64>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -190,7 +200,72 @@ pub(crate) fn derive_trusted_indexes(
     derive_descriptor_evidence(&mut indexes, events);
     derive_pending_checkpoints(&mut indexes);
     derive_lifecycle_support(&mut indexes, events);
+    derive_coordinate_work_metadata(&mut indexes, events);
     indexes
+}
+
+fn derive_coordinate_work_metadata(
+    indexes: &mut TrustedIndexes,
+    events: &BTreeMap<EventId, EventEvidence>,
+) {
+    for (coordinate, reportable) in &indexes.coordinates.events {
+        let support = indexes.coordinates.lifecycle_support.get(coordinate);
+        let duplicates = indexes
+            .coordinates
+            .duplicates
+            .get(coordinate)
+            .map_or(0, Vec::len);
+        let evaluation_event_count = reportable
+            .len()
+            .saturating_add(support.map_or(0, BTreeSet::len))
+            .saturating_add(duplicates);
+        let carrier_evidence_count = reportable
+            .iter()
+            .chain(support.into_iter().flatten())
+            .filter(|event_id| {
+                matches!(
+                    events.get(event_id),
+                    Some(
+                        EventEvidence::VerifiedCarrier { .. }
+                            | EventEvidence::InvalidCarrier { .. }
+                            | EventEvidence::UnsupportedRevision { .. }
+                    )
+                )
+            })
+            .count();
+        let mut seen = BTreeSet::<ChangeHash>::new();
+        let decode_work_bytes = reportable.iter().try_fold(0_u64, |total, event_id| {
+            let Some(EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::Change(change),
+                ..
+            }) = events.get(event_id)
+            else {
+                return Some(total);
+            };
+            if !seen.insert(change.change_hash()) {
+                return Some(total);
+            }
+            total.checked_add(change.decode_work_bytes()?)
+        });
+        indexes.coordinates.work.insert(
+            *coordinate,
+            CoordinateWorkMetadata {
+                control_count: indexes
+                    .coordinates
+                    .controls
+                    .get(coordinate)
+                    .map_or(0, BTreeSet::len),
+                change_hash_count: indexes
+                    .coordinates
+                    .change_hashes
+                    .get(coordinate)
+                    .map_or(0, BTreeSet::len),
+                evaluation_event_count,
+                carrier_evidence_count,
+                decode_work_bytes,
+            },
+        );
+    }
 }
 
 fn derive_lifecycle_support(
@@ -488,7 +563,7 @@ fn index_change(indexes: &mut ChangeIndexes, change: &crate::carrier::change::Ch
 mod tests {
     use std::collections::BTreeMap;
 
-    use super::{IndexedParentEvidence, derive_trusted_indexes};
+    use super::{CoordinateWorkMetadata, IndexedParentEvidence, derive_trusted_indexes};
     use crate::carrier::VerifiedCarrier;
     use crate::carrier::control::{ValidatedControlCarrier, ValidatedControlContent};
     use crate::evidence::event::{EventEvidence, RawChecksum};
@@ -527,6 +602,16 @@ mod tests {
         );
         assert!(indexes.changes.carriers_by_hash.is_empty());
         assert!(indexes.checkpoints.descriptor_evidence.is_empty());
+        assert_eq!(
+            indexes.coordinates.work.get(&coordinate),
+            Some(&CoordinateWorkMetadata {
+                control_count: 1,
+                change_hash_count: 0,
+                evaluation_event_count: 1,
+                carrier_evidence_count: 1,
+                decode_work_bytes: Some(0),
+            })
+        );
     }
 
     #[test]
