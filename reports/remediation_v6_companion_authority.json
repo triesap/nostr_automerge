@@ -1,0 +1,23 @@
+{
+  "schema": "nostr_automerge.remediation_v6_companion_authority.v1",
+  "status": "local_pass_external_hold",
+  "nip_snapshot": {
+    "path": "spec/NIP_DRAFT.md",
+    "sha256": "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3",
+    "mutability": "read_only",
+    "reconciliation": "external_hold"
+  },
+  "companion": {
+    "path": "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
+    "sha256": "8d7fe07de3ba699d7a944003c9fbf4f52e7e865945f0c11d1bd13db5937da5f4",
+    "authority": "implementation_owned"
+  },
+  "portable_delta": {
+    "path": "spec/NIP_V6_PATCH_PROPOSAL.md",
+    "sha256": "cd9a207990e698665e4047887b641136d0d768780fb79e24b5c2e8443998d364",
+    "submission": "not_authorized"
+  },
+  "requirements_sha256": "dc86a3c713166e4137693254e111dd51932a0b0659dafe95695a22241997aded",
+  "applicability_sha256": "333ab51aac26681c2551673b712265a4647bb0f85bcca9cc3eb904b700a54b22",
+  "wire_constants": "unchanged"
+}

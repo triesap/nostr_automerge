@@ -631,7 +631,7 @@
       "id": "NCRDT-NIP-001",
       "section": "Conformance authority",
       "text": "The externally authored NIP MUST eventually contain every interoperability-critical rule required to reproduce language-neutral conformance without companion-only prose; this remains an explicit external reconciliation hold.",
-      "source": "spec/NIP_V5_PATCH_PROPOSAL.md"
+      "source": "spec/NIP_V6_PATCH_PROPOSAL.md"
     },
     {
       "id": "NCRDT-CONF-006",

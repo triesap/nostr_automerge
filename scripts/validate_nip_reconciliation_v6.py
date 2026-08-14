@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 
 
@@ -37,6 +38,17 @@ def main() -> int:
         raise AssertionError("read-only NIP snapshot changed")
     if "not submitted" not in proposal or "grants no submission" not in proposal:
         raise AssertionError("portable delta overclaims external authority")
+    authority = json.loads((ROOT / "reports/remediation_v6_companion_authority.json").read_text())
+    expected = {
+        "requirements_sha256": hashlib.sha256((ROOT / "spec/requirements.json").read_bytes()).hexdigest(),
+        "applicability_sha256": hashlib.sha256((ROOT / "spec/requirements_applicability.json").read_bytes()).hexdigest(),
+    }
+    if any(authority.get(key) != value for key, value in expected.items()):
+        raise AssertionError("stale companion authority hash")
+    if authority["companion"]["sha256"] != hashlib.sha256(companion.encode()).hexdigest():
+        raise AssertionError("stale companion hash")
+    if authority["portable_delta"]["sha256"] != hashlib.sha256(proposal.encode()).hexdigest():
+        raise AssertionError("stale portable delta hash")
     print("PASS: remediation-v6 companion reconciliation")
     print(f"- synchronized_sections={len(SECTIONS)}")
     print(f"- nip_sha256={nip_hash}")
