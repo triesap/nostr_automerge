@@ -472,9 +472,10 @@ fn additional_prior_knowledge(
 > {
     charge_evaluation_work(budget, cancellation, WorkCounter::Control, 0)?;
     let corpus = view.corpus();
-    Ok(controls
+    controls
         .iter()
         .map(|selected| {
+            charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
             let selected_hashes = corpus
                 .indexes
                 .changes
@@ -538,9 +539,9 @@ fn additional_prior_knowledge(
                     knowledge.insert(hash, state);
                 }
             }
-            (selected.event_id, knowledge)
+            Ok((selected.event_id, knowledge))
         })
-        .collect())
+        .collect()
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
