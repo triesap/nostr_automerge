@@ -2752,7 +2752,7 @@ fn unsupported_control_reference_is_invalid() {
 
 #[test]
 #[allow(clippy::expect_used)]
-fn noncanonical_authorization_bypass_is_exposed() {
+fn noncanonical_authorization_is_enforced_before_exclusion() {
     let scenario = signed_engine_scenario();
     let controller = TestSigner::from_byte(20);
     let unauthorized = TestSigner::from_byte(21);
@@ -2811,7 +2811,7 @@ fn noncanonical_authorization_bypass_is_exposed() {
     );
     assert_eq!(
         report.dispositions(),
-        [(scenario.change_hash, ProtocolDisposition::Excluded)]
+        [(scenario.change_hash, ProtocolDisposition::Invalid)]
     );
 }
 

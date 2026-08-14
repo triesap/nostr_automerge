@@ -595,8 +595,28 @@ fn reduce_change_dispositions(
                             }
                         }
                     }
-                    ReferencedControlState::NoncanonicalValid(_) => {
-                        ChangeClaimReason::NoncanonicalValid
+                    ReferencedControlState::NoncanonicalValid(control) => {
+                        if charge_evaluation_work(
+                            budget,
+                            cancellation,
+                            WorkCounter::Control,
+                            u64::try_from(control.members().len()).unwrap_or(u64::MAX),
+                        )
+                        .is_err()
+                        {
+                            return Some(Err(()));
+                        }
+                        let authorized = !control.terminal()
+                            && control.members().iter().any(|member| {
+                                member.actor == semantic.actor
+                                    && member.device == claim.author
+                                    && member.roles.contains(&Role::Write)
+                            });
+                        if authorized {
+                            ChangeClaimReason::NoncanonicalValid
+                        } else {
+                            ChangeClaimReason::Unauthorized
+                        }
                     }
                     ReferencedControlState::Pending(_) | ReferencedControlState::Missing => {
                         ChangeClaimReason::Pending
