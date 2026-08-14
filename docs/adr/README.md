@@ -62,3 +62,4 @@ change-control process.
 | [0054](adr_0054_reasoned_control_relationships.md) | Approved | `R6_CONTROL_001`, `R6_CONTROL_018` |
 | [0055](adr_0055_descriptor_reference_resolution.md) | Approved | `R6_CHECKPOINT_001`, `R6_CHECKPOINT_012` |
 | [0056](adr_0056_exact_evaluation_accounting.md) | Approved | `R6_RESOURCE_001`, `R6_RESOURCE_018` |
+| [0057](adr_0057_semantic_requirement_evidence.md) | Approved | `R6_EVIDENCE_001`, `R6_EVIDENCE_010` |
