@@ -1,0 +1,39 @@
+{
+  "schema": "nostr_automerge.remediation_v6_authority.v1",
+  "status": "pass",
+  "rcld": 56,
+  "completed_steps": [
+    "step_861",
+    "step_862",
+    "step_863",
+    "step_864",
+    "step_865",
+    "step_866",
+    "step_867",
+    "step_868",
+    "step_869",
+    "step_870"
+  ],
+  "through_commit": "b0adc1ec31559d7a3ebc1fdad67c8866959368ef",
+  "verification": {
+    "extbuild_doctor": "pass",
+    "cargo_fmt_all_check": "pass",
+    "cargo_check_workspace_all_targets_locked": "pass",
+    "cargo_test_workspace_all_targets_locked": "pass",
+    "cargo_clippy_workspace_all_targets_all_features_locked_deny_warnings": "pass",
+    "cargo_doc_workspace_no_deps_locked": "pass",
+    "repository_xtask_validate": "pass",
+    "remediation_v6_validator_and_mutations": "pass",
+    "git_diff_check": "pass"
+  },
+  "authority": {
+    "findings": 8,
+    "rclds": 9,
+    "steps": 198,
+    "adrs": 5,
+    "nip_read_only": true,
+    "private_typescript_evidence_only": true,
+    "external_actions_authorized": false
+  },
+  "next_step": "step_871"
+}

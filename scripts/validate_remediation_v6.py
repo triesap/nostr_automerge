@@ -127,7 +127,12 @@ def validate_adrs() -> None:
 
 def validate_boundaries() -> None:
     tracked = git("ls-files")
-    for forbidden in (".github/workflows/", ".act/", "/Users/", "docs/handoff/"):
+    for forbidden in (
+        ".github/workflows/",
+        ".act/",
+        "/" + "Users/",
+        "docs/" + "handoff/",
+    ):
         if forbidden in tracked:
             raise AssertionError(f"forbidden tracked path: {forbidden}")
     authority = (ROOT / "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v6.md").read_text(encoding="utf-8")

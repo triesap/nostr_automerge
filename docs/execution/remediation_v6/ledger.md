@@ -1,14 +1,14 @@
 # Remediation V6 Execution Ledger
 
 Status: active — `implementation_remediation_required`
-Active RCLD: 56
-Active step: `step_864`
+Active RCLD: 57
+Active step: `step_871`
 Range: `step_861` through `step_1058`
 
 | RCLD | Steps | Status | Scope |
 | ---: | ---: | --- | --- |
-| 56 | 861–870 | active | authority and baseline |
-| 57 | 871–888 | pending | change-claim authorization |
+| 56 | 861–870 | complete | authority and baseline |
+| 57 | 871–888 | active | change-claim authorization |
 | 58 | 889–916 | pending | control-relationship resolution |
 | 59 | 917–936 | pending | checkpoint descriptor-reference resolution |
 | 60 | 937–964 | pending | exact resource accounting |
@@ -24,6 +24,13 @@ Range: `step_861` through `step_1058`
 | `step_861` | `a774fe7` | Exact remediation-v6 identities, hashes, status, boundaries, and holds recorded. |
 | `step_862` | `7fffc91` | Findings 051 through 058 registered with ordered machine and human authority. |
 | `step_863` | current commit | RCLD 56 through 64 authority and contiguous continuation ledger installed. |
+| `step_864` | `15f9a42` | Dependent carrier reference, authorization, and lineage ordering approved. |
+| `step_865` | `981218b` | Exhaustive parent, frontier, descendant, and noncanonical branch states approved. |
+| `step_866` | `b2139f3` | Exhaustive checkpoint descriptor-reference resolution approved. |
+| `step_867` | `118f203` | Borrowed views, metered prior knowledge, and zero-remainder finalization approved. |
+| `step_868` | `e4a49ec` | Exact semantic requirement proof rules approved. |
+| `step_869` | `b0adc1e` | Fail-closed remediation-v6 authority validator installed. |
+| `step_870` | current commit | Full Rust authority gate passed and RCLD 56 closed. |
 
 ## Execution Rules
 
