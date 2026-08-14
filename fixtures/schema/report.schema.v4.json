@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/fixtures/schema/report.schema.v4.json",
+  "title": "nostr_automerge remediation-v6 report outcome vocabulary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["completion", "control_reference_state", "change_claim_outcome", "control_parent_state", "parent_frontier_reference", "dependency_outcome", "descriptor_reference_state", "event_disposition", "finalization"],
+  "properties": {
+    "completion": {"enum": ["complete", "budget_exhausted", "cancelled"]},
+    "control_reference_state": {"enum": ["canonical", "noncanonical_valid", "pending", "missing", "wrong_kind", "wrong_coordinate", "static_invalid", "dynamic_invalid", "unsupported_revision"]},
+    "change_claim_outcome": {"enum": ["accepted", "pending", "excluded", "invalid", "unsupported_revision"]},
+    "control_parent_state": {"enum": ["canonical", "noncanonical_valid", "pending", "missing", "wrong_kind", "wrong_coordinate", "static_invalid", "dynamic_invalid", "unsupported_revision"]},
+    "parent_frontier_reference": {"enum": ["accepted_under_parent", "pending_under_parent", "missing", "invalid_under_parent", "excluded_under_parent", "unsupported", "other_control"]},
+    "dependency_outcome": {"enum": ["eligible", "pending", "invalid"]},
+    "descriptor_reference_state": {"enum": ["verified_target", "pending", "missing", "wrong_kind", "wrong_coordinate", "static_invalid", "dynamic_invalid", "unsupported_revision"]},
+    "event_disposition": {"enum": ["accepted", "pending", "excluded", "invalid", "unsupported_revision"]},
+    "finalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["controls", "changes", "events", "checkpoints", "digests", "evidence", "invariants", "fixed_overhead"],
+      "properties": {
+        "controls": {"type": "integer", "minimum": 0},
+        "changes": {"type": "integer", "minimum": 0},
+        "events": {"type": "integer", "minimum": 0},
+        "checkpoints": {"type": "integer", "minimum": 0},
+        "digests": {"type": "integer", "minimum": 0},
+        "evidence": {"type": "integer", "minimum": 0},
+        "invariants": {"type": "integer", "minimum": 0},
+        "fixed_overhead": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}
