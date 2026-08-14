@@ -36,11 +36,62 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "projection" => generate_projection_profile(),
         "interrupted" => generate_interrupted_profile(),
         "remediation_v4" => generate_remediation_v4_profile(),
+        "remediation_v6_change_references_unsupported_control" => {
+            generate_remediation_v6_unsupported_control_change()
+        }
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
 }
 
 type Member<'a> = (&'a Signer, Option<String>, &'a [&'a str]);
+
+fn generate_remediation_v6_unsupported_control_change() -> Result<(), String> {
+    let controller = Signer::from_byte(140)?;
+    let writer = Signer::from_byte(141)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "c4".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation-v6 claim coordinate".to_owned())?;
+    let unsupported_content =
+        control_content_full(0, vec![(&writer, None, &["write"])], "automerge-change-v1")
+            .replace("\"v\":1", "\"v\":2");
+    let unsupported_control = sign_control(&controller, 1, coordinate, None, unsupported_content)?;
+    let unsupported_control_id = event_id(&unsupported_control)?;
+    let actor = ActorId::derive(coordinate, writer.public_key);
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+        .map_err(|error| format!("remediation-v6 claim document: {error:?}"))?;
+    let change = document
+        .author_change(&[Operation::PutString {
+            key: "claim".to_owned(),
+            value: "invalid-reference".to_owned(),
+        }])
+        .map_err(|error| format!("remediation-v6 claim change: {error:?}"))?;
+    let change_event = sign_change(
+        &writer,
+        2,
+        coordinate,
+        unsupported_control_id,
+        change.change_hash(),
+        change.raw(),
+    )?;
+    let root = repository_root().join("fixtures/v1_draft/scenarios/change_claims");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    write_fixture_with_requirements(
+        &root,
+        "change_references_unsupported_control",
+        coordinate,
+        vec![unsupported_control, change_event],
+        &[
+            "NCRDT-CONF-005",
+            "NCRDT-DISPOSITION-002",
+            "NCRDT-VERSION-001",
+        ],
+        "remediation_v6_change_references_unsupported_control",
+    )
+}
 
 fn generate_projection_profile() -> Result<(), String> {
     let controller = Signer::from_byte(100)?;
