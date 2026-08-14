@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate deterministic remediation-v6 control-relationship mutation anchors."""
+"""Validate deterministic remediation-v6 reference-resolution mutation anchors."""
 
 from __future__ import annotations
 
@@ -55,6 +55,24 @@ ANCHORS = (
         "(*disposition == ProtocolDisposition::Excluded).then_some(*event_id)",
         "deep_noncanonical_branch_is_validated_before_exclusion",
     ),
+    MutationAnchor(
+        "missing_descriptor_becomes_invalid",
+        "crates/nostr_automerge/src/checkpoint/reference_state.rs",
+        "Self::Pending(_) | Self::Missing => Some(ProtocolDisposition::Pending),",
+        "every_descriptor_reference_state_has_one_dependent_outcome",
+    ),
+    MutationAnchor(
+        "known_unusable_descriptor_becomes_pending",
+        "crates/nostr_automerge/src/checkpoint/reference_state.rs",
+        "| Self::UnsupportedRevision => Some(ProtocolDisposition::Invalid),",
+        "every_descriptor_reference_state_has_one_dependent_outcome",
+    ),
+    MutationAnchor(
+        "verified_orphan_chunk_remains_excluded",
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        ".unwrap_or((ProtocolDisposition::Pending, None));",
+        "orphan_checkpoint_chunk_promotes_after_descriptor_arrival",
+    ),
 )
 
 
@@ -65,7 +83,7 @@ def main() -> int:
             raise AssertionError(f"stale mutation anchor: {anchor.name}")
         if not anchor.test_filter:
             raise AssertionError(f"missing mutation detector: {anchor.name}")
-    print(f"PASS: {len(ANCHORS)} remediation-v6 control mutation anchors")
+    print(f"PASS: {len(ANCHORS)} remediation-v6 reference mutation anchors")
     return 0
 
 
