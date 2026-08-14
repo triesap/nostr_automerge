@@ -88,6 +88,10 @@ EXACT_FIXTURES: dict[str, list[str]] = {
     ],
 }
 EXACT_ASSERTIONS: dict[str, tuple[str, list[str]]] = {
+    "NCRDT-EVIDENCE-003": (
+        "scripts/validate_requirement_matrix_v7.py",
+        ["generic-critical"],
+    ),
     "NCRDT-RESOURCE-005": (
         "crates/nostr_automerge/tests/public_engine_api.rs",
         [

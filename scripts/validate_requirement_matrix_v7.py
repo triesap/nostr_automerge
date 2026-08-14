@@ -130,10 +130,16 @@ def validate(report: dict) -> None:
             fixture_ids = opaque.get("fixture_ids")
             if opaque.get("candidate") != typescript or opaque.get("result") != "pass":
                 raise EvidenceError(f"typescript-proof:{identifier}")
-            if not isinstance(fixture_ids, list) or any(item not in fixture_paths for item in fixture_ids):
+            if (
+                not isinstance(fixture_ids, list)
+                or fixture_ids != sorted(set(fixture_ids), key=str.encode)
+                or any(item not in fixture_paths for item in fixture_ids)
+            ):
                 raise EvidenceError(f"typescript-fixture:{identifier}")
             if identifier in CRITICAL and not fixture_ids:
                 raise EvidenceError(f"typescript-exact:{identifier}")
+            if identifier in CRITICAL and kind == "signed-fixture" and not set(ids).issubset(fixture_ids):
+                raise EvidenceError(f"typescript-coverage:{identifier}")
             artifact = opaque.get("artifact_sha256")
             if not isinstance(artifact, str) or not HEX64.fullmatch(artifact):
                 raise EvidenceError(f"typescript-artifact:{identifier}")
