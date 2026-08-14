@@ -202,4 +202,12 @@ mod tests {
             Some(ProtocolDisposition::Invalid)
         );
     }
+
+    #[test]
+    fn unsupported_descriptor_invalidates_dependent_chunk() {
+        assert_eq!(
+            ReferencedDescriptorState::UnsupportedRevision.dependent_disposition(),
+            Some(ProtocolDisposition::Invalid)
+        );
+    }
 }
