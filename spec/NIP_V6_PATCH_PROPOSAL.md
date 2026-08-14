@@ -30,3 +30,10 @@ independent claims. Group all attributable claims by hash, retain each claim's
 reasoned state, accept one dynamically valid claim as sufficient, prevent
 invalid or unresolved claims from poisoning it, and filter hashes already in
 the selected accepted base from new epoch admission.
+
+## Dependent change authorization
+
+Make a draft-v1 change invalid when it references known unusable or unsupported
+control evidence; do not propagate `unsupported_revision` to the dependant.
+Require device, ActorId, and write-role authorization before branch disposition.
+An unauthorized noncanonical claim and every terminal-control claim are invalid.

@@ -339,3 +339,12 @@ hash, and admits a hash when any claim is dynamically valid. Invalid, pending,
 unsupported, unauthorized, terminal-control, or noncanonical claims cannot
 poison a valid claim. A hash already in the selected accepted base is not
 readmitted as a new epoch candidate.
+
+### Dependent change authorization
+
+A draft-v1 change whose referenced control is wrong-kind, wrong-coordinate,
+statically invalid, dynamically invalid, or unsupported is invalid; it does not
+inherit `unsupported_revision`. After resolving a valid control, compare the
+signed device, derived ActorId, and `write` role before considering canonical
+versus noncanonical branch disposition. An unauthorized noncanonical claim is
+invalid, and a terminal control authorizes no change.
