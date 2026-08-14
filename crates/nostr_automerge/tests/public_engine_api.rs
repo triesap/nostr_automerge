@@ -2751,6 +2751,71 @@ fn unsupported_control_reference_is_invalid() {
 }
 
 #[test]
+#[allow(clippy::expect_used)]
+fn noncanonical_authorization_bypass_is_exposed() {
+    let scenario = signed_engine_scenario();
+    let controller = TestSigner::from_byte(20);
+    let unauthorized = TestSigner::from_byte(21);
+    let permitted = TestSigner::from_byte(22);
+    let members = vec![(permitted.public_key().to_hex(), vec!["write"])];
+    let first = signed_acl_control(
+        &controller,
+        scenario.coordinate,
+        1,
+        None,
+        0,
+        members.clone(),
+    );
+    let first_id = VerifiedNip01Event::verify(first.clone())
+        .expect("first control")
+        .event_id();
+    let competing = signed_acl_control(&controller, scenario.coordinate, 3, None, 0, members);
+    let competing_id = VerifiedNip01Event::verify(competing.clone())
+        .expect("competing control")
+        .event_id();
+    let noncanonical_id = first_id.max(competing_id);
+    let verified_change = VerifiedNip01Event::verify(scenario.change).expect("signed change");
+    let claim = unauthorized.sign(
+        &UnsignedEventDraft::new(
+            verified_change.created_at(),
+            verified_change.kind(),
+            verified_change
+                .tags()
+                .iter()
+                .map(|tag| {
+                    if tag.first().is_some_and(|name| name == "e") {
+                        vec!["e".to_owned(), noncanonical_id.to_hex()]
+                    } else {
+                        tag.clone()
+                    }
+                })
+                .collect(),
+            verified_change.content().to_owned(),
+        )
+        .expect("unauthorized claim draft")
+        .prepare(unauthorized.public_key())
+        .expect("unauthorized claim preimage"),
+    );
+    let mut builder = CorpusBuilder::new();
+    for event in [first, competing, claim] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+        &builder.finish(),
+        scenario.coordinate,
+        &mut WorkBudget::new(2_000_000, 20_000),
+        &NeverCancelled,
+    );
+    assert_eq!(
+        report.dispositions(),
+        [(scenario.change_hash, ProtocolDisposition::Excluded)]
+    );
+}
+
+#[test]
 fn event_and_carrier_work_exhaustion_precedes_state() {
     let scenario = signed_engine_scenario();
     let mut builder = CorpusBuilder::new();
