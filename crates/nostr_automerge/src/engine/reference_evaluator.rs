@@ -454,9 +454,9 @@ impl ReferenceEvaluator {
             .consume(FinalizationDimension::Invariants, REPORT_INVARIANT_ITEMS)
             .map_err(|_| EvaluationError::ReportInvariant)?;
         finalization
-            .refund(budget)
+            .consume(FinalizationDimension::FixedOverhead, 8)
             .map_err(|_| EvaluationError::ReportInvariant)?;
-        EvaluationReport::from_parts(EvaluationReportParts {
+        let report = EvaluationReport::from_parts(EvaluationReportParts {
             coordinate,
             canonical_controls: batch.canonical_controls,
             disposition_records,
@@ -477,7 +477,11 @@ impl ReferenceEvaluator {
             failure: batch.failure,
             document,
         })
-        .map_err(|_| EvaluationError::ReportInvariant)
+        .map_err(|_| EvaluationError::ReportInvariant)?;
+        finalization
+            .refund(budget)
+            .map_err(|_| EvaluationError::ReportInvariant)?;
+        Ok(report)
     }
 
     /// Replays the complete retained corpus and reports a canonical branch
@@ -1848,12 +1852,17 @@ impl ReportFinalizationPermit {
         Ok(())
     }
 
-    fn refund(&mut self, budget: &mut WorkBudget) -> Result<(), crate::BudgetExhausted> {
+    fn refund(&mut self, budget: &mut WorkBudget) -> Result<(), FinalizationPermitError> {
+        if !self.active {
+            return Err(FinalizationPermitError);
+        }
         let remaining = core::mem::take(&mut self.remaining)
             .total()
             .unwrap_or(u64::MAX);
         self.active = false;
-        budget.refund(WorkCounter::Assertion, remaining)
+        budget
+            .refund(WorkCounter::Assertion, remaining)
+            .map_err(|_| FinalizationPermitError)
     }
 }
 
@@ -2826,5 +2835,17 @@ mod tests {
             assert!(wrapper.contains(".consume("));
             assert!(!wrapper.contains("view."));
         }
+    }
+
+    #[test]
+    fn report_validation_precedes_finalization_refund() {
+        let source = include_str!("reference_evaluator.rs");
+        let complete_path = source
+            .split_once("let report = EvaluationReport::from_parts")
+            .map(|(_, path)| path)
+            .unwrap_or_default();
+        let validation = complete_path.find("map_err(|_| EvaluationError::ReportInvariant)?;");
+        let refund = complete_path.find(".refund(budget)");
+        assert!(matches!((validation, refund), (Some(left), Some(right)) if left < right));
     }
 }
