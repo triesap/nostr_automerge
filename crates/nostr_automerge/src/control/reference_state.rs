@@ -241,4 +241,12 @@ mod tests {
             Some(ProtocolDisposition::Invalid)
         );
     }
+
+    #[test]
+    fn present_unsupported_parent_is_invalid() {
+        assert_eq!(
+            ControlParentState::UnsupportedRevision.dependent_disposition(),
+            Some(ProtocolDisposition::Invalid)
+        );
+    }
 }
