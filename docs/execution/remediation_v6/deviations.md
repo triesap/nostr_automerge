@@ -76,3 +76,15 @@ to the new repository-owned benchmark fixture loader. The benchmark is an
 assertion-only executable over checked-in trusted data, matching the existing
 test policy, so its module now explicitly allows `expect_used`. Production
 library code and runtime error handling were unchanged.
+
+## External NIP scope adaptation
+
+Recorded before `step_1019`.
+
+The reviewed handoff sequence proposed direct edits to `spec/NIP_DRAFT.md`, but
+the operator explicitly excluded the NIP document from implementation scope.
+RCLD 63 therefore writes every approved rule to the implementation-owned
+companion specification and a portable, unsubmitted v6 patch proposal. The NIP
+snapshot remains byte-for-byte unchanged, and `NCRDT-NIP-001` remains an
+external reconciliation hold. This changes the authority destination, not the
+implemented protocol semantics.
