@@ -169,4 +169,13 @@ mod tests {
             ReferencedDescriptorState::Missing
         );
     }
+
+    #[test]
+    fn pending_descriptor_keeps_dependent_chunk_pending() {
+        let descriptor = descriptor();
+        assert_eq!(
+            ReferencedDescriptorState::Pending(&descriptor).dependent_disposition(),
+            Some(ProtocolDisposition::Pending)
+        );
+    }
 }
