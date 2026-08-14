@@ -1,6 +1,6 @@
 # nostr_automerge Draft V1 Remediation V6 Multi-RCLD
 
-Status: approved and pending — `implementation_remediation_required`
+Status: locally complete with external holds — `implementation_remediation_required`
 Created: 2026-08-14
 Mode: rcl-durable
 Rust workspace and Git repository: repository root
@@ -165,7 +165,7 @@ For every checkpoint:
 
 ## RCLD 56 — Authority And Baseline
 
-Status: pending
+Status: complete
 Steps: `step_861` through `step_870`
 Gate: `GATE_AUTHORITY`
 
@@ -188,7 +188,7 @@ machine-checked before behavioral source work.
 
 ## RCLD 57 — Change Claim Authorization
 
-Status: pending
+Status: complete
 Steps: `step_871` through `step_888`
 Gate: `GATE_CLAIM`
 
@@ -219,7 +219,7 @@ and both implementations agree on signed bytes.
 
 ## RCLD 58 — Control Relationship Resolution
 
-Status: pending
+Status: complete
 Steps: `step_889` through `step_916`
 Gate: `GATE_CONTROL`
 
@@ -260,7 +260,7 @@ validated before exclusion; focused, permutation, mutation, and Rust gates pass.
 
 ## RCLD 59 — Checkpoint Descriptor Reference Resolution
 
-Status: pending
+Status: complete
 Steps: `step_917` through `step_936`
 Gate: `GATE_CHECKPOINT`
 
@@ -293,7 +293,7 @@ references are invalid; checkpoint, property, mutation, and Rust gates pass.
 
 ## RCLD 60 — Exact Resource Accounting
 
-Status: pending
+Status: complete
 Steps: `step_937` through `step_964`
 Gate: `GATE_RESOURCE`
 
@@ -334,7 +334,7 @@ are deterministic, and scaling, resource, mutation, and standard gates pass.
 
 ## RCLD 61 — Signed Conformance V7
 
-Status: pending
+Status: complete
 Steps: `step_965` through `step_1001`
 Gate: `GATE_SIGNED`
 
@@ -384,7 +384,7 @@ generation, schema, signature, order, and Rust replay gates pass.
 
 ## RCLD 62 — Semantic Requirement Evidence V7
 
-Status: pending
+Status: complete
 Steps: `step_1002` through `step_1018`
 Gate: `GATE_EVIDENCE`
 
@@ -415,7 +415,7 @@ candidate-binding gates pass.
 
 ## RCLD 63 — Companion Authority And External NIP Reconciliation Delta V2
 
-Status: pending
+Status: complete
 Steps: `step_1019` through `step_1035`
 Gate: `GATE_COMPANION`
 Primary finding: `FINDING_057` (local implementation scope only; external hold
@@ -453,7 +453,7 @@ provided and reconciled.
 
 ## RCLD 64 — Private TypeScript Parity And Final Assurance
 
-Status: pending
+Status: complete for locally authorized work; external holds retained
 Steps: `step_1036` through `step_1058`
 Gate: `GATE_FINAL`
 
@@ -529,16 +529,8 @@ any local implementation or ordinary evidence gate fails
     -> implementation_remediation_required
 ```
 
-## Unfinished Sequence
+## Remaining External Holds
 
-All nine child RCLDs remain unfinished:
-
-1. RCLD 56 — `step_861` through `step_870`.
-2. RCLD 57 — `step_871` through `step_888`.
-3. RCLD 58 — `step_889` through `step_916`.
-4. RCLD 59 — `step_917` through `step_936`.
-5. RCLD 60 — `step_937` through `step_964`.
-6. RCLD 61 — `step_965` through `step_1001`.
-7. RCLD 62 — `step_1002` through `step_1018`.
-8. RCLD 63 — `step_1019` through `step_1035`.
-9. RCLD 64 — `step_1036` through `step_1058`.
+No locally authorized RCLD remains unfinished. The externally authored NIP
+reconciliation, sustained fuzzing, source-mutating campaigns, independent
+review submission, publication, release, and every remote action remain held.

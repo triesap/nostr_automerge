@@ -13,6 +13,14 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "remediation_v6_authority",
         "scripts/validate_remediation_v6.py",
     ),
+    (
+        "requirement_evidence_v7",
+        "scripts/validate_requirement_matrix_v7.py",
+    ),
+    (
+        "remediation_v6_final",
+        "scripts/validate_remediation_v6_final.py",
+    ),
     ("complete_specification", "scripts/validate_spec.py"),
     (
         "fixture_schema_checksum_snake_case",
@@ -89,6 +97,8 @@ mod tests {
         assert!(names.contains(&"remediation_authority"));
         assert!(names.contains(&"remediation_v5_evidence"));
         assert!(names.contains(&"remediation_v6_authority"));
+        assert!(names.contains(&"requirement_evidence_v7"));
+        assert!(names.contains(&"remediation_v6_final"));
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         let report = validate_repository(&root);
         assert!(report.is_ok(), "{report:?}");

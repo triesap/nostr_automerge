@@ -88,3 +88,26 @@ companion specification and a portable, unsubmitted v6 patch proposal. The NIP
 snapshot remains byte-for-byte unchanged, and `NCRDT-NIP-001` remains an
 external reconciliation hold. This changes the authority destination, not the
 implemented protocol semantics.
+
+## Source-mutating and sustained-fuzz execution holds
+
+Recorded during `step_1013`, `step_1050`, `step_1051`, and `step_1056`.
+
+The operator directed work that can trigger the Codex cybersecurity blocker,
+including source-mutating campaigns and sustained fuzzing, to remain deferred
+while all ordinary local work continued. The deterministic mutation
+inventories and evidence-validator self-tests were executed, but neither Rust
+nor TypeScript protocol source was rewritten by a mutation runner and no
+sustained fuzz campaign was started. Final evidence records these lanes as
+operator safety holds rather than passing results.
+
+## Private TypeScript repository identity adaptation
+
+Recorded during `step_1036` through `step_1042`.
+
+The private TypeScript compatibility target is root-owned source, not an
+independent Git repository. Its implementation commits therefore use the
+owning private repository identity and stage only target-scoped files. The
+public repository receives only candidate hashes, lock hashes, commands,
+fixture identifiers, and output hashes; it does not receive private paths,
+source, logs, or runner state.

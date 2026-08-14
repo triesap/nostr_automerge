@@ -53,8 +53,12 @@ def main() -> int:
     fixtures = args.fixtures.resolve(strict=True)
     rust_root = Path(git(rust, "rev-parse", "--show-toplevel")).resolve()
     typescript_root = Path(git(typescript, "rev-parse", "--show-toplevel")).resolve()
-    if rust_root != rust or typescript_root != typescript or rust_root == typescript_root:
-        raise AssertionError("interop roles must be distinct repository roots")
+    if rust_root != rust or rust_root == typescript_root:
+        raise AssertionError("interop roles must use distinct owning Git identities")
+    try:
+        typescript.relative_to(typescript_root)
+    except ValueError as error:
+        raise AssertionError("TypeScript target is outside its owning Git identity") from error
     if rust.name != "nostr_automerge" or typescript.name != "nostr_automerge_typescript":
         raise AssertionError("unexpected local repository identities")
 
@@ -67,7 +71,7 @@ def main() -> int:
     version_starts_with(["node", "--version"], typescript, str(typescript_tools["node"]))
     version_starts_with(["pnpm", "--version"], typescript, str(typescript_tools["pnpm"]))
 
-    manifest_path = fixtures / "distribution" / "manifest.json"
+    manifest_path = fixtures / "distribution" / "manifest_v7.json"
     manifest_bytes = manifest_path.read_bytes()
     manifest_sha = hashlib.sha256(manifest_bytes).hexdigest()
     manifest = json.loads(manifest_bytes)

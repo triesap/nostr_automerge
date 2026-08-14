@@ -1,8 +1,8 @@
 # Remediation V6 Execution Ledger
 
-Status: active — `implementation_remediation_required`
-Active RCLD: 61
-Active step: `step_965`
+Status: locally complete with external holds — `implementation_remediation_required`
+Active RCLD: none
+Active step: none
 Range: `step_861` through `step_1058`
 
 | RCLD | Steps | Status | Scope |
@@ -12,10 +12,10 @@ Range: `step_861` through `step_1058`
 | 58 | 889–916 | complete | control-relationship resolution |
 | 59 | 917–936 | complete | checkpoint descriptor-reference resolution |
 | 60 | 937–964 | complete | exact resource accounting |
-| 61 | 965–1001 | active | signed conformance v7 |
-| 62 | 1002–1018 | pending | semantic requirement evidence v7 |
-| 63 | 1019–1035 | pending | companion authority and external NIP reconciliation delta |
-| 64 | 1036–1058 | pending | private TypeScript parity and final assurance |
+| 61 | 965–1001 | complete | signed conformance v7 |
+| 62 | 1002–1018 | complete | semantic requirement evidence v7 |
+| 63 | 1019–1035 | complete | companion authority and external NIP reconciliation delta |
+| 64 | 1036–1058 | complete | private TypeScript parity and final assurance with external holds |
 
 ## Completed Checkpoints
 
@@ -125,6 +125,23 @@ Range: `step_861` through `step_1058`
 | `step_962` | `2a41f83` | Finalization rejects underflow, double finish, and unexplained remainder. |
 | `step_963` | `d9a7bb6` | Complete reports validate before optional capacity is refunded. |
 | `step_964` | current commit | Resource boundaries, benchmark, full Rust gate, and validators passed, closing RCLD 60. |
+
+## Completed Checkpoint Ranges After Step 964
+
+| Steps | Closing commit | Result |
+| --- | --- | --- |
+| `step_965`–`step_1001` | `2eedfc7` | Fixture and report schemas were versioned, all 33 signed additions were generated, and the 157-fixture distribution v7 was checksum-bound and replayed. |
+| `step_1002`–`step_1011` | `58cd5e7` | The registry grew append-only to 119 rows and exact Rust and opaque TypeScript proof rules were installed. |
+| `step_1012`–`step_1013` | `2f5e892` | Thirteen mutation anchors were inventoried and source-mutating execution was recorded as an operator safety hold. |
+| `step_1014`–`step_1015` | `8a52cef` | Seven evidence-validator mutations were caught and the exact 119-row v7 matrix was generated and validated. |
+| `step_1016`–`step_1018` | current commit | Stale evidence was machine-superseded, final candidates were bound, and the semantic evidence gate closed with explicit holds. |
+| `step_1019`–`step_1035` | `7854229` | Companion authority, portable external delta, unchanged-NIP enforcement, and local reconciliation gates were completed. |
+| `step_1036` | `c5a29c4` | The private TypeScript baseline was recorded as an opaque public attestation. |
+| `step_1037`–`step_1040` | private candidate `1ae2f4fd9492f61a8715ae52f1e16a196b320e14` | The private TypeScript target implemented the corrected claim, control, checkpoint-reference, and resource behavior without exposing private source. |
+| `step_1041`–`step_1049` | `7a93a5f` | Both implementations replayed 157 fixtures twice, produced byte-identical summaries and canonical expected bytes, and rejected a deliberate mismatch. |
+| `step_1050`–`step_1051` | current commit | Source-mutating Rust and TypeScript campaigns remained explicit operator safety holds and were not misreported as executed. |
+| `step_1052`–`step_1055` | current commit | Resource, coverage, package, SBOM, advisory, license, source, and standard gates passed locally. |
+| `step_1056`–`step_1058` | current commit | Sustained fuzzing and external review remained held; review materials and truthful `implementation_remediation_required` closure evidence were prepared. |
 
 ## Execution Rules
 
