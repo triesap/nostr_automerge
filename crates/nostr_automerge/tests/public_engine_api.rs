@@ -2973,10 +2973,11 @@ fn cancellation_before_control_evaluation_fabricates_no_state() {
         builder.ingest(scenario.control),
         IngestOutcome::Accepted { .. }
     ));
+    let mut budget = WorkBudget::new(1_000_000, 1_000);
     let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
         &builder.finish(),
         scenario.coordinate,
-        &mut WorkBudget::new(1_000_000, 1_000),
+        &mut budget,
         &|| true,
     );
 
@@ -2986,6 +2987,7 @@ fn cancellation_before_control_evaluation_fabricates_no_state() {
     assert!(report.dispositions().is_empty());
     assert!(report.accepted_changes().is_empty());
     assert!(report.document().is_none());
+    assert_eq!(budget.remaining(), (1_000_000, 1_000));
 }
 
 #[test]
