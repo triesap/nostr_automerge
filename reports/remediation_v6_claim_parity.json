@@ -1,0 +1,27 @@
+{
+  "schema": "nostr_automerge.remediation_v6_claim_parity.v1",
+  "status": "pass",
+  "scope": "reasoned_change_claim_authorization",
+  "fixture_count": 7,
+  "passed": 7,
+  "failed": 0,
+  "canonical_output_bytes": 9393,
+  "canonical_output_sha256": "1203ef744790a47cb3c2bac5d3a432afd36f1bb482a9aa9ae9d2730d78d04cbc",
+  "fixture_ids": [
+    "change_references_unsupported_control",
+    "unauthorized_change_under_noncanonical_control",
+    "change_under_terminal_control",
+    "pending_and_noncanonical_claims_same_hash",
+    "pending_and_invalid_claims_same_hash",
+    "pruned_and_pending_claims_same_hash",
+    "equivocation_excluded_and_pending_claims_same_hash"
+  ],
+  "rust_candidate": "e993c448689c9100ebb99682acb756514f1e5feb",
+  "typescript_candidate": "4bdf7cc3d85279637077cffab1d703d0bec81879",
+  "rust_repeat": "byte-identical",
+  "typescript_repeat": "byte-identical",
+  "cross_language": "byte-identical",
+  "deliberate_mismatch": "detected",
+  "typescript_source": "independently_maintained_private_target",
+  "provenance": "operator-local"
+}
