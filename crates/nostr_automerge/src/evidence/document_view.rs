@@ -82,14 +82,11 @@ impl<'a> DocumentEvidenceView<'a> {
         self.corpus
             .indexes
             .changes
-            .claims_by_hash
-            .get(&hash)
+            .prior_claims_by_coordinate
+            .get(&self.coordinate)
             .into_iter()
-            .flat_map(|claims| claims.keys())
-            .filter(|event_id| {
-                self.reportable_event_ids
-                    .is_some_and(|events| events.contains(event_id))
-            })
+            .flat_map(move |claims| claims.get(&hash))
+            .flatten()
             .copied()
     }
 

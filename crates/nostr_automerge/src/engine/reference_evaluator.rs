@@ -472,6 +472,64 @@ fn additional_prior_knowledge(
 > {
     charge_evaluation_work(budget, cancellation, WorkCounter::Control, 0)?;
     let corpus = view.corpus();
+    let mut reasoned_by_hash = std::collections::BTreeMap::new();
+    for hash in view.change_hashes() {
+        charge_evaluation_work(budget, cancellation, WorkCounter::GraphNode, 1)?;
+        let mut saw_claim = false;
+        let mut all_unsupported = true;
+        let mut all_invalid = true;
+        for event_id in view.change_claim_event_ids(hash) {
+            charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)?;
+            let Some(claim) = corpus.indexes.changes.claims_by_event.get(&event_id) else {
+                continue;
+            };
+            saw_claim = true;
+            charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
+            match corpus.events.get(&claim.control_id) {
+                Some(EventEvidence::UnsupportedRevision { .. }) => {
+                    all_invalid = false;
+                }
+                Some(EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::UnsupportedRevision { .. },
+                    ..
+                }) => {
+                    all_invalid = false;
+                }
+                Some(EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::Control(control),
+                    ..
+                }) if control.coordinate() == view.coordinate() => {
+                    charge_evaluation_work(
+                        budget,
+                        cancellation,
+                        WorkCounter::Control,
+                        u64::try_from(control.members().len()).unwrap_or(u64::MAX),
+                    )?;
+                    all_unsupported = false;
+                    all_invalid = false;
+                }
+                None => {
+                    all_unsupported = false;
+                    all_invalid = false;
+                }
+                Some(_) => {
+                    all_unsupported = false;
+                }
+            }
+        }
+        if saw_claim {
+            reasoned_by_hash.insert(
+                hash,
+                if all_unsupported {
+                    PriorChangeKnowledge::KnownUnsupported
+                } else if all_invalid {
+                    PriorChangeKnowledge::KnownInvalid
+                } else {
+                    PriorChangeKnowledge::KnownOtherControl
+                },
+            );
+        }
+    }
     controls
         .iter()
         .map(|selected| {
@@ -481,70 +539,17 @@ fn additional_prior_knowledge(
                 .changes
                 .claims_by_control
                 .get(&selected.event_id);
-            let mut knowledge = selected
-                .accepted_base
-                .iter()
-                .map(|hash| (*hash, PriorChangeKnowledge::AcceptedInBase))
-                .collect::<std::collections::BTreeMap<_, _>>();
+            let mut knowledge = std::collections::BTreeMap::new();
             for hash in view.change_hashes() {
                 charge_evaluation_work(budget, cancellation, WorkCounter::GraphNode, 1)?;
-                if knowledge.contains_key(&hash) {
-                    continue;
-                }
-                if selected_hashes.is_some_and(|hashes| hashes.contains_key(&hash)) {
-                    knowledge.insert(hash, PriorChangeKnowledge::SameEpochCandidate);
-                    continue;
-                }
-                let mut saw_claim = false;
-                let mut all_unsupported = true;
-                let mut all_invalid = true;
-                for event_id in view.change_claim_event_ids(hash) {
-                    charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)?;
-                    let Some(claim) = corpus.indexes.changes.claims_by_event.get(&event_id) else {
-                        continue;
-                    };
-                    saw_claim = true;
-                    charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
-                    match corpus.events.get(&claim.control_id) {
-                        Some(EventEvidence::UnsupportedRevision { .. }) => {
-                            all_invalid = false;
-                        }
-                        Some(EventEvidence::VerifiedCarrier {
-                            carrier: VerifiedCarrier::UnsupportedRevision { .. },
-                            ..
-                        }) => {
-                            all_invalid = false;
-                        }
-                        Some(EventEvidence::VerifiedCarrier {
-                            carrier: VerifiedCarrier::Control(control),
-                            ..
-                        }) if control.coordinate() == view.coordinate() => {
-                            charge_evaluation_work(
-                                budget,
-                                cancellation,
-                                WorkCounter::Control,
-                                u64::try_from(control.members().len()).unwrap_or(u64::MAX),
-                            )?;
-                            all_unsupported = false;
-                            all_invalid = false;
-                        }
-                        None => {
-                            all_unsupported = false;
-                            all_invalid = false;
-                        }
-                        Some(_) => {
-                            all_unsupported = false;
-                        }
-                    }
-                }
-                if saw_claim {
-                    let state = if all_unsupported {
-                        PriorChangeKnowledge::KnownUnsupported
-                    } else if all_invalid {
-                        PriorChangeKnowledge::KnownInvalid
-                    } else {
-                        PriorChangeKnowledge::KnownOtherControl
-                    };
+                let state = if selected.accepted_base.contains(&hash) {
+                    Some(PriorChangeKnowledge::AcceptedInBase)
+                } else if selected_hashes.is_some_and(|hashes| hashes.contains_key(&hash)) {
+                    Some(PriorChangeKnowledge::SameEpochCandidate)
+                } else {
+                    reasoned_by_hash.get(&hash).copied()
+                };
+                if let Some(state) = state {
                     knowledge.insert(hash, state);
                 }
             }

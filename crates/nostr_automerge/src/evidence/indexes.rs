@@ -66,6 +66,8 @@ pub(crate) struct ChangeIndexes {
     pub(crate) hashes_by_control: BTreeMap<EventId, BTreeSet<ChangeHash>>,
     pub(crate) hashes_by_actor: BTreeMap<ActorId, BTreeSet<ChangeHash>>,
     pub(crate) dependencies_by_hash: BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
+    pub(crate) prior_claims_by_coordinate:
+        BTreeMap<DocumentCoordinate, BTreeMap<ChangeHash, BTreeSet<EventId>>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -555,6 +557,13 @@ fn index_change(indexes: &mut ChangeIndexes, change: &crate::carrier::change::Ch
         .entry(change_hash)
         .or_default()
         .insert(event_id, claim.clone());
+    indexes
+        .prior_claims_by_coordinate
+        .entry(change.coordinate())
+        .or_default()
+        .entry(change_hash)
+        .or_default()
+        .insert(event_id);
     indexes.claims_by_event.insert(event_id, claim);
     indexes
         .claims_by_control
