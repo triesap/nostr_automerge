@@ -21,3 +21,12 @@ The exact test file was formatted through the repository build router, the
 format and diff checks were rerun successfully, and the repair was committed
 before any behavior change. No semantics, test assertion, or checkpoint order
 changed.
+
+## Test-only diagnostic helper warning repair
+
+Recorded after `step_883` and before `step_884`.
+
+Fixture generation compiled the library without the unit-test configuration and
+revealed that the claim-reason diagnostic helper introduced in `step_881` was
+used only by its exhaustive unit test. The helper was explicitly scoped to
+tests and clippy was rerun. No diagnostic mapping or protocol behavior changed.

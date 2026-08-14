@@ -509,6 +509,7 @@ enum ChangeClaimReason {
 }
 
 impl ChangeClaimReason {
+    #[cfg(test)]
     const fn diagnostic(self) -> Option<crate::DiagnosticCode> {
         let code = match self {
             Self::InvalidReferencedControl => "control.parent",
