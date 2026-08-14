@@ -20,6 +20,24 @@ EXACT_FIXTURES: dict[str, list[str]] = {
     "NCRDT-CLAIM-001": ["change_references_unsupported_control"],
     "NCRDT-CLAIM-002": ["unauthorized_change_under_noncanonical_control"],
     "NCRDT-CLAIM-003": ["change_under_terminal_control"],
+    "NCRDT-CONTROLREF-001": [
+        "child_references_static_invalid_parent",
+        "child_references_unsupported_parent_control",
+        "child_references_wrong_coordinate_parent",
+        "child_references_wrong_kind_parent",
+        "control_transition_unknown_parent",
+    ],
+    "NCRDT-CONTROLREF-002": [
+        "deep_noncanonical_branch_control_validation",
+        "descendant_of_invalid_control_is_invalid",
+        "descendant_of_pending_control_is_pending",
+    ],
+    "NCRDT-FRONTIER-001": [
+        "child_base_head_is_known_excluded",
+        "child_base_head_is_known_invalid",
+        "child_base_head_is_known_other_control",
+        "child_base_head_is_known_unsupported",
+    ],
 }
 EXACT_ASSERTIONS: dict[str, tuple[str, list[str]]] = {}
 REQUIRED_TS_FIXTURES: dict[str, list[str]] = {
