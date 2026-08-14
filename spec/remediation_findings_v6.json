@@ -1,0 +1,78 @@
+{
+  "schema": "nostr_automerge.remediation_v6.findings.v1",
+  "review_head": "e1a6d1cc9f046b5129ad699488fcb034a70f9b4a",
+  "findings": [
+    {
+      "id": "FINDING_051",
+      "severity": "high",
+      "class": "authorization",
+      "title": "Change claims map known authorization failures to the wrong disposition",
+      "paths": ["crates/nostr_automerge/src/engine/reference_evaluator.rs", "crates/nostr_automerge/src/reference/epoch.rs", "crates/nostr_automerge/src/control/reference_state.rs"],
+      "reproduction": "Evaluate unsupported-control, unauthorized-noncanonical, and terminal-control change claims.",
+      "closure": "Every dependent draft-v1 authorization failure is invalid, authorization precedes lineage, and signed Rust and opaque independent parity proofs agree."
+    },
+    {
+      "id": "FINDING_052",
+      "severity": "high",
+      "class": "consensus",
+      "title": "Control parent and base-frontier relationships lack reasoned resolution",
+      "paths": ["crates/nostr_automerge/src/evidence/indexes.rs", "crates/nostr_automerge/src/engine/reference_evaluator.rs", "crates/nostr_automerge/src/control/frontier.rs", "crates/nostr_automerge/src/reference/evaluate.rs"],
+      "reproduction": "Evaluate children under each parent and base-head evidence state, then extend pending, invalid, and noncanonical branches.",
+      "closure": "Exhaustive reason states survive indexing and evaluation, descendants propagate deterministically, and noncanonical branches are statefully validated before exclusion."
+    },
+    {
+      "id": "FINDING_053",
+      "severity": "high",
+      "class": "checkpoint",
+      "title": "Checkpoint chunks lack complete descriptor-reference resolution",
+      "paths": ["crates/nostr_automerge/src/evidence/indexes.rs", "crates/nostr_automerge/src/engine/reference_evaluator.rs", "crates/nostr_automerge/src/checkpoint/join.rs"],
+      "reproduction": "Evaluate target chunks referencing missing, pending, wrong-kind, wrong-coordinate, invalid, unsupported, and dynamically unusable descriptor evidence.",
+      "closure": "One exhaustive resolver assigns every target chunk exactly one disposition and permits promotion only after genuinely missing evidence arrives."
+    },
+    {
+      "id": "FINDING_054",
+      "severity": "high",
+      "class": "resource",
+      "title": "Evaluation and finalization contain unmetered target-proportional work",
+      "paths": ["crates/nostr_automerge/src/evidence/document_view.rs", "crates/nostr_automerge/src/engine/reference_evaluator.rs", "crates/nostr_automerge/src/engine/evaluation_report.rs"],
+      "reproduction": "Exercise zero-budget, cancellation, large duplicate-claim, interrupted-finalization, and exact-boundary evaluations.",
+      "closure": "Views borrow indexes, prior knowledge is metered and cancellable, finalization has zero unexplained remainder, and invariants run under capacity."
+    },
+    {
+      "id": "FINDING_055",
+      "severity": "high",
+      "class": "conformance",
+      "title": "The signed corpus omits material combined and reference-state scenarios",
+      "paths": ["fixtures/distribution/manifest_v6.json", "fixtures/v1_draft/scenarios", "tools/nostr_automerge_conformance/src/runner.rs"],
+      "reproduction": "Compare the 124-scenario v6 manifest with the required mixed claim, relationship, checkpoint, and resource scenario inventory.",
+      "closure": "Signed distribution v7 contains exactly 157 scenarios and both implementations emit byte-identical outputs across required orders and repeated runs."
+    },
+    {
+      "id": "FINDING_056",
+      "severity": "high",
+      "class": "evidence",
+      "title": "Requirement evidence is not semantically fail-closed",
+      "paths": ["spec/requirements.json", "reports/requirements_coverage_v6.json", "scripts/generate_requirement_matrix_v6.py", "scripts/validate_requirement_matrix_v6.py"],
+      "reproduction": "Replace consensus-critical exact proof identifiers with broad workspace commands or profile-only overlays.",
+      "closure": "Every applicable in-core row binds exact executed proof, generic proof is rejected, and opaque parity evidence names exact fixture IDs and profile hashes."
+    },
+    {
+      "id": "FINDING_057",
+      "severity": "high",
+      "class": "specification",
+      "title": "The externally authored NIP remains non-self-contained",
+      "paths": ["spec/NIP_DRAFT.md", "spec/NOSTR_AUTOMERGE_V1_SPEC.md", "spec/NIP_V5_PATCH_PROPOSAL.md", "spec/requirements.json"],
+      "reproduction": "Compare the read-only NIP with interoperability-critical companion rules.",
+      "closure": "Local companion authority and a portable external reconciliation delta are complete; the finding remains held until separately authored NIP prose is supplied and reconciled."
+    },
+    {
+      "id": "FINDING_058",
+      "severity": "medium",
+      "class": "assurance",
+      "title": "External assurance and publication gates remain open",
+      "paths": ["reports/remediation_v5_final.json", "README.md", "SECURITY.md"],
+      "reproduction": "Inspect external holds and the absence of separately granted remote or publication authority.",
+      "closure": "All local implementation gates pass while sustained fuzzing, independent review, NIP reconciliation, and every remote or publication action remain explicit holds."
+    }
+  ]
+}
