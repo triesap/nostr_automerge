@@ -1,0 +1,57 @@
+{
+  "budget": {
+    "max_bytes": 1000000,
+    "max_items": 1000000
+  },
+  "cancel_after": null,
+  "coordinate": "31624:d54cd37930b0c5587333d55bf4841843a922a5af7546818ba8ac2c5cfa2cf93d:d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0",
+  "expected_report": {
+    "accepted_changes": [],
+    "canonical_controls": [],
+    "completion": "complete",
+    "coordinate": "31624:d54cd37930b0c5587333d55bf4841843a922a5af7546818ba8ac2c5cfa2cf93d:d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0",
+    "disposition_records": [
+      {
+        "disposition": "pending",
+        "identifier": "8a9c12ec554643e6182aec63aaeb0b7e04b9daed35851897a0257fac56047e34",
+        "namespace": "control_event"
+      },
+      {
+        "disposition": "pending",
+        "identifier": "d7400fa9b97d193a3aa6d6ed444179b5f68202a2c26b5218cb6b3b1a22aba4cc",
+        "namespace": "control_event"
+      }
+    ],
+    "dispositions_digest": "68b033589ac28cf7c7f85ccd1697e9cf3f003ea146de3582c980f6705afcb8e0",
+    "excluded_changes": [],
+    "fixture_id": "descendant_of_pending_control_is_pending",
+    "heads": [],
+    "history_digest": "08555070701bfa9287ec09608430e2159b325a415996846a1b617f2d1a66f589",
+    "integrity_alerts": [],
+    "invalid_changes": [],
+    "invalid_events": [],
+    "pending_changes": [],
+    "report_schema": "nostr_automerge.report.v1",
+    "revision": "draft_2026_08",
+    "state_assertions": [],
+    "unsupported_events": []
+  },
+  "fixture_id": "descendant_of_pending_control_is_pending",
+  "raw_events": [
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"ab5d2e79cfd621b1b027ffb24e2453ed7fb571ba9a841ff0e2473466cabd168d\\\",\\\"roles\\\":[\\\"checkpoint\\\",\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":1,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":29,\"id\":\"8a9c12ec554643e6182aec63aaeb0b7e04b9daed35851897a0257fac56047e34\",\"kind\":1625,\"pubkey\":\"d54cd37930b0c5587333d55bf4841843a922a5af7546818ba8ac2c5cfa2cf93d\",\"sig\":\"c835ad7246697409d124ff8abedd1e39b04f392bfae0ecd2c743b7899ea865f68ef0e04b7ee5f2c302023abca385c8cb8c2dd134708f805e77a67bb5217b7b20\",\"tags\":[[\"a\",\"31624:d54cd37930b0c5587333d55bf4841843a922a5af7546818ba8ac2c5cfa2cf93d:d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0\"],[\"e\",\"d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"ab5d2e79cfd621b1b027ffb24e2453ed7fb571ba9a841ff0e2473466cabd168d\\\",\\\"roles\\\":[\\\"checkpoint\\\",\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":2,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":30,\"id\":\"d7400fa9b97d193a3aa6d6ed444179b5f68202a2c26b5218cb6b3b1a22aba4cc\",\"kind\":1625,\"pubkey\":\"d54cd37930b0c5587333d55bf4841843a922a5af7546818ba8ac2c5cfa2cf93d\",\"sig\":\"a57527d364de31edeac2863f731afff6c0ede79eb099477f3a9e041931d1dca80df8a2e628dca8e1275e14c087d23182a2872653aea1db1e5931b6b5ae9fc28d\",\"tags\":[[\"a\",\"31624:d54cd37930b0c5587333d55bf4841843a922a5af7546818ba8ac2c5cfa2cf93d:d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0\"],[\"e\",\"8a9c12ec554643e6182aec63aaeb0b7e04b9daed35851897a0257fac56047e34\"]]}",
+      "encoding": "utf8"
+    }
+  ],
+  "requirements": [
+    "NCRDT-CONF-002",
+    "NCRDT-CONTROL-001",
+    "NCRDT-EPOCH-001"
+  ],
+  "revision": "draft_2026_08",
+  "scenario_schema": "nostr_automerge.signed_scenario.v2"
+}
