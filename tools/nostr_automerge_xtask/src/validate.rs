@@ -47,6 +47,7 @@ pub(crate) fn validate_repository(root: &Path) -> Result<ValidationReport, Strin
     for (name, script) in PYTHON_VALIDATORS {
         let output = Command::new("python3")
             .current_dir(root)
+            .env("PYTHONDONTWRITEBYTECODE", "1")
             .arg(script)
             .output()
             .map_err(|error| format!("{name}: {error}"))?;
