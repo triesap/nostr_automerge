@@ -508,6 +508,21 @@ enum ChangeClaimReason {
     UnsupportedCarrier,
 }
 
+impl ChangeClaimReason {
+    const fn diagnostic(self) -> Option<crate::DiagnosticCode> {
+        let code = match self {
+            Self::InvalidReferencedControl => "control.parent",
+            Self::Unauthorized => "change.actor",
+            Self::UnsupportedCarrier => "carrier.revision",
+            Self::AuthorizedCanonical
+            | Self::UnresolvedControl
+            | Self::AuthorizedNoncanonical
+            | Self::AuthorizedCurrentExcluded => return None,
+        };
+        Some(crate::DiagnosticCode::registered(code))
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum FinalLineageChangeState {
     Accepted,
@@ -2323,6 +2338,34 @@ mod tests {
             ),
             Invalid
         );
+    }
+
+    #[test]
+    fn change_claim_failures_have_stable_diagnostics() {
+        assert_eq!(
+            ChangeClaimReason::InvalidReferencedControl
+                .diagnostic()
+                .map(crate::DiagnosticCode::as_str),
+            Some("control.parent")
+        );
+        assert_eq!(
+            ChangeClaimReason::Unauthorized
+                .diagnostic()
+                .map(crate::DiagnosticCode::as_str),
+            Some("change.actor")
+        );
+        assert_eq!(
+            ChangeClaimReason::UnsupportedCarrier
+                .diagnostic()
+                .map(crate::DiagnosticCode::as_str),
+            Some("carrier.revision")
+        );
+        assert!(
+            ChangeClaimReason::AuthorizedCanonical
+                .diagnostic()
+                .is_none()
+        );
+        assert!(ChangeClaimReason::UnresolvedControl.diagnostic().is_none());
     }
 
     #[test]

@@ -88,5 +88,11 @@ mod tests {
             Some("graph.cycle")
         );
         assert_eq!(DiagnosticCode::lookup("future.code"), None);
+        for code in ["carrier.revision", "change.actor", "control.parent"] {
+            assert_eq!(
+                DiagnosticCode::lookup(code).map(DiagnosticCode::as_str),
+                Some(code)
+            );
+        }
     }
 }
