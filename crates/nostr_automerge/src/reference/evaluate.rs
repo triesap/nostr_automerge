@@ -141,7 +141,7 @@ pub(crate) fn evaluate_batch_with_prior(
         }
         let parent_view = parent_epoch_result
             .as_ref()
-            .map(|result| ParentEpochView::from_accepted_state(result.accepted_state()));
+            .map(ParentEpochView::from_result);
         if let Some(view) = parent_view.as_ref()
             && let Err(interruption) = charge_control_closures(
                 children,

@@ -1,7 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::control::epoch_state::AcceptedEpochState;
+use crate::control::frontier::ParentFrontierReference;
 use crate::graph::actor_state::EpochActorState;
+use crate::reference::epoch_engine::EpochEvaluationResult;
 use crate::{ActorId, ChangeHash};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -11,17 +13,46 @@ pub(crate) struct ParentEpochView {
     dependencies: BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
     actors: BTreeMap<ActorId, EpochActorState>,
     writer_contributions: BTreeMap<ActorId, ChangeHash>,
+    frontier_knowledge: BTreeMap<ChangeHash, ParentFrontierReference>,
 }
 
 impl ParentEpochView {
     pub(crate) fn from_accepted_state(state: &AcceptedEpochState) -> Self {
+        let frontier_knowledge = state
+            .accepted_closure()
+            .iter()
+            .copied()
+            .map(|hash| (hash, ParentFrontierReference::AcceptedUnderParent))
+            .collect();
         Self {
             accepted: state.accepted_closure().clone(),
             heads: state.frontier_heads().clone(),
             dependencies: state.dependencies().clone(),
             actors: state.actor_states().clone(),
             writer_contributions: state.writer_contributions().clone(),
+            frontier_knowledge,
         }
+    }
+
+    pub(crate) fn from_result(result: &EpochEvaluationResult) -> Self {
+        let mut view = Self::from_accepted_state(result.accepted_state());
+        for (hash, disposition) in result.dispositions() {
+            let knowledge = match disposition {
+                crate::ProtocolDisposition::Accepted => {
+                    ParentFrontierReference::AcceptedUnderParent
+                }
+                crate::ProtocolDisposition::Pending => ParentFrontierReference::PendingUnderParent,
+                crate::ProtocolDisposition::Invalid => ParentFrontierReference::InvalidUnderParent,
+                crate::ProtocolDisposition::Excluded => {
+                    ParentFrontierReference::ExcludedUnderParent
+                }
+                crate::ProtocolDisposition::UnsupportedRevision => {
+                    ParentFrontierReference::Unsupported
+                }
+            };
+            view.frontier_knowledge.insert(*hash, knowledge);
+        }
+        view
     }
 
     #[cfg(test)]
@@ -32,12 +63,18 @@ impl ParentEpochView {
         actors: BTreeMap<ActorId, EpochActorState>,
         writer_contributions: BTreeMap<ActorId, ChangeHash>,
     ) -> Self {
+        let frontier_knowledge = accepted
+            .iter()
+            .copied()
+            .map(|hash| (hash, ParentFrontierReference::AcceptedUnderParent))
+            .collect();
         Self {
             accepted,
             heads,
             dependencies,
             actors,
             writer_contributions,
+            frontier_knowledge,
         }
     }
 
@@ -67,6 +104,13 @@ impl ParentEpochView {
 
     pub(crate) fn writer_contribution(&self, actor: &ActorId) -> Option<ChangeHash> {
         self.writer_contributions.get(actor).copied()
+    }
+
+    pub(crate) fn frontier_knowledge(&self, hash: &ChangeHash) -> ParentFrontierReference {
+        self.frontier_knowledge
+            .get(hash)
+            .copied()
+            .unwrap_or(ParentFrontierReference::Unknown)
     }
 }
 
@@ -139,6 +183,14 @@ mod tests {
         };
         let view = ParentEpochView::from_accepted_state(&state);
         assert!(view.contains(&first_hash));
+        assert_eq!(
+            view.frontier_knowledge(&first_hash),
+            crate::control::frontier::ParentFrontierReference::AcceptedUnderParent
+        );
+        assert_eq!(
+            view.frontier_knowledge(&ChangeHash::from_bytes([99; 32])),
+            crate::control::frontier::ParentFrontierReference::Unknown
+        );
         assert_eq!(view.heads(), &BTreeSet::from([first_hash, second_hash]));
         assert_eq!(view.dependencies(&first_hash), Some(&BTreeSet::new()));
         assert_eq!(
