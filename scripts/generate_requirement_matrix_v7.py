@@ -52,10 +52,53 @@ EXACT_FIXTURES: dict[str, list[str]] = {
         "orphan_chunk_promotes_after_descriptor_delivery",
     ],
 }
-EXACT_ASSERTIONS: dict[str, tuple[str, list[str]]] = {}
+EXACT_ASSERTIONS: dict[str, tuple[str, list[str]]] = {
+    "NCRDT-RESOURCE-005": (
+        "crates/nostr_automerge/tests/public_engine_api.rs",
+        [
+            "cancellation_before_control_evaluation_fabricates_no_state",
+            "zero_budget_target_entry_consumes_no_work",
+        ],
+    ),
+    "NCRDT-RESOURCE-006": (
+        "crates/nostr_automerge/tests/public_engine_api.rs",
+        [
+            "prior_knowledge_classification_has_cooperative_stop_boundaries",
+            "prior_knowledge_exhaustion_is_deterministic_at_every_item_boundary",
+        ],
+    ),
+    "NCRDT-RESOURCE-007": (
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        ["finalization_dimensions_reject_underflow_and_double_finish"],
+    ),
+    "NCRDT-RESOURCE-008": (
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        ["report_validation_precedes_finalization_refund"],
+    ),
+}
 REQUIRED_TS_FIXTURES: dict[str, list[str]] = {
     key: value.copy() for key, value in EXACT_FIXTURES.items()
 }
+REQUIRED_TS_FIXTURES.update({
+    "NCRDT-RESOURCE-005": [
+        "interrupted_cancel_at_ingress",
+        "unrelated_changes_do_not_consume_target_budget",
+    ],
+    "NCRDT-RESOURCE-006": [
+        "dependency_known_through_invalid_control",
+        "dependency_known_through_other_control",
+        "dependency_known_through_prior_equivocation_exclusion",
+        "dependency_known_through_unsupported_control",
+    ],
+    "NCRDT-RESOURCE-007": [
+        "interrupted_report_reservation_after",
+        "interrupted_report_reservation_before",
+    ],
+    "NCRDT-RESOURCE-008": [
+        "interrupted_report_reservation_after",
+        "interrupted_report_reservation_before",
+    ],
+})
 
 
 def sha256(path: Path) -> str:
