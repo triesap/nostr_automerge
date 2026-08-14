@@ -38,6 +38,19 @@ EXACT_FIXTURES: dict[str, list[str]] = {
         "child_base_head_is_known_other_control",
         "child_base_head_is_known_unsupported",
     ],
+    "NCRDT-CPCHUNK-004": [
+        "checkpoint_descriptor_references_invalid_control",
+        "checkpoint_descriptor_references_pending_control",
+        "checkpoint_descriptor_references_unsupported_control",
+        "checkpoint_descriptor_references_wrong_coordinate_control",
+        "checkpoint_descriptor_references_wrong_kind_control",
+        "chunk_references_invalid_descriptor",
+        "chunk_references_pending_descriptor",
+        "chunk_references_unsupported_descriptor",
+        "chunk_references_wrong_coordinate_descriptor",
+        "chunk_references_wrong_kind_descriptor",
+        "orphan_chunk_promotes_after_descriptor_delivery",
+    ],
 }
 EXACT_ASSERTIONS: dict[str, tuple[str, list[str]]] = {}
 REQUIRED_TS_FIXTURES: dict[str, list[str]] = {
