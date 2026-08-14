@@ -601,7 +601,9 @@ fn reduce_change_dispositions(
                     ReferencedControlState::Pending(_) | ReferencedControlState::Missing => {
                         ChangeClaimReason::Pending
                     }
-                    ReferencedControlState::UnsupportedRevision => ChangeClaimReason::Unsupported,
+                    ReferencedControlState::UnsupportedRevision => {
+                        ChangeClaimReason::InvalidControl
+                    }
                     ReferencedControlState::DynamicInvalid(_)
                         if matches!(
                             batch.dispositions.get(&hash),

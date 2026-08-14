@@ -2688,7 +2688,7 @@ fn valid_claim_dominates_a_missing_control_duplicate() {
 
 #[test]
 #[allow(clippy::expect_used)]
-fn unsupported_control_reference_currently_inherits_revision() {
+fn unsupported_control_reference_is_invalid() {
     let scenario = signed_engine_scenario();
     let controller = TestSigner::from_byte(20);
     let device = TestSigner::from_byte(21);
@@ -2746,10 +2746,7 @@ fn unsupported_control_reference_currently_inherits_revision() {
     );
     assert_eq!(
         report.dispositions(),
-        [(
-            scenario.change_hash,
-            ProtocolDisposition::UnsupportedRevision
-        )]
+        [(scenario.change_hash, ProtocolDisposition::Invalid)]
     );
 }
 
