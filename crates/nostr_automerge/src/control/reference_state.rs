@@ -19,6 +19,35 @@ pub(crate) enum ReferencedControlState<'a> {
     UnsupportedRevision,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ControlParentState<'a> {
+    Canonical(&'a ValidatedControlCarrier),
+    NoncanonicalValid(&'a ValidatedControlCarrier),
+    Pending(&'a ValidatedControlCarrier),
+    Missing,
+    WrongKind,
+    WrongCoordinate,
+    StaticInvalid,
+    DynamicInvalid(&'a ValidatedControlCarrier),
+    UnsupportedRevision,
+}
+
+impl<'a> From<ReferencedControlState<'a>> for ControlParentState<'a> {
+    fn from(state: ReferencedControlState<'a>) -> Self {
+        match state {
+            ReferencedControlState::Canonical(control) => Self::Canonical(control),
+            ReferencedControlState::NoncanonicalValid(control) => Self::NoncanonicalValid(control),
+            ReferencedControlState::Pending(control) => Self::Pending(control),
+            ReferencedControlState::Missing => Self::Missing,
+            ReferencedControlState::WrongKind => Self::WrongKind,
+            ReferencedControlState::WrongCoordinate => Self::WrongCoordinate,
+            ReferencedControlState::StaticInvalid => Self::StaticInvalid,
+            ReferencedControlState::DynamicInvalid(control) => Self::DynamicInvalid(control),
+            ReferencedControlState::UnsupportedRevision => Self::UnsupportedRevision,
+        }
+    }
+}
+
 impl ReferencedControlState<'_> {
     pub(crate) const fn diagnostic(self) -> DiagnosticCode {
         let code = match self {
