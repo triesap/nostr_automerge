@@ -1666,6 +1666,7 @@ struct ReportFinalizationPlan {
     digests: u64,
     evidence: u64,
     invariants: u64,
+    fixed_overhead: u64,
 }
 
 impl ReportFinalizationPlan {
@@ -1686,6 +1687,7 @@ impl ReportFinalizationPlan {
             digests,
             evidence: events,
             invariants: 8,
+            fixed_overhead: 8,
         };
         plan.total().ok_or(())?;
         Ok(plan)
@@ -1700,6 +1702,7 @@ impl ReportFinalizationPlan {
             self.digests,
             self.evidence,
             self.invariants,
+            self.fixed_overhead,
         ]
         .into_iter()
         .try_fold(0_u64, u64::checked_add)
@@ -1715,6 +1718,7 @@ enum FinalizationDimension {
     Digests,
     Evidence,
     Invariants,
+    FixedOverhead,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1754,6 +1758,7 @@ impl ReportFinalizationPermit {
             FinalizationDimension::Digests => &mut self.remaining.digests,
             FinalizationDimension::Evidence => &mut self.remaining.evidence,
             FinalizationDimension::Invariants => &mut self.remaining.invariants,
+            FinalizationDimension::FixedOverhead => &mut self.remaining.fixed_overhead,
         };
         *remaining = remaining
             .checked_sub(amount)
@@ -1788,6 +1793,7 @@ fn reserved_interrupted_report(
     permit
         .consume(FinalizationDimension::Digests, 8)
         .and_then(|()| permit.consume(FinalizationDimension::Invariants, 8))
+        .and_then(|()| permit.consume(FinalizationDimension::FixedOverhead, 8))
         .and_then(|()| permit.finish_interrupted())
         .map_err(|_| EvaluationError::ReportInvariant)?;
     compact_interrupted_report(revision, coordinate, completion)
@@ -1829,6 +1835,7 @@ fn reserved_batch_report(
         (FinalizationDimension::Digests, digest_count),
         (FinalizationDimension::Evidence, 0),
         (FinalizationDimension::Invariants, 8),
+        (FinalizationDimension::FixedOverhead, 8),
     ] {
         permit
             .consume(dimension, amount)
