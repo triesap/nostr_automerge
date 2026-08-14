@@ -1,0 +1,12 @@
+{
+  "schema": "nostr_automerge.mutation_campaign.v6",
+  "status": "external_hold",
+  "inventory_status": "pass",
+  "target_count": 13,
+  "generated": 0,
+  "caught": 0,
+  "survived": 0,
+  "execution": "deferred",
+  "reason": "Source-mutating campaign execution is intentionally deferred under the operator's cybersecurity-tooling constraint; deterministic anchors and their exact detecting tests were validated without altering source.",
+  "inventory_path": "reports/mutation_campaign_v6_inventory.json"
+}
