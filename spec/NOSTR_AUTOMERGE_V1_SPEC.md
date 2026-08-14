@@ -358,3 +358,13 @@ or current-branch-excluded claim is `excluded`; a nonempty claim set containing
 only unsupported carriers is `unsupported_revision`; every remaining conclusive
 failure is `invalid`. Accepted and canonical-pruned lineage outrank later
 duplicate claims, while pending outranks noncanonical and conclusive failures.
+
+### Complete dependency knowledge
+
+For each selected signed epoch, classify a dependency as accepted in base,
+same-epoch candidate, pruned canonical ancestor, known through another control,
+known invalid, known unsupported, prior-equivocation-excluded, or unknown.
+Accepted-base dependencies are usable and same-epoch candidates resolve in the
+selected graph. Every other known state is impossible under that epoch and
+invalidates the dependant and its descendants. Only genuinely absent or
+unresolved selected-control evidence remains pending and may promote.

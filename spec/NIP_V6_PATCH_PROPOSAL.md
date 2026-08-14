@@ -45,3 +45,10 @@ pruning, genuinely unresolved claims, otherwise-valid noncanonical claims,
 all-unsupported carriers, then conclusive invalidity. State explicitly that
 accepted and pruned lineage cannot be poisoned and pending outranks
 noncanonical or invalid duplicate claims.
+
+## Complete dependency knowledge
+
+Define all eight prior states: accepted base, same-epoch candidate, pruned
+canonical ancestor, other control, invalid, unsupported,
+prior-equivocation-excluded, and unknown. Only absent or unresolved evidence is
+pending; every known-impossible state invalidates the dependant transitively.
