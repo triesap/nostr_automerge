@@ -1,0 +1,17 @@
+{
+  "boundaries": {
+    "private_runner_state_included": false,
+    "public_repository_paths_included": false,
+    "rust_bindings_used": false,
+    "tracked_workflows_present": false
+  },
+  "candidate": "e01f46d8972396ca48529e38abe9a92f9beddb87",
+  "dependency_lock_sha256": "d881757529b805b8ae4da935127730fe901b8b13a71382023be161016cd35a7d",
+  "fixture_distribution_lock_sha256": "c8e09b1159e34deb16c33dbb0aee96f76a5da8d2601d92785f229f7e37be0337",
+  "fixture_distribution_size": 124,
+  "implementation": "typescript",
+  "package_manifest_sha256": "8fc3a6e5e3ebfeba6d5fab2b7e43054d0ddf579f7ecb73a2890ee37d017f8e6a",
+  "requirements_lock_sha256": "3c12e8006ded4cd7c38ddf62af82a61361436542aa47540670845c20c9b4fddf",
+  "schema": "nostr_automerge.private_target_baseline.v1",
+  "status": "remediation_v6_baseline"
+}
