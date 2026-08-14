@@ -41,3 +41,15 @@ correctly increased that cardinality, so the stale test failed despite both
 matching fixtures passing. The assertion now requires a nonempty filtered set
 whose entries all pass. No fixture metadata, protocol behavior, or filter
 semantics changed.
+
+## Checkpoint diagnostic preservation repair
+
+Recorded during the `step_936` full checkpoint descriptor-reference gate.
+
+The new exhaustive dependent-chunk disposition sweep correctly retained each
+checkpoint refusal's final invalid disposition, but initially replaced an
+already-derived stable refusal diagnostic with no diagnostic. Three signed
+checkpoint refusal fixtures detected the report mismatch. The sweep now
+preserves a prior diagnostic only when its disposition agrees with the resolved
+final disposition; newly invalidated dependent chunks remain diagnostic-free.
+No checkpoint status, acceptance decision, or digest identity changed.

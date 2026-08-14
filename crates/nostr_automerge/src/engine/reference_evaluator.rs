@@ -917,7 +917,12 @@ fn event_disposition_records(
         let prior = records.get(&chunk.event_id).copied();
         let final_record = state
             .dependent_disposition()
-            .map(|disposition| (disposition, None))
+            .map(|disposition| {
+                let diagnostic = prior.and_then(|(prior_disposition, diagnostic)| {
+                    (prior_disposition == disposition).then_some(diagnostic)
+                });
+                (disposition, diagnostic.flatten())
+            })
             .or_else(|| {
                 prior.filter(|(disposition, _)| *disposition != ProtocolDisposition::Excluded)
             })
