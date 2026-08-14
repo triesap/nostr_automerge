@@ -400,6 +400,12 @@ impl ReferenceEvaluator {
         }
         let evidence = view.records().collect();
         finalization
+            .consume(
+                FinalizationDimension::Controls,
+                u64::try_from(control_dispositions.len()).unwrap_or(u64::MAX),
+            )
+            .map_err(|_| EvaluationError::ReportInvariant)?;
+        finalization
             .refund(budget)
             .map_err(|_| EvaluationError::ReportInvariant)?;
         EvaluationReport::from_parts(EvaluationReportParts {
