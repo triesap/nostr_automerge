@@ -6,6 +6,7 @@ mod chunk;
 mod descriptor;
 pub(crate) mod join;
 mod merkle;
+pub(crate) mod reference_state;
 mod verify;
 mod verify_history;
 
