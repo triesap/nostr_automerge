@@ -1,8 +1,8 @@
 # Remediation V6 Execution Ledger
 
 Status: active — `implementation_remediation_required`
-Active RCLD: 60
-Active step: `step_937`
+Active RCLD: 61
+Active step: `step_965`
 Range: `step_861` through `step_1058`
 
 | RCLD | Steps | Status | Scope |
@@ -11,8 +11,8 @@ Range: `step_861` through `step_1058`
 | 57 | 871–888 | complete | change-claim authorization |
 | 58 | 889–916 | complete | control-relationship resolution |
 | 59 | 917–936 | complete | checkpoint descriptor-reference resolution |
-| 60 | 937–964 | active | exact resource accounting |
-| 61 | 965–1001 | pending | signed conformance v7 |
+| 60 | 937–964 | complete | exact resource accounting |
+| 61 | 965–1001 | active | signed conformance v7 |
 | 62 | 1002–1018 | pending | semantic requirement evidence v7 |
 | 63 | 1019–1035 | pending | companion authority and external NIP reconciliation delta |
 | 64 | 1036–1058 | pending | private TypeScript parity and final assurance |
@@ -97,6 +97,34 @@ Range: `step_861` through `step_1058`
 | `step_934` | `3f472c9` | Nine deterministic reference-resolution mutation anchors are validated. |
 | `step_935` | `833e7ad` | The focused checkpoint descriptor-reference matrix passed. |
 | `step_936` | current commit | Refusal diagnostics were preserved, the full Rust gate passed, and RCLD 59 closed. |
+| `step_937` | `e4b8fbe` | Every target-proportional and finalization operation was assigned an accounting dimension. |
+| `step_938` | `5a135fc` | Document evidence views borrow coordinate event indexes without cloning. |
+| `step_939` | `82333f9` | Coordinate counts and decode metadata are computed once during corpus finalization. |
+| `step_940` | `0956e4b` | Target view derivation now stores only references and scalar metadata. |
+| `step_941` | `16ca2a5` | Pre-view cancellation returns without consuming any budget. |
+| `step_942` | `398e96f` | Zero-budget evaluation performs no target-proportional work. |
+| `step_943` | `9f64186` | Manifest selection iterates only indexed coordinate candidates. |
+| `step_944` | `7c1c8fe` | Prior-knowledge construction is fallible and returns typed interruption. |
+| `step_945` | `0567b7c` | Every selected control in prior classification is charged. |
+| `step_946` | `d4615ad` | Every target change hash in prior classification is charged. |
+| `step_947` | `3b681fe` | Every carrier claim in prior classification is charged. |
+| `step_948` | `4084493` | Every referenced-control resolution in prior classification is charged. |
+| `step_949` | `d8c4458` | Prior ACL member work is charged proportionally. |
+| `step_950` | `8d8c365` | Coordinate claim inputs are indexed and reasoned once before per-control projection. |
+| `step_951` | `3fafce8` | Cancellation stops prior classification at deterministic boundaries. |
+| `step_952` | `9f91c33` | Exhaustion stops prior classification at every exact item boundary. |
+| `step_953` | `1ab74d2` | The resource benchmark exercises signed duplicate-claim classification. |
+| `step_954` | `41baf66` | Finalization represents fixed report overhead as its own dimension. |
+| `step_955` | `4666043` | Complete-path control finalization is consumed exactly. |
+| `step_956` | `bb72522` | Complete-path change finalization is consumed exactly. |
+| `step_957` | `e6477e6` | Complete-path event finalization is consumed exactly. |
+| `step_958` | `a8f4899` | Complete-path checkpoint finalization is consumed exactly. |
+| `step_959` | `92029aa` | Complete-path digest finalization is consumed exactly. |
+| `step_960` | `878e297` | Complete-path evidence finalization is consumed exactly. |
+| `step_961` | `516e4d3` | Report invariant validation consumes its named reserved capacity. |
+| `step_962` | `2a41f83` | Finalization rejects underflow, double finish, and unexplained remainder. |
+| `step_963` | `d9a7bb6` | Complete reports validate before optional capacity is refunded. |
+| `step_964` | current commit | Resource boundaries, benchmark, full Rust gate, and validators passed, closing RCLD 60. |
 
 ## Execution Rules
 
