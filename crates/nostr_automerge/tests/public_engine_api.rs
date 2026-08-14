@@ -3415,6 +3415,19 @@ fn cancellation_is_safe_at_every_evaluator_boundary() {
 }
 
 #[test]
+fn prior_knowledge_classification_has_cooperative_stop_boundaries() {
+    let evaluator = include_str!("../src/engine/reference_evaluator.rs");
+    let prior = evaluator
+        .split_once("fn additional_prior_knowledge(")
+        .and_then(|(_, source)| source.split_once("enum ChangeClaimReason"))
+        .map(|(source, _)| source)
+        .unwrap_or_default();
+    assert!(prior.contains("cancellation: &impl CancellationCheck"));
+    assert!(prior.matches("charge_evaluation_work(").count() >= 6);
+    cancellation_is_safe_at_every_evaluator_boundary();
+}
+
+#[test]
 fn every_item_budget_boundary_preserves_canonical_control_outcomes() {
     let scenario = signed_engine_scenario();
     let mut builder = CorpusBuilder::new();
