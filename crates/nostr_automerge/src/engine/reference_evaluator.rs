@@ -1,6 +1,7 @@
 use crate::carrier::VerifiedCarrier;
 use crate::checkpoint::authorize::{DescriptorAuthorization, authorize_descriptor};
 use crate::checkpoint::join::{JoinError, join_chunks};
+use crate::checkpoint::reference_state::resolve_referenced_descriptor;
 use crate::checkpoint::{HistoryVerificationError, historical_carrier_coverage};
 use crate::conformance::dispositions_digest::{disposition_items, dispositions_digest};
 use crate::conformance::history_digest::history_digest;
@@ -872,6 +873,37 @@ fn event_disposition_records(
             },
             (record.disposition(), record.diagnostic()),
         );
+    }
+
+    let descriptor_dispositions = corpus
+        .indexes
+        .checkpoints
+        .descriptors_by_id
+        .keys()
+        .filter_map(|event_id| {
+            records
+                .get(event_id)
+                .map(|(disposition, _)| (*event_id, *disposition))
+        })
+        .collect::<std::collections::BTreeMap<_, _>>();
+    for chunk in corpus.indexes.checkpoints.chunks_by_id.values() {
+        if !view.contains_reportable(&chunk.event_id) {
+            continue;
+        }
+        let state = resolve_referenced_descriptor(
+            corpus,
+            chunk.descriptor_id,
+            view.coordinate(),
+            &descriptor_dispositions,
+        );
+        if let Some(disposition) = state.dependent_disposition() {
+            records.insert(chunk.event_id, (disposition, None));
+        } else if records
+            .get(&chunk.event_id)
+            .is_none_or(|(disposition, _)| *disposition == ProtocolDisposition::Excluded)
+        {
+            records.insert(chunk.event_id, (ProtocolDisposition::Pending, None));
+        }
     }
 
     records
