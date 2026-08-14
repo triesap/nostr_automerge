@@ -35,7 +35,7 @@ use crate::{
 
 use super::evaluation_report::{
     DispositionRecord, EvaluationError, EvaluationFailure, EvaluationReport, EvaluationReportParts,
-    ProtocolItemIdentifier,
+    ProtocolItemIdentifier, REPORT_INVARIANT_ITEMS,
 };
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 
@@ -449,6 +449,9 @@ impl ReferenceEvaluator {
                 FinalizationDimension::Evidence,
                 u64::try_from(evidence.len()).unwrap_or(u64::MAX),
             )
+            .map_err(|_| EvaluationError::ReportInvariant)?;
+        finalization
+            .consume(FinalizationDimension::Invariants, REPORT_INVARIANT_ITEMS)
             .map_err(|_| EvaluationError::ReportInvariant)?;
         finalization
             .refund(budget)
@@ -1737,7 +1740,7 @@ impl ReportFinalizationPlan {
             checkpoints: events,
             digests,
             evidence: events,
-            invariants: 8,
+            invariants: REPORT_INVARIANT_ITEMS,
             fixed_overhead: 8,
         };
         plan.total().ok_or(())?;
@@ -1843,7 +1846,7 @@ fn reserved_interrupted_report(
 ) -> Result<EvaluationReport, EvaluationError> {
     permit
         .consume(FinalizationDimension::Digests, 8)
-        .and_then(|()| permit.consume(FinalizationDimension::Invariants, 8))
+        .and_then(|()| permit.consume(FinalizationDimension::Invariants, REPORT_INVARIANT_ITEMS))
         .and_then(|()| permit.consume(FinalizationDimension::FixedOverhead, 8))
         .and_then(|()| permit.finish_interrupted())
         .map_err(|_| EvaluationError::ReportInvariant)?;
@@ -1885,7 +1888,7 @@ fn reserved_batch_report(
         (FinalizationDimension::Checkpoints, checkpoint_count),
         (FinalizationDimension::Digests, digest_count),
         (FinalizationDimension::Evidence, 0),
-        (FinalizationDimension::Invariants, 8),
+        (FinalizationDimension::Invariants, REPORT_INVARIANT_ITEMS),
         (FinalizationDimension::FixedOverhead, 8),
     ] {
         permit

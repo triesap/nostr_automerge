@@ -59,6 +59,8 @@ impl std::error::Error for EvaluationError {}
 
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 
+pub(crate) const REPORT_INVARIANT_ITEMS: u64 = 8;
+
 /// A canonical identifier whose namespace prevents collisions between protocol item kinds.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
