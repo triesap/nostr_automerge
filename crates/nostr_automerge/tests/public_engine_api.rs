@@ -438,26 +438,40 @@ fn deep_noncanonical_branch_is_validated_before_exclusion() {
         .prepare(writer.public_key())
         .expect("change preimage"),
     );
-    let mut builder = CorpusBuilder::new();
-    for event in [genesis, first, second, grandchild, claim] {
-        assert!(matches!(
-            builder.ingest(event),
-            IngestOutcome::Accepted { .. }
-        ));
+    let events = vec![genesis, first, second, grandchild, claim];
+    let mut reversed = events.clone();
+    reversed.reverse();
+    let mut duplicated = reversed.clone();
+    duplicated.extend(events.clone());
+    let reports = [events, reversed, duplicated].map(|events| {
+        let mut builder = CorpusBuilder::new();
+        for event in events {
+            assert!(matches!(
+                builder.ingest(event),
+                IngestOutcome::Accepted { .. } | IngestOutcome::Duplicate { .. }
+            ));
+        }
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+            &builder.finish(),
+            coordinate,
+            &mut WorkBudget::new(1_000_000, 1_000),
+            &NeverCancelled,
+        )
+    });
+    for report in &reports {
+        assert!(
+            report
+                .control_dispositions()
+                .contains(&(grandchild_id, ProtocolDisposition::Excluded))
+        );
+        assert_eq!(report.excluded_changes(), [change_hash]);
+        assert!(report.invalid_changes().is_empty());
     }
-    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
-        &builder.finish(),
-        coordinate,
-        &mut WorkBudget::new(1_000_000, 1_000),
-        &NeverCancelled,
+    assert_eq!(
+        reports[0].control_dispositions(),
+        reports[1].control_dispositions()
     );
-    assert!(
-        report
-            .control_dispositions()
-            .contains(&(grandchild_id, ProtocolDisposition::Excluded))
-    );
-    assert_eq!(report.excluded_changes(), [change_hash]);
-    assert!(report.invalid_changes().is_empty());
+    assert_eq!(reports[0].dispositions(), reports[2].dispositions());
 }
 
 #[test]
