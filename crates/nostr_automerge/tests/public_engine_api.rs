@@ -784,6 +784,11 @@ fn terminal_control_stops_document_extension() {
 }
 
 #[test]
+fn terminal_control_change_is_currently_excluded() {
+    signed_terminal_genesis_rejects_children();
+}
+
+#[test]
 #[allow(clippy::expect_used)]
 fn successor_genesis_starts_new_document_state() {
     let predecessor_controller = TestSigner::from_byte(55);
