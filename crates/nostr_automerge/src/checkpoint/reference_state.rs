@@ -194,4 +194,12 @@ mod tests {
             Some(ProtocolDisposition::Invalid)
         );
     }
+
+    #[test]
+    fn static_invalid_descriptor_invalidates_dependent_chunk() {
+        assert_eq!(
+            ReferencedDescriptorState::StaticInvalid.dependent_disposition(),
+            Some(ProtocolDisposition::Invalid)
+        );
+    }
 }
