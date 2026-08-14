@@ -304,3 +304,18 @@ dimension. Cross-dimension borrowing, underflow, overrun, double consumption,
 or unexplained remainder is a noncanonical invariant failure. Failed reservation
 returns a constant-size no-progress interruption report. Completed evaluation
 refunds unused optional capacity exactly once.
+
+## Remediation v6 reconciliation authority
+
+The following rules are the self-contained local authority mirrored by the
+unsubmitted external patch proposal. They do not modify the read-only NIP
+snapshot or any wire constant.
+
+### Causal operation counters
+
+For a candidate change `C`, let `D(C)` be its exact accepted dependency closure.
+`next_op(C)` is one when `D(C)` contains no operations; otherwise it is one plus
+the greatest operation counter visible in `D(C)`. `C.start_op` must equal
+`next_op(C)`, with checked arithmetic and conversions. Actor sequence is a
+separate actor-local rule: it starts at one, increments exactly, and an empty
+change consumes sequence without advancing the causal operation counter.
