@@ -50,6 +50,9 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         }
         "remediation_v6_pending_invalid_claims" => generate_remediation_v6_pending_invalid_claims(),
         "remediation_v6_pruned_pending_claims" => generate_remediation_v6_pruned_pending_claims(),
+        "remediation_v6_equivocation_pending_claims" => {
+            generate_remediation_v6_equivocation_pending_claims()
+        }
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
 }
@@ -388,6 +391,73 @@ fn generate_remediation_v6_pruned_pending_claims() -> Result<(), String> {
         vec![genesis, accepted_claim, child, pending_claim],
         &["NCRDT-CONF-005", "NCRDT-DISPOSITION-002", "NCRDT-DUP-003"],
         "remediation_v6_pruned_pending_claims",
+    )
+}
+
+fn generate_remediation_v6_equivocation_pending_claims() -> Result<(), String> {
+    let controller = Signer::from_byte(153)?;
+    let writer = Signer::from_byte(154)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "ca".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid mixed equivocation-claim coordinate".to_owned())?;
+    let control = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, vec![(&writer, None, &["write"])], "automerge-change-v1"),
+    )?;
+    let control_id = event_id(&control)?;
+    let actor = ActorId::derive(coordinate, writer.public_key);
+    let author_root = |key: &str| -> Result<_, String> {
+        let mut document = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+            .map_err(|error| format!("mixed equivocation document: {error:?}"))?;
+        document
+            .author_change(&[Operation::PutString {
+                key: key.to_owned(),
+                value: "mixed-equivocation".to_owned(),
+            }])
+            .map_err(|error| format!("mixed equivocation change: {error:?}"))
+    };
+    let target = author_root("target")?;
+    let conflict = author_root("conflict")?;
+    let target_claim = sign_change(
+        &writer,
+        2,
+        coordinate,
+        control_id,
+        target.change_hash(),
+        target.raw(),
+    )?;
+    let conflict_claim = sign_change(
+        &writer,
+        3,
+        coordinate,
+        control_id,
+        conflict.change_hash(),
+        conflict.raw(),
+    )?;
+    let pending_target_claim = sign_change(
+        &writer,
+        4,
+        coordinate,
+        EventId::from_bytes([0xca; 32]),
+        target.change_hash(),
+        target.raw(),
+    )?;
+    let root = repository_root().join("fixtures/v1_draft/scenarios/change_claims");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    write_fixture_with_requirements(
+        &root,
+        "equivocation_excluded_and_pending_claims_same_hash",
+        coordinate,
+        vec![control, target_claim, conflict_claim, pending_target_claim],
+        &["NCRDT-CONF-005", "NCRDT-DISPOSITION-002", "NCRDT-DUP-003"],
+        "remediation_v6_equivocation_pending_claims",
     )
 }
 
