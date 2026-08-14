@@ -2687,6 +2687,70 @@ fn valid_claim_dominates_a_missing_control_duplicate() {
 }
 
 #[test]
+#[allow(clippy::expect_used)]
+fn unsupported_control_reference_currently_inherits_revision() {
+    let scenario = signed_engine_scenario();
+    let controller = TestSigner::from_byte(20);
+    let device = TestSigner::from_byte(21);
+    let verified_control = VerifiedNip01Event::verify(scenario.control).expect("signed control");
+    let unsupported_control = controller.sign(
+        &UnsignedEventDraft::new(
+            verified_control.created_at(),
+            verified_control.kind(),
+            verified_control.tags().to_vec(),
+            verified_control.content().replace("\"v\":1", "\"v\":2"),
+        )
+        .expect("unsupported control draft")
+        .prepare(controller.public_key())
+        .expect("unsupported control preimage"),
+    );
+    let unsupported_control_id = VerifiedNip01Event::verify(unsupported_control.clone())
+        .expect("unsupported control event")
+        .event_id();
+    let verified_change = VerifiedNip01Event::verify(scenario.change).expect("signed change");
+    let change = device.sign(
+        &UnsignedEventDraft::new(
+            verified_change.created_at(),
+            verified_change.kind(),
+            verified_change
+                .tags()
+                .iter()
+                .map(|tag| {
+                    if tag.first().is_some_and(|name| name == "e") {
+                        vec!["e".to_owned(), unsupported_control_id.to_hex()]
+                    } else {
+                        tag.clone()
+                    }
+                })
+                .collect(),
+            verified_change.content().to_owned(),
+        )
+        .expect("dependent change draft")
+        .prepare(device.public_key())
+        .expect("dependent change preimage"),
+    );
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(unsupported_control),
+        IngestOutcome::UnsupportedRevision { .. }
+    ));
+    assert!(matches!(
+        builder.ingest(change),
+        IngestOutcome::Accepted { .. }
+    ));
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+        &builder.finish(),
+        scenario.coordinate,
+        &mut WorkBudget::new(2_000_000, 20_000),
+        &NeverCancelled,
+    );
+    assert_eq!(
+        report.dispositions(),
+        [(scenario.change_hash, ProtocolDisposition::UnsupportedRevision)]
+    );
+}
+
+#[test]
 fn event_and_carrier_work_exhaustion_precedes_state() {
     let scenario = signed_engine_scenario();
     let mut builder = CorpusBuilder::new();
