@@ -1,7 +1,7 @@
 {
-  "schema": "nostr_automerge.requirements.v3",
+  "schema": "nostr_automerge.requirements.v4",
   "project": "nostr_automerge_v1_spec",
-  "requirement_count": 106,
+  "requirement_count": 119,
   "requirements": [
     {
       "id": "NCRDT-SCOPE-001",
@@ -637,6 +637,84 @@
       "id": "NCRDT-CONF-006",
       "section": "Conformance",
       "text": "The mandatory signed corpus MUST cover mixed claims, complete dependency knowledge, checkpoint control states, coordinate resource isolation, and finalization boundaries.",
+      "source": "spec/CONFORMANCE.md"
+    },
+    {
+      "id": "NCRDT-CLAIM-001",
+      "section": "Dependent change authorization",
+      "text": "A draft-v1 change that references unsupported control evidence MUST be invalid and MUST NOT inherit unsupported_revision.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-CLAIM-002",
+      "section": "Dependent change authorization",
+      "text": "Device, ActorId, and write-role authorization MUST be evaluated before canonical versus noncanonical branch disposition; an unauthorized noncanonical claim is invalid.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-CLAIM-003",
+      "section": "Dependent change authorization",
+      "text": "A change referencing a terminal control is invalid because no write authorization exists.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-CONTROLREF-001",
+      "section": "Control parent references",
+      "text": "A child control with missing or pending parent evidence is pending; a child naming known wrong-kind, wrong-coordinate, static-invalid, dynamic-invalid, or unsupported parent evidence is invalid.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-CONTROLREF-002",
+      "section": "Control descendant outcomes",
+      "text": "Pending parent state propagates pending to descendants, invalid parent state propagates invalid, and noncanonical descendants are excluded only after branch-relative transition validation.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-FRONTIER-001",
+      "section": "Control base frontier",
+      "text": "A child base head accepted under the parent is usable; genuinely absent or unresolved heads are pending; known invalid, excluded, unsupported, or other-control heads make the child invalid.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-CPCHUNK-004",
+      "section": "Checkpoint chunk references",
+      "text": "A chunk with missing or pending descriptor evidence is pending; wrong-kind, wrong-coordinate, invalid, unsupported, or dynamically unusable descriptor evidence makes the draft-v1 chunk invalid.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-RESOURCE-005",
+      "section": "Evaluation entry",
+      "text": "Cancellation and capacity checks MUST precede target-proportional allocation; coordinate views MUST use retained indexes without cloning target evidence sets.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-RESOURCE-006",
+      "section": "Prior knowledge work",
+      "text": "Every control, ChangeHash, carrier claim, reference lookup, and authorization comparison used to construct prior dependency knowledge MUST be deterministically metered and cancellable.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-RESOURCE-007",
+      "section": "Finalization consumption",
+      "text": "Every reserved finalization dimension MUST be mechanically consumed or explicitly refunded; unexplained remainder, underflow, overrun, cross-dimension borrowing, or double finish is an invariant failure.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-RESOURCE-008",
+      "section": "Report validation",
+      "text": "Evidence-proportional report invariant validation MUST execute under reserved or separately charged capacity before finalization capacity is released.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-CONF-007",
+      "section": "Signed conformance",
+      "text": "The mandatory signed distribution MUST include the combined claim, parent, frontier, descriptor, chunk, terminal, and exact resource scenarios identified by remediation v6.",
+      "source": "spec/CONFORMANCE.md"
+    },
+    {
+      "id": "NCRDT-EVIDENCE-003",
+      "section": "Requirement evidence",
+      "text": "Every in-core normative requirement MUST bind an exact executed signed fixture or exact named assertion; broad repository tests or profile-only overlays cannot close consensus-critical behavior.",
       "source": "spec/CONFORMANCE.md"
     }
   ]

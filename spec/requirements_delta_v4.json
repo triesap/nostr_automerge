@@ -1,0 +1,22 @@
+{
+  "schema": "nostr_automerge.requirements_delta.v4",
+  "append_only": true,
+  "base_count": 106,
+  "target_count": 119,
+  "requirement_ids": [
+    "NCRDT-CLAIM-001",
+    "NCRDT-CLAIM-002",
+    "NCRDT-CLAIM-003",
+    "NCRDT-CONTROLREF-001",
+    "NCRDT-CONTROLREF-002",
+    "NCRDT-FRONTIER-001",
+    "NCRDT-CPCHUNK-004",
+    "NCRDT-RESOURCE-005",
+    "NCRDT-RESOURCE-006",
+    "NCRDT-RESOURCE-007",
+    "NCRDT-RESOURCE-008",
+    "NCRDT-CONF-007",
+    "NCRDT-EVIDENCE-003"
+  ],
+  "authority_note": "The implementation-owned companion specification and conformance contract carry these rows while the external NIP remains read-only."
+}
