@@ -30,3 +30,14 @@ Fixture generation compiled the library without the unit-test configuration and
 revealed that the claim-reason diagnostic helper introduced in `step_881` was
 used only by its exhaustive unit test. The helper was explicitly scoped to
 tests and clippy was rerun. No diagnostic mapping or protocol behavior changed.
+
+## Requirement-filter cardinality repair
+
+Recorded during the `step_916` full control-relationship gate.
+
+The conformance runner's requirement-filter unit test assumed exactly one
+fixture carried `NCRDT-ACTOR-001`. The remediation-v6 signed claim fixtures
+correctly increased that cardinality, so the stale test failed despite both
+matching fixtures passing. The assertion now requires a nonempty filtered set
+whose entries all pass. No fixture metadata, protocol behavior, or filter
+semantics changed.

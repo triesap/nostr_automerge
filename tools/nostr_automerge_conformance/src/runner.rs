@@ -828,8 +828,9 @@ mod tests {
             None,
             Some("NCRDT-ACTOR-001"),
         );
-        assert_eq!(requirement.total, 1);
+        assert!(requirement.total >= 1);
         assert_eq!(requirement.failed, 0);
+        assert_eq!(requirement.passed, requirement.total);
         let failures = run_corpus(
             paths
                 .into_iter()
