@@ -1,5 +1,5 @@
 use crate::DiagnosticCode;
-use crate::control::frontier::accepted_frontier_closure;
+use crate::control::frontier::{accepted_frontier_closure, reasoned_frontier_disposition};
 use crate::control::parent_view::ParentEpochView;
 use crate::control::transition::{
     TransitionError, validate_account_mapping, validate_base_frontier_antichain,
@@ -124,6 +124,22 @@ pub(crate) fn evaluate_child(
         || validate_base_frontier(&child.content, false).is_err()
     {
         return CandidateResult::Invalid(DiagnosticCode::registered("control.structure"));
+    }
+    match reasoned_frontier_disposition(child.content.base_heads.iter().copied(), |hash| {
+        view.frontier_knowledge(hash)
+    }) {
+        Some(crate::ProtocolDisposition::Pending) => {
+            return CandidateResult::Pending(DiagnosticCode::registered("control.frontier"));
+        }
+        Some(crate::ProtocolDisposition::Invalid) => {
+            return CandidateResult::Invalid(DiagnosticCode::registered("control.frontier"));
+        }
+        Some(
+            crate::ProtocolDisposition::Accepted
+            | crate::ProtocolDisposition::Excluded
+            | crate::ProtocolDisposition::UnsupportedRevision,
+        )
+        | None => {}
     }
     let base_closure = accepted_frontier_closure(
         child.content.base_heads.iter().copied(),

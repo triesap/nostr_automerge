@@ -29,6 +29,28 @@ impl ParentFrontierReference {
     }
 }
 
+pub(crate) fn reasoned_frontier_disposition(
+    frontier: impl IntoIterator<Item = ChangeHash>,
+    mut knowledge: impl FnMut(&ChangeHash) -> ParentFrontierReference,
+) -> Option<crate::ProtocolDisposition> {
+    let mut pending = false;
+    for hash in frontier {
+        match knowledge(&hash).dependent_disposition() {
+            Some(crate::ProtocolDisposition::Invalid) => {
+                return Some(crate::ProtocolDisposition::Invalid);
+            }
+            Some(crate::ProtocolDisposition::Pending) => pending = true,
+            Some(
+                crate::ProtocolDisposition::Accepted
+                | crate::ProtocolDisposition::Excluded
+                | crate::ProtocolDisposition::UnsupportedRevision,
+            )
+            | None => {}
+        }
+    }
+    pending.then_some(crate::ProtocolDisposition::Pending)
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct FrontierClosure {
     pub(crate) accepted: BTreeSet<ChangeHash>,
@@ -67,7 +89,10 @@ pub(crate) fn accepted_frontier_closure(
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
-    use super::{FrontierClosure, ParentFrontierReference, accepted_frontier_closure};
+    use super::{
+        FrontierClosure, ParentFrontierReference, accepted_frontier_closure,
+        reasoned_frontier_disposition,
+    };
     use crate::{ChangeHash, ProtocolDisposition};
 
     fn hash(value: u8) -> ChangeHash {
@@ -169,6 +194,17 @@ mod tests {
     fn genuinely_missing_head_remains_pending() {
         assert_eq!(
             ParentFrontierReference::Missing.dependent_disposition(),
+            Some(ProtocolDisposition::Pending)
+        );
+    }
+
+    #[test]
+    fn statefully_pending_head_remains_pending() {
+        let pending = hash(21);
+        assert_eq!(
+            reasoned_frontier_disposition([pending], |_| {
+                ParentFrontierReference::PendingUnderParent
+            }),
             Some(ProtocolDisposition::Pending)
         );
     }
