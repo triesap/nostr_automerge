@@ -411,6 +411,16 @@ impl ReferenceEvaluator {
                 u64::try_from(dispositions.len()).unwrap_or(u64::MAX),
             )
             .map_err(|_| EvaluationError::ReportInvariant)?;
+        let finalized_events = disposition_records
+            .iter()
+            .filter(|record| matches!(record.identifier(), ProtocolItemIdentifier::Event(_)))
+            .count();
+        finalization
+            .consume(
+                FinalizationDimension::Events,
+                u64::try_from(finalized_events).unwrap_or(u64::MAX),
+            )
+            .map_err(|_| EvaluationError::ReportInvariant)?;
         finalization
             .refund(budget)
             .map_err(|_| EvaluationError::ReportInvariant)?;
