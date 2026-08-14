@@ -504,6 +504,7 @@ fn additional_prior_knowledge(
                         continue;
                     };
                     saw_claim = true;
+                    charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
                     match corpus.events.get(&claim.control_id) {
                         Some(EventEvidence::UnsupportedRevision { .. }) => {
                             all_invalid = false;
