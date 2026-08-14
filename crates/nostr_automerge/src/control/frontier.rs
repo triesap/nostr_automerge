@@ -218,4 +218,14 @@ mod tests {
             Some(ProtocolDisposition::Invalid)
         );
     }
+
+    #[test]
+    fn excluded_head_rejects_the_frontier() {
+        assert_eq!(
+            reasoned_frontier_disposition([hash(23)], |_| {
+                ParentFrontierReference::ExcludedUnderParent
+            }),
+            Some(ProtocolDisposition::Invalid)
+        );
+    }
 }
