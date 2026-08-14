@@ -9,26 +9,18 @@ use crate::{ChangeHash, DocumentCoordinate, EventId};
 pub(crate) struct DocumentEvidenceView<'a> {
     corpus: &'a EvidenceCorpus,
     coordinate: DocumentCoordinate,
-    reportable_event_ids: BTreeSet<EventId>,
-    support_event_ids: BTreeSet<EventId>,
+    reportable_event_ids: Option<&'a BTreeSet<EventId>>,
+    support_event_ids: Option<&'a BTreeSet<EventId>>,
 }
 
 impl<'a> DocumentEvidenceView<'a> {
     pub(crate) fn derive(corpus: &'a EvidenceCorpus, coordinate: DocumentCoordinate) -> Self {
-        let reportable_event_ids = corpus
-            .indexes
-            .coordinates
-            .events
-            .get(&coordinate)
-            .cloned()
-            .unwrap_or_default();
+        let reportable_event_ids = corpus.indexes.coordinates.events.get(&coordinate);
         let support_event_ids = corpus
             .indexes
             .coordinates
             .lifecycle_support
-            .get(&coordinate)
-            .cloned()
-            .unwrap_or_default();
+            .get(&coordinate);
         Self {
             corpus,
             coordinate,
@@ -45,22 +37,28 @@ impl<'a> DocumentEvidenceView<'a> {
         self.coordinate
     }
 
-    pub(crate) fn reportable_event_ids(&self) -> &BTreeSet<EventId> {
-        &self.reportable_event_ids
+    pub(crate) fn reportable_event_ids(&self) -> impl Iterator<Item = &EventId> {
+        self.reportable_event_ids.into_iter().flatten()
     }
 
     pub(crate) fn contains_reportable(&self, event_id: &EventId) -> bool {
-        self.reportable_event_ids.contains(event_id)
+        self.reportable_event_ids
+            .is_some_and(|events| events.contains(event_id))
     }
 
     pub(crate) fn contains_input(&self, event_id: &EventId) -> bool {
-        self.reportable_event_ids.contains(event_id) || self.support_event_ids.contains(event_id)
+        self.reportable_event_ids
+            .is_some_and(|events| events.contains(event_id))
+            || self
+                .support_event_ids
+                .is_some_and(|events| events.contains(event_id))
     }
 
     pub(crate) fn input_event_ids(&self) -> impl Iterator<Item = EventId> + '_ {
         self.reportable_event_ids
-            .iter()
-            .chain(&self.support_event_ids)
+            .into_iter()
+            .flatten()
+            .chain(self.support_event_ids.into_iter().flatten())
             .copied()
     }
 
@@ -86,13 +84,17 @@ impl<'a> DocumentEvidenceView<'a> {
             .get(&hash)
             .into_iter()
             .flat_map(|claims| claims.keys())
-            .filter(|event_id| self.reportable_event_ids.contains(event_id))
+            .filter(|event_id| {
+                self.reportable_event_ids
+                    .is_some_and(|events| events.contains(event_id))
+            })
             .copied()
     }
 
     pub(crate) fn control_count(&self) -> usize {
         self.reportable_event_ids
-            .iter()
+            .into_iter()
+            .flatten()
             .filter(|event_id| {
                 matches!(
                     self.corpus.events.get(event_id),
@@ -138,7 +140,8 @@ impl<'a> DocumentEvidenceView<'a> {
     pub(crate) fn decode_work_bytes(&self) -> Option<u64> {
         let mut seen = BTreeSet::<ChangeHash>::new();
         self.reportable_event_ids
-            .iter()
+            .into_iter()
+            .flatten()
             .try_fold(0_u64, |total, event_id| {
                 let Some(EventEvidence::VerifiedCarrier {
                     carrier: VerifiedCarrier::Change(change),
@@ -155,13 +158,16 @@ impl<'a> DocumentEvidenceView<'a> {
     }
 
     pub(crate) fn selected_manifest(&self) -> Option<ManifestSelection> {
-        self.corpus
-            .selected_manifest_selection_in(self.coordinate, &self.reportable_event_ids)
+        self.reportable_event_ids.and_then(|event_ids| {
+            self.corpus
+                .selected_manifest_selection_in(self.coordinate, event_ids)
+        })
     }
 
     pub(crate) fn records(&self) -> impl Iterator<Item = EvidenceRecord> + '_ {
         self.reportable_event_ids
-            .iter()
+            .into_iter()
+            .flatten()
             .filter_map(|event_id| self.corpus.record_for_event(event_id))
             .chain(
                 self.corpus

@@ -795,7 +795,6 @@ fn event_disposition_records(
     let corpus = view.corpus();
     let represented_events = view
         .reportable_event_ids()
-        .iter()
         .filter(|event_id| {
             matches!(
                 corpus.events.get(event_id),
