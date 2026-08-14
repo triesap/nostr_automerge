@@ -5194,6 +5194,59 @@ fn orphan_checkpoint_chunk_promotes_after_descriptor_arrival() {
 
 #[test]
 #[allow(clippy::expect_used)]
+fn descriptor_reference_evidence_delivery_permutations_converge() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../fixtures/v1_draft/scenarios/checkpoints/checkpoints_single_chunk.input.json"
+    ))
+    .expect("signed checkpoint scenario");
+    let coordinate: DocumentCoordinate = fixture["coordinate"]
+        .as_str()
+        .expect("fixture coordinate")
+        .parse()
+        .expect("valid fixture coordinate");
+    let raw_events = fixture["raw_events"]
+        .as_array()
+        .expect("fixture raw events");
+    let orders = [
+        vec![0, 1, 2, 3],
+        vec![3, 2, 1, 0],
+        vec![3, 0, 2, 1],
+        vec![2, 3, 0, 1],
+        vec![3, 3, 2, 1, 0],
+    ];
+    let evaluate = |order: &[usize]| {
+        let mut builder = CorpusBuilder::new();
+        for index in order {
+            let data = raw_events[*index]["data"]
+                .as_str()
+                .expect("signed event bytes");
+            assert!(matches!(
+                builder.ingest_bytes(data.as_bytes()),
+                IngestOutcome::Accepted { .. } | IngestOutcome::Duplicate { .. }
+            ));
+        }
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+            &builder.finish(),
+            coordinate,
+            &mut WorkBudget::new(1_000_000, 1_000_000),
+            &NeverCancelled,
+        )
+    };
+    let baseline = evaluate(&orders[0]);
+    for order in &orders[1..] {
+        let report = evaluate(order);
+        assert_eq!(report.canonical_controls(), baseline.canonical_controls());
+        assert_eq!(report.disposition_records(), baseline.disposition_records());
+        assert_eq!(report.checkpoints(), baseline.checkpoints());
+        assert_eq!(report.heads(), baseline.heads());
+        assert_eq!(report.history_digest(), baseline.history_digest());
+        assert_eq!(report.dispositions_digest(), baseline.dispositions_digest());
+        assert_eq!(report.document(), baseline.document());
+    }
+}
+
+#[test]
+#[allow(clippy::expect_used)]
 fn signed_empty_history_checkpoint_verifies_without_redefining_history() {
     let controller = TestSigner::from_byte(60);
     let checkpoint_signer = TestSigner::from_byte(61);
