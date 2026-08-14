@@ -431,6 +431,19 @@ impl ReferenceEvaluator {
                 u64::try_from(finalized_checkpoints).unwrap_or(u64::MAX),
             )
             .map_err(|_| EvaluationError::ReportInvariant)?;
+        let finalized_digests = batch
+            .canonical_controls
+            .len()
+            .saturating_add(accepted_changes.len())
+            .saturating_add(heads.len())
+            .saturating_add(disposition_records.len())
+            .saturating_add(8);
+        finalization
+            .consume(
+                FinalizationDimension::Digests,
+                u64::try_from(finalized_digests).unwrap_or(u64::MAX),
+            )
+            .map_err(|_| EvaluationError::ReportInvariant)?;
         finalization
             .refund(budget)
             .map_err(|_| EvaluationError::ReportInvariant)?;
@@ -1708,7 +1721,7 @@ impl ReportFinalizationPlan {
         let hashes = u64::try_from(view.change_hash_count()).map_err(|_| ())?;
         let digests = events
             .checked_add(controls)
-            .and_then(|value| value.checked_add(hashes))
+            .and_then(|value| value.checked_add(hashes.checked_mul(3)?))
             .and_then(|value| value.checked_add(8))
             .ok_or(())?;
         let plan = Self {
