@@ -1,16 +1,16 @@
 # Remediation V6 Execution Ledger
 
 Status: active — `implementation_remediation_required`
-Active RCLD: 58
-Active step: `step_889`
+Active RCLD: 59
+Active step: `step_917`
 Range: `step_861` through `step_1058`
 
 | RCLD | Steps | Status | Scope |
 | ---: | ---: | --- | --- |
 | 56 | 861–870 | complete | authority and baseline |
 | 57 | 871–888 | complete | change-claim authorization |
-| 58 | 889–916 | active | control-relationship resolution |
-| 59 | 917–936 | pending | checkpoint descriptor-reference resolution |
+| 58 | 889–916 | complete | control-relationship resolution |
+| 59 | 917–936 | active | checkpoint descriptor-reference resolution |
 | 60 | 937–964 | pending | exact resource accounting |
 | 61 | 965–1001 | pending | signed conformance v7 |
 | 62 | 1002–1018 | pending | semantic requirement evidence v7 |
@@ -49,6 +49,34 @@ Range: `step_861` through `step_1058`
 | `step_886` | `e993c44` | Equivocation-excluded and pending duplicate claims are covered by a signed fixture. |
 | `step_887` | `4bdf7cc3` | The independent TypeScript target implements the same reasoned claim semantics. |
 | `step_888` | current commit | Seven signed scenarios produced byte-identical Rust and TypeScript reports, closing RCLD 57. |
+| `step_889` | `31f44e2` | Exhaustive parent-reference states were defined. |
+| `step_890` | `53fd294` | Every parent-reference state has a table-driven dependent outcome. |
+| `step_891` | `63bde36` | Parent identities and retained evidence classes are indexed separately from absence. |
+| `step_892` | `a28daec` | Control-parent validation now resolves retained evidence through the shared boundary. |
+| `step_893` | `704d7be` | Truly absent parents retain a pending child outcome. |
+| `step_894` | `955fe7c` | Pending parent outcomes propagate through descendants. |
+| `step_895` | `824e2aa` | Present wrong-kind parent evidence invalidates the child. |
+| `step_896` | `d7c715b` | Present wrong-coordinate parent evidence invalidates the child. |
+| `step_897` | `fcca471` | Present statically invalid parent evidence invalidates the child. |
+| `step_898` | `b3240ef` | Unsupported parent revisions invalidate draft-v1 children. |
+| `step_899` | `40b634f` | Dynamically invalid parent state propagates through descendants. |
+| `step_900` | `c514016` | Valid noncanonical ancestry is retained as statefully valid before exclusion. |
+| `step_901` | `b19e4e3` | Exhaustive base-head knowledge and dependent outcomes were defined. |
+| `step_902` | `afa1517` | Parent views now retain accepted and nonaccepted frontier knowledge. |
+| `step_903` | `cdb678d` | Parent-accepted base-head traversal is locked. |
+| `step_904` | `6faed05` | Genuinely missing base heads remain pending. |
+| `step_905` | `fcae392` | Stateful pending base heads remain pending. |
+| `step_906` | `0e0d0d1` | Invalid base-head evidence rejects the child frontier. |
+| `step_907` | `94394e8` | Excluded base-head evidence rejects the child frontier. |
+| `step_908` | `dda7835` | Unsupported base-head evidence rejects the child frontier. |
+| `step_909` | `5d3c715` | Evidence known through another control rejects the child frontier. |
+| `step_910` | `7f739d0` | Deep pending ancestry reaches an order-independent fixed point. |
+| `step_911` | `4eb6271` | Deep invalid ancestry reaches an order-independent fixed point. |
+| `step_912` | `1ef1c1f` | A signed deep noncanonical branch is validated before exclusion. |
+| `step_913` | `39e80ea` | Lifecycle predecessor references distinguish missing from known unusable evidence. |
+| `step_914` | `7d20066` | Control outcomes are stable across reversed and duplicate deliveries. |
+| `step_915` | `f5e4392` | Six deterministic control-relationship mutation anchors are validated. |
+| `step_916` | current commit | The full Rust control-relationship gate passed, closing RCLD 58. |
 
 ## Execution Rules
 

@@ -1,0 +1,21 @@
+{
+  "schema": "nostr_automerge.remediation_v6_control.v1",
+  "status": "pass",
+  "scope": "reasoned_control_relationship_resolution",
+  "through_commit": "31e4845e11ef25c50122d7bf9c7583156f766758",
+  "parent_reference_states": 9,
+  "frontier_reference_states": 8,
+  "mutation_anchors": 6,
+  "signed_scenarios": 131,
+  "library_tests": 216,
+  "public_engine_tests": 102,
+  "conformance_runner_tests": 17,
+  "delivery_permutations": "pass",
+  "workspace_check": "pass",
+  "workspace_all_targets": "pass",
+  "workspace_clippy": "pass",
+  "workspace_docs": "pass",
+  "authority_validation": "pass",
+  "fixture_validation": "pass",
+  "provenance": "operator-local"
+}
