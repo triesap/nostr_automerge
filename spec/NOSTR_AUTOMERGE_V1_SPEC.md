@@ -390,3 +390,12 @@ invalid, or unsupported descriptor evidence makes the dependent draft-v1 chunk
 invalid. Binding, author, index, count, hash, proof, or set mismatch is invalid.
 An orphan chunk remains pending and promotes after its descriptor arrives; all
 events in one verified set receive mutually consistent dispositions.
+
+### Manifest attribution and replacement
+
+Before full validation, a validly signed kind-31624 event is attributable when
+all syntactically valid `d` values collapse to exactly one document ID. It then
+participates in NIP-01 replacement ordering. Full validation still rejects a
+missing, repeated, malformed, or extra-element `d` tag, and a selected invalid,
+pending, unsupported, or unavailable event suppresses fallback to older
+manifests. Zero or multiple distinct valid document IDs is unattributable.

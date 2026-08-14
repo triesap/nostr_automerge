@@ -70,3 +70,10 @@ unsupported, or dynamically unusable evidence is invalid. Require complete
 binding and set verification before acceptance, consistent event dispositions
 for a verified set, and promotion of a retained orphan after descriptor
 delivery.
+
+## Manifest attribution and replacement
+
+Attribute a signed kind-31624 event before full validation only when its valid
+`d` values identify exactly one document. Include it in replacement ordering,
+retain strict tag validation afterward, prohibit fallback from the selected
+event, and make zero or multiple distinct valid IDs unattributable.
