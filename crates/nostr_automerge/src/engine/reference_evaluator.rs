@@ -2179,12 +2179,16 @@ fn reserved_batch_report(
         .saturating_add(change_count)
         .saturating_add(event_count)
         .saturating_add(8);
-    let report =
-        prepare_interrupted_batch_report(revision, coordinate, batch, manifest, checkpoints)
-            .map_err(|error| settle_reserved_error(permit, error))?;
+    let report = prepare_interrupted_batch_report(
+        revision,
+        coordinate,
+        batch,
+        manifest,
+        checkpoints,
+        permit,
+    )
+    .map_err(|error| settle_reserved_error(permit, error))?;
     for (dimension, amount) in [
-        (FinalizationDimension::Controls, control_count),
-        (FinalizationDimension::Changes, change_count),
         (FinalizationDimension::Events, event_count),
         (FinalizationDimension::Checkpoints, checkpoint_count),
         (FinalizationDimension::Digests, digest_count),
@@ -2261,11 +2265,24 @@ fn prepare_interrupted_batch_report(
     batch: BatchEvaluationReport,
     manifest: ResolvedManifestAvailability,
     checkpoints: Vec<CheckpointVerificationResult>,
+    permit: &mut ReportFinalizationPermit,
 ) -> Result<EvaluationReport, EvaluationError> {
     if batch.completion == Completion::Complete {
         return Err(EvaluationError::ReportInvariant);
     }
+    permit
+        .consume_pass(FinalizationReservationUnit::new(
+            InterruptedReportPass::Controls,
+            u64::try_from(batch.control_dispositions.len()).unwrap_or(u64::MAX),
+        ))
+        .map_err(|_| EvaluationError::ReportInvariant)?;
     let control_dispositions = batch.control_dispositions.into_iter().collect::<Vec<_>>();
+    permit
+        .consume_pass(FinalizationReservationUnit::new(
+            InterruptedReportPass::Changes,
+            u64::try_from(batch.dispositions.len()).unwrap_or(u64::MAX),
+        ))
+        .map_err(|_| EvaluationError::ReportInvariant)?;
     let dispositions = batch.dispositions.into_iter().collect::<Vec<_>>();
     let mut disposition_records = control_dispositions
         .iter()
@@ -3226,7 +3243,7 @@ mod tests {
                 .and_then(|(_, rest)| rest.split_once(end))
                 .map(|(body, _)| body)
                 .unwrap_or_default();
-            assert!(wrapper.contains(".consume("));
+            assert!(wrapper.contains(".consume(") || wrapper.contains(".consume_pass("));
             assert!(!wrapper.contains("view."));
         }
     }
