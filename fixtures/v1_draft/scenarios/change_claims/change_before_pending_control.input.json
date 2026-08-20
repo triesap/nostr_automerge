@@ -20,9 +20,14 @@
         "disposition": "pending",
         "identifier": "f1c673624fc77eb7985227e315c1be4c4484e7d009c11005f76abdc913da83f9",
         "namespace": "change_hash"
+      },
+      {
+        "disposition": "pending",
+        "identifier": "602651e6607c55ebd7c6ed3337bbe4f16255898d6aab4ce78502c38fdef9688d",
+        "namespace": "event"
       }
     ],
-    "dispositions_digest": "f9fc7b4cec2d1bd93f9f1d30ee71da113cde94cb4eb5cc83c9262d0c565874f2",
+    "dispositions_digest": "4cf982bc8cbad1e4cd66601369ac9c51c586ca7ba099d466f2ea4d8e7d29c236",
     "excluded_changes": [],
     "fixture_id": "change_before_pending_control",
     "heads": [],

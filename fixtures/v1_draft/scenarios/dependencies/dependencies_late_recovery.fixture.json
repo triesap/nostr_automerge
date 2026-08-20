@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "dependencies_late_recovery.expected.json",
-    "sha256": "b1e3799b61f37e4f8b87ba7b96b5b084675a0bd4c3993195e6961daaafb3f553"
+    "sha256": "bfece2100bff857129aff718e4c261d1d589efd5f9ea568711694da4c44fef65"
   },
   "fixture_id": "dependencies_late_recovery",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "dependencies_late_recovery.input.json",
-      "sha256": "c78771df5685e4224b8350059baf16d076d6f5e6eb811b02cf5b22c603d56ae9"
+      "sha256": "a3f16b7b2a002d275c611115f7632540a4716fa48f915743a5fe8f1c35f72a50"
     }
   ],
   "provenance": {

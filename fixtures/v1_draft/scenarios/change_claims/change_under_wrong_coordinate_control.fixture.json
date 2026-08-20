@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "change_under_wrong_coordinate_control.expected.json",
-    "sha256": "8d504398face9331efae65e7893b387562b38fb826eb9e5bc408d8d149bf2350"
+    "sha256": "5ae8303a09533a26d5ee84ff78cdb17d616d890c5f38d8e9c9d8c3ff6484048e"
   },
   "fixture_id": "change_under_wrong_coordinate_control",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "change_under_wrong_coordinate_control.input.json",
-      "sha256": "bbea50a0d834dbdd74ad63a01b433891995083c248616fb773b4479824a43556"
+      "sha256": "1a129edba240240c922e481da247a0b83e3f6dcbb3727c2ff9c088f96b9d1fe8"
     }
   ],
   "provenance": {

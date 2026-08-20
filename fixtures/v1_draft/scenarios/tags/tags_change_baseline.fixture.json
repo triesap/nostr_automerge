@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "tags_change_baseline.expected.json",
-    "sha256": "ec0f6b3955e7fb91c7115b98731c69952b6bce20d8b314656c29fa3225ed94be"
+    "sha256": "9106ac96a3296038631268c1ee7f8ddd1373359a4dc319c9241cf2ff61e813a8"
   },
   "fixture_id": "tags_change_baseline",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "tags_change_baseline.input.json",
-      "sha256": "50181cd9b386329e1d145e229b112e024cc8f6aaf58b59b4df0e0e0f51713651"
+      "sha256": "88cee2c2477f0a7d02892ebd63a79c9cc931afaabd1489436778450d7b69539a"
     }
   ],
   "provenance": {

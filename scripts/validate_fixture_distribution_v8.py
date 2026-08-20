@@ -12,7 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "fixtures/distribution/manifest_v8.json"
 PROFILES = {"core", "checkpoint", "malformed", "property"}
-REQUIREMENTS_SHA256 = "95a80689b3e4d661a73867673994829e7060df67277120b2f16ee9f2dd16f9fd"
+REQUIREMENTS_SHA256 = "2432157fc76c70c1833210d7bac3ea410f5071f0ce6b0246bb59fbfefdee52c3"
 V8_REQUIREMENTS = {
     "change_references_invalid_noncanonical_child": ["NCRDT-BRANCH-001", "NCRDT-BRANCH-002", "NCRDT-CONF-008"],
     "manifest_references_invalid_noncanonical_child": ["NCRDT-BRANCH-001", "NCRDT-BRANCH-002", "NCRDT-CONF-008"],

@@ -53,11 +53,16 @@
       },
       {
         "disposition": "accepted",
+        "identifier": "9a0701b37736afc4c28c82bfdc94ddf53a3b054fecfa191f18ed94c14982ac7f",
+        "namespace": "event"
+      },
+      {
+        "disposition": "accepted",
         "identifier": "ff4a9f4602400bd54a34fd747494b3dbf0b6733149243772019d42b3e327e916",
         "namespace": "event"
       }
     ],
-    "dispositions_digest": "f065ccabae636743d8d1418d365cf087f6cf0aca054b4c1b68da9be996121569",
+    "dispositions_digest": "c442833f454e71e1824a84d15cc451926a30a6b1ebf5513ca775438146447d48",
     "excluded_changes": [],
     "fixture_id": "checkpoints_single_chunk",
     "heads": [

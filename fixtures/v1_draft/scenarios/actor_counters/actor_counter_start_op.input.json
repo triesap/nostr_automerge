@@ -22,9 +22,15 @@
         "disposition": "invalid",
         "identifier": "92f4dde50b1f86dbeb56debbe2bcded765fa0a76557e2162366c941b1ce4b47b",
         "namespace": "change_hash"
+      },
+      {
+        "diagnostic": "control.parent",
+        "disposition": "invalid",
+        "identifier": "58447bfb2232431b2c19a7d311f94930733918f05a9f58973c57e519ca7958a7",
+        "namespace": "event"
       }
     ],
-    "dispositions_digest": "0fa9dfa6571bb66f33d172e3a9d0d7806699dc61140163c56ba0b5d96b082bec",
+    "dispositions_digest": "152b97b80b1163454974f5231ba20f15ae66efc6c712eb832d4bed93ccc2dc05",
     "excluded_changes": [],
     "fixture_id": "actor_counter_start_op",
     "heads": [],

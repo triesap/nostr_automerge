@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "multi_epoch_child_epoch.expected.json",
-    "sha256": "17b2a201687b30ad336c998f6fe40101396768b01b70c3f29859c7a380014d41"
+    "sha256": "19090e1d7ed0eeb3cf5c08c42fea916acddd6c042040d9022b29b76a2c59d658"
   },
   "fixture_id": "multi_epoch_child_epoch",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "multi_epoch_child_epoch.input.json",
-      "sha256": "1bd94e292673d8684f7d76d182087c98df85043e32bc011ebf70f5a76b494ad9"
+      "sha256": "1321e840eb9c69751bd3d7aeca863d5c8361a649874096222885127f06f77d48"
     }
   ],
   "provenance": {

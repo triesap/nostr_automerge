@@ -9,8 +9,8 @@ Updated: 2026-08-20
 | 74 | 1102–1109 | complete | `GATE_V8_BRANCH` |
 | 75 | 1110–1117 | complete | `GATE_V8_SCOPE` |
 | 76 | 1118–1125 | complete | `GATE_V8_RESOURCE` |
-| 77 | 1126–1134 | active | `GATE_V8_DISPOSITION` |
-| 78 | 1135–1140 | planned | `GATE_V8_NIP` |
+| 77 | 1126–1134 | complete | `GATE_V8_DISPOSITION` |
+| 78 | 1135–1140 | active | `GATE_V8_NIP` |
 | 79 | 1141–1148 | planned | `GATE_V8_INTEROP` |
 | 80 | 1149–1157 | planned | `GATE_V8_FINAL` |
 
@@ -77,10 +77,31 @@ Updated: 2026-08-20
 - `step_1125` activated FINDING-068, passed zero, N-1, N, and cancellation
   settlement tests, recorded held mutation anchors, and closed
   `GATE_V8_RESOURCE`.
+- `step_1126` retained typed EventId, ChangeHash, control, disposition, and
+  reason state for each verified change carrier.
+- `step_1127` resolved carrier outcomes through authorization, referenced
+  control state, and branch-local hash results.
+- `step_1128` kept semantic ChangeHash reduction independent from carrier
+  outcomes and preserved valid-carrier dominance.
+- `step_1129` emitted one generic Event disposition for every attributable
+  verified change carrier.
+- `step_1130` enforced carrier coverage, uniqueness, hash consistency,
+  namespace separation, and canonical ordering.
+- `step_1131` bound carrier Event records into the existing dispositions
+  digest namespace and ordering.
+- `step_1132` retained report-schema compatibility and clarified canonical
+  carrier serialization authority.
+- `step_1133` activated FINDING-069 and passed mixed-carrier and delivery-order
+  regressions.
+- `step_1134` refreshed the 171 intentional canonical report changes, bound
+  carrier mutation anchors, retained source-mutating execution as held, passed
+  the full public workspace gate, and closed `GATE_V8_DISPOSITION`. The final
+  139-row validator self-mutations remain scheduled at `step_1151` after exact
+  evidence regeneration.
 
 ## Active checkpoint
 
-`step_1126` is next. No implementation checkpoint is active between commits.
+`step_1135` is next. No implementation checkpoint is active between commits.
 
 ## Holds
 

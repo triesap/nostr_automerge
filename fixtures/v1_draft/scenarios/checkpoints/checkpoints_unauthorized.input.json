@@ -49,9 +49,14 @@
         "disposition": "invalid",
         "identifier": "50ce8d1d30ad85acb4e82b875d232b801247f652036ef2226be6cb344f124791",
         "namespace": "event"
+      },
+      {
+        "disposition": "accepted",
+        "identifier": "9a0701b37736afc4c28c82bfdc94ddf53a3b054fecfa191f18ed94c14982ac7f",
+        "namespace": "event"
       }
     ],
-    "dispositions_digest": "1cde126e7794ed61dcd11cc3e809ddbddd1240bc405f5b3caafed6d0041c0778",
+    "dispositions_digest": "e58c5a24869062d049ba280a474ea5c14078388b5e5766b88658496735b28aef",
     "excluded_changes": [],
     "fixture_id": "checkpoints_unauthorized",
     "heads": [

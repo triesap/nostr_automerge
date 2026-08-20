@@ -32,9 +32,15 @@
         "disposition": "invalid",
         "identifier": "08a02ac819bd1f2a19fbbe1aca68a317d1673cb86fa580dcc5737b70addfc44d",
         "namespace": "change_hash"
+      },
+      {
+        "diagnostic": "control.parent",
+        "disposition": "invalid",
+        "identifier": "d11265ef063fa0bcc0d5176e7afd6a6354d5a7fc1c57b3187d73755f68c72c98",
+        "namespace": "event"
       }
     ],
-    "dispositions_digest": "ace71085bd5426825b8f2401b33acc5fbda7ceb6ac8ce88fe5ce7eae69d39075",
+    "dispositions_digest": "1b7781de1c937dfc00901bfaeb81b1f910b85389c6adbc86feb4aee112fbeff7",
     "excluded_changes": [],
     "fixture_id": "change_references_invalid_noncanonical_child",
     "heads": [],

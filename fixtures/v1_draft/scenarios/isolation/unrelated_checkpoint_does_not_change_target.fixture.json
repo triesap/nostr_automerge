@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "unrelated_checkpoint_does_not_change_target.expected.json",
-    "sha256": "462df18fbaeef3b3f1507c8d11d62c9822d71a88b6545e0f5b6beb9946b8c54e"
+    "sha256": "be4fae84bcaea32923eeac9f85fe76984158f794909336cc229f6d2fbfe0c964"
   },
   "fixture_id": "unrelated_checkpoint_does_not_change_target",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "unrelated_checkpoint_does_not_change_target.input.json",
-      "sha256": "b2c911ff7deda45ba4d7d7d5dac13601cf3a9bdbdb4782b8a538d63b4ab596ac"
+      "sha256": "1edda2942c78e2a69b4f3b5222353d3f466ff47955f3313d8ea1ca48c6b04155"
     }
   ],
   "provenance": {

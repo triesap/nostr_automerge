@@ -26,13 +26,24 @@
         "namespace": "change_hash"
       },
       {
+        "diagnostic": "control.parent",
+        "disposition": "invalid",
+        "identifier": "24131f50dfac5e6d85572e1ffb44846950aca38d4bd95ec1520d55f6a51e0022",
+        "namespace": "event"
+      },
+      {
+        "disposition": "accepted",
+        "identifier": "9474007fe802ac60f0272d9df58e79cbdd997e0ef719933b8c87cae66afb1987",
+        "namespace": "event"
+      },
+      {
         "diagnostic": "tag.required",
         "disposition": "invalid",
         "identifier": "f05d82df681256192ba0a9b79f2f4976dd9ffb3f022eeb127168ead4419a07f1",
         "namespace": "event"
       }
     ],
-    "dispositions_digest": "bb16117a77777d4ed23ec55b629d8a8b471f8ec6fd693c897c849622544cdfa1",
+    "dispositions_digest": "64a4bbfadf91e204a58ea66ccb066833612cba3652ef6ba8af7695cd4b9f65e5",
     "excluded_changes": [],
     "fixture_id": "invalid_claim_does_not_poison_valid_hash",
     "heads": [

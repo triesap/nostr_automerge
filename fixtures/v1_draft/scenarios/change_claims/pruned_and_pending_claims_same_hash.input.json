@@ -28,9 +28,19 @@
         "disposition": "excluded",
         "identifier": "66e18f31eb2b6e6082dc4496e68ccea9ce46515d89d6322a1b601c41fd257b07",
         "namespace": "change_hash"
+      },
+      {
+        "disposition": "pending",
+        "identifier": "2928125da36ee3e816aa861645498913a9e0a23e3dcc84a3991e2e58b369b235",
+        "namespace": "event"
+      },
+      {
+        "disposition": "excluded",
+        "identifier": "91e6937952db3037177b5cf8a26367c86e3570273cee2af7cf8dff2dacf786ee",
+        "namespace": "event"
       }
     ],
-    "dispositions_digest": "44bdedca0d8a121e77366d7f76665b47e950ad8cd8cd02cb75c3dd62839fa0fe",
+    "dispositions_digest": "3ea21b8040cb1eca7c989ea6ce4522893729909c8893c42c92401b5187f16cc5",
     "excluded_changes": [
       "66e18f31eb2b6e6082dc4496e68ccea9ce46515d89d6322a1b601c41fd257b07"
     ],

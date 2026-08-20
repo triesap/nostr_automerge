@@ -3390,9 +3390,10 @@ fn automerge_application_and_materialization_are_charged() {
     assert_eq!(report.completion(), Completion::BudgetExhausted);
     assert_eq!(report.accepted_changes(), [scenario.change_hash]);
     assert_eq!(report.history_digest(), measured_report.history_digest());
-    assert_eq!(
+    assert_ne!(
         report.dispositions_digest(),
-        measured_report.dispositions_digest()
+        measured_report.dispositions_digest(),
+        "the interrupted report has not finalized the carrier Event record"
     );
     assert!(report.document().is_none());
     assert_eq!(exhausted.consumed().get(WorkCounter::ApplyChange), 3);
@@ -5237,7 +5238,7 @@ fn signed_engine_scenario_with_roles(
 
 #[test]
 #[allow(clippy::expect_used)]
-fn unknown_change_tags_leave_canonical_report_unchanged() {
+fn unknown_change_tags_preserve_semantics_but_change_carrier_identity() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!(
         "../../../fixtures/v1_draft/tags/unknown_tag_invariance.json"
     ))
@@ -5267,10 +5268,21 @@ fn unknown_change_tags_leave_canonical_report_unchanged() {
     for extra in variants {
         let report = evaluate(signed_engine_scenario_with_change_tags(extra));
         assert_eq!(report.canonical_controls(), baseline.canonical_controls());
-        assert_eq!(report.disposition_records(), baseline.disposition_records());
+        assert_eq!(report.dispositions(), baseline.dispositions());
+        assert_eq!(report.accepted_changes(), baseline.accepted_changes());
         assert_eq!(report.heads(), baseline.heads());
         assert_eq!(report.history_digest(), baseline.history_digest());
-        assert_eq!(report.dispositions_digest(), baseline.dispositions_digest());
+        assert_ne!(report.dispositions_digest(), baseline.dispositions_digest());
+        let carrier_records = report
+            .disposition_records()
+            .iter()
+            .filter(|record| matches!(record.identifier(), ProtocolItemIdentifier::Event(_)))
+            .collect::<Vec<_>>();
+        assert_eq!(carrier_records.len(), 1);
+        assert_eq!(
+            carrier_records[0].disposition(),
+            ProtocolDisposition::Accepted
+        );
     }
 }
 

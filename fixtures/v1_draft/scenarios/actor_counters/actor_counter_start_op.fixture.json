@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "actor_counter_start_op.expected.json",
-    "sha256": "bd4ee9d2ded0e384087a848dfe02af8319a4eb3f98b2154e368411f960580d75"
+    "sha256": "031d9d844a19ddba1dc864e3cfda4c98c0ca0afc1c8e60e4ecd158b953b7e3db"
   },
   "fixture_id": "actor_counter_start_op",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "actor_counter_start_op.input.json",
-      "sha256": "a68060ef7bc515a447cb747607eaeee66ab15800b693fee950f08be9bf2075a8"
+      "sha256": "66c82ff3b5ef6d1e314e2af42f068b55c38fb14ea2c0c21e239befaf8575667e"
     }
   ],
   "provenance": {

@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "equivocation_duplicate_carriers.expected.json",
-    "sha256": "a6d17ce1a4a2da24f2c230908c9ccc5da106d17c1a6f78034623e22ca5306060"
+    "sha256": "8801657636ef01a41312a2f32c2523f6b2124c5ce3f8715c9d3cadc44c06f1e5"
   },
   "fixture_id": "equivocation_duplicate_carriers",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "equivocation_duplicate_carriers.input.json",
-      "sha256": "1d624ad436b823690227b8768fd89def959bb95a9da6ae9f881c36a7d6166a7a"
+      "sha256": "6697663ab907136aef6b43c448c4eaa5d8bbf47b4b9eb6cdb0ccb7f3cbe9b106"
     }
   ],
   "provenance": {

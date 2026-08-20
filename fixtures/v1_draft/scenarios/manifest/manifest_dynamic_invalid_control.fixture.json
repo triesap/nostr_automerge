@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "manifest_dynamic_invalid_control.input.json",
-      "sha256": "cebbb73c58576a4003defa4e7bee92031cfd9ff89eaa721120dddddd256fe7c2"
+      "sha256": "cfd22c0fb34ba59adc4195c24741e63da5eb270dd53bdabe899eed865718e61f"
     }
   ],
   "provenance": {

@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "child_base_head_is_known_excluded.expected.json",
-    "sha256": "7d1e392a7f5f89b1782b3c7cc53073b168e41afa860dd77fa5462cb1f146addd"
+    "sha256": "446135d83b169d87d95fcbee4bc161c7262ba28e5b79804258321281b6a216b8"
   },
   "fixture_id": "child_base_head_is_known_excluded",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "child_base_head_is_known_excluded.input.json",
-      "sha256": "cc137fde785d84743ad2010ead1b577c9136fa3f6c32253b8c51f7f2f725cdd3"
+      "sha256": "c2eb0103b62ab9fad1387338d1894c18d5f2a5398ce97a356ed58bee861f7d22"
     }
   ],
   "provenance": {

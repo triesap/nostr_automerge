@@ -34,9 +34,24 @@
         "disposition": "excluded",
         "identifier": "d14b8544c4ea94b25b42fd507c1b30e95863258220dde2afbb5bec6808495565",
         "namespace": "change_hash"
+      },
+      {
+        "disposition": "accepted",
+        "identifier": "9e1cd358a227f8f60c895135088830f3fb043689e62b57f8aed7b359fcc632ef",
+        "namespace": "event"
+      },
+      {
+        "disposition": "excluded",
+        "identifier": "c13086045a0544e4eb9556a8b0b44efbab87c8f21387a6483206990f6916460a",
+        "namespace": "event"
+      },
+      {
+        "disposition": "excluded",
+        "identifier": "fbbc886a4badea35f5bf09f638577c73fff56e8940e5221c61509c961145caf0",
+        "namespace": "event"
       }
     ],
-    "dispositions_digest": "993f04e3a5d297f11829c0dd3232e37baccca3ecec951818b7ffb489956c1f36",
+    "dispositions_digest": "d9fafa54e6521d5725c83e2298593abfcd2b8e09ad275229378b1635e543ed21",
     "excluded_changes": [
       "11b5633c0b903ca38189529328073709cb9062bf15e998c9df912a4e2447ee28",
       "d14b8544c4ea94b25b42fd507c1b30e95863258220dde2afbb5bec6808495565"

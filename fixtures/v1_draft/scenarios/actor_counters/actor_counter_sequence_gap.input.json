@@ -22,9 +22,15 @@
         "disposition": "invalid",
         "identifier": "14a2f4608522cc384905d9c82ebbffb274b7d2e82a972e5188d980e814ccf1fa",
         "namespace": "change_hash"
+      },
+      {
+        "diagnostic": "control.parent",
+        "disposition": "invalid",
+        "identifier": "be159e8bdd8ed43651af718ce61e0a1d1ea8df9738cea0f6b15c58b8e0256eb9",
+        "namespace": "event"
       }
     ],
-    "dispositions_digest": "6e6ca380be719c9876001467dc4cc4eddb2f5b80dee71c55de73acf894df4b49",
+    "dispositions_digest": "9dc098a05e8ee87d2a1ebdee008c7cde3aa18bf4b7002497e6d5df6ce93db85d",
     "excluded_changes": [],
     "fixture_id": "actor_counter_sequence_gap",
     "heads": [],

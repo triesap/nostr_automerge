@@ -29,13 +29,19 @@
         "namespace": "change_hash"
       },
       {
+        "diagnostic": "control.parent",
+        "disposition": "invalid",
+        "identifier": "51e258de61498fe11a24869e1560fd4d7301874ad07485e8379d75526290c6dd",
+        "namespace": "event"
+      },
+      {
         "diagnostic": "carrier.revision",
         "disposition": "unsupported_revision",
         "identifier": "dc00d61135a0e12b8a8014b1c673c9c90b8912c1802ef2a878d3ad7571847cb4",
         "namespace": "event"
       }
     ],
-    "dispositions_digest": "6ed0225a585b998d28ddeefe414ac5e8423da0ca0dfcb48fa745eae8e51cbed3",
+    "dispositions_digest": "72bc199b9f899d518101dcd6ab58b85d55fe35a3d7703070ae18402fff699117",
     "excluded_changes": [],
     "fixture_id": "child_base_head_is_known_unsupported",
     "heads": [],

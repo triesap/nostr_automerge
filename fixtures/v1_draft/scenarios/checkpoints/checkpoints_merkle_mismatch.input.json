@@ -53,13 +53,18 @@
         "namespace": "event"
       },
       {
+        "disposition": "accepted",
+        "identifier": "9a0701b37736afc4c28c82bfdc94ddf53a3b054fecfa191f18ed94c14982ac7f",
+        "namespace": "event"
+      },
+      {
         "diagnostic": "checkpoint.merkle",
         "disposition": "invalid",
         "identifier": "f95405deeca0eefb2ad381456396ccd8b88b332b9d275906bf387e7f68be9743",
         "namespace": "event"
       }
     ],
-    "dispositions_digest": "e1771d5c11b34dd3b0edf541fbca79eb10515b2284cabe1a9fc60aacd602c745",
+    "dispositions_digest": "1017ff720ba92e412bb2e9b04351ffc85b1a564749aca9778a1ec6dc28f01f39",
     "excluded_changes": [],
     "fixture_id": "checkpoints_merkle_mismatch",
     "heads": [

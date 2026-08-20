@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "unrelated_valid_checkpoints_exact_budget.input.json",
-      "sha256": "6ff521b8e97215b0c6508ce708f58d00bb9c167c71c31d86b00ab923dcd29f75"
+      "sha256": "fcbca644e11bbb233197596d4a58761fd0a9bdb47e6cedf50a36ac7e90a62aa4"
     }
   ],
   "provenance": {

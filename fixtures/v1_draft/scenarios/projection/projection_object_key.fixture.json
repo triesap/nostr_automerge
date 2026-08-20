@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "projection_object_key.expected.json",
-    "sha256": "09a3681f7b1af70dfaf615770527b2e6064fed8ad1f0566ce557b4d7c73d6618"
+    "sha256": "144b4140ec0fc0ecdcfcb232ee7101373d911dfccb12be63b7ff4c24192c2d8f"
   },
   "fixture_id": "projection_object_key",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "projection_object_key.input.json",
-      "sha256": "17d01123ebeeb1befad158dda001ea5db3d16a1d2f8aa9caa4c9aac8bc852d5d"
+      "sha256": "4825bd519346ab7044797f19b9641d01aca2c9ac5d7417888873cac87cb09f32"
     }
   ],
   "provenance": {

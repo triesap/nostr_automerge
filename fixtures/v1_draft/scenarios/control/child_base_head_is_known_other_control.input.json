@@ -32,9 +32,14 @@
         "disposition": "excluded",
         "identifier": "9bbda19a2762c3feb610ade075bc0a821ee0adfd04111941a2e24b29237f0d7e",
         "namespace": "change_hash"
+      },
+      {
+        "disposition": "excluded",
+        "identifier": "810d1d1992f7af995e8ff10f421edfb3ef07db8dff11cfad8df17681adbadf11",
+        "namespace": "event"
       }
     ],
-    "dispositions_digest": "edaaaa25f317665cab4467beb826f27d813c6a5528c11424d11d2e850b2f0923",
+    "dispositions_digest": "a265d90f8a64f2321fd88eade46eef9d4c63029981fb235ae12dc686e962767f",
     "excluded_changes": [
       "9bbda19a2762c3feb610ade075bc0a821ee0adfd04111941a2e24b29237f0d7e"
     ],

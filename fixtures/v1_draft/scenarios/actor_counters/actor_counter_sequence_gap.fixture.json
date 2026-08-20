@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "actor_counter_sequence_gap.expected.json",
-    "sha256": "0026a3d1e0567d8516f87b18fed9b1307f6a557a0ceb8a8a32f11208385f0c2e"
+    "sha256": "a2eb68cbf7e18eef617c1e967a3f0e0e89efafdf3e8abd0dfbd58f2b6dba693d"
   },
   "fixture_id": "actor_counter_sequence_gap",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "actor_counter_sequence_gap.input.json",
-      "sha256": "43ae0ae712a467094fa3e826e7757083c4af77f46571595aef329a974488176a"
+      "sha256": "e0cf59c5a0e8f1d34c327f600b78931a10c767a5b53525d1128cecce44fec95e"
     }
   ],
   "provenance": {

@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "projection_all_scalars.expected.json",
-    "sha256": "95f62a5104175edb0e8e9cdc337c4179926741f8bda0c4b2d29bc1e170024d9a"
+    "sha256": "87521427ebf972e2f6c6252df6acd2b149237fb63e24738c781d51da0418666a"
   },
   "fixture_id": "projection_all_scalars",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "projection_all_scalars.input.json",
-      "sha256": "6be75d4ac6f0c5c13d589db9231507692f843099440a15bf1ab6e5f70788c17f"
+      "sha256": "abe4a3dd8fd3c90481ee6c19b942940b926b5ef3ea544ad704ddd96fbd54cf2a"
     }
   ],
   "provenance": {

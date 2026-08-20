@@ -21,9 +21,15 @@
         "disposition": "unsupported_revision",
         "identifier": "e9ccf71f568a787c7dfe90e4dcb78cbcf89aabb03fbc9a9610bb1ecf6b3f45eb",
         "namespace": "event"
+      },
+      {
+        "diagnostic": "control.parent",
+        "disposition": "invalid",
+        "identifier": "fc79b7d1b7fba8a8997f3d21e3b755e239143e703db50f41c9558b7f80c538dc",
+        "namespace": "event"
       }
     ],
-    "dispositions_digest": "f4117e594169b83f408bbbc5c9965dceede11ecf44b021eb3f1de5f3646c95a7",
+    "dispositions_digest": "cff222ecea91b2caa89cb8d892f3350ce9d70bfeffb0608f2e7d8cac087dd403",
     "excluded_changes": [],
     "fixture_id": "change_references_unsupported_control",
     "heads": [],

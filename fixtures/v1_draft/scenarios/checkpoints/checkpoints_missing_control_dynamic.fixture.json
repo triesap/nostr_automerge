@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "checkpoints_missing_control_dynamic.expected.json",
-    "sha256": "2f74af89c708b77e3630c022e084734a56bbcf56a383cb13a98d27e5a1dc735a"
+    "sha256": "5e5ab45ce7784543b72aa5ff9ccd460f5eb23c40bcfaac0474fd0e88faf90b0b"
   },
   "fixture_id": "checkpoints_missing_control_dynamic",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "checkpoints_missing_control_dynamic.input.json",
-      "sha256": "8abc595afa9c54ae1c3b4c12f81f673d2acfa5253b88649fe1fe1087c8a910ca"
+      "sha256": "08bc9cadb1354feb32876c6ad3932dc3e37b9daf5c23b1f57aad425e8f56d577"
     }
   ],
   "provenance": {

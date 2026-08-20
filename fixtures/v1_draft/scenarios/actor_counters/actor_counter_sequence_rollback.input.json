@@ -29,9 +29,20 @@
         "disposition": "accepted",
         "identifier": "6dde49dac41ed194b0afa8594e7b18bb4d010a8bf907864415117ea8f9f62ea1",
         "namespace": "change_hash"
+      },
+      {
+        "disposition": "accepted",
+        "identifier": "61f46cf52c90b65671602df71f2c98ba9208cc94b1a380f92d9c31418932fde3",
+        "namespace": "event"
+      },
+      {
+        "diagnostic": "control.parent",
+        "disposition": "invalid",
+        "identifier": "8616c1b7d8ad4226ef3b5d5b23e1cd838b15665e6ac0c8d59f9dec772407d0d7",
+        "namespace": "event"
       }
     ],
-    "dispositions_digest": "726d32de5c2e6090899d3be22c28d433b32c11a886580d8704d7027e8f9de77d",
+    "dispositions_digest": "20c62dd1c5fc10284e5f91cb80e93780318171ebf8d00416ebf270cd91e0a87d",
     "excluded_changes": [],
     "fixture_id": "actor_counter_sequence_rollback",
     "heads": [

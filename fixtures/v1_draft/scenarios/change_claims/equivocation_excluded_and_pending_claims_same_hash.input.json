@@ -27,9 +27,24 @@
         "disposition": "excluded",
         "identifier": "cf0788b5d86508626d7c7a2e3b20a049ff15f1da63dcbff86e33b264f83351b6",
         "namespace": "change_hash"
+      },
+      {
+        "disposition": "excluded",
+        "identifier": "7cc8ac969243fb0586215b3eeac3e12a0e98ec94b081d71a80c8d626d0802aed",
+        "namespace": "event"
+      },
+      {
+        "disposition": "excluded",
+        "identifier": "9a5c57548468e93a848c9cb43ee0999196442ad41b42fc214714a754804b72d6",
+        "namespace": "event"
+      },
+      {
+        "disposition": "pending",
+        "identifier": "a64448f6dabee98c3424a935e4d6df1ea7b19e467183de14b22b1d00e1680598",
+        "namespace": "event"
       }
     ],
-    "dispositions_digest": "7907848df1fd1b2fcf8e3ea84bf500c4f8442e27f1148e5fa74a3b8c5b04e97a",
+    "dispositions_digest": "7ebb1682aabeaafcf47f48b6edd332a853253aa5e4945f5c24c06a443e5dcf8d",
     "excluded_changes": [
       "cf0788b5d86508626d7c7a2e3b20a049ff15f1da63dcbff86e33b264f83351b6"
     ],

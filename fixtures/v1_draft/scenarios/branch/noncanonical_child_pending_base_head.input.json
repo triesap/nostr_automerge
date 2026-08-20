@@ -32,9 +32,14 @@
         "disposition": "pending",
         "identifier": "6458b15fc63750b92d18900f214982746897cfb5b3c14c0ea23ffe85f332213a",
         "namespace": "change_hash"
+      },
+      {
+        "disposition": "pending",
+        "identifier": "d94a096315d0eeb9ca2b2b6afeccfc862f239e4a694e1a1448e7a98c86d23695",
+        "namespace": "event"
       }
     ],
-    "dispositions_digest": "bacc366fd9c67d884d80d40e7bdda4d23566ed4f7c75151b71a5340a8891bd26",
+    "dispositions_digest": "3426bfa1e85667e139e25bb761d7ab34e9cea2cecebf178f1f6a4e2bccb4b014",
     "excluded_changes": [],
     "fixture_id": "noncanonical_child_pending_base_head",
     "heads": [],

@@ -67,6 +67,11 @@
       },
       {
         "disposition": "accepted",
+        "identifier": "9a0701b37736afc4c28c82bfdc94ddf53a3b054fecfa191f18ed94c14982ac7f",
+        "namespace": "event"
+      },
+      {
+        "disposition": "accepted",
         "identifier": "a434c59b9440643942d6289d49582c763d22573afac19ce267b1031cfef12278",
         "namespace": "event"
       },
@@ -81,7 +86,7 @@
         "namespace": "event"
       }
     ],
-    "dispositions_digest": "48be2ee6a6bb859adcfe584efaedca37de7cbb5c33b512011a36e52f9da8dfff",
+    "dispositions_digest": "785452bbe8ec19c2c9586bebbf165600bf14f26d2915f5efcc4d0f70e856f754",
     "excluded_changes": [],
     "fixture_id": "checkpoints_multichunk",
     "heads": [

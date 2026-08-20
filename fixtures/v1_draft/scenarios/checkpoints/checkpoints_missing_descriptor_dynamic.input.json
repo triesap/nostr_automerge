@@ -29,9 +29,14 @@
         "disposition": "pending",
         "identifier": "55193223180b465fcecbf279be3eca5c26e1ba643047abcf9611eaa80922689e",
         "namespace": "event"
+      },
+      {
+        "disposition": "accepted",
+        "identifier": "9a0701b37736afc4c28c82bfdc94ddf53a3b054fecfa191f18ed94c14982ac7f",
+        "namespace": "event"
       }
     ],
-    "dispositions_digest": "6fa21ccd48b19e068cd51ec13f83dd84d887241790bd2cce1f5dbcf882e68e9b",
+    "dispositions_digest": "0bfc999fbb48d312f46c3bafcf9deb51a1ebb18ce32c9d8c62c86ef256f169e1",
     "excluded_changes": [],
     "fixture_id": "checkpoints_missing_descriptor_dynamic",
     "heads": [

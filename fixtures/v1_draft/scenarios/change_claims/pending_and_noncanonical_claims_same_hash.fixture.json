@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "pending_and_noncanonical_claims_same_hash.expected.json",
-    "sha256": "998b5bc473cfa7e9cd7189a6fd4e5e28c16321c9238b86321225110ff6e2b80b"
+    "sha256": "6740754d8e971e727c95f72ef6d8add456f3d833242a2bc241f6477e8d8e9877"
   },
   "fixture_id": "pending_and_noncanonical_claims_same_hash",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "pending_and_noncanonical_claims_same_hash.input.json",
-      "sha256": "143b4411a45c5fb73dbc7972d1226480f37704c1823eb93d9cdaedf112e4b325"
+      "sha256": "84a17ef5beb1fa32f6473f8bbb7000a62fc01fa18b67c46d0335c2dff5b8e68d"
     }
   ],
   "provenance": {

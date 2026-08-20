@@ -31,6 +31,23 @@
         "prepare_interrupted_batch_report",
         "forfeit_all_remaining"
       ]
+    },
+    {
+      "finding": "FINDING_069",
+      "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+      "symbols": [
+        "ChangeCarrierOutcome",
+        "change_carrier_dispositions",
+        "event_disposition_records"
+      ]
+    },
+    {
+      "finding": "FINDING_069",
+      "path": "crates/nostr_automerge/src/conformance/dispositions_digest.rs",
+      "symbols": [
+        "DispositionNamespace::Event",
+        "disposition_items"
+      ]
     }
   ],
   "campaign_executed": false,

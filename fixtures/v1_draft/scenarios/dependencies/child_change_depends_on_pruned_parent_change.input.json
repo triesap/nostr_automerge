@@ -40,9 +40,25 @@
         "disposition": "invalid",
         "identifier": "deb8e1aa89c41643b819fc4bee543c526ad127a672ecd7cdf9ed31eeb708dcc9",
         "namespace": "change_hash"
+      },
+      {
+        "disposition": "accepted",
+        "identifier": "3734163273a55e8d8d3c89919e6aaff3409cbeb033e597f25b355b9da1552043",
+        "namespace": "event"
+      },
+      {
+        "disposition": "excluded",
+        "identifier": "c6b73d7be45cfa595ab72c9d3b35f7c1fd80d58695e4a168b8730923aab608f7",
+        "namespace": "event"
+      },
+      {
+        "diagnostic": "control.parent",
+        "disposition": "invalid",
+        "identifier": "f00421612dccaa49f5f10aa2a69da92776e768f295c1d17563935a2704ca9647",
+        "namespace": "event"
       }
     ],
-    "dispositions_digest": "d6518e5c8e5f0008492707bcc3ef7e9c3e3c1aa0c561f0fcca2a147feac74ed8",
+    "dispositions_digest": "d2daab1225350e3faa055bb9504b27ebabbed6449cac5395bf1e19416d818888",
     "excluded_changes": [
       "3b71aae1eea67271e6e2a4250838457ce1fdc6715aaea1de977a5b3cfe0939c1"
     ],

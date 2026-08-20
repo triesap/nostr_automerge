@@ -13,10 +13,10 @@ Reviewed requirement registry SHA-256: `95a80689b3e4d661a73867673994829e7060df67
 Reviewed applicability SHA-256: `27c58584b6ab1627823fb620378f56a7038de21d7f38b6ed4baae5a64fafe87d`
 Reviewed distribution-v8 manifest SHA-256: `7f1c17d61d28857562ffbae68fa132efa3e052863434cc686b2a72234b614ada`
 Steps: `step_1096` through `step_1157` (62 contiguous checkpoints)
-Active RCLD: RCLD 77
-Active checkpoint: `step_1126`
-Next RCLD: RCLD 77
-Next checkpoint: `step_1126`
+Active RCLD: RCLD 78
+Active checkpoint: `step_1135`
+Next RCLD: RCLD 78
+Next checkpoint: `step_1135`
 
 ## Outcome
 
@@ -345,7 +345,7 @@ forfeited means it did not; the fallback is constant; all boundary tests pass.
 
 ## RCLD 77 — Carrier Event Dispositions
 
-Status: planned
+Status: complete
 Steps: `step_1126` through `step_1134`
 Gate: `GATE_V8_DISPOSITION`
 Depends on: RCLD 76
@@ -498,10 +498,9 @@ completion.
 
 ## Unfinished RCLDs
 
-- RCLD 77 — Carrier Event Dispositions
 - RCLD 78 — Local NIP Reconciliation
 - RCLD 79 — Signed Distribution V9 And Private Parity
 - RCLD 80 — Exact Evidence And Truthful Closure
 
-Thirty-two checkpoints remain unfinished. Execution continues with
-`step_1126`.
+Twenty-three checkpoints remain unfinished. Execution continues with
+`step_1135`.

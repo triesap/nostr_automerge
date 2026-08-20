@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "dependencies_base_omission.expected.json",
-    "sha256": "8a349ef9803c8f40b8314afb6e6d75eb8b69507d0dacbe796de98078a2db9e50"
+    "sha256": "ebaa008ce023d7265535fd2a433f8620b2aaab43aab0fb1eeaea5e480c4e3033"
   },
   "fixture_id": "dependencies_base_omission",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "dependencies_base_omission.input.json",
-      "sha256": "aee417972c99f7584724e4ee62ee19e970e695ec21dfa233879ad3af69b5b406"
+      "sha256": "92c38014f9301b354b784f5c9524dfe678dd4f667f082b0952dc14c5ac44bbc0"
     }
   ],
   "provenance": {

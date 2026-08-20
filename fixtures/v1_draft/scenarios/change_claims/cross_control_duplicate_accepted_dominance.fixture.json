@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "cross_control_duplicate_accepted_dominance.expected.json",
-    "sha256": "ef3a0e534aa0764fa75f51dd1db7c73e1c829882bec455d21ffe0b1a6cceef1a"
+    "sha256": "07155de4bb81743956a88f13410c781925f5e17a263428b373bd79c0f2c000a8"
   },
   "fixture_id": "cross_control_duplicate_accepted_dominance",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "cross_control_duplicate_accepted_dominance.input.json",
-      "sha256": "07ea4af660fe98fa77d634deacc0ce5d7eb1131cdea10a9da09ca0ba648f0034"
+      "sha256": "d7f594a623adbe0cf6c213418d2d02f078127b3f949ee76d5df1e21db34cf684"
     }
   ],
   "provenance": {

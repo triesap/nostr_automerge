@@ -17,12 +17,18 @@
         "namespace": "change_hash"
       },
       {
+        "diagnostic": "control.parent",
+        "disposition": "invalid",
+        "identifier": "3719be7acc167b4831bfcfac8871d587b0d012e8d497fc0035eba350b3687a53",
+        "namespace": "event"
+      },
+      {
         "disposition": "pending",
         "identifier": "a06486d648e027837bed6c0e774e8317c6284f7e4c98e2975f5b6fb2bb0fefd1",
         "namespace": "event"
       }
     ],
-    "dispositions_digest": "cf55e27dcb2bba52cf6c4352ee84fbafd8807e970bb230697f2e1fd50f79e3f8",
+    "dispositions_digest": "ff12b05ed70f22a4515804309685dcebd319c0ae61ec9c60d03721bc393cd07a",
     "excluded_changes": [],
     "fixture_id": "change_under_wrong_kind_control",
     "heads": [],

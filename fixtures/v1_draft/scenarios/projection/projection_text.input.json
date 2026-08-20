@@ -24,9 +24,14 @@
         "disposition": "accepted",
         "identifier": "0910d0b2399463ac6f083328273c5795bbf4f7a9dead518ff3b89bfeb5b4e6a5",
         "namespace": "change_hash"
+      },
+      {
+        "disposition": "accepted",
+        "identifier": "a6bea9b4219474c5feff07e53563e3d0279a7e47d3585ee0582144ca3f07f7b8",
+        "namespace": "event"
       }
     ],
-    "dispositions_digest": "e477d317a10f858f4e6729e74e8969894484c673947e1292330e01383ab7a318",
+    "dispositions_digest": "d6cde0ca92b7e3266adc51d76572b51f50ac1b24116680fd6d4092b23e4ad47e",
     "excluded_changes": [],
     "fixture_id": "projection_text",
     "heads": [

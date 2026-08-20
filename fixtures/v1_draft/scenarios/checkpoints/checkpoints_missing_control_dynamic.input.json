@@ -33,11 +33,16 @@
       },
       {
         "disposition": "pending",
+        "identifier": "9a0701b37736afc4c28c82bfdc94ddf53a3b054fecfa191f18ed94c14982ac7f",
+        "namespace": "event"
+      },
+      {
+        "disposition": "pending",
         "identifier": "e1aa168038cc70e73804e16bf1c9b38ef3ba29d92e9e62e3654b92ec2dbde079",
         "namespace": "event"
       }
     ],
-    "dispositions_digest": "1985f51639786f016e44bc41145c68244b0005bcb4037a5a63e772498a8135fb",
+    "dispositions_digest": "7ad3fdd06cddff1cf3de5f4d71496e49863707ebeb18e78c4b1ea3020e5b0237",
     "excluded_changes": [],
     "fixture_id": "checkpoints_missing_control_dynamic",
     "heads": [],

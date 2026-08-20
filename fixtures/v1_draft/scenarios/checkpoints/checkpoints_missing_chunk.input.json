@@ -48,9 +48,14 @@
         "disposition": "pending",
         "identifier": "9675163833edcdff33530ff9e0eced480e38dfc0a2b770adb6415e3c39b217ab",
         "namespace": "event"
+      },
+      {
+        "disposition": "accepted",
+        "identifier": "9a0701b37736afc4c28c82bfdc94ddf53a3b054fecfa191f18ed94c14982ac7f",
+        "namespace": "event"
       }
     ],
-    "dispositions_digest": "38d656221c2094357858251969427ba029098a6bdca6352ded4dd2ec8e4f1989",
+    "dispositions_digest": "6a88103293a35ea7f2de13f16fe08eeb2e9470cad795dcbb8f2d4cbcacbeaaa7",
     "excluded_changes": [],
     "fixture_id": "checkpoints_missing_chunk",
     "heads": [

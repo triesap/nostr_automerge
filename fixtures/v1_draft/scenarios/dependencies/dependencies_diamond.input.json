@@ -42,9 +42,29 @@
         "disposition": "accepted",
         "identifier": "d1daea6fd5b0af45110da8c22e0c9604fdefe7bf1cc7976b9f370f6c4b266460",
         "namespace": "change_hash"
+      },
+      {
+        "disposition": "accepted",
+        "identifier": "507a65516db50b2e79649be9925c6117a30d5155731fc9a7c913846f35565fbd",
+        "namespace": "event"
+      },
+      {
+        "disposition": "accepted",
+        "identifier": "7569af7b3f72b367b8d5781f1d3f7ee0b52e581cc2083b0bda8bfa690fd00216",
+        "namespace": "event"
+      },
+      {
+        "disposition": "accepted",
+        "identifier": "8171b1a348b08f7156f06e1adc3766974a79eb6de2e563f4eaab5ba86e58c9a6",
+        "namespace": "event"
+      },
+      {
+        "disposition": "accepted",
+        "identifier": "f48cf7af455afefc485c5a84d60bc94986fc4a678480ed4e4d81f02382154951",
+        "namespace": "event"
       }
     ],
-    "dispositions_digest": "80d015c9fd37c37cbc6d20e74874edc12dbcb2a308a3cd768e36fd44c9d6732d",
+    "dispositions_digest": "139b9e3c7ea43fdac5b869c8f3c4759f483194a6bf1b39604a7c76412e1d02b8",
     "excluded_changes": [],
     "fixture_id": "dependencies_diamond",
     "heads": [

@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "change_with_missing_control.expected.json",
-    "sha256": "d7baec5d5ea6950dff9b7764f1a502e488047ccc75bf35f569ab50f62ec0b5ab"
+    "sha256": "4c05f88b7bc98fcf4483389b40ab8c8849feb7b741f957e35878e04b9ac318cc"
   },
   "fixture_id": "change_with_missing_control",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "change_with_missing_control.input.json",
-      "sha256": "2eba67b2793e1bf2cfabb5fa992bc017fdd747eeda86e8f731bf3ea27b518b26"
+      "sha256": "bd4bd4c276183c75e5f24637c47d752d8c873772a132a61c309853a9b633ebbd"
     }
   ],
   "provenance": {

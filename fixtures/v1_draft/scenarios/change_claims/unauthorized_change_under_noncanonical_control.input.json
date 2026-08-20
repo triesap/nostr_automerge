@@ -27,9 +27,15 @@
         "disposition": "invalid",
         "identifier": "36b8642c6b04f0fddedb7bd2fa30579402c9600bf42b4a6a8302eb8ab676b07f",
         "namespace": "change_hash"
+      },
+      {
+        "diagnostic": "change.actor",
+        "disposition": "invalid",
+        "identifier": "c1f1e8538b2f92f03aad0a434f6599a908e9fe5322793d33475d11fe1d4c888e",
+        "namespace": "event"
       }
     ],
-    "dispositions_digest": "35e84d71377b2f857c672fb70992114168fa5b2e682b7e05a789d15af012fc42",
+    "dispositions_digest": "7c4eaf067ea820ccaf16c0a6beacb3be0d506e50aa9eaeee0df286239cdcd4c6",
     "excluded_changes": [],
     "fixture_id": "unauthorized_change_under_noncanonical_control",
     "heads": [],
