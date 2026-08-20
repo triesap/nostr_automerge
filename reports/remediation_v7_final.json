@@ -1,0 +1,63 @@
+{
+  "schema": "nostr_automerge.remediation_v7_final.v1",
+  "status": "implementation_remediation_required",
+  "local_implementation": "pass",
+  "publication_authorized": false,
+  "remote_actions_performed": false,
+  "sequence": {
+    "first_step": 1059,
+    "last_step": 1095,
+    "checkpoint_count": 37,
+    "completed_rclds": [65, 66, 67, 68, 69, 70, 71, 72],
+    "unfinished_rclds": []
+  },
+  "candidates": {
+    "rust_source": "707e850d2fc0fef94cd0dc247c46a403b8195738",
+    "rust_evidence": "1063ae1027949c39c33f30eb27ddb4192679c158",
+    "typescript_implementation": "d853a2fd46f4ba76b9d57d2848baa51ac974c789",
+    "typescript_evidence": "cdb6d4b558918f0249420621f2524ffaebb3688a"
+  },
+  "authority": {
+    "nip_sha256": "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3",
+    "nip_edited": false,
+    "companion_sha256": "5ab298eb06399e1dc1631898f1910c3a33860b8b40b2cb2c0cf9b7f2266fdf23",
+    "requirements_sha256": "95a80689b3e4d661a73867673994829e7060df67277120b2f16ee9f2dd16f9fd",
+    "applicability_sha256": "27c58584b6ab1627823fb620378f56a7038de21d7f38b6ed4baae5a64fafe87d",
+    "fixture_distribution_sha256": "7f1c17d61d28857562ffbae68fa132efa3e052863434cc686b2a72234b614ada"
+  },
+  "evidence": {
+    "final_candidate_identity": "reports/final_candidate_identity_v7.json",
+    "requirements_matrix": "reports/requirements_coverage_v8.json",
+    "typescript_attestation": "reports/interop_typescript_v8.json",
+    "resource_qualification": "reports/resource_qualification_v7.json",
+    "external_holds": "reports/external_holds_v7.json"
+  },
+  "ordinary_direct_gates": {
+    "rust_format_check_test_clippy_docs_xtask": "pass",
+    "rust_package_sbom_supply_chain": "pass_with_documented_warnings",
+    "typescript_format_typecheck_policy_tests": "pass",
+    "typescript_package_and_dependency_audit": "pass",
+    "signed_distribution_two_runs_eight_permutations": "pass",
+    "source_only_and_private_boundaries": "pass"
+  },
+  "operator_local_workflows": {
+    "ownership": "private_untracked",
+    "definitions_tracked_in_source_repositories": false,
+    "outputs_tracked_in_source_repositories": false,
+    "remediation": "pass",
+    "held_campaign_readiness": "pass",
+    "interoperability": "pass",
+    "complete_local_suite": "pass"
+  },
+  "held_campaigns": [
+    "rust_source_mutation",
+    "typescript_source_mutation",
+    "sustained_fuzzing",
+    "sustained_generative_campaign"
+  ],
+  "external_holds": [
+    "external_nip_reconciliation",
+    "independent_external_review",
+    "publication_release_deployment"
+  ]
+}

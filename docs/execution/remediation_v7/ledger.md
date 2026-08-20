@@ -12,7 +12,7 @@ Updated: 2026-08-20
 | 69 | 1082–1086 | complete | `GATE_V7_CONFORMANCE` |
 | 70 | 1087–1089 | complete | `GATE_V7_TYPESCRIPT` |
 | 71 | 1090–1092 | complete | `GATE_V7_COMPANION` |
-| 72 | 1093–1095 | active | `GATE_V7_FINAL` |
+| 72 | 1093–1095 | complete | `GATE_V7_FINAL` |
 
 ## Completed checkpoints
 
@@ -84,10 +84,20 @@ Updated: 2026-08-20
   conformance, or portable-proposal sections.
 - `step_1092` rebound companion, registry, distribution, Rust profile, and
   evidence hashes and closed `GATE_V7_COMPANION` without changing wire data.
+- `step_1093` completed Rust and private TypeScript assurance, recorded exact
+  coverage, resource, package, supply-chain, and source-only evidence, and
+  retained source-mutating and sustained campaigns as explicit holds.
+- `step_1094` imported the opaque TypeScript attestation, completed all 129
+  requirement rows, bound the final candidates and 171-fixture outputs, and
+  superseded stale evidence without exposing private source material.
+- `step_1095` passed every ordinary direct gate and all private operator-owned
+  local workflow lanes, verified both source repositories contain no tracked
+  workflow content, and closed `GATE_V7_FINAL` without remote action.
 
 ## Active checkpoint
 
-`step_1093` — complete final local assurance and record held campaigns.
+None. The 37-checkpoint remediation-v7 sequence is complete for all locally
+authorized implementation scope.
 
 ## Holds
 

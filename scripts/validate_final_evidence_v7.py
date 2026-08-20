@@ -28,6 +28,7 @@ def digest(relative: str) -> str:
 
 def main() -> int:
     identity = load("reports/final_candidate_identity_v7.json")
+    closure = load("reports/remediation_v7_final.json")
     matrix = load("reports/requirements_coverage_v8.json")
     attestation = load("reports/interop_typescript_v8.json")
     supersession = load("reports/evidence_supersession_v7.json")
@@ -39,6 +40,14 @@ def main() -> int:
         or identity.get("publication_authorized") is not False
     ):
         raise AssertionError("invalid final candidate identity")
+    if (
+        closure.get("schema") != "nostr_automerge.remediation_v7_final.v1"
+        or closure.get("status") != "implementation_remediation_required"
+        or closure.get("local_implementation") != "pass"
+        or closure.get("publication_authorized") is not False
+        or closure.get("remote_actions_performed") is not False
+    ):
+        raise AssertionError("invalid remediation-v7 closure")
     expected_authority = {
         "nip_sha256": digest("spec/NIP_DRAFT.md"),
         "companion_sha256": digest("spec/NOSTR_AUTOMERGE_V1_SPEC.md"),
@@ -48,7 +57,17 @@ def main() -> int:
     }
     if identity.get("authority") != expected_authority:
         raise AssertionError("final authority hash is stale")
+    closure_authority = closure.get("authority", {})
+    if (
+        closure_authority
+        != {
+            **expected_authority,
+            "nip_edited": False,
+        }
+    ):
+        raise AssertionError("closure authority hash is stale")
     rust = identity.get("rust", {})
+    typescript = identity.get("typescript", {})
     rust_candidate = rust.get("source_candidate", "")
     if (
         not HEX40.fullmatch(rust_candidate)
@@ -65,7 +84,24 @@ def main() -> int:
         stderr=subprocess.DEVNULL,
     ).returncode:
         raise AssertionError("final Rust candidate is unavailable")
-    typescript = identity.get("typescript", {})
+    candidates = closure.get("candidates", {})
+    rust_evidence = candidates.get("rust_evidence", "")
+    if (
+        candidates.get("rust_source") != rust_candidate
+        or candidates.get("typescript_implementation")
+        != typescript.get("implementation_candidate")
+        or candidates.get("typescript_evidence") != typescript.get("evidence_candidate")
+        or not HEX40.fullmatch(rust_evidence)
+    ):
+        raise AssertionError("closure candidate binding is stale")
+    for candidate in (rust_candidate, rust_evidence):
+        if subprocess.run(
+            ["git", "merge-base", "--is-ancestor", candidate, "HEAD"],
+            cwd=ROOT,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        ).returncode:
+            raise AssertionError("closure Rust candidate is not an ancestor")
     if (
         typescript.get("implementation_candidate") != attestation.get("candidate")
         or typescript.get("evidence_candidate") != attestation.get("evidence_candidate")
@@ -112,6 +148,47 @@ def main() -> int:
         or holds.get("remote_actions_performed") is not False
     ):
         raise AssertionError("external holds overclaim completion")
+    sequence = closure.get("sequence", {})
+    if (
+        sequence.get("first_step") != 1059
+        or sequence.get("last_step") != 1095
+        or sequence.get("checkpoint_count") != 37
+        or sequence.get("completed_rclds") != list(range(65, 73))
+        or sequence.get("unfinished_rclds") != []
+    ):
+        raise AssertionError("invalid remediation-v7 sequence closure")
+    workflows = closure.get("operator_local_workflows", {})
+    if (
+        workflows.get("ownership") != "private_untracked"
+        or workflows.get("definitions_tracked_in_source_repositories") is not False
+        or workflows.get("outputs_tracked_in_source_repositories") is not False
+        or any(
+            workflows.get(name) != "pass"
+            for name in (
+                "remediation",
+                "held_campaign_readiness",
+                "interoperability",
+                "complete_local_suite",
+            )
+        )
+    ):
+        raise AssertionError("operator-local workflow evidence is incomplete")
+    held = {row.get("id") for row in hold_rows}
+    if set(closure.get("held_campaigns", [])) | set(
+        closure.get("external_holds", [])
+    ) != held:
+        raise AssertionError("closure hold set is incomplete")
+    evidence = closure.get("evidence", {})
+    if set(evidence.values()) != {
+        "reports/final_candidate_identity_v7.json",
+        "reports/requirements_coverage_v8.json",
+        "reports/interop_typescript_v8.json",
+        "reports/resource_qualification_v7.json",
+        "reports/external_holds_v7.json",
+    }:
+        raise AssertionError("closure evidence set is incomplete")
+    if any(not (ROOT / path).is_file() for path in evidence.values()):
+        raise AssertionError("closure evidence file is unavailable")
     public_attestation = (ROOT / "reports/interop_typescript_v8.json").read_text()
     forbidden = (
         "/" + "Users/",
