@@ -1,0 +1,12 @@
+{
+  "schema": "nostr_automerge.source_mutation.typescript.v7",
+  "status": "held_operator_safety",
+  "implementation_candidate": "d853a2fd46f4ba76b9d57d2848baa51ac974c789",
+  "evidence_candidate": "cdb6d4b558918f0249420621f2524ffaebb3688a",
+  "campaign_executed": false,
+  "definition_sha256": "ae613271865993886e98f91a0d62e51cce91e8b3c841c89840e08e9ff4cc9b93",
+  "target_count": 10,
+  "anchor_validation": "pass",
+  "sustained_generative_campaign": "held_operator_safety",
+  "result_claimed": false
+}

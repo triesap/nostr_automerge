@@ -1,0 +1,21 @@
+{
+  "schema": "nostr_automerge.source_mutation.rust.v7",
+  "status": "held_operator_safety",
+  "candidate": "07ad98010daaa601492e4c9183ca6bc17c170b39",
+  "campaign_executed": false,
+  "definition": {
+    "path": "reports/mutation_campaign_v7_inventory.json",
+    "sha256": "1640ad4ded16a42d994a8c2416585bd9261375ee16acba4581e6fafe47c07bd2",
+    "anchor_count": 5,
+    "findings": [
+      "FINDING_059",
+      "FINDING_060",
+      "FINDING_061",
+      "FINDING_062",
+      "FINDING_063"
+    ]
+  },
+  "anchor_validation": "pass",
+  "sustained_fuzzing": "held_operator_safety",
+  "result_claimed": false
+}
