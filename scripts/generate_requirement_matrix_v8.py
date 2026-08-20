@@ -19,6 +19,7 @@ from validate_requirement_matrix_v7 import signed_artifact_hash
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "fixtures/distribution/manifest_v8.json"
+TS_ATTESTATION = ROOT / "reports/interop_typescript_v8.json"
 EXACT_FIXTURES = {key: value.copy() for key, value in V7_EXACT_FIXTURES.items()}
 BRANCH = [
     "change_references_invalid_noncanonical_child",
@@ -84,6 +85,11 @@ def main() -> int:
     requirements = json.loads(requirements_path.read_text())["requirements"]
     applicability = json.loads(applicability_path.read_text())["classifications"]
     distribution = json.loads(MANIFEST.read_text())
+    attestation = json.loads(TS_ATTESTATION.read_text())
+    attestation_hash = sha256(TS_ATTESTATION)
+    prior_overlay = json.loads(
+        (ROOT / "reports/requirements_typescript_overlay_v7.json").read_text()
+    )["requirements"]
     fixture_paths = {
         item["fixture_id"]: ROOT / item["metadata_path"]
         for item in distribution["fixtures"]
@@ -93,9 +99,8 @@ def main() -> int:
         for requirement in item["requirements"]:
             by_requirement[requirement].append(item["fixture_id"])
     rust_candidate = git("rev-parse", "HEAD")
-    prior_typescript = json.loads(
-        (ROOT / "reports/interop_typescript_v7.json").read_text()
-    )["candidate"]
+    typescript_candidate = attestation["candidate"]
+    overlay_rows: dict[str, object] = {}
     rows: list[dict[str, object]] = []
     for requirement in requirements:
         identifier = requirement["id"]
@@ -155,22 +160,47 @@ def main() -> int:
             "result": "pass",
             "artifact_sha256": artifact_hash,
         }
-        row["status"] = "pass" if classification == "rust-only" else "pending"
+        if classification == "rust-and-typescript":
+            typescript_fixture_ids = sorted(
+                prior_overlay.get(identifier, {}).get("fixture_ids", fixture_ids),
+                key=str.encode,
+            )
+            opaque = {
+                "implementation_identity": "triesap/nostr_automerge_typescript",
+                "candidate": typescript_candidate,
+                "evidence_candidate": attestation["evidence_candidate"],
+                "dependency_lock_sha256": attestation["dependency_lock_sha256"],
+                "fixture_ids": typescript_fixture_ids,
+                "commands": attestation["commands"],
+                "result": "pass",
+                "artifact_sha256": attestation_hash,
+            }
+            row["typescript_proof"] = opaque
+            overlay_rows[identifier] = opaque
+        row["status"] = "pass"
         rows.append(row)
 
+    overlay = {
+        "schema": "nostr_automerge.requirement_typescript_overlay.v8",
+        "attestation_path": TS_ATTESTATION.relative_to(ROOT).as_posix(),
+        "attestation_sha256": attestation_hash,
+        "requirement_count": len(overlay_rows),
+        "requirements": overlay_rows,
+    }
+    canonical_write(ROOT / "reports/requirements_typescript_overlay_v8.json", overlay)
     report = {
         "schema": "nostr_automerge.requirement_coverage.v8",
-        "phase": "rust-complete-typescript-pending",
+        "phase": "complete",
         "requirements_sha256": sha256(requirements_path),
         "applicability_sha256": sha256(applicability_path),
         "fixture_distribution_sha256": sha256(MANIFEST),
         "rust_candidate": rust_candidate,
-        "typescript_candidate": prior_typescript,
+        "typescript_candidate": typescript_candidate,
         "requirement_count": len(rows),
         "rows": rows,
     }
     canonical_write(ROOT / "reports/requirements_coverage_v8.json", report)
-    print(f"PASS: generated {len(rows)} exact Rust requirement rows; TypeScript pending")
+    print(f"PASS: generated {len(rows)} exact Rust and TypeScript requirement rows")
     return 0
 
 

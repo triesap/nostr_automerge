@@ -1,0 +1,42 @@
+{
+  "schema": "nostr_automerge.private_typescript_attestation.v8",
+  "result": "pass",
+  "implementation": "typescript",
+  "candidate": "d853a2fd46f4ba76b9d57d2848baa51ac974c789",
+  "evidence_candidate": "cdb6d4b558918f0249420621f2524ffaebb3688a",
+  "dependency_lock_sha256": "d881757529b805b8ae4da935127730fe901b8b13a71382023be161016cd35a7d",
+  "requirements_sha256": "95a80689b3e4d661a73867673994829e7060df67277120b2f16ee9f2dd16f9fd",
+  "requirements_lock_sha256": "1d1e08697c68b2b5f8afa4727821557d6bb6c2eb59afc8d25a543d7518a180b2",
+  "distribution_id": "draft_2026_08_signed_neutral_8",
+  "fixture_distribution_sha256": "7f1c17d61d28857562ffbae68fa132efa3e052863434cc686b2a72234b614ada",
+  "fixture_distribution_lock_sha256": "8ed505c37d1aef99cffe296d2be5ecd5d0692cc250075ffd263c5e0162567a86",
+  "fixture_count": 171,
+  "process_runs_per_fixture": 2,
+  "permutations_per_fixture": 8,
+  "canonical_report_bytes": "identical",
+  "corpus_sha256": "183d93bd2f35128345188a3a1376bbbfc7c3fb0e05a387deca4a88f81fc46d78",
+  "deliberate_mismatch": "detected",
+  "profile_output_sha256": {
+    "checkpoint": "c170b8cf63e436cef119ed8691f9ce415c6f74d48d06bed879012acc720a2931",
+    "core": "816afc4b53c4b30293a24d4ee4dfa81917f7899ebc690d51a4193c09b492ae79",
+    "malformed": "2504f7f550c6b5c6298f57132411858c358a7358136ffa9419aa71c24e7871f6",
+    "property": "05d9ab88636e37e6682bf0d55e018d39565883828419ee6af4565abdea21ce22"
+  },
+  "commands": [
+    "pinned package-manager complete check",
+    "signed distribution v8 profile generation",
+    "two-process 171-fixture execution",
+    "operator-local byte-exact differential comparison"
+  ],
+  "runner_versions": {
+    "node": "26.7.0",
+    "pnpm": "10.30.3",
+    "rust": "1.97.1"
+  },
+  "boundaries": {
+    "private_paths_included": false,
+    "private_runner_state_included": false,
+    "rust_bindings_used": false,
+    "tracked_workflows_present": false
+  }
+}

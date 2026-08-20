@@ -97,9 +97,11 @@ def validate(report: dict) -> None:
         "applicability_sha256": sha256(applicability_path),
         "fixture_distribution_sha256": sha256(distribution_path),
     }
+    attestation_path = ROOT / "reports/interop_typescript_v8.json"
+    attestation = json.loads(attestation_path.read_text())
     if report.get("schema") != "nostr_automerge.requirement_coverage.v8":
         raise EvidenceError("schema")
-    if report.get("phase") != "rust-complete-typescript-pending":
+    if report.get("phase") not in {"rust-complete-typescript-pending", "complete"}:
         raise EvidenceError("phase")
     if any(report.get(key) != value for key, value in expected_hashes.items()):
         raise EvidenceError("authority-hash")
@@ -107,6 +109,26 @@ def validate(report: dict) -> None:
     typescript = str(report.get("typescript_candidate", ""))
     if not HEX40.fullmatch(rust) or not HEX40.fullmatch(typescript):
         raise EvidenceError("candidate")
+    if report.get("phase") == "complete":
+        if (
+            attestation.get("schema")
+            != "nostr_automerge.private_typescript_attestation.v8"
+            or attestation.get("result") != "pass"
+            or attestation.get("candidate") != typescript
+            or attestation.get("fixture_count") != 171
+            or attestation.get("process_runs_per_fixture") != 2
+            or attestation.get("permutations_per_fixture") != 8
+            or attestation.get("fixture_distribution_sha256")
+            != expected_hashes["fixture_distribution_sha256"]
+            or attestation.get("requirements_sha256")
+            != expected_hashes["requirements_sha256"]
+            or attestation.get("canonical_report_bytes") != "identical"
+            or attestation.get("deliberate_mismatch") != "detected"
+            or set(attestation.get("profile_output_sha256", {}))
+            != {"checkpoint", "core", "malformed", "property"}
+            or any(attestation.get("boundaries", {}).values())
+        ):
+            raise EvidenceError("typescript-attestation")
     if subprocess.run(
         ("git", "cat-file", "-e", f"{rust}^{{commit}}"),
         cwd=ROOT,
@@ -174,8 +196,33 @@ def validate(report: dict) -> None:
         if classification == "rust-only":
             if row.get("status") != "pass" or "typescript_proof" in row:
                 raise EvidenceError(f"rust-only-status:{identifier}")
-        elif row.get("status") != "pending" or "typescript_proof" in row:
-            raise EvidenceError(f"typescript-pending:{identifier}")
+        elif report.get("phase") == "rust-complete-typescript-pending":
+            if row.get("status") != "pending" or "typescript_proof" in row:
+                raise EvidenceError(f"typescript-pending:{identifier}")
+        else:
+            opaque = row.get("typescript_proof", {})
+            fixture_ids = opaque.get("fixture_ids")
+            if row.get("status") != "pass" or opaque.get("candidate") != typescript:
+                raise EvidenceError(f"typescript-proof:{identifier}")
+            if opaque.get("result") != "pass" or not HEX40.fullmatch(
+                str(opaque.get("evidence_candidate", ""))
+            ):
+                raise EvidenceError(f"typescript-result:{identifier}")
+            if (
+                not isinstance(fixture_ids, list)
+                or fixture_ids != sorted(set(fixture_ids), key=str.encode)
+                or any(item not in fixture_paths for item in fixture_ids)
+            ):
+                raise EvidenceError(f"typescript-fixture:{identifier}")
+            if identifier in CRITICAL and kind == "signed-fixture" and set(ids) != set(fixture_ids):
+                raise EvidenceError(f"typescript-coverage:{identifier}")
+            artifact = opaque.get("artifact_sha256")
+            if (
+                artifact != sha256(attestation_path)
+                or not isinstance(artifact, str)
+                or not HEX64.fullmatch(artifact)
+            ):
+                raise EvidenceError(f"typescript-artifact:{identifier}")
 
 
 def self_test(report: dict) -> dict:
@@ -215,8 +262,12 @@ def self_test(report: dict) -> dict:
         if row["applicability"] == "rust-and-typescript"
     )
     overclaim = copy.deepcopy(report)
-    overclaim["rows"][pending_index]["status"] = "pass"
-    mutations.append(("status_overclaim", overclaim))
+    if report.get("phase") == "complete":
+        overclaim["rows"][pending_index].pop("typescript_proof", None)
+        mutations.append(("typescript_proof", overclaim))
+    else:
+        overclaim["rows"][pending_index]["status"] = "pass"
+        mutations.append(("status_overclaim", overclaim))
     caught = []
     for name, mutation in mutations:
         try:
@@ -245,7 +296,7 @@ def main() -> int:
         result = self_test(report)
         canonical_write(MUTATIONS, result)
         print(json.dumps(result, sort_keys=True, separators=(",", ":")))
-    print("PASS: all 129 Rust requirement rows are exact; TypeScript remains pending")
+    print(f"PASS: all 129 requirement rows are exact; phase={report['phase']}")
     return 0
 
 

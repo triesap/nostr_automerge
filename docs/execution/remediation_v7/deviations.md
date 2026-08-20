@@ -34,3 +34,14 @@ scenario bytes, expected report bytes, profiles, permutation names, NIP
 snapshot, wire constants, and implementation behavior did not change. The
 private distribution lock and opaque parity attestation are refreshed before
 final evidence closure.
+
+## DEV-V7-003 — Final evidence candidate split
+
+Status: resolved within `step_1094`.
+
+The opaque TypeScript attestation and complete-matrix generator and validator
+must be committed before the matrix can truthfully bind their Rust candidate
+and exact validator bytes. Step 1094 therefore uses one prerequisite commit for
+the attestation and proof machinery, followed by one generated-evidence commit.
+This avoids a self-referential commit hash and does not split implementation
+behavior, alter fixtures, change authority, or weaken any gate.
