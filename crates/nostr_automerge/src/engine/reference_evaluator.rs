@@ -1760,18 +1760,77 @@ impl ReportFinalizationPlan {
     }
 
     fn total(self) -> Option<u64> {
+        self.reservations()
+            .into_iter()
+            .try_fold(0_u64, |total, reservation| {
+                total.checked_add(reservation.units)
+            })
+    }
+
+    const fn reservations(self) -> [FinalizationReservationUnit; 8] {
         [
-            self.controls,
-            self.changes,
-            self.events,
-            self.checkpoints,
-            self.digests,
-            self.evidence,
-            self.invariants,
-            self.fixed_overhead,
+            FinalizationReservationUnit::new(InterruptedReportPass::Controls, self.controls),
+            FinalizationReservationUnit::new(InterruptedReportPass::Changes, self.changes),
+            FinalizationReservationUnit::new(InterruptedReportPass::Events, self.events),
+            FinalizationReservationUnit::new(InterruptedReportPass::Checkpoints, self.checkpoints),
+            FinalizationReservationUnit::new(InterruptedReportPass::Digests, self.digests),
+            FinalizationReservationUnit::new(InterruptedReportPass::Evidence, self.evidence),
+            FinalizationReservationUnit::new(InterruptedReportPass::Invariants, self.invariants),
+            FinalizationReservationUnit::new(
+                InterruptedReportPass::FixedOverhead,
+                self.fixed_overhead,
+            ),
         ]
-        .into_iter()
-        .try_fold(0_u64, u64::checked_add)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum InterruptedReportPass {
+    Controls,
+    Changes,
+    Events,
+    Checkpoints,
+    Digests,
+    Evidence,
+    Invariants,
+    FixedOverhead,
+}
+
+impl InterruptedReportPass {
+    const ALL: [Self; 8] = [
+        Self::Controls,
+        Self::Changes,
+        Self::Events,
+        Self::Checkpoints,
+        Self::Digests,
+        Self::Evidence,
+        Self::Invariants,
+        Self::FixedOverhead,
+    ];
+
+    const fn dimension(self) -> FinalizationDimension {
+        match self {
+            Self::Controls => FinalizationDimension::Controls,
+            Self::Changes => FinalizationDimension::Changes,
+            Self::Events => FinalizationDimension::Events,
+            Self::Checkpoints => FinalizationDimension::Checkpoints,
+            Self::Digests => FinalizationDimension::Digests,
+            Self::Evidence => FinalizationDimension::Evidence,
+            Self::Invariants => FinalizationDimension::Invariants,
+            Self::FixedOverhead => FinalizationDimension::FixedOverhead,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct FinalizationReservationUnit {
+    pass: InterruptedReportPass,
+    units: u64,
+}
+
+impl FinalizationReservationUnit {
+    const fn new(pass: InterruptedReportPass, units: u64) -> Self {
+        Self { pass, units }
     }
 }
 
@@ -1980,6 +2039,13 @@ impl ReportFinalizationPermit {
         self.ledger.dimension_mut(dimension).consume(amount)
     }
 
+    fn consume_pass(
+        &mut self,
+        reservation: FinalizationReservationUnit,
+    ) -> Result<(), FinalizationPermitError> {
+        self.consume(reservation.pass.dimension(), reservation.units)
+    }
+
     fn finish_interrupted(&mut self) -> Result<(), FinalizationPermitError> {
         if self.state != FinalizationPermitState::Active || !self.ledger.is_interrupted_settlement()
         {
@@ -2000,17 +2066,8 @@ impl ReportFinalizationPermit {
         if self.state != FinalizationPermitState::Active {
             return Err(FinalizationPermitError);
         }
-        for dimension in [
-            FinalizationDimension::Controls,
-            FinalizationDimension::Changes,
-            FinalizationDimension::Events,
-            FinalizationDimension::Checkpoints,
-            FinalizationDimension::Digests,
-            FinalizationDimension::Evidence,
-            FinalizationDimension::Invariants,
-            FinalizationDimension::FixedOverhead,
-        ] {
-            self.forfeit(dimension)?;
+        for pass in InterruptedReportPass::ALL {
+            self.forfeit(pass.dimension())?;
         }
         if !self.ledger.is_settled() {
             return Err(FinalizationPermitError);
@@ -2057,9 +2114,22 @@ fn reserved_interrupted_report(
     permit: &mut ReportFinalizationPermit,
 ) -> Result<EvaluationReport, EvaluationError> {
     permit
-        .consume(FinalizationDimension::Digests, 8)
-        .and_then(|()| permit.consume(FinalizationDimension::Invariants, REPORT_INVARIANT_ITEMS))
-        .and_then(|()| permit.consume(FinalizationDimension::FixedOverhead, 8))
+        .consume_pass(FinalizationReservationUnit::new(
+            InterruptedReportPass::Digests,
+            8,
+        ))
+        .and_then(|()| {
+            permit.consume_pass(FinalizationReservationUnit::new(
+                InterruptedReportPass::Invariants,
+                REPORT_INVARIANT_ITEMS,
+            ))
+        })
+        .and_then(|()| {
+            permit.consume_pass(FinalizationReservationUnit::new(
+                InterruptedReportPass::FixedOverhead,
+                8,
+            ))
+        })
         .map_err(|_| EvaluationError::ReportInvariant)?;
     for dimension in [
         FinalizationDimension::Controls,
