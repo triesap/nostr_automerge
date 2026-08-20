@@ -1,0 +1,69 @@
+{
+  "schema": "nostr_automerge.remediation_v7.findings.v1",
+  "review_head": "bf78c630b456613b3e9595ebae06cf5802f78921",
+  "findings": [
+    {
+      "id": "FINDING_059",
+      "severity": "high",
+      "class": "protocol-control-state",
+      "title": "Deep noncanonical controls can be promoted without branch-local epoch evaluation",
+      "paths": ["crates/nostr_automerge/src/engine/reference_evaluator.rs", "crates/nostr_automerge/src/reference/evaluate.rs", "crates/nostr_automerge/src/control/reference_state.rs"],
+      "reproduction": "Evaluate a losing branch whose child names an invalid, excluded, or pending branch-local base head.",
+      "closure": "Every otherwise-usable retained control is evaluated against its own branch-local accepted state before its final disposition is assigned."
+    },
+    {
+      "id": "FINDING_060",
+      "severity": "high",
+      "class": "coordinate-isolation-checkpoint",
+      "title": "Foreign-coordinate chunks can poison a target descriptor",
+      "paths": ["crates/nostr_automerge/src/evidence/indexes.rs", "crates/nostr_automerge/src/engine/reference_evaluator.rs", "crates/nostr_automerge/src/checkpoint/join.rs"],
+      "reproduction": "Evaluate a valid target descriptor beside a foreign-coordinate chunk that references the target descriptor.",
+      "closure": "Checkpoint chunks, event identifiers, digest inputs, and work are selected by coordinate plus descriptor."
+    },
+    {
+      "id": "FINDING_061",
+      "severity": "high",
+      "class": "coordinate-isolation-change",
+      "title": "Foreign-coordinate change claims can consume target work",
+      "paths": ["crates/nostr_automerge/src/evidence/indexes.rs", "crates/nostr_automerge/src/engine/reference_evaluator.rs", "crates/nostr_automerge/src/evidence/document_view.rs"],
+      "reproduction": "Evaluate a target beside foreign-coordinate change events that name its control or share a change hash.",
+      "closure": "Change claims and carriers are indexed and traversed by coordinate plus control or hash, with exact target budget invariance."
+    },
+    {
+      "id": "FINDING_062",
+      "severity": "medium-high",
+      "class": "resource-accounting",
+      "title": "Parent-disposition propagation is unmetered and potentially quadratic",
+      "paths": ["crates/nostr_automerge/src/reference/evaluate.rs", "crates/nostr_automerge/src/engine/reference_evaluator.rs"],
+      "reproduction": "Propagate a pending or invalid ancestor through a long target control chain under an exact work budget.",
+      "closure": "A deterministic parent-before-child traversal charges each relevant relationship once and observes cancellation before charged work."
+    },
+    {
+      "id": "FINDING_063",
+      "severity": "medium-high",
+      "class": "resource-finalization",
+      "title": "Interrupted finalization reports unexplained remainder as consumed work",
+      "paths": ["crates/nostr_automerge/src/engine/reference_evaluator.rs", "crates/nostr_automerge/src/engine/evaluation_report.rs"],
+      "reproduction": "Interrupt after reservation but before most finalization work and inspect each permit dimension.",
+      "closure": "Every reserved dimension is settled exactly once as consumed, refunded, or deliberately forfeited."
+    },
+    {
+      "id": "FINDING_064",
+      "severity": "deferred",
+      "class": "specification-authority",
+      "title": "The externally authored NIP is not locally reconciled",
+      "paths": ["spec/NIP_DRAFT.md", "spec/NOSTR_AUTOMERGE_V1_SPEC.md"],
+      "reproduction": "Compare the read-only NIP with interoperability-critical companion rules.",
+      "closure": "The implementation-owned companion and a portable reconciliation delta remain complete while the NIP itself stays outside this repository's implementation scope."
+    },
+    {
+      "id": "FINDING_065",
+      "severity": "high",
+      "class": "conformance-evidence",
+      "title": "The signed corpus and evidence matrix omit follow-up compositions",
+      "paths": ["fixtures/distribution/manifest_v7.json", "fixtures/v1_draft/scenarios", "spec/requirements.json", "reports/requirements_coverage_v7.json"],
+      "reproduction": "Exercise branch-local invalid frontiers, foreign references, exact isolation budgets, propagation, and finalization settlement.",
+      "closure": "Distribution v8 contains 171 scenarios and the 129-row registry binds exact cross-language and local proof."
+    }
+  ]
+}

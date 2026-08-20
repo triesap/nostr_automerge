@@ -1,0 +1,88 @@
+{
+  "schema": "nostr_automerge.remediation_v7.requirement_additions.v1",
+  "append_only": true,
+  "base_requirement_count": 119,
+  "target_requirement_count": 129,
+  "requirements": [
+    {
+      "id": "NCRDT-BRANCH-001",
+      "finding": "FINDING_059",
+      "applicability": "rust-and-typescript",
+      "section": "Branch-local control evaluation",
+      "text": "The evaluator MUST derive stateful validity for every retained otherwise-usable control against that control's own branch; static usability alone MUST NOT establish noncanonical validity.",
+      "proof": ["branch-local unit assertions", "noncanonical branch signed fixtures"]
+    },
+    {
+      "id": "NCRDT-BRANCH-002",
+      "finding": "FINDING_059",
+      "applicability": "rust-and-typescript",
+      "section": "Branch-local frontier resolution",
+      "text": "Each child base head MUST be resolved against accepted state under the child's actual parent branch, preserving pending and invalid distinctions.",
+      "proof": ["frontier matrix assertions", "noncanonical_child signed fixtures"]
+    },
+    {
+      "id": "NCRDT-SCOPE-004",
+      "finding": "FINDING_061",
+      "applicability": "rust-and-typescript",
+      "section": "Coordinate-qualified change indexes",
+      "text": "Evaluation of one coordinate MUST NOT traverse or charge change claims attributable only to another coordinate, even when a foreign claim names a target control or shares a change hash.",
+      "proof": ["foreign_change_references_target_control", "foreign_claim_flood_exact_budget"]
+    },
+    {
+      "id": "NCRDT-SCOPE-005",
+      "finding": "FINDING_060",
+      "applicability": "rust-and-typescript",
+      "section": "Coordinate-qualified checkpoint indexes",
+      "text": "A target descriptor MUST be joined only with chunks attributable to the target coordinate.",
+      "proof": ["foreign_chunk_references_target_descriptor", "cross_coordinate_descriptor_reference_isolated"]
+    },
+    {
+      "id": "NCRDT-SCOPE-006",
+      "finding": "FINDING_060,FINDING_061",
+      "applicability": "rust-and-typescript",
+      "section": "Coordinate-isolated outputs and work",
+      "text": "Foreign evidence MUST NOT enter target event dispositions, digest inputs, completion decisions, or target-proportional work counters.",
+      "proof": ["foreign_chunk_excluded_from_target_digest", "unrelated_valid_checkpoints_exact_budget", "foreign_claim_flood_exact_budget"]
+    },
+    {
+      "id": "NCRDT-RESOURCE-009",
+      "finding": "FINDING_062",
+      "applicability": "rust-and-typescript",
+      "section": "Parent-state propagation",
+      "text": "Propagation of pending or invalid parent state MUST visit each relevant control relationship through a deterministic charged traversal and observe cancellation before target-proportional work.",
+      "proof": ["parent_propagation_exact_budget", "parent propagation cancellation assertions"]
+    },
+    {
+      "id": "NCRDT-RESOURCE-010",
+      "finding": "FINDING_063",
+      "applicability": "rust-and-typescript",
+      "section": "Finalization settlement",
+      "text": "Every reserved finalization dimension MUST be settled exactly once as actual consumption, validated refund, or deliberate interruption forfeiture; generic remainder erasure is forbidden.",
+      "proof": ["interrupted_finalization_forfeiture", "permit state-machine assertions"]
+    },
+    {
+      "id": "NCRDT-NIP-002",
+      "finding": "FINDING_064",
+      "applicability": "explicitly-deferred",
+      "section": "External NIP reconciliation",
+      "text": "The externally authored NIP SHOULD eventually reconcile all interoperability-critical companion rules without changing provisional allocation boundaries.",
+      "proof": ["portable NIP reconciliation delta", "immutable NIP hash"]
+    },
+    {
+      "id": "NCRDT-CONF-008",
+      "finding": "FINDING_059,FINDING_060,FINDING_061,FINDING_062,FINDING_063,FINDING_065",
+      "applicability": "rust-and-typescript",
+      "section": "Signed conformance",
+      "text": "Conforming engines MUST process the checksum-bound v8 distribution of exactly 171 scenarios under every required delivery permutation.",
+      "proof": ["manifest v8 validation", "two stable Rust runs", "two stable TypeScript runs", "byte-exact comparison"]
+    },
+    {
+      "id": "NCRDT-EVIDENCE-004",
+      "finding": "FINDING_065",
+      "applicability": "rust-only",
+      "section": "Requirement evidence",
+      "text": "Each of the 129 registry rows MUST bind exact candidate identities, source assertions, fixtures where applicable, and artifact hashes; weakening evidence binding MUST be rejected.",
+      "proof": ["129-row evidence validator", "evidence mutation checks"]
+    }
+  ]
+}
