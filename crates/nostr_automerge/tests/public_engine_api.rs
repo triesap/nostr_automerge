@@ -475,6 +475,112 @@ fn deep_noncanonical_branch_is_validated_before_exclusion() {
 }
 
 #[test]
+#[allow(clippy::expect_used)]
+fn noncanonical_child_uses_its_actual_parent_frontier() {
+    let controller = TestSigner::from_byte(157);
+    let writer = TestSigner::from_byte(158);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "cc".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let members = vec![(writer.public_key().to_hex(), vec!["write"])];
+    let genesis = signed_acl_control(&controller, coordinate, 1, None, 0, members.clone());
+    let genesis_id = VerifiedNip01Event::verify(genesis.clone())
+        .expect("signed genesis")
+        .event_id();
+    let first = signed_acl_control(
+        &controller,
+        coordinate,
+        2,
+        Some(genesis_id),
+        1,
+        members.clone(),
+    );
+    let second = signed_acl_control(
+        &controller,
+        coordinate,
+        3,
+        Some(genesis_id),
+        1,
+        members.clone(),
+    );
+    let first_id = VerifiedNip01Event::verify(first.clone())
+        .expect("signed first fork")
+        .event_id();
+    let second_id = VerifiedNip01Event::verify(second.clone())
+        .expect("signed second fork")
+        .event_id();
+    let canonical_id = first_id.min(second_id);
+    let noncanonical_id = first_id.max(second_id);
+    let actor = ActorId::derive(coordinate, writer.public_key());
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
+        .expect("empty authoring document");
+    let authored = document
+        .author_change(&[Operation::PutString {
+            key: "canonical".to_owned(),
+            value: "only".to_owned(),
+        }])
+        .expect("canonical branch change");
+    let change_hash = authored.change_hash();
+    let claim = writer.sign(
+        &UnsignedEventDraft::new(
+            4,
+            1_624,
+            vec![
+                vec!["a".to_owned(), coordinate.to_address()],
+                vec!["e".to_owned(), canonical_id.to_hex()],
+                vec!["x".to_owned(), change_hash.to_hex()],
+            ],
+            base64::engine::general_purpose::STANDARD.encode(authored.raw()),
+        )
+        .expect("change draft")
+        .prepare(writer.public_key())
+        .expect("change preimage"),
+    );
+    let grandchild = signed_acl_control_with_base(
+        &controller,
+        coordinate,
+        5,
+        Some(noncanonical_id),
+        2,
+        members,
+        &[change_hash],
+    );
+    let grandchild_id = VerifiedNip01Event::verify(grandchild.clone())
+        .expect("signed noncanonical grandchild")
+        .event_id();
+
+    let events = [genesis, first, second, claim, grandchild];
+    let reports = [events.to_vec(), events.into_iter().rev().collect()].map(|events| {
+        let mut builder = CorpusBuilder::new();
+        for event in events {
+            assert!(matches!(
+                builder.ingest(event),
+                IngestOutcome::Accepted { .. }
+            ));
+        }
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+            &builder.finish(),
+            coordinate,
+            &mut WorkBudget::new(1_000_000, 2_000),
+            &NeverCancelled,
+        )
+    });
+    for report in &reports {
+        assert!(
+            report
+                .control_dispositions()
+                .contains(&(grandchild_id, ProtocolDisposition::Invalid))
+        );
+        assert_eq!(report.accepted_changes(), [change_hash]);
+    }
+    assert_eq!(reports[0], reports[1]);
+}
+
+#[test]
 fn build_immutable_evidence_corpus_through_public_api() {
     let valid = include_bytes!("../../../fixtures/v1_draft/nip01/valid_event.json");
 
