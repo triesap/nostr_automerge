@@ -370,6 +370,36 @@ struct CanonicalBranchEvaluation {
     integrity_alerts: Vec<IntegrityAlert>,
 }
 
+#[derive(Default)]
+struct BatchChangeMemo {
+    candidates: BTreeMap<ChangeHash, ChangeCandidate>,
+    hashes_by_control: BTreeMap<EventId, BTreeSet<ChangeHash>>,
+    controls_by_hash: BTreeMap<ChangeHash, BTreeSet<EventId>>,
+}
+
+impl BatchChangeMemo {
+    fn derive(controls: &BTreeMap<EventId, BatchControl>) -> Self {
+        let mut memo = Self::default();
+        for (control_id, control) in controls {
+            for change in &control.changes {
+                let hash = change.candidate.change_hash;
+                memo.candidates
+                    .entry(hash)
+                    .or_insert_with(|| change.candidate.clone());
+                memo.hashes_by_control
+                    .entry(*control_id)
+                    .or_default()
+                    .insert(hash);
+                memo.controls_by_hash
+                    .entry(hash)
+                    .or_default()
+                    .insert(*control_id);
+            }
+        }
+        memo
+    }
+}
+
 fn derive_canonical_branch(
     controls: &BTreeMap<EventId, BatchControl>,
     children_by_parent: &BTreeMap<Option<EventId>, BTreeSet<EventId>>,
@@ -458,6 +488,8 @@ fn evaluate_branch_table(
     cancellation: &impl CancellationCheck,
 ) -> Result<BranchTableEvaluation, Completion> {
     let mut table = BranchTableEvaluation::default();
+    let change_memo = BatchChangeMemo::derive(controls);
+    let mut accepted_state_cache = BTreeMap::new();
     let mut ready = children_by_parent.get(&None).cloned().unwrap_or_default();
     while let Some(event_id) = ready.pop_first() {
         if cancellation.is_cancelled() {
@@ -550,9 +582,12 @@ fn evaluate_branch_table(
 
         if let Some(validated_base) = validated_base {
             let parent_epoch = parent_branch.map(|branch| &branch.epoch);
-            let Some(accepted_base) =
-                accepted_state_for_closure(&validated_base, controls, parent_epoch)
-            else {
+            let Some(accepted_base) = accepted_state_for_closure(
+                &validated_base,
+                &change_memo.candidates,
+                parent_epoch,
+                &mut accepted_state_cache,
+            ) else {
                 table
                     .states
                     .insert(event_id, BranchEvaluationState::Invalid);
@@ -564,7 +599,7 @@ fn evaluate_branch_table(
                 &validated_base,
                 preliminary_change_dispositions,
                 event_id,
-                controls,
+                &change_memo,
             );
             if let Some(additional) = additional_prior.get(&event_id) {
                 for (hash, item) in additional {
@@ -957,16 +992,16 @@ fn prior_change_knowledge(
     selected_base: &BTreeSet<ChangeHash>,
     dispositions: &BTreeMap<ChangeHash, ProtocolDisposition>,
     selected_control: EventId,
-    controls: &BTreeMap<EventId, BatchControl>,
+    memo: &BatchChangeMemo,
 ) -> BTreeMap<ChangeHash, PriorChangeKnowledge> {
     let mut knowledge = selected_base
         .iter()
         .map(|hash| (*hash, PriorChangeKnowledge::AcceptedInBase))
         .collect::<BTreeMap<_, _>>();
-    if let Some(control) = controls.get(&selected_control) {
-        for change in &control.changes {
+    if let Some(hashes) = memo.hashes_by_control.get(&selected_control) {
+        for hash in hashes {
             knowledge
-                .entry(change.candidate.change_hash)
+                .entry(*hash)
                 .or_insert(PriorChangeKnowledge::SameEpochCandidate);
         }
     }
@@ -977,13 +1012,13 @@ fn prior_change_knowledge(
             .filter(|hash| !selected_base.contains(hash))
             .map(|hash| (*hash, PriorChangeKnowledge::PrunedCanonicalAncestor)),
     );
-    for (control_id, control) in controls {
-        if *control_id == selected_control {
-            continue;
-        }
-        for change in &control.changes {
+    for (hash, control_ids) in &memo.controls_by_hash {
+        if control_ids
+            .iter()
+            .any(|control_id| *control_id != selected_control)
+        {
             knowledge
-                .entry(change.candidate.change_hash)
+                .entry(*hash)
                 .or_insert(PriorChangeKnowledge::KnownOtherControl);
         }
     }
@@ -1004,14 +1039,21 @@ fn prior_change_knowledge(
 
 fn accepted_state_for_closure(
     accepted: &BTreeSet<ChangeHash>,
-    controls: &BTreeMap<EventId, BatchControl>,
+    candidates_by_hash: &BTreeMap<ChangeHash, ChangeCandidate>,
     parent: Option<&EpochEvaluationResult>,
+    cache: &mut BTreeMap<BTreeSet<ChangeHash>, AcceptedEpochState>,
 ) -> Option<AcceptedEpochState> {
-    let candidates = controls
-        .values()
-        .flat_map(|control| control.changes.iter())
-        .filter(|change| accepted.contains(&change.candidate.change_hash))
-        .map(|change| (change.candidate.change_hash, change.candidate.clone()))
+    if let Some(cached) = cache.get(accepted) {
+        return Some(cached.clone());
+    }
+    let candidates = accepted
+        .iter()
+        .filter_map(|hash| {
+            candidates_by_hash
+                .get(hash)
+                .cloned()
+                .map(|value| (*hash, value))
+        })
         .collect::<BTreeMap<_, _>>();
     if candidates.len() != accepted.len() {
         return None;
@@ -1032,7 +1074,9 @@ fn accepted_state_for_closure(
     } else {
         materialized
     };
-    AcceptedEpochState::new(accepted.clone(), heads, candidates, materialized).ok()
+    let state = AcceptedEpochState::new(accepted.clone(), heads, candidates, materialized).ok()?;
+    cache.insert(accepted.clone(), state.clone());
+    Some(state)
 }
 
 fn applied_heads_agree(
