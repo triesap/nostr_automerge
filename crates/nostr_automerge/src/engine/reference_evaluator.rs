@@ -101,18 +101,18 @@ impl ReferenceEvaluator {
                 &mut finalization,
             );
         }
-        let (controls, preliminary_control_dispositions) =
-            match prepare_controls(&view, budget, cancellation) {
-                Ok(prepared) => prepared,
-                Err(completion) => {
-                    return reserved_interrupted_report(
-                        self.revision,
-                        coordinate,
-                        completion,
-                        &mut finalization,
-                    );
-                }
-            };
+        let prepared_controls = match prepare_controls(&view, budget, cancellation) {
+            Ok(prepared) => prepared,
+            Err(completion) => {
+                return reserved_interrupted_report(
+                    self.revision,
+                    coordinate,
+                    completion,
+                    &mut finalization,
+                );
+            }
+        };
+        let (controls, preliminary_control_dispositions) = prepared_controls.into_parts();
         let additional_prior =
             match additional_prior_knowledge(&view, &controls, budget, cancellation) {
                 Ok(knowledge) => knowledge,
@@ -2051,13 +2051,7 @@ fn prepare_controls(
     view: &DocumentEvidenceView<'_>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
-) -> Result<
-    (
-        Vec<BatchControl>,
-        std::collections::BTreeMap<crate::EventId, ProtocolDisposition>,
-    ),
-    Completion,
-> {
+) -> Result<PreparedControls, Completion> {
     let corpus = view.corpus();
     let coordinate = view.coordinate();
     let ancestry_index = build_control_ancestry_index(view, budget, cancellation)?;
@@ -2184,7 +2178,52 @@ fn prepare_controls(
     controls.retain(|control| {
         dispositions.get(&control.event_id) == Some(&ProtocolDisposition::Excluded)
     });
-    Ok((controls, dispositions))
+    let states = dispositions
+        .iter()
+        .map(|(event_id, disposition)| {
+            let state = match disposition {
+                ProtocolDisposition::Accepted | ProtocolDisposition::Excluded => {
+                    PreparedControlState::Ready
+                }
+                ProtocolDisposition::Pending => PreparedControlState::Pending,
+                ProtocolDisposition::Invalid | ProtocolDisposition::UnsupportedRevision => {
+                    PreparedControlState::Invalid
+                }
+            };
+            (*event_id, state)
+        })
+        .collect();
+    Ok(PreparedControls {
+        controls,
+        dispositions,
+        states,
+    })
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PreparedControlState {
+    Ready,
+    Pending,
+    Invalid,
+}
+
+#[derive(Debug)]
+struct PreparedControls {
+    controls: Vec<BatchControl>,
+    dispositions: std::collections::BTreeMap<crate::EventId, ProtocolDisposition>,
+    states: std::collections::BTreeMap<crate::EventId, PreparedControlState>,
+}
+
+impl PreparedControls {
+    fn into_parts(
+        self,
+    ) -> (
+        Vec<BatchControl>,
+        std::collections::BTreeMap<crate::EventId, ProtocolDisposition>,
+    ) {
+        debug_assert_eq!(self.states.len(), self.dispositions.len());
+        (self.controls, self.dispositions)
+    }
 }
 
 fn device_ancestry_is_valid(

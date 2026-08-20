@@ -49,6 +49,7 @@ pub(crate) struct BatchEvaluationReport {
     pub(crate) control_dispositions: BTreeMap<EventId, ProtocolDisposition>,
     pub(crate) accepted_at_control: BTreeMap<EventId, AcceptedAtControl>,
     pub(crate) statefully_valid_controls: BTreeSet<EventId>,
+    pub(crate) branch_states: BTreeMap<EventId, BranchEvaluationState>,
     pub(crate) dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
     pub(crate) accepted_changes: BTreeSet<ChangeHash>,
     pub(crate) heads: BTreeSet<ChangeHash>,
@@ -58,12 +59,31 @@ pub(crate) struct BatchEvaluationReport {
     pub(crate) failure: Option<EvaluationFailure>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum BranchEvaluationState {
+    Valid,
+    Pending,
+    Invalid,
+}
+
+impl BranchEvaluationState {
+    pub(crate) const fn final_disposition(self, canonical: bool) -> ProtocolDisposition {
+        match (self, canonical) {
+            (Self::Valid, true) => ProtocolDisposition::Accepted,
+            (Self::Valid, false) => ProtocolDisposition::Excluded,
+            (Self::Pending, _) => ProtocolDisposition::Pending,
+            (Self::Invalid, _) => ProtocolDisposition::Invalid,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default)]
 struct PreservedBatchProgress {
     canonical_controls: Vec<EventId>,
     control_dispositions: BTreeMap<EventId, ProtocolDisposition>,
     accepted_at_control: BTreeMap<EventId, AcceptedAtControl>,
     statefully_valid_controls: BTreeSet<EventId>,
+    branch_states: BTreeMap<EventId, BranchEvaluationState>,
     dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
     accepted_changes: BTreeSet<ChangeHash>,
     integrity_alerts: Vec<IntegrityAlert>,
@@ -127,6 +147,7 @@ pub(crate) fn evaluate_batch_with_prior(
     let mut accepted_changes = BTreeSet::new();
     let mut accepted_at_control = BTreeMap::new();
     let mut statefully_valid_controls = BTreeSet::new();
+    let mut branch_states = BTreeMap::new();
     let mut parent_epoch_result: Option<EpochEvaluationResult> = None;
     let mut parent_id = None;
     let mut canonical_ancestry = Vec::<ControlEnvelope>::new();
@@ -234,12 +255,20 @@ pub(crate) fn evaluate_batch_with_prior(
                 })
             })
             .collect::<Vec<_>>();
-        statefully_valid_controls.extend(outcomes.iter().filter_map(|outcome| {
-            (outcome.disposition() == ProtocolDisposition::Accepted).then_some(outcome.event_id())
-        }));
         for outcome in &outcomes {
-            if outcome.disposition() != ProtocolDisposition::Accepted {
-                control_dispositions.insert(outcome.event_id(), outcome.disposition());
+            let state = match outcome.disposition() {
+                ProtocolDisposition::Accepted | ProtocolDisposition::Excluded => {
+                    BranchEvaluationState::Valid
+                }
+                ProtocolDisposition::Pending => BranchEvaluationState::Pending,
+                ProtocolDisposition::Invalid | ProtocolDisposition::UnsupportedRevision => {
+                    BranchEvaluationState::Invalid
+                }
+            };
+            branch_states.insert(outcome.event_id(), state);
+            control_dispositions.insert(outcome.event_id(), state.final_disposition(false));
+            if state == BranchEvaluationState::Valid {
+                statefully_valid_controls.insert(outcome.event_id());
             }
         }
         let (selection, alert) =
@@ -339,6 +368,7 @@ pub(crate) fn evaluate_batch_with_prior(
                 control_dispositions,
                 accepted_at_control,
                 statefully_valid_controls,
+                branch_states,
                 dispositions,
                 accepted_changes,
                 integrity_alerts,
@@ -372,6 +402,7 @@ pub(crate) fn evaluate_batch_with_prior(
                     control_dispositions,
                     accepted_at_control,
                     statefully_valid_controls,
+                    branch_states,
                     dispositions,
                     accepted_changes,
                     integrity_alerts,
@@ -407,6 +438,7 @@ pub(crate) fn evaluate_batch_with_prior(
                 control_dispositions,
                 accepted_at_control,
                 statefully_valid_controls,
+                branch_states,
                 dispositions,
                 accepted_changes,
                 integrity_alerts,
@@ -426,6 +458,7 @@ pub(crate) fn evaluate_batch_with_prior(
                         control_dispositions,
                         accepted_at_control,
                         statefully_valid_controls,
+                        branch_states,
                         dispositions,
                         accepted_changes,
                         integrity_alerts,
@@ -452,6 +485,7 @@ pub(crate) fn evaluate_batch_with_prior(
                     control_dispositions,
                     accepted_at_control,
                     statefully_valid_controls,
+                    branch_states,
                     dispositions,
                     accepted_changes,
                     integrity_alerts,
@@ -468,6 +502,7 @@ pub(crate) fn evaluate_batch_with_prior(
         control_dispositions,
         accepted_at_control,
         statefully_valid_controls,
+        branch_states,
         dispositions,
         accepted_changes,
         heads,
@@ -880,6 +915,7 @@ fn incomplete_report(
         control_dispositions: progress.control_dispositions,
         accepted_at_control: progress.accepted_at_control,
         statefully_valid_controls: progress.statefully_valid_controls,
+        branch_states: progress.branch_states,
         dispositions: progress.dispositions,
         accepted_changes: progress.accepted_changes,
         heads: BTreeSet::new(),
@@ -912,8 +948,8 @@ mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
     use super::{
-        AcceptedAtControl, BatchChange, BatchControl, charge_control_closures, evaluate_batch,
-        propagate_control_parent_dispositions,
+        AcceptedAtControl, BatchChange, BatchControl, BranchEvaluationState,
+        charge_control_closures, evaluate_batch, propagate_control_parent_dispositions,
     };
     use crate::automerge_adapter::decode::decode_change;
     use crate::graph::actor_state::tests::candidate;
@@ -921,6 +957,26 @@ mod tests {
         ChangeHash, Completion, EvaluationFailure, EventId, NeverCancelled, ProtocolDisposition,
         ProtocolRevision, WorkBudget, WorkCounter,
     };
+
+    #[test]
+    fn branch_state_maps_exhaustively_to_final_disposition() {
+        assert_eq!(
+            BranchEvaluationState::Valid.final_disposition(true),
+            ProtocolDisposition::Accepted
+        );
+        assert_eq!(
+            BranchEvaluationState::Valid.final_disposition(false),
+            ProtocolDisposition::Excluded
+        );
+        assert_eq!(
+            BranchEvaluationState::Pending.final_disposition(true),
+            ProtocolDisposition::Pending
+        );
+        assert_eq!(
+            BranchEvaluationState::Invalid.final_disposition(false),
+            ProtocolDisposition::Invalid
+        );
+    }
 
     fn control(id: u8, parent: Option<u8>, changes: Vec<BatchChange>) -> BatchControl {
         BatchControl {

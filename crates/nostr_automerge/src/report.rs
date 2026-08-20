@@ -238,6 +238,10 @@ mod tests {
                 AcceptedAtControl::for_test(BTreeSet::from([accepted[0]])),
             )]),
             statefully_valid_controls: BTreeSet::from([controls[0]]),
+            branch_states: BTreeMap::from([(
+                controls[0],
+                crate::reference::evaluate::BranchEvaluationState::Valid,
+            )]),
             dispositions: BTreeMap::from([(accepted[0], ProtocolDisposition::Accepted)]),
             accepted_changes: BTreeSet::from([accepted[0]]),
             heads: BTreeSet::from([accepted[0]]),
