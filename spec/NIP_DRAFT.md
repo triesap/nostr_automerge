@@ -291,18 +291,21 @@ Only an unknown protocol revision or unknown declared Automerge profile is
 
 For each ActorId, change sequence starts at `1` and increases by exactly one.
 
-Clients maintain an explicit next operation counter:
+For a candidate change `C`, let `D(C)` be its exact accepted dependency
+closure. The next operation counter is causal:
 
 ```text
-initial next_op = 1
-require change.start_op == next_op
-if change has operations:
-    next_op = change.start_op + operation_count
-else:
-    next_op is unchanged
+next_op(C) = 1                          when D(C) contains no operations
+next_op(C) = 1 + max(operation_counter) otherwise
+require C.start_op == next_op(C)
 ```
 
-All arithmetic MUST be checked for overflow.
+An implementation MAY equivalently take the maximum exclusive next-operation
+value exposed by changes in `D(C)`. An operation-bearing change advances that
+value by its operation count. An empty change consumes one actor sequence and
+does not advance the operation counter. All additions and conversions MUST be
+checked for overflow. Unrelated, pending, excluded, invalid, or later changes
+MUST NOT contribute to `next_op(C)`.
 
 For `seq > 1`, the accepted dependency closure MUST contain exactly one accepted change from the same actor with `seq - 1`.
 
@@ -459,6 +462,27 @@ A control with missing base changes remains pending. It is not valid until those
 A newly received lower-id sibling may change the canonical chain. Clients MUST retain signed evidence and rebuild derived state when this happens.
 
 Controller equivocation is a governance failure. The lowest-id rule provides convergence; it does not make a compromised controller trustworthy.
+
+### Branch-local change outcomes
+
+Before selecting the canonical child at any fork, clients MUST statefully
+evaluate every structurally and transition-valid control branch against the
+accepted state of its actual parent branch. A branch MUST NOT borrow the
+frontier, actor counters, dependency knowledge, or change results of a sibling.
+
+Each evaluated branch retains its own accepted state, per-ChangeHash outcomes,
+and integrity alerts. A missing or pending parent makes its descendants
+pending. A statically or dynamically invalid parent makes its descendants
+invalid. These states propagate through the control tree independently of
+event-id ordering.
+
+Canonical selection chooses the lowest event id only among statefully valid
+siblings. A losing but statefully valid control is `excluded`; this does not
+erase its branch-local change results. An otherwise-valid authorized change on
+that branch is accepted for the branch and `excluded` from canonical document
+state. A branch-local missing dependency remains `pending`; a known binding,
+counter, dependency, authorization, or application failure remains `invalid`;
+and an otherwise-valid equivocation quarantine remains `excluded`.
 
 ### Causal epoch boundary
 

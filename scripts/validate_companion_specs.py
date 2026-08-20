@@ -34,6 +34,7 @@ ADAPTED = {
     "ACCEPTANCE_CRITERIA.md",
     "AUTOMERGE_PROFILE.md",
     "CONFORMANCE.md",
+    "NIP_DRAFT.md",
     "NOSTR_AUTOMERGE_V1_SPEC.md",
 }
 

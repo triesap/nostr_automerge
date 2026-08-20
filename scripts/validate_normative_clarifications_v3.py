@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-NIP_SHA256 = "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3"
+SOURCE_NIP_SHA256 = "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3"
 REQUIREMENT_ID_SHA256 = "16caaa50b4c0b5e1039f365b5fc996a385a149958834a3e4bd821d5b074af8ca"
 
 
@@ -19,11 +19,22 @@ def sha256_bytes(value: bytes) -> str:
 
 def main() -> int:
     nip = ROOT / "spec/NIP_DRAFT.md"
-    if sha256_bytes(nip.read_bytes()) != NIP_SHA256:
-        raise AssertionError("external NIP snapshot changed")
+    nip_sha256 = sha256_bytes(nip.read_bytes())
     checksum = (ROOT / "spec/NIP_DRAFT.sha256").read_text(encoding="utf-8")
-    if checksum != f"{NIP_SHA256}  NIP_DRAFT.md\n":
+    if checksum != f"{nip_sha256}  NIP_DRAFT.md\n":
         raise AssertionError("NIP snapshot checksum declaration changed")
+    adaptation = json.loads((ROOT / "docs/import_adaptation.json").read_text())
+    nip_import = next(
+        item
+        for item in adaptation["imported_files"]
+        if item["path"] == "spec/NIP_DRAFT.md"
+    )
+    if (
+        nip_import.get("source_sha256") != SOURCE_NIP_SHA256
+        or nip_import.get("target_sha256") != nip_sha256
+        or nip_import.get("adapted") is not True
+    ):
+        raise AssertionError("local NIP reconciliation provenance is invalid")
 
     registry = json.loads((ROOT / "spec/requirements.json").read_text(encoding="utf-8"))
     requirements = registry.get("requirements")
@@ -88,7 +99,7 @@ def main() -> int:
     if revision.get("sealed") is not True or revision.get("revision") != "draft_2026_08":
         raise AssertionError("sealed protocol revision changed")
     print("PASS: normative clarification v3")
-    print("- nip_snapshot=unchanged")
+    print("- nip_snapshot=local_reconciled_source_preserved")
     print("- requirement_ids=87_stable_plus_32_append_only")
     print(f"- causal_counter_cases={len(case_ids)}")
     return 0

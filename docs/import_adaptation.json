@@ -43,8 +43,8 @@
     {
       "path": "spec/NIP_DRAFT.md",
       "source_sha256": "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3",
-      "target_sha256": "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3",
-      "adapted": false
+      "target_sha256": "cf89d7160b40d204ca7351d4aec095a41c9bbe9f875cfa2f05e7f22405b649ec",
+      "adapted": true
     },
     {
       "path": "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
