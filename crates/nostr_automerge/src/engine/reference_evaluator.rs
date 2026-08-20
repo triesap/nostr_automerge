@@ -585,17 +585,13 @@ fn additional_prior_knowledge(
         .iter()
         .map(|selected| {
             charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
-            let selected_hashes = corpus
-                .indexes
-                .changes
-                .claims_by_control
-                .get(&selected.event_id);
+            let selected_hashes = view.change_hashes_for_control(selected.event_id);
             let mut knowledge = std::collections::BTreeMap::new();
             for hash in view.change_hashes() {
                 charge_evaluation_work(budget, cancellation, WorkCounter::GraphNode, 1)?;
                 let state = if selected.accepted_base.contains(&hash) {
                     Some(PriorChangeKnowledge::AcceptedInBase)
-                } else if selected_hashes.is_some_and(|hashes| hashes.contains_key(&hash)) {
+                } else if selected_hashes.is_some_and(|hashes| hashes.contains(&hash)) {
                     Some(PriorChangeKnowledge::SameEpochCandidate)
                 } else {
                     reasoned_by_hash.get(&hash).copied()
@@ -2097,7 +2093,7 @@ fn prepare_controls(
         });
         let frontier_missing = control
             .base_heads()
-            .any(|head| !corpus.indexes.changes.carriers_by_hash.contains_key(&head));
+            .any(|head| view.change_carrier_event_ids(head).is_none());
         let disposition = if let Some(disposition) = parent_disposition {
             disposition
         } else if frontier_missing {
@@ -2156,7 +2152,7 @@ fn prepare_controls(
             parent: control.parent(),
             accepted_base: control.base_heads().collect(),
             frozen: control.terminal(),
-            changes: changes_for_control(corpus, control, budget, cancellation)?,
+            changes: changes_for_control(view, control, budget, cancellation)?,
             envelope: Some(envelope),
         });
     }
@@ -2416,20 +2412,16 @@ fn terminal_continuity_is_valid(
 }
 
 fn changes_for_control(
-    corpus: &EvidenceCorpus,
+    view: &DocumentEvidenceView<'_>,
     control: &crate::carrier::control::ValidatedControlCarrier,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<Vec<BatchChange>, Completion> {
-    let hashes = corpus
-        .indexes
-        .changes
-        .hashes_by_control
-        .get(&control.event_id());
+    let hashes = view.change_hashes_for_control(control.event_id());
     let mut changes = Vec::new();
     for hash in hashes.into_iter().flatten().copied() {
         charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)?;
-        if let Some(change) = change_for_hash(corpus, control, hash, budget, cancellation)? {
+        if let Some(change) = change_for_hash(view, control, hash, budget, cancellation)? {
             changes.push(change);
         }
     }
@@ -2437,15 +2429,16 @@ fn changes_for_control(
 }
 
 fn change_for_hash(
-    corpus: &EvidenceCorpus,
+    view: &DocumentEvidenceView<'_>,
     control: &crate::carrier::control::ValidatedControlCarrier,
     hash: ChangeHash,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<Option<BatchChange>, Completion> {
-    let Some(event_ids) = corpus.indexes.changes.carriers_by_hash.get(&hash) else {
+    let Some(event_ids) = view.change_carrier_event_ids(hash) else {
         return Ok(None);
     };
+    let corpus = view.corpus();
     let mut raw = None;
     let mut carriers = Vec::new();
     for event_id in event_ids {
@@ -2455,7 +2448,7 @@ fn change_for_hash(
             ..
         }) = corpus.events.get(event_id)
             && change.control_id() == control.event_id()
-            && change.coordinate() == control.coordinate()
+            && change.coordinate() == view.coordinate()
         {
             let raw_bytes = change.canonical_raw_bytes();
             charge_evaluation_work(

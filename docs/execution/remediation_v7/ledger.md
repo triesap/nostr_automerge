@@ -36,10 +36,12 @@ Updated: 2026-08-20
   indexes with coordinate-scoped checkpoint work metadata.
 - `step_1071` exposed deterministic borrowed dependent lookups and checkpoint
   counts through `DocumentEvidenceView`.
+- `step_1072` routed frontier checks, change discovery, carrier selection, and
+  same-epoch claim classification through coordinate-scoped view accessors.
 
 ## Active checkpoint
 
-`step_1072` — route change discovery and claims through scoped accessors.
+`step_1073` — route checkpoint evaluation through scoped accessors.
 
 ## Holds
 
