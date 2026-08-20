@@ -65,12 +65,17 @@ def validate_findings_and_requirements() -> None:
     nip_row = next(row for row in rows if row["id"] == "NCRDT-NIP-002")
     require(nip_row["applicability"] == "explicitly-deferred", "NIP applicability")
 
-    canonical = load("spec/requirements.json")["requirements"]
-    require(len(canonical) in {119, 129}, "canonical requirement count")
-    if len(canonical) == 119:
-        require(not set(REQUIREMENT_IDS).intersection(row["id"] for row in canonical), "early registry mutation")
-    else:
-        require(tuple(row["id"] for row in canonical[-10:]) == REQUIREMENT_IDS, "canonical append order")
+    registry = load("spec/requirements.json")
+    canonical = registry["requirements"]
+    require(registry["schema"] == "nostr_automerge.requirements.v5", "canonical registry schema")
+    require(registry["requirement_count"] == 129 == len(canonical), "canonical requirement count")
+    require(tuple(row["id"] for row in canonical[-10:]) == REQUIREMENT_IDS, "canonical append order")
+    applicability = load("spec/requirements_applicability.json")
+    require(applicability["schema"] == "nostr_automerge.requirements_applicability.v5", "applicability schema")
+    classifications = applicability["classifications"]
+    require(tuple(classifications) == tuple(row["id"] for row in canonical), "applicability order")
+    for row in rows:
+        require(classifications[row["id"]] == row["applicability"], f"applicability {row['id']}")
 
 
 def validate_plan() -> None:

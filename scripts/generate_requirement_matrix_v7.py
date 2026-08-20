@@ -11,7 +11,7 @@ from pathlib import Path
 
 from generate_requirement_matrix import rust_proof
 from generate_requirement_matrix_v3 import test_id
-from validate_requirement_matrix_v7 import signed_artifact_hash
+from validate_requirement_matrix_v7 import git_bytes, signed_artifact_hash_at_commit
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -177,12 +177,16 @@ def main() -> int:
     requirements_path = ROOT / "spec/requirements.json"
     applicability_path = ROOT / "spec/requirements_applicability.json"
     distribution_path = ROOT / "fixtures/distribution/manifest_v7.json"
-    requirements = json.loads(requirements_path.read_text())["requirements"]
-    applicability = json.loads(applicability_path.read_text())["classifications"]
-    distribution = json.loads(distribution_path.read_text())
+    rust_candidate = git("rev-parse", "HEAD")
+    requirements_bytes = git_bytes(rust_candidate, "spec/requirements.json")
+    applicability_bytes = git_bytes(rust_candidate, "spec/requirements_applicability.json")
+    distribution_bytes = git_bytes(rust_candidate, "fixtures/distribution/manifest_v7.json")
+    requirements = json.loads(requirements_bytes)["requirements"]
+    applicability = json.loads(applicability_bytes)["classifications"]
+    distribution = json.loads(distribution_bytes)
     attestation = json.loads(TS_ATTESTATION.read_text())
     fixture_paths = {
-        item["fixture_id"]: ROOT / item["metadata_path"]
+        item["fixture_id"]: item["metadata_path"]
         for item in distribution["fixtures"]
     }
     by_requirement: dict[str, list[str]] = defaultdict(list)
@@ -190,7 +194,6 @@ def main() -> int:
         for requirement in item["requirements"]:
             by_requirement[requirement].append(item["fixture_id"])
     executed_typescript = set(attestation["executed_fixture_ids"])
-    rust_candidate = git("rev-parse", "HEAD")
     typescript_candidate = attestation["candidate"]
     attestation_hash = sha256(TS_ATTESTATION)
     rows: list[dict[str, object]] = []
@@ -227,19 +230,25 @@ def main() -> int:
             evidence_kind = "signed-fixture"
             evidence_ids = fixture_ids
             test_path = "tools/nostr_automerge_conformance/src/runner.rs"
-            artifact_hash = signed_artifact_hash(evidence_ids, fixture_paths)
+            artifact_hash = signed_artifact_hash_at_commit(
+                rust_candidate, evidence_ids, fixture_paths
+            )
             command = "cargo run -p nostr_automerge_conformance --locked -- run_corpus fixtures/v1_draft/scenarios"
         elif identifier in EXACT_ASSERTIONS:
             test_path, evidence_ids = EXACT_ASSERTIONS[identifier]
             evidence_kind = "exact-assertion"
             test_path = exact_assertion_path(test_path, evidence_ids)
-            artifact_hash = sha256(ROOT / test_path)
+            artifact_hash = hashlib.sha256(
+                git_bytes(rust_candidate, test_path)
+            ).hexdigest()
             command = "cargo test --workspace --all-targets --locked"
         else:
             evidence_kind = "exact-assertion"
             evidence_ids = [test_id(identifier)]
             test_path = exact_assertion_path(source["test"], evidence_ids)
-            artifact_hash = sha256(ROOT / test_path)
+            artifact_hash = hashlib.sha256(
+                git_bytes(rust_candidate, test_path)
+            ).hexdigest()
             command = "cargo test --workspace --all-targets --locked"
         row["rust_proof"] = {
             "candidate": rust_candidate,
@@ -284,9 +293,9 @@ def main() -> int:
     canonical_write(overlay_path, overlay)
     report = {
         "schema": "nostr_automerge.requirement_coverage.v7",
-        "requirements_sha256": sha256(requirements_path),
-        "applicability_sha256": sha256(applicability_path),
-        "fixture_distribution_sha256": sha256(distribution_path),
+        "requirements_sha256": hashlib.sha256(requirements_bytes).hexdigest(),
+        "applicability_sha256": hashlib.sha256(applicability_bytes).hexdigest(),
+        "fixture_distribution_sha256": hashlib.sha256(distribution_bytes).hexdigest(),
         "rust_candidate": rust_candidate,
         "typescript_candidate": typescript_candidate,
         "requirement_count": len(rows),

@@ -57,10 +57,13 @@ Updated: 2026-08-20
 - `step_1081` enabled the finalization regression, passed the focused
   property, resource, and standard gates, installed exact mutation anchors,
   and recorded source-mutating execution as held rather than passed.
+- `step_1082` atomically appended the ten approved requirement rows, installed
+  the exact 129-row registry and applicability schemas, and preserved the
+  independently verifiable 119-row historical evidence report.
 
 ## Active checkpoint
 
-`step_1082` — append and version the canonical 129-row requirement registry.
+`step_1083` — install the signed 171-scenario distribution v8.
 
 ## Holds
 

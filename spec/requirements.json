@@ -1,7 +1,7 @@
 {
-  "schema": "nostr_automerge.requirements.v4",
+  "schema": "nostr_automerge.requirements.v5",
   "project": "nostr_automerge_v1_spec",
-  "requirement_count": 119,
+  "requirement_count": 129,
   "requirements": [
     {
       "id": "NCRDT-SCOPE-001",
@@ -716,6 +716,66 @@
       "section": "Requirement evidence",
       "text": "Every in-core normative requirement MUST bind an exact executed signed fixture or exact named assertion; broad repository tests or profile-only overlays cannot close consensus-critical behavior.",
       "source": "spec/CONFORMANCE.md"
+    },
+    {
+      "id": "NCRDT-BRANCH-001",
+      "section": "Branch-local control evaluation",
+      "text": "The evaluator MUST derive stateful validity for every retained otherwise-usable control against that control's own branch; static usability alone MUST NOT establish noncanonical validity.",
+      "source": "spec/remediation_v7_requirements.json"
+    },
+    {
+      "id": "NCRDT-BRANCH-002",
+      "section": "Branch-local frontier resolution",
+      "text": "Each child base head MUST be resolved against accepted state under the child's actual parent branch, preserving pending and invalid distinctions.",
+      "source": "spec/remediation_v7_requirements.json"
+    },
+    {
+      "id": "NCRDT-SCOPE-004",
+      "section": "Coordinate-qualified change indexes",
+      "text": "Evaluation of one coordinate MUST NOT traverse or charge change claims attributable only to another coordinate, even when a foreign claim names a target control or shares a change hash.",
+      "source": "spec/remediation_v7_requirements.json"
+    },
+    {
+      "id": "NCRDT-SCOPE-005",
+      "section": "Coordinate-qualified checkpoint indexes",
+      "text": "A target descriptor MUST be joined only with chunks attributable to the target coordinate.",
+      "source": "spec/remediation_v7_requirements.json"
+    },
+    {
+      "id": "NCRDT-SCOPE-006",
+      "section": "Coordinate-isolated outputs and work",
+      "text": "Foreign evidence MUST NOT enter target event dispositions, digest inputs, completion decisions, or target-proportional work counters.",
+      "source": "spec/remediation_v7_requirements.json"
+    },
+    {
+      "id": "NCRDT-RESOURCE-009",
+      "section": "Parent-state propagation",
+      "text": "Propagation of pending or invalid parent state MUST visit each relevant control relationship through a deterministic charged traversal and observe cancellation before target-proportional work.",
+      "source": "spec/remediation_v7_requirements.json"
+    },
+    {
+      "id": "NCRDT-RESOURCE-010",
+      "section": "Finalization settlement",
+      "text": "Every reserved finalization dimension MUST be settled exactly once as actual consumption, validated refund, or deliberate interruption forfeiture; generic remainder erasure is forbidden.",
+      "source": "spec/remediation_v7_requirements.json"
+    },
+    {
+      "id": "NCRDT-NIP-002",
+      "section": "External NIP reconciliation",
+      "text": "The externally authored NIP SHOULD eventually reconcile all interoperability-critical companion rules without changing provisional allocation boundaries.",
+      "source": "spec/remediation_v7_requirements.json"
+    },
+    {
+      "id": "NCRDT-CONF-008",
+      "section": "Signed conformance",
+      "text": "Conforming engines MUST process the checksum-bound v8 distribution of exactly 171 scenarios under every required delivery permutation.",
+      "source": "spec/remediation_v7_requirements.json"
+    },
+    {
+      "id": "NCRDT-EVIDENCE-004",
+      "section": "Requirement evidence",
+      "text": "Each of the 129 registry rows MUST bind exact candidate identities, source assertions, fixtures where applicable, and artifact hashes; weakening evidence binding MUST be rejected.",
+      "source": "spec/remediation_v7_requirements.json"
     }
   ]
 }

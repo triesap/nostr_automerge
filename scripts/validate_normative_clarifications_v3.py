@@ -27,8 +27,12 @@ def main() -> int:
 
     registry = json.loads((ROOT / "spec/requirements.json").read_text(encoding="utf-8"))
     requirements = registry.get("requirements")
-    if registry.get("requirement_count") != 119 or not isinstance(requirements, list):
-        raise AssertionError("the normative registry must contain 119 entries")
+    if (
+        not isinstance(requirements, list)
+        or registry.get("requirement_count") != len(requirements)
+        or len(requirements) < 119
+    ):
+        raise AssertionError("the normative registry must retain the original 119 entries")
     identifiers = [item.get("id") for item in requirements]
     identifier_digest = sha256_bytes("\n".join(identifiers[:87]).encode())
     if identifier_digest != REQUIREMENT_ID_SHA256:

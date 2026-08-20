@@ -67,7 +67,7 @@
     {
       "path": "spec/requirements.json",
       "source_sha256": "19e09e9862fd3a22051a43eec6329a9015e8ea24628fd93d83fca2e2376849c3",
-      "target_sha256": "dc86a3c713166e4137693254e111dd51932a0b0659dafe95695a22241997aded",
+      "target_sha256": "76277dd092ca8d47bb082cdbe64ba981107dd530c33a80d92b9bd58301dd2fb2",
       "adapted": true
     },
     {

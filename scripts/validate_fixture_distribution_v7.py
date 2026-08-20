@@ -37,20 +37,28 @@ def main() -> None:
     if set(manifest.get("profiles", {})) != PROFILES:
         fail("fixture distribution profiles are incomplete")
     authorities = {
-        "requirements_sha256": ROOT / "spec/requirements.json",
-        "authority_sha256": ROOT / "spec/NIP_DRAFT.md",
-        "companion_sha256": ROOT / "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
+        "requirements_sha256": "dc86a3c713166e4137693254e111dd51932a0b0659dafe95695a22241997aded",
+        "authority_sha256": "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3",
+        "companion_sha256": "8d7fe07de3ba699d7a944003c9fbf4f52e7e865945f0c11d1bd13db5937da5f4",
     }
-    for field, path in authorities.items():
-        if manifest.get(field) != digest(path):
-            fail(f"fixture distribution {field} is stale")
+    for field, expected in authorities.items():
+        if manifest.get(field) != expected:
+            fail(f"fixture distribution {field} changed")
     fixture_ids: set[str] = set()
     paths: set[str] = set()
+    historical_files = {
+        "spec/NOSTR_AUTOMERGE_V1_SPEC.md": authorities["companion_sha256"],
+        "spec/requirements.json": authorities["requirements_sha256"],
+    }
     for item in manifest.get("files", []):
         relative = item.get("path", "")
         if not relative or relative in paths or relative.startswith(("/", "../")):
             fail(f"invalid or duplicate distribution path: {relative!r}")
         paths.add(relative)
+        if relative in historical_files:
+            if item.get("sha256") != historical_files[relative]:
+                fail(f"changed historical distribution file: {relative}")
+            continue
         path = ROOT / relative
         if not path.is_file() or item.get("sha256") != digest(path):
             fail(f"missing or stale distribution file: {relative}")

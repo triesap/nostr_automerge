@@ -48,26 +48,32 @@ def signed_artifact_hash(fixture_ids: list[str], fixture_paths: dict[str, Path])
     return digest.hexdigest()
 
 
+def git_bytes(candidate: str, relative: str) -> bytes:
+    result = subprocess.run(
+        ("git", "show", f"{candidate}:{relative}"),
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+    )
+    if result.returncode:
+        raise EvidenceError(f"candidate-path:{relative}")
+    return result.stdout
+
+
+def signed_artifact_hash_at_commit(
+    candidate: str, fixture_ids: list[str], fixture_paths: dict[str, str]
+) -> str:
+    digest = hashlib.sha256()
+    for fixture_id in fixture_ids:
+        relative = fixture_paths[fixture_id]
+        data = git_bytes(candidate, relative)
+        encoded = relative.encode()
+        digest.update(len(encoded).to_bytes(4, "big") + encoded)
+        digest.update(len(data).to_bytes(8, "big") + data)
+    return digest.hexdigest()
+
+
 def validate(report: dict) -> None:
-    requirements_path = ROOT / "spec/requirements.json"
-    applicability_path = ROOT / "spec/requirements_applicability.json"
-    distribution_path = ROOT / "fixtures/distribution/manifest_v7.json"
-    requirements = json.loads(requirements_path.read_text())["requirements"]
-    applicability = json.loads(applicability_path.read_text())["classifications"]
-    distribution = json.loads(distribution_path.read_text())
-    fixture_paths = {
-        item["fixture_id"]: ROOT / item["metadata_path"]
-        for item in distribution["fixtures"]
-    }
-    expected_hashes = {
-        "requirements_sha256": sha256(requirements_path),
-        "applicability_sha256": sha256(applicability_path),
-        "fixture_distribution_sha256": sha256(distribution_path),
-    }
-    if report.get("schema") != "nostr_automerge.requirement_coverage.v7":
-        raise EvidenceError("schema")
-    if any(report.get(key) != value for key, value in expected_hashes.items()):
-        raise EvidenceError("authority-hash")
     rust = str(report.get("rust_candidate", ""))
     typescript = str(report.get("typescript_candidate", ""))
     if not HEX40.fullmatch(rust) or not HEX40.fullmatch(typescript):
@@ -77,6 +83,25 @@ def validate(report: dict) -> None:
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     ).returncode:
         raise EvidenceError("rust-candidate")
+    requirements_bytes = git_bytes(rust, "spec/requirements.json")
+    applicability_bytes = git_bytes(rust, "spec/requirements_applicability.json")
+    distribution_bytes = git_bytes(rust, "fixtures/distribution/manifest_v7.json")
+    requirements = json.loads(requirements_bytes)["requirements"]
+    applicability = json.loads(applicability_bytes)["classifications"]
+    distribution = json.loads(distribution_bytes)
+    fixture_paths = {
+        item["fixture_id"]: item["metadata_path"]
+        for item in distribution["fixtures"]
+    }
+    expected_hashes = {
+        "requirements_sha256": hashlib.sha256(requirements_bytes).hexdigest(),
+        "applicability_sha256": hashlib.sha256(applicability_bytes).hexdigest(),
+        "fixture_distribution_sha256": hashlib.sha256(distribution_bytes).hexdigest(),
+    }
+    if report.get("schema") != "nostr_automerge.requirement_coverage.v7":
+        raise EvidenceError("schema")
+    if any(report.get(key) != value for key, value in expected_hashes.items()):
+        raise EvidenceError("authority-hash")
     rows = report.get("rows")
     if report.get("requirement_count") != 119 or not isinstance(rows, list):
         raise EvidenceError("count")
@@ -102,10 +127,10 @@ def validate(report: dict) -> None:
         proof = row.get("rust_proof", {})
         if row.get("status") != "pass" or proof.get("candidate") != rust or proof.get("result") != "pass":
             raise EvidenceError(f"rust-proof:{identifier}")
-        implementation = ROOT / str(proof.get("implementation_path", ""))
-        test_path = ROOT / str(proof.get("test_path", ""))
-        if not implementation.is_file() or not test_path.is_file():
-            raise EvidenceError(f"rust-path:{identifier}")
+        implementation = str(proof.get("implementation_path", ""))
+        test_path = str(proof.get("test_path", ""))
+        git_bytes(rust, implementation)
+        test_bytes = git_bytes(rust, test_path)
         ids = proof.get("evidence_ids")
         if not isinstance(ids, list) or not ids or ids != sorted(set(ids), key=str.encode):
             raise EvidenceError(f"rust-evidence:{identifier}")
@@ -113,15 +138,15 @@ def validate(report: dict) -> None:
         if kind == "signed-fixture":
             if any(item not in fixture_paths for item in ids):
                 raise EvidenceError(f"fixture:{identifier}")
-            expected_artifact = signed_artifact_hash(ids, fixture_paths)
+            expected_artifact = signed_artifact_hash_at_commit(rust, ids, fixture_paths)
         elif kind == "exact-assertion":
-            source = test_path.read_text()
+            source = test_bytes.decode()
             if any(
                 item not in source and item.rsplit("::", 1)[-1] not in source
                 for item in ids
             ):
                 raise EvidenceError(f"assertion:{identifier}")
-            expected_artifact = sha256(test_path)
+            expected_artifact = hashlib.sha256(test_bytes).hexdigest()
         else:
             raise EvidenceError(f"proof-kind:{identifier}")
         if proof.get("artifact_sha256") != expected_artifact or not HEX64.fullmatch(expected_artifact):

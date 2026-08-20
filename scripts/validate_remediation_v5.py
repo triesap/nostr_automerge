@@ -110,9 +110,12 @@ def validate_boundaries() -> None:
 def validate_registry() -> None:
     registry = load("spec/requirements.json")
     rows = registry.get("requirements")
-    if registry.get("schema") != "nostr_automerge.requirements.v4" or not isinstance(rows, list):
+    if registry.get("schema") not in {
+        "nostr_automerge.requirements.v4",
+        "nostr_automerge.requirements.v5",
+    } or not isinstance(rows, list):
         raise AssertionError("unexpected append-only requirement registry")
-    if registry.get("requirement_count") != 119 or len(rows) != 119:
+    if registry.get("requirement_count") != len(rows) or len(rows) < 119:
         raise AssertionError("append-only requirement count is inconsistent")
     expected = [
         "NCRDT-DUP-003", "NCRDT-DISPOSITION-003", "NCRDT-EPOCH-002",
@@ -121,7 +124,7 @@ def validate_registry() -> None:
         "NCRDT-CONF-006",
     ]
     identifiers = [row.get("id") for row in rows]
-    if len(set(identifiers)) != 119 or identifiers[96:106] != expected:
+    if len(set(identifiers)) != len(identifiers) or identifiers[96:106] != expected:
         raise AssertionError("v3 requirements are duplicate, missing, or reordered")
     authority = load("reports/remediation_v5_authority.json")
     if authority.get("status") != "local_companion_authority_pass_external_nip_hold":

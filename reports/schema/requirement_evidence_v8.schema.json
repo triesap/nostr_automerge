@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/reports/schema/requirement_evidence_v8.schema.json",
+  "title": "nostr_automerge exact requirement evidence v8",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "requirements_sha256", "applicability_sha256", "fixture_distribution_sha256", "rust_candidate", "typescript_candidate", "requirement_count", "rows"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.requirement_coverage.v8"},
+    "requirements_sha256": {"$ref": "#/$defs/hash"},
+    "applicability_sha256": {"$ref": "#/$defs/hash"},
+    "fixture_distribution_sha256": {"$ref": "#/$defs/hash"},
+    "rust_candidate": {"$ref": "#/$defs/commit"},
+    "typescript_candidate": {"$ref": "#/$defs/commit"},
+    "requirement_count": {"const": 129},
+    "rows": {
+      "type": "array",
+      "minItems": 129,
+      "maxItems": 129,
+      "items": {"$ref": "#/$defs/row"}
+    }
+  },
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "identifier": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_:-]*$"},
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "section", "text_sha256"],
+      "properties": {
+        "source": {"type": "string", "minLength": 1},
+        "section": {"type": "string", "minLength": 1},
+        "text_sha256": {"$ref": "#/$defs/hash"}
+      }
+    },
+    "rustProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate", "implementation_path", "test_path", "evidence_kind", "evidence_ids", "command", "result", "artifact_sha256"],
+      "properties": {
+        "candidate": {"$ref": "#/$defs/commit"},
+        "implementation_path": {"type": "string", "minLength": 1},
+        "test_path": {"type": "string", "minLength": 1},
+        "evidence_kind": {"enum": ["exact-assertion", "signed-fixture"]},
+        "evidence_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/identifier"}},
+        "command": {"type": "string", "minLength": 1},
+        "result": {"const": "pass"},
+        "artifact_sha256": {"$ref": "#/$defs/hash"}
+      }
+    },
+    "typescriptProof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["implementation_identity", "candidate", "dependency_lock_sha256", "fixture_ids", "commands", "result", "artifact_sha256"],
+      "properties": {
+        "implementation_identity": {"const": "triesap/nostr_automerge_typescript"},
+        "candidate": {"$ref": "#/$defs/commit"},
+        "dependency_lock_sha256": {"$ref": "#/$defs/hash"},
+        "fixture_ids": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/identifier"}},
+        "commands": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "result": {"const": "pass"},
+        "artifact_sha256": {"$ref": "#/$defs/hash"}
+      }
+    },
+    "row": {
+      "type": "object",
+      "required": ["id", "applicability", "authority", "status"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^NCRDT-[A-Z0-9]+(?:-[A-Z0-9]+)*$"},
+        "applicability": {"enum": ["rust-only", "rust-and-typescript", "out-of-core", "explicitly-deferred"]},
+        "authority": {"$ref": "#/$defs/authority"},
+        "status": {"enum": ["pass", "pending", "not-applicable", "external-hold"]},
+        "rationale": {"type": "string", "minLength": 1},
+        "rust_proof": {"$ref": "#/$defs/rustProof"},
+        "typescript_proof": {"$ref": "#/$defs/typescriptProof"}
+      },
+      "additionalProperties": false
+    }
+  }
+}

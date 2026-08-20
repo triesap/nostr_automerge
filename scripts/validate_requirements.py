@@ -41,9 +41,10 @@ def validate(registry: dict[str, Any], *, resolve_sources: bool) -> None:
         "nostr_automerge.requirements.v2",
         "nostr_automerge.requirements.v3",
         "nostr_automerge.requirements.v4",
+        "nostr_automerge.requirements.v5",
     }:
         raise RegistryError("invalid_registry_schema")
-    if resolve_sources and registry["schema"] != "nostr_automerge.requirements.v4":
+    if resolve_sources and registry["schema"] != "nostr_automerge.requirements.v5":
         raise RegistryError("invalid_registry_schema")
     if registry["project"] != "nostr_automerge_v1_spec":
         raise RegistryError("invalid_registry_project")
@@ -52,7 +53,7 @@ def validate(registry: dict[str, Any], *, resolve_sources: bool) -> None:
         raise RegistryError("requirements_not_array")
     if registry["requirement_count"] != len(requirements):
         raise RegistryError("requirement_count_mismatch")
-    if resolve_sources and registry["requirement_count"] != 119:
+    if resolve_sources and registry["requirement_count"] != 129:
         raise RegistryError("requirement_count_mismatch")
 
     seen: set[str] = set()
