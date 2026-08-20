@@ -68,6 +68,11 @@ def main() -> int:
     evidence_schema = load("reports/schema/requirement_evidence_v8.schema.json")
     if evidence_schema["properties"]["requirement_count"].get("const") != 129:
         raise AssertionError("evidence schema does not require exactly 129 rows")
+    if evidence_schema["properties"]["phase"].get("enum") != [
+        "rust-complete-typescript-pending",
+        "complete",
+    ]:
+        raise AssertionError("evidence schema does not define the two exact phases")
 
     print("PASS: remediation-v7 canonical requirement registry")
     print("- requirements=129")

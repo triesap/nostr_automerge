@@ -14,8 +14,8 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "scripts/validate_remediation_v6.py",
     ),
     (
-        "requirement_evidence_v7",
-        "scripts/validate_requirement_matrix_v7.py",
+        "requirement_evidence_v8",
+        "scripts/validate_requirement_matrix_v8.py",
     ),
     (
         "requirement_registry_v8",
@@ -102,7 +102,7 @@ mod tests {
         assert!(names.contains(&"remediation_authority"));
         assert!(names.contains(&"remediation_v5_evidence"));
         assert!(names.contains(&"remediation_v6_authority"));
-        assert!(names.contains(&"requirement_evidence_v7"));
+        assert!(names.contains(&"requirement_evidence_v8"));
         assert!(names.contains(&"requirement_registry_v8"));
         assert!(names.contains(&"remediation_v6_final"));
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");

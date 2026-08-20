@@ -66,10 +66,13 @@ Updated: 2026-08-20
 - `step_1084` executed all 171 Rust scenarios twice in independent processes,
   exercised all eight required permutations per fixture, proved identical
   canonical output bytes, and rejected the deliberate signed-profile mismatch.
+- `step_1085` generated exact Rust proof for all 129 requirement rows, retained
+  all 96 cross-language rows as explicitly pending, and caught all eight
+  evidence weakening, staleness, coverage, and overclaim mutations.
 
 ## Active checkpoint
 
-`step_1085` — install and adversarially exercise exact 129-row evidence.
+`step_1086` — refresh the final Rust ordinary-assurance evidence set.
 
 ## Holds
 

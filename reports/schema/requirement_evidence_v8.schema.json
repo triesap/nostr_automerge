@@ -4,9 +4,10 @@
   "title": "nostr_automerge exact requirement evidence v8",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "requirements_sha256", "applicability_sha256", "fixture_distribution_sha256", "rust_candidate", "typescript_candidate", "requirement_count", "rows"],
+  "required": ["schema", "phase", "requirements_sha256", "applicability_sha256", "fixture_distribution_sha256", "rust_candidate", "typescript_candidate", "requirement_count", "rows"],
   "properties": {
     "schema": {"const": "nostr_automerge.requirement_coverage.v8"},
+    "phase": {"enum": ["rust-complete-typescript-pending", "complete"]},
     "requirements_sha256": {"$ref": "#/$defs/hash"},
     "applicability_sha256": {"$ref": "#/$defs/hash"},
     "fixture_distribution_sha256": {"$ref": "#/$defs/hash"},
