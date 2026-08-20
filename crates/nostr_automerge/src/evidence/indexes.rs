@@ -62,8 +62,12 @@ pub(crate) struct ChangeIndexes {
     pub(crate) claims_by_event: BTreeMap<EventId, ChangeCarrierClaim>,
     pub(crate) claims_by_control: BTreeMap<EventId, BTreeMap<ChangeHash, BTreeSet<EventId>>>,
     pub(crate) carriers_by_hash: BTreeMap<ChangeHash, BTreeSet<EventId>>,
+    pub(crate) carriers_by_coordinate_hash:
+        BTreeMap<(DocumentCoordinate, ChangeHash), BTreeSet<EventId>>,
     pub(crate) preferred_carrier: BTreeMap<ChangeHash, EventId>,
     pub(crate) hashes_by_control: BTreeMap<EventId, BTreeSet<ChangeHash>>,
+    pub(crate) hashes_by_coordinate_control:
+        BTreeMap<(DocumentCoordinate, EventId), BTreeSet<ChangeHash>>,
     pub(crate) hashes_by_actor: BTreeMap<ActorId, BTreeSet<ChangeHash>>,
     pub(crate) dependencies_by_hash: BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
     pub(crate) prior_claims_by_coordinate:
@@ -98,6 +102,8 @@ pub(crate) struct CheckpointIndexes {
     pub(crate) descriptors_by_coordinate: BTreeMap<DocumentCoordinate, BTreeSet<EventId>>,
     pub(crate) chunks_by_id: BTreeMap<EventId, CheckpointChunkIndexRecord>,
     pub(crate) chunks_by_descriptor: BTreeMap<EventId, BTreeSet<EventId>>,
+    pub(crate) chunks_by_coordinate_descriptor:
+        BTreeMap<(DocumentCoordinate, EventId), BTreeSet<EventId>>,
     pub(crate) descriptor_evidence: BTreeMap<EventId, IndexedDescriptorEvidence>,
     pub(crate) pending_descriptors: BTreeSet<EventId>,
     pub(crate) pending_chunks: BTreeSet<EventId>,
@@ -120,6 +126,8 @@ pub(crate) struct CoordinateWorkMetadata {
     pub(crate) change_hash_count: usize,
     pub(crate) evaluation_event_count: usize,
     pub(crate) carrier_evidence_count: usize,
+    pub(crate) checkpoint_descriptor_count: usize,
+    pub(crate) checkpoint_chunk_count: usize,
     pub(crate) decode_work_bytes: Option<u64>,
 }
 
@@ -295,6 +303,22 @@ fn derive_coordinate_work_metadata(
                     .map_or(0, BTreeSet::len),
                 evaluation_event_count,
                 carrier_evidence_count,
+                checkpoint_descriptor_count: indexes
+                    .checkpoints
+                    .descriptors_by_coordinate
+                    .get(coordinate)
+                    .map_or(0, BTreeSet::len),
+                checkpoint_chunk_count: indexes
+                    .checkpoints
+                    .chunks_by_coordinate_descriptor
+                    .range(
+                        (*coordinate, EventId::from_bytes([0; 32]))
+                            ..=(*coordinate, EventId::from_bytes([u8::MAX; 32])),
+                    )
+                    .try_fold(0_usize, |total, (_, chunks)| {
+                        total.checked_add(chunks.len())
+                    })
+                    .unwrap_or(usize::MAX),
                 decode_work_bytes,
             },
         );
@@ -403,6 +427,11 @@ fn index_checkpoint_chunk(
     indexes
         .chunks_by_descriptor
         .entry(record.descriptor_id)
+        .or_default()
+        .insert(record.event_id);
+    indexes
+        .chunks_by_coordinate_descriptor
+        .entry((record.coordinate, record.descriptor_id))
         .or_default()
         .insert(record.event_id);
     indexes.chunks_by_id.insert(record.event_id, record);
@@ -578,6 +607,11 @@ fn index_change(indexes: &mut ChangeIndexes, change: &crate::carrier::change::Ch
         .or_default()
         .insert(event_id);
     indexes
+        .carriers_by_coordinate_hash
+        .entry((change.coordinate(), change_hash))
+        .or_default()
+        .insert(event_id);
+    indexes
         .preferred_carrier
         .entry(change_hash)
         .and_modify(|current| *current = (*current).min(event_id))
@@ -585,6 +619,11 @@ fn index_change(indexes: &mut ChangeIndexes, change: &crate::carrier::change::Ch
     indexes
         .hashes_by_control
         .entry(change.control_id())
+        .or_default()
+        .insert(change_hash);
+    indexes
+        .hashes_by_coordinate_control
+        .entry((change.coordinate(), change.control_id()))
         .or_default()
         .insert(change_hash);
     indexes
@@ -603,11 +642,61 @@ fn index_change(indexes: &mut ChangeIndexes, change: &crate::carrier::change::Ch
 mod tests {
     use std::collections::BTreeMap;
 
-    use super::{CoordinateWorkMetadata, IndexedParentEvidence, derive_trusted_indexes};
+    use super::{
+        CheckpointIndexes, CoordinateWorkMetadata, IndexedParentEvidence, derive_trusted_indexes,
+        index_checkpoint_chunk,
+    };
     use crate::carrier::VerifiedCarrier;
+    use crate::carrier::checkpoint_chunk::ValidatedCheckpointChunkCarrier;
     use crate::carrier::control::{ValidatedControlCarrier, ValidatedControlContent};
+    use crate::checkpoint::CheckpointChunk;
     use crate::evidence::event::{EventEvidence, RawChecksum};
-    use crate::{ControllerPublicKey, DocumentCoordinate, DocumentId, EventId};
+    use crate::{
+        ChunkHash, ControllerPublicKey, DevicePublicKey, DocumentCoordinate, DocumentId, EventId,
+    };
+
+    #[test]
+    fn dependent_checkpoint_index_is_coordinate_qualified() {
+        let controller = ControllerPublicKey::from_bytes([1; 32]);
+        let first_coordinate = DocumentCoordinate::new(controller, DocumentId::from_bytes([2; 32]));
+        let second_coordinate =
+            DocumentCoordinate::new(controller, DocumentId::from_bytes([3; 32]));
+        let descriptor_id = EventId::from_bytes([4; 32]);
+        let chunk = |coordinate, event| {
+            ValidatedCheckpointChunkCarrier::for_test(
+                EventId::from_bytes([event; 32]),
+                DevicePublicKey::from_bytes([5; 32]),
+                coordinate,
+                descriptor_id,
+                ChunkHash::from_bytes([6; 32]),
+                CheckpointChunk {
+                    index: 0,
+                    count: 1,
+                    data: vec![event],
+                    proof: Vec::new(),
+                },
+            )
+        };
+        let mut indexes = CheckpointIndexes::default();
+        index_checkpoint_chunk(&mut indexes, &chunk(first_coordinate, 7));
+        index_checkpoint_chunk(&mut indexes, &chunk(second_coordinate, 8));
+        assert_eq!(
+            indexes
+                .chunks_by_coordinate_descriptor
+                .get(&(first_coordinate, descriptor_id)),
+            Some(&std::collections::BTreeSet::from([EventId::from_bytes(
+                [7; 32]
+            )]))
+        );
+        assert_eq!(
+            indexes
+                .chunks_by_coordinate_descriptor
+                .get(&(second_coordinate, descriptor_id)),
+            Some(&std::collections::BTreeSet::from([EventId::from_bytes(
+                [8; 32]
+            )]))
+        );
+    }
 
     #[test]
     fn trusted_indexes_only_include_validated_carrier_evidence() {
@@ -649,6 +738,8 @@ mod tests {
                 change_hash_count: 0,
                 evaluation_event_count: 1,
                 carrier_evidence_count: 1,
+                checkpoint_descriptor_count: 0,
+                checkpoint_chunk_count: 0,
                 decode_work_bytes: Some(0),
             })
         );

@@ -32,10 +32,12 @@ Updated: 2026-08-20
 - `step_1068` removed blanket excluded-control validity promotion.
 - `step_1069` added six signed branch scenarios, ran all required delivery
   permutations, preserved legacy outputs, and closed `GATE_V7_BRANCH`.
+- `step_1070` added coordinate-qualified change and checkpoint dependent
+  indexes with coordinate-scoped checkpoint work metadata.
 
 ## Active checkpoint
 
-`step_1070` — add coordinate-qualified dependent indexes and checked metadata.
+`step_1071` — expose borrowed scoped accessors on `DocumentEvidenceView`.
 
 ## Holds
 
