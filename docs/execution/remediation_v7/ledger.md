@@ -40,10 +40,12 @@ Updated: 2026-08-20
   same-epoch claim classification through coordinate-scoped view accessors.
 - `step_1073` routed checkpoint discovery, assembly, historical carrier
   coverage, chunk collection, and target event collection through the view.
+- `step_1074` required dynamic event dispositions and digest inputs to contain
+  only reportable target event identifiers, with typed invariant rejection.
 
 ## Active checkpoint
 
-`step_1074` — enforce target-only dynamic event disposition membership.
+`step_1075` — charge only coordinate-scoped checkpoint reference work.
 
 ## Holds
 

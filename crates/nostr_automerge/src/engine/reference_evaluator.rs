@@ -303,7 +303,7 @@ impl ReferenceEvaluator {
                 &mut finalization,
             );
         }
-        disposition_records.extend(event_disposition_records(&view, &manifest, &checkpoints));
+        disposition_records.extend(event_disposition_records(&view, &manifest, &checkpoints)?);
         let accepted_changes = disposition_hashes(&dispositions, ProtocolDisposition::Accepted);
         let heads = batch.heads.iter().copied().collect::<Vec<_>>();
         let pending_changes = disposition_hashes(&dispositions, ProtocolDisposition::Pending);
@@ -871,7 +871,7 @@ fn event_disposition_records(
     view: &DocumentEvidenceView<'_>,
     manifest: &ResolvedManifestAvailability,
     checkpoints: &[CheckpointVerificationResult],
-) -> Vec<DispositionRecord> {
+) -> Result<Vec<DispositionRecord>, EvaluationError> {
     let corpus = view.corpus();
     let represented_events = view
         .reportable_event_ids()
@@ -960,7 +960,7 @@ fn event_disposition_records(
         }
     }
 
-    for record in dynamic_event_disposition_records(manifest, checkpoints) {
+    for record in scoped_dynamic_event_disposition_records(view, manifest, checkpoints)? {
         records.insert(
             match record.identifier() {
                 ProtocolItemIdentifier::Event(event_id) => event_id,
@@ -1026,7 +1026,13 @@ fn event_disposition_records(
             .is_some_and(|(disposition, _)| *disposition != ProtocolDisposition::Excluded)
     }));
 
-    records
+    if records
+        .keys()
+        .any(|event_id| !view.contains_reportable(event_id))
+    {
+        return Err(EvaluationError::ReportInvariant);
+    }
+    Ok(records
         .into_iter()
         .map(|(event_id, (disposition, diagnostic))| {
             DispositionRecord::new(
@@ -1035,7 +1041,22 @@ fn event_disposition_records(
                 diagnostic,
             )
         })
-        .collect()
+        .collect())
+}
+
+fn scoped_dynamic_event_disposition_records(
+    view: &DocumentEvidenceView<'_>,
+    manifest: &ResolvedManifestAvailability,
+    checkpoints: &[CheckpointVerificationResult],
+) -> Result<Vec<DispositionRecord>, EvaluationError> {
+    let records = dynamic_event_disposition_records(manifest, checkpoints);
+    if records.iter().any(|record| match record.identifier() {
+        ProtocolItemIdentifier::Event(event_id) => !view.contains_reportable(&event_id),
+        ProtocolItemIdentifier::ControlEvent(_) | ProtocolItemIdentifier::ChangeHash(_) => true,
+    }) {
+        return Err(EvaluationError::ReportInvariant);
+    }
+    Ok(records)
 }
 
 fn dynamic_event_disposition_records(
@@ -2500,12 +2521,52 @@ mod tests {
     use super::{
         ChangeClaimReason, CheckpointWorkStop, FinalLineageChangeState, FinalizationDimension,
         ReportFinalizationPermit, ReportFinalizationPlan, assembly_status, charge_checkpoint_work,
-        join_status, reduce_reasoned_change_outcome,
+        join_status, reduce_reasoned_change_outcome, scoped_dynamic_event_disposition_records,
     };
     use crate::CheckpointVerificationStatus as Status;
     use crate::checkpoint::AssemblyError;
     use crate::checkpoint::join::JoinError;
-    use crate::{WorkBudget, WorkCounter};
+    use crate::evidence::corpus_builder::EvidenceCorpus;
+    use crate::evidence::document_view::DocumentEvidenceView;
+    use crate::evidence::indexes::TrustedIndexes;
+    use crate::{
+        CheckpointVerificationResult, ControllerPublicKey, DocumentCoordinate, DocumentId, EventId,
+        ResolvedManifestAvailability, SnapshotHash, WorkBudget, WorkCounter,
+    };
+
+    #[test]
+    fn dynamic_event_records_reject_foreign_membership() {
+        let coordinate = DocumentCoordinate::new(
+            ControllerPublicKey::from_bytes([1; 32]),
+            DocumentId::from_bytes([2; 32]),
+        );
+        let corpus = EvidenceCorpus {
+            events: std::collections::BTreeMap::new(),
+            invalid: std::collections::BTreeMap::new(),
+            duplicates: Vec::new(),
+            indexes: TrustedIndexes::default(),
+        };
+        let view = DocumentEvidenceView::derive(&corpus, coordinate);
+        let foreign = CheckpointVerificationResult::new(
+            EventId::from_bytes([3; 32]),
+            vec![EventId::from_bytes([4; 32])],
+            SnapshotHash::from_bytes([5; 32]),
+            Vec::new(),
+            0,
+            [0; 32],
+            Vec::new(),
+            Vec::new(),
+            Status::Verified,
+        );
+        assert!(
+            scoped_dynamic_event_disposition_records(
+                &view,
+                &ResolvedManifestAvailability::Missing,
+                &[foreign]
+            )
+            .is_err()
+        );
+    }
 
     #[test]
     fn reasoned_change_outcome_uses_final_precedence() {
