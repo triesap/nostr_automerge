@@ -158,18 +158,26 @@ impl ReferenceEvaluator {
                 &mut finalization,
             );
         }
-        if let Err(completion) = reduce_change_dispositions(&view, &mut batch, budget, cancellation)
-        {
-            interrupt_batch(&mut batch, completion);
-            return reserved_batch_report(
-                self.revision,
-                coordinate,
-                batch,
-                ResolvedManifestAvailability::Missing,
-                Vec::new(),
-                &mut finalization,
-            );
-        }
+        let change_carrier_dispositions =
+            match reduce_change_dispositions(&view, &mut batch, budget, cancellation) {
+                Ok(dispositions) => dispositions,
+                Err(completion) => {
+                    interrupt_batch(&mut batch, completion);
+                    return reserved_batch_report(
+                        self.revision,
+                        coordinate,
+                        batch,
+                        ResolvedManifestAvailability::Missing,
+                        Vec::new(),
+                        &mut finalization,
+                    );
+                }
+            };
+        debug_assert!(change_carrier_dispositions.values().all(|outcome| {
+            outcome.event_id != crate::EventId::from_bytes([0; 32])
+                && outcome.change_hash != ChangeHash::from_bytes([0; 32])
+                && outcome.control_id != crate::EventId::from_bytes([0; 32])
+        }));
         if let Err(completion) =
             charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)
         {
@@ -646,6 +654,45 @@ enum ChangeClaimReason {
     UnsupportedCarrier,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct ChangeCarrierOutcome {
+    event_id: crate::EventId,
+    change_hash: ChangeHash,
+    control_id: crate::EventId,
+    disposition: ProtocolDisposition,
+    reason: ChangeClaimReason,
+}
+
+impl ChangeCarrierOutcome {
+    const fn new(
+        event_id: crate::EventId,
+        change_hash: ChangeHash,
+        control_id: crate::EventId,
+        reason: ChangeClaimReason,
+    ) -> Self {
+        Self {
+            event_id,
+            change_hash,
+            control_id,
+            disposition: change_carrier_disposition(reason),
+            reason,
+        }
+    }
+}
+
+const fn change_carrier_disposition(reason: ChangeClaimReason) -> ProtocolDisposition {
+    match reason {
+        ChangeClaimReason::AuthorizedCanonical => ProtocolDisposition::Accepted,
+        ChangeClaimReason::UnresolvedControl => ProtocolDisposition::Pending,
+        ChangeClaimReason::AuthorizedNoncanonical
+        | ChangeClaimReason::AuthorizedCurrentExcluded => ProtocolDisposition::Excluded,
+        ChangeClaimReason::InvalidReferencedControl | ChangeClaimReason::Unauthorized => {
+            ProtocolDisposition::Invalid
+        }
+        ChangeClaimReason::UnsupportedCarrier => ProtocolDisposition::UnsupportedRevision,
+    }
+}
+
 impl ChangeClaimReason {
     #[cfg(test)]
     const fn diagnostic(self) -> Option<crate::DiagnosticCode> {
@@ -685,9 +732,10 @@ fn reduce_change_dispositions(
     batch: &mut BatchEvaluationReport,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
-) -> Result<(), Completion> {
+) -> Result<std::collections::BTreeMap<crate::EventId, ChangeCarrierOutcome>, Completion> {
     let corpus = view.corpus();
     let final_accepted = batch.accepted_changes.clone();
+    let mut change_carrier_dispositions = std::collections::BTreeMap::new();
     for hash in view.change_hashes() {
         charge_evaluation_work(budget, cancellation, WorkCounter::GraphNode, 1)?;
         let lineage = if final_accepted.contains(&hash) {
@@ -702,7 +750,7 @@ fn reduce_change_dispositions(
         } else {
             FinalLineageChangeState::Current
         };
-        let states = view
+        let outcomes = view
             .change_claim_event_ids(hash)
             .filter_map(|event_id| {
                 if charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1).is_err() {
@@ -717,7 +765,7 @@ fn reduce_change_dispositions(
                     &batch.control_dispositions,
                     &batch.statefully_valid_controls,
                 );
-                Some(Ok(match state {
+                let reason = match state {
                     ReferencedControlState::Canonical(control) => {
                         if charge_evaluation_work(
                             budget,
@@ -801,7 +849,13 @@ fn reduce_change_dispositions(
                     | ReferencedControlState::DynamicInvalid(_) => {
                         ChangeClaimReason::InvalidReferencedControl
                     }
-                }))
+                };
+                Some(Ok(ChangeCarrierOutcome::new(
+                    claim.event_id,
+                    claim.change_hash,
+                    claim.control_id,
+                    reason,
+                )))
             })
             .collect::<Result<Vec<_>, _>>()
             .map_err(|()| {
@@ -811,10 +865,19 @@ fn reduce_change_dispositions(
                     Completion::BudgetExhausted
                 }
             })?;
+        let states = outcomes
+            .iter()
+            .map(|outcome| outcome.reason)
+            .collect::<Vec<_>>();
         let disposition = reduce_reasoned_change_outcome(lineage, &states);
         batch.dispositions.insert(hash, disposition);
+        change_carrier_dispositions.extend(
+            outcomes
+                .into_iter()
+                .map(|outcome| (outcome.event_id, outcome)),
+        );
     }
-    Ok(())
+    Ok(change_carrier_dispositions)
 }
 
 fn reduce_reasoned_change_outcome(
@@ -2927,9 +2990,10 @@ fn charge_evaluation_work(
 #[cfg(test)]
 mod tests {
     use super::{
-        ChangeClaimReason, CheckpointWorkStop, FinalLineageChangeState, FinalizationDimension,
-        ReportFinalizationPermit, ReportFinalizationPlan, assembly_status, charge_checkpoint_work,
-        join_status, noncanonical_branch_claim_reason, reduce_reasoned_change_outcome,
+        ChangeCarrierOutcome, ChangeClaimReason, CheckpointWorkStop, FinalLineageChangeState,
+        FinalizationDimension, ReportFinalizationPermit, ReportFinalizationPlan, assembly_status,
+        change_carrier_disposition, charge_checkpoint_work, join_status,
+        noncanonical_branch_claim_reason, reduce_reasoned_change_outcome,
         scoped_dynamic_event_disposition_records,
     };
     use crate::CheckpointVerificationStatus as Status;
@@ -3046,6 +3110,37 @@ mod tests {
             ),
             Invalid
         );
+    }
+
+    #[test]
+    fn change_carrier_outcome_reason_mapping_is_exhaustive() {
+        use crate::ProtocolDisposition::{
+            Accepted, Excluded, Invalid, Pending, UnsupportedRevision,
+        };
+        use ChangeClaimReason::{
+            AuthorizedCanonical, AuthorizedCurrentExcluded, AuthorizedNoncanonical,
+            InvalidReferencedControl, Unauthorized, UnresolvedControl, UnsupportedCarrier,
+        };
+
+        for (reason, expected) in [
+            (AuthorizedCanonical, Accepted),
+            (AuthorizedNoncanonical, Excluded),
+            (AuthorizedCurrentExcluded, Excluded),
+            (UnresolvedControl, Pending),
+            (InvalidReferencedControl, Invalid),
+            (Unauthorized, Invalid),
+            (UnsupportedCarrier, UnsupportedRevision),
+        ] {
+            assert_eq!(change_carrier_disposition(reason), expected);
+            let outcome = ChangeCarrierOutcome::new(
+                crate::EventId::from_bytes([1; 32]),
+                crate::ChangeHash::from_bytes([2; 32]),
+                crate::EventId::from_bytes([3; 32]),
+                reason,
+            );
+            assert_eq!(outcome.disposition, expected);
+            assert_eq!(outcome.reason, reason);
+        }
     }
 
     #[test]
