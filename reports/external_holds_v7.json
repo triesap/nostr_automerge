@@ -1,0 +1,43 @@
+{
+  "schema": "nostr_automerge.external_holds.v7",
+  "status": "implementation_remediation_required",
+  "holds": [
+    {
+      "id": "external_nip_reconciliation",
+      "status": "external_authority_hold",
+      "local_result_claimed": false
+    },
+    {
+      "id": "rust_source_mutation",
+      "status": "held_operator_safety",
+      "local_result_claimed": false
+    },
+    {
+      "id": "typescript_source_mutation",
+      "status": "held_operator_safety",
+      "local_result_claimed": false
+    },
+    {
+      "id": "sustained_fuzzing",
+      "status": "held_operator_safety",
+      "local_result_claimed": false
+    },
+    {
+      "id": "sustained_generative_campaign",
+      "status": "held_operator_safety",
+      "local_result_claimed": false
+    },
+    {
+      "id": "independent_external_review",
+      "status": "not_authorized",
+      "local_result_claimed": false
+    },
+    {
+      "id": "publication_release_deployment",
+      "status": "not_authorized",
+      "local_result_claimed": false
+    }
+  ],
+  "nip_snapshot_sha256": "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3",
+  "remote_actions_performed": false
+}

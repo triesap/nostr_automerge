@@ -1,0 +1,35 @@
+{
+  "schema": "nostr_automerge.final_candidate_identity.v7",
+  "result": "bound",
+  "status": "implementation_remediation_required",
+  "publication_authorized": false,
+  "authority": {
+    "nip_sha256": "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3",
+    "companion_sha256": "5ab298eb06399e1dc1631898f1910c3a33860b8b40b2cb2c0cf9b7f2266fdf23",
+    "requirements_sha256": "95a80689b3e4d661a73867673994829e7060df67277120b2f16ee9f2dd16f9fd",
+    "applicability_sha256": "27c58584b6ab1627823fb620378f56a7038de21d7f38b6ed4baae5a64fafe87d",
+    "fixture_distribution_sha256": "7f1c17d61d28857562ffbae68fa132efa3e052863434cc686b2a72234b614ada"
+  },
+  "rust": {
+    "implementation_identity": "triesap/nostr_automerge",
+    "source_candidate": "707e850d2fc0fef94cd0dc247c46a403b8195738",
+    "cargo_lock_sha256": "6d1b886ff74637ba6682d349ab81424b0792f2cbc61cf0f213dfcf16af4f6744",
+    "requirement_matrix_sha256": "18c779123be139133cf1382892b7c2917c72ebb776bb183c0f6b8f3fa80af797"
+  },
+  "typescript": {
+    "implementation_identity": "triesap/nostr_automerge_typescript",
+    "implementation_candidate": "d853a2fd46f4ba76b9d57d2848baa51ac974c789",
+    "evidence_candidate": "cdb6d4b558918f0249420621f2524ffaebb3688a",
+    "dependency_lock_sha256": "d881757529b805b8ae4da935127730fe901b8b13a71382023be161016cd35a7d",
+    "attestation_sha256": "84ab00b06d36a1a0b12879c3b561b0a2826e86e85126ee8a1e923c8f81d5f065"
+  },
+  "conformance": {
+    "fixture_count": 171,
+    "permutations_per_fixture": 8,
+    "process_runs_per_implementation": 2,
+    "rust_process_output_sha256": "6155309e327647074ee044567a4e8da12e1c24d3cdd939ea505169863cc4017a",
+    "differential_corpus_sha256": "183d93bd2f35128345188a3a1376bbbfc7c3fb0e05a387deca4a88f81fc46d78",
+    "canonical_report_bytes": "identical",
+    "deliberate_mismatch": "detected"
+  }
+}

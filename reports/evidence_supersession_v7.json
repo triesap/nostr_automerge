@@ -1,0 +1,26 @@
+{
+  "schema": "nostr_automerge.evidence_supersession.v7",
+  "status": "active",
+  "authoritative": [
+    { "path": "reports/final_candidate_identity_v7.json", "sha256": "1f15fef87f82a34c4ad9a78a6429213123d815f8868ab605d25b42d384135ba0" },
+    { "path": "reports/interop_typescript_v8.json", "sha256": "84ab00b06d36a1a0b12879c3b561b0a2826e86e85126ee8a1e923c8f81d5f065" },
+    { "path": "reports/requirements_coverage_v8.json", "sha256": "18c779123be139133cf1382892b7c2917c72ebb776bb183c0f6b8f3fa80af797" },
+    { "path": "reports/requirements_evidence_mutations_v8.json", "sha256": "6d41bdb01835ce93ae64daf2f29376b61cc2107d9e32a2cd82d6f7f3cfe23a87" },
+    { "path": "reports/requirements_typescript_overlay_v8.json", "sha256": "f9634801d0009c1aaf561f878e89ea932ff31471f8fff2e45656cdfeb3d5e7ff" },
+    { "path": "reports/resource_qualification_v7.json", "sha256": "0be0e379afa21e2336b7f4b5c4ceed64f169a7e8234a553cfbccb291fd13e340" },
+    { "path": "reports/source_mutation_rust_v7.json", "sha256": "a844257bfce102d54ecb2ad332188caae3c72c82df857dcfb461868b326f89fa" },
+    { "path": "reports/source_mutation_typescript_v7.json", "sha256": "10d8b0ab92827077c9e96765f14e33c3f734229308a2b49b3ce73733cfbc5401" },
+    { "path": "reports/external_holds_v7.json", "sha256": "b4dbf00178b05a478cb1ff6a5c536faabea0a6493765d325106368e4abd3ddce" }
+  ],
+  "superseded": [
+    { "path": "reports/evidence_supersession_v6.json", "sha256": "2f0f57944969e1962325df8068ec9373e9dcd68dd8c0a736baa61ebb96692da2" },
+    { "path": "reports/final_candidate_identity_v6.json", "sha256": "2835c3c89e815a8756c448b169b9d27bb90800f9bcda7d0cf0ef83049e8642be" },
+    { "path": "reports/interop_typescript_v7.json", "sha256": "f0d268981502935f647b90282e3121affdedbe6a83d11b032968e3a7ba6506ca" },
+    { "path": "reports/package_supply_chain_v6.json", "sha256": "45dbfd579e13ff91a4bed60904ba6872d7da3d60fcdfcf633895e2770981553b" },
+    { "path": "reports/requirements_coverage_v7.json", "sha256": "e927897c62256e3da23b6bee6fe2378c139bf1ec86e316a868bf7f628ec31849" },
+    { "path": "reports/requirements_evidence_mutations_v7.json", "sha256": "038f2fd7b7744bf678ef425a7827dc42008c520a89f06027881b0acb4f580984" },
+    { "path": "reports/requirements_typescript_overlay_v7.json", "sha256": "c1bc85f87eebc7c6d0b2859104cd7dd82c1bb13b9ced22d6d4fa6a741451eb2b" },
+    { "path": "reports/resource_qualification_v6.json", "sha256": "51948d138b6e50cbff5e722dcb5023cee373c82856f75524969870a51627fde4" },
+    { "path": "reports/rust_assurance_v8.json", "sha256": "3542487b1e0c1c15e9c1586b5f5209613d0e39db47e9357f49c8a5dd829f042b" }
+  ]
+}
