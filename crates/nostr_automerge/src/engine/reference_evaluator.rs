@@ -2159,26 +2159,6 @@ fn reserved_batch_report(
     checkpoints: Vec<CheckpointVerificationResult>,
     permit: &mut ReportFinalizationPermit,
 ) -> Result<EvaluationReport, EvaluationError> {
-    let control_count = u64::try_from(batch.control_dispositions.len()).unwrap_or(u64::MAX);
-    let change_count = u64::try_from(batch.dispositions.len()).unwrap_or(u64::MAX);
-    let checkpoint_count = u64::try_from(checkpoints.len()).unwrap_or(u64::MAX);
-    let event_count = checkpoint_count
-        .saturating_add(
-            checkpoints
-                .iter()
-                .map(|checkpoint| checkpoint.chunk_events().len())
-                .sum::<usize>()
-                .try_into()
-                .unwrap_or(u64::MAX),
-        )
-        .saturating_add(u64::from(!matches!(
-            manifest,
-            ResolvedManifestAvailability::Missing
-        )));
-    let digest_count = control_count
-        .saturating_add(change_count)
-        .saturating_add(event_count)
-        .saturating_add(8);
     let report = prepare_interrupted_batch_report(
         revision,
         coordinate,
@@ -2188,16 +2168,12 @@ fn reserved_batch_report(
         permit,
     )
     .map_err(|error| settle_reserved_error(permit, error))?;
-    for (dimension, amount) in [
-        (FinalizationDimension::Digests, digest_count),
-        (FinalizationDimension::Evidence, 0),
-        (FinalizationDimension::Invariants, REPORT_INVARIANT_ITEMS),
-        (FinalizationDimension::FixedOverhead, 8),
-    ] {
-        permit
-            .consume(dimension, amount)
-            .map_err(|_| EvaluationError::ReportInvariant)?;
-    }
+    permit
+        .consume_pass(FinalizationReservationUnit::new(
+            InterruptedReportPass::FixedOverhead,
+            8,
+        ))
+        .map_err(|_| EvaluationError::ReportInvariant)?;
     for dimension in [
         FinalizationDimension::Controls,
         FinalizationDimension::Changes,
@@ -2265,7 +2241,12 @@ fn prepare_interrupted_batch_report(
     checkpoints: Vec<CheckpointVerificationResult>,
     permit: &mut ReportFinalizationPermit,
 ) -> Result<EvaluationReport, EvaluationError> {
-    if batch.completion == Completion::Complete {
+    if batch.completion == Completion::Complete
+        || !matches!(
+            batch.failure,
+            Some(EvaluationFailure::BudgetExhausted | EvaluationFailure::Cancelled)
+        )
+    {
         return Err(EvaluationError::ReportInvariant);
     }
     permit
@@ -2326,6 +2307,22 @@ fn prepare_interrupted_batch_report(
     let excluded_changes = disposition_hashes(&dispositions, ProtocolDisposition::Excluded);
     let invalid_changes = disposition_hashes(&dispositions, ProtocolDisposition::Invalid);
     let heads = batch.heads.into_iter().collect::<Vec<_>>();
+    let digest_units = u64::try_from(
+        batch
+            .canonical_controls
+            .len()
+            .saturating_add(accepted_changes.len())
+            .saturating_add(heads.len())
+            .saturating_add(disposition_records.len())
+            .saturating_add(8),
+    )
+    .unwrap_or(u64::MAX);
+    permit
+        .consume_pass(FinalizationReservationUnit::new(
+            InterruptedReportPass::Digests,
+            digest_units,
+        ))
+        .map_err(|_| EvaluationError::ReportInvariant)?;
     let history_digest = history_digest(
         revision,
         coordinate,
@@ -2338,6 +2335,19 @@ fn prepare_interrupted_batch_report(
         disposition_items(&disposition_records).map_err(|_| EvaluationError::ReportInvariant)?;
     let dispositions_digest = dispositions_digest(revision, coordinate, &disposition_items)
         .map_err(|_| EvaluationError::ReportInvariant)?;
+    permit
+        .consume_pass(FinalizationReservationUnit::new(
+            InterruptedReportPass::Evidence,
+            0,
+        ))
+        .map_err(|_| EvaluationError::ReportInvariant)?;
+    let evidence = Vec::new();
+    permit
+        .consume_pass(FinalizationReservationUnit::new(
+            InterruptedReportPass::Invariants,
+            REPORT_INVARIANT_ITEMS,
+        ))
+        .map_err(|_| EvaluationError::ReportInvariant)?;
     EvaluationReport::from_parts(EvaluationReportParts {
         coordinate,
         canonical_controls: batch.canonical_controls,
@@ -2349,7 +2359,7 @@ fn prepare_interrupted_batch_report(
         excluded_changes,
         invalid_changes,
         heads,
-        evidence: Vec::new(),
+        evidence,
         checkpoints,
         history_digest,
         dispositions_digest,
