@@ -401,6 +401,7 @@ struct ValidBranchEvaluation {
     epoch: EpochEvaluationResult,
     validated_base: BTreeSet<ChangeHash>,
     ancestry: Vec<ControlEnvelope>,
+    prior_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
 }
 
 #[derive(Default)]
@@ -451,6 +452,7 @@ fn evaluate_branch_table(
             control.envelope.as_ref(),
         ) {
             let mut view = ParentEpochView::from_result(&branch.epoch);
+            view.extend_prior_knowledge(&branch.prior_knowledge);
             if let Some(parent_id) = control.parent
                 && let Some(knowledge) = additional_prior.get(&parent_id)
             {
@@ -533,6 +535,7 @@ fn evaluate_branch_table(
             let parent_ancestry = parent_branch
                 .map(|branch| branch.ancestry.as_slice())
                 .unwrap_or_default();
+            let retained_knowledge = knowledge.clone();
             match resolve_authoritative_epoch(
                 control,
                 accepted_base,
@@ -554,6 +557,7 @@ fn evaluate_branch_table(
                             epoch,
                             validated_base,
                             ancestry,
+                            prior_knowledge: retained_knowledge,
                         },
                     );
                 }
