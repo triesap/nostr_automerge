@@ -5,7 +5,6 @@
 //! assertion only after the corresponding implementation is green.
 
 #[test]
-#[ignore = "expected to fail at the remediation-v8 baseline"]
 fn finding_066_branch_results_reach_final_claim_reduction() {
     let evaluation = include_str!("../src/reference/evaluate.rs");
     let reducer = include_str!("../src/engine/reference_evaluator.rs");
