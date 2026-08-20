@@ -70,6 +70,8 @@ pub(crate) struct ChangeIndexes {
         BTreeMap<(DocumentCoordinate, EventId), BTreeSet<ChangeHash>>,
     pub(crate) hashes_by_actor: BTreeMap<ActorId, BTreeSet<ChangeHash>>,
     pub(crate) dependencies_by_hash: BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
+    pub(crate) raw_changes_by_coordinate_hash: BTreeMap<(DocumentCoordinate, ChangeHash), Vec<u8>>,
+    pub(crate) inconsistent_raw_changes: BTreeSet<(DocumentCoordinate, ChangeHash)>,
     pub(crate) prior_claims_by_coordinate:
         BTreeMap<DocumentCoordinate, BTreeMap<ChangeHash, BTreeSet<EventId>>>,
 }
@@ -588,6 +590,12 @@ fn index_change(indexes: &mut ChangeIndexes, change: &crate::carrier::change::Ch
         operation_count: change.operation_count(),
         dependencies: change.dependencies().collect(),
     };
+    index_canonical_raw_change(
+        indexes,
+        change.coordinate(),
+        change_hash,
+        change.canonical_raw_bytes(),
+    );
     indexes
         .semantic_by_hash
         .entry(change_hash)
@@ -657,13 +665,35 @@ fn index_change(indexes: &mut ChangeIndexes, change: &crate::carrier::change::Ch
         .extend(change.dependencies());
 }
 
+fn index_canonical_raw_change(
+    indexes: &mut ChangeIndexes,
+    coordinate: DocumentCoordinate,
+    change_hash: ChangeHash,
+    raw: &[u8],
+) {
+    let key = (coordinate, change_hash);
+    if indexes.inconsistent_raw_changes.contains(&key) {
+        return;
+    }
+    match indexes.raw_changes_by_coordinate_hash.entry(key) {
+        std::collections::btree_map::Entry::Vacant(entry) => {
+            entry.insert(raw.to_vec());
+        }
+        std::collections::btree_map::Entry::Occupied(entry) if entry.get() != raw => {
+            entry.remove();
+            indexes.inconsistent_raw_changes.insert(key);
+        }
+        std::collections::btree_map::Entry::Occupied(_) => {}
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
 
     use super::{
-        CheckpointIndexes, CoordinateWorkMetadata, IndexedParentEvidence, derive_trusted_indexes,
-        index_checkpoint_chunk,
+        ChangeIndexes, CheckpointIndexes, CoordinateWorkMetadata, IndexedParentEvidence,
+        derive_trusted_indexes, index_canonical_raw_change, index_checkpoint_chunk,
     };
     use crate::carrier::VerifiedCarrier;
     use crate::carrier::checkpoint_chunk::ValidatedCheckpointChunkCarrier;
@@ -671,7 +701,8 @@ mod tests {
     use crate::checkpoint::CheckpointChunk;
     use crate::evidence::event::{EventEvidence, RawChecksum};
     use crate::{
-        ChunkHash, ControllerPublicKey, DevicePublicKey, DocumentCoordinate, DocumentId, EventId,
+        ChangeHash, ChunkHash, ControllerPublicKey, DevicePublicKey, DocumentCoordinate,
+        DocumentId, EventId,
     };
 
     #[test]
@@ -861,6 +892,42 @@ mod tests {
                 .get(&coordinate)
                 .map(|work| work.control_relationship_count),
             Some(3)
+        );
+    }
+
+    #[test]
+    fn canonical_raw_change_index_rejects_inconsistent_duplicate_bytes() {
+        let coordinate = DocumentCoordinate::new(
+            ControllerPublicKey::from_bytes([12; 32]),
+            DocumentId::from_bytes([13; 32]),
+        );
+        let hash = ChangeHash::from_bytes([14; 32]);
+        let mut indexes = ChangeIndexes::default();
+        index_canonical_raw_change(&mut indexes, coordinate, hash, b"canonical");
+        index_canonical_raw_change(&mut indexes, coordinate, hash, b"canonical");
+        assert_eq!(
+            indexes
+                .raw_changes_by_coordinate_hash
+                .get(&(coordinate, hash))
+                .map(Vec::as_slice),
+            Some(b"canonical".as_slice())
+        );
+        index_canonical_raw_change(&mut indexes, coordinate, hash, b"inconsistent");
+        assert!(
+            !indexes
+                .raw_changes_by_coordinate_hash
+                .contains_key(&(coordinate, hash))
+        );
+        assert!(
+            indexes
+                .inconsistent_raw_changes
+                .contains(&(coordinate, hash))
+        );
+        index_canonical_raw_change(&mut indexes, coordinate, hash, b"canonical");
+        assert!(
+            !indexes
+                .raw_changes_by_coordinate_hash
+                .contains_key(&(coordinate, hash))
         );
     }
 }
