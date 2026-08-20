@@ -4,6 +4,9 @@
 from __future__ import annotations
 
 import hashlib
+import json
+import re
+import subprocess
 from pathlib import Path
 
 
@@ -16,6 +19,11 @@ SECTIONS = (
     "Explicit finalization settlement",
     "Signed conformance v8",
 )
+HEX40 = re.compile(r"^[0-9a-f]{40}$")
+
+
+def digest(relative: str) -> str:
+    return hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()
 
 
 def main() -> int:
@@ -37,6 +45,38 @@ def main() -> int:
         raise AssertionError("portable delta overclaims external authority")
     if "exactly\n171 scenarios" not in companion or "171-scenario" not in proposal:
         raise AssertionError("signed-v8 scenario count is not exact")
+    authority = json.loads(
+        (ROOT / "reports/remediation_v7_companion_authority.json").read_text()
+    )
+    expected = {
+        "requirements_sha256": digest("spec/requirements.json"),
+        "applicability_sha256": digest("spec/requirements_applicability.json"),
+        "fixture_distribution_sha256": digest("fixtures/distribution/manifest_v8.json"),
+    }
+    if any(authority.get(key) != value for key, value in expected.items()):
+        raise AssertionError("stale remediation-v7 authority hash")
+    if authority.get("companion", {}).get("sha256") != digest(
+        "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    ):
+        raise AssertionError("stale companion authority hash")
+    if authority.get("portable_delta", {}).get("sha256") != digest(
+        "spec/NIP_V7_PATCH_PROPOSAL.md"
+    ):
+        raise AssertionError("stale portable delta hash")
+    if authority.get("protocol_revision", {}).get("sha256") != digest(
+        "spec/protocol_revision.json"
+    ):
+        raise AssertionError("stale protocol revision hash")
+    candidate = authority.get("source_candidate", "")
+    if not HEX40.fullmatch(candidate) or subprocess.run(
+        ["git", "cat-file", "-e", f"{candidate}^{{commit}}"],
+        cwd=ROOT,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    ).returncode:
+        raise AssertionError("invalid source candidate")
+    if authority.get("publication_authorized") is not False:
+        raise AssertionError("authority overclaims publication")
     print("PASS: remediation-v7 companion reconciliation")
     print(f"- synchronized_sections={len(SECTIONS)}")
     print(f"- nip_sha256={nip_hash}")

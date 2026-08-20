@@ -1,0 +1,39 @@
+{
+  "schema": "nostr_automerge.remediation_v7_companion_authority.v1",
+  "status": "local_pass_external_hold",
+  "source_candidate": "b489ca0bcf3de806ba8e9b75d8514cdfc7be9985",
+  "nip_snapshot": {
+    "path": "spec/NIP_DRAFT.md",
+    "sha256": "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3",
+    "mutability": "read_only",
+    "reconciliation": "external_hold"
+  },
+  "companion": {
+    "path": "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
+    "sha256": "5ab298eb06399e1dc1631898f1910c3a33860b8b40b2cb2c0cf9b7f2266fdf23",
+    "authority": "implementation_owned"
+  },
+  "portable_delta": {
+    "path": "spec/NIP_V7_PATCH_PROPOSAL.md",
+    "sha256": "c52d4761f4a16c25e2ae4419ee3000aa6811ffa75e1b0d125a409a425a643ca7",
+    "submission": "not_authorized"
+  },
+  "requirements_sha256": "95a80689b3e4d661a73867673994829e7060df67277120b2f16ee9f2dd16f9fd",
+  "applicability_sha256": "27c58584b6ab1627823fb620378f56a7038de21d7f38b6ed4baae5a64fafe87d",
+  "fixture_distribution_sha256": "7f1c17d61d28857562ffbae68fa132efa3e052863434cc686b2a72234b614ada",
+  "rust_conformance": {
+    "path": "reports/rust_conformance_v8.json",
+    "scenario_count": 171,
+    "process_count": 2,
+    "permutations_per_fixture": 8,
+    "corpus_output_sha256": "6155309e327647074ee044567a4e8da12e1c24d3cdd939ea505169863cc4017a"
+  },
+  "protocol_revision": {
+    "path": "spec/protocol_revision.json",
+    "sha256": "165902e6be66f3528ff3d4745544eeea6468fd01811cc7aab047c54ab2ab5aa1",
+    "revision": "draft_2026_08",
+    "wire_constants": "unchanged",
+    "provisional_kinds": "unchanged"
+  },
+  "publication_authorized": false
+}

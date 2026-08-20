@@ -10,9 +10,9 @@ Updated: 2026-08-20
 | 67 | 1070–1076 | complete | `GATE_V7_SCOPE` |
 | 68 | 1077–1081 | complete | `GATE_V7_RESOURCE` |
 | 69 | 1082–1086 | complete | `GATE_V7_CONFORMANCE` |
-| 70 | 1087–1089 | active | `GATE_V7_TYPESCRIPT` |
-| 71 | 1090–1092 | pending | `GATE_V7_COMPANION` |
-| 72 | 1093–1095 | pending | `GATE_V7_FINAL` |
+| 70 | 1087–1089 | complete | `GATE_V7_TYPESCRIPT` |
+| 71 | 1090–1092 | complete | `GATE_V7_COMPANION` |
+| 72 | 1093–1095 | active | `GATE_V7_FINAL` |
 
 ## Completed checkpoints
 
@@ -72,10 +72,22 @@ Updated: 2026-08-20
 - `step_1086` passed the final Rust standard, measured coverage, resource,
   package, deny, audit, license, SBOM, source-only, and repository-policy
   gates; only documented dependency-version and unused-license warnings remain.
+- `step_1087` implemented independent private TypeScript branch-local and
+  coordinate-scoped evaluation semantics.
+- `step_1088` implemented private linear propagation and explicit finalization
+  settlement ledgers with exact boundary tests.
+- `step_1089` passed all 171 scenarios twice under all eight permutations in
+  both implementations and rejected a deliberate mismatch.
+- `step_1090` added implementation-owned remediation-v7 companion authority
+  and an unsubmitted portable proposal while preserving the NIP snapshot.
+- `step_1091` mapped all ten appended requirement rows to exact companion,
+  conformance, or portable-proposal sections.
+- `step_1092` rebound companion, registry, distribution, Rust profile, and
+  evidence hashes and closed `GATE_V7_COMPANION` without changing wire data.
 
 ## Active checkpoint
 
-`step_1087` — implement private TypeScript branch and scope parity.
+`step_1093` — complete final local assurance and record held campaigns.
 
 ## Holds
 

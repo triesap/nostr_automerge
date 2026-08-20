@@ -1,8 +1,8 @@
 {
   "schema": "nostr_automerge.rust_conformance.v8",
   "status": "pass",
-  "candidate": "08847cf6df5f112b2f71f18ac8630b9fb36a9efe",
-  "manifest_sha256": "fb6a73b4bc98efa40e17d9eb3246a19065c1d4b52ea5c7077b4e9fdbea5da527",
+  "candidate": "b489ca0bcf3de806ba8e9b75d8514cdfc7be9985",
+  "manifest_sha256": "7f1c17d61d28857562ffbae68fa132efa3e052863434cc686b2a72234b614ada",
   "cargo_lock_sha256": "6d1b886ff74637ba6682d349ab81424b0792f2cbc61cf0f213dfcf16af4f6744",
   "rust_toolchain_sha256": "5d959dfcc98b53886ee772ba216c4f9a1b31f093b46b5b263c0d084af54e821d",
   "scenario_count": 171,
