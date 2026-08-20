@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::evidence::corpus_builder::{EvidenceCorpus, EvidenceRecord, ManifestSelection};
 use crate::evidence::indexes::CoordinateWorkMetadata;
@@ -75,6 +75,43 @@ impl<'a> DocumentEvidenceView<'a> {
             .copied()
     }
 
+    pub(crate) fn control_event_ids(&self) -> impl Iterator<Item = EventId> + '_ {
+        self.corpus
+            .indexes
+            .coordinates
+            .controls
+            .get(&self.coordinate)
+            .into_iter()
+            .flatten()
+            .copied()
+    }
+
+    pub(crate) fn control_children(
+        &self,
+        parent: Option<EventId>,
+    ) -> Option<&'a BTreeSet<EventId>> {
+        self.parent_relationships()?.get(&parent)
+    }
+
+    pub(crate) fn parent_relationships(
+        &self,
+    ) -> Option<&'a BTreeMap<Option<EventId>, BTreeSet<EventId>>> {
+        self.corpus
+            .indexes
+            .coordinates
+            .control_children_by_coordinate_parent
+            .get(&self.coordinate)
+    }
+
+    pub(crate) fn raw_change(&self, hash: ChangeHash) -> Option<&'a [u8]> {
+        self.corpus
+            .indexes
+            .changes
+            .raw_changes_by_coordinate_hash
+            .get(&(self.coordinate, hash))
+            .map(Vec::as_slice)
+    }
+
     pub(crate) fn change_hashes_for_control(
         &self,
         control_id: EventId,
@@ -133,6 +170,10 @@ impl<'a> DocumentEvidenceView<'a> {
 
     pub(crate) fn control_count(&self) -> usize {
         self.work.map_or(0, |work| work.control_count)
+    }
+
+    pub(crate) fn control_relationship_count(&self) -> usize {
+        self.work.map_or(0, |work| work.control_relationship_count)
     }
 
     pub(crate) fn change_hash_count(&self) -> usize {
@@ -217,6 +258,17 @@ mod tests {
         let hash = ChangeHash::from_bytes([6; 32]);
         let mut indexes = TrustedIndexes::default();
         indexes
+            .coordinates
+            .controls
+            .insert(coordinate, BTreeSet::from([control_id]));
+        indexes
+            .coordinates
+            .control_children_by_coordinate_parent
+            .insert(
+                coordinate,
+                BTreeMap::from([(None, BTreeSet::from([control_id]))]),
+            );
+        indexes
             .changes
             .hashes_by_coordinate_control
             .insert((coordinate, control_id), BTreeSet::from([hash]));
@@ -224,6 +276,10 @@ mod tests {
             (coordinate, hash),
             BTreeSet::from([EventId::from_bytes([7; 32])]),
         );
+        indexes
+            .changes
+            .raw_changes_by_coordinate_hash
+            .insert((coordinate, hash), b"canonical".to_vec());
         indexes
             .checkpoints
             .descriptors_by_coordinate
@@ -235,6 +291,8 @@ mod tests {
         indexes.coordinates.work.insert(
             coordinate,
             CoordinateWorkMetadata {
+                control_count: 1,
+                control_relationship_count: 1,
                 checkpoint_descriptor_count: 1,
                 checkpoint_chunk_count: 1,
                 ..CoordinateWorkMetadata::default()
@@ -259,6 +317,18 @@ mod tests {
             indexes,
         };
         let view = DocumentEvidenceView::derive(&corpus, coordinate);
+        assert_eq!(
+            view.control_event_ids().collect::<Vec<_>>(),
+            vec![control_id]
+        );
+        assert_eq!(
+            view.control_children(None),
+            Some(&BTreeSet::from([control_id]))
+        );
+        assert_eq!(view.parent_relationships().map(BTreeMap::len), Some(1));
+        assert_eq!(view.raw_change(hash), Some(b"canonical".as_slice()));
+        assert_eq!(view.control_count(), 1);
+        assert_eq!(view.control_relationship_count(), 1);
         assert_eq!(
             view.change_hashes_for_control(control_id),
             Some(&BTreeSet::from([hash]))
