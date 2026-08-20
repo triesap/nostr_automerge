@@ -170,4 +170,35 @@ mod tests {
             Err(DigestError::NonCanonical)
         );
     }
+
+    #[test]
+    fn change_carrier_event_is_bound_independently_of_hash() {
+        let coordinate =
+            DocumentCoordinate::from_str(&format!("31624:{}:{}", "41".repeat(32), "42".repeat(32)));
+        assert!(coordinate.is_ok());
+        let Ok(coordinate) = coordinate else { return };
+        let hash_record = crate::DispositionRecord::new(
+            crate::ProtocolItemIdentifier::from(crate::ChangeHash::from_bytes([2; 32])),
+            ProtocolDisposition::Accepted,
+            None,
+        );
+        let carrier_record = crate::DispositionRecord::new(
+            crate::ProtocolItemIdentifier::event(crate::EventId::from_bytes([3; 32])),
+            ProtocolDisposition::Invalid,
+            crate::DiagnosticCode::lookup("change.actor"),
+        );
+        let hash_only = disposition_items(&[hash_record]);
+        let with_carrier = disposition_items(&[hash_record, carrier_record]);
+        assert!(hash_only.is_ok());
+        assert!(with_carrier.is_ok());
+        let (Ok(hash_only), Ok(with_carrier)) = (hash_only, with_carrier) else {
+            return;
+        };
+        assert_ne!(
+            dispositions_digest(ProtocolRevision::draft_v1(), coordinate, &hash_only),
+            dispositions_digest(ProtocolRevision::draft_v1(), coordinate, &with_carrier)
+        );
+        assert_eq!(with_carrier[0].namespace, DispositionNamespace::ChangeHash);
+        assert_eq!(with_carrier[1].namespace, DispositionNamespace::Event);
+    }
 }
