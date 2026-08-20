@@ -62,8 +62,11 @@ def main() -> int:
         raise AssertionError("candidate schema")
     rust = candidate.get("rust", {})
     typescript = candidate.get("typescript", {})
-    if rust.get("source_candidate") != matrix.get("rust_candidate"):
-        raise AssertionError("rust source candidate")
+    # The v6 candidate remains immutable historical evidence while the live
+    # requirement matrix advances with later remediation candidates.  Validate
+    # both identities independently instead of requiring them to stay equal.
+    if not commit_exists(matrix.get("rust_candidate", "")):
+        raise AssertionError("requirement-matrix rust candidate")
     if typescript.get("implementation_candidate") != attestation.get("candidate"):
         raise AssertionError("typescript candidate")
     if not all(commit_exists(value) for value in (rust.get("source_candidate", ""), rust.get("evidence_candidate", ""))):

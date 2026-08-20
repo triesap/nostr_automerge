@@ -655,11 +655,12 @@ fn reduce_change_dispositions(
         charge_evaluation_work(budget, cancellation, WorkCounter::GraphNode, 1)?;
         let lineage = if final_accepted.contains(&hash) {
             FinalLineageChangeState::Accepted
-        } else if batch
-            .accepted_at_control
-            .values()
-            .any(|accepted| accepted.accepted_closure().contains(&hash))
-        {
+        } else if batch.canonical_controls.iter().any(|control_id| {
+            batch
+                .accepted_at_control
+                .get(control_id)
+                .is_some_and(|accepted| accepted.accepted_closure().contains(&hash))
+        }) {
             FinalLineageChangeState::CanonicalPruned
         } else {
             FinalLineageChangeState::Current

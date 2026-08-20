@@ -56,8 +56,161 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "remediation_v6_control_relationships" => generate_remediation_v6_control_relationships(),
         "remediation_v6_dependency_knowledge" => generate_remediation_v6_dependency_knowledge(),
         "remediation_v6_checkpoint_references" => generate_remediation_v6_checkpoint_references(),
+        "remediation_v7_branch" => generate_remediation_v7_branch(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
+}
+
+fn generate_remediation_v7_branch() -> Result<(), String> {
+    let controller = Signer::from_byte(180)?;
+    let writer = Signer::from_byte(181)?;
+    let document_id = "d8".repeat(32);
+    let coordinate: DocumentCoordinate =
+        format!("31624:{}:{document_id}", controller.public_key.to_hex())
+            .parse()
+            .map_err(|_| "invalid remediation-v7 branch coordinate".to_owned())?;
+    let members = || vec![(&writer, None, &["write"][..])];
+    let first = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let second = sign_control(
+        &controller,
+        2,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let first_id = event_id(&first)?;
+    let second_id = event_id(&second)?;
+    let canonical_id = first_id.min(second_id);
+    let noncanonical_id = first_id.max(second_id);
+    let roots = || vec![first.clone(), second.clone()];
+    let child = |created_at: u64, parent: EventId, sequence: u64, base_heads: &[ChangeHash]| {
+        sign_control(
+            &controller,
+            created_at,
+            coordinate,
+            Some(parent),
+            control_content_with_links(sequence, members(), base_heads, None, None),
+        )
+    };
+
+    let (foreign_raw, foreign_hash) = author_root_change(coordinate, &writer, "foreign-base")?;
+    let foreign_claim = sign_change(
+        &writer,
+        3,
+        coordinate,
+        canonical_id,
+        foreign_hash,
+        &foreign_raw,
+    )?;
+    let invalid_base_child = child(4, noncanonical_id, 1, &[foreign_hash])?;
+
+    let (left_raw, left_hash) = author_root_change(coordinate, &writer, "excluded-left")?;
+    let (right_raw, right_hash) = author_root_change(coordinate, &writer, "excluded-right")?;
+    let left_claim = sign_change(
+        &writer,
+        5,
+        coordinate,
+        noncanonical_id,
+        left_hash,
+        &left_raw,
+    )?;
+    let right_claim = sign_change(
+        &writer,
+        6,
+        coordinate,
+        noncanonical_id,
+        right_hash,
+        &right_raw,
+    )?;
+    let excluded_hash = left_hash.max(right_hash);
+    let excluded_base_child = child(7, noncanonical_id, 1, &[excluded_hash])?;
+
+    let (pending_seed, _) = author_root_change(coordinate, &writer, "pending-base")?;
+    let (pending_raw, pending_hash) =
+        with_change_dependencies(&pending_seed, &[ChangeHash::from_bytes([0xee; 32])], 1)?;
+    let pending_claim = sign_change(
+        &writer,
+        8,
+        coordinate,
+        noncanonical_id,
+        pending_hash,
+        &pending_raw,
+    )?;
+    let pending_base_child = child(9, noncanonical_id, 1, &[pending_hash])?;
+
+    let invalid_parent = child(10, noncanonical_id, 2, &[])?;
+    let invalid_parent_id = event_id(&invalid_parent)?;
+    let invalid_grandchild = child(11, invalid_parent_id, 3, &[])?;
+    let manifest = sign_raw_event(
+        &controller,
+        12,
+        31_624,
+        vec![vec!["d".to_owned(), document_id]],
+        manifest_content(&invalid_parent_id.to_hex(), "active", 1),
+    )?;
+    let (invalid_child_raw, invalid_child_hash) =
+        author_root_change(coordinate, &writer, "invalid-child")?;
+    let invalid_child_claim = sign_change(
+        &writer,
+        13,
+        coordinate,
+        invalid_parent_id,
+        invalid_child_hash,
+        &invalid_child_raw,
+    )?;
+
+    let root = repository_root().join("fixtures/v1_draft/scenarios/branch");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    let cases = vec![
+        ("noncanonical_child_invalid_base_head", {
+            let mut events = roots();
+            events.extend([foreign_claim, invalid_base_child]);
+            events
+        }),
+        ("noncanonical_child_excluded_base_head", {
+            let mut events = roots();
+            events.extend([left_claim, right_claim, excluded_base_child]);
+            events
+        }),
+        ("noncanonical_child_pending_base_head", {
+            let mut events = roots();
+            events.extend([pending_claim, pending_base_child]);
+            events
+        }),
+        ("noncanonical_grandchild_invalid_parent_epoch", {
+            let mut events = roots();
+            events.extend([invalid_parent.clone(), invalid_grandchild]);
+            events
+        }),
+        ("manifest_references_invalid_noncanonical_child", {
+            let mut events = roots();
+            events.extend([invalid_parent.clone(), manifest]);
+            events
+        }),
+        ("change_references_invalid_noncanonical_child", {
+            let mut events = roots();
+            events.extend([invalid_parent, invalid_child_claim]);
+            events
+        }),
+    ];
+    for (fixture_id, events) in cases {
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            &["NCRDT-CONTROL-001", "NCRDT-EPOCH-003"],
+            "remediation_v7_branch",
+        )
+        .map_err(|error| format!("{fixture_id}: {error}"))?;
+    }
+    Ok(())
 }
 
 type Member<'a> = (&'a Signer, Option<String>, &'a [&'a str]);
@@ -4557,7 +4710,8 @@ fn write_fixture_with_execution(
     let mut template = ExpectedReport::empty(fixture_id, &coordinate_text);
     template.state_assertions = state_assertions;
     let report = generic_report(scenario, template).map_err(|error| error.message().to_owned())?;
-    let expected_bytes = write_canonical_report(&report).map_err(|error| format!("{error:?}"))?;
+    let expected_bytes = write_canonical_report(&report)
+        .map_err(|error| format!("{error:?}: {:?}", report.disposition_records))?;
     let expected_value: Value =
         serde_json::from_slice(&expected_bytes).map_err(|error| error.to_string())?;
     let input_value = json!({

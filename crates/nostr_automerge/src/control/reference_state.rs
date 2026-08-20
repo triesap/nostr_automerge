@@ -65,14 +65,14 @@ impl ControlParentState<'_> {
 impl ReferencedControlState<'_> {
     pub(crate) const fn diagnostic(self) -> DiagnosticCode {
         let code = match self {
-            Self::Canonical(_) | Self::NoncanonicalValid(_) => "control.reference.valid",
-            Self::Pending(_) => "control.reference.pending",
-            Self::Missing => "control.reference.missing",
+            Self::Canonical(_) | Self::NoncanonicalValid(_) => "control.parent",
+            Self::Pending(_) => "control.frontier",
+            Self::Missing => "control.parent",
             Self::WrongKind => "carrier.kind",
             Self::WrongCoordinate => "carrier.coordinate",
             Self::StaticInvalid => "control.structure",
-            Self::DynamicInvalid(_) => "control.state",
-            Self::UnsupportedRevision => "control.reference.unsupported",
+            Self::DynamicInvalid(_) => "control.parent",
+            Self::UnsupportedRevision => "carrier.revision",
         };
         DiagnosticCode::registered(code)
     }
@@ -154,7 +154,7 @@ mod tests {
     fn every_state_has_a_stable_diagnostic() {
         assert_eq!(
             ReferencedControlState::Missing.diagnostic().as_str(),
-            "control.reference.missing"
+            "control.parent"
         );
         assert_eq!(
             ReferencedControlState::WrongKind.diagnostic().as_str(),
@@ -174,7 +174,13 @@ mod tests {
             ReferencedControlState::UnsupportedRevision
                 .diagnostic()
                 .as_str(),
-            "control.reference.unsupported"
+            "carrier.revision"
+        );
+        assert_eq!(
+            ReferencedControlState::DynamicInvalid(&control())
+                .diagnostic()
+                .as_str(),
+            "control.parent"
         );
     }
 
