@@ -150,6 +150,7 @@ pub(crate) fn evaluate_batch_with_prior(
     let mut accepted_at_control = BTreeMap::new();
     let mut statefully_valid_controls = BTreeSet::new();
     let mut branch_states = BTreeMap::new();
+    let mut branch_change_dispositions = BTreeMap::new();
     match evaluate_branch_table(
         &controls,
         &by_parent,
@@ -167,6 +168,11 @@ pub(crate) fn evaluate_batch_with_prior(
                 .map(|(event_id, branch)| {
                     (*event_id, AcceptedAtControl::from_result(&branch.epoch))
                 })
+                .collect();
+            branch_change_dispositions = table
+                .valid
+                .iter()
+                .map(|(event_id, branch)| (*event_id, branch.change_dispositions.clone()))
                 .collect();
             for (event_id, state) in &branch_states {
                 control_dispositions.insert(*event_id, state.final_disposition(false));
@@ -332,7 +338,7 @@ pub(crate) fn evaluate_batch_with_prior(
         accepted_at_control,
         statefully_valid_controls,
         branch_states,
-        branch_change_dispositions: BTreeMap::new(),
+        branch_change_dispositions,
         dispositions,
         accepted_changes,
         heads,
@@ -345,6 +351,7 @@ pub(crate) fn evaluate_batch_with_prior(
 
 struct ValidBranchEvaluation {
     epoch: EpochEvaluationResult,
+    change_dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
     validated_base: BTreeSet<ChangeHash>,
     ancestry: Vec<ControlEnvelope>,
     prior_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
@@ -578,6 +585,25 @@ fn evaluate_branch_table(
                 cancellation,
             ) {
                 Ok(epoch) => {
+                    let mut branch_change_dispositions = parent_branch
+                        .map(|branch| branch.change_dispositions.clone())
+                        .unwrap_or_default();
+                    if let Some(parent) = parent_branch {
+                        for hash in parent.epoch.accepted_state().accepted_closure() {
+                            branch_change_dispositions.insert(
+                                *hash,
+                                if validated_base.contains(hash) {
+                                    ProtocolDisposition::Accepted
+                                } else {
+                                    ProtocolDisposition::Excluded
+                                },
+                            );
+                        }
+                    }
+                    for hash in &validated_base {
+                        branch_change_dispositions.insert(*hash, ProtocolDisposition::Accepted);
+                    }
+                    branch_change_dispositions.extend(epoch.dispositions().clone());
                     let mut ancestry = parent_ancestry.to_vec();
                     if let Some(envelope) = control.envelope.as_ref() {
                         ancestry.push(envelope.clone());
@@ -587,6 +613,7 @@ fn evaluate_branch_table(
                         event_id,
                         ValidBranchEvaluation {
                             epoch,
+                            change_dispositions: branch_change_dispositions,
                             validated_base,
                             ancestry,
                             prior_knowledge: retained_knowledge,
@@ -1486,6 +1513,11 @@ mod tests {
             &NeverCancelled,
         );
         assert_eq!(basic_report.completion, Completion::Complete);
+        assert_eq!(
+            basic_report.branch_change_dispositions[&EventId::from_bytes([1; 32])]
+                [&basic.candidate.change_hash],
+            ProtocolDisposition::Accepted
+        );
         assert_eq!(
             basic_report
                 .accepted_at_control
