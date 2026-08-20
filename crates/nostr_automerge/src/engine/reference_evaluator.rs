@@ -493,6 +493,10 @@ impl ReferenceEvaluator {
             disposition_records,
             control_dispositions,
             dispositions,
+            change_carrier_dispositions: change_carrier_dispositions
+                .values()
+                .map(|outcome| (outcome.event_id, outcome.change_hash, outcome.disposition))
+                .collect(),
             accepted_changes,
             pending_changes,
             excluded_changes,
@@ -979,6 +983,27 @@ fn event_disposition_records(
     checkpoints: &[CheckpointVerificationResult],
 ) -> Result<Vec<DispositionRecord>, EvaluationError> {
     let corpus = view.corpus();
+    let expected_change_carriers = view
+        .reportable_event_ids()
+        .filter_map(|event_id| match corpus.events.get(event_id) {
+            Some(EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::Change(change),
+                ..
+            }) => Some((*event_id, (change.change_hash(), change.control_id()))),
+            _ => None,
+        })
+        .collect::<std::collections::BTreeMap<_, _>>();
+    if expected_change_carriers.len() != change_carrier_dispositions.len()
+        || change_carrier_dispositions
+            .iter()
+            .any(|(event_id, outcome)| {
+                *event_id != outcome.event_id
+                    || expected_change_carriers.get(event_id)
+                        != Some(&(outcome.change_hash, outcome.control_id))
+            })
+    {
+        return Err(EvaluationError::ReportInvariant);
+    }
     let represented_events = view
         .reportable_event_ids()
         .filter(|event_id| {
@@ -2318,6 +2343,7 @@ fn build_no_progress_interrupted_report(
         disposition_records: Vec::new(),
         control_dispositions: Vec::new(),
         dispositions: Vec::new(),
+        change_carrier_dispositions: Vec::new(),
         accepted_changes: Vec::new(),
         pending_changes: Vec::new(),
         excluded_changes: Vec::new(),
@@ -2463,6 +2489,7 @@ fn prepare_interrupted_batch_report(
         disposition_records,
         control_dispositions,
         dispositions,
+        change_carrier_dispositions: Vec::new(),
         accepted_changes,
         pending_changes,
         excluded_changes,

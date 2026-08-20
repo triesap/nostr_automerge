@@ -174,12 +174,14 @@ pub struct EvaluationReport {
     document: Option<MaterializedDocumentView>,
 }
 
+#[derive(Clone)]
 pub(crate) struct EvaluationReportParts {
     pub(crate) coordinate: DocumentCoordinate,
     pub(crate) canonical_controls: Vec<EventId>,
     pub(crate) disposition_records: Vec<DispositionRecord>,
     pub(crate) control_dispositions: Vec<(EventId, ProtocolDisposition)>,
     pub(crate) dispositions: Vec<(ChangeHash, ProtocolDisposition)>,
+    pub(crate) change_carrier_dispositions: Vec<(EventId, ChangeHash, ProtocolDisposition)>,
     pub(crate) accepted_changes: Vec<ChangeHash>,
     pub(crate) pending_changes: Vec<ChangeHash>,
     pub(crate) excluded_changes: Vec<ChangeHash>,
@@ -219,10 +221,17 @@ impl EvaluationReport {
                 .windows(2)
                 .all(|pair| pair[0].0 < pair[1].0)
             || !parts
+                .change_carrier_dispositions
+                .windows(2)
+                .all(|pair| pair[0].0 < pair[1].0)
+            || !parts
                 .checkpoints
                 .windows(2)
                 .all(|pair| pair[0].descriptor_event() < pair[1].descriptor_event())
         {
+            return Err(EvaluationError::ReportInvariant);
+        }
+        if !change_carrier_dispositions_are_consistent(&parts) {
             return Err(EvaluationError::ReportInvariant);
         }
         let accepted = parts
@@ -467,6 +476,46 @@ impl EvaluationReport {
     }
 }
 
+fn change_carrier_dispositions_are_consistent(parts: &EvaluationReportParts) -> bool {
+    let carrier_records_match =
+        parts
+            .change_carrier_dispositions
+            .iter()
+            .all(|(event_id, hash, carrier_disposition)| {
+                let event_identifier = ProtocolItemIdentifier::event(*event_id);
+                let event_matches = parts
+                    .disposition_records
+                    .binary_search_by_key(&event_identifier, DispositionRecord::identifier)
+                    .is_ok_and(|index| {
+                        parts.disposition_records[index].disposition() == *carrier_disposition
+                    });
+                let hash_matches = parts
+                    .dispositions
+                    .binary_search_by_key(hash, |(candidate, _)| *candidate)
+                    .is_ok_and(|index| {
+                        *carrier_disposition != ProtocolDisposition::Accepted
+                            || parts.dispositions[index].1 == ProtocolDisposition::Accepted
+                    });
+                event_matches && hash_matches
+            });
+    if !carrier_records_match {
+        return false;
+    }
+    parts.completion != Completion::Complete
+        || parts
+            .dispositions
+            .iter()
+            .filter(|(_, disposition)| *disposition == ProtocolDisposition::Accepted)
+            .all(|(hash, _)| {
+                parts
+                    .change_carrier_dispositions
+                    .iter()
+                    .any(|(_, carrier_hash, disposition)| {
+                        carrier_hash == hash && *disposition == ProtocolDisposition::Accepted
+                    })
+            })
+}
+
 fn checkpoint_event_disposition(status: CheckpointVerificationStatus) -> ProtocolDisposition {
     match status {
         CheckpointVerificationStatus::Verified => ProtocolDisposition::Accepted,
@@ -535,6 +584,7 @@ mod tests {
                 crate::ProtocolDisposition::Accepted,
             )],
             dispositions: vec![],
+            change_carrier_dispositions: vec![],
             accepted_changes: vec![ChangeHash::from_bytes([2; 32])],
             pending_changes: vec![],
             excluded_changes: vec![],
@@ -582,6 +632,7 @@ mod tests {
                 crate::ProtocolDisposition::Accepted,
             )],
             dispositions: vec![(hash, crate::ProtocolDisposition::Accepted)],
+            change_carrier_dispositions: vec![],
             accepted_changes: vec![hash],
             pending_changes: vec![],
             excluded_changes: vec![],
@@ -598,6 +649,40 @@ mod tests {
             document: None,
         };
         assert!(EvaluationReport::from_parts(parts()).is_ok());
+
+        let carrier_id = EventId::from_bytes([9; 32]);
+        let mut carrier_consistent = parts();
+        carrier_consistent.disposition_records = vec![
+            DispositionRecord::new(
+                ProtocolItemIdentifier::from(hash),
+                crate::ProtocolDisposition::Accepted,
+                None,
+            ),
+            DispositionRecord::new(
+                ProtocolItemIdentifier::event(carrier_id),
+                crate::ProtocolDisposition::Accepted,
+                None,
+            ),
+        ];
+        carrier_consistent.change_carrier_dispositions =
+            vec![(carrier_id, hash, crate::ProtocolDisposition::Accepted)];
+        assert!(EvaluationReport::from_parts(carrier_consistent.clone()).is_ok());
+
+        let mut missing_carrier_record = carrier_consistent.clone();
+        missing_carrier_record.disposition_records.pop();
+        assert!(EvaluationReport::from_parts(missing_carrier_record).is_err());
+
+        let mut duplicate_carrier = carrier_consistent.clone();
+        duplicate_carrier.change_carrier_dispositions.push((
+            carrier_id,
+            hash,
+            crate::ProtocolDisposition::Accepted,
+        ));
+        assert!(EvaluationReport::from_parts(duplicate_carrier).is_err());
+
+        let mut wrong_carrier_hash = carrier_consistent;
+        wrong_carrier_hash.change_carrier_dispositions[0].1 = ChangeHash::from_bytes([8; 32]);
+        assert!(EvaluationReport::from_parts(wrong_carrier_hash).is_err());
 
         let assert_invariant = |parts| {
             assert_eq!(
