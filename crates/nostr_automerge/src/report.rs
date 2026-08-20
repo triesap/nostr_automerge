@@ -242,6 +242,7 @@ mod tests {
                 controls[0],
                 crate::reference::evaluate::BranchEvaluationState::Valid,
             )]),
+            branch_change_dispositions: BTreeMap::new(),
             dispositions: BTreeMap::from([(accepted[0], ProtocolDisposition::Accepted)]),
             accepted_changes: BTreeSet::from([accepted[0]]),
             heads: BTreeSet::from([accepted[0]]),
