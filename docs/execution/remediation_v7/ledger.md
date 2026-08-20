@@ -48,10 +48,12 @@ Updated: 2026-08-20
   scenarios, ran all 169 transitional fixtures, and closed `GATE_V7_SCOPE`.
 - `step_1077` replaced repeated whole-map parent scans with an iterative,
   memoized traversal charging each relationship once.
+- `step_1078` enabled the propagation regression and proved zero, exact,
+  insufficient, deep, reversed-order, cycle, and cancellation boundaries.
 
 ## Active checkpoint
 
-`step_1078` — qualify propagation budgets, ordering, depth, and cancellation.
+`step_1079` — model consumed, refunded, and forfeited permit settlement.
 
 ## Holds
 

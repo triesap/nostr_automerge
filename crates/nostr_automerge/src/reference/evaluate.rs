@@ -1268,6 +1268,153 @@ mod tests {
         );
     }
 
+    fn propagation_chain(length: u16) -> BTreeMap<EventId, Option<EventId>> {
+        (0..length)
+            .map(|index| {
+                let event_id = EventId::from_bytes([(length - index) as u8; 32]);
+                let parent =
+                    (index > 0).then(|| EventId::from_bytes([(length - (index - 1)) as u8; 32]));
+                (event_id, parent)
+            })
+            .collect()
+    }
+
+    #[test]
+    fn parent_propagation_has_exact_linear_budget_boundaries() {
+        let empty = BTreeMap::new();
+        assert_eq!(
+            propagate_control_parent_dispositions(
+                &empty,
+                &mut BTreeMap::new(),
+                &mut WorkBudget::new(0, 0),
+                &crate::NeverCancelled,
+            ),
+            Ok(())
+        );
+
+        let parents = propagation_chain(200);
+        let root = EventId::from_bytes([200; 32]);
+        let initial = parents
+            .keys()
+            .copied()
+            .map(|event_id| {
+                (
+                    event_id,
+                    if event_id == root {
+                        ProtocolDisposition::Pending
+                    } else {
+                        ProtocolDisposition::Excluded
+                    },
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+        let mut exact_dispositions = initial.clone();
+        let mut exact = WorkBudget::new(0, 199);
+        assert_eq!(
+            propagate_control_parent_dispositions(
+                &parents,
+                &mut exact_dispositions,
+                &mut exact,
+                &crate::NeverCancelled,
+            ),
+            Ok(())
+        );
+        assert_eq!(exact.consumed().get(WorkCounter::Control), 199);
+        assert!(
+            exact_dispositions
+                .values()
+                .all(|value| *value == ProtocolDisposition::Pending)
+        );
+
+        let mut insufficient_dispositions = initial;
+        let mut insufficient = WorkBudget::new(0, 198);
+        assert_eq!(
+            propagate_control_parent_dispositions(
+                &parents,
+                &mut insufficient_dispositions,
+                &mut insufficient,
+                &crate::NeverCancelled,
+            ),
+            Err(Completion::BudgetExhausted)
+        );
+        assert_eq!(insufficient.consumed().get(WorkCounter::Control), 198);
+    }
+
+    #[test]
+    fn parent_propagation_checks_every_cancellation_boundary() {
+        let parents = propagation_chain(8);
+        let root = EventId::from_bytes([8; 32]);
+        let initial = parents
+            .keys()
+            .copied()
+            .map(|event_id| {
+                (
+                    event_id,
+                    if event_id == root {
+                        ProtocolDisposition::Invalid
+                    } else {
+                        ProtocolDisposition::Excluded
+                    },
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+        for boundary in 0_u64..=7 {
+            let checks = std::cell::Cell::new(0_u64);
+            let cancellation = || {
+                let current = checks.get();
+                checks.set(current.saturating_add(1));
+                current == boundary
+            };
+            let mut dispositions = initial.clone();
+            let mut budget = WorkBudget::new(0, 7);
+            let result = propagate_control_parent_dispositions(
+                &parents,
+                &mut dispositions,
+                &mut budget,
+                &cancellation,
+            );
+            if boundary < 7 {
+                assert_eq!(result, Err(Completion::Cancelled));
+                assert_eq!(budget.consumed().get(WorkCounter::Control), boundary);
+            } else {
+                assert_eq!(result, Ok(()));
+                assert_eq!(budget.consumed().get(WorkCounter::Control), 7);
+                assert!(
+                    dispositions
+                        .values()
+                        .all(|value| *value == ProtocolDisposition::Invalid)
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn parent_cycles_fail_closed_after_one_visit_per_edge() {
+        let first = EventId::from_bytes([1; 32]);
+        let second = EventId::from_bytes([2; 32]);
+        let parents = BTreeMap::from([(first, Some(second)), (second, Some(first))]);
+        let mut dispositions = BTreeMap::from([
+            (first, ProtocolDisposition::Pending),
+            (second, ProtocolDisposition::Excluded),
+        ]);
+        let mut budget = WorkBudget::new(0, 2);
+        assert_eq!(
+            propagate_control_parent_dispositions(
+                &parents,
+                &mut dispositions,
+                &mut budget,
+                &crate::NeverCancelled,
+            ),
+            Ok(())
+        );
+        assert!(
+            dispositions
+                .values()
+                .all(|value| *value == ProtocolDisposition::Invalid)
+        );
+        assert_eq!(budget.consumed().get(WorkCounter::Control), 2);
+    }
+
     #[test]
     fn control_closure_precharge_exhaustion_is_atomic() {
         let envelope = crate::control::validate::tests::genesis();

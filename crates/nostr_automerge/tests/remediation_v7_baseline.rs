@@ -33,7 +33,6 @@ fn finding_061_change_indexes_are_coordinate_qualified() {
 }
 
 #[test]
-#[ignore = "remediation-v7 baseline reproduction for FINDING_062"]
 fn finding_062_parent_propagation_is_linear_and_metered() {
     let source = include_str!("../src/reference/evaluate.rs");
     let body = source
