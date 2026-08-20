@@ -762,10 +762,26 @@ fn reduce_change_dispositions(
                                     && member.device == claim.author
                                     && member.roles.contains(&Role::Write)
                             });
-                        if authorized {
-                            ChangeClaimReason::AuthorizedNoncanonical
-                        } else {
+                        if !authorized {
                             ChangeClaimReason::Unauthorized
+                        } else {
+                            match batch.referenced_branch_change_disposition(claim.control_id, hash)
+                            {
+                                Some(ProtocolDisposition::Accepted) => {
+                                    ChangeClaimReason::AuthorizedNoncanonical
+                                }
+                                Some(ProtocolDisposition::Pending) => {
+                                    ChangeClaimReason::UnresolvedControl
+                                }
+                                Some(ProtocolDisposition::Excluded) => {
+                                    ChangeClaimReason::AuthorizedCurrentExcluded
+                                }
+                                Some(
+                                    ProtocolDisposition::Invalid
+                                    | ProtocolDisposition::UnsupportedRevision,
+                                )
+                                | None => ChangeClaimReason::InvalidReferencedControl,
+                            }
                         }
                     }
                     ReferencedControlState::Pending(_) | ReferencedControlState::Missing => {
