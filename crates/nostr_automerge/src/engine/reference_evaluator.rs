@@ -2267,35 +2267,31 @@ fn prepare_controls(
     let corpus = view.corpus();
     let coordinate = view.coordinate();
     let ancestry_index = build_control_ancestry_index(view, budget, cancellation)?;
-    let assumed_control_dispositions = corpus
-        .indexes
-        .controls
-        .controls_by_id
-        .keys()
+    let assumed_statefully_valid = view
+        .input_event_ids()
+        .filter(|event_id| {
+            matches!(
+                corpus.events.get(event_id),
+                Some(EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::Control(_),
+                    ..
+                })
+            )
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    let assumed_control_dispositions = assumed_statefully_valid
+        .iter()
         .copied()
         .map(|event_id| (event_id, ProtocolDisposition::Accepted))
         .collect::<std::collections::BTreeMap<_, _>>();
-    let assumed_statefully_valid = corpus
-        .indexes
-        .controls
-        .controls_by_id
-        .keys()
-        .copied()
-        .collect::<std::collections::BTreeSet<_>>();
     let mut dispositions = std::collections::BTreeMap::new();
     let mut controls = Vec::new();
-    for control_id in corpus
-        .indexes
-        .controls
-        .controls_by_id
-        .keys()
-        .filter(|event_id| view.contains_reportable(event_id))
-    {
+    for control_id in view.control_event_ids() {
         charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
         let Some(EventEvidence::VerifiedCarrier {
             carrier: VerifiedCarrier::Control(control),
             ..
-        }) = corpus.events.get(control_id)
+        }) = corpus.events.get(&control_id)
         else {
             continue;
         };
@@ -2378,13 +2374,11 @@ fn prepare_controls(
             envelope: Some(envelope),
         });
     }
-    let parents = corpus
-        .indexes
-        .controls
-        .controls_by_id
-        .values()
-        .filter(|record| view.contains_reportable(&record.event_id))
-        .map(|record| (record.event_id, record.parent))
+    let parents = view
+        .parent_relationships()
+        .into_iter()
+        .flat_map(std::collections::BTreeMap::iter)
+        .flat_map(|(parent, children)| children.iter().map(move |child| (*child, *parent)))
         .collect::<std::collections::BTreeMap<_, _>>();
     propagate_control_parent_dispositions(&parents, &mut dispositions, budget, cancellation)?;
     controls.retain(|control| {
