@@ -65,7 +65,13 @@ The exact formula lives in the fixture contract and requirements registry.
 ## Dispositions digest
 
 Fix a domain-separated encoding over canonical item identifiers and their
-protocol dispositions. Local completion is excluded.
+protocol dispositions. `ControlEvent(EventId)` records describe signed control
+outcomes, `ChangeHash(ChangeHash)` records describe semantic Automerge change
+outcomes, and `Event(EventId)` records describe signed manifest, checkpoint,
+and change-carrier outcomes. Every attributable change carrier has one `Event`
+record in addition to the aggregate `ChangeHash` record for its semantic
+change. All three namespaces share the existing canonical ordering and digest
+encoding. Local completion is excluded.
 
 ## Typed assertions
 

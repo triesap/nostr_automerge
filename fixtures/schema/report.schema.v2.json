@@ -44,7 +44,7 @@
     "disposition_records": {
       "type": "array",
       "uniqueItems": true,
-      "description": "Canonical outcomes derived from complete protocol evaluation. Event records include selected manifests, checkpoint descriptors, and checkpoint chunks whose final status can differ from static carrier validity.",
+      "description": "Canonical outcomes derived from complete protocol evaluation. Event records include selected manifests, checkpoint descriptors, checkpoint chunks, and attributable change carriers whose final status can differ from static carrier validity or aggregate ChangeHash state.",
       "items": {"$ref": "#/$defs/disposition_record"}
     },
     "accepted_changes": {
