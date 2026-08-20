@@ -1658,6 +1658,53 @@ mod tests {
     }
 
     #[test]
+    fn losing_branch_preserves_pending_invalid_and_equivocation_outcomes() {
+        let mut invalid = change(3, 3, 1);
+        invalid.legacy_eligible = false;
+        let mut pending = change(4, 4, 1);
+        pending
+            .candidate
+            .dependencies
+            .push(ChangeHash::from_bytes([99; 32]));
+        let equivocation_a = change(5, 5, 1);
+        let equivocation_b = change(6, 5, 1);
+        let report = evaluate_batch(
+            [
+                control(1, None, vec![]),
+                control(
+                    2,
+                    None,
+                    vec![
+                        invalid.clone(),
+                        pending.clone(),
+                        equivocation_a.clone(),
+                        equivocation_b.clone(),
+                    ],
+                ),
+            ],
+            &mut WorkBudget::new(0, 500),
+            &NeverCancelled,
+        );
+        let branch = &report.branch_change_dispositions[&EventId::from_bytes([2; 32])];
+        assert_eq!(
+            branch[&invalid.candidate.change_hash],
+            ProtocolDisposition::Invalid
+        );
+        assert_eq!(
+            branch[&pending.candidate.change_hash],
+            ProtocolDisposition::Pending
+        );
+        assert_eq!(
+            branch[&equivocation_a.candidate.change_hash],
+            ProtocolDisposition::Excluded
+        );
+        assert_eq!(
+            branch[&equivocation_b.candidate.change_hash],
+            ProtocolDisposition::Excluded
+        );
+    }
+
+    #[test]
     fn applied_head_agreement_is_required() {
         let accepted = BTreeSet::from([ChangeHash::from_bytes([1; 32])]);
         let controls = std::collections::BTreeMap::from([(
