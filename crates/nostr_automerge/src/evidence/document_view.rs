@@ -155,6 +155,12 @@ impl<'a> DocumentEvidenceView<'a> {
         self.work.map_or(0, |work| work.checkpoint_chunk_count)
     }
 
+    pub(crate) fn checkpoint_reference_work(&self) -> Option<u64> {
+        u64::try_from(self.checkpoint_descriptor_count())
+            .ok()?
+            .checked_add(u64::try_from(self.checkpoint_chunk_count()).ok()?)
+    }
+
     pub(crate) fn decode_work_bytes(&self) -> Option<u64> {
         self.work.map_or(Some(0), |work| work.decode_work_bytes)
     }
@@ -234,6 +240,18 @@ mod tests {
                 ..CoordinateWorkMetadata::default()
             },
         );
+        let overflow_coordinate = DocumentCoordinate::new(
+            ControllerPublicKey::from_bytes([8; 32]),
+            DocumentId::from_bytes([9; 32]),
+        );
+        indexes.coordinates.work.insert(
+            overflow_coordinate,
+            CoordinateWorkMetadata {
+                checkpoint_descriptor_count: usize::MAX,
+                checkpoint_chunk_count: usize::MAX,
+                ..CoordinateWorkMetadata::default()
+            },
+        );
         let corpus = EvidenceCorpus {
             events: BTreeMap::new(),
             invalid: BTreeMap::new(),
@@ -259,5 +277,10 @@ mod tests {
         );
         assert_eq!(view.checkpoint_descriptor_count(), 1);
         assert_eq!(view.checkpoint_chunk_count(), 1);
+        assert_eq!(view.checkpoint_reference_work(), Some(2));
+        assert_eq!(
+            DocumentEvidenceView::derive(&corpus, overflow_coordinate).checkpoint_reference_work(),
+            None
+        );
     }
 }

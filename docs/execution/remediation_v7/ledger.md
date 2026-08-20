@@ -42,10 +42,12 @@ Updated: 2026-08-20
   coverage, chunk collection, and target event collection through the view.
 - `step_1074` required dynamic event dispositions and digest inputs to contain
   only reportable target event identifiers, with typed invariant rejection.
+- `step_1075` replaced global descriptor and chunk charges with checked,
+  coordinate-scoped checkpoint reference work.
 
 ## Active checkpoint
 
-`step_1075` — charge only coordinate-scoped checkpoint reference work.
+`step_1076` — add signed scope scenarios and close the Rust scope gate.
 
 ## Holds
 
