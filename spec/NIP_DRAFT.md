@@ -525,8 +525,9 @@ A change is accepted only when:
 
 1. the NIP-01 event id and signature are valid;
 2. the coordinate and required tags are valid;
-3. the referenced control is on the canonical control chain;
-4. the event author has `write` in that control;
+3. the referenced control resolves for the same coordinate;
+4. the event author has `write` in that control and the internal ActorId binds
+   to that author;
 5. framing, size, checksum, and ChangeHash checks pass;
 6. canonical decode and re-encode passes;
 7. the internal ActorId equals the ActorId derived from the coordinate and event author;
@@ -538,6 +539,16 @@ A change is accepted only when:
 
 Parser success alone is not acceptance.
 
+A carrier that names a missing or pending control is `pending`. A carrier that
+names a wrong-kind, wrong-coordinate, statically invalid, dynamically invalid,
+or unsupported control is `invalid`; a draft-v1 carrier does not inherit an
+unsupported revision from the control it references. A carrier whose own
+unique canonical revision or Automerge profile is unknown is
+`unsupported_revision`. An otherwise-valid authorized carrier on a statefully
+valid noncanonical control uses that branch's per-ChangeHash result: accepted
+for the branch becomes `excluded`, branch-pending remains `pending`,
+branch-invalid remains `invalid`, and equivocation-excluded remains `excluded`.
+
 ### Duplicate carriers
 
 The same Change Chunk may appear in more than one signed Nostr event.
@@ -545,6 +556,37 @@ The same Change Chunk may appear in more than one signed Nostr event.
 Document state is deduplicated by ChangeHash. One valid carrier is enough. An invalid carrier for the same ChangeHash does not invalidate a valid carrier.
 
 Clients SHOULD retain at least one complete valid carrier for every accepted ChangeHash.
+
+### Semantic ChangeHash and carrier outcomes
+
+`ChangeHash` is the semantic identity used for dependency evaluation,
+deduplicated application, document state, and heads. Each signed change carrier
+is also a distinct claim identified by its NIP-01 event id. Carrier event id,
+referenced control, and author are claim metadata; they do not create a second
+semantic change.
+
+Every attributable signed change carrier MUST have exactly one final `Event`
+disposition. Every attributable semantic change MUST have exactly one
+`ChangeHash` disposition. Both records coexist in canonical reports and in the
+dispositions digest. Carrier outcomes MUST be derived independently and MUST
+NOT be copied from the aggregate hash outcome.
+
+Final ChangeHash reduction uses all carrier claims and the final canonical
+lineage:
+
+- a hash in the final accepted closure is `accepted`;
+- a hash accepted at a canonical ancestor but pruned from the final lineage is
+  `excluded`;
+- otherwise, an unresolved claim makes the hash `pending`;
+- otherwise, an authorized statefully valid noncanonical claim or a current
+  authorized excluded claim makes the hash `excluded`;
+- otherwise, a hash with only unsupported carriers is
+  `unsupported_revision`; and
+- every remaining conclusive failure is `invalid`.
+
+One sufficient valid carrier dominates invalid, pending, unsupported, or
+noncanonical carriers for aggregate acceptance without hiding their individual
+Event outcomes. A semantic change MUST be applied at most once.
 
 ### Device equivocation
 
@@ -606,6 +648,18 @@ Local execution completion is separate from protocol disposition:
 
 `budget_exhausted` and `cancelled` do not make evidence invalid and MUST NOT
 appear in canonical cross-language disposition digests.
+
+Canonical disposition records use three disjoint namespaces:
+
+- `ControlEvent(EventId)` for controller-signed control outcomes;
+- `ChangeHash(ChangeHash)` for semantic Automerge change outcomes; and
+- `Event(EventId)` for signed manifest, checkpoint, and change-carrier
+  outcomes.
+
+Records MUST be strictly ordered first by namespace and then by the identifier's
+32 bytes. All three namespaces participate in the dispositions digest.
+Optional diagnostic metadata explains an outcome but does not alter digest
+identity.
 
 These categories do not define new relay messages. Later evidence may move a
 `pending` item to another protocol disposition.
