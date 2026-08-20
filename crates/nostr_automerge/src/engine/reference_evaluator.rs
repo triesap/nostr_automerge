@@ -669,6 +669,17 @@ enum FinalLineageChangeState {
     Current,
 }
 
+fn noncanonical_branch_claim_reason(outcome: Option<ProtocolDisposition>) -> ChangeClaimReason {
+    match outcome {
+        Some(ProtocolDisposition::Accepted) => ChangeClaimReason::AuthorizedNoncanonical,
+        Some(ProtocolDisposition::Pending) => ChangeClaimReason::UnresolvedControl,
+        Some(ProtocolDisposition::Excluded) => ChangeClaimReason::AuthorizedCurrentExcluded,
+        Some(ProtocolDisposition::Invalid | ProtocolDisposition::UnsupportedRevision) | None => {
+            ChangeClaimReason::InvalidReferencedControl
+        }
+    }
+}
+
 fn reduce_change_dispositions(
     view: &DocumentEvidenceView<'_>,
     batch: &mut BatchEvaluationReport,
@@ -765,23 +776,9 @@ fn reduce_change_dispositions(
                         if !authorized {
                             ChangeClaimReason::Unauthorized
                         } else {
-                            match batch.referenced_branch_change_disposition(claim.control_id, hash)
-                            {
-                                Some(ProtocolDisposition::Accepted) => {
-                                    ChangeClaimReason::AuthorizedNoncanonical
-                                }
-                                Some(ProtocolDisposition::Pending) => {
-                                    ChangeClaimReason::UnresolvedControl
-                                }
-                                Some(ProtocolDisposition::Excluded) => {
-                                    ChangeClaimReason::AuthorizedCurrentExcluded
-                                }
-                                Some(
-                                    ProtocolDisposition::Invalid
-                                    | ProtocolDisposition::UnsupportedRevision,
-                                )
-                                | None => ChangeClaimReason::InvalidReferencedControl,
-                            }
+                            noncanonical_branch_claim_reason(
+                                batch.referenced_branch_change_disposition(claim.control_id, hash),
+                            )
                         }
                     }
                     ReferencedControlState::Pending(_) | ReferencedControlState::Missing => {
@@ -2771,7 +2768,8 @@ mod tests {
     use super::{
         ChangeClaimReason, CheckpointWorkStop, FinalLineageChangeState, FinalizationDimension,
         ReportFinalizationPermit, ReportFinalizationPlan, assembly_status, charge_checkpoint_work,
-        join_status, reduce_reasoned_change_outcome, scoped_dynamic_event_disposition_records,
+        join_status, noncanonical_branch_claim_reason, reduce_reasoned_change_outcome,
+        scoped_dynamic_event_disposition_records,
     };
     use crate::CheckpointVerificationStatus as Status;
     use crate::checkpoint::AssemblyError;
@@ -2886,6 +2884,23 @@ mod tests {
                 ]
             ),
             Invalid
+        );
+    }
+
+    #[test]
+    fn valid_carrier_dominates_invalid_carrier_without_hiding_it() {
+        use crate::ProtocolDisposition::{Accepted, Excluded, Invalid};
+        let valid = noncanonical_branch_claim_reason(Some(Accepted));
+        let invalid = noncanonical_branch_claim_reason(Some(Invalid));
+        assert_eq!(valid, ChangeClaimReason::AuthorizedNoncanonical);
+        assert_eq!(invalid, ChangeClaimReason::InvalidReferencedControl);
+        assert_eq!(
+            reduce_reasoned_change_outcome(FinalLineageChangeState::Current, &[valid, invalid],),
+            Excluded
+        );
+        assert_eq!(
+            reduce_reasoned_change_outcome(FinalLineageChangeState::Accepted, &[valid, invalid],),
+            Accepted
         );
     }
 
