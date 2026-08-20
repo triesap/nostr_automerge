@@ -29,15 +29,13 @@
         "namespace": "control_event"
       },
       {
-        "disposition": "excluded",
+        "disposition": "pending",
         "identifier": "6458b15fc63750b92d18900f214982746897cfb5b3c14c0ea23ffe85f332213a",
         "namespace": "change_hash"
       }
     ],
-    "dispositions_digest": "edf8b64e1154cd5a703a0fe6b802acae1f37dd4bf47539ee314cff8fcdeef67d",
-    "excluded_changes": [
-      "6458b15fc63750b92d18900f214982746897cfb5b3c14c0ea23ffe85f332213a"
-    ],
+    "dispositions_digest": "bacc366fd9c67d884d80d40e7bdda4d23566ed4f7c75151b71a5340a8891bd26",
+    "excluded_changes": [],
     "fixture_id": "noncanonical_child_pending_base_head",
     "heads": [],
     "history_digest": "f051f909d3fc68dbd26eb6a4f99e3a18aef68153a0d5aabfd7e2c305ea3eb3de",
@@ -54,7 +52,9 @@
     ],
     "invalid_changes": [],
     "invalid_events": [],
-    "pending_changes": [],
+    "pending_changes": [
+      "6458b15fc63750b92d18900f214982746897cfb5b3c14c0ea23ffe85f332213a"
+    ],
     "report_schema": "nostr_automerge.report.v1",
     "revision": "draft_2026_08",
     "state_assertions": [],

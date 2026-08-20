@@ -1,0 +1,35 @@
+{
+  "allowed_validator_self_mutations": {
+    "caught": 8,
+    "report": "reports/requirements_evidence_mutations_v8.json",
+    "status": "pass",
+    "survived": 0
+  },
+  "anchors": [
+    {
+      "finding": "FINDING_066",
+      "path": "crates/nostr_automerge/src/reference/evaluate.rs",
+      "symbols": [
+        "ValidBranchEvaluation",
+        "branch_change_dispositions",
+        "referenced_branch_change_disposition"
+      ]
+    },
+    {
+      "finding": "FINDING_066",
+      "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+      "symbols": [
+        "noncanonical_branch_claim_reason",
+        "reduce_reasoned_change_outcome"
+      ]
+    }
+  ],
+  "campaign_executed": false,
+  "execution_status": "held_operator_safety",
+  "schema": "nostr_automerge.mutation_campaign.v8.inventory.v1",
+  "source_mutating_execution": {
+    "authorized": false,
+    "executed": false,
+    "reason": "source-mutating campaigns remain outside the locally authorized sequence"
+  }
+}

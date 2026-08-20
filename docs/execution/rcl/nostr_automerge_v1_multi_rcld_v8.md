@@ -13,10 +13,10 @@ Reviewed requirement registry SHA-256: `95a80689b3e4d661a73867673994829e7060df67
 Reviewed applicability SHA-256: `27c58584b6ab1627823fb620378f56a7038de21d7f38b6ed4baae5a64fafe87d`
 Reviewed distribution-v8 manifest SHA-256: `7f1c17d61d28857562ffbae68fa132efa3e052863434cc686b2a72234b614ada`
 Steps: `step_1096` through `step_1157` (62 contiguous checkpoints)
-Active RCLD: RCLD 74
-Active checkpoint: `step_1102`
-Next RCLD: RCLD 74
-Next checkpoint: `step_1102`
+Active RCLD: RCLD 75
+Active checkpoint: `step_1110`
+Next RCLD: RCLD 75
+Next checkpoint: `step_1110`
 
 ## Outcome
 
@@ -277,7 +277,7 @@ machine-linked; all source defects reproduce without a red default suite; the
 
 ## RCLD 74 — Branch-Local Change Reduction
 
-Status: planned
+Status: complete
 Steps: `step_1102` through `step_1109`
 Gate: `GATE_V8_BRANCH`
 Depends on: RCLD 73
@@ -498,7 +498,6 @@ completion.
 
 ## Unfinished RCLDs
 
-- RCLD 74 — Branch-Local Change Reduction
 - RCLD 75 — Target-Scoped Control, Ancestry, And Raw-Change Work
 - RCLD 76 — Pass-Level Interrupted Finalization
 - RCLD 77 — Carrier Event Dispositions
@@ -506,5 +505,5 @@ completion.
 - RCLD 79 — Signed Distribution V9 And Private Parity
 - RCLD 80 — Exact Evidence And Truthful Closure
 
-Fifty-six checkpoints remain unfinished. Execution continues with
-`step_1102`.
+Forty-eight checkpoints remain unfinished. Execution continues with
+`step_1110`.

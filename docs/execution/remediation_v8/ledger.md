@@ -6,8 +6,8 @@ Updated: 2026-08-20
 | RCLD | Steps | Status | Gate |
 | --- | --- | --- | --- |
 | 73 | 1096–1101 | complete | `GATE_V8_AUTHORITY` |
-| 74 | 1102–1109 | planned | `GATE_V8_BRANCH` |
-| 75 | 1110–1117 | planned | `GATE_V8_SCOPE` |
+| 74 | 1102–1109 | complete | `GATE_V8_BRANCH` |
+| 75 | 1110–1117 | active | `GATE_V8_SCOPE` |
 | 76 | 1118–1125 | planned | `GATE_V8_RESOURCE` |
 | 77 | 1126–1134 | planned | `GATE_V8_DISPOSITION` |
 | 78 | 1135–1140 | planned | `GATE_V8_NIP` |
@@ -29,10 +29,26 @@ Updated: 2026-08-20
   the ordinary test target remains green.
 - `step_1101` installed this ledger, the deviation register, and the v8
   authority validator and closed `GATE_V8_AUTHORITY`.
+- `step_1102` introduced typed branch-local change dispositions without
+  changing the public report surface.
+- `step_1103` retained every evaluated branch result after canonical-lineage
+  selection.
+- `step_1104` added deterministic referenced-control and change-hash lookup.
+- `step_1105` reduced authorized noncanonical claims through their referenced
+  branch outcomes.
+- `step_1106` preserved pending, invalid, excluded, and equivocation-descendant
+  outcomes from losing branches.
+- `step_1107` made same-hash multi-carrier reduction deterministic while
+  preserving invalid carrier evidence.
+- `step_1108` activated and passed the FINDING-066 regression and focused
+  public-engine suite.
+- `step_1109` recorded deterministic mutation anchors, passed all eight
+  allowed validator self-mutations, retained the source-mutation hold, and
+  closed `GATE_V8_BRANCH`.
 
 ## Active checkpoint
 
-`step_1102` is next. No implementation checkpoint is active between commits.
+`step_1110` is next. No implementation checkpoint is active between commits.
 
 ## Holds
 
