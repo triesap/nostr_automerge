@@ -1064,6 +1064,17 @@ fn charge_application_work(
 }
 
 impl BatchEvaluationReport {
+    pub(crate) fn referenced_branch_change_disposition(
+        &self,
+        control: EventId,
+        hash: ChangeHash,
+    ) -> Option<ProtocolDisposition> {
+        self.branch_change_dispositions
+            .get(&control)
+            .and_then(|dispositions| dispositions.get(&hash))
+            .copied()
+    }
+
     fn with_heads(mut self, heads: BTreeSet<ChangeHash>) -> Self {
         self.heads = heads;
         self
@@ -1517,6 +1528,13 @@ mod tests {
             basic_report.branch_change_dispositions[&EventId::from_bytes([1; 32])]
                 [&basic.candidate.change_hash],
             ProtocolDisposition::Accepted
+        );
+        assert_eq!(
+            basic_report.referenced_branch_change_disposition(
+                EventId::from_bytes([1; 32]),
+                basic.candidate.change_hash,
+            ),
+            Some(ProtocolDisposition::Accepted)
         );
         assert_eq!(
             basic_report
