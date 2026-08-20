@@ -1,0 +1,61 @@
+{
+  "schema": "nostr_automerge.remediation_findings.v8.v1",
+  "findings": [
+    {
+      "id": "FINDING_066",
+      "severity": "high",
+      "title": "Branch-local change outcomes are discarded before final reduction",
+      "requirements": ["NCRDT-BRANCH-003", "NCRDT-BRANCH-004"],
+      "status": "open",
+      "closure_gate": "GATE_V8_BRANCH"
+    },
+    {
+      "id": "FINDING_067",
+      "severity": "high",
+      "title": "Target evaluation still performs global and repeatedly unmetered control work",
+      "requirements": ["NCRDT-SCOPE-007", "NCRDT-RESOURCE-011"],
+      "status": "open",
+      "closure_gate": "GATE_V8_SCOPE"
+    },
+    {
+      "id": "FINDING_068",
+      "severity": "medium-high",
+      "title": "Interrupted finalization forfeits capacity before performing actual report work",
+      "requirements": ["NCRDT-RESOURCE-012"],
+      "status": "open",
+      "closure_gate": "GATE_V8_RESOURCE"
+    },
+    {
+      "id": "FINDING_069",
+      "severity": "medium-high",
+      "title": "Change carrier events have no dynamic event-level dispositions",
+      "requirements": ["NCRDT-DISPOSITION-004", "NCRDT-DISPOSITION-005"],
+      "status": "open",
+      "closure_gate": "GATE_V8_DISPOSITION"
+    },
+    {
+      "id": "FINDING_070",
+      "severity": "blocking",
+      "title": "The locally authorized NIP reconciliation was not completed",
+      "requirements": ["NCRDT-NIP-003"],
+      "status": "open",
+      "closure_gate": "GATE_V8_NIP"
+    },
+    {
+      "id": "FINDING_071",
+      "severity": "high-for-sign-off",
+      "title": "Shared conformance and requirement evidence omit the remaining compositions",
+      "requirements": ["NCRDT-CONF-009", "NCRDT-EVIDENCE-005"],
+      "status": "open",
+      "closure_gate": "GATE_V8_FINAL"
+    },
+    {
+      "id": "FINDING_072",
+      "severity": "release-hold",
+      "title": "External assurance and publication holds remain",
+      "requirements": [],
+      "status": "held",
+      "closure_gate": "external"
+    }
+  ]
+}
