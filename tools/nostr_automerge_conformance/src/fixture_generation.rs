@@ -57,8 +57,280 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "remediation_v6_dependency_knowledge" => generate_remediation_v6_dependency_knowledge(),
         "remediation_v6_checkpoint_references" => generate_remediation_v6_checkpoint_references(),
         "remediation_v7_branch" => generate_remediation_v7_branch(),
+        "remediation_v7_scope" => generate_remediation_v7_scope(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
+}
+
+fn generate_remediation_v7_scope() -> Result<(), String> {
+    let controller = Signer::from_byte(182)?;
+    let foreign_controller = Signer::from_byte(183)?;
+    let writer = Signer::from_byte(184)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "d9".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation-v7 scope coordinate".to_owned())?;
+    let foreign_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        foreign_controller.public_key.to_hex(),
+        "da".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation-v7 foreign coordinate".to_owned())?;
+    let members = || vec![(&writer, None, &["checkpoint", "write"][..])];
+    let control = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let control_id = event_id(&control)?;
+    let foreign_control = sign_control(
+        &foreign_controller,
+        2,
+        foreign_coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let foreign_control_id = event_id(&foreign_control)?;
+    let snapshot = AuthoringDocument::empty(ActorState::initial(
+        ActorId::derive(coordinate, writer.public_key),
+        Default::default(),
+    ))
+    .map_err(|error| format!("remediation-v7 scope document: {error:?}"))?
+    .accepted_state_bytes();
+    let foreign_snapshot = AuthoringDocument::empty(ActorState::initial(
+        ActorId::derive(foreign_coordinate, writer.public_key),
+        Default::default(),
+    ))
+    .map_err(|error| format!("remediation-v7 foreign scope document: {error:?}"))?
+    .accepted_state_bytes();
+    let empty_commitment: [u8; 32] = Sha256::digest(
+        [
+            b"nostr-crdt/automerge/change-set/v1".as_slice(),
+            &[0],
+            &0_u64.to_be_bytes(),
+        ]
+        .concat(),
+    )
+    .into();
+    let descriptor = sign_checkpoint_descriptor(
+        &writer,
+        3,
+        coordinate,
+        control_id,
+        &snapshot,
+        &[],
+        empty_commitment,
+        None,
+    )?;
+    let descriptor_id = event_id(&descriptor)?;
+    let target_chunk = sign_checkpoint_chunk(&writer, 4, coordinate, descriptor_id, &snapshot)?;
+    let foreign_chunk =
+        sign_checkpoint_chunk(&writer, 5, foreign_coordinate, descriptor_id, &snapshot)?;
+    let foreign_descriptor = sign_checkpoint_descriptor(
+        &writer,
+        6,
+        foreign_coordinate,
+        foreign_control_id,
+        &foreign_snapshot,
+        &[],
+        empty_commitment,
+        None,
+    )?;
+    let foreign_descriptor_id = event_id(&foreign_descriptor)?;
+    let foreign_checkpoint_chunk = sign_checkpoint_chunk(
+        &writer,
+        7,
+        foreign_coordinate,
+        foreign_descriptor_id,
+        &foreign_snapshot,
+    )?;
+    let cross_coordinate_chunk = sign_checkpoint_chunk(
+        &writer,
+        8,
+        coordinate,
+        foreign_descriptor_id,
+        &foreign_snapshot,
+    )?;
+    let (foreign_change_raw, foreign_change_hash) =
+        author_root_change(foreign_coordinate, &writer, "foreign-target-control")?;
+    let foreign_change = sign_change(
+        &writer,
+        9,
+        foreign_coordinate,
+        control_id,
+        foreign_change_hash,
+        &foreign_change_raw,
+    )?;
+
+    let mut foreign_claim_flood = Vec::new();
+    for index in 0_u8..24 {
+        let (raw, hash) = author_root_change(
+            foreign_coordinate,
+            &writer,
+            &format!("foreign-claim-{index:02}"),
+        )?;
+        foreign_claim_flood.push(sign_change(
+            &writer,
+            20 + u64::from(index),
+            foreign_coordinate,
+            control_id,
+            hash,
+            &raw,
+        )?);
+    }
+
+    let root = repository_root().join("fixtures/v1_draft/scenarios/scope");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    let requirements = &["NCRDT-SCOPE-002", "NCRDT-SCOPE-003"];
+    for (fixture_id, events) in [
+        (
+            "foreign_chunk_references_target_descriptor",
+            vec![control.clone(), descriptor.clone(), foreign_chunk.clone()],
+        ),
+        (
+            "foreign_chunk_excluded_from_target_digest",
+            vec![
+                control.clone(),
+                descriptor.clone(),
+                target_chunk.clone(),
+                foreign_chunk,
+            ],
+        ),
+        (
+            "foreign_change_references_target_control",
+            vec![control.clone(), foreign_change],
+        ),
+        (
+            "cross_coordinate_descriptor_reference_isolated",
+            vec![
+                control.clone(),
+                foreign_control.clone(),
+                foreign_descriptor.clone(),
+                cross_coordinate_chunk,
+            ],
+        ),
+    ] {
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            requirements,
+            "remediation_v7_scope",
+        )?;
+    }
+
+    let target_checkpoint_events = vec![control.clone(), descriptor, target_chunk];
+    let mut checkpoint_flood = target_checkpoint_events.clone();
+    checkpoint_flood.extend([
+        foreign_control,
+        foreign_descriptor,
+        foreign_checkpoint_chunk,
+    ]);
+    let checkpoint_budget = minimum_complete_item_budget(coordinate, &target_checkpoint_events)?;
+    if minimum_complete_item_budget(coordinate, &checkpoint_flood)? != checkpoint_budget {
+        return Err("foreign checkpoint evidence changed target exact budget".to_owned());
+    }
+    write_fixture_with_execution(
+        &root,
+        "unrelated_valid_checkpoints_exact_budget",
+        coordinate,
+        checkpoint_flood,
+        requirements,
+        "remediation_v7_scope",
+        Vec::new(),
+        ScenarioBudget {
+            max_bytes: 1_000_000,
+            max_items: checkpoint_budget,
+        },
+        None,
+    )?;
+
+    let target_control_events = vec![control.clone()];
+    let mut claim_flood = target_control_events.clone();
+    claim_flood.extend(foreign_claim_flood);
+    let claim_budget = minimum_complete_item_budget(coordinate, &target_control_events)?;
+    if minimum_complete_item_budget(coordinate, &claim_flood)? != claim_budget {
+        return Err("foreign change claims changed target exact budget".to_owned());
+    }
+    write_fixture_with_execution(
+        &root,
+        "foreign_claim_flood_exact_budget",
+        coordinate,
+        claim_flood,
+        requirements,
+        "remediation_v7_scope",
+        Vec::new(),
+        ScenarioBudget {
+            max_bytes: 1_000_000,
+            max_items: claim_budget,
+        },
+        None,
+    )?;
+    Ok(())
+}
+
+fn minimum_complete_item_budget(
+    coordinate: DocumentCoordinate,
+    events: &[RawEventBytes],
+) -> Result<u64, String> {
+    let kind = |event: &RawEventBytes| {
+        serde_json::from_str::<Value>(event.as_str())
+            .ok()?
+            .get("kind")?
+            .as_u64()
+    };
+    crate::permutations::required_delivery_permutations(
+        events,
+        |event| kind(event) == Some(1_624),
+        |event| kind(event) == Some(1_625),
+        |_| false,
+    )
+    .into_iter()
+    .try_fold(0_u64, |required, permutation| {
+        minimum_complete_item_budget_for_events(coordinate, &permutation.events)
+            .map(|budget| required.max(budget))
+    })
+}
+
+fn minimum_complete_item_budget_for_events(
+    coordinate: DocumentCoordinate,
+    events: &[RawEventBytes],
+) -> Result<u64, String> {
+    let mut lower = 0_u64;
+    let mut upper = 1_000_000_u64;
+    while lower < upper {
+        let middle = lower + (upper - lower) / 2;
+        let report = generic_report(
+            ScenarioInput {
+                scenario_schema: "nostr_automerge.scenario.v1".to_owned(),
+                coordinate: coordinate.to_address(),
+                raw_events: events
+                    .iter()
+                    .map(|event| RawScenarioEvent::Utf8(event.as_str().to_owned()))
+                    .collect(),
+                budget: ScenarioBudget {
+                    max_bytes: 1_000_000,
+                    max_items: middle,
+                },
+                cancel_after: None,
+            },
+            ExpectedReport::empty("minimum_complete_item_budget", &coordinate.to_address()),
+        )
+        .map_err(|error| error.message().to_owned())?;
+        if report.completion == "complete" {
+            upper = middle;
+        } else {
+            lower = middle.saturating_add(1);
+        }
+    }
+    Ok(lower)
 }
 
 fn generate_remediation_v7_branch() -> Result<(), String> {

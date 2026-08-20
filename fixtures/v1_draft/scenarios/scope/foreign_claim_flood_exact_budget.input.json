@@ -1,0 +1,145 @@
+{
+  "budget": {
+    "max_bytes": 1000000,
+    "max_items": 67
+  },
+  "cancel_after": null,
+  "coordinate": "31624:1e56775637dbcd2c79a5598435d1c183b9631532332094deccfebad19b346bc2:d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9",
+  "expected_report": {
+    "accepted_changes": [],
+    "canonical_controls": [
+      "ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d"
+    ],
+    "completion": "complete",
+    "coordinate": "31624:1e56775637dbcd2c79a5598435d1c183b9631532332094deccfebad19b346bc2:d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9",
+    "disposition_records": [
+      {
+        "disposition": "accepted",
+        "identifier": "ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d",
+        "namespace": "control_event"
+      }
+    ],
+    "dispositions_digest": "aa2d12c5054138bf95f0dd5902b9abc0c800765e427abdb5c9cc6f83398aa6d2",
+    "excluded_changes": [],
+    "fixture_id": "foreign_claim_flood_exact_budget",
+    "heads": [],
+    "history_digest": "95f9bf3f3f1df155d8c1a97896c57c7a92857f52ed4157877dd49367cec07ca9",
+    "integrity_alerts": [],
+    "invalid_changes": [],
+    "invalid_events": [],
+    "pending_changes": [],
+    "report_schema": "nostr_automerge.report.v1",
+    "revision": "draft_2026_08",
+    "state_assertions": [],
+    "unsupported_events": []
+  },
+  "fixture_id": "foreign_claim_flood_exact_budget",
+  "raw_events": [
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\\\",\\\"roles\\\":[\\\"checkpoint\\\",\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":0,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":1,\"id\":\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\",\"kind\":1625,\"pubkey\":\"1e56775637dbcd2c79a5598435d1c183b9631532332094deccfebad19b346bc2\",\"sig\":\"5becc703092e633b18a516bfe5aa39b0996f1f8764c90db3a49e235285622ebfff67136fb8584762a285fff74a9ae522acecc87361561e6f0b519afe70bf4d7d\",\"tags\":[[\"a\",\"31624:1e56775637dbcd2c79a5598435d1c183b9631532332094deccfebad19b346bc2:d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kg5JV0bABVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMDABfwF/hgFldmlkZW5jZX8A\",\"created_at\":20,\"id\":\"d5eb3be0f018d177b4a0a20b11bb583a12dc9740e80b4e552729cc4653162c93\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"732fa92d5a431639a23d7064ea99fe73797293d2202b29076ec969fe752dc8ebc6ebdfc583994e89ba0fb7f2edb1ff7c04eaf79862fc18619391379ae2cf1fa3\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"9255d1b06e836644625f72982c4ae8f00951841f90c1efc8398ef34096433232\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9KgyO8n+gBVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMDEBfwF/hgFldmlkZW5jZX8A\",\"created_at\":21,\"id\":\"53fb761482aa901f13329f7ec4eceaaf25de1158aaed3fdc3f59b4e72ef1e00a\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"86db344b6fcd1745f1d518c5e922461e5fee1b42b850a1ace2a566cdb7c02c32c64688707b9fdf57055898427fafc3e6538821573faf52116e8b2868f8d2b325\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"23bc9fe87f6cfeb9e777fd464ab2c625cb6ee3e6f9c2a8c802e742374a4d1cd2\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9KgwWhskoBVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMDIBfwF/hgFldmlkZW5jZX8A\",\"created_at\":22,\"id\":\"c08fe8a0f3e1bc17db59f0d38155e4585baa51d4b1d4b78c7bb2b809d854fd31\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"929d952adcdb71408c30f1a87bd29a434b60a7af710c4d36b328f749d05a694317e41552b5fc1fb44763642051d472188839f776c2009f20d36a4ef98ffeea53\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"05a1b24ad665f05ce83e919980ab6337cc06e315cdd67f2a6f3a8291734759e7\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9KgwBpdqMBVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMDMBfwF/hgFldmlkZW5jZX8A\",\"created_at\":23,\"id\":\"c7c6a7d3e5fea280c471532bcebeb7e991932c27ec687dfb8202cd9c3ccc5b33\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"365a873aff1fe0eb89da01a517a243b9b5a9c1531718c625d4a3154a7705d1b6763c1642d0ed955f4c6bf384da7a596c2e872d61eb6651f4b50431a1e5641db3\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"006976a309ee802061b4e8f1fcf9894c1270da758dca287f5f1c5ca17898ae9a\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kg3e2WJABVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMDQBfwF/hgFldmlkZW5jZX8A\",\"created_at\":24,\"id\":\"eb16f21fde9eb226a4c2d214faac014446f716788aa3f6d1df7cd9110f8dfd60\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"e821e500253e88e05e3b0aec9c7cf7e072f2d80d0d51806a91e6bda8ed0381c1b143f1625ba9bf85663314795b1106d6ccb45e3bbf220ce7f42e68055c885771\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"77b658902fdb23aca32691175253939a06b5ece03cefb257092201fb8ea077e9\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kg0GdcGoBVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMDUBfwF/hgFldmlkZW5jZX8A\",\"created_at\":25,\"id\":\"4c7bf13dc967cc2c815804fc869c00cbd98fd5b88c65d4c190bc7897bda9751c\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"257f6e91d1d3d282ff2a271d4b10e3a4661b839c856816d5e400b0dbaf8c229cb3f25ae9fa92fa897ff4274f2a72348911b945ae0f5e13c767a6085caf5fa9d7\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"419d706aed6042244eafa347f124be4a11598daf86f89a1c63e9181307c12417\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kg68G7egBVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMDYBfwF/hgFldmlkZW5jZX8A\",\"created_at\":26,\"id\":\"f120ef8ec5f7ef95b7c76b9e249db188abdbb5587f570bbe5a57e92ae94c726a\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"c697786c45e472e4006fd079e0ce51bb986ff00d9c6ea93d150825ccc8b56412d7af5203d720ccac7536d842ca717bd4bfe3488feb92020a1df1614430b17e88\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"af06ede86dc7935dd0d9b747bc0c57421ca428699bfdc72a482237435f57e3e7\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kg44pSMIBVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMDcBfwF/hgFldmlkZW5jZX8A\",\"created_at\":27,\"id\":\"a4a2c8eef6a4b0f710c231170ac2bfab3f816f9046c4312594a689f22c14dc75\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"37790968a606e9cc8b4a0cde750bdba19905280680d1a21f75140bc05cd711cec97dd222f3fde1eb1052af253c3fd4ce271143ad8a4c80e286c270da898bdd7d\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"8e2948c21484c312a730beed38ade56ee8aeb2261a700b9adbf58a677d3b3f71\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kg2GIZNEBVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMDgBfwF/hgFldmlkZW5jZX8A\",\"created_at\":28,\"id\":\"98c6ac3906cd2ed8c2cfc49cc6ad815c996614529beb8b8f04e64ca274c982b6\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"f385847f15322f00eb35a6e3b58d5996b4afe09cbb71cab6fae641964214bff446f776880d2c40971b898946118d3c5f9a645349881d08606f289e0588349d93\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"618864d1cc1ec34b3a8ea4ce8fea531a72300c86b737210f873c9bac3910332b\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kg+uadSsBVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMDkBfwF/hgFldmlkZW5jZX8A\",\"created_at\":29,\"id\":\"7091d277b1114bdf32f563671d155d7c5669bb57c8655e707c2f3db85075d403\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"77c19203215482e22084960386141634ff705fedd878d8a98a531718ee27b44ce6a61207f77c7b535657f15edb5b307e2bdba600f875b80a023bf3a388ab2e3d\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"eb9a752b7820b47fd2d75952c2b378ba0140cac200cd6b899870211c28a72d51\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kgwc4tVEBVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMTABfwF/hgFldmlkZW5jZX8A\",\"created_at\":30,\"id\":\"62868a53041bed47c378587760c3204dc6621b8a0539725b8a6ad96dd5c9a781\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"69ce82d3cd50098d9d101d632e6feb92d069a52abfd8e3c0934af534d8135f7d7ab5ffad49cb9c86408bd57904e59d972f0d2d16937efe80dc45fa8733312e7b\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"0738b5515102d01a8c77dfeef022fd67e4a11f29ff41bbdf8617ab148745bf72\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kg8HC6+4BVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMTEBfwF/hgFldmlkZW5jZX8A\",\"created_at\":31,\"id\":\"4933c3d8dd2bce186bd1e2af6b1d29678b73c0d298dc2db1074a66c5d81a63f8\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"05f3e010d0681bf774c7e885a5f9e997d172e316e0978f7cc8067db4b905fcadd5c7faa6fd9bb46e335d14c4c530b961db736e85fdc4f0c675faf68b49dc8a4a\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"c1c2ebee9bcbe9b10389c877bd250339d82c303d2266d4e4cabcbe8cda11a94f\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kg5xoJdIBVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMTIBfwF/hgFldmlkZW5jZX8A\",\"created_at\":32,\"id\":\"0357a52604e707b52905d146881abd39cf2454c8472faab7604673e849178d0f\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"c3803372cb85bbddf42aed14dfbcf3263b595e4989bad5b462d060b486cb85e9820f8d5dfa0b9993d845e6d37b1629ba449d29545701a17176d56e567c18616c\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"9c6825d26ace54e3bed2fb90aa46c849fc5b40a599d144f680201485becbce2c\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kg3jiecgBVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMTMBfwF/hgFldmlkZW5jZX8A\",\"created_at\":33,\"id\":\"e58ef10c15aa8f07cc70d6a976e9132d0d0b969d7932d01c0adf67fa1dfe5191\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"15ec5fe8c3418dfac6b79b878abe7121fbadf199eaecaea0b9ae416a248d07ad42fbefb0396b18d249411ae39a6ebd38acb0437c167ab5c0c689590ace9d2f32\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"78e279c8ee3895726d3ed04735862a7b7e22eb66eb210549073ad3b492c7f652\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kg/lFzcQBVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMTQBfwF/hgFldmlkZW5jZX8A\",\"created_at\":34,\"id\":\"0867cdbe828d644c9c1079c25674f9dddf08869d3516a58983362fd17d627f7e\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"f7ad973eb5a7c1f5a24f7a36c2fb4b7f2073ce0af066d10fd2a84299fd18d8ecf6adc87aa0b0be1a67ac13f45409be69d4c8019053f103279ac9d84eba372e7d\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"f945cdc4617976f559927c6acf9529419a4ec93d77e9e30f65e47ef7167a0d96\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kg4ZfNNwBVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMTUBfwF/hgFldmlkZW5jZX8A\",\"created_at\":35,\"id\":\"3a35f403b5e7e926bc94a12fcda81c94bcf3f50b13dc73b5f22b83fdf4e55d5f\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"d8b80716fcf478e388ce6227a82693bd4b33c4609b846967827fc0a3e08a93aeacd215c14a939212ebd851d3efcafad8923bfbcb0fcd469e05c3b322f1e10a58\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"865f34dc7de36b33218f6c93359bd1b03196c8fb20b0ea009a01e6f810adbcdf\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kg2T5H18BVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMTYBfwF/hgFldmlkZW5jZX8A\",\"created_at\":36,\"id\":\"899abca7727aa45d88324a5087e9591cd82bdbe5cd2e5d13407adfa67e9db3c2\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"74bb34e4941609bb66b9e3290955cf71661fbc866e4654be596ce27e967224cc544126c1c244cf3b17de6af7ad8361ca1519ee02c76150739bcac1bcddb2ebf9\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"64f91f5f6a10d01722cec246d800306616e06ef12ac07d677b75fc6c2a41ece2\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kg2hmdfUBVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMTcBfwF/hgFldmlkZW5jZX8A\",\"created_at\":37,\"id\":\"a2561f1f37ea166af42917b5f05bdf4106241917c9c64179757aff3afad15141\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"0597136733cd34fd3c5addfa4ceda7dee8b6c02dbc0d4161ae1a70aad5766e4d3771eb63a541c3a31e92d460c666fec89232bc56159ecb328b0f09e3fe82c6ec\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"686675f58b2e9a0f94b14e75045f0aef2bcb74d040100da0c44ed72a77ce7757\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kg9mnVY0BVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMTgBfwF/hgFldmlkZW5jZX8A\",\"created_at\":38,\"id\":\"90a43ddd59b3abcdc88130c745481a0b504740d63c8da680a83e209b0a06b621\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"8a14252fad07b91f88994e03fd3b950c4b43036bd7f274ab24a419696bed39559daf6245fb30e700d48a39854433c14d631b0ce2afb1cef46df5cb3c0d0ed7f8\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"d9a7558dd8e56d6e4561a14a0f3ddf7bd42a0bb7b9724ebf1d1468100db627cb\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kg1cU1CIBVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMTkBfwF/hgFldmlkZW5jZX8A\",\"created_at\":39,\"id\":\"eb3b16fe7783ab0942054dc30a58a20a971134ff9a64f938ceb82609c8080d10\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"b7c83e5be3c843a5c073c40e2f89470570074e941061e3a1a294bef05e3973d3c63554fd8509abff44555986eb43a2f4c749b34189b594c66164c9184ff9ceb6\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"5714d42213abe3e4bf436c5dca4c21e7f85f1f178de4839e2e25722f95fc94d7\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kgxk74/wBVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMjABfwF/hgFldmlkZW5jZX8A\",\"created_at\":40,\"id\":\"b113458d6d6aafecd56d8f0f15d676c76da1f85ffea93358a87c9c544b7ceac9\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"ae6ae1afedd815073a89728ff8faa419cc5a70afbbd805c6d94f756dd1e06417580feed2acec6be2b81ce3eeec6c28a99d2b2d81335434d0accbb9299d00a8f4\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"193be3fc50103fb3d99ebdbb4f91c5b1d81c9c3f55f49d15e255c3daa0957a2e\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kg42RjIgBVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMjEBfwF/hgFldmlkZW5jZX8A\",\"created_at\":41,\"id\":\"8399d245b5c11a1c0925f7751b2f36df827d926ef73d9369e4e8bcc203ab0735\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"0221a04bc3e94d4ead743493028e3ef601d0d9e01efdba0eedf7c0c1a499e683bbe60c3abccb4d85ad77a3561c25933897a18660291cdcbfb9328d850ac4ac1e\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"8d918c888a321215e5be88f8ba591a47759ae82307836e002684e3fcad9e53fd\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9Kg/EaGysBVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMjIBfwF/hgFldmlkZW5jZX8A\",\"created_at\":42,\"id\":\"76bb3185cac3d02c5403d2d3b2e7cc29779a7d2dc7e382bace945cd43550778f\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"7dc1def354bd1e9825be48ab67cba1c42699e8a9cee662ff9aee71f39122c9bccc039efdf8e06d1bd5dbba474242fed0b7fc05b7d337ba84178122063d66311b\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"f11a1b2ba26763cbae1364c631fa39ac94c5252cbf3af5c8087923c01307b01d\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"hW9KgypoHm0BVgAgiXI3KCxXyHfEsfglrVo6gRxQmtKhyuo5vkUT68ZsV1UBAQAAAAYVEjQBQgJWA1cIcAJ/EGZvcmVpZ24tY2xhaW0tMjMBfwF/hgFldmlkZW5jZX8A\",\"created_at\":43,\"id\":\"8f42d47ba8f0708f4722cb80fc06053b397c055692ef9e3b6891a8527adeb30b\",\"kind\":1624,\"pubkey\":\"2636923b0e7c77237b9bc910929bddc3817629d158c19313cecb3462cfaed02f\",\"sig\":\"a3d3e8b8f1254f4e621aecf3cf142ca0f52a24c3f85afa4f43e0f88b7f6b279cc968e3e1d167d141e92cc5a8ffd0b1e980f737ac958bb607fbb7a3236ad71973\",\"tags\":[[\"a\",\"31624:5c87e84ce348701797e190282507897370f48448f3ab45f821b98f153b8f9f80:dadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadada\"],[\"e\",\"ecd0998a222e70350f64b8fc12ff7c90ac9bb4d6be661c756c41db5186188a8d\"],[\"x\",\"2a681e6dad7b82e0980daf1b3626130fbee72a33ebea839ed75f9aeb75793e1b\"]]}",
+      "encoding": "utf8"
+    }
+  ],
+  "requirements": [
+    "NCRDT-SCOPE-002",
+    "NCRDT-SCOPE-003"
+  ],
+  "revision": "draft_2026_08",
+  "scenario_schema": "nostr_automerge.signed_scenario.v2"
+}

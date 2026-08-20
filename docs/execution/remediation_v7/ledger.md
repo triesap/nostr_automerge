@@ -7,8 +7,8 @@ Updated: 2026-08-20
 | --- | --- | --- | --- |
 | 65 | 1059–1062 | complete | `GATE_V7_AUTHORITY` |
 | 66 | 1063–1069 | complete | `GATE_V7_BRANCH` |
-| 67 | 1070–1076 | active | `GATE_V7_SCOPE` |
-| 68 | 1077–1081 | pending | `GATE_V7_RESOURCE` |
+| 67 | 1070–1076 | complete | `GATE_V7_SCOPE` |
+| 68 | 1077–1081 | active | `GATE_V7_RESOURCE` |
 | 69 | 1082–1086 | pending | `GATE_V7_CONFORMANCE` |
 | 70 | 1087–1089 | pending | `GATE_V7_TYPESCRIPT` |
 | 71 | 1090–1092 | pending | `GATE_V7_COMPANION` |
@@ -44,10 +44,12 @@ Updated: 2026-08-20
   only reportable target event identifiers, with typed invariant rejection.
 - `step_1075` replaced global descriptor and chunk charges with checked,
   coordinate-scoped checkpoint reference work.
+- `step_1076` enabled both scope regressions, added six signed isolation
+  scenarios, ran all 169 transitional fixtures, and closed `GATE_V7_SCOPE`.
 
 ## Active checkpoint
 
-`step_1076` — add signed scope scenarios and close the Rust scope gate.
+`step_1077` — replace repeated parent propagation with a metered traversal.
 
 ## Holds
 

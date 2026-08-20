@@ -14,7 +14,6 @@ fn finding_059_noncanonical_control_requires_branch_table() {
 }
 
 #[test]
-#[ignore = "remediation-v7 baseline reproduction for FINDING_060"]
 fn finding_060_checkpoint_index_is_coordinate_qualified() {
     let source = include_str!("../src/evidence/indexes.rs");
     assert!(
@@ -24,7 +23,6 @@ fn finding_060_checkpoint_index_is_coordinate_qualified() {
 }
 
 #[test]
-#[ignore = "remediation-v7 baseline reproduction for FINDING_061"]
 fn finding_061_change_indexes_are_coordinate_qualified() {
     let source = include_str!("../src/evidence/indexes.rs");
     assert!(
