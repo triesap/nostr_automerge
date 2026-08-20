@@ -2452,16 +2452,21 @@ fn build_control_ancestry_index(
     cancellation: &impl CancellationCheck,
 ) -> Result<std::collections::BTreeMap<crate::EventId, Option<Vec<ControlEnvelope>>>, Completion> {
     let corpus = view.corpus();
+    let mut parents = std::collections::BTreeMap::new();
+    for (parent, children) in view
+        .parent_relationships()
+        .into_iter()
+        .flat_map(std::collections::BTreeMap::iter)
+    {
+        for child in children {
+            charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
+            parents.insert(*child, *parent);
+        }
+    }
+    debug_assert_eq!(parents.len(), view.control_relationship_count());
     let mut index =
         std::collections::BTreeMap::<crate::EventId, Option<Vec<ControlEnvelope>>>::new();
-    for root in corpus
-        .indexes
-        .controls
-        .controls_by_id
-        .keys()
-        .filter(|event_id| view.contains_reportable(event_id))
-        .copied()
-    {
+    for root in view.control_event_ids() {
         if index.contains_key(&root) {
             continue;
         }
@@ -2499,7 +2504,7 @@ fn build_control_ancestry_index(
                 break;
             }
             let Some(EventEvidence::VerifiedCarrier {
-                carrier: VerifiedCarrier::Control(control),
+                carrier: VerifiedCarrier::Control(_),
                 ..
             }) = corpus.events.get(&event_id)
             else {
@@ -2507,7 +2512,7 @@ fn build_control_ancestry_index(
                 break;
             };
             path.push(event_id);
-            current = control.parent();
+            current = parents.get(&event_id).copied().flatten();
         }
         if !valid {
             for event_id in path {
