@@ -50,10 +50,12 @@ Updated: 2026-08-20
   memoized traversal charging each relationship once.
 - `step_1078` enabled the propagation regression and proved zero, exact,
   insufficient, deep, reversed-order, cycle, and cancellation boundaries.
+- `step_1079` replaced remaining-only finalization state with per-dimension
+  reserved, consumed, refunded, and forfeited settlement ledgers.
 
 ## Active checkpoint
 
-`step_1079` — model consumed, refunded, and forfeited permit settlement.
+`step_1080` — explicitly settle every finalization return path.
 
 ## Holds
 

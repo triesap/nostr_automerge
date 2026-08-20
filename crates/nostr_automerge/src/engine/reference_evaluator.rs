@@ -1751,9 +1751,178 @@ enum FinalizationDimension {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct FinalizationPermitError;
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+struct FinalizationSettlement {
+    reserved: u64,
+    consumed: u64,
+    refunded: u64,
+    forfeited: u64,
+}
+
+impl FinalizationSettlement {
+    const fn new(reserved: u64) -> Self {
+        Self {
+            reserved,
+            consumed: 0,
+            refunded: 0,
+            forfeited: 0,
+        }
+    }
+
+    fn classified(self) -> Option<u64> {
+        self.consumed
+            .checked_add(self.refunded)?
+            .checked_add(self.forfeited)
+    }
+
+    fn remaining(self) -> Option<u64> {
+        self.reserved.checked_sub(self.classified()?)
+    }
+
+    fn consume(&mut self, amount: u64) -> Result<(), FinalizationPermitError> {
+        if amount > self.remaining().ok_or(FinalizationPermitError)? {
+            return Err(FinalizationPermitError);
+        }
+        self.consumed = self
+            .consumed
+            .checked_add(amount)
+            .ok_or(FinalizationPermitError)?;
+        Ok(())
+    }
+
+    fn refund_remaining(&mut self) -> Result<u64, FinalizationPermitError> {
+        let amount = self.remaining().ok_or(FinalizationPermitError)?;
+        self.refunded = self
+            .refunded
+            .checked_add(amount)
+            .ok_or(FinalizationPermitError)?;
+        Ok(amount)
+    }
+
+    fn forfeit_remaining(&mut self) -> Result<(), FinalizationPermitError> {
+        let amount = self.remaining().ok_or(FinalizationPermitError)?;
+        self.forfeited = self
+            .forfeited
+            .checked_add(amount)
+            .ok_or(FinalizationPermitError)?;
+        Ok(())
+    }
+
+    fn is_settled(self) -> bool {
+        self.classified() == Some(self.reserved)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct ReportFinalizationLedger {
+    controls: FinalizationSettlement,
+    changes: FinalizationSettlement,
+    events: FinalizationSettlement,
+    checkpoints: FinalizationSettlement,
+    digests: FinalizationSettlement,
+    evidence: FinalizationSettlement,
+    invariants: FinalizationSettlement,
+    fixed_overhead: FinalizationSettlement,
+}
+
+impl ReportFinalizationLedger {
+    const fn from_plan(plan: ReportFinalizationPlan) -> Self {
+        Self {
+            controls: FinalizationSettlement::new(plan.controls),
+            changes: FinalizationSettlement::new(plan.changes),
+            events: FinalizationSettlement::new(plan.events),
+            checkpoints: FinalizationSettlement::new(plan.checkpoints),
+            digests: FinalizationSettlement::new(plan.digests),
+            evidence: FinalizationSettlement::new(plan.evidence),
+            invariants: FinalizationSettlement::new(plan.invariants),
+            fixed_overhead: FinalizationSettlement::new(plan.fixed_overhead),
+        }
+    }
+
+    fn dimension_mut(&mut self, dimension: FinalizationDimension) -> &mut FinalizationSettlement {
+        match dimension {
+            FinalizationDimension::Controls => &mut self.controls,
+            FinalizationDimension::Changes => &mut self.changes,
+            FinalizationDimension::Events => &mut self.events,
+            FinalizationDimension::Checkpoints => &mut self.checkpoints,
+            FinalizationDimension::Digests => &mut self.digests,
+            FinalizationDimension::Evidence => &mut self.evidence,
+            FinalizationDimension::Invariants => &mut self.invariants,
+            FinalizationDimension::FixedOverhead => &mut self.fixed_overhead,
+        }
+    }
+
+    fn settlements(&self) -> [&FinalizationSettlement; 8] {
+        [
+            &self.controls,
+            &self.changes,
+            &self.events,
+            &self.checkpoints,
+            &self.digests,
+            &self.evidence,
+            &self.invariants,
+            &self.fixed_overhead,
+        ]
+    }
+
+    fn is_settled(&self) -> bool {
+        self.settlements()
+            .into_iter()
+            .all(|settlement| settlement.is_settled())
+    }
+
+    fn is_interrupted_settlement(&self) -> bool {
+        self.is_settled()
+            && self
+                .settlements()
+                .into_iter()
+                .all(|settlement| settlement.refunded == 0)
+    }
+
+    fn remaining_total(&self) -> Option<u64> {
+        self.settlements()
+            .into_iter()
+            .try_fold(0_u64, |total, settlement| {
+                total.checked_add(settlement.remaining()?)
+            })
+    }
+
+    fn refund_all_remaining(&mut self) -> Result<(), FinalizationPermitError> {
+        for dimension in [
+            FinalizationDimension::Controls,
+            FinalizationDimension::Changes,
+            FinalizationDimension::Events,
+            FinalizationDimension::Checkpoints,
+            FinalizationDimension::Digests,
+            FinalizationDimension::Evidence,
+            FinalizationDimension::Invariants,
+            FinalizationDimension::FixedOverhead,
+        ] {
+            self.dimension_mut(dimension).refund_remaining()?;
+        }
+        Ok(())
+    }
+
+    fn forfeit_all_remaining(&mut self) -> Result<(), FinalizationPermitError> {
+        for dimension in [
+            FinalizationDimension::Controls,
+            FinalizationDimension::Changes,
+            FinalizationDimension::Events,
+            FinalizationDimension::Checkpoints,
+            FinalizationDimension::Digests,
+            FinalizationDimension::Evidence,
+            FinalizationDimension::Invariants,
+            FinalizationDimension::FixedOverhead,
+        ] {
+            self.dimension_mut(dimension).forfeit_remaining()?;
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug)]
 struct ReportFinalizationPermit {
-    remaining: ReportFinalizationPlan,
+    ledger: ReportFinalizationLedger,
     active: bool,
 }
 
@@ -1764,7 +1933,7 @@ impl ReportFinalizationPermit {
     ) -> Result<Self, crate::BudgetExhausted> {
         budget.charge(WorkCounter::Assertion, plan.total().unwrap_or(u64::MAX))?;
         Ok(Self {
-            remaining: plan,
+            ledger: ReportFinalizationLedger::from_plan(plan),
             active: true,
         })
     }
@@ -1777,24 +1946,11 @@ impl ReportFinalizationPermit {
         if !self.active {
             return Err(FinalizationPermitError);
         }
-        let remaining = match dimension {
-            FinalizationDimension::Controls => &mut self.remaining.controls,
-            FinalizationDimension::Changes => &mut self.remaining.changes,
-            FinalizationDimension::Events => &mut self.remaining.events,
-            FinalizationDimension::Checkpoints => &mut self.remaining.checkpoints,
-            FinalizationDimension::Digests => &mut self.remaining.digests,
-            FinalizationDimension::Evidence => &mut self.remaining.evidence,
-            FinalizationDimension::Invariants => &mut self.remaining.invariants,
-            FinalizationDimension::FixedOverhead => &mut self.remaining.fixed_overhead,
-        };
-        *remaining = remaining
-            .checked_sub(amount)
-            .ok_or(FinalizationPermitError)?;
-        Ok(())
+        self.ledger.dimension_mut(dimension).consume(amount)
     }
 
     fn finish_interrupted(&mut self) -> Result<(), FinalizationPermitError> {
-        if !self.active || self.remaining != ReportFinalizationPlan::default() {
+        if !self.active || !self.ledger.is_interrupted_settlement() {
             return Err(FinalizationPermitError);
         }
         self.active = false;
@@ -1802,36 +1958,29 @@ impl ReportFinalizationPermit {
     }
 
     fn consume_interrupted_omissions(&mut self) -> Result<(), FinalizationPermitError> {
-        let remaining = self.remaining;
-        for (dimension, amount) in [
-            (FinalizationDimension::Controls, remaining.controls),
-            (FinalizationDimension::Changes, remaining.changes),
-            (FinalizationDimension::Events, remaining.events),
-            (FinalizationDimension::Checkpoints, remaining.checkpoints),
-            (FinalizationDimension::Digests, remaining.digests),
-            (FinalizationDimension::Evidence, remaining.evidence),
-            (FinalizationDimension::Invariants, remaining.invariants),
-            (
-                FinalizationDimension::FixedOverhead,
-                remaining.fixed_overhead,
-            ),
-        ] {
-            self.consume(dimension, amount)?;
+        if !self.active {
+            return Err(FinalizationPermitError);
         }
-        Ok(())
+        self.ledger.forfeit_all_remaining()
     }
 
     fn refund(&mut self, budget: &mut WorkBudget) -> Result<(), FinalizationPermitError> {
         if !self.active {
             return Err(FinalizationPermitError);
         }
-        let remaining = core::mem::take(&mut self.remaining)
-            .total()
-            .unwrap_or(u64::MAX);
-        self.active = false;
+        let remaining = self
+            .ledger
+            .remaining_total()
+            .ok_or(FinalizationPermitError)?;
         budget
             .refund(WorkCounter::Assertion, remaining)
-            .map_err(|_| FinalizationPermitError)
+            .map_err(|_| FinalizationPermitError)?;
+        self.ledger.refund_all_remaining()?;
+        if !self.ledger.is_settled() {
+            return Err(FinalizationPermitError);
+        }
+        self.active = false;
+        Ok(())
     }
 }
 
@@ -2850,6 +2999,11 @@ mod tests {
         assert!(permit.consume(FinalizationDimension::Controls, 1).is_err());
         assert!(permit.finish_interrupted().is_err());
         assert!(permit.consume_interrupted_omissions().is_ok());
+        assert_eq!(permit.ledger.controls.consumed, 2);
+        assert_eq!(permit.ledger.controls.forfeited, 0);
+        assert_eq!(permit.ledger.invariants.consumed, 0);
+        assert_eq!(permit.ledger.invariants.forfeited, 1);
+        assert!(permit.ledger.is_interrupted_settlement());
         assert!(permit.finish_interrupted().is_ok());
         assert!(permit.finish_interrupted().is_err());
         assert!(
