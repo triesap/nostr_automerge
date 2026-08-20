@@ -55,7 +55,7 @@
     {
       "path": "spec/CONFORMANCE.md",
       "source_sha256": "805e0e52d6e7018160664f00d9b84ff92e38ab73ab772d764b9d4c9d49b754b7",
-      "target_sha256": "7d0773ef3a597566d7cccfaeb7ac01cf9ebec0e54e8da9e530e7777d152cb01e",
+      "target_sha256": "67639ff968dd5fc0002b8b1e2400c3efbba781a7734fe5aeaf93c1663104bb70",
       "adapted": true
     },
     {
@@ -67,7 +67,7 @@
     {
       "path": "spec/requirements.json",
       "source_sha256": "19e09e9862fd3a22051a43eec6329a9015e8ea24628fd93d83fca2e2376849c3",
-      "target_sha256": "76277dd092ca8d47bb082cdbe64ba981107dd530c33a80d92b9bd58301dd2fb2",
+      "target_sha256": "95a80689b3e4d661a73867673994829e7060df67277120b2f16ee9f2dd16f9fd",
       "adapted": true
     },
     {

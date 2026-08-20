@@ -20,3 +20,17 @@ these transitional citations with the canonical `NCRDT-BRANCH-*` and
 `NCRDT-SCOPE-*` additions after step 1082 atomically installs those rows.
 All twelve metadata and signed scenario records now use canonical v8 rows;
 the two resource fixtures were introduced directly with canonical rows.
+
+## DEV-V7-002 — Companion and registry hash cascade
+
+Status: resolved by `step_1091` and `step_1092`.
+
+Appending the approved remediation-v7 companion rules changed a file embedded
+in the signed distribution-v8 checksum set. Atomizing the ten registry sources
+then changed the registry digest. The manifest and Rust evidence matrix were
+therefore regenerated at the earliest green checkpoint rather than left stale
+until the later evidence-record checkpoint. The fixture inventory, signed
+scenario bytes, expected report bytes, profiles, permutation names, NIP
+snapshot, wire constants, and implementation behavior did not change. The
+private distribution lock and opaque parity attestation are refreshed before
+final evidence closure.

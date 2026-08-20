@@ -44,11 +44,16 @@ def main() -> int:
 
     additions = load("spec/remediation_v7_requirements.json")["requirements"]
     for canonical, proposed in zip(rows[-10:], additions, strict=True):
-        for field in ("id", "section", "text"):
+        for field in ("id", "section", "text", "source"):
             if canonical[field] != proposed[field]:
                 raise AssertionError(f"canonical row differs from approved {field}")
-        if canonical["source"] != "spec/remediation_v7_requirements.json":
-            raise AssertionError("remediation-v7 row has unexpected authority source")
+        source = ROOT / canonical["source"]
+        heading = f"## {canonical['section']}"
+        source_text = source.read_text(encoding="utf-8")
+        if heading not in source_text and f"### {canonical['section']}" not in source_text:
+            raise AssertionError(
+                f"remediation-v7 authority section is absent: {canonical['id']}"
+            )
 
     applicability = load("spec/requirements_applicability.json")
     if applicability.get("schema") != "nostr_automerge.requirements_applicability.v5":
@@ -77,6 +82,7 @@ def main() -> int:
     print("PASS: remediation-v7 canonical requirement registry")
     print("- requirements=129")
     print("- appended=10")
+    print("- authority_sources=companion,conformance,portable-delta")
     print("- nip_applicability=explicitly-deferred")
     return 0
 

@@ -125,3 +125,14 @@ unrelated-coordinate isolation, malformed manifest prevalidation attribution,
 and exact interrupted-finalization boundaries. Complete scenarios run under all
 required delivery permutations through the public engine. The independent
 TypeScript implementation must produce byte-identical canonical reports.
+
+## Requirement evidence
+
+Every canonical requirement row binds its exact authority text, applicability,
+implementation assertion or signed fixtures, implementation candidate, and
+artifact digest. Cross-language rows remain pending until an opaque attestation
+binds an independently written implementation to the same signed distribution
+and byte-identical complete canonical reports. Evidence validators fail closed
+on missing or reordered rows, stale authority or candidate identities, generic
+critical proofs, weakened fixture coverage, altered artifacts, and status
+overclaim.
