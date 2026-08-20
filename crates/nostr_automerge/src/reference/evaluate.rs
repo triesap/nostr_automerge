@@ -373,19 +373,39 @@ struct CanonicalBranchEvaluation {
 #[derive(Default)]
 struct BatchChangeMemo {
     candidates: BTreeMap<ChangeHash, ChangeCandidate>,
+    raw_changes: BTreeMap<ChangeHash, Vec<u8>>,
     hashes_by_control: BTreeMap<EventId, BTreeSet<ChangeHash>>,
     controls_by_hash: BTreeMap<ChangeHash, BTreeSet<EventId>>,
 }
 
 impl BatchChangeMemo {
-    fn derive(controls: &BTreeMap<EventId, BatchControl>) -> Self {
+    fn derive(
+        controls: &BTreeMap<EventId, BatchControl>,
+        budget: &mut WorkBudget,
+        cancellation: &impl CancellationCheck,
+    ) -> Result<Self, Completion> {
         let mut memo = Self::default();
         for (control_id, control) in controls {
             for change in &control.changes {
+                if cancellation.is_cancelled() {
+                    return Err(Completion::Cancelled);
+                }
+                budget
+                    .charge(WorkCounter::GraphNode, 1)
+                    .map_err(|_| Completion::BudgetExhausted)?;
+                budget
+                    .charge(
+                        WorkCounter::GraphEdge,
+                        u64::try_from(change.candidate.dependencies.len()).unwrap_or(u64::MAX),
+                    )
+                    .map_err(|_| Completion::BudgetExhausted)?;
                 let hash = change.candidate.change_hash;
                 memo.candidates
                     .entry(hash)
                     .or_insert_with(|| change.candidate.clone());
+                if let Some(raw) = &change.raw_change {
+                    memo.raw_changes.entry(hash).or_insert_with(|| raw.clone());
+                }
                 memo.hashes_by_control
                     .entry(*control_id)
                     .or_default()
@@ -396,7 +416,7 @@ impl BatchChangeMemo {
                     .insert(*control_id);
             }
         }
-        memo
+        Ok(memo)
     }
 }
 
@@ -488,7 +508,7 @@ fn evaluate_branch_table(
     cancellation: &impl CancellationCheck,
 ) -> Result<BranchTableEvaluation, Completion> {
     let mut table = BranchTableEvaluation::default();
-    let change_memo = BatchChangeMemo::derive(controls);
+    let change_memo = BatchChangeMemo::derive(controls, budget, cancellation)?;
     let mut accepted_state_cache = BTreeMap::new();
     let mut ready = children_by_parent.get(&None).cloned().unwrap_or_default();
     while let Some(event_id) = ready.pop_first() {
@@ -615,7 +635,7 @@ fn evaluate_branch_table(
                 accepted_base,
                 knowledge,
                 parent_ancestry,
-                controls,
+                &change_memo.raw_changes,
                 budget,
                 cancellation,
             ) {
@@ -846,7 +866,7 @@ fn resolve_authoritative_epoch(
     accepted_base: AcceptedEpochState,
     prior_change_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
     ancestry: &[ControlEnvelope],
-    controls: &BTreeMap<EventId, BatchControl>,
+    raw_changes: &BTreeMap<ChangeHash, Vec<u8>>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<EpochEvaluationResult, EpochResolutionError> {
@@ -944,16 +964,6 @@ fn resolve_authoritative_epoch(
         .map_err(|_| EpochResolutionError::InvalidState);
     };
     let canonical_ancestry = ancestry.to_vec();
-    let raw_changes = controls
-        .values()
-        .flat_map(|control| control.changes.iter())
-        .filter_map(|change| {
-            change
-                .raw_change
-                .clone()
-                .map(|raw| (change.candidate.change_hash, raw))
-        })
-        .collect();
     let epoch_changes = control
         .changes
         .iter()
@@ -962,9 +972,9 @@ fn resolve_authoritative_epoch(
                 .accepted_closure()
                 .contains(&change.candidate.change_hash)
         })
-        .map(|change| (change.candidate.clone(), change.raw_change.clone()))
+        .map(|change| change.candidate.clone())
         .collect::<Vec<_>>();
-    let input = EpochEvaluationInput::new_with_raw_and_prior(
+    let input = EpochEvaluationInput::new_with_borrowed_raw_and_prior(
         selected,
         accepted_base,
         epoch_changes,

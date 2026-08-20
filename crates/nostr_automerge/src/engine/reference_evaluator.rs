@@ -2660,7 +2660,6 @@ fn change_for_hash(
         return Ok(None);
     };
     let corpus = view.corpus();
-    let mut raw = None;
     let mut carriers = Vec::new();
     for event_id in event_ids {
         charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)?;
@@ -2671,14 +2670,6 @@ fn change_for_hash(
             && change.control_id() == control.event_id()
             && change.coordinate() == view.coordinate()
         {
-            let raw_bytes = change.canonical_raw_bytes();
-            charge_evaluation_work(
-                budget,
-                cancellation,
-                WorkCounter::DecodeByte,
-                u64::try_from(raw_bytes.len()).unwrap_or(u64::MAX),
-            )?;
-            raw.get_or_insert_with(|| raw_bytes.to_vec());
             let dependency_count = u64::try_from(change.dependencies().count()).unwrap_or(u64::MAX);
             charge_evaluation_work(
                 budget,
@@ -2702,6 +2693,15 @@ fn change_for_hash(
     let Ok(candidate) = ChangeCandidate::from_carriers(carriers) else {
         return Ok(None);
     };
+    let raw = view.raw_change(hash);
+    charge_evaluation_work(
+        budget,
+        cancellation,
+        WorkCounter::DecodeByte,
+        raw.map_or(u64::MAX, |bytes| {
+            u64::try_from(bytes.len()).unwrap_or(u64::MAX)
+        }),
+    )?;
     charge_evaluation_work(
         budget,
         cancellation,
@@ -2716,7 +2716,7 @@ fn change_for_hash(
     Ok(Some(BatchChange {
         candidate,
         legacy_eligible: authorized && !control.terminal(),
-        raw_change: raw,
+        raw_change: raw.map(<[u8]>::to_vec),
     }))
 }
 

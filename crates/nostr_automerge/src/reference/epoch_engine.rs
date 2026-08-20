@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::ChangeHash;
@@ -66,16 +67,16 @@ impl PriorChangeKnowledge {
 /// The accepted base is carried as one invariant-checked state object. Change
 /// semantic validity is deliberately absent and must be derived by evaluation.
 #[derive(Clone)]
-pub(crate) struct EpochEvaluationInput {
+pub(crate) struct EpochEvaluationInput<'a> {
     selected_control: ControlEnvelope,
     accepted_base: AcceptedEpochState,
     candidate_changes: BTreeMap<ChangeHash, ChangeCandidate>,
-    raw_changes: BTreeMap<ChangeHash, Vec<u8>>,
+    raw_changes: Cow<'a, BTreeMap<ChangeHash, Vec<u8>>>,
     canonical_ancestry: Vec<ControlEnvelope>,
     prior_change_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
 }
 
-impl EpochEvaluationInput {
+impl EpochEvaluationInput<'static> {
     pub(crate) fn new(
         selected_control: ControlEnvelope,
         accepted_base: AcceptedEpochState,
@@ -152,10 +153,34 @@ impl EpochEvaluationInput {
             selected_control,
             accepted_base,
             candidate_changes: candidates,
-            raw_changes,
+            raw_changes: Cow::Owned(raw_changes),
             canonical_ancestry,
             prior_change_knowledge,
         })
+    }
+}
+
+impl<'a> EpochEvaluationInput<'a> {
+    pub(crate) fn new_with_borrowed_raw_and_prior(
+        selected_control: ControlEnvelope,
+        accepted_base: AcceptedEpochState,
+        candidate_changes: impl IntoIterator<Item = ChangeCandidate>,
+        raw_changes: &'a BTreeMap<ChangeHash, Vec<u8>>,
+        canonical_ancestry: Vec<ControlEnvelope>,
+        prior_change_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
+    ) -> Result<Self, EpochEvaluationInputError> {
+        let mut input = EpochEvaluationInput::new_with_raw_and_prior(
+            selected_control,
+            accepted_base,
+            candidate_changes
+                .into_iter()
+                .map(|candidate| (candidate, None)),
+            BTreeMap::new(),
+            canonical_ancestry,
+            prior_change_knowledge,
+        )?;
+        input.raw_changes = Cow::Borrowed(raw_changes);
+        Ok(input)
     }
 
     pub(crate) const fn selected_control(&self) -> &ControlEnvelope {
@@ -170,7 +195,7 @@ impl EpochEvaluationInput {
         &self.candidate_changes
     }
 
-    pub(crate) const fn raw_changes(&self) -> &BTreeMap<ChangeHash, Vec<u8>> {
+    pub(crate) fn raw_changes(&self) -> &BTreeMap<ChangeHash, Vec<u8>> {
         &self.raw_changes
     }
 
