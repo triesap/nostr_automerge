@@ -621,31 +621,65 @@ fn enqueue_children(
 pub(crate) fn propagate_control_parent_dispositions(
     parents: &BTreeMap<EventId, Option<EventId>>,
     dispositions: &mut BTreeMap<EventId, ProtocolDisposition>,
-) {
-    for _ in 0..parents.len() {
-        let mut changed = false;
-        for (child, parent) in parents {
-            let Some(parent) = parent else {
-                continue;
-            };
-            let inherited = match dispositions.get(parent) {
-                Some(ProtocolDisposition::Pending) => ProtocolDisposition::Pending,
-                Some(ProtocolDisposition::Invalid | ProtocolDisposition::UnsupportedRevision) => {
-                    ProtocolDisposition::Invalid
-                }
-                Some(ProtocolDisposition::Accepted | ProtocolDisposition::Excluded) | None => {
-                    continue;
-                }
-            };
-            if dispositions.get(child) != Some(&inherited) {
-                dispositions.insert(*child, inherited);
-                changed = true;
-            }
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<(), Completion> {
+    let mut resolved = BTreeSet::new();
+    for start in parents.keys().copied() {
+        if resolved.contains(&start) {
+            continue;
         }
-        if !changed {
-            break;
+        let mut path = Vec::new();
+        let mut positions = BTreeMap::new();
+        let mut current = start;
+        loop {
+            if resolved.contains(&current) {
+                break;
+            }
+            if let Some(cycle_start) = positions.get(&current).copied() {
+                for event_id in &path[cycle_start..] {
+                    dispositions.insert(*event_id, ProtocolDisposition::Invalid);
+                    resolved.insert(*event_id);
+                }
+                break;
+            }
+            positions.insert(current, path.len());
+            path.push(current);
+            let Some(parent) = parents.get(&current).copied().flatten() else {
+                break;
+            };
+            if cancellation.is_cancelled() {
+                return Err(Completion::Cancelled);
+            }
+            budget
+                .charge(WorkCounter::Control, 1)
+                .map_err(|_| Completion::BudgetExhausted)?;
+            if !parents.contains_key(&parent) {
+                break;
+            }
+            current = parent;
+        }
+        for child in path.into_iter().rev() {
+            if resolved.contains(&child) {
+                continue;
+            }
+            if let Some(parent) = parents.get(&child).copied().flatten() {
+                match dispositions.get(&parent) {
+                    Some(ProtocolDisposition::Pending) => {
+                        dispositions.insert(child, ProtocolDisposition::Pending);
+                    }
+                    Some(
+                        ProtocolDisposition::Invalid | ProtocolDisposition::UnsupportedRevision,
+                    ) => {
+                        dispositions.insert(child, ProtocolDisposition::Invalid);
+                    }
+                    Some(ProtocolDisposition::Accepted | ProtocolDisposition::Excluded) | None => {}
+                }
+            }
+            resolved.insert(child);
         }
     }
+    Ok(())
 }
 
 fn charge_control_transitions(
@@ -1119,7 +1153,15 @@ mod tests {
             (child, ProtocolDisposition::Invalid),
             (grandchild, ProtocolDisposition::Excluded),
         ]);
-        propagate_control_parent_dispositions(&parents, &mut dispositions);
+        assert_eq!(
+            propagate_control_parent_dispositions(
+                &parents,
+                &mut dispositions,
+                &mut WorkBudget::new(0, 3),
+                &crate::NeverCancelled,
+            ),
+            Ok(())
+        );
         assert_eq!(
             dispositions.get(&child),
             Some(&ProtocolDisposition::Pending)
@@ -1145,7 +1187,15 @@ mod tests {
             (child, ProtocolDisposition::Excluded),
             (grandchild, ProtocolDisposition::Pending),
         ]);
-        propagate_control_parent_dispositions(&parents, &mut dispositions);
+        assert_eq!(
+            propagate_control_parent_dispositions(
+                &parents,
+                &mut dispositions,
+                &mut WorkBudget::new(0, 3),
+                &crate::NeverCancelled,
+            ),
+            Ok(())
+        );
         assert_eq!(
             dispositions.get(&child),
             Some(&ProtocolDisposition::Invalid)
@@ -1171,7 +1221,15 @@ mod tests {
             (child, ProtocolDisposition::Excluded),
             (grandchild, ProtocolDisposition::Excluded),
         ]);
-        propagate_control_parent_dispositions(&parents, &mut dispositions);
+        assert_eq!(
+            propagate_control_parent_dispositions(
+                &parents,
+                &mut dispositions,
+                &mut WorkBudget::new(0, 3),
+                &crate::NeverCancelled,
+            ),
+            Ok(())
+        );
         assert!(
             [parent, child, grandchild]
                 .into_iter()
@@ -1194,7 +1252,15 @@ mod tests {
             (child, ProtocolDisposition::Excluded),
             (grandchild, ProtocolDisposition::Pending),
         ]);
-        propagate_control_parent_dispositions(&parents, &mut dispositions);
+        assert_eq!(
+            propagate_control_parent_dispositions(
+                &parents,
+                &mut dispositions,
+                &mut WorkBudget::new(0, 3),
+                &crate::NeverCancelled,
+            ),
+            Ok(())
+        );
         assert!(
             [parent, child, grandchild]
                 .into_iter()

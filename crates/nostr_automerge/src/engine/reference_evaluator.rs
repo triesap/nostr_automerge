@@ -2143,7 +2143,7 @@ fn prepare_controls(
         .filter(|record| view.contains_reportable(&record.event_id))
         .map(|record| (record.event_id, record.parent))
         .collect::<std::collections::BTreeMap<_, _>>();
-    propagate_control_parent_dispositions(&parents, &mut dispositions);
+    propagate_control_parent_dispositions(&parents, &mut dispositions, budget, cancellation)?;
     controls.retain(|control| {
         dispositions.get(&control.event_id) == Some(&ProtocolDisposition::Excluded)
     });

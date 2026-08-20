@@ -46,10 +46,12 @@ Updated: 2026-08-20
   coordinate-scoped checkpoint reference work.
 - `step_1076` enabled both scope regressions, added six signed isolation
   scenarios, ran all 169 transitional fixtures, and closed `GATE_V7_SCOPE`.
+- `step_1077` replaced repeated whole-map parent scans with an iterative,
+  memoized traversal charging each relationship once.
 
 ## Active checkpoint
 
-`step_1077` — replace repeated parent propagation with a metered traversal.
+`step_1078` — qualify propagation budgets, ordering, depth, and cancellation.
 
 ## Holds
 
