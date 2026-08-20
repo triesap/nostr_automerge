@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "unrelated_valid_checkpoints_exact_budget.input.json",
-      "sha256": "cc7747e9e9c1c917d164a102754bfdc03d3f003c3c986cecd6c3b260b7633728"
+      "sha256": "293e69fc1c385e5897e56f0e9aa45b33d0f69d263c9b4b1f681429be6acec864"
     }
   ],
   "provenance": {
@@ -22,8 +22,8 @@
     }
   },
   "requirements": [
-    "NCRDT-SCOPE-002",
-    "NCRDT-SCOPE-003"
+    "NCRDT-CONF-008",
+    "NCRDT-SCOPE-006"
   ],
   "revision": "draft_2026_08",
   "seed": null

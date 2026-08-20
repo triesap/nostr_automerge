@@ -10,7 +10,7 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 VALIDATORS = [
     "validate_adrs.py", "validate_automerge_qualification.py", "validate_companion_specs.py", "validate_diagnostics.py",
-    "validate_dispositions_digest.py", "validate_draft_limits.py", "validate_fixtures.py", "validate_fixture_distribution_v7.py",
+    "validate_dispositions_digest.py", "validate_draft_limits.py", "validate_fixtures.py", "validate_fixture_distribution_v8.py",
     "validate_governance.py", "validate_history_digest.py", "validate_import.py",
     "validate_nip_snapshot.py", "validate_prior_art.py", "validate_protocol_revision.py",
     "validate_reports.py", "validate_repository_policy.py", "validate_requirements.py",

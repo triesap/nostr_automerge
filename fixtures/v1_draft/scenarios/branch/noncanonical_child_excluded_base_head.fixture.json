@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "noncanonical_child_excluded_base_head.input.json",
-      "sha256": "a9ca6092b48c3a432a893467402301a69315d9f775d5f4e4ae1af99ded386663"
+      "sha256": "15d050eee9adb0af990ad44e88581f64532aa36e73aa11f61c9d3b8a357f9b57"
     }
   ],
   "provenance": {
@@ -22,8 +22,9 @@
     }
   },
   "requirements": [
-    "NCRDT-CONTROL-001",
-    "NCRDT-EPOCH-003"
+    "NCRDT-BRANCH-001",
+    "NCRDT-BRANCH-002",
+    "NCRDT-CONF-008"
   ],
   "revision": "draft_2026_08",
   "seed": null

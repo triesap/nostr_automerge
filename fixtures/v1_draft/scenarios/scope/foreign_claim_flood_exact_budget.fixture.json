@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "foreign_claim_flood_exact_budget.input.json",
-      "sha256": "051cab86a94d2efcb27703a18ac16e21dd8c28c344e054a7476abc423f076221"
+      "sha256": "d591e52ef6fce1e4234a37d56938b6edda0341f869edd8cf3e56a4d8c16ffcef"
     }
   ],
   "provenance": {
@@ -22,8 +22,9 @@
     }
   },
   "requirements": [
-    "NCRDT-SCOPE-002",
-    "NCRDT-SCOPE-003"
+    "NCRDT-CONF-008",
+    "NCRDT-SCOPE-004",
+    "NCRDT-SCOPE-006"
   ],
   "revision": "draft_2026_08",
   "seed": null

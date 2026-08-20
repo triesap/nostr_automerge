@@ -58,8 +58,75 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "remediation_v6_checkpoint_references" => generate_remediation_v6_checkpoint_references(),
         "remediation_v7_branch" => generate_remediation_v7_branch(),
         "remediation_v7_scope" => generate_remediation_v7_scope(),
+        "remediation_v7_resource" => generate_remediation_v7_resource(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
+}
+
+fn generate_remediation_v7_resource() -> Result<(), String> {
+    let controller = Signer::from_byte(185)?;
+    let writer = Signer::from_byte(186)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "db".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation-v7 resource coordinate".to_owned())?;
+    let members = || vec![(&writer, None, &["write"][..])];
+    let genesis = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let mut chain = vec![genesis.clone()];
+    let mut parent = event_id(&genesis)?;
+    for sequence in 1_u64..=24 {
+        let child = sign_control(
+            &controller,
+            sequence + 1,
+            coordinate,
+            Some(parent),
+            control_content_with_links(sequence, members(), &[], None, None),
+        )?;
+        parent = event_id(&child)?;
+        chain.push(child);
+    }
+
+    let root = repository_root().join("fixtures/v1_draft/scenarios/resource");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    let exact_budget = minimum_complete_item_budget(coordinate, &chain)?;
+    write_fixture_with_execution(
+        &root,
+        "parent_propagation_exact_budget",
+        coordinate,
+        chain,
+        &["NCRDT-CONF-008", "NCRDT-RESOURCE-009"],
+        "remediation_v7_resource",
+        Vec::new(),
+        ScenarioBudget {
+            max_bytes: 1_000_000,
+            max_items: exact_budget,
+        },
+        None,
+    )?;
+    write_fixture_with_execution(
+        &root,
+        "interrupted_finalization_forfeiture",
+        coordinate,
+        vec![genesis],
+        &["NCRDT-CONF-008", "NCRDT-RESOURCE-010"],
+        "remediation_v7_resource",
+        Vec::new(),
+        ScenarioBudget {
+            max_bytes: 1_000_000,
+            max_items: 14,
+        },
+        None,
+    )?;
+    Ok(())
 }
 
 fn generate_remediation_v7_scope() -> Result<(), String> {
@@ -187,11 +254,11 @@ fn generate_remediation_v7_scope() -> Result<(), String> {
 
     let root = repository_root().join("fixtures/v1_draft/scenarios/scope");
     std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
-    let requirements = &["NCRDT-SCOPE-002", "NCRDT-SCOPE-003"];
-    for (fixture_id, events) in [
+    for (fixture_id, events, requirements) in [
         (
             "foreign_chunk_references_target_descriptor",
             vec![control.clone(), descriptor.clone(), foreign_chunk.clone()],
+            &["NCRDT-CONF-008", "NCRDT-SCOPE-005", "NCRDT-SCOPE-006"][..],
         ),
         (
             "foreign_chunk_excluded_from_target_digest",
@@ -201,10 +268,12 @@ fn generate_remediation_v7_scope() -> Result<(), String> {
                 target_chunk.clone(),
                 foreign_chunk,
             ],
+            &["NCRDT-CONF-008", "NCRDT-SCOPE-006"][..],
         ),
         (
             "foreign_change_references_target_control",
             vec![control.clone(), foreign_change],
+            &["NCRDT-CONF-008", "NCRDT-SCOPE-004", "NCRDT-SCOPE-006"][..],
         ),
         (
             "cross_coordinate_descriptor_reference_isolated",
@@ -214,6 +283,7 @@ fn generate_remediation_v7_scope() -> Result<(), String> {
                 foreign_descriptor.clone(),
                 cross_coordinate_chunk,
             ],
+            &["NCRDT-CONF-008", "NCRDT-SCOPE-005", "NCRDT-SCOPE-006"][..],
         ),
     ] {
         write_fixture_with_requirements(
@@ -242,7 +312,7 @@ fn generate_remediation_v7_scope() -> Result<(), String> {
         "unrelated_valid_checkpoints_exact_budget",
         coordinate,
         checkpoint_flood,
-        requirements,
+        &["NCRDT-CONF-008", "NCRDT-SCOPE-006"],
         "remediation_v7_scope",
         Vec::new(),
         ScenarioBudget {
@@ -264,7 +334,7 @@ fn generate_remediation_v7_scope() -> Result<(), String> {
         "foreign_claim_flood_exact_budget",
         coordinate,
         claim_flood,
-        requirements,
+        &["NCRDT-CONF-008", "NCRDT-SCOPE-004", "NCRDT-SCOPE-006"],
         "remediation_v7_scope",
         Vec::new(),
         ScenarioBudget {
@@ -477,7 +547,7 @@ fn generate_remediation_v7_branch() -> Result<(), String> {
             fixture_id,
             coordinate,
             events,
-            &["NCRDT-CONTROL-001", "NCRDT-EPOCH-003"],
+            &["NCRDT-BRANCH-001", "NCRDT-BRANCH-002", "NCRDT-CONF-008"],
             "remediation_v7_branch",
         )
         .map_err(|error| format!("{fixture_id}: {error}"))?;

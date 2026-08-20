@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "foreign_chunk_references_target_descriptor.input.json",
-      "sha256": "15ee878fc6d86a1030862360f1848da52646d9f83dd8c067bb405b6251769826"
+      "sha256": "c1b4c5c6734add06ecc59557fe1df14d5af7e53ef896adb9c91117bb36f80d3f"
     }
   ],
   "provenance": {
@@ -22,8 +22,9 @@
     }
   },
   "requirements": [
-    "NCRDT-SCOPE-002",
-    "NCRDT-SCOPE-003"
+    "NCRDT-CONF-008",
+    "NCRDT-SCOPE-005",
+    "NCRDT-SCOPE-006"
   ],
   "revision": "draft_2026_08",
   "seed": null

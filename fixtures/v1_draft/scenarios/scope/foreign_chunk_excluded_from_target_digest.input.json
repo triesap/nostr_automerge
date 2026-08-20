@@ -78,8 +78,8 @@
     }
   ],
   "requirements": [
-    "NCRDT-SCOPE-002",
-    "NCRDT-SCOPE-003"
+    "NCRDT-CONF-008",
+    "NCRDT-SCOPE-006"
   ],
   "revision": "draft_2026_08",
   "scenario_schema": "nostr_automerge.signed_scenario.v2"

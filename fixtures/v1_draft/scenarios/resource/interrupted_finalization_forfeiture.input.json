@@ -1,0 +1,41 @@
+{
+  "budget": {
+    "max_bytes": 1000000,
+    "max_items": 14
+  },
+  "cancel_after": null,
+  "coordinate": "31624:9611ba340bce00a594f1ffb1294974af80e1301e49597378732fd77bbdedf454:dbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdb",
+  "expected_report": {
+    "accepted_changes": [],
+    "canonical_controls": [],
+    "completion": "budget_exhausted",
+    "coordinate": "31624:9611ba340bce00a594f1ffb1294974af80e1301e49597378732fd77bbdedf454:dbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdb",
+    "disposition_records": [],
+    "dispositions_digest": "885818495160d9989cf91c52edfbe357ef7a9f01fc2151e8716e9a3f6bb78425",
+    "excluded_changes": [],
+    "fixture_id": "interrupted_finalization_forfeiture",
+    "heads": [],
+    "history_digest": "e246673e0f7b61efb0a2a861409de51f778815859662c0bded4ee2480cadc388",
+    "integrity_alerts": [],
+    "invalid_changes": [],
+    "invalid_events": [],
+    "pending_changes": [],
+    "report_schema": "nostr_automerge.report.v1",
+    "revision": "draft_2026_08",
+    "state_assertions": [],
+    "unsupported_events": []
+  },
+  "fixture_id": "interrupted_finalization_forfeiture",
+  "raw_events": [
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"ddc665fd84e49c3e960b63b686c1a47f6e908759e511493c146871fc5cebf268\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":0,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":1,\"id\":\"dd73bb80398bae45f46df980e6b3147649f366be6f15de7cb780dc4a8d4391d9\",\"kind\":1625,\"pubkey\":\"9611ba340bce00a594f1ffb1294974af80e1301e49597378732fd77bbdedf454\",\"sig\":\"f85759ea004b084dd15bab3c842c0242ec5e6d1e7080214f5cc8785ab9295a153965e20c0736f33d0e065ce6a0eccc4d7eb5214c8e4c979461e28f285a4ff69c\",\"tags\":[[\"a\",\"31624:9611ba340bce00a594f1ffb1294974af80e1301e49597378732fd77bbdedf454:dbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdb\"]]}",
+      "encoding": "utf8"
+    }
+  ],
+  "requirements": [
+    "NCRDT-CONF-008",
+    "NCRDT-RESOURCE-010"
+  ],
+  "revision": "draft_2026_08",
+  "scenario_schema": "nostr_automerge.signed_scenario.v2"
+}

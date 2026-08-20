@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "cross_coordinate_descriptor_reference_isolated.input.json",
-      "sha256": "b49e8b75e3d28cb8e31e829ac9f34a9c98a0f9d2f91bd23f00829773f155e909"
+      "sha256": "a1c17749ae6a7bb5a18be17bad5a47573e82d78d2087f6f860f1acbaba86c18f"
     }
   ],
   "provenance": {
@@ -22,8 +22,9 @@
     }
   },
   "requirements": [
-    "NCRDT-SCOPE-002",
-    "NCRDT-SCOPE-003"
+    "NCRDT-CONF-008",
+    "NCRDT-SCOPE-005",
+    "NCRDT-SCOPE-006"
   ],
   "revision": "draft_2026_08",
   "seed": null

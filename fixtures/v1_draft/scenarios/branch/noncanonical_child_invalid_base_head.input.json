@@ -82,8 +82,9 @@
     }
   ],
   "requirements": [
-    "NCRDT-CONTROL-001",
-    "NCRDT-EPOCH-003"
+    "NCRDT-BRANCH-001",
+    "NCRDT-BRANCH-002",
+    "NCRDT-CONF-008"
   ],
   "revision": "draft_2026_08",
   "scenario_schema": "nostr_automerge.signed_scenario.v2"
