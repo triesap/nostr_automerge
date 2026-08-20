@@ -77,8 +77,9 @@ fn implementation_owned_normative_clarifications_are_explicit() {
         "`event` namespace",
         "They never authorize or",
         "redefine document history.",
-        "does not claim",
-        "external NIP prose was edited",
+        "repository-local `NIP_DRAFT.md`",
+        "without authorizing any upstream",
+        "Remediation v8 reconciled authority",
     ] {
         assert!(
             companion.contains(required),
@@ -98,7 +99,7 @@ fn implementation_owned_normative_clarifications_are_explicit() {
     }
     assert_eq!(
         nip_checksum,
-        "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3  NIP_DRAFT.md\n"
+        "0dfa683aa0f4a1c7d3df010ec95901bf4ba4094ed3adaacc26e85d95aaa4ded1  NIP_DRAFT.md\n"
     );
 }
 

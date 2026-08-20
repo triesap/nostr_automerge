@@ -14,7 +14,7 @@ VALIDATORS = [
     "validate_governance.py", "validate_history_digest.py", "validate_import.py",
     "validate_nip_snapshot.py", "validate_remediation_v8.py", "validate_prior_art.py", "validate_protocol_revision.py",
     "validate_reports.py", "validate_repository_policy.py", "validate_requirements.py",
-    "validate_runner_manifest.py",
+    "validate_runner_manifest.py", "validate_nip_reconciliation_v8.py",
     "validate_normative_clarifications_v3.py",
 ]
 

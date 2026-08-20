@@ -13,10 +13,10 @@ Reviewed requirement registry SHA-256: `95a80689b3e4d661a73867673994829e7060df67
 Reviewed applicability SHA-256: `27c58584b6ab1627823fb620378f56a7038de21d7f38b6ed4baae5a64fafe87d`
 Reviewed distribution-v8 manifest SHA-256: `7f1c17d61d28857562ffbae68fa132efa3e052863434cc686b2a72234b614ada`
 Steps: `step_1096` through `step_1157` (62 contiguous checkpoints)
-Active RCLD: RCLD 78
-Active checkpoint: `step_1135`
-Next RCLD: RCLD 78
-Next checkpoint: `step_1135`
+Active RCLD: RCLD 79
+Active checkpoint: `step_1141`
+Next RCLD: RCLD 79
+Next checkpoint: `step_1141`
 
 ## Outcome
 
@@ -368,7 +368,7 @@ digest bytes are delivery-order invariant; mixed carrier outcomes are visible.
 
 ## RCLD 78 — Local NIP Reconciliation
 
-Status: planned
+Status: complete
 Steps: `step_1135` through `step_1140`
 Gate: `GATE_V8_NIP`
 Depends on: RCLD 77
@@ -389,7 +389,7 @@ upstream action occurs.
 
 ## RCLD 79 — Signed Distribution V9 And Private Parity
 
-Status: planned
+Status: active
 Steps: `step_1141` through `step_1148`
 Gate: `GATE_V8_INTEROP`
 Depends on: RCLD 78

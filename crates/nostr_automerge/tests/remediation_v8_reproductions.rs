@@ -46,7 +46,6 @@ fn finding_069_change_carriers_have_event_dispositions() {
 }
 
 #[test]
-#[ignore = "expected to fail at the remediation-v8 baseline"]
 fn finding_070_local_nip_contains_reconciled_branch_rules() {
     let source = include_str!("../../../spec/NIP_DRAFT.md");
     assert!(

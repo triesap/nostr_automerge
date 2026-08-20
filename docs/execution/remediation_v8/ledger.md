@@ -10,8 +10,8 @@ Updated: 2026-08-20
 | 75 | 1110–1117 | complete | `GATE_V8_SCOPE` |
 | 76 | 1118–1125 | complete | `GATE_V8_RESOURCE` |
 | 77 | 1126–1134 | complete | `GATE_V8_DISPOSITION` |
-| 78 | 1135–1140 | active | `GATE_V8_NIP` |
-| 79 | 1141–1148 | planned | `GATE_V8_INTEROP` |
+| 78 | 1135–1140 | complete | `GATE_V8_NIP` |
+| 79 | 1141–1148 | active | `GATE_V8_INTEROP` |
 | 80 | 1149–1157 | planned | `GATE_V8_FINAL` |
 
 ## Completed checkpoints
@@ -98,10 +98,25 @@ Updated: 2026-08-20
   the full public workspace gate, and closed `GATE_V8_DISPOSITION`. The final
   139-row validator self-mutations remain scheduled at `step_1151` after exact
   evidence regeneration.
+- `step_1135` recorded the exact pre-edit local NIP, companion, conformance,
+  and registry identities plus the preserved wire and publication boundaries.
+- `step_1136` reconciled the causal counter, parent-relative control branch,
+  and branch-local change outcome rules into the repository-local draft.
+- `step_1137` reconciled semantic ChangeHash identity, signed carrier claims,
+  valid-carrier dominance, and distinct carrier Event outcomes.
+- `step_1138` reconciled coordinate-qualified evidence and work, complete
+  reference states, checked resource settlement, and constant fallback rules.
+- `step_1139` reconciled exact report and digest behavior, the signed-v9
+  two-run eight-permutation contract, provisional kinds, and nonpublication
+  language, then rebound the local authority hashes.
+- `step_1140` completed the language-neutral implementer review, moved the
+  fulfilled NIP authority rows off their historical external holds, bound exact
+  NIP section anchors, activated FINDING-070, proved preserved wire identities,
+  and closed `GATE_V8_NIP`.
 
 ## Active checkpoint
 
-`step_1135` is next. No implementation checkpoint is active between commits.
+`step_1141` is next. No implementation checkpoint is active between commits.
 
 ## Holds
 

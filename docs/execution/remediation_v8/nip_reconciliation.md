@@ -1,6 +1,6 @@
 # Remediation V8 Local NIP Reconciliation
 
-Status: in progress
+Status: complete
 Scope: repository-local draft only; no submission, allocation, publication, or
 remote action is authorized.
 
@@ -49,3 +49,34 @@ implementation structures. The companion may provide implementation detail,
 but it must agree with the draft. Every changed authority anchor and bound hash
 must be regenerated after the prose is final. Distribution-v9 and private
 parity bindings remain pending until RCLD 79.
+
+## Independent implementer-language review
+
+The reconciled draft was reread as a language-neutral protocol contract without
+relying on Rust or TypeScript structure names. An implementer can derive all of
+the following directly from the draft:
+
+- the causal operation-counter formula and checked-overflow behavior;
+- stateful evaluation against each control's actual parent branch;
+- branch-local change outcomes and valid-carrier aggregate dominance;
+- distinct ChangeHash and carrier Event records, ordering, and digest input;
+- coordinate-qualified evidence, indexes, work, and report attribution;
+- complete control and descriptor reference-state distinctions;
+- pass-level finalization consumption, refund, forfeiture, and fallback; and
+- the exact signed-v9 two-run, eight-permutation, mismatch-rejection contract.
+
+No implementation type, private path, or operator-only mechanism is needed to
+interpret those rules. The companion retains optimization and pressure-test
+detail but defines no contradictory canonical behavior.
+
+## Final identities and boundary review
+
+- Reconciled `spec/NIP_DRAFT.md` SHA-256:
+  `0dfa683aa0f4a1c7d3df010ec95901bf4ba4094ed3adaacc26e85d95aaa4ded1`
+- Reconciled `spec/NOSTR_AUTOMERGE_V1_SPEC.md` SHA-256:
+  `58177c31eb06086d76297bbb0fc15343a8e34c15499d6e03636c63df7604bb10`
+- The sealed revision, report schema, provisional kinds, tag contract, and
+  standalone wire-format authority retain their pre-reconciliation identities.
+- `NIP-XX`, `draft`, `optional`, provisional allocation, non-submission,
+  nonpublication, nonrelease, and nonproduction status remain explicit.
+- No upstream, remote, workflow, publication, or allocation action occurred.

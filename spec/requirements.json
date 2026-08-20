@@ -629,9 +629,9 @@
     },
     {
       "id": "NCRDT-NIP-001",
-      "section": "Conformance authority",
-      "text": "The externally authored NIP MUST eventually contain every interoperability-critical rule required to reproduce language-neutral conformance without companion-only prose; this remains an explicit external reconciliation hold.",
-      "source": "spec/NIP_V6_PATCH_PROPOSAL.md"
+      "section": "Conformance",
+      "text": "The repository-local NIP MUST contain every interoperability-critical rule required to reproduce language-neutral conformance without companion-only canonical behavior.",
+      "source": "spec/NIP_DRAFT.md"
     },
     {
       "id": "NCRDT-CONF-006",
@@ -761,9 +761,9 @@
     },
     {
       "id": "NCRDT-NIP-002",
-      "section": "Preserved external boundary",
-      "text": "The externally authored NIP SHOULD eventually reconcile all interoperability-critical companion rules without changing provisional allocation boundaries.",
-      "source": "spec/NIP_V7_PATCH_PROPOSAL.md"
+      "section": "Conformance",
+      "text": "The repository-local NIP MUST retain NIP-XX, provisional event kinds, and explicit non-submission and nonpublication boundaries while reconciling interoperability-critical rules.",
+      "source": "spec/NIP_DRAFT.md"
     },
     {
       "id": "NCRDT-CONF-008",
@@ -781,47 +781,47 @@
       "id": "NCRDT-BRANCH-003",
       "section": "Branch-local change outcomes",
       "text": "Every statefully evaluated control branch MUST retain a deterministic disposition for every attributable change evaluated in that branch until final carrier-claim reduction is complete.",
-      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+      "source": "spec/NIP_DRAFT.md"
     },
     {
       "id": "NCRDT-BRANCH-004",
       "section": "Branch-local change outcomes",
       "text": "A claim under a valid noncanonical control MUST use the change outcome under that referenced branch: accepted otherwise-valid claims are excluded, pending claims remain pending, invalid claims remain invalid, and equivocation-quarantined claims remain excluded.",
-      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+      "source": "spec/NIP_DRAFT.md"
     },
     {
       "id": "NCRDT-SCOPE-007",
-      "section": "Coordinate-scoped control work",
+      "section": "Coordinate scope and deterministic interruption",
       "text": "Evaluation for one coordinate MUST obtain controls, parent edges, and branch inputs from coordinate-qualified indexes without scanning or allocating from unrelated controls.",
-      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+      "source": "spec/NIP_DRAFT.md"
     },
     {
       "id": "NCRDT-RESOURCE-011",
-      "section": "Branch work accounting",
+      "section": "Coordinate scope and deterministic interruption",
       "text": "Every branch-local control, change, hash, dependency, member, ancestry, raw-byte, accepted-state, and canonical-selection traversal MUST be deterministically charged, reserved, or memoized so repeated work is not unaccounted.",
-      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+      "source": "spec/NIP_DRAFT.md"
     },
     {
       "id": "NCRDT-RESOURCE-012",
-      "section": "Interrupted finalization settlement",
+      "section": "Coordinate scope and deterministic interruption",
       "text": "An interrupted report MUST classify every report-construction pass actually performed as consumed capacity before classifying only proven unused capacity as forfeited; no actual work may occur after its dimension is fully forfeited.",
-      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+      "source": "spec/NIP_DRAFT.md"
     },
     {
       "id": "NCRDT-DISPOSITION-004",
-      "section": "Change carrier event outcomes",
+      "section": "Semantic ChangeHash and carrier outcomes",
       "text": "Every attributable signed change carrier MUST receive exactly one final Event-namespace disposition derived from its revision, coordinate, referenced control, authorization, branch-local outcome, and binding validity.",
-      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+      "source": "spec/NIP_DRAFT.md"
     },
     {
       "id": "NCRDT-DISPOSITION-005",
-      "section": "Semantic and carrier outcome separation",
+      "section": "Semantic ChangeHash and carrier outcomes",
       "text": "The aggregate ChangeHash disposition and each carrier EventId disposition MUST coexist, be canonically ordered, participate in the dispositions digest, and preserve valid-carrier dominance without hiding invalid or pending carriers.",
-      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+      "source": "spec/NIP_DRAFT.md"
     },
     {
       "id": "NCRDT-NIP-003",
-      "section": "Local NIP authority",
+      "section": "Conformance",
       "text": "The local NIP draft MUST be independently implementable and include all interoperability-critical companion rules while retaining NIP-XX, provisional kinds, and explicit non-submission status.",
       "source": "spec/NIP_DRAFT.md"
     },

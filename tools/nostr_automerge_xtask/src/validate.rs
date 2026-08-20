@@ -8,6 +8,10 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "remediation_v8_authority",
         "scripts/validate_remediation_v8.py",
     ),
+    (
+        "nip_reconciliation_v8",
+        "scripts/validate_nip_reconciliation_v8.py",
+    ),
     ("complete_specification", "scripts/validate_spec.py"),
     (
         "fixture_schema_checksum_snake_case",
@@ -83,6 +87,7 @@ mod tests {
         assert!(names.contains(&"automerge_boundary"));
         assert!(names.contains(&"diagnostic_registry"));
         assert!(names.contains(&"remediation_v8_authority"));
+        assert!(names.contains(&"nip_reconciliation_v8"));
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         let report = validate_repository(&root);
         assert!(report.is_ok(), "{report:?}");
