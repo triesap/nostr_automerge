@@ -113,6 +113,8 @@ pub(crate) struct CheckpointIndexes {
 pub(crate) struct CoordinateEvidenceIndexes {
     pub(crate) events: BTreeMap<DocumentCoordinate, BTreeSet<EventId>>,
     pub(crate) controls: BTreeMap<DocumentCoordinate, BTreeSet<EventId>>,
+    pub(crate) control_children_by_coordinate_parent:
+        BTreeMap<DocumentCoordinate, BTreeMap<Option<EventId>, BTreeSet<EventId>>>,
     pub(crate) change_hashes: BTreeMap<DocumentCoordinate, BTreeSet<ChangeHash>>,
     pub(crate) manifests: BTreeMap<DocumentCoordinate, BTreeSet<EventId>>,
     pub(crate) lifecycle_support: BTreeMap<DocumentCoordinate, BTreeSet<EventId>>,
@@ -123,6 +125,7 @@ pub(crate) struct CoordinateEvidenceIndexes {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(crate) struct CoordinateWorkMetadata {
     pub(crate) control_count: usize,
+    pub(crate) control_relationship_count: usize,
     pub(crate) change_hash_count: usize,
     pub(crate) evaluation_event_count: usize,
     pub(crate) carrier_evidence_count: usize,
@@ -166,6 +169,14 @@ pub(crate) fn derive_trusted_indexes(
         };
         match carrier {
             VerifiedCarrier::Control(control) => {
+                indexes
+                    .coordinates
+                    .control_children_by_coordinate_parent
+                    .entry(control.coordinate())
+                    .or_default()
+                    .entry(control.parent())
+                    .or_default()
+                    .insert(control.event_id());
                 indexes
                     .coordinates
                     .controls
@@ -296,6 +307,14 @@ fn derive_coordinate_work_metadata(
                     .controls
                     .get(coordinate)
                     .map_or(0, BTreeSet::len),
+                control_relationship_count: indexes
+                    .coordinates
+                    .control_children_by_coordinate_parent
+                    .get(coordinate)
+                    .into_iter()
+                    .flat_map(BTreeMap::values)
+                    .try_fold(0_usize, |total, children| total.checked_add(children.len()))
+                    .unwrap_or(usize::MAX),
                 change_hash_count: indexes
                     .coordinates
                     .change_hashes
@@ -735,6 +754,7 @@ mod tests {
             indexes.coordinates.work.get(&coordinate),
             Some(&CoordinateWorkMetadata {
                 control_count: 1,
+                control_relationship_count: 1,
                 change_hash_count: 0,
                 evaluation_event_count: 1,
                 carrier_evidence_count: 1,
@@ -818,5 +838,29 @@ mod tests {
         assert!(!indexes.controls.parent_evidence.contains_key(&missing_id));
         assert!(indexes.controls.pending.contains(&missing_child_id));
         assert!(!indexes.controls.pending.contains(&present_child_id));
+        let relationships = indexes
+            .coordinates
+            .control_children_by_coordinate_parent
+            .get(&coordinate);
+        assert_eq!(
+            relationships.and_then(|children| children.get(&None)),
+            Some(&std::collections::BTreeSet::from([parent_id]))
+        );
+        assert_eq!(
+            relationships.and_then(|children| children.get(&Some(parent_id))),
+            Some(&std::collections::BTreeSet::from([present_child_id]))
+        );
+        assert_eq!(
+            relationships.and_then(|children| children.get(&Some(missing_id))),
+            Some(&std::collections::BTreeSet::from([missing_child_id]))
+        );
+        assert_eq!(
+            indexes
+                .coordinates
+                .work
+                .get(&coordinate)
+                .map(|work| work.control_relationship_count),
+            Some(3)
+        );
     }
 }
