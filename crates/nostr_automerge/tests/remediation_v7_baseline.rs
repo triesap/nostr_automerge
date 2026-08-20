@@ -48,7 +48,6 @@ fn finding_062_parent_propagation_is_linear_and_metered() {
 }
 
 #[test]
-#[ignore = "remediation-v7 baseline reproduction for FINDING_063"]
 fn finding_063_interrupted_settlement_is_explicit() {
     let source = include_str!("../src/engine/reference_evaluator.rs");
     assert!(

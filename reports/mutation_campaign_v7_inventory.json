@@ -1,0 +1,32 @@
+{
+  "campaign_executed": false,
+  "execution_status": "held_operator_safety",
+  "anchors": [
+    {
+      "finding": "FINDING_059",
+      "path": "crates/nostr_automerge/src/reference/evaluate.rs",
+      "symbols": ["BranchEvaluationState", "evaluate_branch_table"]
+    },
+    {
+      "finding": "FINDING_060",
+      "path": "crates/nostr_automerge/src/evidence/indexes.rs",
+      "symbols": ["chunks_by_coordinate_descriptor", "index_checkpoint_chunk"]
+    },
+    {
+      "finding": "FINDING_061",
+      "path": "crates/nostr_automerge/src/evidence/indexes.rs",
+      "symbols": ["hashes_by_coordinate_control", "carriers_by_coordinate_hash"]
+    },
+    {
+      "finding": "FINDING_062",
+      "path": "crates/nostr_automerge/src/reference/evaluate.rs",
+      "symbols": ["propagate_control_parent_dispositions", "WorkCounter::Control"]
+    },
+    {
+      "finding": "FINDING_063",
+      "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+      "symbols": ["FinalizationSettlement", "finish_interrupted", "finish_failed"]
+    }
+  ],
+  "schema": "nostr_automerge.mutation_campaign.v7.inventory.v1"
+}

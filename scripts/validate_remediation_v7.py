@@ -93,6 +93,19 @@ def validate_boundaries() -> None:
     reproduction = (ROOT / "scripts/reproduce_remediation_v7.py").read_text(encoding="utf-8")
     for number in range(59, 64):
         require(f"finding_{number:03d}" in reproduction, f"missing reproduction {number}")
+    mutation = load("reports/mutation_campaign_v7_inventory.json")
+    require(
+        mutation["schema"] == "nostr_automerge.mutation_campaign.v7.inventory.v1",
+        "mutation inventory schema",
+    )
+    require(mutation["campaign_executed"] is False, "mutation execution boundary")
+    require(mutation["execution_status"] == "held_operator_safety", "mutation hold")
+    anchors = mutation["anchors"]
+    require(isinstance(anchors, list) and len(anchors) == 5, "mutation anchor count")
+    require({row["finding"] for row in anchors} == {f"FINDING_{value:03d}" for value in range(59, 64)}, "mutation findings")
+    for row in anchors:
+        source = (ROOT / row["path"]).read_text(encoding="utf-8")
+        require(all(symbol in source for symbol in row["symbols"]), f"mutation anchor: {row['finding']}")
 
 
 def main() -> int:

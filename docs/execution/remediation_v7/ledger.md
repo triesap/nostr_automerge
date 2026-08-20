@@ -8,8 +8,8 @@ Updated: 2026-08-20
 | 65 | 1059–1062 | complete | `GATE_V7_AUTHORITY` |
 | 66 | 1063–1069 | complete | `GATE_V7_BRANCH` |
 | 67 | 1070–1076 | complete | `GATE_V7_SCOPE` |
-| 68 | 1077–1081 | active | `GATE_V7_RESOURCE` |
-| 69 | 1082–1086 | pending | `GATE_V7_CONFORMANCE` |
+| 68 | 1077–1081 | complete | `GATE_V7_RESOURCE` |
+| 69 | 1082–1086 | active | `GATE_V7_CONFORMANCE` |
 | 70 | 1087–1089 | pending | `GATE_V7_TYPESCRIPT` |
 | 71 | 1090–1092 | pending | `GATE_V7_COMPANION` |
 | 72 | 1093–1095 | pending | `GATE_V7_FINAL` |
@@ -54,10 +54,13 @@ Updated: 2026-08-20
   reserved, consumed, refunded, and forfeited settlement ledgers.
 - `step_1080` added explicit complete, interrupted, and failed permit
   transitions and settled every post-reservation return path.
+- `step_1081` enabled the finalization regression, passed the focused
+  property, resource, and standard gates, installed exact mutation anchors,
+  and recorded source-mutating execution as held rather than passed.
 
 ## Active checkpoint
 
-`step_1081` — close the ordinary resource gate and record held campaigns.
+`step_1082` — append and version the canonical 129-row requirement registry.
 
 ## Holds
 

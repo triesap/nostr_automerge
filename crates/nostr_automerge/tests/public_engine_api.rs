@@ -129,7 +129,8 @@ fn projection_failure_is_typed_error() {
     );
     let evaluator = include_str!("../src/engine/reference_evaluator.rs");
     assert!(evaluator.contains("ProjectionError::Invalid"));
-    assert!(evaluator.contains("return Err(EvaluationError::Projection)"));
+    assert!(evaluator.contains("settle_reserved_error("));
+    assert!(evaluator.contains("EvaluationError::Projection"));
     assert!(!evaluator.contains("applied state must project"));
 }
 
