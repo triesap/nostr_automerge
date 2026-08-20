@@ -22,6 +22,15 @@
         "noncanonical_branch_claim_reason",
         "reduce_reasoned_change_outcome"
       ]
+    },
+    {
+      "finding": "FINDING_068",
+      "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+      "symbols": [
+        "InterruptedReportPass",
+        "prepare_interrupted_batch_report",
+        "forfeit_all_remaining"
+      ]
     }
   ],
   "campaign_executed": false,

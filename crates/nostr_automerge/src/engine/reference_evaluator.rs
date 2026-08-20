@@ -3258,6 +3258,34 @@ mod tests {
     }
 
     #[test]
+    fn interrupted_finalization_has_exact_zero_n_minus_one_and_n_boundaries() {
+        let mut zero_budget = WorkBudget::new(0, 0);
+        let zero =
+            ReportFinalizationPermit::reserve(ReportFinalizationPlan::default(), &mut zero_budget);
+        assert!(zero.is_ok());
+        let Ok(mut zero) = zero else { return };
+        assert!(zero.forfeit_all_remaining().is_ok());
+        assert!(zero.finish_interrupted().is_ok());
+
+        let plan = ReportFinalizationPlan {
+            controls: 2,
+            invariants: 1,
+            ..ReportFinalizationPlan::default()
+        };
+        let mut n_minus_one = WorkBudget::new(0, 2);
+        assert!(ReportFinalizationPermit::reserve(plan, &mut n_minus_one).is_err());
+        let mut exact_n = WorkBudget::new(0, 3);
+        let exact = ReportFinalizationPermit::reserve(plan, &mut exact_n);
+        assert!(exact.is_ok());
+        let Ok(mut exact) = exact else { return };
+        assert!(exact.consume(FinalizationDimension::Controls, 2).is_ok());
+        assert!(exact.forfeit_all_remaining().is_ok());
+        assert!(exact.finish_interrupted().is_ok());
+        assert_eq!(exact.ledger.controls.consumed, 2);
+        assert_eq!(exact.ledger.invariants.forfeited, 1);
+    }
+
+    #[test]
     fn finalization_dimensions_reject_underflow_and_double_finish() {
         let plan = ReportFinalizationPlan {
             controls: 2,

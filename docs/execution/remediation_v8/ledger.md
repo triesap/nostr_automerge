@@ -8,8 +8,8 @@ Updated: 2026-08-20
 | 73 | 1096–1101 | complete | `GATE_V8_AUTHORITY` |
 | 74 | 1102–1109 | complete | `GATE_V8_BRANCH` |
 | 75 | 1110–1117 | complete | `GATE_V8_SCOPE` |
-| 76 | 1118–1125 | active | `GATE_V8_RESOURCE` |
-| 77 | 1126–1134 | planned | `GATE_V8_DISPOSITION` |
+| 76 | 1118–1125 | complete | `GATE_V8_RESOURCE` |
+| 77 | 1126–1134 | active | `GATE_V8_DISPOSITION` |
 | 78 | 1135–1140 | planned | `GATE_V8_NIP` |
 | 79 | 1141–1148 | planned | `GATE_V8_INTEROP` |
 | 80 | 1149–1157 | planned | `GATE_V8_FINAL` |
@@ -61,10 +61,26 @@ Updated: 2026-08-20
   borrowed target memo with explicit graph charges.
 - `step_1117` activated FINDING-067, passed exact-budget and unrelated-evidence
   regressions, and closed `GATE_V8_SCOPE`.
+- `step_1118` typed every interrupted finalization pass and its reservation
+  units.
+- `step_1119` separated partial report preparation from terminal permit
+  closure.
+- `step_1120` consumed control and change passes before their vector work.
+- `step_1121` consumed checkpoint and Event passes before partial carrier
+  serialization.
+- `step_1122` consumed digest, evidence, and invariant passes before their
+  corresponding work and rejected non-interrupted inputs.
+- `step_1123` made reservation remainder closure single-use and forfeited only
+  work not performed.
+- `step_1124` isolated a constant no-progress fallback with no target-sized
+  report work.
+- `step_1125` activated FINDING-068, passed zero, N-1, N, and cancellation
+  settlement tests, recorded held mutation anchors, and closed
+  `GATE_V8_RESOURCE`.
 
 ## Active checkpoint
 
-`step_1118` is next. No implementation checkpoint is active between commits.
+`step_1126` is next. No implementation checkpoint is active between commits.
 
 ## Holds
 
