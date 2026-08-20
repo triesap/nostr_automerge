@@ -63,10 +63,13 @@ Updated: 2026-08-20
 - `step_1083` replaced all twelve transitional branch and scope citations,
   added two signed resource scenarios, and installed the checksum-bound
   171-scenario distribution v8 with exact canonical requirement mappings.
+- `step_1084` executed all 171 Rust scenarios twice in independent processes,
+  exercised all eight required permutations per fixture, proved identical
+  canonical output bytes, and rejected the deliberate signed-profile mismatch.
 
 ## Active checkpoint
 
-`step_1084` — prove two stable Rust corpus runs and mismatch rejection.
+`step_1085` — install and adversarially exercise exact 129-row evidence.
 
 ## Holds
 

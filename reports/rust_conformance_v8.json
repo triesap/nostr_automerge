@@ -1,0 +1,28 @@
+{
+  "schema": "nostr_automerge.rust_conformance.v8",
+  "status": "pass",
+  "candidate": "08847cf6df5f112b2f71f18ac8630b9fb36a9efe",
+  "manifest_sha256": "fb6a73b4bc98efa40e17d9eb3246a19065c1d4b52ea5c7077b4e9fdbea5da527",
+  "cargo_lock_sha256": "6d1b886ff74637ba6682d349ab81424b0792f2cbc61cf0f213dfcf16af4f6744",
+  "rust_toolchain_sha256": "5d959dfcc98b53886ee772ba216c4f9a1b31f093b46b5b263c0d084af54e821d",
+  "scenario_count": 171,
+  "process_count": 2,
+  "permutations_per_fixture": 8,
+  "permutations": [
+    "canonical",
+    "reverse",
+    "seed_0",
+    "seed_24301",
+    "duplicate_heavy",
+    "dependencies_last",
+    "controls_last",
+    "invalid_before_valid"
+  ],
+  "canonical_process_bytes": "identical",
+  "corpus_output_sha256": "6155309e327647074ee044567a4e8da12e1c24d3cdd939ea505169863cc4017a",
+  "deliberate_mismatch": "rejected",
+  "commands": [
+    "python3 scripts/local_gate.py conformance",
+    "cargo test -p nostr_automerge --test interop_evidence signed_profile_deliberate_mismatch_is_detectable --locked"
+  ]
+}
