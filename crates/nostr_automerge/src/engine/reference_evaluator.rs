@@ -2189,8 +2189,6 @@ fn reserved_batch_report(
     )
     .map_err(|error| settle_reserved_error(permit, error))?;
     for (dimension, amount) in [
-        (FinalizationDimension::Events, event_count),
-        (FinalizationDimension::Checkpoints, checkpoint_count),
         (FinalizationDimension::Digests, digest_count),
         (FinalizationDimension::Evidence, 0),
         (FinalizationDimension::Invariants, REPORT_INVARIANT_ITEMS),
@@ -2297,6 +2295,31 @@ fn prepare_interrupted_batch_report(
     disposition_records.extend(dispositions.iter().map(|(hash, disposition)| {
         DispositionRecord::new(ProtocolItemIdentifier::from(*hash), *disposition, None)
     }));
+    let checkpoint_units = checkpoints
+        .iter()
+        .try_fold(0_u64, |total, checkpoint| {
+            total.checked_add(
+                u64::try_from(1_usize.saturating_add(checkpoint.chunk_events().len()))
+                    .unwrap_or(u64::MAX),
+            )
+        })
+        .unwrap_or(u64::MAX);
+    permit
+        .consume_pass(FinalizationReservationUnit::new(
+            InterruptedReportPass::Checkpoints,
+            checkpoint_units,
+        ))
+        .map_err(|_| EvaluationError::ReportInvariant)?;
+    let event_units = checkpoint_units.saturating_add(u64::from(!matches!(
+        manifest,
+        ResolvedManifestAvailability::Missing
+    )));
+    permit
+        .consume_pass(FinalizationReservationUnit::new(
+            InterruptedReportPass::Events,
+            event_units,
+        ))
+        .map_err(|_| EvaluationError::ReportInvariant)?;
     disposition_records.extend(dynamic_event_disposition_records(&manifest, &checkpoints));
     let accepted_changes = disposition_hashes(&dispositions, ProtocolDisposition::Accepted);
     let pending_changes = disposition_hashes(&dispositions, ProtocolDisposition::Pending);
