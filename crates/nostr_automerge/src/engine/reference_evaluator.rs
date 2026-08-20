@@ -131,7 +131,7 @@ impl ReferenceEvaluator {
             batch.failure,
             None | Some(EvaluationFailure::BudgetExhausted | EvaluationFailure::Cancelled)
         ) {
-            return Err(match batch.failure {
+            let error = match batch.failure {
                 Some(EvaluationFailure::Graph) => EvaluationError::Graph,
                 Some(EvaluationFailure::Decode) => EvaluationError::Decode,
                 Some(EvaluationFailure::Apply) => EvaluationError::Apply,
@@ -142,7 +142,8 @@ impl ReferenceEvaluator {
                     | EvaluationFailure::Cancelled,
                 )
                 | None => EvaluationError::ReportInvariant,
-            });
+            };
+            return Err(settle_reserved_error(&mut finalization, error));
         }
         let mut control_disposition_map = preliminary_control_dispositions;
         control_disposition_map.extend(core::mem::take(&mut batch.control_dispositions));
@@ -307,7 +308,11 @@ impl ReferenceEvaluator {
                 &mut finalization,
             );
         }
-        disposition_records.extend(event_disposition_records(&view, &manifest, &checkpoints)?);
+        let event_records = match event_disposition_records(&view, &manifest, &checkpoints) {
+            Ok(records) => records,
+            Err(error) => return Err(settle_reserved_error(&mut finalization, error)),
+        };
+        disposition_records.extend(event_records);
         let accepted_changes = disposition_hashes(&dispositions, ProtocolDisposition::Accepted);
         let heads = batch.heads.iter().copied().collect::<Vec<_>>();
         let pending_changes = disposition_hashes(&dispositions, ProtocolDisposition::Pending);
@@ -342,12 +347,14 @@ impl ReferenceEvaluator {
             &accepted_changes,
             &heads,
         )
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-        let disposition_items = disposition_items(&disposition_records)
-            .map_err(|_| EvaluationError::ReportInvariant)?;
+        .map_err(|_| settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant))?;
+        let disposition_items = disposition_items(&disposition_records).map_err(|_| {
+            settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
+        })?;
         let dispositions_digest =
-            dispositions_digest(self.revision, coordinate, &disposition_items)
-                .map_err(|_| EvaluationError::ReportInvariant)?;
+            dispositions_digest(self.revision, coordinate, &disposition_items).map_err(|_| {
+                settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
+            })?;
         let projection = project_document(
             core::mem::take(&mut batch.materialized_document),
             budget,
@@ -378,7 +385,10 @@ impl ReferenceEvaluator {
                 );
             }
             Err(crate::automerge_adapter::materialized_view::ProjectionError::Invalid) => {
-                return Err(EvaluationError::Projection);
+                return Err(settle_reserved_error(
+                    &mut finalization,
+                    EvaluationError::Projection,
+                ));
             }
         };
         let evidence_work = u64::try_from(view.evaluation_event_count()).unwrap_or(u64::MAX);
@@ -401,13 +411,17 @@ impl ReferenceEvaluator {
                 FinalizationDimension::Controls,
                 u64::try_from(control_dispositions.len()).unwrap_or(u64::MAX),
             )
-            .map_err(|_| EvaluationError::ReportInvariant)?;
+            .map_err(|_| {
+                settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
+            })?;
         finalization
             .consume(
                 FinalizationDimension::Changes,
                 u64::try_from(dispositions.len()).unwrap_or(u64::MAX),
             )
-            .map_err(|_| EvaluationError::ReportInvariant)?;
+            .map_err(|_| {
+                settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
+            })?;
         let finalized_events = disposition_records
             .iter()
             .filter(|record| matches!(record.identifier(), ProtocolItemIdentifier::Event(_)))
@@ -417,7 +431,9 @@ impl ReferenceEvaluator {
                 FinalizationDimension::Events,
                 u64::try_from(finalized_events).unwrap_or(u64::MAX),
             )
-            .map_err(|_| EvaluationError::ReportInvariant)?;
+            .map_err(|_| {
+                settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
+            })?;
         let finalized_checkpoints = checkpoints
             .iter()
             .map(|checkpoint| 1_usize.saturating_add(checkpoint.chunk_events().len()))
@@ -427,7 +443,9 @@ impl ReferenceEvaluator {
                 FinalizationDimension::Checkpoints,
                 u64::try_from(finalized_checkpoints).unwrap_or(u64::MAX),
             )
-            .map_err(|_| EvaluationError::ReportInvariant)?;
+            .map_err(|_| {
+                settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
+            })?;
         let finalized_digests = batch
             .canonical_controls
             .len()
@@ -440,19 +458,27 @@ impl ReferenceEvaluator {
                 FinalizationDimension::Digests,
                 u64::try_from(finalized_digests).unwrap_or(u64::MAX),
             )
-            .map_err(|_| EvaluationError::ReportInvariant)?;
+            .map_err(|_| {
+                settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
+            })?;
         finalization
             .consume(
                 FinalizationDimension::Evidence,
                 u64::try_from(evidence.len()).unwrap_or(u64::MAX),
             )
-            .map_err(|_| EvaluationError::ReportInvariant)?;
+            .map_err(|_| {
+                settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
+            })?;
         finalization
             .consume(FinalizationDimension::Invariants, REPORT_INVARIANT_ITEMS)
-            .map_err(|_| EvaluationError::ReportInvariant)?;
+            .map_err(|_| {
+                settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
+            })?;
         finalization
             .consume(FinalizationDimension::FixedOverhead, 8)
-            .map_err(|_| EvaluationError::ReportInvariant)?;
+            .map_err(|_| {
+                settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
+            })?;
         let report = EvaluationReport::from_parts(EvaluationReportParts {
             coordinate,
             canonical_controls: batch.canonical_controls,
@@ -474,10 +500,10 @@ impl ReferenceEvaluator {
             failure: batch.failure,
             document,
         })
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-        finalization
-            .refund(budget)
-            .map_err(|_| EvaluationError::ReportInvariant)?;
+        .map_err(|_| settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant))?;
+        finalization.refund(budget).map_err(|_| {
+            settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
+        })?;
         Ok(report)
     }
 
@@ -1902,28 +1928,20 @@ impl ReportFinalizationLedger {
         }
         Ok(())
     }
+}
 
-    fn forfeit_all_remaining(&mut self) -> Result<(), FinalizationPermitError> {
-        for dimension in [
-            FinalizationDimension::Controls,
-            FinalizationDimension::Changes,
-            FinalizationDimension::Events,
-            FinalizationDimension::Checkpoints,
-            FinalizationDimension::Digests,
-            FinalizationDimension::Evidence,
-            FinalizationDimension::Invariants,
-            FinalizationDimension::FixedOverhead,
-        ] {
-            self.dimension_mut(dimension).forfeit_remaining()?;
-        }
-        Ok(())
-    }
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum FinalizationPermitState {
+    Active,
+    Complete,
+    Interrupted,
+    Failed,
 }
 
 #[derive(Debug)]
 struct ReportFinalizationPermit {
     ledger: ReportFinalizationLedger,
-    active: bool,
+    state: FinalizationPermitState,
 }
 
 impl ReportFinalizationPermit {
@@ -1934,7 +1952,7 @@ impl ReportFinalizationPermit {
         budget.charge(WorkCounter::Assertion, plan.total().unwrap_or(u64::MAX))?;
         Ok(Self {
             ledger: ReportFinalizationLedger::from_plan(plan),
-            active: true,
+            state: FinalizationPermitState::Active,
         })
     }
 
@@ -1943,29 +1961,53 @@ impl ReportFinalizationPermit {
         dimension: FinalizationDimension,
         amount: u64,
     ) -> Result<(), FinalizationPermitError> {
-        if !self.active {
+        if self.state != FinalizationPermitState::Active {
             return Err(FinalizationPermitError);
         }
         self.ledger.dimension_mut(dimension).consume(amount)
     }
 
     fn finish_interrupted(&mut self) -> Result<(), FinalizationPermitError> {
-        if !self.active || !self.ledger.is_interrupted_settlement() {
+        if self.state != FinalizationPermitState::Active || !self.ledger.is_interrupted_settlement()
+        {
             return Err(FinalizationPermitError);
         }
-        self.active = false;
+        self.state = FinalizationPermitState::Interrupted;
         Ok(())
     }
 
-    fn consume_interrupted_omissions(&mut self) -> Result<(), FinalizationPermitError> {
-        if !self.active {
+    fn forfeit(&mut self, dimension: FinalizationDimension) -> Result<(), FinalizationPermitError> {
+        if self.state != FinalizationPermitState::Active {
             return Err(FinalizationPermitError);
         }
-        self.ledger.forfeit_all_remaining()
+        self.ledger.dimension_mut(dimension).forfeit_remaining()
+    }
+
+    fn finish_failed(&mut self) -> Result<(), FinalizationPermitError> {
+        if self.state != FinalizationPermitState::Active {
+            return Err(FinalizationPermitError);
+        }
+        for dimension in [
+            FinalizationDimension::Controls,
+            FinalizationDimension::Changes,
+            FinalizationDimension::Events,
+            FinalizationDimension::Checkpoints,
+            FinalizationDimension::Digests,
+            FinalizationDimension::Evidence,
+            FinalizationDimension::Invariants,
+            FinalizationDimension::FixedOverhead,
+        ] {
+            self.forfeit(dimension)?;
+        }
+        if !self.ledger.is_settled() {
+            return Err(FinalizationPermitError);
+        }
+        self.state = FinalizationPermitState::Failed;
+        Ok(())
     }
 
     fn refund(&mut self, budget: &mut WorkBudget) -> Result<(), FinalizationPermitError> {
-        if !self.active {
+        if self.state != FinalizationPermitState::Active {
             return Err(FinalizationPermitError);
         }
         let remaining = self
@@ -1979,8 +2021,19 @@ impl ReportFinalizationPermit {
         if !self.ledger.is_settled() {
             return Err(FinalizationPermitError);
         }
-        self.active = false;
+        self.state = FinalizationPermitState::Complete;
         Ok(())
+    }
+}
+
+fn settle_reserved_error(
+    permit: &mut ReportFinalizationPermit,
+    error: EvaluationError,
+) -> EvaluationError {
+    if permit.finish_failed().is_ok() {
+        error
+    } else {
+        EvaluationError::ReportInvariant
     }
 }
 
@@ -1994,8 +2047,23 @@ fn reserved_interrupted_report(
         .consume(FinalizationDimension::Digests, 8)
         .and_then(|()| permit.consume(FinalizationDimension::Invariants, REPORT_INVARIANT_ITEMS))
         .and_then(|()| permit.consume(FinalizationDimension::FixedOverhead, 8))
-        .and_then(|()| permit.consume_interrupted_omissions())
-        .and_then(|()| permit.finish_interrupted())
+        .map_err(|_| EvaluationError::ReportInvariant)?;
+    for dimension in [
+        FinalizationDimension::Controls,
+        FinalizationDimension::Changes,
+        FinalizationDimension::Events,
+        FinalizationDimension::Checkpoints,
+        FinalizationDimension::Digests,
+        FinalizationDimension::Evidence,
+        FinalizationDimension::Invariants,
+        FinalizationDimension::FixedOverhead,
+    ] {
+        permit
+            .forfeit(dimension)
+            .map_err(|_| EvaluationError::ReportInvariant)?;
+    }
+    permit
+        .finish_interrupted()
         .map_err(|_| EvaluationError::ReportInvariant)?;
     compact_interrupted_report(revision, coordinate, completion)
 }
@@ -2042,9 +2110,22 @@ fn reserved_batch_report(
             .consume(dimension, amount)
             .map_err(|_| EvaluationError::ReportInvariant)?;
     }
+    for dimension in [
+        FinalizationDimension::Controls,
+        FinalizationDimension::Changes,
+        FinalizationDimension::Events,
+        FinalizationDimension::Checkpoints,
+        FinalizationDimension::Digests,
+        FinalizationDimension::Evidence,
+        FinalizationDimension::Invariants,
+        FinalizationDimension::FixedOverhead,
+    ] {
+        permit
+            .forfeit(dimension)
+            .map_err(|_| EvaluationError::ReportInvariant)?;
+    }
     permit
-        .consume_interrupted_omissions()
-        .and_then(|()| permit.finish_interrupted())
+        .finish_interrupted()
         .map_err(|_| EvaluationError::ReportInvariant)?;
     compact_batch_report(revision, coordinate, batch, manifest, checkpoints)
 }
@@ -2998,7 +3079,18 @@ mod tests {
         assert!(permit.consume(FinalizationDimension::Controls, 2).is_ok());
         assert!(permit.consume(FinalizationDimension::Controls, 1).is_err());
         assert!(permit.finish_interrupted().is_err());
-        assert!(permit.consume_interrupted_omissions().is_ok());
+        for dimension in [
+            FinalizationDimension::Controls,
+            FinalizationDimension::Changes,
+            FinalizationDimension::Events,
+            FinalizationDimension::Checkpoints,
+            FinalizationDimension::Digests,
+            FinalizationDimension::Evidence,
+            FinalizationDimension::Invariants,
+            FinalizationDimension::FixedOverhead,
+        ] {
+            assert!(permit.forfeit(dimension).is_ok());
+        }
         assert_eq!(permit.ledger.controls.consumed, 2);
         assert_eq!(permit.ledger.controls.forfeited, 0);
         assert_eq!(permit.ledger.invariants.consumed, 0);
@@ -3043,8 +3135,23 @@ mod tests {
             .split_once("let report = EvaluationReport::from_parts")
             .map(|(_, path)| path)
             .unwrap_or_default();
-        let validation = complete_path.find("map_err(|_| EvaluationError::ReportInvariant)?;");
+        let validation = complete_path.find("settle_reserved_error(&mut finalization");
         let refund = complete_path.find(".refund(budget)");
         assert!(matches!((validation, refund), (Some(left), Some(right)) if left < right));
+    }
+
+    #[test]
+    fn every_post_reservation_error_settles_the_permit() {
+        let source = include_str!("reference_evaluator.rs");
+        let evaluation = source
+            .split_once("let mut finalization =")
+            .and_then(|(_, rest)| rest.split_once("/// Replays the complete retained corpus"))
+            .map(|(body, _)| body)
+            .unwrap_or_default();
+        assert!(!evaluation.contains("return Err(EvaluationError::"));
+        assert!(!evaluation.contains("map_err(|_| EvaluationError::"));
+        assert!(evaluation.contains("settle_reserved_error(&mut finalization"));
+        assert!(evaluation.contains("reserved_interrupted_report("));
+        assert!(evaluation.contains("reserved_batch_report("));
     }
 }

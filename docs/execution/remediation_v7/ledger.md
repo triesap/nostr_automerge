@@ -52,10 +52,12 @@ Updated: 2026-08-20
   insufficient, deep, reversed-order, cycle, and cancellation boundaries.
 - `step_1079` replaced remaining-only finalization state with per-dimension
   reserved, consumed, refunded, and forfeited settlement ledgers.
+- `step_1080` added explicit complete, interrupted, and failed permit
+  transitions and settled every post-reservation return path.
 
 ## Active checkpoint
 
-`step_1080` — explicitly settle every finalization return path.
+`step_1081` — close the ordinary resource gate and record held campaigns.
 
 ## Holds
 

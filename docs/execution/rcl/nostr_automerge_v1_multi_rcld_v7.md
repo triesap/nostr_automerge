@@ -9,7 +9,7 @@ Reviewed opaque TypeScript import identity: `1ae2f4fd9492f61a8715ae52f1e16a196b3
 Reviewed NIP snapshot SHA-256: `67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3`
 Steps: `step_1059` through `step_1095` (37 contiguous checkpoints)
 Active RCLD: RCLD 68
-Active checkpoint: `step_1080`
+Active checkpoint: `step_1081`
 
 ## Outcome
 
