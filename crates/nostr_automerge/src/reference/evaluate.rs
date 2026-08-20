@@ -148,216 +148,100 @@ pub(crate) fn evaluate_batch_with_prior(
     let mut accepted_at_control = BTreeMap::new();
     let mut statefully_valid_controls = BTreeSet::new();
     let mut branch_states = BTreeMap::new();
-    let mut parent_epoch_result: Option<EpochEvaluationResult> = None;
-    let mut parent_id = None;
-    let mut canonical_ancestry = Vec::<ControlEnvelope>::new();
-    while let Some(children) = by_parent.get(&parent_id) {
-        if cancellation.is_cancelled() {
-            completion = Completion::Cancelled;
-            break;
-        }
-        if charge_control_transitions(children.len(), budget).is_err() {
-            completion = Completion::BudgetExhausted;
-            break;
-        }
-        let parent_view = parent_epoch_result.as_ref().map(|result| {
-            let mut view = ParentEpochView::from_result(result);
-            if let Some(parent_id) = parent_id
-                && let Some(knowledge) = additional_prior.get(&parent_id)
-            {
-                view.extend_prior_knowledge(knowledge);
+    match evaluate_branch_table(
+        &controls,
+        &by_parent,
+        additional_prior,
+        &dispositions,
+        budget,
+        cancellation,
+    ) {
+        Ok(table) => {
+            branch_states = table.states.clone();
+            statefully_valid_controls = table.valid.keys().copied().collect();
+            accepted_at_control = table
+                .valid
+                .iter()
+                .map(|(event_id, branch)| {
+                    (*event_id, AcceptedAtControl::from_result(&branch.epoch))
+                })
+                .collect();
+            for (event_id, state) in &branch_states {
+                control_dispositions.insert(*event_id, state.final_disposition(false));
             }
-            view
-        });
-        if let Some(view) = parent_view.as_ref()
-            && let Err(interruption) = charge_control_closures(
-                children,
-                &controls,
-                &canonical_ancestry,
-                view,
-                budget,
-                cancellation,
-            )
-        {
-            completion = interruption;
-            break;
-        }
-        let ancestry = canonical_ancestry
-            .iter()
-            .map(ControlEnvelope::content)
-            .collect::<Vec<_>>();
-        let parent_envelope = parent_id.and_then(|event_id| {
-            controls
-                .get(&event_id)
-                .and_then(|control| control.envelope.as_ref())
-        });
-        let outcomes = children
-            .iter()
-            .filter_map(|event_id| {
-                let control = controls.get(event_id)?;
-                let sequence = control
-                    .envelope
-                    .as_ref()
-                    .map_or(0, ControlEnvelope::sequence);
-                let Some(child) = control.envelope.as_ref() else {
-                    return Some(ControlCandidateOutcome::valid(
-                        *event_id,
-                        control.parent,
-                        sequence,
-                        control.accepted_base.clone(),
-                    ));
-                };
-                let Some(parent) = parent_envelope else {
-                    return Some(ControlCandidateOutcome::valid(
-                        *event_id,
-                        None,
-                        sequence,
-                        BTreeSet::new(),
-                    ));
-                };
-                let Some(view) = parent_view.as_ref() else {
-                    return Some(ControlCandidateOutcome::invalid(
-                        *event_id,
-                        control.parent,
-                        sequence,
-                        crate::DiagnosticCode::registered("control.state"),
-                        None,
-                    ));
-                };
-                Some(match evaluate_child(parent, child, &ancestry, view) {
-                    CandidateResult::Valid => {
-                        let closure = accepted_frontier_closure(
-                            child.base_heads(),
-                            view.accepted(),
-                            view.dependency_index(),
-                        );
-                        ControlCandidateOutcome::valid(
+
+            let mut parent_id = None;
+            while let Some(children) = by_parent.get(&parent_id) {
+                let outcomes = children.iter().filter_map(|event_id| {
+                    let control = controls.get(event_id)?;
+                    let state = branch_states.get(event_id)?;
+                    let sequence = control
+                        .envelope
+                        .as_ref()
+                        .map_or(0, ControlEnvelope::sequence);
+                    Some(match state {
+                        BranchEvaluationState::Valid => ControlCandidateOutcome::valid(
                             *event_id,
                             control.parent,
                             sequence,
-                            closure.accepted,
-                        )
-                    }
-                    CandidateResult::Pending(diagnostic) => ControlCandidateOutcome::pending(
-                        *event_id,
-                        control.parent,
-                        sequence,
-                        diagnostic,
-                        None,
-                    ),
-                    CandidateResult::Invalid(diagnostic) => ControlCandidateOutcome::invalid(
-                        *event_id,
-                        control.parent,
-                        sequence,
-                        diagnostic,
-                        None,
-                    ),
-                })
-            })
-            .collect::<Vec<_>>();
-        for outcome in &outcomes {
-            let state = match outcome.disposition() {
-                ProtocolDisposition::Accepted | ProtocolDisposition::Excluded => {
-                    BranchEvaluationState::Valid
+                            table
+                                .valid
+                                .get(event_id)
+                                .map(|branch| branch.validated_base.clone())
+                                .unwrap_or_default(),
+                        ),
+                        BranchEvaluationState::Pending => ControlCandidateOutcome::pending(
+                            *event_id,
+                            control.parent,
+                            sequence,
+                            crate::DiagnosticCode::registered("control.state"),
+                            None,
+                        ),
+                        BranchEvaluationState::Invalid => ControlCandidateOutcome::invalid(
+                            *event_id,
+                            control.parent,
+                            sequence,
+                            crate::DiagnosticCode::registered("control.state"),
+                            None,
+                        ),
+                    })
+                });
+                let (selection, alert) = select_valid_outcomes_with_alert(parent_id, outcomes);
+                let Some(selected) = selection.selected else {
+                    break;
+                };
+                let Some(branch) = table.valid.get(&selected) else {
+                    failure = Some(EvaluationFailure::InvariantViolation);
+                    break;
+                };
+                let Some(control) = controls.get(&selected) else {
+                    failure = Some(EvaluationFailure::InvariantViolation);
+                    break;
+                };
+                canonical_controls.push(selected);
+                control_dispositions.insert(selected, ProtocolDisposition::Accepted);
+                if let Some(alert) = alert {
+                    integrity_alerts.push(alert);
                 }
-                ProtocolDisposition::Pending => BranchEvaluationState::Pending,
-                ProtocolDisposition::Invalid | ProtocolDisposition::UnsupportedRevision => {
-                    BranchEvaluationState::Invalid
+                dispositions.extend(branch.epoch.dispositions().clone());
+                accepted_changes = branch.epoch.accepted_state().accepted_closure().clone();
+                integrity_alerts.extend_from_slice(branch.epoch.integrity_alerts());
+                if control.frozen {
+                    break;
                 }
-            };
-            branch_states.insert(outcome.event_id(), state);
-            control_dispositions.insert(outcome.event_id(), state.final_disposition(false));
-            if state == BranchEvaluationState::Valid {
-                statefully_valid_controls.insert(outcome.event_id());
+                parent_id = Some(selected);
+            }
+            for (hash, disposition) in &mut dispositions {
+                if accepted_changes.contains(hash) {
+                    *disposition = ProtocolDisposition::Accepted;
+                } else if *disposition == ProtocolDisposition::Accepted {
+                    *disposition = ProtocolDisposition::Excluded;
+                }
             }
         }
-        let (selection, alert) =
-            select_valid_outcomes_with_alert(parent_id, outcomes.iter().cloned());
-        let Some(selected) = selection.selected else {
-            break;
-        };
-        let selected_base = outcomes
-            .iter()
-            .find(|outcome| outcome.event_id() == selected)
-            .and_then(ControlCandidateOutcome::validated_base_closure)
-            .cloned()
-            .unwrap_or_default();
-        let Some(control) = controls.get(&selected) else {
-            failure = Some(EvaluationFailure::InvariantViolation);
-            break;
-        };
-        let Some(selected_state) =
-            accepted_state_for_closure(&selected_base, &controls, parent_epoch_result.as_ref())
-        else {
-            failure = Some(EvaluationFailure::InvariantViolation);
-            break;
-        };
-        canonical_controls.push(selected);
-        control_dispositions.insert(selected, ProtocolDisposition::Accepted);
-        if let Some(alert) = alert {
-            integrity_alerts.push(alert);
+        Err(stop) => {
+            completion = stop;
         }
-        for change in &control.changes {
-            if !selected_base.contains(&change.candidate.change_hash) {
-                dispositions.remove(&change.candidate.change_hash);
-            }
-        }
-        if budget.charge(WorkCounter::Control, 1).is_err() {
-            completion = Completion::BudgetExhausted;
-            break;
-        }
-        for hash in accepted_changes.difference(&selected_base) {
-            dispositions.insert(*hash, ProtocolDisposition::Excluded);
-        }
-        let mut prior_change_knowledge = prior_change_knowledge(
-            parent_epoch_result.as_ref(),
-            &selected_base,
-            &dispositions,
-            selected,
-            &controls,
-        );
-        if let Some(additional) = additional_prior.get(&selected) {
-            for (hash, knowledge) in additional {
-                prior_change_knowledge.entry(*hash).or_insert(*knowledge);
-            }
-        }
-        accepted_changes = selected_base;
-        let epoch = resolve_authoritative_epoch(
-            control,
-            selected_state,
-            prior_change_knowledge,
-            &canonical_ancestry,
-            &controls,
-            budget,
-            cancellation,
-        );
-        let resolved = match epoch {
-            Ok(resolved) => resolved,
-            Err(EpochResolutionError::Schedule(ScheduleError::BudgetExhausted)) => {
-                completion = Completion::BudgetExhausted;
-                break;
-            }
-            Err(EpochResolutionError::Schedule(ScheduleError::Cancelled)) => {
-                completion = Completion::Cancelled;
-                break;
-            }
-            Err(EpochResolutionError::InvalidState) => {
-                failure = Some(EvaluationFailure::Graph);
-                break;
-            }
-        };
-        dispositions.extend(resolved.dispositions().clone());
-        integrity_alerts.extend_from_slice(resolved.integrity_alerts());
-        accepted_changes = resolved.accepted_state().accepted_closure().clone();
-        accepted_at_control.insert(selected, AcceptedAtControl::from_result(&resolved));
-        parent_epoch_result = Some(resolved);
-        if let Some(envelope) = control.envelope.as_ref() {
-            canonical_ancestry.push(envelope.clone());
-        }
-        if control.frozen {
-            break;
-        }
-        parent_id = Some(selected);
     }
 
     if completion != Completion::Complete || failure.is_some() {
@@ -510,6 +394,194 @@ pub(crate) fn evaluate_batch_with_prior(
         integrity_alerts,
         completion,
         failure: None,
+    }
+}
+
+struct ValidBranchEvaluation {
+    epoch: EpochEvaluationResult,
+    validated_base: BTreeSet<ChangeHash>,
+    ancestry: Vec<ControlEnvelope>,
+}
+
+#[derive(Default)]
+struct BranchTableEvaluation {
+    states: BTreeMap<EventId, BranchEvaluationState>,
+    valid: BTreeMap<EventId, ValidBranchEvaluation>,
+}
+
+fn evaluate_branch_table(
+    controls: &BTreeMap<EventId, BatchControl>,
+    children_by_parent: &BTreeMap<Option<EventId>, BTreeSet<EventId>>,
+    additional_prior: &BTreeMap<EventId, BTreeMap<ChangeHash, PriorChangeKnowledge>>,
+    preliminary_change_dispositions: &BTreeMap<ChangeHash, ProtocolDisposition>,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<BranchTableEvaluation, Completion> {
+    let mut table = BranchTableEvaluation::default();
+    let mut ready = children_by_parent.get(&None).cloned().unwrap_or_default();
+    while let Some(event_id) = ready.pop_first() {
+        if cancellation.is_cancelled() {
+            return Err(Completion::Cancelled);
+        }
+        charge_control_transitions(1, budget).map_err(|_| Completion::BudgetExhausted)?;
+        let Some(control) = controls.get(&event_id) else {
+            table
+                .states
+                .insert(event_id, BranchEvaluationState::Invalid);
+            continue;
+        };
+        let parent_branch = control.parent.and_then(|parent| table.valid.get(&parent));
+        let inherited = control
+            .parent
+            .and_then(|parent| table.states.get(&parent))
+            .and_then(|state| match state {
+                BranchEvaluationState::Pending => Some(BranchEvaluationState::Pending),
+                BranchEvaluationState::Invalid => Some(BranchEvaluationState::Invalid),
+                BranchEvaluationState::Valid => None,
+            });
+        let validated_base = if let Some(state) = inherited {
+            table.states.insert(event_id, state);
+            None
+        } else if let (Some(parent), Some(branch), Some(child)) = (
+            control
+                .parent
+                .and_then(|parent| controls.get(&parent))
+                .and_then(|parent| parent.envelope.as_ref()),
+            parent_branch,
+            control.envelope.as_ref(),
+        ) {
+            let mut view = ParentEpochView::from_result(&branch.epoch);
+            if let Some(parent_id) = control.parent
+                && let Some(knowledge) = additional_prior.get(&parent_id)
+            {
+                view.extend_prior_knowledge(knowledge);
+            }
+            let singleton = BTreeSet::from([event_id]);
+            charge_control_closures(
+                &singleton,
+                controls,
+                &branch.ancestry,
+                &view,
+                budget,
+                cancellation,
+            )?;
+            let ancestry = branch
+                .ancestry
+                .iter()
+                .map(ControlEnvelope::content)
+                .collect::<Vec<_>>();
+            match evaluate_child(parent, child, &ancestry, &view) {
+                CandidateResult::Valid => Some(
+                    accepted_frontier_closure(
+                        child.base_heads(),
+                        view.accepted(),
+                        view.dependency_index(),
+                    )
+                    .accepted,
+                ),
+                CandidateResult::Pending(_) => {
+                    table
+                        .states
+                        .insert(event_id, BranchEvaluationState::Pending);
+                    None
+                }
+                CandidateResult::Invalid(_) => {
+                    table
+                        .states
+                        .insert(event_id, BranchEvaluationState::Invalid);
+                    None
+                }
+            }
+        } else if control.parent.is_none() {
+            Some(if control.envelope.is_some() {
+                BTreeSet::new()
+            } else {
+                control.accepted_base.clone()
+            })
+        } else if control.envelope.is_none() && parent_branch.is_some() {
+            Some(control.accepted_base.clone())
+        } else {
+            table
+                .states
+                .insert(event_id, BranchEvaluationState::Invalid);
+            None
+        };
+
+        if let Some(validated_base) = validated_base {
+            let parent_epoch = parent_branch.map(|branch| &branch.epoch);
+            let Some(accepted_base) =
+                accepted_state_for_closure(&validated_base, controls, parent_epoch)
+            else {
+                table
+                    .states
+                    .insert(event_id, BranchEvaluationState::Invalid);
+                enqueue_children(event_id, children_by_parent, &mut ready);
+                continue;
+            };
+            let mut knowledge = prior_change_knowledge(
+                parent_epoch,
+                &validated_base,
+                preliminary_change_dispositions,
+                event_id,
+                controls,
+            );
+            if let Some(additional) = additional_prior.get(&event_id) {
+                for (hash, item) in additional {
+                    knowledge.entry(*hash).or_insert(*item);
+                }
+            }
+            let parent_ancestry = parent_branch
+                .map(|branch| branch.ancestry.as_slice())
+                .unwrap_or_default();
+            match resolve_authoritative_epoch(
+                control,
+                accepted_base,
+                knowledge,
+                parent_ancestry,
+                controls,
+                budget,
+                cancellation,
+            ) {
+                Ok(epoch) => {
+                    let mut ancestry = parent_ancestry.to_vec();
+                    if let Some(envelope) = control.envelope.as_ref() {
+                        ancestry.push(envelope.clone());
+                    }
+                    table.states.insert(event_id, BranchEvaluationState::Valid);
+                    table.valid.insert(
+                        event_id,
+                        ValidBranchEvaluation {
+                            epoch,
+                            validated_base,
+                            ancestry,
+                        },
+                    );
+                }
+                Err(EpochResolutionError::Schedule(ScheduleError::BudgetExhausted)) => {
+                    return Err(Completion::BudgetExhausted);
+                }
+                Err(EpochResolutionError::Schedule(ScheduleError::Cancelled)) => {
+                    return Err(Completion::Cancelled);
+                }
+                Err(EpochResolutionError::InvalidState) => {
+                    table
+                        .states
+                        .insert(event_id, BranchEvaluationState::Invalid);
+                }
+            }
+        }
+        enqueue_children(event_id, children_by_parent, &mut ready);
+    }
+    Ok(table)
+}
+
+fn enqueue_children(
+    parent: EventId,
+    children_by_parent: &BTreeMap<Option<EventId>, BTreeSet<EventId>>,
+    ready: &mut BTreeSet<EventId>,
+) {
+    if let Some(children) = children_by_parent.get(&Some(parent)) {
+        ready.extend(children);
     }
 }
 
