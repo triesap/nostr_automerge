@@ -169,74 +169,17 @@ pub(crate) fn evaluate_batch_with_prior(
             for (event_id, state) in &branch_states {
                 control_dispositions.insert(*event_id, state.final_disposition(false));
             }
-
-            let mut parent_id = None;
-            while let Some(children) = by_parent.get(&parent_id) {
-                let outcomes = children.iter().filter_map(|event_id| {
-                    let control = controls.get(event_id)?;
-                    let state = branch_states.get(event_id)?;
-                    let sequence = control
-                        .envelope
-                        .as_ref()
-                        .map_or(0, ControlEnvelope::sequence);
-                    Some(match state {
-                        BranchEvaluationState::Valid => ControlCandidateOutcome::valid(
-                            *event_id,
-                            control.parent,
-                            sequence,
-                            table
-                                .valid
-                                .get(event_id)
-                                .map(|branch| branch.validated_base.clone())
-                                .unwrap_or_default(),
-                        ),
-                        BranchEvaluationState::Pending => ControlCandidateOutcome::pending(
-                            *event_id,
-                            control.parent,
-                            sequence,
-                            crate::DiagnosticCode::registered("control.state"),
-                            None,
-                        ),
-                        BranchEvaluationState::Invalid => ControlCandidateOutcome::invalid(
-                            *event_id,
-                            control.parent,
-                            sequence,
-                            crate::DiagnosticCode::registered("control.state"),
-                            None,
-                        ),
-                    })
-                });
-                let (selection, alert) = select_valid_outcomes_with_alert(parent_id, outcomes);
-                let Some(selected) = selection.selected else {
-                    break;
-                };
-                let Some(branch) = table.valid.get(&selected) else {
-                    failure = Some(EvaluationFailure::InvariantViolation);
-                    break;
-                };
-                let Some(control) = controls.get(&selected) else {
-                    failure = Some(EvaluationFailure::InvariantViolation);
-                    break;
-                };
-                canonical_controls.push(selected);
-                control_dispositions.insert(selected, ProtocolDisposition::Accepted);
-                if let Some(alert) = alert {
-                    integrity_alerts.push(alert);
+            match derive_canonical_branch(&controls, &by_parent, &table, &dispositions) {
+                Ok(canonical) => {
+                    canonical_controls = canonical.controls;
+                    dispositions = canonical.change_dispositions;
+                    accepted_changes = canonical.accepted_changes;
+                    integrity_alerts = canonical.integrity_alerts;
+                    for selected in &canonical_controls {
+                        control_dispositions.insert(*selected, ProtocolDisposition::Accepted);
+                    }
                 }
-                dispositions.extend(branch.epoch.dispositions().clone());
-                accepted_changes = branch.epoch.accepted_state().accepted_closure().clone();
-                integrity_alerts.extend_from_slice(branch.epoch.integrity_alerts());
-                if control.frozen {
-                    break;
-                }
-                parent_id = Some(selected);
-            }
-            for (hash, disposition) in &mut dispositions {
-                if accepted_changes.contains(hash) {
-                    *disposition = ProtocolDisposition::Accepted;
-                } else if *disposition == ProtocolDisposition::Accepted {
-                    *disposition = ProtocolDisposition::Excluded;
-                }
+                Err(()) => failure = Some(EvaluationFailure::InvariantViolation),
             }
         }
         Err(stop) => {
@@ -408,6 +351,92 @@ struct ValidBranchEvaluation {
 struct BranchTableEvaluation {
     states: BTreeMap<EventId, BranchEvaluationState>,
     valid: BTreeMap<EventId, ValidBranchEvaluation>,
+}
+
+struct CanonicalBranchEvaluation {
+    controls: Vec<EventId>,
+    change_dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
+    accepted_changes: BTreeSet<ChangeHash>,
+    integrity_alerts: Vec<IntegrityAlert>,
+}
+
+fn derive_canonical_branch(
+    controls: &BTreeMap<EventId, BatchControl>,
+    children_by_parent: &BTreeMap<Option<EventId>, BTreeSet<EventId>>,
+    table: &BranchTableEvaluation,
+    preliminary_change_dispositions: &BTreeMap<ChangeHash, ProtocolDisposition>,
+) -> Result<CanonicalBranchEvaluation, ()> {
+    let mut change_dispositions = preliminary_change_dispositions.clone();
+    let mut canonical_controls = Vec::new();
+    let mut accepted_changes = BTreeSet::new();
+    let mut integrity_alerts = Vec::new();
+    let mut parent_id = None;
+    while let Some(children) = children_by_parent.get(&parent_id) {
+        let outcomes = children.iter().filter_map(|event_id| {
+            let control = controls.get(event_id)?;
+            let state = table.states.get(event_id)?;
+            let sequence = control
+                .envelope
+                .as_ref()
+                .map_or(0, ControlEnvelope::sequence);
+            Some(match state {
+                BranchEvaluationState::Valid => ControlCandidateOutcome::valid(
+                    *event_id,
+                    control.parent,
+                    sequence,
+                    table
+                        .valid
+                        .get(event_id)
+                        .map(|branch| branch.validated_base.clone())
+                        .unwrap_or_default(),
+                ),
+                BranchEvaluationState::Pending => ControlCandidateOutcome::pending(
+                    *event_id,
+                    control.parent,
+                    sequence,
+                    crate::DiagnosticCode::registered("control.state"),
+                    None,
+                ),
+                BranchEvaluationState::Invalid => ControlCandidateOutcome::invalid(
+                    *event_id,
+                    control.parent,
+                    sequence,
+                    crate::DiagnosticCode::registered("control.state"),
+                    None,
+                ),
+            })
+        });
+        let (selection, alert) = select_valid_outcomes_with_alert(parent_id, outcomes);
+        let Some(selected) = selection.selected else {
+            break;
+        };
+        let branch = table.valid.get(&selected).ok_or(())?;
+        let control = controls.get(&selected).ok_or(())?;
+        canonical_controls.push(selected);
+        if let Some(alert) = alert {
+            integrity_alerts.push(alert);
+        }
+        change_dispositions.extend(branch.epoch.dispositions().clone());
+        accepted_changes = branch.epoch.accepted_state().accepted_closure().clone();
+        integrity_alerts.extend_from_slice(branch.epoch.integrity_alerts());
+        if control.frozen {
+            break;
+        }
+        parent_id = Some(selected);
+    }
+    for (hash, disposition) in &mut change_dispositions {
+        if accepted_changes.contains(hash) {
+            *disposition = ProtocolDisposition::Accepted;
+        } else if *disposition == ProtocolDisposition::Accepted {
+            *disposition = ProtocolDisposition::Excluded;
+        }
+    }
+    Ok(CanonicalBranchEvaluation {
+        controls: canonical_controls,
+        change_dispositions,
+        accepted_changes,
+        integrity_alerts,
+    })
 }
 
 fn evaluate_branch_table(
