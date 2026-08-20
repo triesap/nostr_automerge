@@ -6,6 +6,9 @@ Automerge CRDT Documents over Nostr
 
 `draft` `optional`
 
+This is a repository-local draft. It has not been submitted, assigned final
+event kinds, adopted, published as a NIP, or released as a production profile.
+
 This NIP defines a local-first document protocol built from signed Nostr events and Automerge changes.
 
 Relays store and forward events. Clients verify authorization, rebuild the change graph, and derive the document state. Relays do not merge documents and do not decide which changes are valid.
@@ -1122,6 +1125,13 @@ covering valid and invalid manifests, controls, changes, causal transitions,
 control forks, device equivocation, verified-history checkpoints, dependency
 recovery, and randomized event delivery.
 
+The checksum-bound signed v9 distribution contains exactly 180 scenarios. A
+conforming implementation MUST execute every scenario in two complete
+processes and under all eight declared delivery permutations. Complete
+canonical report bytes MUST be identical across runs and independent
+implementations, and the comparison procedure MUST reject a deliberate byte
+mismatch.
+
 For each required vector, a conforming implementation MUST produce the expected:
 
 - canonical control-chain event ids;
@@ -1136,9 +1146,10 @@ The initial conformance contract does not define a digest over
 `Automerge::save()` bytes. Such a digest may be added only after byte-identical
 save output has been demonstrated across independent implementations.
 
-The vectors are maintained outside the NIPs repository and MUST be linked from
-the proposal before it is marked ready for acceptance. If the prose and a
-vector disagree, the prose in this NIP controls.
+The vectors are maintained outside the NIPs repository. Their local execution
+does not imply submission, event-kind allocation, adoption, publication,
+release, deployment, or production qualification. If the prose and a vector
+disagree, the prose in this repository-local draft controls.
 
 ## Actor derivation test vector
 

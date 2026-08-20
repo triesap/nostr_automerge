@@ -66,8 +66,9 @@ def main() -> int:
         "next_op(C) = 1",
         "Selected manifest dynamic validity",
         "Dynamic signed-event dispositions",
-        "does not claim",
-        "external NIP prose was edited",
+        "repository-local `NIP_DRAFT.md`",
+        "without authorizing any upstream",
+        "Remediation v8 reconciled authority",
     ):
         if clause not in companion:
             raise AssertionError(f"companion clarification missing: {clause}")

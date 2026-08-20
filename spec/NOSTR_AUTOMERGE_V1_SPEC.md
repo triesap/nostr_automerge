@@ -2,13 +2,13 @@
 
 ## Status
 
-Approved implementation baseline.
+Approved repository-local implementation baseline.
 
-The NIP text in `NIP_DRAFT.md` is a read-only snapshot of the externally
-authored normative proposal. This companion specification records
-implementation invariants, claim levels, and pressure-tested clarifications
-that are required for this repository's conformance profile. It does not claim
-that the external NIP prose was edited, reconciled, submitted, or adopted.
+The repository-local `NIP_DRAFT.md` and this companion are reconciled for the
+v8 implementation contract. The draft remains `NIP-XX`, optional, provisional,
+unsubmitted, unpublished, and unadopted. This companion records implementation
+invariants and proof obligations without authorizing any upstream or remote
+action.
 
 ## Protocol thesis
 
@@ -38,6 +38,9 @@ signed immutable Nostr evidence
 13. Checkpoints accelerate only fully verified history.
 14. Batch replay is the initial reference oracle.
 15. Rust and TypeScript fixtures are required before interoperability claims.
+16. Every usable control branch is evaluated against its actual parent state.
+17. Every attributable change carrier has its own Event outcome in addition to
+    the semantic ChangeHash outcome.
 
 ## Causal actor sequence and operation counter
 
@@ -65,8 +68,8 @@ pending, excluded, invalid, or later changes do not.
 ## Selected manifest dynamic validity
 
 The manifest's signed structure, canonical content, field values, and limits
-remain exactly those defined by the read-only NIP snapshot. This section adds
-the dynamic meaning of a statically valid selected manifest.
+remain exactly those defined by the repository-local NIP draft. This section
+adds the dynamic meaning of a statically valid selected manifest.
 
 NIP-01 addressable replacement selection occurs before semantic validation.
 Only the selected event is validated, and an unavailable or invalid selected
@@ -89,9 +92,10 @@ authorization, or establishes checkpoint trust.
 ## Dynamic signed-event dispositions
 
 Static signed-carrier validity is ingress evidence status, not necessarily the
-final protocol disposition. Every dynamically evaluated manifest, checkpoint
-descriptor, and checkpoint chunk has exactly one canonical record in the
-`event` namespace, and that record participates in the dispositions digest.
+final protocol disposition. Every dynamically evaluated manifest, change
+carrier, checkpoint descriptor, and checkpoint chunk has exactly one canonical
+record in the `event` namespace, and that record participates in the
+dispositions digest.
 
 - A manifest is `accepted` when selected and dynamically valid, `excluded`
   when statically valid but not selected by replacement, `pending` when its
@@ -110,6 +114,10 @@ descriptor, and checkpoint chunk has exactly one canonical record in the
   count, index, content, proof, or verification mismatch; and
   `unsupported_revision` only for a unique canonical unknown revision or
   profile.
+- A change carrier derives its Event outcome from its revision, coordinate,
+  referenced control, authorization, binding, and branch-local hash result. It
+  may be `pending`, `invalid`, or `excluded` even when another sufficient
+  carrier makes the semantic ChangeHash `accepted`.
 
 Verified checkpoints remain acceleration artifacts. They never authorize or
 redefine document history.
@@ -164,7 +172,7 @@ Automerge semantics, canonical encoding, digests, checkpoint verification, or
 protocol limits requires:
 - ADR;
 - requirement update;
-- companion-spec update and separately tracked external NIP reconciliation;
+- companion-spec and repository-local NIP update;
 - fixture update;
 - Rust update;
 - TypeScript update;
@@ -172,8 +180,8 @@ protocol limits requires:
 
 ## Remediation v4 execution rules
 
-These implementation-owned rules are normative for this repository while the
-external NIP prose is reconciled separately.
+These implementation-owned rules were normative before repository-local NIP
+reconciliation and remain detailed companion constraints.
 
 ### Coordinate scope
 
@@ -238,8 +246,8 @@ bounded mandatory finalization may consume the reservation.
 
 ## Remediation v5 execution rules
 
-These implementation-owned rules refine the preceding sections while the
-external NIP remains read-only and separately reconciled.
+These implementation-owned rules refine the preceding sections and are now
+reflected in the repository-local NIP draft.
 
 ### Shared referenced-control resolution
 
@@ -307,9 +315,8 @@ refunds unused optional capacity exactly once.
 
 ## Remediation v6 reconciliation authority
 
-The following rules are the self-contained local authority mirrored by the
-unsubmitted external patch proposal. They do not modify the read-only NIP
-snapshot or any wire constant.
+The following rules are the self-contained local authority incorporated into
+the repository-local NIP draft. They do not modify any wire constant.
 
 ### Causal operation counters
 
@@ -446,8 +453,8 @@ when no acceptable checkpoint exists.
 ## Remediation v7 reconciliation authority
 
 The following rules extend the implementation-owned companion without changing
-the read-only NIP snapshot, provisional event kinds, coordinate format, wire
-encodings, roles, protocol revision, or hash domains.
+provisional event kinds, coordinate format, wire encodings, roles, protocol
+revision, or hash domains.
 
 ### Branch-local control evaluation
 
@@ -500,3 +507,40 @@ prior signed scenario. Each implementation executes two complete processes and
 all eight declared delivery permutations per fixture. Rust and an independently
 written TypeScript implementation must emit byte-identical complete canonical
 reports, and the comparison lane must reject a deliberate byte mismatch.
+
+## Remediation v8 reconciled authority
+
+The repository-local NIP draft and this companion now state the same causal
+operation-counter, branch-local evaluation, semantic-hash, carrier-Event,
+coordinate-scope, reference-state, and interrupted-finalization rules. The
+reconciliation changes no event kind, tag, content field, ActorId formula,
+Automerge framing rule, limit, report schema, or digest domain.
+
+### Carrier and semantic report layers
+
+Each attributable signed change carrier has one independently derived Event
+disposition. Each attributable semantic change has one ChangeHash disposition.
+Both records are strictly ordered in their existing namespaces and participate
+in the dispositions digest. At least one sufficient accepted carrier supports
+an accepted ChangeHash; other invalid, pending, unsupported, or noncanonical
+carriers remain visible and never cause duplicate application.
+
+### Pass-level interrupted settlement
+
+The finalization permit stays active through declared report passes. A pass
+consumes its exact dimension immediately before doing that work. Only work not
+performed is forfeited after the last runnable pass, complete reports alone
+refund unused capacity, and every permit closes once with no unexplained
+remainder. Failed reservation returns a constant no-progress report without
+target-sized construction.
+
+### Signed conformance v9
+
+The v9 distribution contains exactly 180 signed scenarios: all 171 v8
+scenarios with only intentional carrier-Event report changes, plus nine v8
+remediation scenarios. Rust and the independent private TypeScript target each
+execute every scenario twice under all eight delivery permutations. Complete
+canonical bytes must agree, and the comparison must reject a deliberate
+mismatch. Passing this local profile does not authorize NIP submission,
+event-kind allocation, publication, release, deployment, or a production
+qualification claim.
