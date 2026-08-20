@@ -9,8 +9,8 @@ Updated: 2026-08-20
 | 66 | 1063–1069 | complete | `GATE_V7_BRANCH` |
 | 67 | 1070–1076 | complete | `GATE_V7_SCOPE` |
 | 68 | 1077–1081 | complete | `GATE_V7_RESOURCE` |
-| 69 | 1082–1086 | active | `GATE_V7_CONFORMANCE` |
-| 70 | 1087–1089 | pending | `GATE_V7_TYPESCRIPT` |
+| 69 | 1082–1086 | complete | `GATE_V7_CONFORMANCE` |
+| 70 | 1087–1089 | active | `GATE_V7_TYPESCRIPT` |
 | 71 | 1090–1092 | pending | `GATE_V7_COMPANION` |
 | 72 | 1093–1095 | pending | `GATE_V7_FINAL` |
 
@@ -69,10 +69,13 @@ Updated: 2026-08-20
 - `step_1085` generated exact Rust proof for all 129 requirement rows, retained
   all 96 cross-language rows as explicitly pending, and caught all eight
   evidence weakening, staleness, coverage, and overclaim mutations.
+- `step_1086` passed the final Rust standard, measured coverage, resource,
+  package, deny, audit, license, SBOM, source-only, and repository-policy
+  gates; only documented dependency-version and unused-license warnings remain.
 
 ## Active checkpoint
 
-`step_1086` — refresh the final Rust ordinary-assurance evidence set.
+`step_1087` — implement private TypeScript branch and scope parity.
 
 ## Holds
 

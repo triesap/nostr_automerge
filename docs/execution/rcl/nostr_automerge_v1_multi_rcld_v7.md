@@ -8,8 +8,8 @@ Reviewed Rust head: `bf78c630b456613b3e9595ebae06cf5802f78921`
 Reviewed opaque TypeScript import identity: `1ae2f4fd9492f61a8715ae52f1e16a196b320e14`
 Reviewed NIP snapshot SHA-256: `67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3`
 Steps: `step_1059` through `step_1095` (37 contiguous checkpoints)
-Active RCLD: RCLD 69
-Active checkpoint: `step_1086`
+Active RCLD: RCLD 70
+Active checkpoint: `step_1087`
 
 ## Outcome
 
@@ -325,7 +325,7 @@ hold and is not reported as a pass.
 
 ## RCLD 69 — Signed Distribution V8 And Proof Infrastructure
 
-Status: pending; active
+Status: complete
 Steps: `step_1082` through `step_1086`
 Gate: `GATE_V7_CONFORMANCE`
 Depends on: RCLD 68
@@ -346,7 +346,7 @@ pending until RCLD 70.
 
 ## RCLD 70 — Independent Private TypeScript Parity
 
-Status: pending
+Status: pending; active
 Steps: `step_1087` through `step_1089`
 Gate: `GATE_V7_TYPESCRIPT`
 Depends on: RCLD 69
@@ -458,12 +458,11 @@ No report may infer the second state from local code completion alone.
 
 ## Unfinished RCLDs
 
-Four RCLDs remain unfinished after the resource gate:
+Three RCLDs remain unfinished after the Rust conformance gate:
 
-1. RCLD 69 — Signed Distribution V8 And Proof Infrastructure (`step_1082`–`step_1086`).
-2. RCLD 70 — Independent Private TypeScript Parity (`step_1087`–`step_1089`).
-3. RCLD 71 — Companion Authority And External NIP Delta V3 (`step_1090`–`step_1092`).
-4. RCLD 72 — Final Local Assurance And Truthful Closure (`step_1093`–`step_1095`).
+1. RCLD 70 — Independent Private TypeScript Parity (`step_1087`–`step_1089`).
+2. RCLD 71 — Companion Authority And External NIP Delta V3 (`step_1090`–`step_1092`).
+3. RCLD 72 — Final Local Assurance And Truthful Closure (`step_1093`–`step_1095`).
 
-Execution continues at `step_1082`. No later RCLD is safe to activate before its
+Execution continues at `step_1087`. No later RCLD is safe to activate before its
 declared dependency is green.

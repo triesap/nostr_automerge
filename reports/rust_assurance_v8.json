@@ -1,0 +1,68 @@
+{
+  "schema": "nostr_automerge.rust_assurance.v8",
+  "status": "pass_with_documented_warnings_and_holds",
+  "candidate": "4057c814039412361e96faf3349fa50353175942",
+  "standard_gate": {
+    "status": "pass",
+    "library_tests": 233,
+    "public_engine_tests": 108,
+    "conformance_runner_tests": 17,
+    "xtask_tests": 4,
+    "clippy_warnings": 0,
+    "documentation": "pass"
+  },
+  "coverage": {
+    "status": "measured",
+    "regions_percent": 72.97,
+    "functions_percent": 78.85,
+    "lines_percent": 74.53,
+    "branches_percent": 69.48,
+    "raw_evidence_sha256": "7356f868426b87c04dd8f8a5e2359f273b6730ff3eb21e5675a0416bd6a6c507"
+  },
+  "resource": {
+    "status": "pass",
+    "elapsed_ns": "851229333",
+    "maximum_resident_set_bytes": 55836672,
+    "raw_evidence_sha256": "a980aed0b487f83698f8808a8c9ea5cca4e73caf54b0fdf4009961ffbb62c306"
+  },
+  "package": {
+    "status": "verified",
+    "file_count": 132,
+    "source_only": true
+  },
+  "supply_chain": {
+    "cargo_deny": {
+      "status": "pass_with_warnings",
+      "advisories": "pass",
+      "bans": "pass",
+      "licenses": "pass",
+      "sources": "pass",
+      "duplicate_version_warnings": 6,
+      "unused_license_allowance_warnings": 2
+    },
+    "cargo_audit": {
+      "status": "pass",
+      "dependencies_scanned": 113,
+      "advisories_loaded": 1225,
+      "vulnerabilities": 0,
+      "database": "fresh_temporary_checkout_after_shared_cache_validation_failure"
+    }
+  },
+  "sbom": {
+    "status": "generated",
+    "format": "CycloneDX",
+    "spec_version": "1.5",
+    "component_count": 110,
+    "sha256": "dc9dd554bff8950d8f527ac3931b39241d69e8467d69146ba08aa97b17e6edfe"
+  },
+  "source_only_policy": {
+    "status": "pass",
+    "tracked_github_workflows": false,
+    "tracked_act_workflows": false,
+    "operator_orchestration": "external_only"
+  },
+  "held": {
+    "source_mutation_campaign": "held_operator_safety",
+    "sustained_fuzzing": "held_operator_safety"
+  }
+}
