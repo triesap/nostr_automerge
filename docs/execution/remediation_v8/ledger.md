@@ -7,8 +7,8 @@ Updated: 2026-08-20
 | --- | --- | --- | --- |
 | 73 | 1096–1101 | complete | `GATE_V8_AUTHORITY` |
 | 74 | 1102–1109 | complete | `GATE_V8_BRANCH` |
-| 75 | 1110–1117 | active | `GATE_V8_SCOPE` |
-| 76 | 1118–1125 | planned | `GATE_V8_RESOURCE` |
+| 75 | 1110–1117 | complete | `GATE_V8_SCOPE` |
+| 76 | 1118–1125 | active | `GATE_V8_RESOURCE` |
 | 77 | 1126–1134 | planned | `GATE_V8_DISPOSITION` |
 | 78 | 1135–1140 | planned | `GATE_V8_NIP` |
 | 79 | 1141–1148 | planned | `GATE_V8_INTEROP` |
@@ -45,10 +45,26 @@ Updated: 2026-08-20
 - `step_1109` recorded deterministic mutation anchors, passed all eight
   allowed validator self-mutations, retained the source-mutation hold, and
   closed `GATE_V8_BRANCH`.
+- `step_1110` added coordinate-qualified genesis and parent-child control
+  indexes with checked relationship counts.
+- `step_1111` indexed one canonical raw byte sequence per coordinate and hash
+  and rejected inconsistent duplicates.
+- `step_1112` exposed borrowed target controls, relationships, raw changes,
+  and exact work metadata through the document view.
+- `step_1113` removed global control-map filtering and allocation from target
+  preparation.
+- `step_1114` bounded ancestry construction and its charges to target parent
+  relationships.
+- `step_1115` memoized branch candidates, accepted states, and prior knowledge
+  without repeated control scans.
+- `step_1116` routed epoch evaluation through scoped raw-change lookup and a
+  borrowed target memo with explicit graph charges.
+- `step_1117` activated FINDING-067, passed exact-budget and unrelated-evidence
+  regressions, and closed `GATE_V8_SCOPE`.
 
 ## Active checkpoint
 
-`step_1110` is next. No implementation checkpoint is active between commits.
+`step_1118` is next. No implementation checkpoint is active between commits.
 
 ## Holds
 

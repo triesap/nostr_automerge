@@ -16,7 +16,6 @@ fn finding_066_branch_results_reach_final_claim_reduction() {
 }
 
 #[test]
-#[ignore = "expected to fail at the remediation-v8 baseline"]
 fn finding_067_control_work_is_coordinate_scoped() {
     let indexes = include_str!("../src/evidence/indexes.rs");
     let view = include_str!("../src/evidence/document_view.rs");
