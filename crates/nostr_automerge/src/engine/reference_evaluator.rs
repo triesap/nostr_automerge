@@ -1855,6 +1855,7 @@ struct FinalizationSettlement {
     consumed: u64,
     refunded: u64,
     forfeited: u64,
+    remainder_closed: bool,
 }
 
 impl FinalizationSettlement {
@@ -1864,6 +1865,7 @@ impl FinalizationSettlement {
             consumed: 0,
             refunded: 0,
             forfeited: 0,
+            remainder_closed: false,
         }
     }
 
@@ -1878,7 +1880,7 @@ impl FinalizationSettlement {
     }
 
     fn consume(&mut self, amount: u64) -> Result<(), FinalizationPermitError> {
-        if amount > self.remaining().ok_or(FinalizationPermitError)? {
+        if self.remainder_closed || amount > self.remaining().ok_or(FinalizationPermitError)? {
             return Err(FinalizationPermitError);
         }
         self.consumed = self
@@ -1889,25 +1891,33 @@ impl FinalizationSettlement {
     }
 
     fn refund_remaining(&mut self) -> Result<u64, FinalizationPermitError> {
+        if self.remainder_closed {
+            return Err(FinalizationPermitError);
+        }
         let amount = self.remaining().ok_or(FinalizationPermitError)?;
         self.refunded = self
             .refunded
             .checked_add(amount)
             .ok_or(FinalizationPermitError)?;
+        self.remainder_closed = true;
         Ok(amount)
     }
 
     fn forfeit_remaining(&mut self) -> Result<(), FinalizationPermitError> {
+        if self.remainder_closed {
+            return Err(FinalizationPermitError);
+        }
         let amount = self.remaining().ok_or(FinalizationPermitError)?;
         self.forfeited = self
             .forfeited
             .checked_add(amount)
             .ok_or(FinalizationPermitError)?;
+        self.remainder_closed = true;
         Ok(())
     }
 
     fn is_settled(self) -> bool {
-        self.classified() == Some(self.reserved)
+        self.remainder_closed && self.classified() == Some(self.reserved)
     }
 }
 
@@ -2066,9 +2076,7 @@ impl ReportFinalizationPermit {
         if self.state != FinalizationPermitState::Active {
             return Err(FinalizationPermitError);
         }
-        for pass in InterruptedReportPass::ALL {
-            self.forfeit(pass.dimension())?;
-        }
+        self.forfeit_all_remaining()?;
         if !self.ledger.is_settled() {
             return Err(FinalizationPermitError);
         }
@@ -2092,6 +2100,16 @@ impl ReportFinalizationPermit {
             return Err(FinalizationPermitError);
         }
         self.state = FinalizationPermitState::Complete;
+        Ok(())
+    }
+
+    fn forfeit_all_remaining(&mut self) -> Result<(), FinalizationPermitError> {
+        if self.state != FinalizationPermitState::Active {
+            return Err(FinalizationPermitError);
+        }
+        for pass in InterruptedReportPass::ALL {
+            self.forfeit(pass.dimension())?;
+        }
         Ok(())
     }
 }
@@ -2131,20 +2149,9 @@ fn reserved_interrupted_report(
             ))
         })
         .map_err(|_| EvaluationError::ReportInvariant)?;
-    for dimension in [
-        FinalizationDimension::Controls,
-        FinalizationDimension::Changes,
-        FinalizationDimension::Events,
-        FinalizationDimension::Checkpoints,
-        FinalizationDimension::Digests,
-        FinalizationDimension::Evidence,
-        FinalizationDimension::Invariants,
-        FinalizationDimension::FixedOverhead,
-    ] {
-        permit
-            .forfeit(dimension)
-            .map_err(|_| EvaluationError::ReportInvariant)?;
-    }
+    permit
+        .forfeit_all_remaining()
+        .map_err(|_| EvaluationError::ReportInvariant)?;
     permit
         .finish_interrupted()
         .map_err(|_| EvaluationError::ReportInvariant)?;
@@ -2169,25 +2176,8 @@ fn reserved_batch_report(
     )
     .map_err(|error| settle_reserved_error(permit, error))?;
     permit
-        .consume_pass(FinalizationReservationUnit::new(
-            InterruptedReportPass::FixedOverhead,
-            8,
-        ))
+        .forfeit_all_remaining()
         .map_err(|_| EvaluationError::ReportInvariant)?;
-    for dimension in [
-        FinalizationDimension::Controls,
-        FinalizationDimension::Changes,
-        FinalizationDimension::Events,
-        FinalizationDimension::Checkpoints,
-        FinalizationDimension::Digests,
-        FinalizationDimension::Evidence,
-        FinalizationDimension::Invariants,
-        FinalizationDimension::FixedOverhead,
-    ] {
-        permit
-            .forfeit(dimension)
-            .map_err(|_| EvaluationError::ReportInvariant)?;
-    }
     permit
         .finish_interrupted()
         .map_err(|_| EvaluationError::ReportInvariant)?;
@@ -2342,6 +2332,12 @@ fn prepare_interrupted_batch_report(
         ))
         .map_err(|_| EvaluationError::ReportInvariant)?;
     let evidence = Vec::new();
+    permit
+        .consume_pass(FinalizationReservationUnit::new(
+            InterruptedReportPass::FixedOverhead,
+            8,
+        ))
+        .map_err(|_| EvaluationError::ReportInvariant)?;
     permit
         .consume_pass(FinalizationReservationUnit::new(
             InterruptedReportPass::Invariants,
@@ -3244,6 +3240,8 @@ mod tests {
         ] {
             assert!(permit.forfeit(dimension).is_ok());
         }
+        assert!(permit.forfeit(FinalizationDimension::Controls).is_err());
+        assert!(permit.consume(FinalizationDimension::Changes, 0).is_err());
         assert_eq!(permit.ledger.controls.consumed, 2);
         assert_eq!(permit.ledger.controls.forfeited, 0);
         assert_eq!(permit.ledger.invariants.consumed, 0);
