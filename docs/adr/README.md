@@ -65,3 +65,8 @@ change-control process.
 | [0057](adr_0057_semantic_requirement_evidence.md) | Approved | `R6_EVIDENCE_001`, `R6_EVIDENCE_010` |
 | [0058](adr_0058_companion_nip_reconciliation.md) | Approved | `R6_NIP_001`, `R6_NIP_008` |
 | [0059](adr_0059_remediation_v7_companion_authority.md) | Approved | `NCRDT-BRANCH-001`, `NCRDT-SCOPE-006`, `NCRDT-RESOURCE-010`, `NCRDT-NIP-002`, `NCRDT-CONF-008` |
+| [0060](adr_0060_branch_local_change_outcomes.md) | Approved | `NCRDT-BRANCH-003`, `NCRDT-BRANCH-004` |
+| [0061](adr_0061_coordinate_scoped_control_indexes.md) | Approved | `NCRDT-SCOPE-007`, `NCRDT-RESOURCE-011` |
+| [0062](adr_0062_interrupted_finalization_settlement.md) | Approved | `NCRDT-RESOURCE-012` |
+| [0063](adr_0063_dual_changehash_and_carrier_dispositions.md) | Approved | `NCRDT-DISPOSITION-004`, `NCRDT-DISPOSITION-005` |
+| [0064](adr_0064_local_nip_reconciliation.md) | Approved | `NCRDT-NIP-003`, `NCRDT-CONF-009` |
