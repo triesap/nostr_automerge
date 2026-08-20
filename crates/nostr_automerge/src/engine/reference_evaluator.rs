@@ -3144,6 +3144,44 @@ mod tests {
     }
 
     #[test]
+    fn carrier_resolution_distinguishes_branch_and_reference_states() {
+        use crate::ProtocolDisposition::{Accepted, Excluded, Invalid, Pending};
+
+        for (branch, expected_reason, expected_disposition) in [
+            (
+                Some(Accepted),
+                ChangeClaimReason::AuthorizedNoncanonical,
+                Excluded,
+            ),
+            (Some(Pending), ChangeClaimReason::UnresolvedControl, Pending),
+            (
+                Some(Excluded),
+                ChangeClaimReason::AuthorizedCurrentExcluded,
+                Excluded,
+            ),
+            (
+                Some(Invalid),
+                ChangeClaimReason::InvalidReferencedControl,
+                Invalid,
+            ),
+            (None, ChangeClaimReason::InvalidReferencedControl, Invalid),
+        ] {
+            let reason = noncanonical_branch_claim_reason(branch);
+            assert_eq!(reason, expected_reason);
+            assert_eq!(change_carrier_disposition(reason), expected_disposition);
+        }
+        assert_eq!(
+            change_carrier_disposition(ChangeClaimReason::Unauthorized),
+            Invalid
+        );
+        assert_eq!(
+            change_carrier_disposition(ChangeClaimReason::InvalidReferencedControl),
+            Invalid,
+            "an unsupported referenced control invalidates a draft-v1 carrier"
+        );
+    }
+
+    #[test]
     fn valid_carrier_dominates_invalid_carrier_without_hiding_it() {
         use crate::ProtocolDisposition::{Accepted, Excluded, Invalid};
         let valid = noncanonical_branch_claim_reason(Some(Accepted));
