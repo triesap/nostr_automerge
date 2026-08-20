@@ -5,7 +5,6 @@
 //! removes `ignore` only after the corresponding assertion becomes green.
 
 #[test]
-#[ignore = "remediation-v7 baseline reproduction for FINDING_059"]
 fn finding_059_noncanonical_control_requires_branch_table() {
     let source = include_str!("../src/engine/reference_evaluator.rs");
     assert!(
@@ -39,10 +38,10 @@ fn finding_061_change_indexes_are_coordinate_qualified() {
 #[ignore = "remediation-v7 baseline reproduction for FINDING_062"]
 fn finding_062_parent_propagation_is_linear_and_metered() {
     let source = include_str!("../src/reference/evaluate.rs");
-    let start = source
+    let body = source
         .find("pub(crate) fn propagate_control_parent_dispositions(")
-        .expect("propagation function remains present");
-    let body = &source[start..source.len().min(start + 2_400)];
+        .map(|start| &source[start..source.len().min(start + 2_400)])
+        .unwrap_or("");
     assert!(
         body.contains("budget: &mut WorkBudget")
             && body.contains("cancellation: &impl CancellationCheck")
