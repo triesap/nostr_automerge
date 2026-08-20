@@ -37,7 +37,6 @@ fn finding_068_interrupted_report_work_is_settled_by_pass() {
 }
 
 #[test]
-#[ignore = "expected to fail at the remediation-v8 baseline"]
 fn finding_069_change_carriers_have_event_dispositions() {
     let source = include_str!("../src/engine/reference_evaluator.rs");
     assert!(

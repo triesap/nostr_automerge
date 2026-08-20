@@ -2452,6 +2452,91 @@ fn change_disposition_collections_are_disjoint() {
 
 #[test]
 #[allow(clippy::expect_used)]
+fn mixed_change_carrier_outcomes_are_visible_and_order_stable() {
+    let scenario = signed_engine_scenario();
+    let device = TestSigner::from_byte(21);
+    let encoded: serde_json::Value =
+        serde_json::from_str(scenario.change.as_str()).expect("signed change JSON");
+    let content = encoded["content"]
+        .as_str()
+        .expect("signed change content")
+        .to_owned();
+    let sign = |created_at: u64, control: EventId, hash: String| {
+        device.sign(
+            &UnsignedEventDraft::new(
+                created_at,
+                1_624,
+                vec![
+                    vec!["a".to_owned(), scenario.coordinate.to_address()],
+                    vec!["e".to_owned(), control.to_hex()],
+                    vec!["x".to_owned(), hash],
+                ],
+                content.clone(),
+            )
+            .expect("change draft")
+            .prepare(device.public_key())
+            .expect("change preimage"),
+        )
+    };
+    let pending = sign(
+        3,
+        EventId::from_bytes([0xee; 32]),
+        scenario.change_hash.to_hex(),
+    );
+    let invalid = sign(4, scenario.control_id, "00".repeat(32));
+    let accepted_id = VerifiedNip01Event::verify(scenario.change.clone())
+        .expect("accepted carrier")
+        .event_id();
+    let pending_id = VerifiedNip01Event::verify(pending.clone())
+        .expect("pending carrier")
+        .event_id();
+    let invalid_id = VerifiedNip01Event::verify(invalid.clone())
+        .expect("invalid carrier")
+        .event_id();
+    let evaluate = |events: Vec<RawEventBytes>| {
+        let mut builder = CorpusBuilder::new();
+        for event in events {
+            let _ = builder.ingest(event);
+        }
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+            &builder.finish(),
+            scenario.coordinate,
+            &mut WorkBudget::new(1_000_000, 1_000),
+            &NeverCancelled,
+        )
+    };
+    let ordered = evaluate(vec![
+        scenario.control.clone(),
+        scenario.change.clone(),
+        pending.clone(),
+        invalid.clone(),
+    ]);
+    let reversed = evaluate(vec![invalid, pending, scenario.change, scenario.control]);
+    assert_eq!(
+        event_disposition(&ordered, accepted_id),
+        Some(ProtocolDisposition::Accepted)
+    );
+    assert_eq!(
+        event_disposition(&ordered, pending_id),
+        Some(ProtocolDisposition::Pending)
+    );
+    assert_eq!(
+        event_disposition(&ordered, invalid_id),
+        Some(ProtocolDisposition::Invalid)
+    );
+    assert_eq!(ordered.accepted_changes(), [scenario.change_hash]);
+    assert_eq!(
+        ordered.disposition_records(),
+        reversed.disposition_records()
+    );
+    assert_eq!(
+        ordered.dispositions_digest(),
+        reversed.dispositions_digest()
+    );
+}
+
+#[test]
+#[allow(clippy::expect_used)]
 fn signed_event_disposition_records() {
     let signer = TestSigner::from_byte(107);
     let document_id = "b0".repeat(32);
