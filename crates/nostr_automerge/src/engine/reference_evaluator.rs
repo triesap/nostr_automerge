@@ -2131,9 +2131,42 @@ fn reserved_interrupted_report(
     completion: Completion,
     permit: &mut ReportFinalizationPermit,
 ) -> Result<EvaluationReport, EvaluationError> {
+    let report = prepare_no_progress_interrupted_report(revision, coordinate, completion, permit)
+        .map_err(|error| settle_reserved_error(permit, error))?;
+    permit
+        .forfeit_all_remaining()
+        .map_err(|_| EvaluationError::ReportInvariant)?;
+    permit
+        .finish_interrupted()
+        .map_err(|_| EvaluationError::ReportInvariant)?;
+    Ok(report)
+}
+
+fn prepare_no_progress_interrupted_report(
+    revision: ProtocolRevision,
+    coordinate: DocumentCoordinate,
+    completion: Completion,
+    permit: &mut ReportFinalizationPermit,
+) -> Result<EvaluationReport, EvaluationError> {
     permit
         .consume_pass(FinalizationReservationUnit::new(
             InterruptedReportPass::Digests,
+            8,
+        ))
+        .map_err(|_| EvaluationError::ReportInvariant)?;
+    let history_digest = history_digest(revision, coordinate, &[], &[], &[])
+        .map_err(|_| EvaluationError::ReportInvariant)?;
+    let disposition_items = disposition_items(&[]).map_err(|_| EvaluationError::ReportInvariant)?;
+    let dispositions_digest = dispositions_digest(revision, coordinate, &disposition_items)
+        .map_err(|_| EvaluationError::ReportInvariant)?;
+    let failure = match completion {
+        Completion::BudgetExhausted => EvaluationFailure::BudgetExhausted,
+        Completion::Cancelled => EvaluationFailure::Cancelled,
+        Completion::Complete => return Err(EvaluationError::ReportInvariant),
+    };
+    permit
+        .consume_pass(FinalizationReservationUnit::new(
+            InterruptedReportPass::FixedOverhead,
             8,
         ))
         .and_then(|()| {
@@ -2142,20 +2175,14 @@ fn reserved_interrupted_report(
                 REPORT_INVARIANT_ITEMS,
             ))
         })
-        .and_then(|()| {
-            permit.consume_pass(FinalizationReservationUnit::new(
-                InterruptedReportPass::FixedOverhead,
-                8,
-            ))
-        })
         .map_err(|_| EvaluationError::ReportInvariant)?;
-    permit
-        .forfeit_all_remaining()
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    permit
-        .finish_interrupted()
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    compact_interrupted_report(revision, coordinate, completion)
+    build_no_progress_interrupted_report(
+        coordinate,
+        completion,
+        failure,
+        history_digest,
+        dispositions_digest,
+    )
 }
 
 fn reserved_batch_report(
@@ -2199,6 +2226,22 @@ fn compact_interrupted_report(
         Completion::Cancelled => EvaluationFailure::Cancelled,
         Completion::Complete => return Err(EvaluationError::ReportInvariant),
     };
+    build_no_progress_interrupted_report(
+        coordinate,
+        completion,
+        failure,
+        history_digest,
+        dispositions_digest,
+    )
+}
+
+fn build_no_progress_interrupted_report(
+    coordinate: DocumentCoordinate,
+    completion: Completion,
+    failure: EvaluationFailure,
+    history_digest: crate::HistoryDigest,
+    dispositions_digest: crate::DispositionsDigest,
+) -> Result<EvaluationReport, EvaluationError> {
     EvaluationReport::from_parts(EvaluationReportParts {
         coordinate,
         canonical_controls: Vec::new(),
@@ -3274,7 +3317,11 @@ mod tests {
                 .and_then(|(_, rest)| rest.split_once(end))
                 .map(|(body, _)| body)
                 .unwrap_or_default();
-            assert!(wrapper.contains(".consume(") || wrapper.contains(".consume_pass("));
+            assert!(
+                wrapper.contains(".consume(")
+                    || wrapper.contains(".consume_pass(")
+                    || wrapper.contains("prepare_")
+            );
             assert!(!wrapper.contains("view."));
         }
     }
