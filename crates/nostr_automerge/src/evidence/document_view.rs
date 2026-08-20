@@ -75,6 +75,47 @@ impl<'a> DocumentEvidenceView<'a> {
             .copied()
     }
 
+    pub(crate) fn change_hashes_for_control(
+        &self,
+        control_id: EventId,
+    ) -> Option<&'a BTreeSet<ChangeHash>> {
+        self.corpus
+            .indexes
+            .changes
+            .hashes_by_coordinate_control
+            .get(&(self.coordinate, control_id))
+    }
+
+    pub(crate) fn change_carrier_event_ids(
+        &self,
+        hash: ChangeHash,
+    ) -> Option<&'a BTreeSet<EventId>> {
+        self.corpus
+            .indexes
+            .changes
+            .carriers_by_coordinate_hash
+            .get(&(self.coordinate, hash))
+    }
+
+    pub(crate) fn checkpoint_descriptor_event_ids(&self) -> Option<&'a BTreeSet<EventId>> {
+        self.corpus
+            .indexes
+            .checkpoints
+            .descriptors_by_coordinate
+            .get(&self.coordinate)
+    }
+
+    pub(crate) fn checkpoint_chunk_event_ids(
+        &self,
+        descriptor_id: EventId,
+    ) -> Option<&'a BTreeSet<EventId>> {
+        self.corpus
+            .indexes
+            .checkpoints
+            .chunks_by_coordinate_descriptor
+            .get(&(self.coordinate, descriptor_id))
+    }
+
     pub(crate) fn change_claim_event_ids(
         &self,
         hash: ChangeHash,
@@ -104,6 +145,14 @@ impl<'a> DocumentEvidenceView<'a> {
 
     pub(crate) fn carrier_evidence_count(&self) -> usize {
         self.work.map_or(0, |work| work.carrier_evidence_count)
+    }
+
+    pub(crate) fn checkpoint_descriptor_count(&self) -> usize {
+        self.work.map_or(0, |work| work.checkpoint_descriptor_count)
+    }
+
+    pub(crate) fn checkpoint_chunk_count(&self) -> usize {
+        self.work.map_or(0, |work| work.checkpoint_chunk_count)
     }
 
     pub(crate) fn decode_work_bytes(&self) -> Option<u64> {
@@ -138,5 +187,77 @@ impl<'a> DocumentEvidenceView<'a> {
                     .filter_map(|index| self.corpus.duplicates.get(*index))
                     .filter_map(|evidence| self.corpus.record_for_duplicate(evidence)),
             )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::{BTreeMap, BTreeSet};
+
+    use super::DocumentEvidenceView;
+    use crate::evidence::corpus_builder::EvidenceCorpus;
+    use crate::evidence::indexes::{CoordinateWorkMetadata, TrustedIndexes};
+    use crate::{ChangeHash, ControllerPublicKey, DocumentCoordinate, DocumentId, EventId};
+
+    #[test]
+    fn exposes_borrowed_coordinate_dependent_membership() {
+        let coordinate = DocumentCoordinate::new(
+            ControllerPublicKey::from_bytes([1; 32]),
+            DocumentId::from_bytes([2; 32]),
+        );
+        let control_id = EventId::from_bytes([3; 32]);
+        let descriptor_id = EventId::from_bytes([4; 32]);
+        let chunk_id = EventId::from_bytes([5; 32]);
+        let hash = ChangeHash::from_bytes([6; 32]);
+        let mut indexes = TrustedIndexes::default();
+        indexes
+            .changes
+            .hashes_by_coordinate_control
+            .insert((coordinate, control_id), BTreeSet::from([hash]));
+        indexes.changes.carriers_by_coordinate_hash.insert(
+            (coordinate, hash),
+            BTreeSet::from([EventId::from_bytes([7; 32])]),
+        );
+        indexes
+            .checkpoints
+            .descriptors_by_coordinate
+            .insert(coordinate, BTreeSet::from([descriptor_id]));
+        indexes
+            .checkpoints
+            .chunks_by_coordinate_descriptor
+            .insert((coordinate, descriptor_id), BTreeSet::from([chunk_id]));
+        indexes.coordinates.work.insert(
+            coordinate,
+            CoordinateWorkMetadata {
+                checkpoint_descriptor_count: 1,
+                checkpoint_chunk_count: 1,
+                ..CoordinateWorkMetadata::default()
+            },
+        );
+        let corpus = EvidenceCorpus {
+            events: BTreeMap::new(),
+            invalid: BTreeMap::new(),
+            duplicates: Vec::new(),
+            indexes,
+        };
+        let view = DocumentEvidenceView::derive(&corpus, coordinate);
+        assert_eq!(
+            view.change_hashes_for_control(control_id),
+            Some(&BTreeSet::from([hash]))
+        );
+        assert_eq!(
+            view.change_carrier_event_ids(hash),
+            Some(&BTreeSet::from([EventId::from_bytes([7; 32])]))
+        );
+        assert_eq!(
+            view.checkpoint_descriptor_event_ids(),
+            Some(&BTreeSet::from([descriptor_id]))
+        );
+        assert_eq!(
+            view.checkpoint_chunk_event_ids(descriptor_id),
+            Some(&BTreeSet::from([chunk_id]))
+        );
+        assert_eq!(view.checkpoint_descriptor_count(), 1);
+        assert_eq!(view.checkpoint_chunk_count(), 1);
     }
 }

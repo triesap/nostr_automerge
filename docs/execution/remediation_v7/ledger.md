@@ -34,10 +34,12 @@ Updated: 2026-08-20
   permutations, preserved legacy outputs, and closed `GATE_V7_BRANCH`.
 - `step_1070` added coordinate-qualified change and checkpoint dependent
   indexes with coordinate-scoped checkpoint work metadata.
+- `step_1071` exposed deterministic borrowed dependent lookups and checkpoint
+  counts through `DocumentEvidenceView`.
 
 ## Active checkpoint
 
-`step_1071` — expose borrowed scoped accessors on `DocumentEvidenceView`.
+`step_1072` — route change discovery and claims through scoped accessors.
 
 ## Holds
 
