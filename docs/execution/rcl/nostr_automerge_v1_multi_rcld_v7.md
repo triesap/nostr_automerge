@@ -1,6 +1,6 @@
 # nostr_automerge Draft V1 Follow-up Refactor V7 Multi-RCLD
 
-Status: approved, pending execution — `implementation_remediation_required`
+Status: executing — `implementation_remediation_required`
 Created: 2026-08-20
 Mode: rcl-durable
 Rust workspace and Git repository: repository root
@@ -8,8 +8,8 @@ Reviewed Rust head: `bf78c630b456613b3e9595ebae06cf5802f78921`
 Reviewed opaque TypeScript import identity: `1ae2f4fd9492f61a8715ae52f1e16a196b320e14`
 Reviewed NIP snapshot SHA-256: `67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3`
 Steps: `step_1059` through `step_1095` (37 contiguous checkpoints)
-Active RCLD: RCLD 65
-Active checkpoint: `step_1059`
+Active RCLD: RCLD 66
+Active checkpoint: `step_1063`
 
 ## Outcome
 
@@ -241,7 +241,7 @@ the source-fix checkpoint that closes it.
 
 ## RCLD 65 — Authority And Reproducible Baseline
 
-Status: pending; active
+Status: complete
 Steps: `step_1059` through `step_1062`
 Gate: `GATE_V7_AUTHORITY`
 
@@ -259,7 +259,7 @@ and publication boundaries are machine-checked.
 
 ## RCLD 66 — Branch-Local Control Evaluation
 
-Status: pending
+Status: pending; active
 Steps: `step_1063` through `step_1069`
 Gate: `GATE_V7_BRANCH`
 Depends on: RCLD 65
@@ -458,16 +458,15 @@ No report may infer the second state from local code completion alone.
 
 ## Unfinished RCLDs
 
-All eight RCLDs in this sequence remain unfinished at creation time:
+Seven RCLDs remain unfinished after the authority gate:
 
-1. RCLD 65 — Authority And Reproducible Baseline (`step_1059`–`step_1062`).
-2. RCLD 66 — Branch-Local Control Evaluation (`step_1063`–`step_1069`).
-3. RCLD 67 — Coordinate-Qualified Dependent Indexes (`step_1070`–`step_1076`).
-4. RCLD 68 — Linear Propagation And Explicit Settlement (`step_1077`–`step_1081`).
-5. RCLD 69 — Signed Distribution V8 And Proof Infrastructure (`step_1082`–`step_1086`).
-6. RCLD 70 — Independent Private TypeScript Parity (`step_1087`–`step_1089`).
-7. RCLD 71 — Companion Authority And External NIP Delta V3 (`step_1090`–`step_1092`).
-8. RCLD 72 — Final Local Assurance And Truthful Closure (`step_1093`–`step_1095`).
+1. RCLD 66 — Branch-Local Control Evaluation (`step_1063`–`step_1069`).
+2. RCLD 67 — Coordinate-Qualified Dependent Indexes (`step_1070`–`step_1076`).
+3. RCLD 68 — Linear Propagation And Explicit Settlement (`step_1077`–`step_1081`).
+4. RCLD 69 — Signed Distribution V8 And Proof Infrastructure (`step_1082`–`step_1086`).
+5. RCLD 70 — Independent Private TypeScript Parity (`step_1087`–`step_1089`).
+6. RCLD 71 — Companion Authority And External NIP Delta V3 (`step_1090`–`step_1092`).
+7. RCLD 72 — Final Local Assurance And Truthful Closure (`step_1093`–`step_1095`).
 
-Execution begins at `step_1059`. No later RCLD is safe to activate before its
+Execution continues at `step_1063`. No later RCLD is safe to activate before its
 declared dependency is green.
