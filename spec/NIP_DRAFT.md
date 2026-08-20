@@ -664,6 +664,44 @@ identity.
 These categories do not define new relay messages. Later evidence may move a
 `pending` item to another protocol disposition.
 
+### Coordinate scope and deterministic interruption
+
+One evaluation targets exactly one document coordinate. Canonical controls,
+change and Event dispositions, digests, checkpoint results, reported evidence,
+and local work accounting MUST derive only from events attributable to that
+coordinate. A target may read an explicitly referenced predecessor or
+successor control as charged, non-reportable lifecycle support. Unattributable
+invalid bytes and unrelated documents MUST NOT change the target report,
+completion boundary, or work consumption.
+
+Implementations MUST obtain controls, parent-child relationships, change
+carriers, raw change bytes, manifests, descriptors, and chunks from
+coordinate-qualified membership. They MUST NOT construct target-sized work by
+scanning unrelated retained evidence and filtering it afterward.
+
+Every traversal, comparison, allocation, copy, decode, dependency edge,
+branch evaluation, projection unit, and report item proportional to retained
+target evidence MUST be bounded by the draft limits, charged to a deterministic
+local work budget, or both. Cancellation MUST be checked before and during
+each proportional traversal. All accumulated sizes and work values MUST use
+checked arithmetic and fail closed on overflow.
+
+Before canonical state work, an evaluator that can return an interrupted
+report MUST atomically reserve the maximum mandatory finalization work. The
+reservation remains active while finalization runs. For each declared report
+pass, the evaluator MUST consume the exact matching reservation immediately
+before constructing or ordering that pass's controls, changes, Events,
+checkpoints, digests, evidence, or invariants. Work not performed is forfeited
+only after the last runnable pass. A reservation is refunded only after a
+complete report and is otherwise closed exactly once; borrowing, underflow,
+overrun, double settlement, and unclassified remainder are invalid local
+states.
+
+If the reservation cannot cover an interrupted report, the evaluator MUST
+return a constant-size no-progress report. That fallback MUST NOT construct a
+target-sized vector, digest input, evidence collection, or invariant set, and
+MUST NOT fabricate canonical progress.
+
 ## Checkpoints
 
 A checkpoint accelerates document loading. It does not authorize changes and does not replace the control chain.
@@ -781,6 +819,19 @@ After assembly, the client MUST verify:
 - all declared counts.
 
 Failure invalidates the checkpoint, not the underlying document history.
+
+Referenced controls are resolved as canonical, statefully valid
+noncanonical, pending, missing, wrong kind, wrong coordinate, statically
+invalid, dynamically invalid, or unsupported. A descriptor is eligible only
+for a canonical control whose author has `checkpoint`; missing or pending is
+recoverable, while every other unusable control state makes the draft-v1
+descriptor invalid.
+
+A chunk's referenced descriptor is resolved as validated, pending, missing,
+wrong kind, wrong coordinate, statically invalid, dynamically invalid, or
+unsupported. Missing or pending keeps the chunk pending. Every known unusable
+descriptor state makes the draft-v1 chunk invalid. A dependent descriptor or
+chunk does not inherit `unsupported_revision` from referenced evidence.
 
 ### Verified-history checkpoints
 
@@ -990,7 +1041,11 @@ The manifest remains subject to NIP-01 addressable replacement rules because it 
 
 Nostr JSON, base64, Automerge bytes, dependency graphs, and checkpoint saves are untrusted input.
 
-Clients MUST enforce the v1 limits before large allocations where possible. They SHOULD use bounded workers for Automerge and checkpoint parsing and MUST avoid recursion or work that is unbounded by validated input limits.
+Clients MUST enforce the v1 limits before large allocations where possible.
+They SHOULD use bounded workers for Automerge and checkpoint parsing and MUST
+avoid recursion or work that is unbounded by validated input limits. Work
+limits and cancellation are local execution policy; they MUST NOT alter a
+protocol disposition or any complete canonical digest.
 
 ### Checkpoint trust
 
