@@ -64,3 +64,4 @@ change-control process.
 | [0056](adr_0056_exact_evaluation_accounting.md) | Approved | `R6_RESOURCE_001`, `R6_RESOURCE_018` |
 | [0057](adr_0057_semantic_requirement_evidence.md) | Approved | `R6_EVIDENCE_001`, `R6_EVIDENCE_010` |
 | [0058](adr_0058_companion_nip_reconciliation.md) | Approved | `R6_NIP_001`, `R6_NIP_008` |
+| [0059](adr_0059_remediation_v7_companion_authority.md) | Approved | `NCRDT-BRANCH-001`, `NCRDT-SCOPE-006`, `NCRDT-RESOURCE-010`, `NCRDT-NIP-002`, `NCRDT-CONF-008` |

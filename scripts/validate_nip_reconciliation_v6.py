@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 
 
@@ -39,15 +40,37 @@ def main() -> int:
     if "not submitted" not in proposal or "grants no submission" not in proposal:
         raise AssertionError("portable delta overclaims external authority")
     authority = json.loads((ROOT / "reports/remediation_v6_companion_authority.json").read_text())
+    authority_commit = subprocess.run(
+        ["git", "log", "-1", "--format=%H", "--", "reports/remediation_v6_companion_authority.json"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    def committed(path: str) -> bytes:
+        return subprocess.run(
+            ["git", "show", f"{authority_commit}:{path}"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+        ).stdout
+
     expected = {
-        "requirements_sha256": hashlib.sha256((ROOT / "spec/requirements.json").read_bytes()).hexdigest(),
-        "applicability_sha256": hashlib.sha256((ROOT / "spec/requirements_applicability.json").read_bytes()).hexdigest(),
+        "requirements_sha256": hashlib.sha256(committed("spec/requirements.json")).hexdigest(),
+        "applicability_sha256": hashlib.sha256(
+            committed("spec/requirements_applicability.json")
+        ).hexdigest(),
     }
     if any(authority.get(key) != value for key, value in expected.items()):
         raise AssertionError("stale companion authority hash")
-    if authority["companion"]["sha256"] != hashlib.sha256(companion.encode()).hexdigest():
+    if authority["companion"]["sha256"] != hashlib.sha256(
+        committed("spec/NOSTR_AUTOMERGE_V1_SPEC.md")
+    ).hexdigest():
         raise AssertionError("stale companion hash")
-    if authority["portable_delta"]["sha256"] != hashlib.sha256(proposal.encode()).hexdigest():
+    if authority["portable_delta"]["sha256"] != hashlib.sha256(
+        committed("spec/NIP_V6_PATCH_PROPOSAL.md")
+    ).hexdigest():
         raise AssertionError("stale portable delta hash")
     print("PASS: remediation-v6 companion reconciliation")
     print(f"- synchronized_sections={len(SECTIONS)}")

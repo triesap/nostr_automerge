@@ -442,3 +442,61 @@ binding, Merkle and snapshot verification, and equality with ordinary replay of
 the exact authorized ancestor closure. A verified checkpoint never authorizes,
 selects, repairs, or redefines history. Clients must support ordinary replay
 when no acceptable checkpoint exists.
+
+## Remediation v7 reconciliation authority
+
+The following rules extend the implementation-owned companion without changing
+the read-only NIP snapshot, provisional event kinds, coordinate format, wire
+encodings, roles, protocol revision, or hash domains.
+
+### Branch-local control evaluation
+
+Preparation, branch validity, and canonical disposition are distinct states.
+Every usable genesis and every reachable child is evaluated against the
+accepted epoch, frontier, ancestry, membership, and terminal state of its
+actual parent branch. A losing branch remains eligible for complete stateful
+evaluation, but `excluded` alone never implies validity. Only a completed valid
+branch may authorize a valid noncanonical reference. Canonical selection occurs
+after branch evaluation and does not change the semantic validity of losing
+branches. Pending or invalid ancestry propagates its respective state to every
+descendant.
+
+### Coordinate-qualified dependent indexes
+
+Canonical evaluation obtains change hashes by target coordinate and control,
+claim carriers by target coordinate and semantic hash, checkpoint descriptors
+by target coordinate, and chunks by target coordinate and descriptor. Target
+checkpoint work counts are derived from the same qualified indexes. Foreign
+claims or chunks are neither traversed nor charged for the target, and dynamic
+event dispositions are intersected with reportable target identifiers before
+digest encoding. Adding evidence attributable only to another coordinate
+cannot change target bytes, dispositions, completion, or work counters.
+
+### Deterministic parent-state propagation
+
+Parent outcomes propagate through deterministic child adjacency in parent-
+before-child order. Each relationship is visited at most once per propagation
+pass, cancellation is checked at every visit, and one relationship-work unit is
+charged before applying an inherited state. Invalid state is not weakened by a
+pending ancestor. Cycles and unreachable ancestry fail closed without repeated
+whole-map rescans.
+
+### Explicit finalization settlement
+
+Every finalization dimension keeps checked reserved, consumed, refunded, and
+forfeited amounts satisfying `reserved = consumed + refunded + forfeited`.
+Dimensions cannot borrow from one another and no amount may be classified
+twice. A complete, invariant-valid report may refund unused reservation only
+after construction and validation. An interrupted evaluation explicitly
+forfeits unused reservation and cannot present that reservation as refunded.
+No terminal path may retain unclassified capacity.
+
+### Signed conformance v8
+
+Conforming engines execute the checksum-bound signed v8 distribution of exactly
+171 scenarios. The distribution includes six branch-local cases, six
+coordinate-isolation cases, two exact resource-settlement cases, and every
+prior signed scenario. Each implementation executes two complete processes and
+all eight declared delivery permutations per fixture. Rust and an independently
+written TypeScript implementation must emit byte-identical complete canonical
+reports, and the comparison lane must reject a deliberate byte mismatch.

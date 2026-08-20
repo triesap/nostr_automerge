@@ -49,7 +49,7 @@
     {
       "path": "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
       "source_sha256": "f8a2e53c66fff9b61cab1b1c22074dd513e6525fea4c298b73a91e905c097de7",
-      "target_sha256": "8d7fe07de3ba699d7a944003c9fbf4f52e7e865945f0c11d1bd13db5937da5f4",
+      "target_sha256": "5ab298eb06399e1dc1631898f1910c3a33860b8b40b2cb2c0cf9b7f2266fdf23",
       "adapted": true
     },
     {
