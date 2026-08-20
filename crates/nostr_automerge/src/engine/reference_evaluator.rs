@@ -173,11 +173,6 @@ impl ReferenceEvaluator {
                     );
                 }
             };
-        debug_assert!(change_carrier_dispositions.values().all(|outcome| {
-            outcome.event_id != crate::EventId::from_bytes([0; 32])
-                && outcome.change_hash != ChangeHash::from_bytes([0; 32])
-                && outcome.control_id != crate::EventId::from_bytes([0; 32])
-        }));
         if let Err(completion) =
             charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)
         {
@@ -316,7 +311,12 @@ impl ReferenceEvaluator {
                 &mut finalization,
             );
         }
-        let event_records = match event_disposition_records(&view, &manifest, &checkpoints) {
+        let event_records = match event_disposition_records(
+            &view,
+            &change_carrier_dispositions,
+            &manifest,
+            &checkpoints,
+        ) {
             Ok(records) => records,
             Err(error) => return Err(settle_reserved_error(&mut finalization, error)),
         };
@@ -694,7 +694,6 @@ const fn change_carrier_disposition(reason: ChangeClaimReason) -> ProtocolDispos
 }
 
 impl ChangeClaimReason {
-    #[cfg(test)]
     const fn diagnostic(self) -> Option<crate::DiagnosticCode> {
         let code = match self {
             Self::InvalidReferencedControl => "control.parent",
@@ -975,6 +974,7 @@ fn project_document(
 
 fn event_disposition_records(
     view: &DocumentEvidenceView<'_>,
+    change_carrier_dispositions: &std::collections::BTreeMap<crate::EventId, ChangeCarrierOutcome>,
     manifest: &ResolvedManifestAvailability,
     checkpoints: &[CheckpointVerificationResult],
 ) -> Result<Vec<DispositionRecord>, EvaluationError> {
@@ -1064,6 +1064,13 @@ fn event_disposition_records(
             | VerifiedCarrier::Change(_)
             | VerifiedCarrier::UnsupportedRevision { .. } => {}
         }
+    }
+
+    for outcome in change_carrier_dispositions.values() {
+        records.insert(
+            outcome.event_id,
+            (outcome.disposition, outcome.reason.diagnostic()),
+        );
     }
 
     for record in scoped_dynamic_event_disposition_records(view, manifest, checkpoints)? {

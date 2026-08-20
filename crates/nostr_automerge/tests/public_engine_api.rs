@@ -2396,8 +2396,12 @@ fn control_disposition_records_are_complete() {
 }
 
 #[test]
+#[allow(clippy::expect_used)]
 fn change_disposition_collections_are_disjoint() {
     let scenario = signed_engine_scenario();
+    let change_event_id = VerifiedNip01Event::verify(scenario.change.clone())
+        .expect("signed change carrier")
+        .event_id();
     let mut builder = CorpusBuilder::new();
     for event in [scenario.change, scenario.control] {
         assert!(matches!(
@@ -2434,6 +2438,16 @@ fn change_disposition_collections_are_disjoint() {
         .iter()
         .filter(|record| matches!(record.identifier(), ProtocolItemIdentifier::ChangeHash(_)));
     assert_eq!(change_records.count(), report.dispositions().len());
+    let carrier_records = report
+        .disposition_records()
+        .iter()
+        .filter(|record| record.identifier() == ProtocolItemIdentifier::event(change_event_id))
+        .collect::<Vec<_>>();
+    assert_eq!(carrier_records.len(), 1);
+    assert_eq!(
+        carrier_records[0].disposition(),
+        ProtocolDisposition::Accepted
+    );
 }
 
 #[test]
