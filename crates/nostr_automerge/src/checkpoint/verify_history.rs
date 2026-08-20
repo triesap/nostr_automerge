@@ -21,7 +21,7 @@ pub enum HistoryVerificationError {
 
 /// Derives qualifying validated carrier coverage through one canonical control.
 pub(crate) fn historical_carrier_coverage(
-    corpus: &crate::EvidenceCorpus,
+    view: &crate::evidence::document_view::DocumentEvidenceView<'_>,
     canonical_controls: &[crate::EventId],
     through: crate::EventId,
     budget: &mut crate::WorkBudget,
@@ -31,7 +31,7 @@ pub(crate) fn historical_carrier_coverage(
     let mut found = false;
     for control in canonical_controls {
         charge_history_item(budget, cancellation)?;
-        if let Some(hashes) = corpus.indexes.changes.hashes_by_control.get(control) {
+        if let Some(hashes) = view.change_hashes_for_control(*control) {
             for hash in hashes {
                 charge_history_item(budget, cancellation)?;
                 coverage.insert(*hash);
@@ -158,10 +158,14 @@ mod tests {
         let b = ChangeHash::from_bytes([5; 32]);
         let c = ChangeHash::from_bytes([6; 32]);
         let mut indexes = TrustedIndexes::default();
-        indexes.changes.hashes_by_control = BTreeMap::from([
-            (first, BTreeSet::from([a])),
-            (second, BTreeSet::from([b])),
-            (third, BTreeSet::from([c])),
+        let coordinate = crate::DocumentCoordinate::new(
+            crate::ControllerPublicKey::from_bytes([7; 32]),
+            crate::DocumentId::from_bytes([8; 32]),
+        );
+        indexes.changes.hashes_by_coordinate_control = BTreeMap::from([
+            ((coordinate, first), BTreeSet::from([a])),
+            ((coordinate, second), BTreeSet::from([b])),
+            ((coordinate, third), BTreeSet::from([c])),
         ]);
         let corpus = EvidenceCorpus {
             events: BTreeMap::new(),
@@ -169,9 +173,11 @@ mod tests {
             duplicates: Vec::new(),
             indexes,
         };
+        let view =
+            crate::evidence::document_view::DocumentEvidenceView::derive(&corpus, coordinate);
         assert_eq!(
             historical_carrier_coverage(
-                &corpus,
+                &view,
                 &[first, second, third],
                 second,
                 &mut crate::WorkBudget::new(0, 10),
@@ -181,7 +187,7 @@ mod tests {
         );
         assert_eq!(
             historical_carrier_coverage(
-                &corpus,
+                &view,
                 &[first, second, third],
                 EventId::from_bytes([9; 32]),
                 &mut crate::WorkBudget::new(0, 10),
@@ -191,7 +197,7 @@ mod tests {
         );
         assert_eq!(
             historical_carrier_coverage(
-                &corpus,
+                &view,
                 &[first, second, third],
                 second,
                 &mut crate::WorkBudget::new(0, 0),

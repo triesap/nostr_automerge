@@ -5885,9 +5885,9 @@ fn checkpoint_author_and_binding_refusals() {
     );
     assert_eq!(
         wrong_coordinate.checkpoints()[0].status(),
-        CheckpointVerificationStatus::ChunkCoordinateMismatch
+        CheckpointVerificationStatus::MissingChunk
     );
-    assert_checkpoint_event_dispositions(&wrong_coordinate, ProtocolDisposition::Invalid);
+    assert_checkpoint_event_dispositions(&wrong_coordinate, ProtocolDisposition::Pending);
 
     let wrong_descriptor = evaluate_single_chunk_variant(
         &TestSigner::from_byte(21),

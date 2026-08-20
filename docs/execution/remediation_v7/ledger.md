@@ -38,10 +38,12 @@ Updated: 2026-08-20
   counts through `DocumentEvidenceView`.
 - `step_1072` routed frontier checks, change discovery, carrier selection, and
   same-epoch claim classification through coordinate-scoped view accessors.
+- `step_1073` routed checkpoint discovery, assembly, historical carrier
+  coverage, chunk collection, and target event collection through the view.
 
 ## Active checkpoint
 
-`step_1073` — route checkpoint evaluation through scoped accessors.
+`step_1074` — enforce target-only dynamic event disposition membership.
 
 ## Holds
 

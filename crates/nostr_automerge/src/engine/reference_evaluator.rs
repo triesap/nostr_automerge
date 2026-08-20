@@ -972,28 +972,33 @@ fn event_disposition_records(
         );
     }
 
-    let descriptor_dispositions = corpus
-        .indexes
-        .checkpoints
-        .descriptors_by_id
-        .keys()
+    let descriptor_dispositions = view
+        .checkpoint_descriptor_event_ids()
+        .into_iter()
+        .flatten()
         .filter_map(|event_id| {
             records
                 .get(event_id)
                 .map(|(disposition, _)| (*event_id, *disposition))
         })
         .collect::<std::collections::BTreeMap<_, _>>();
-    for chunk in corpus.indexes.checkpoints.chunks_by_id.values() {
-        if !view.contains_reportable(&chunk.event_id) {
-            continue;
-        }
+    for chunk in
+        view.reportable_event_ids()
+            .filter_map(|event_id| match corpus.events.get(event_id) {
+                Some(EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::CheckpointChunk(chunk),
+                    ..
+                }) => Some(chunk.as_ref()),
+                _ => None,
+            })
+    {
         let state = resolve_referenced_descriptor(
             corpus,
-            chunk.descriptor_id,
+            chunk.descriptor_id(),
             view.coordinate(),
             &descriptor_dispositions,
         );
-        let prior = records.get(&chunk.event_id).copied();
+        let prior = records.get(&chunk.event_id()).copied();
         let final_record = state
             .dependent_disposition()
             .map(|disposition| {
@@ -1006,24 +1011,20 @@ fn event_disposition_records(
                 prior.filter(|(disposition, _)| *disposition != ProtocolDisposition::Excluded)
             })
             .unwrap_or((ProtocolDisposition::Pending, None));
-        records.insert(chunk.event_id, final_record);
+        records.insert(chunk.event_id(), final_record);
     }
 
-    debug_assert!(
-        corpus
-            .indexes
-            .checkpoints
-            .chunks_by_id
-            .values()
-            .all(|chunk| {
-                !view.contains_reportable(&chunk.event_id)
-                    || records
-                        .get(&chunk.event_id)
-                        .is_some_and(|(disposition, _)| {
-                            *disposition != ProtocolDisposition::Excluded
-                        })
+    debug_assert!(view.reportable_event_ids().all(|event_id| {
+        !matches!(
+            corpus.events.get(event_id),
+            Some(EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::CheckpointChunk(_),
+                ..
             })
-    );
+        ) || records
+            .get(event_id)
+            .is_some_and(|(disposition, _)| *disposition != ProtocolDisposition::Excluded)
+    }));
 
     records
         .into_iter()
@@ -1157,7 +1158,6 @@ fn verify_checkpoints(
     cancellation: &impl CancellationCheck,
 ) -> CheckpointEvaluation {
     let corpus = view.corpus();
-    let coordinate = view.coordinate();
     let prepared = (|| {
         charge_checkpoint_work(
             budget,
@@ -1171,21 +1171,11 @@ fn verify_checkpoints(
             budget,
             cancellation,
         )?;
-        let chunk_sets = checkpoint_chunk_sets(corpus, coordinate, budget, cancellation)?;
-        let carrier_coverage = checkpoint_carrier_coverage(
-            corpus,
-            coordinate,
-            canonical_controls,
-            budget,
-            cancellation,
-        )?;
-        let accepted_history = checkpoint_accepted_history(
-            corpus,
-            coordinate,
-            accepted_at_control,
-            budget,
-            cancellation,
-        )?;
+        let chunk_sets = checkpoint_chunk_sets(view, budget, cancellation)?;
+        let carrier_coverage =
+            checkpoint_carrier_coverage(view, canonical_controls, budget, cancellation)?;
+        let accepted_history =
+            checkpoint_accepted_history(view, accepted_at_control, budget, cancellation)?;
         Ok::<_, CheckpointWorkStop>((
             authorizations,
             chunk_sets,
@@ -1203,11 +1193,8 @@ fn verify_checkpoints(
         }
     };
     let mut results = Vec::new();
-    for descriptor_id in corpus
-        .indexes
-        .checkpoints
-        .descriptors_by_coordinate
-        .get(&coordinate)
+    for descriptor_id in view
+        .checkpoint_descriptor_event_ids()
         .into_iter()
         .flatten()
         .copied()
@@ -1226,7 +1213,7 @@ fn verify_checkpoints(
             continue;
         };
         let chunk_events =
-            match checkpoint_chunk_event_ids(corpus, descriptor_id, budget, cancellation) {
+            match checkpoint_chunk_event_ids(view, descriptor_id, budget, cancellation) {
                 Ok(events) => events,
                 Err(stop) => {
                     return CheckpointEvaluation {
@@ -1314,16 +1301,13 @@ const fn history_refusal_status(error: &HistoryVerificationError) -> CheckpointV
 }
 
 fn checkpoint_chunk_event_ids(
-    corpus: &EvidenceCorpus,
+    view: &DocumentEvidenceView<'_>,
     descriptor_id: crate::EventId,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<Vec<crate::EventId>, CheckpointWorkStop> {
-    let event_ids = corpus
-        .indexes
-        .checkpoints
-        .chunks_by_descriptor
-        .get(&descriptor_id)
+    let event_ids = view
+        .checkpoint_chunk_event_ids(descriptor_id)
         .into_iter()
         .flatten()
         .copied();
@@ -1458,8 +1442,7 @@ const fn assembly_status(error: crate::checkpoint::AssemblyError) -> CheckpointV
 }
 
 fn checkpoint_accepted_history(
-    corpus: &EvidenceCorpus,
-    coordinate: DocumentCoordinate,
+    view: &DocumentEvidenceView<'_>,
     accepted_at_control: &std::collections::BTreeMap<crate::EventId, AcceptedAtControl>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
@@ -1471,14 +1454,8 @@ fn checkpoint_accepted_history(
     CheckpointWorkStop,
 > {
     let mut history = std::collections::BTreeMap::new();
-    for descriptor_id in corpus
-        .indexes
-        .checkpoints
-        .descriptors_by_coordinate
-        .get(&coordinate)
-        .into_iter()
-        .flatten()
-    {
+    let corpus = view.corpus();
+    for descriptor_id in view.checkpoint_descriptor_event_ids().into_iter().flatten() {
         charge_checkpoint_work(budget, cancellation, 1)?;
         if let Some(EventEvidence::VerifiedCarrier {
             carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
@@ -1502,8 +1479,7 @@ fn checkpoint_accepted_history(
 }
 
 fn checkpoint_carrier_coverage(
-    corpus: &EvidenceCorpus,
-    coordinate: DocumentCoordinate,
+    view: &DocumentEvidenceView<'_>,
     canonical_controls: &[crate::EventId],
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
@@ -1515,14 +1491,8 @@ fn checkpoint_carrier_coverage(
     CheckpointWorkStop,
 > {
     let mut coverage = std::collections::BTreeMap::new();
-    for descriptor_id in corpus
-        .indexes
-        .checkpoints
-        .descriptors_by_coordinate
-        .get(&coordinate)
-        .into_iter()
-        .flatten()
-    {
+    let corpus = view.corpus();
+    for descriptor_id in view.checkpoint_descriptor_event_ids().into_iter().flatten() {
         charge_checkpoint_work(budget, cancellation, 1)?;
         if let Some(EventEvidence::VerifiedCarrier {
             carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
@@ -1530,7 +1500,7 @@ fn checkpoint_carrier_coverage(
         }) = corpus.events.get(descriptor_id)
         {
             let result = historical_carrier_coverage(
-                corpus,
+                view,
                 canonical_controls,
                 descriptor.control_id(),
                 budget,
@@ -1553,8 +1523,7 @@ fn checkpoint_carrier_coverage(
 }
 
 fn checkpoint_chunk_sets(
-    corpus: &EvidenceCorpus,
-    coordinate: DocumentCoordinate,
+    view: &DocumentEvidenceView<'_>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<
@@ -1565,13 +1534,8 @@ fn checkpoint_chunk_sets(
     CheckpointWorkStop,
 > {
     let mut sets = std::collections::BTreeMap::new();
-    let descriptor_ids = corpus
-        .indexes
-        .checkpoints
-        .descriptors_by_coordinate
-        .get(&coordinate)
-        .into_iter()
-        .flatten();
+    let corpus = view.corpus();
+    let descriptor_ids = view.checkpoint_descriptor_event_ids().into_iter().flatten();
     for descriptor_id in descriptor_ids {
         charge_checkpoint_work(budget, cancellation, 1)?;
         let Some(EventEvidence::VerifiedCarrier {
@@ -1582,11 +1546,8 @@ fn checkpoint_chunk_sets(
             continue;
         };
         let mut chunks = Vec::new();
-        for chunk_id in corpus
-            .indexes
-            .checkpoints
-            .chunks_by_descriptor
-            .get(descriptor_id)
+        for chunk_id in view
+            .checkpoint_chunk_event_ids(*descriptor_id)
             .into_iter()
             .flatten()
         {
@@ -1615,14 +1576,7 @@ fn checkpoint_authorizations(
     let corpus = view.corpus();
     let coordinate = view.coordinate();
     let mut authorizations = std::collections::BTreeMap::new();
-    for descriptor_id in corpus
-        .indexes
-        .checkpoints
-        .descriptors_by_coordinate
-        .get(&coordinate)
-        .into_iter()
-        .flatten()
-    {
+    for descriptor_id in view.checkpoint_descriptor_event_ids().into_iter().flatten() {
         charge_checkpoint_work(budget, cancellation, 1)?;
         if let Some(EventEvidence::VerifiedCarrier {
             carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
