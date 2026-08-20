@@ -3186,8 +3186,22 @@ mod tests {
         use crate::ProtocolDisposition::{Accepted, Excluded, Invalid};
         let valid = noncanonical_branch_claim_reason(Some(Accepted));
         let invalid = noncanonical_branch_claim_reason(Some(Invalid));
+        let accepted_carrier = ChangeCarrierOutcome::new(
+            crate::EventId::from_bytes([1; 32]),
+            crate::ChangeHash::from_bytes([2; 32]),
+            crate::EventId::from_bytes([3; 32]),
+            ChangeClaimReason::AuthorizedCanonical,
+        );
+        let invalid_carrier = ChangeCarrierOutcome::new(
+            crate::EventId::from_bytes([4; 32]),
+            crate::ChangeHash::from_bytes([2; 32]),
+            crate::EventId::from_bytes([5; 32]),
+            ChangeClaimReason::Unauthorized,
+        );
         assert_eq!(valid, ChangeClaimReason::AuthorizedNoncanonical);
         assert_eq!(invalid, ChangeClaimReason::InvalidReferencedControl);
+        assert_eq!(accepted_carrier.disposition, Accepted);
+        assert_eq!(invalid_carrier.disposition, Invalid);
         assert_eq!(
             reduce_reasoned_change_outcome(FinalLineageChangeState::Current, &[valid, invalid],),
             Excluded
@@ -3195,6 +3209,10 @@ mod tests {
         assert_eq!(
             reduce_reasoned_change_outcome(FinalLineageChangeState::Accepted, &[valid, invalid],),
             Accepted
+        );
+        assert_eq!(
+            invalid_carrier.disposition, Invalid,
+            "aggregate acceptance must not overwrite the invalid carrier outcome"
         );
     }
 
