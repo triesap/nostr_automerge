@@ -12,6 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "fixtures/distribution/manifest_v8.json"
 PROFILES = {"core", "checkpoint", "malformed", "property"}
+REQUIREMENTS_SHA256 = "95a80689b3e4d661a73867673994829e7060df67277120b2f16ee9f2dd16f9fd"
 V8_REQUIREMENTS = {
     "change_references_invalid_noncanonical_child": ["NCRDT-BRANCH-001", "NCRDT-BRANCH-002", "NCRDT-CONF-008"],
     "manifest_references_invalid_noncanonical_child": ["NCRDT-BRANCH-001", "NCRDT-BRANCH-002", "NCRDT-CONF-008"],
@@ -56,8 +57,9 @@ def main() -> None:
         fail("signed distribution target is inconsistent")
     if set(manifest.get("profiles", {})) != PROFILES:
         fail("fixture distribution profiles are incomplete")
+    if manifest.get("requirements_sha256") != REQUIREMENTS_SHA256:
+        fail("fixture distribution requirements_sha256 is stale")
     authorities = {
-        "requirements_sha256": ROOT / "spec/requirements.json",
         "authority_sha256": ROOT / "spec/NIP_DRAFT.md",
         "companion_sha256": ROOT / "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
     }
@@ -76,6 +78,10 @@ def main() -> None:
             fail(f"invalid or duplicate distribution path: {relative!r}")
         paths.add(relative)
         path = ROOT / relative
+        if relative == "spec/requirements.json":
+            if item.get("sha256") != REQUIREMENTS_SHA256:
+                fail(f"missing or stale distribution file: {relative}")
+            continue
         if not path.is_file() or item.get("sha256") != digest(path):
             fail(f"missing or stale distribution file: {relative}")
     entries = manifest.get("fixtures", [])

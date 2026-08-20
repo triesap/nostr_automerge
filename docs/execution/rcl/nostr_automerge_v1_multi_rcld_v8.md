@@ -13,10 +13,10 @@ Reviewed requirement registry SHA-256: `95a80689b3e4d661a73867673994829e7060df67
 Reviewed applicability SHA-256: `27c58584b6ab1627823fb620378f56a7038de21d7f38b6ed4baae5a64fafe87d`
 Reviewed distribution-v8 manifest SHA-256: `7f1c17d61d28857562ffbae68fa132efa3e052863434cc686b2a72234b614ada`
 Steps: `step_1096` through `step_1157` (62 contiguous checkpoints)
-Active RCLD: none
-Active checkpoint: none
-Next RCLD: RCLD 73
-Next checkpoint: `step_1096`
+Active RCLD: RCLD 74
+Active checkpoint: `step_1102`
+Next RCLD: RCLD 74
+Next checkpoint: `step_1102`
 
 ## Outcome
 
@@ -258,7 +258,7 @@ ordinary regression in the checkpoint that closes it.
 
 ## RCLD 73 — Authority, Decisions, And Reproducible Baseline
 
-Status: planned
+Status: complete
 Steps: `step_1096` through `step_1101`
 Gate: `GATE_V8_AUTHORITY`
 
@@ -498,7 +498,6 @@ completion.
 
 ## Unfinished RCLDs
 
-- RCLD 73 — Authority, Decisions, And Reproducible Baseline
 - RCLD 74 — Branch-Local Change Reduction
 - RCLD 75 — Target-Scoped Control, Ancestry, And Raw-Change Work
 - RCLD 76 — Pass-Level Interrupted Finalization
@@ -507,5 +506,5 @@ completion.
 - RCLD 79 — Signed Distribution V9 And Private Parity
 - RCLD 80 — Exact Evidence And Truthful Closure
 
-All 62 checkpoints remain unfinished. Execution begins with `step_1096` only
-after an explicit execution directive.
+Fifty-six checkpoints remain unfinished. Execution continues with
+`step_1102`.

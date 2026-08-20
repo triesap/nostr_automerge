@@ -64,9 +64,11 @@ fn finding_070_local_nip_contains_reconciled_branch_rules() {
 fn finding_071_distribution_contains_180_scenarios() {
     let manifest = include_str!("../../../fixtures/distribution/manifest_v8.json");
     let value: serde_json::Value =
-        serde_json::from_str(manifest).unwrap_or_else(|_| serde_json::Value::Null);
+        serde_json::from_str(manifest).unwrap_or(serde_json::Value::Null);
     assert_eq!(
-        value.get("fixture_count").and_then(serde_json::Value::as_u64),
+        value
+            .get("fixture_count")
+            .and_then(serde_json::Value::as_u64),
         Some(180),
         "FINDING_071 reproduced: signed distribution does not contain 180 scenarios"
     );

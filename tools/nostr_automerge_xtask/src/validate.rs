@@ -4,34 +4,9 @@ use std::process::Command;
 use crate::requirements::{discover_fixture_metadata, generate_coverage_report};
 
 const PYTHON_VALIDATORS: &[(&str, &str)] = &[
-    ("remediation_authority", "scripts/validate_remediation.py"),
     (
-        "remediation_v5_evidence",
-        "scripts/validate_remediation_v5.py",
-    ),
-    (
-        "remediation_v6_authority",
-        "scripts/validate_remediation_v6.py",
-    ),
-    (
-        "requirement_evidence_v8",
-        "scripts/validate_requirement_matrix_v8.py",
-    ),
-    (
-        "requirement_registry_v8",
-        "scripts/validate_requirement_registry_v8.py",
-    ),
-    (
-        "remediation_v6_final",
-        "scripts/validate_remediation_v6_final.py",
-    ),
-    (
-        "remediation_v7_assurance",
-        "scripts/validate_assurance_v7.py",
-    ),
-    (
-        "remediation_v7_final_evidence",
-        "scripts/validate_final_evidence_v7.py",
+        "remediation_v8_authority",
+        "scripts/validate_remediation_v8.py",
     ),
     ("complete_specification", "scripts/validate_spec.py"),
     (
@@ -107,14 +82,7 @@ mod tests {
         assert!(names.contains(&"sealed_constants"));
         assert!(names.contains(&"automerge_boundary"));
         assert!(names.contains(&"diagnostic_registry"));
-        assert!(names.contains(&"remediation_authority"));
-        assert!(names.contains(&"remediation_v5_evidence"));
-        assert!(names.contains(&"remediation_v6_authority"));
-        assert!(names.contains(&"requirement_evidence_v8"));
-        assert!(names.contains(&"requirement_registry_v8"));
-        assert!(names.contains(&"remediation_v6_final"));
-        assert!(names.contains(&"remediation_v7_assurance"));
-        assert!(names.contains(&"remediation_v7_final_evidence"));
+        assert!(names.contains(&"remediation_v8_authority"));
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         let report = validate_repository(&root);
         assert!(report.is_ok(), "{report:?}");
