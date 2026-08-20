@@ -2179,6 +2179,9 @@ fn reserved_batch_report(
         .saturating_add(change_count)
         .saturating_add(event_count)
         .saturating_add(8);
+    let report =
+        prepare_interrupted_batch_report(revision, coordinate, batch, manifest, checkpoints)
+            .map_err(|error| settle_reserved_error(permit, error))?;
     for (dimension, amount) in [
         (FinalizationDimension::Controls, control_count),
         (FinalizationDimension::Changes, change_count),
@@ -2210,7 +2213,7 @@ fn reserved_batch_report(
     permit
         .finish_interrupted()
         .map_err(|_| EvaluationError::ReportInvariant)?;
-    compact_batch_report(revision, coordinate, batch, manifest, checkpoints)
+    Ok(report)
 }
 
 fn compact_interrupted_report(
@@ -2252,7 +2255,7 @@ fn compact_interrupted_report(
     .map_err(|_| EvaluationError::ReportInvariant)
 }
 
-fn compact_batch_report(
+fn prepare_interrupted_batch_report(
     revision: ProtocolRevision,
     coordinate: DocumentCoordinate,
     batch: BatchEvaluationReport,
