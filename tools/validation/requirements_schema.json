@@ -6,13 +6,13 @@
   "additionalProperties": false,
   "required": ["schema", "project", "requirement_count", "requirements"],
   "properties": {
-    "schema": {"const": "nostr_automerge.requirements.v5"},
+    "schema": {"const": "nostr_automerge.requirements.v6"},
     "project": {"const": "nostr_automerge_v1_spec"},
-    "requirement_count": {"const": 129},
+    "requirement_count": {"const": 139},
     "requirements": {
       "type": "array",
-      "minItems": 129,
-      "maxItems": 129,
+      "minItems": 139,
+      "maxItems": 139,
       "items": {
         "type": "object",
         "additionalProperties": false,

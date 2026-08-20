@@ -1,7 +1,7 @@
 {
-  "schema": "nostr_automerge.requirements.v5",
+  "schema": "nostr_automerge.requirements.v6",
   "project": "nostr_automerge_v1_spec",
-  "requirement_count": 129,
+  "requirement_count": 139,
   "requirements": [
     {
       "id": "NCRDT-SCOPE-001",
@@ -775,6 +775,66 @@
       "id": "NCRDT-EVIDENCE-004",
       "section": "Requirement evidence",
       "text": "Each of the 129 registry rows MUST bind exact candidate identities, source assertions, fixtures where applicable, and artifact hashes; weakening evidence binding MUST be rejected.",
+      "source": "spec/CONFORMANCE.md"
+    },
+    {
+      "id": "NCRDT-BRANCH-003",
+      "section": "Branch-local change outcomes",
+      "text": "Every statefully evaluated control branch MUST retain a deterministic disposition for every attributable change evaluated in that branch until final carrier-claim reduction is complete.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-BRANCH-004",
+      "section": "Branch-local change outcomes",
+      "text": "A claim under a valid noncanonical control MUST use the change outcome under that referenced branch: accepted otherwise-valid claims are excluded, pending claims remain pending, invalid claims remain invalid, and equivocation-quarantined claims remain excluded.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-SCOPE-007",
+      "section": "Coordinate-scoped control work",
+      "text": "Evaluation for one coordinate MUST obtain controls, parent edges, and branch inputs from coordinate-qualified indexes without scanning or allocating from unrelated controls.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-RESOURCE-011",
+      "section": "Branch work accounting",
+      "text": "Every branch-local control, change, hash, dependency, member, ancestry, raw-byte, accepted-state, and canonical-selection traversal MUST be deterministically charged, reserved, or memoized so repeated work is not unaccounted.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-RESOURCE-012",
+      "section": "Interrupted finalization settlement",
+      "text": "An interrupted report MUST classify every report-construction pass actually performed as consumed capacity before classifying only proven unused capacity as forfeited; no actual work may occur after its dimension is fully forfeited.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-DISPOSITION-004",
+      "section": "Change carrier event outcomes",
+      "text": "Every attributable signed change carrier MUST receive exactly one final Event-namespace disposition derived from its revision, coordinate, referenced control, authorization, branch-local outcome, and binding validity.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-DISPOSITION-005",
+      "section": "Semantic and carrier outcome separation",
+      "text": "The aggregate ChangeHash disposition and each carrier EventId disposition MUST coexist, be canonically ordered, participate in the dispositions digest, and preserve valid-carrier dominance without hiding invalid or pending carriers.",
+      "source": "spec/NOSTR_AUTOMERGE_V1_SPEC.md"
+    },
+    {
+      "id": "NCRDT-NIP-003",
+      "section": "Local NIP authority",
+      "text": "The local NIP draft MUST be independently implementable and include all interoperability-critical companion rules while retaining NIP-XX, provisional kinds, and explicit non-submission status.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-CONF-009",
+      "section": "Signed conformance v9",
+      "text": "Conforming Rust and TypeScript engines MUST execute signed distribution v9 of exactly 180 scenarios twice and under all eight declared delivery permutations, producing byte-identical canonical output and rejecting a deliberate mismatch.",
+      "source": "spec/CONFORMANCE.md"
+    },
+    {
+      "id": "NCRDT-EVIDENCE-005",
+      "section": "Exact semantic evidence",
+      "text": "Every passing requirement MUST cite an exact signed fixture or exact named assertion that directly exercises its normative behavior, together with candidate identity, command, result artifact, and artifact hash.",
       "source": "spec/CONFORMANCE.md"
     }
   ]

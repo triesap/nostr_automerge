@@ -1,0 +1,18 @@
+{
+  "schema": "nostr_automerge.requirement_additions.v8.v1",
+  "base_requirement_count": 129,
+  "addition_count": 10,
+  "target_requirement_count": 139,
+  "requirements": [
+    {"id": "NCRDT-BRANCH-003", "applicability": "rust-and-typescript", "finding": "FINDING_066"},
+    {"id": "NCRDT-BRANCH-004", "applicability": "rust-and-typescript", "finding": "FINDING_066"},
+    {"id": "NCRDT-SCOPE-007", "applicability": "rust-and-typescript", "finding": "FINDING_067"},
+    {"id": "NCRDT-RESOURCE-011", "applicability": "rust-and-typescript", "finding": "FINDING_067"},
+    {"id": "NCRDT-RESOURCE-012", "applicability": "rust-and-typescript", "finding": "FINDING_068"},
+    {"id": "NCRDT-DISPOSITION-004", "applicability": "rust-and-typescript", "finding": "FINDING_069"},
+    {"id": "NCRDT-DISPOSITION-005", "applicability": "rust-and-typescript", "finding": "FINDING_069"},
+    {"id": "NCRDT-NIP-003", "applicability": "rust-only", "finding": "FINDING_070"},
+    {"id": "NCRDT-CONF-009", "applicability": "rust-and-typescript", "finding": "FINDING_071"},
+    {"id": "NCRDT-EVIDENCE-005", "applicability": "rust-only", "finding": "FINDING_071"}
+  ]
+}
