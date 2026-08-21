@@ -66,6 +66,16 @@
         "parent_control": null,
         "selected_control": "0932b5c54f69ab4c0ac88bcfd3627be20877835ffe57cc08de05de7e8c242664",
         "type": "controller_equivocation"
+      },
+      {
+        "actor_id": "41b6aeb1d82b54606400b1921ef84dd63a9ccbaf51585f5962808f2ed0f74950",
+        "affected_descendants": [],
+        "conflicting_changes": [
+          "c2da016330538ae21632f1f9f8651ab096b181957d54b575031421793fe74aec",
+          "f09c46b976a92fea569cb70c0aacadf327c3cd8f1327c9bfc4d9fecc65331c41"
+        ],
+        "first_sequence": 1,
+        "type": "device_equivocation"
       }
     ],
     "invalid_changes": [],

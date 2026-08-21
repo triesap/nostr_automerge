@@ -484,6 +484,16 @@ fn derive_canonical_branch(
         }
         parent_id = Some(selected);
     }
+    for (control_id, branch) in &table.valid {
+        if canonical_controls.contains(control_id) {
+            continue;
+        }
+        for alert in branch.epoch.integrity_alerts() {
+            if !integrity_alerts.contains(alert) {
+                integrity_alerts.push(alert.clone());
+            }
+        }
+    }
     for (hash, disposition) in &mut change_dispositions {
         if accepted_changes.contains(hash) {
             *disposition = ProtocolDisposition::Accepted;
@@ -1189,8 +1199,8 @@ mod tests {
     use crate::automerge_adapter::decode::decode_change;
     use crate::graph::actor_state::tests::candidate;
     use crate::{
-        ChangeHash, Completion, EvaluationFailure, EventId, NeverCancelled, ProtocolDisposition,
-        ProtocolRevision, WorkBudget, WorkCounter,
+        ChangeHash, Completion, EvaluationFailure, EventId, IntegrityAlert, NeverCancelled,
+        ProtocolDisposition, ProtocolRevision, WorkBudget, WorkCounter,
     };
 
     #[test]
@@ -1755,6 +1765,13 @@ mod tests {
         assert_eq!(
             branch[&equivocation_b.candidate.change_hash],
             ProtocolDisposition::Excluded
+        );
+        assert_eq!(report.integrity_alerts.len(), 2);
+        assert!(
+            report
+                .integrity_alerts
+                .iter()
+                .any(|alert| matches!(alert, IntegrityAlert::DeviceEquivocation(_)))
         );
     }
 

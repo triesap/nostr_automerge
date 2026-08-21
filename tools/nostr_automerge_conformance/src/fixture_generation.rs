@@ -59,8 +59,349 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "remediation_v7_branch" => generate_remediation_v7_branch(),
         "remediation_v7_scope" => generate_remediation_v7_scope(),
         "remediation_v7_resource" => generate_remediation_v7_resource(),
+        "remediation_v8" => generate_remediation_v8(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
+}
+
+fn generate_remediation_v8() -> Result<(), String> {
+    generate_remediation_v8_branch_and_carriers()?;
+    generate_remediation_v8_scope()
+}
+
+fn generate_remediation_v8_branch_and_carriers() -> Result<(), String> {
+    let controller = Signer::from_byte(190)?;
+    let writer = Signer::from_byte(191)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "dc".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation-v8 branch coordinate".to_owned())?;
+    let members = || vec![(&writer, None, &["write"][..])];
+    let first = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let second = sign_control(
+        &controller,
+        2,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let first_id = event_id(&first)?;
+    let second_id = event_id(&second)?;
+    let canonical_id = first_id.min(second_id);
+    let noncanonical_id = first_id.max(second_id);
+    let roots = || vec![first.clone(), second.clone()];
+    let root = repository_root().join("fixtures/v1_draft/scenarios/change_claims");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+
+    let (sequence_source, _) = author_root_change(coordinate, &writer, "v8-bad-sequence")?;
+    let (bad_sequence_raw, bad_sequence_hash) = rewrite_change_sequence(sequence_source, 1, 2)?;
+    let bad_sequence = sign_change(
+        &writer,
+        3,
+        coordinate,
+        noncanonical_id,
+        bad_sequence_hash,
+        &bad_sequence_raw,
+    )?;
+    let mut bad_sequence_events = roots();
+    bad_sequence_events.push(bad_sequence);
+    write_fixture_with_requirements(
+        &root,
+        "invalid_change_under_valid_noncanonical_control",
+        coordinate,
+        bad_sequence_events,
+        &[
+            "NCRDT-BRANCH-003",
+            "NCRDT-BRANCH-004",
+            "NCRDT-DISPOSITION-004",
+        ],
+        "remediation_v8",
+    )?;
+
+    let (pending_source, _) = author_root_change(coordinate, &writer, "v8-pending")?;
+    let (pending_raw, pending_hash) =
+        with_change_dependencies(&pending_source, &[ChangeHash::from_bytes([0xdc; 32])], 1)?;
+    let pending = sign_change(
+        &writer,
+        4,
+        coordinate,
+        noncanonical_id,
+        pending_hash,
+        &pending_raw,
+    )?;
+    let mut pending_events = roots();
+    pending_events.push(pending);
+    write_fixture_with_requirements(
+        &root,
+        "pending_change_under_valid_noncanonical_control",
+        coordinate,
+        pending_events,
+        &["NCRDT-BRANCH-003", "NCRDT-BRANCH-004"],
+        "remediation_v8",
+    )?;
+
+    let (left_raw, left_hash) = author_root_change(coordinate, &writer, "v8-equivocation-left")?;
+    let (right_raw, right_hash) = author_root_change(coordinate, &writer, "v8-equivocation-right")?;
+    let left_claim = sign_change(
+        &writer,
+        5,
+        coordinate,
+        noncanonical_id,
+        left_hash,
+        &left_raw,
+    )?;
+    let right_claim = sign_change(
+        &writer,
+        6,
+        coordinate,
+        noncanonical_id,
+        right_hash,
+        &right_raw,
+    )?;
+    let mut equivocation_events = roots();
+    equivocation_events.extend([left_claim, right_claim]);
+    write_fixture_with_requirements(
+        &root,
+        "equivocation_excluded_change_under_valid_noncanonical_control",
+        coordinate,
+        equivocation_events,
+        &["NCRDT-BRANCH-003", "NCRDT-BRANCH-004"],
+        "remediation_v8",
+    )?;
+
+    let (start_source, _) = author_root_change(coordinate, &writer, "v8-bad-start-op")?;
+    let (bad_start_raw, bad_start_hash) = rewrite_first_change_start_op(start_source, 2)?;
+    let bad_start = sign_change(
+        &writer,
+        7,
+        coordinate,
+        noncanonical_id,
+        bad_start_hash,
+        &bad_start_raw,
+    )?;
+    let mut bad_start_events = roots();
+    bad_start_events.push(bad_start);
+    write_fixture_with_requirements(
+        &root,
+        "noncanonical_bad_start_op_is_invalid",
+        coordinate,
+        bad_start_events,
+        &["NCRDT-BRANCH-004"],
+        "remediation_v8",
+    )?;
+
+    let actor = ActorId::derive(coordinate, writer.public_key);
+    let mut canonical_document =
+        AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+            .map_err(|error| format!("remediation-v8 branch document: {error:?}"))?;
+    let first_change = canonical_document
+        .author_change(&[Operation::PutString {
+            key: "canonical-first".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .map_err(|error| format!("remediation-v8 first change: {error:?}"))?;
+    let second_change = canonical_document
+        .author_change(&[Operation::PutString {
+            key: "canonical-second".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .map_err(|error| format!("remediation-v8 second change: {error:?}"))?;
+    let first_canonical = sign_change(
+        &writer,
+        8,
+        coordinate,
+        canonical_id,
+        first_change.change_hash(),
+        first_change.raw(),
+    )?;
+    let second_canonical = sign_change(
+        &writer,
+        9,
+        coordinate,
+        canonical_id,
+        second_change.change_hash(),
+        second_change.raw(),
+    )?;
+    let second_noncanonical = sign_change(
+        &writer,
+        10,
+        coordinate,
+        noncanonical_id,
+        second_change.change_hash(),
+        second_change.raw(),
+    )?;
+    let mut branch_invalid_events = roots();
+    branch_invalid_events.extend([first_canonical, second_canonical, second_noncanonical]);
+    write_fixture_with_requirements(
+        &root,
+        "same_hash_valid_and_noncanonical_invalid_carriers",
+        coordinate,
+        branch_invalid_events,
+        &[
+            "NCRDT-BRANCH-004",
+            "NCRDT-DISPOSITION-004",
+            "NCRDT-DISPOSITION-005",
+        ],
+        "remediation_v8",
+    )?;
+
+    let carrier_controller = Signer::from_byte(192)?;
+    let carrier_writer = Signer::from_byte(193)?;
+    let carrier_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        carrier_controller.public_key.to_hex(),
+        "dd".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation-v8 carrier coordinate".to_owned())?;
+    let carrier_control = sign_control(
+        &carrier_controller,
+        1,
+        carrier_coordinate,
+        None,
+        control_content_full(
+            0,
+            vec![(&carrier_writer, None, &["write"])],
+            "automerge-change-v1",
+        ),
+    )?;
+    let carrier_control_id = event_id(&carrier_control)?;
+    let (carrier_raw, carrier_hash) =
+        author_root_change(carrier_coordinate, &carrier_writer, "v8-carrier")?;
+    let accepted_carrier = sign_change(
+        &carrier_writer,
+        2,
+        carrier_coordinate,
+        carrier_control_id,
+        carrier_hash,
+        &carrier_raw,
+    )?;
+    let pending_carrier = sign_change(
+        &carrier_writer,
+        3,
+        carrier_coordinate,
+        EventId::from_bytes([0xdd; 32]),
+        carrier_hash,
+        &carrier_raw,
+    )?;
+    let invalid_carrier = sign_change(
+        &carrier_writer,
+        4,
+        carrier_coordinate,
+        carrier_control_id,
+        ChangeHash::from_bytes([0; 32]),
+        &carrier_raw,
+    )?;
+    for (fixture_id, requirements) in [
+        (
+            "change_carrier_mixed_outcomes",
+            &["NCRDT-DISPOSITION-004", "NCRDT-DISPOSITION-005"][..],
+        ),
+        (
+            "change_carrier_event_order_stability",
+            &["NCRDT-CONF-009", "NCRDT-DISPOSITION-005"][..],
+        ),
+    ] {
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            carrier_coordinate,
+            vec![
+                carrier_control.clone(),
+                accepted_carrier.clone(),
+                pending_carrier.clone(),
+                invalid_carrier.clone(),
+            ],
+            requirements,
+            "remediation_v8",
+        )?;
+    }
+    Ok(())
+}
+
+fn generate_remediation_v8_scope() -> Result<(), String> {
+    let controller = Signer::from_byte(194)?;
+    let writer = Signer::from_byte(195)?;
+    let foreign_controller = Signer::from_byte(196)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "de".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation-v8 scope coordinate".to_owned())?;
+    let foreign_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        foreign_controller.public_key.to_hex(),
+        "df".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation-v8 foreign coordinate".to_owned())?;
+    let members = || vec![(&writer, None, &["write"][..])];
+    let target = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let mut foreign = sign_control(
+        &foreign_controller,
+        2,
+        foreign_coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let mut foreign_events = vec![foreign.clone()];
+    for sequence in 1_u64..=24 {
+        foreign = sign_control(
+            &foreign_controller,
+            sequence + 2,
+            foreign_coordinate,
+            Some(event_id(&foreign)?),
+            control_content_with_links(sequence, members(), &[], None, None),
+        )?;
+        foreign_events.push(foreign.clone());
+    }
+    let mut events = vec![target.clone()];
+    events.extend(foreign_events);
+    let exact_budget = minimum_complete_item_budget(coordinate, &[target])?;
+    if minimum_complete_item_budget(coordinate, &events)? != exact_budget {
+        return Err("foreign controls changed target exact budget".to_owned());
+    }
+    let root = repository_root().join("fixtures/v1_draft/scenarios/resource");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    write_fixture_with_execution(
+        &root,
+        "unrelated_control_flood_exact_budget",
+        coordinate,
+        events.clone(),
+        &["NCRDT-RESOURCE-011", "NCRDT-SCOPE-007"],
+        "remediation_v8",
+        Vec::new(),
+        ScenarioBudget {
+            max_bytes: 1_000_000,
+            max_items: exact_budget,
+        },
+        None,
+    )?;
+    write_fixture_with_requirements(
+        &root,
+        "unrelated_control_flood_does_not_change_digest",
+        coordinate,
+        events,
+        &["NCRDT-SCOPE-007"],
+        "remediation_v8",
+    )
 }
 
 fn generate_remediation_v7_resource() -> Result<(), String> {

@@ -19,8 +19,9 @@ consumer must reject an unknown distribution schema, revision, file, or
 checksum rather than silently updating expectations.
 
 `distribution/manifest_v9.json` is the remediation-v8 transition boundary. It
-binds the complete v8 manifest identity, preserves all 171 prior signed fixture
-entries and artifacts byte-for-byte, and names the exact nine additions needed
-for the 180-scenario v9 corpus. A `locked_transition` manifest is planning
+binds the complete v8 manifest identity, preserves all 171 prior signed inputs
+byte-for-byte, inventories intentional canonical-report changes, and names the
+exact nine additions needed for the 180-scenario v9 corpus. A
+`locked_transition` manifest is planning
 evidence only; conformance requires `canonical_signed_neutral_corpus` with no
 missing v9 fixtures.

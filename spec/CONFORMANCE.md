@@ -142,3 +142,18 @@ and byte-identical complete canonical reports. Evidence validators fail closed
 on missing or reordered rows, stale authority or candidate identities, generic
 critical proofs, weakened fixture coverage, altered artifacts, and status
 overclaim.
+
+## Remediation v8 signed coverage
+
+The canonical signed v9 distribution contains exactly 180 scenarios. It
+preserves all 171 signed v8 fixtures byte-for-byte and adds the nine named
+branch-local change, coordinate-scoped control, and carrier Event cases. Every
+complete implementation run executes two independent processes and all eight
+declared delivery permutations for every fixture. Canonical report bytes must
+be stable within each implementation, byte-identical across the Rust and
+independently written TypeScript implementations, and a deliberate mismatch
+must be rejected.
+
+The distribution manifest binds the reconciled local NIP, companion,
+requirements registry, schemas, signed inputs, and expected canonical reports
+by SHA-256. A locked or incomplete transition is not conformance evidence.

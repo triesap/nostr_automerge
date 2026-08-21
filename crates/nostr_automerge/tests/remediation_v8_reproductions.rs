@@ -55,9 +55,8 @@ fn finding_070_local_nip_contains_reconciled_branch_rules() {
 }
 
 #[test]
-#[ignore = "expected to fail at the remediation-v8 baseline"]
 fn finding_071_distribution_contains_180_scenarios() {
-    let manifest = include_str!("../../../fixtures/distribution/manifest_v8.json");
+    let manifest = include_str!("../../../fixtures/distribution/manifest_v9.json");
     let value: serde_json::Value =
         serde_json::from_str(manifest).unwrap_or(serde_json::Value::Null);
     assert_eq!(

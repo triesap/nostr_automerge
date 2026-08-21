@@ -17,8 +17,10 @@ BASE = FIXTURES / "distribution" / "manifest_v8.json"
 REQUIREMENTS = ROOT / "spec" / "requirements.json"
 AUTHORITY = ROOT / "spec" / "NIP_DRAFT.md"
 COMPANION = ROOT / "spec" / "NOSTR_AUTOMERGE_V1_SPEC.md"
+CONFORMANCE = ROOT / "spec" / "CONFORMANCE.md"
 TARGET_COUNT = 180
 BASE_COUNT = 171
+BASE_SIGNED_EVENTS_SHA256 = "50313da01a212e25fcab49e27882d5e9ed11110cfe1ab1b69d6771f83f6e8844"
 PROFILE_BY_FAMILY = {
     "checkpoint": "checkpoint",
     "checkpoints": "checkpoint",
@@ -42,6 +44,23 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def signed_event_set_sha256(entries: list[dict[str, object]]) -> str:
+    digest = hashlib.sha256()
+    for entry in entries:
+        identifier = str(entry["fixture_id"]).encode()
+        digest.update(len(identifier).to_bytes(4, "big"))
+        digest.update(identifier)
+        scenario = json.loads((ROOT / str(entry["input_paths"][0])).read_text())
+        for raw in scenario["raw_events"]:
+            encoding = raw["encoding"].encode()
+            data = raw["data"].encode()
+            digest.update(len(encoding).to_bytes(4, "big"))
+            digest.update(encoding)
+            digest.update(len(data).to_bytes(8, "big"))
+            digest.update(data)
+    return digest.hexdigest()
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--allow-locked-transition", action="store_true")
@@ -54,7 +73,7 @@ def main() -> int:
     base_entries = {item["fixture_id"]: item for item in base["fixtures"]}
     entries: list[dict[str, object]] = []
     paths = set(FIXTURES.joinpath("schema").glob("*.json"))
-    paths.update((REQUIREMENTS, AUTHORITY, COMPANION))
+    paths.update((REQUIREMENTS, AUTHORITY, COMPANION, CONFORMANCE))
     profiles = {name: [] for name in ("checkpoint", "core", "malformed", "property", "resource")}
     seen: set[str] = set()
     known_requirements = {
@@ -109,6 +128,20 @@ def main() -> int:
         raise AssertionError(
             f"v8 fixture entries changed: missing={missing_base}; changed={changed_base}"
         )
+    base_files = {item["path"]: item["sha256"] for item in base["files"]}
+    intentional_v8_report_changes = sorted(
+        (
+            identifier
+            for identifier, entry in base_entries.items()
+            if base_files.get(entry["expected_path"])
+            != sha256(ROOT / str(entry["expected_path"]))
+        ),
+        key=str.encode,
+    )
+    preserved_entries = [current[identifier] for identifier in sorted(base_entries, key=str.encode)]
+    signed_events_sha256 = signed_event_set_sha256(preserved_entries)
+    if signed_events_sha256 != BASE_SIGNED_EVENTS_SHA256:
+        raise AssertionError("v8 signed event set changed")
     if len(entries) > TARGET_COUNT:
         raise AssertionError(f"signed fixture count exceeds {TARGET_COUNT}: {len(entries)}")
     files = [
@@ -135,11 +168,14 @@ def main() -> int:
         "complete": complete,
         "base_manifest_sha256": sha256(BASE),
         "preserved_v8_fixture_count": len(base_entries),
+        "preserved_v8_signed_events_sha256": signed_events_sha256,
         "missing_v8_fixtures": missing_base,
         "missing_v9_fixtures": missing_v9,
+        "intentional_v8_report_changes": intentional_v8_report_changes,
         "requirements_sha256": sha256(REQUIREMENTS),
         "authority_sha256": sha256(AUTHORITY),
         "companion_sha256": sha256(COMPANION),
+        "conformance_sha256": sha256(CONFORMANCE),
         "supersedes": "fixtures/distribution/manifest_v8.json",
         "v9_fixtures": list(V9_REQUIREMENTS),
         "profiles": profiles,
