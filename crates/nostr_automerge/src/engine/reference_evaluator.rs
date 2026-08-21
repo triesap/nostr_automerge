@@ -230,6 +230,7 @@ impl ReferenceEvaluator {
             &batch.control_dispositions,
             &batch.statefully_valid_controls,
             &batch.accepted_at_control,
+            &batch.branch_change_dispositions,
             budget,
             cancellation,
         );
@@ -1307,43 +1308,92 @@ struct CheckpointEvaluation {
     stop: Option<CheckpointWorkStop>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum CheckpointDownstreamStage {
+    ChunkSetCollection,
+    ChunkEventCollection,
+    CarrierHistoryCoverage,
+    AcceptedAtControlLookup,
+    SnapshotLoad,
+    HistoryVerification,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum CheckpointReportAttributionStage {
+    IndexedChunkEvent,
+    DescriptorHead,
+    AcceptedAtControlHash,
+    BranchDispositionHash,
+}
+
+trait CheckpointWorkObserver {
+    fn authorized_precharge(&mut self) {}
+
+    fn enter_downstream(
+        &mut self,
+        _descriptor_id: crate::EventId,
+        _stage: CheckpointDownstreamStage,
+    ) {
+    }
+
+    fn enter_report_attribution(
+        &mut self,
+        _descriptor_id: crate::EventId,
+        _stage: CheckpointReportAttributionStage,
+    ) {
+    }
+
+    fn report_attribution_item(
+        &mut self,
+        _descriptor_id: crate::EventId,
+        _stage: CheckpointReportAttributionStage,
+    ) {
+    }
+}
+
+struct NoopCheckpointWorkObserver;
+
+impl CheckpointWorkObserver for NoopCheckpointWorkObserver {}
+
+struct PreparedCheckpointInputs<'view, 'corpus> {
+    view: &'view DocumentEvidenceView<'corpus>,
+    canonical_controls: &'view [crate::EventId],
+    accepted_at_control: &'view std::collections::BTreeMap<crate::EventId, AcceptedAtControl>,
+    branch_change_dispositions: &'view std::collections::BTreeMap<
+        crate::EventId,
+        std::collections::BTreeMap<ChangeHash, ProtocolDisposition>,
+    >,
+    authorizations: &'view std::collections::BTreeMap<crate::EventId, DescriptorControlOutcome>,
+}
+
+struct CheckpointReportAttribution {
+    chunk_events: Vec<crate::EventId>,
+    heads: Vec<ChangeHash>,
+    historical_carriers: Vec<ChangeHash>,
+    accepted_at_control: Vec<ChangeHash>,
+}
+
 fn verify_checkpoints(
     view: &DocumentEvidenceView<'_>,
     canonical_controls: &[crate::EventId],
     control_dispositions: &std::collections::BTreeMap<crate::EventId, ProtocolDisposition>,
     statefully_valid_controls: &std::collections::BTreeSet<crate::EventId>,
     accepted_at_control: &std::collections::BTreeMap<crate::EventId, AcceptedAtControl>,
+    branch_change_dispositions: &std::collections::BTreeMap<
+        crate::EventId,
+        std::collections::BTreeMap<ChangeHash, ProtocolDisposition>,
+    >,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> CheckpointEvaluation {
-    let corpus = view.corpus();
-    let prepared = (|| {
-        let authorizations = checkpoint_authorizations(
-            view,
-            control_dispositions,
-            statefully_valid_controls,
-            budget,
-            cancellation,
-        )?;
-        charge_checkpoint_work(
-            budget,
-            cancellation,
-            u64::try_from(canonical_controls.len()).unwrap_or(u64::MAX),
-        )?;
-        let chunk_sets = checkpoint_chunk_sets(view, budget, cancellation)?;
-        let carrier_coverage =
-            checkpoint_carrier_coverage(view, canonical_controls, budget, cancellation)?;
-        let accepted_history =
-            checkpoint_accepted_history(view, accepted_at_control, budget, cancellation)?;
-        Ok::<_, CheckpointWorkStop>((
-            authorizations,
-            chunk_sets,
-            carrier_coverage,
-            accepted_history,
-        ))
-    })();
-    let (authorizations, chunk_sets, carrier_coverage, accepted_history) = match prepared {
-        Ok(prepared) => prepared,
+    let authorizations = match checkpoint_authorizations(
+        view,
+        control_dispositions,
+        statefully_valid_controls,
+        budget,
+        cancellation,
+    ) {
+        Ok(authorizations) => authorizations,
         Err(stop) => {
             return CheckpointEvaluation {
                 results: Vec::new(),
@@ -1351,8 +1401,32 @@ fn verify_checkpoints(
             };
         }
     };
+    let mut observer = NoopCheckpointWorkObserver;
+    verify_prepared_checkpoints(
+        PreparedCheckpointInputs {
+            view,
+            canonical_controls,
+            accepted_at_control,
+            branch_change_dispositions,
+            authorizations: &authorizations,
+        },
+        budget,
+        cancellation,
+        &mut observer,
+    )
+}
+
+fn verify_prepared_checkpoints(
+    inputs: PreparedCheckpointInputs<'_, '_>,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+    observer: &mut impl CheckpointWorkObserver,
+) -> CheckpointEvaluation {
+    let corpus = inputs.view.corpus();
     let mut results = Vec::new();
-    for descriptor_id in view
+    let mut coverage_controls_accounted = false;
+    for descriptor_id in inputs
+        .view
         .checkpoint_descriptor_event_ids()
         .into_iter()
         .flatten()
@@ -1371,54 +1445,119 @@ fn verify_checkpoints(
         else {
             continue;
         };
-        let control_refusal =
-            checkpoint_control_refusal(authorizations.get(&descriptor_id).copied());
-        let chunk_events =
-            match checkpoint_chunk_event_ids(view, descriptor_id, budget, cancellation) {
-                Ok(events) => events,
-                Err(stop) => {
-                    return CheckpointEvaluation {
-                        results,
-                        stop: Some(stop),
-                    };
-                }
-            };
-        let coverage_result = carrier_coverage.get(&descriptor_id);
-        let accepted_result = accepted_history.get(&descriptor_id);
-        let coverage_ref = coverage_result.and_then(|value| value.as_ref().ok());
-        let accepted_ref = accepted_result.and_then(|value| value.as_ref().ok());
         let commitments = descriptor.descriptor();
-        let result_work = coverage_ref
-            .map_or(0, std::collections::BTreeSet::len)
-            .saturating_add(accepted_ref.map_or(0, std::collections::BTreeSet::len))
-            .saturating_add(commitments.heads.len());
-        if let Err(stop) = charge_checkpoint_work(
-            budget,
-            cancellation,
-            u64::try_from(result_work).unwrap_or(u64::MAX),
-        ) {
-            return CheckpointEvaluation {
-                results,
-                stop: Some(stop),
-            };
-        }
-        let coverage = coverage_ref.cloned().unwrap_or_default();
-        let accepted = accepted_ref.cloned().unwrap_or_default();
-        let history_refusal = coverage_result
-            .and_then(|result| result.as_ref().err())
-            .or_else(|| accepted_result.and_then(|result| result.as_ref().err()))
-            .copied();
-        let status =
-            checkpoint_preflight_refusal(control_refusal, history_refusal).unwrap_or_else(|| {
-                verify_one_checkpoint(
-                    descriptor,
-                    chunk_sets.get(&descriptor_id),
-                    &coverage,
-                    &accepted,
+        let control_outcome = inputs.authorizations.get(&descriptor_id).copied();
+        let downstream = checkpoint_after_authorization(control_outcome, || {
+            if !coverage_controls_accounted {
+                charge_checkpoint_work(
                     budget,
                     cancellation,
+                    u64::try_from(inputs.canonical_controls.len()).unwrap_or(u64::MAX),
+                )?;
+                coverage_controls_accounted = true;
+                observer.authorized_precharge();
+            }
+            let chunk_set =
+                checkpoint_chunk_set(inputs.view, descriptor, budget, cancellation, observer)?;
+            let chunk_events = checkpoint_chunk_event_ids(
+                inputs.view,
+                descriptor_id,
+                budget,
+                cancellation,
+                observer,
+            )?;
+            let coverage_result = checkpoint_carrier_coverage(
+                inputs.view,
+                inputs.canonical_controls,
+                descriptor,
+                budget,
+                cancellation,
+                observer,
+            )?;
+            let accepted_result = checkpoint_accepted_history(
+                descriptor,
+                inputs.accepted_at_control,
+                budget,
+                cancellation,
+                observer,
+            )?;
+            let coverage_ref = coverage_result.as_ref().ok();
+            let accepted_ref = accepted_result.as_ref().ok();
+            let result_work = coverage_ref
+                .map_or(0, std::collections::BTreeSet::len)
+                .saturating_add(accepted_ref.map_or(0, std::collections::BTreeSet::len))
+                .saturating_add(commitments.heads.len());
+            charge_checkpoint_work(
+                budget,
+                cancellation,
+                u64::try_from(result_work).unwrap_or(u64::MAX),
+            )?;
+            let coverage = coverage_ref.cloned().unwrap_or_default();
+            let accepted = accepted_ref.cloned().unwrap_or_default();
+            let history_refusal = coverage_result
+                .as_ref()
+                .err()
+                .or_else(|| accepted_result.as_ref().err())
+                .copied();
+            let status = history_refusal.map_or_else(
+                || {
+                    verify_one_checkpoint(
+                        descriptor,
+                        Some(&chunk_set),
+                        &coverage,
+                        &accepted,
+                        budget,
+                        cancellation,
+                        observer,
+                    )
+                },
+                |error| history_refusal_status(&error),
+            );
+            Ok::<_, CheckpointWorkStop>((
+                chunk_events,
+                commitments.heads.iter().copied().collect::<Vec<_>>(),
+                coverage.into_iter().collect::<Vec<_>>(),
+                accepted.into_iter().collect::<Vec<_>>(),
+                status,
+            ))
+        });
+        let (chunk_events, heads, coverage, accepted, status) = match downstream {
+            Err(status) => {
+                let attribution = checkpoint_refusal_report_attribution(
+                    inputs.view,
+                    descriptor,
+                    control_outcome,
+                    inputs.accepted_at_control,
+                    inputs.branch_change_dispositions,
+                    budget,
+                    cancellation,
+                    observer,
+                );
+                let attribution = match attribution {
+                    Ok(attribution) => attribution,
+                    Err(stop) => {
+                        return CheckpointEvaluation {
+                            results,
+                            stop: Some(stop),
+                        };
+                    }
+                };
+                (
+                    attribution.chunk_events,
+                    attribution.heads,
+                    attribution.historical_carriers,
+                    attribution.accepted_at_control,
+                    status,
                 )
-            });
+            }
+            Ok(Ok(prepared)) => prepared,
+            Ok(Err(stop)) => {
+                return CheckpointEvaluation {
+                    results,
+                    stop: Some(stop),
+                };
+            }
+        };
         let stop = match status {
             CheckpointVerificationStatus::BudgetExhausted => Some(CheckpointWorkStop::Budget),
             CheckpointVerificationStatus::Cancelled => Some(CheckpointWorkStop::Cancelled),
@@ -1430,21 +1569,120 @@ fn verify_checkpoints(
                 stop: Some(stop),
             };
         }
-        results.push(CheckpointVerificationResult::new(
+        results.push(CheckpointVerificationResult::from_trusted_ordered(
             descriptor_id,
             chunk_events,
             descriptor.snapshot_hash(),
-            commitments.heads.iter().copied().collect(),
+            heads,
             commitments.change_count,
             commitments.change_set_hash,
-            coverage.into_iter().collect(),
-            accepted.into_iter().collect(),
+            coverage,
+            accepted,
             status,
         ));
     }
     CheckpointEvaluation {
         results,
         stop: None,
+    }
+}
+
+fn checkpoint_refusal_report_attribution(
+    view: &DocumentEvidenceView<'_>,
+    descriptor: &crate::carrier::checkpoint_descriptor::ValidatedCheckpointDescriptorCarrier,
+    outcome: Option<DescriptorControlOutcome>,
+    accepted_at_control: &std::collections::BTreeMap<crate::EventId, AcceptedAtControl>,
+    branch_change_dispositions: &std::collections::BTreeMap<
+        crate::EventId,
+        std::collections::BTreeMap<ChangeHash, ProtocolDisposition>,
+    >,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+    observer: &mut impl CheckpointWorkObserver,
+) -> Result<CheckpointReportAttribution, CheckpointWorkStop> {
+    let descriptor_id = descriptor.event_id();
+    observer.enter_report_attribution(
+        descriptor_id,
+        CheckpointReportAttributionStage::IndexedChunkEvent,
+    );
+    let mut chunk_events = Vec::new();
+    for event_id in view
+        .checkpoint_chunk_event_ids(descriptor_id)
+        .into_iter()
+        .flatten()
+    {
+        charge_checkpoint_work(budget, cancellation, 1)?;
+        observer.report_attribution_item(
+            descriptor_id,
+            CheckpointReportAttributionStage::IndexedChunkEvent,
+        );
+        chunk_events.push(*event_id);
+    }
+    observer.enter_report_attribution(
+        descriptor_id,
+        CheckpointReportAttributionStage::DescriptorHead,
+    );
+    let mut heads = Vec::new();
+    for head in &descriptor.descriptor().heads {
+        charge_checkpoint_work(budget, cancellation, 1)?;
+        observer.report_attribution_item(
+            descriptor_id,
+            CheckpointReportAttributionStage::DescriptorHead,
+        );
+        heads.push(*head);
+    }
+    let mut accepted = Vec::new();
+    if matches!(
+        outcome,
+        Some(DescriptorControlOutcome::Noncanonical | DescriptorControlOutcome::RoleDenied)
+    ) {
+        observer.enter_report_attribution(
+            descriptor_id,
+            CheckpointReportAttributionStage::AcceptedAtControlHash,
+        );
+        if let Some(state) = accepted_at_control.get(&descriptor.control_id()) {
+            for hash in state.accepted_closure() {
+                charge_checkpoint_work(budget, cancellation, 1)?;
+                observer.report_attribution_item(
+                    descriptor_id,
+                    CheckpointReportAttributionStage::AcceptedAtControlHash,
+                );
+                accepted.push(*hash);
+            }
+        }
+    }
+    let mut coverage = Vec::new();
+    if outcome == Some(DescriptorControlOutcome::RoleDenied) {
+        observer.enter_report_attribution(
+            descriptor_id,
+            CheckpointReportAttributionStage::BranchDispositionHash,
+        );
+        if let Some(dispositions) = branch_change_dispositions.get(&descriptor.control_id()) {
+            for hash in dispositions.keys() {
+                charge_checkpoint_work(budget, cancellation, 1)?;
+                observer.report_attribution_item(
+                    descriptor_id,
+                    CheckpointReportAttributionStage::BranchDispositionHash,
+                );
+                coverage.push(*hash);
+            }
+        }
+    }
+    Ok(CheckpointReportAttribution {
+        chunk_events,
+        heads,
+        historical_carriers: coverage,
+        accepted_at_control: accepted,
+    })
+}
+
+fn checkpoint_after_authorization<T>(
+    outcome: Option<DescriptorControlOutcome>,
+    downstream: impl FnOnce() -> T,
+) -> Result<T, CheckpointVerificationStatus> {
+    match checkpoint_control_refusal(outcome) {
+        Some(status) => Err(status),
+        None => Ok(downstream()),
     }
 }
 
@@ -1468,6 +1706,7 @@ const fn checkpoint_control_refusal(
     }
 }
 
+#[cfg(test)]
 const fn checkpoint_preflight_refusal(
     control_refusal: Option<CheckpointVerificationStatus>,
     history_refusal: Option<HistoryVerificationError>,
@@ -1499,7 +1738,12 @@ fn checkpoint_chunk_event_ids(
     descriptor_id: crate::EventId,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
+    observer: &mut impl CheckpointWorkObserver,
 ) -> Result<Vec<crate::EventId>, CheckpointWorkStop> {
+    observer.enter_downstream(
+        descriptor_id,
+        CheckpointDownstreamStage::ChunkEventCollection,
+    );
     let event_ids = view
         .checkpoint_chunk_event_ids(descriptor_id)
         .into_iter()
@@ -1520,6 +1764,7 @@ fn verify_one_checkpoint(
     accepted: &std::collections::BTreeSet<ChangeHash>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
+    observer: &mut impl CheckpointWorkObserver,
 ) -> CheckpointVerificationStatus {
     use crate::checkpoint::{HistoryVerificationError, VerifyError};
     if cancellation.is_cancelled() {
@@ -1542,6 +1787,10 @@ fn verify_one_checkpoint(
         Ok(bytes) => bytes,
         Err(error) => return assembly_status(error),
     };
+    observer.enter_downstream(
+        descriptor.event_id(),
+        CheckpointDownstreamStage::SnapshotLoad,
+    );
     let snapshot = match crate::checkpoint::verify_snapshot_heads(
         &bytes,
         descriptor.descriptor(),
@@ -1573,6 +1822,10 @@ fn verify_one_checkpoint(
             _ => CheckpointVerificationStatus::ClosureMismatch,
         };
     }
+    observer.enter_downstream(
+        descriptor.event_id(),
+        CheckpointDownstreamStage::HistoryVerification,
+    );
     match crate::checkpoint::verify_full_history_metered(
         &snapshot,
         coverage,
@@ -1626,127 +1879,89 @@ const fn assembly_status(error: crate::checkpoint::AssemblyError) -> CheckpointV
 }
 
 fn checkpoint_accepted_history(
-    view: &DocumentEvidenceView<'_>,
+    descriptor: &crate::carrier::checkpoint_descriptor::ValidatedCheckpointDescriptorCarrier,
     accepted_at_control: &std::collections::BTreeMap<crate::EventId, AcceptedAtControl>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
+    observer: &mut impl CheckpointWorkObserver,
 ) -> Result<
-    std::collections::BTreeMap<
-        crate::EventId,
-        Result<std::collections::BTreeSet<ChangeHash>, HistoryVerificationError>,
-    >,
+    Result<std::collections::BTreeSet<ChangeHash>, HistoryVerificationError>,
     CheckpointWorkStop,
 > {
-    let mut history = std::collections::BTreeMap::new();
-    let corpus = view.corpus();
-    for descriptor_id in view.checkpoint_descriptor_event_ids().into_iter().flatten() {
-        charge_checkpoint_work(budget, cancellation, 1)?;
-        if let Some(EventEvidence::VerifiedCarrier {
-            carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
-            ..
-        }) = corpus.events.get(descriptor_id)
-        {
-            let accepted = if let Some(state) = accepted_at_control.get(&descriptor.control_id()) {
-                charge_checkpoint_work(
-                    budget,
-                    cancellation,
-                    u64::try_from(state.accepted_closure().len()).unwrap_or(u64::MAX),
-                )?;
-                Ok(state.accepted_closure().clone())
-            } else {
-                Err(HistoryVerificationError::UnknownControl)
-            };
-            history.insert(*descriptor_id, accepted);
-        }
-    }
-    Ok(history)
+    observer.enter_downstream(
+        descriptor.event_id(),
+        CheckpointDownstreamStage::AcceptedAtControlLookup,
+    );
+    charge_checkpoint_work(budget, cancellation, 1)?;
+    let Some(state) = accepted_at_control.get(&descriptor.control_id()) else {
+        return Ok(Err(HistoryVerificationError::UnknownControl));
+    };
+    charge_checkpoint_work(
+        budget,
+        cancellation,
+        u64::try_from(state.accepted_closure().len()).unwrap_or(u64::MAX),
+    )?;
+    Ok(Ok(state.accepted_closure().clone()))
 }
 
 fn checkpoint_carrier_coverage(
     view: &DocumentEvidenceView<'_>,
     canonical_controls: &[crate::EventId],
+    descriptor: &crate::carrier::checkpoint_descriptor::ValidatedCheckpointDescriptorCarrier,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
+    observer: &mut impl CheckpointWorkObserver,
 ) -> Result<
-    std::collections::BTreeMap<
-        crate::EventId,
-        Result<std::collections::BTreeSet<ChangeHash>, HistoryVerificationError>,
-    >,
+    Result<std::collections::BTreeSet<ChangeHash>, HistoryVerificationError>,
     CheckpointWorkStop,
 > {
-    let mut coverage = std::collections::BTreeMap::new();
-    let corpus = view.corpus();
-    for descriptor_id in view.checkpoint_descriptor_event_ids().into_iter().flatten() {
-        charge_checkpoint_work(budget, cancellation, 1)?;
-        if let Some(EventEvidence::VerifiedCarrier {
-            carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
-            ..
-        }) = corpus.events.get(descriptor_id)
-        {
-            let result = historical_carrier_coverage(
-                view,
-                canonical_controls,
-                descriptor.control_id(),
-                budget,
-                cancellation,
-            );
-            match result {
-                Err(HistoryVerificationError::Budget) => {
-                    return Err(CheckpointWorkStop::Budget);
-                }
-                Err(HistoryVerificationError::Cancelled) => {
-                    return Err(CheckpointWorkStop::Cancelled);
-                }
-                result => {
-                    coverage.insert(*descriptor_id, result);
-                }
-            }
-        }
+    observer.enter_downstream(
+        descriptor.event_id(),
+        CheckpointDownstreamStage::CarrierHistoryCoverage,
+    );
+    charge_checkpoint_work(budget, cancellation, 1)?;
+    match historical_carrier_coverage(
+        view,
+        canonical_controls,
+        descriptor.control_id(),
+        budget,
+        cancellation,
+    ) {
+        Err(HistoryVerificationError::Budget) => Err(CheckpointWorkStop::Budget),
+        Err(HistoryVerificationError::Cancelled) => Err(CheckpointWorkStop::Cancelled),
+        result => Ok(result),
     }
-    Ok(coverage)
 }
 
-fn checkpoint_chunk_sets(
+fn checkpoint_chunk_set(
     view: &DocumentEvidenceView<'_>,
+    descriptor: &crate::carrier::checkpoint_descriptor::ValidatedCheckpointDescriptorCarrier,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
-) -> Result<
-    std::collections::BTreeMap<
-        crate::EventId,
-        Result<Vec<crate::checkpoint::CheckpointChunk>, JoinError>,
-    >,
-    CheckpointWorkStop,
-> {
-    let mut sets = std::collections::BTreeMap::new();
+    observer: &mut impl CheckpointWorkObserver,
+) -> Result<Result<Vec<crate::checkpoint::CheckpointChunk>, JoinError>, CheckpointWorkStop> {
+    observer.enter_downstream(
+        descriptor.event_id(),
+        CheckpointDownstreamStage::ChunkSetCollection,
+    );
     let corpus = view.corpus();
-    let descriptor_ids = view.checkpoint_descriptor_event_ids().into_iter().flatten();
-    for descriptor_id in descriptor_ids {
+    charge_checkpoint_work(budget, cancellation, 1)?;
+    let mut chunks = Vec::new();
+    for chunk_id in view
+        .checkpoint_chunk_event_ids(descriptor.event_id())
+        .into_iter()
+        .flatten()
+    {
         charge_checkpoint_work(budget, cancellation, 1)?;
-        let Some(EventEvidence::VerifiedCarrier {
-            carrier: VerifiedCarrier::CheckpointDescriptor(descriptor),
+        if let Some(EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::CheckpointChunk(chunk),
             ..
-        }) = corpus.events.get(descriptor_id)
-        else {
-            continue;
-        };
-        let mut chunks = Vec::new();
-        for chunk_id in view
-            .checkpoint_chunk_event_ids(*descriptor_id)
-            .into_iter()
-            .flatten()
+        }) = corpus.events.get(chunk_id)
         {
-            charge_checkpoint_work(budget, cancellation, 1)?;
-            if let Some(EventEvidence::VerifiedCarrier {
-                carrier: VerifiedCarrier::CheckpointChunk(chunk),
-                ..
-            }) = corpus.events.get(chunk_id)
-            {
-                chunks.push(chunk.as_ref());
-            }
+            chunks.push(chunk.as_ref());
         }
-        sets.insert(*descriptor_id, join_chunks(descriptor, chunks));
     }
-    Ok(sets)
+    Ok(join_chunks(descriptor, chunks))
 }
 
 fn checkpoint_authorizations(
@@ -3049,24 +3264,37 @@ fn charge_evaluation_work(
 #[cfg(test)]
 mod tests {
     use super::{
-        ChangeCarrierOutcome, ChangeClaimReason, CheckpointWorkStop, FinalLineageChangeState,
-        FinalizationDimension, FinalizationPermitError, FinalizationReservationUnit,
-        InterruptedReportPass, ReportFinalizationPermit, ReportFinalizationPlan, assembly_status,
+        ChangeCarrierOutcome, ChangeClaimReason, CheckpointDownstreamStage,
+        CheckpointReportAttributionStage, CheckpointWorkObserver, CheckpointWorkStop,
+        FinalLineageChangeState, FinalizationDimension, FinalizationPermitError,
+        FinalizationReservationUnit, InterruptedReportPass, PreparedCheckpointInputs,
+        ReportFinalizationPermit, ReportFinalizationPlan, assembly_status,
         change_carrier_disposition, charge_checkpoint_work, checkpoint_control_refusal,
         checkpoint_preflight_refusal, join_status, noncanonical_branch_claim_reason,
         reduce_reasoned_change_outcome, scoped_dynamic_event_disposition_records,
+        verify_prepared_checkpoints,
     };
     use crate::CheckpointVerificationStatus as Status;
+    use crate::authoring::{ActorState, AuthoringDocument};
+    use crate::carrier::VerifiedCarrier;
+    use crate::carrier::checkpoint_chunk::ValidatedCheckpointChunkCarrier;
+    use crate::carrier::checkpoint_descriptor::ValidatedCheckpointDescriptorCarrier;
     use crate::checkpoint::authorize::DescriptorControlOutcome;
     use crate::checkpoint::join::JoinError;
-    use crate::checkpoint::{AssemblyError, HistoryVerificationError};
+    use crate::checkpoint::{
+        AssemblyError, CheckpointChunk, CheckpointDescriptor, HistoryVerificationError, leaf_hash,
+    };
     use crate::evidence::corpus_builder::EvidenceCorpus;
     use crate::evidence::document_view::DocumentEvidenceView;
-    use crate::evidence::indexes::TrustedIndexes;
+    use crate::evidence::event::{EventEvidence, RawChecksum};
+    use crate::evidence::indexes::{TrustedIndexes, derive_trusted_indexes};
+    use crate::reference::epoch_engine::AcceptedAtControl;
     use crate::{
-        CheckpointVerificationResult, ControllerPublicKey, DocumentCoordinate, DocumentId, EventId,
+        ActorId, ChangeHash, CheckpointVerificationResult, ChunkHash, ControllerPublicKey,
+        DevicePublicKey, DocumentCoordinate, DocumentId, EventId, ProtocolDisposition,
         ResolvedManifestAvailability, SnapshotHash, WorkBudget, WorkCounter,
     };
+    use sha2::{Digest, Sha256};
 
     #[test]
     fn dynamic_event_records_reject_foreign_membership() {
@@ -3452,6 +3680,875 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[derive(Default)]
+    struct RecordingCheckpointWorkObserver {
+        authorized_precharges: u64,
+        downstream: std::collections::BTreeMap<(EventId, CheckpointDownstreamStage), u64>,
+        report_attribution_calls:
+            std::collections::BTreeMap<(EventId, CheckpointReportAttributionStage), u64>,
+        report_attribution_items:
+            std::collections::BTreeMap<(EventId, CheckpointReportAttributionStage), u64>,
+    }
+
+    impl CheckpointWorkObserver for RecordingCheckpointWorkObserver {
+        fn authorized_precharge(&mut self) {
+            self.authorized_precharges += 1;
+        }
+
+        fn enter_downstream(&mut self, descriptor_id: EventId, stage: CheckpointDownstreamStage) {
+            *self.downstream.entry((descriptor_id, stage)).or_default() += 1;
+        }
+
+        fn enter_report_attribution(
+            &mut self,
+            descriptor_id: EventId,
+            stage: CheckpointReportAttributionStage,
+        ) {
+            *self
+                .report_attribution_calls
+                .entry((descriptor_id, stage))
+                .or_default() += 1;
+        }
+
+        fn report_attribution_item(
+            &mut self,
+            descriptor_id: EventId,
+            stage: CheckpointReportAttributionStage,
+        ) {
+            *self
+                .report_attribution_items
+                .entry((descriptor_id, stage))
+                .or_default() += 1;
+        }
+    }
+
+    impl RecordingCheckpointWorkObserver {
+        fn calls(&self, descriptor_id: EventId, stage: CheckpointDownstreamStage) -> u64 {
+            self.downstream
+                .get(&(descriptor_id, stage))
+                .copied()
+                .unwrap_or_default()
+        }
+
+        fn descriptor_calls(&self, descriptor_id: EventId) -> u64 {
+            self.downstream
+                .iter()
+                .filter(|((observed_id, _), _)| *observed_id == descriptor_id)
+                .map(|(_, calls)| *calls)
+                .sum()
+        }
+
+        fn report_calls(
+            &self,
+            descriptor_id: EventId,
+            stage: CheckpointReportAttributionStage,
+        ) -> u64 {
+            self.report_attribution_calls
+                .get(&(descriptor_id, stage))
+                .copied()
+                .unwrap_or_default()
+        }
+
+        fn report_items(
+            &self,
+            descriptor_id: EventId,
+            stage: CheckpointReportAttributionStage,
+        ) -> u64 {
+            self.report_attribution_items
+                .get(&(descriptor_id, stage))
+                .copied()
+                .unwrap_or_default()
+        }
+
+        fn descriptor_report_items(&self, descriptor_id: EventId) -> u64 {
+            self.report_attribution_items
+                .iter()
+                .filter(|((observed_id, _), _)| *observed_id == descriptor_id)
+                .map(|(_, items)| *items)
+                .sum()
+        }
+    }
+
+    struct PreparedCheckpointHarness {
+        corpus: EvidenceCorpus,
+        coordinate: DocumentCoordinate,
+        control_id: EventId,
+        attribution_hash: ChangeHash,
+        descriptor_ids: Vec<EventId>,
+    }
+
+    fn prepared_checkpoint_harness(descriptor_bytes: &[u8]) -> PreparedCheckpointHarness {
+        prepared_checkpoint_harness_with_report_shape(
+            descriptor_bytes,
+            std::collections::BTreeSet::new(),
+            1,
+        )
+    }
+
+    fn prepared_checkpoint_harness_with_report_shape(
+        descriptor_bytes: &[u8],
+        descriptor_heads: std::collections::BTreeSet<ChangeHash>,
+        chunks_per_descriptor: u8,
+    ) -> PreparedCheckpointHarness {
+        assert!(chunks_per_descriptor > 0);
+        let coordinate = DocumentCoordinate::new(
+            ControllerPublicKey::from_bytes([0x70; 32]),
+            DocumentId::from_bytes([0x71; 32]),
+        );
+        let author = DevicePublicKey::from_bytes([0x72; 32]);
+        let control_id = EventId::from_bytes([0x73; 32]);
+        let attribution_hash = ChangeHash::from_bytes([0x75; 32]);
+        let actor = ActorId::from_bytes([0x74; 32]);
+        let document = AuthoringDocument::empty(ActorState::initial(
+            actor,
+            std::collections::BTreeSet::new(),
+        ));
+        assert!(document.is_ok());
+        let snapshot = document.map_or_else(|_| Vec::new(), |value| value.accepted_state_bytes());
+        assert!(!snapshot.is_empty());
+        let snapshot_hash_bytes: [u8; 32] = Sha256::digest(&snapshot).into();
+        let snapshot_hash = SnapshotHash::from_bytes(snapshot_hash_bytes);
+        let chunk_hash = ChunkHash::from_bytes(snapshot_hash_bytes);
+        let chunk_root = leaf_hash(0, 1, snapshot_hash_bytes);
+        let empty_change_set_hash: [u8; 32] = Sha256::digest(
+            [
+                b"nostr-crdt/automerge/change-set/v1".as_slice(),
+                &[0],
+                &0_u64.to_be_bytes(),
+            ]
+            .concat(),
+        )
+        .into();
+        let chunk_size = u32::try_from(snapshot.len()).unwrap_or(u32::MAX);
+        let mut events = std::collections::BTreeMap::new();
+        let mut descriptor_ids = Vec::new();
+        for descriptor_byte in descriptor_bytes {
+            let descriptor_id = EventId::from_bytes([*descriptor_byte; 32]);
+            let descriptor = CheckpointDescriptor {
+                snapshot_hash,
+                heads: descriptor_heads.clone(),
+                raw_size: u64::try_from(snapshot.len()).unwrap_or(u64::MAX),
+                chunk_size,
+                chunk_count: u32::from(chunks_per_descriptor),
+                chunk_root,
+                change_count: u64::try_from(descriptor_heads.len()).unwrap_or(u64::MAX),
+                change_set_hash: empty_change_set_hash,
+                dependency_edges: 0,
+                total_ops: 0,
+            };
+            let descriptor = ValidatedCheckpointDescriptorCarrier::for_test(
+                descriptor_id,
+                author,
+                coordinate,
+                control_id,
+                descriptor,
+            );
+            events.insert(
+                descriptor_id,
+                EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::CheckpointDescriptor(Box::new(descriptor)),
+                    raw_checksum: RawChecksum::test_only([*descriptor_byte; 32]),
+                },
+            );
+            for chunk_index in 0..chunks_per_descriptor {
+                let chunk_byte = descriptor_byte
+                    .saturating_add(0x80)
+                    .saturating_add(chunk_index);
+                let chunk_id = EventId::from_bytes([chunk_byte; 32]);
+                let chunk = ValidatedCheckpointChunkCarrier::for_test(
+                    chunk_id,
+                    author,
+                    coordinate,
+                    descriptor_id,
+                    chunk_hash,
+                    CheckpointChunk {
+                        index: u32::from(chunk_index),
+                        count: u32::from(chunks_per_descriptor),
+                        data: snapshot.clone(),
+                        proof: Vec::new(),
+                    },
+                );
+                events.insert(
+                    chunk_id,
+                    EventEvidence::VerifiedCarrier {
+                        carrier: VerifiedCarrier::CheckpointChunk(Box::new(chunk)),
+                        raw_checksum: RawChecksum::test_only([chunk_byte.saturating_add(1); 32]),
+                    },
+                );
+            }
+            descriptor_ids.push(descriptor_id);
+        }
+        let indexes = derive_trusted_indexes(&events, &[]);
+        PreparedCheckpointHarness {
+            corpus: EvidenceCorpus {
+                events,
+                invalid: std::collections::BTreeMap::new(),
+                duplicates: Vec::new(),
+                indexes,
+            },
+            coordinate,
+            control_id,
+            attribution_hash,
+            descriptor_ids,
+        }
+    }
+
+    fn evaluate_prepared_checkpoints(
+        harness: &PreparedCheckpointHarness,
+        authorizations: &std::collections::BTreeMap<EventId, DescriptorControlOutcome>,
+        budget: &mut WorkBudget,
+        cancellation: &impl crate::CancellationCheck,
+        observer: &mut RecordingCheckpointWorkObserver,
+    ) -> super::CheckpointEvaluation {
+        let view = DocumentEvidenceView::derive(&harness.corpus, harness.coordinate);
+        let accepted_at_control = std::collections::BTreeMap::from([(
+            harness.control_id,
+            AcceptedAtControl::for_test(std::collections::BTreeSet::from([
+                harness.attribution_hash
+            ])),
+        )]);
+        let branch_change_dispositions = std::collections::BTreeMap::from([(
+            harness.control_id,
+            std::collections::BTreeMap::from([(
+                harness.attribution_hash,
+                ProtocolDisposition::Accepted,
+            )]),
+        )]);
+        verify_prepared_checkpoints(
+            PreparedCheckpointInputs {
+                view: &view,
+                canonical_controls: &[harness.control_id],
+                accepted_at_control: &accepted_at_control,
+                branch_change_dispositions: &branch_change_dispositions,
+                authorizations,
+            },
+            budget,
+            cancellation,
+            observer,
+        )
+    }
+
+    fn assert_all_downstream_stages_once(
+        observer: &RecordingCheckpointWorkObserver,
+        descriptor_id: EventId,
+    ) {
+        for stage in [
+            CheckpointDownstreamStage::ChunkSetCollection,
+            CheckpointDownstreamStage::ChunkEventCollection,
+            CheckpointDownstreamStage::CarrierHistoryCoverage,
+            CheckpointDownstreamStage::AcceptedAtControlLookup,
+            CheckpointDownstreamStage::SnapshotLoad,
+            CheckpointDownstreamStage::HistoryVerification,
+        ] {
+            assert_eq!(observer.calls(descriptor_id, stage), 1);
+        }
+    }
+
+    fn assert_report_attribution(
+        observer: &RecordingCheckpointWorkObserver,
+        descriptor_id: EventId,
+        accepted_hash: bool,
+        branch_hash: bool,
+    ) {
+        assert_eq!(
+            observer.report_calls(
+                descriptor_id,
+                CheckpointReportAttributionStage::IndexedChunkEvent
+            ),
+            1
+        );
+        assert_eq!(
+            observer.report_items(
+                descriptor_id,
+                CheckpointReportAttributionStage::IndexedChunkEvent
+            ),
+            1
+        );
+        assert_eq!(
+            observer.report_calls(
+                descriptor_id,
+                CheckpointReportAttributionStage::DescriptorHead
+            ),
+            1
+        );
+        assert_eq!(
+            observer.report_items(
+                descriptor_id,
+                CheckpointReportAttributionStage::DescriptorHead
+            ),
+            0
+        );
+        for (stage, expected) in [
+            (
+                CheckpointReportAttributionStage::AcceptedAtControlHash,
+                u64::from(accepted_hash),
+            ),
+            (
+                CheckpointReportAttributionStage::BranchDispositionHash,
+                u64::from(branch_hash),
+            ),
+        ] {
+            assert_eq!(observer.report_calls(descriptor_id, stage), expected);
+            assert_eq!(observer.report_items(descriptor_id, stage), expected);
+        }
+    }
+
+    #[test]
+    fn every_refused_descriptor_family_skips_checkpoint_verification_stages() {
+        use DescriptorControlOutcome::{
+            DynamicInvalid, Missing, Noncanonical, Pending, RoleDenied, StaticInvalid,
+            UnsupportedRevision, WrongCoordinate, WrongKind,
+        };
+
+        let harness = prepared_checkpoint_harness(&[0x10]);
+        let descriptor_id = harness.descriptor_ids[0];
+        for (outcome, expected, accepted_hash, branch_hash) in [
+            (Some(Missing), Status::PendingControl, false, false),
+            (Some(Pending), Status::PendingControl, false, false),
+            (Some(Noncanonical), Status::Unauthorized, true, false),
+            (Some(WrongKind), Status::Unauthorized, false, false),
+            (Some(WrongCoordinate), Status::Unauthorized, false, false),
+            (Some(StaticInvalid), Status::Unauthorized, false, false),
+            (Some(DynamicInvalid), Status::Unauthorized, false, false),
+            (
+                Some(UnsupportedRevision),
+                Status::Unauthorized,
+                false,
+                false,
+            ),
+            (Some(RoleDenied), Status::Unauthorized, true, true),
+            (None, Status::PendingControl, false, false),
+        ] {
+            let authorizations = outcome
+                .map(|value| std::collections::BTreeMap::from([(descriptor_id, value)]))
+                .unwrap_or_default();
+            let mut budget = WorkBudget::new(u64::MAX, u64::MAX);
+            let mut observer = RecordingCheckpointWorkObserver::default();
+            let evaluation = evaluate_prepared_checkpoints(
+                &harness,
+                &authorizations,
+                &mut budget,
+                &crate::NeverCancelled,
+                &mut observer,
+            );
+            assert_eq!(evaluation.stop, None);
+            assert_eq!(evaluation.results.len(), 1);
+            assert_eq!(evaluation.results[0].status(), expected);
+            assert_eq!(evaluation.results[0].chunk_events().len(), 1);
+            assert_eq!(
+                evaluation.results[0].accepted_at_control().len(),
+                usize::from(accepted_hash)
+            );
+            assert_eq!(
+                evaluation.results[0].historical_carriers().len(),
+                usize::from(branch_hash)
+            );
+            assert_eq!(observer.authorized_precharges, 0);
+            assert_eq!(observer.descriptor_calls(descriptor_id), 0);
+            assert_report_attribution(&observer, descriptor_id, accepted_hash, branch_hash);
+            assert_eq!(
+                budget.consumed().get(WorkCounter::CheckpointItem),
+                2 + u64::from(accepted_hash) + u64::from(branch_hash)
+            );
+        }
+    }
+
+    #[test]
+    fn authorized_precharge_and_checkpoint_verification_are_order_independent() {
+        use DescriptorControlOutcome::{CanonicalAuthorized, Missing, RoleDenied};
+
+        for outcomes in [
+            vec![Missing, CanonicalAuthorized],
+            vec![CanonicalAuthorized, RoleDenied],
+            vec![
+                CanonicalAuthorized,
+                CanonicalAuthorized,
+                CanonicalAuthorized,
+            ],
+        ] {
+            let descriptor_bytes = (0..outcomes.len())
+                .map(|offset| 0x20_u8.saturating_add(u8::try_from(offset).unwrap_or(u8::MAX)))
+                .collect::<Vec<_>>();
+            let harness = prepared_checkpoint_harness(&descriptor_bytes);
+            let authorizations = harness
+                .descriptor_ids
+                .iter()
+                .copied()
+                .zip(outcomes.iter().copied())
+                .collect::<std::collections::BTreeMap<_, _>>();
+            let mut budget = WorkBudget::new(u64::MAX, u64::MAX);
+            let mut observer = RecordingCheckpointWorkObserver::default();
+            let evaluation = evaluate_prepared_checkpoints(
+                &harness,
+                &authorizations,
+                &mut budget,
+                &crate::NeverCancelled,
+                &mut observer,
+            );
+            assert_eq!(evaluation.stop, None);
+            assert_eq!(evaluation.results.len(), outcomes.len());
+            assert_eq!(observer.authorized_precharges, 1);
+            for (descriptor_id, outcome) in harness
+                .descriptor_ids
+                .iter()
+                .copied()
+                .zip(outcomes.iter().copied())
+            {
+                if outcome == CanonicalAuthorized {
+                    assert_eq!(
+                        evaluation
+                            .results
+                            .iter()
+                            .find(|result| result.descriptor_event() == descriptor_id)
+                            .map(CheckpointVerificationResult::status),
+                        Some(Status::Verified)
+                    );
+                    assert_all_downstream_stages_once(&observer, descriptor_id);
+                    assert_eq!(observer.descriptor_report_items(descriptor_id), 0);
+                } else {
+                    assert_eq!(observer.descriptor_calls(descriptor_id), 0);
+                    assert_report_attribution(
+                        &observer,
+                        descriptor_id,
+                        outcome == RoleDenied,
+                        outcome == RoleDenied,
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn checkpoint_authorization_gate_preserves_budget_and_cancellation_boundaries() {
+        use DescriptorControlOutcome::{CanonicalAuthorized, Missing, RoleDenied};
+
+        let harness = prepared_checkpoint_harness(&[0x30]);
+        let descriptor_id = harness.descriptor_ids[0];
+        let authorized = std::collections::BTreeMap::from([(descriptor_id, CanonicalAuthorized)]);
+
+        let mut zero_budget = WorkBudget::new(0, 0);
+        let mut zero_observer = RecordingCheckpointWorkObserver::default();
+        let zero = evaluate_prepared_checkpoints(
+            &harness,
+            &authorized,
+            &mut zero_budget,
+            &crate::NeverCancelled,
+            &mut zero_observer,
+        );
+        assert_eq!(zero.stop, Some(CheckpointWorkStop::Budget));
+        assert_eq!(zero_budget.consumed().get(WorkCounter::CheckpointItem), 0);
+        assert_eq!(zero_observer.authorized_precharges, 0);
+        assert_eq!(zero_observer.descriptor_calls(descriptor_id), 0);
+
+        let mut precharge_budget = WorkBudget::new(0, 1);
+        let mut precharge_observer = RecordingCheckpointWorkObserver::default();
+        let precharge_stop = evaluate_prepared_checkpoints(
+            &harness,
+            &authorized,
+            &mut precharge_budget,
+            &crate::NeverCancelled,
+            &mut precharge_observer,
+        );
+        assert_eq!(precharge_stop.stop, Some(CheckpointWorkStop::Budget));
+        assert_eq!(
+            precharge_budget.consumed().get(WorkCounter::CheckpointItem),
+            1
+        );
+        assert_eq!(precharge_observer.authorized_precharges, 0);
+        assert_eq!(precharge_observer.descriptor_calls(descriptor_id), 0);
+
+        let mut downstream_budget = WorkBudget::new(0, 2);
+        let mut downstream_observer = RecordingCheckpointWorkObserver::default();
+        let downstream_stop = evaluate_prepared_checkpoints(
+            &harness,
+            &authorized,
+            &mut downstream_budget,
+            &crate::NeverCancelled,
+            &mut downstream_observer,
+        );
+        assert_eq!(downstream_stop.stop, Some(CheckpointWorkStop::Budget));
+        assert_eq!(downstream_observer.authorized_precharges, 1);
+        assert_eq!(
+            downstream_observer.calls(descriptor_id, CheckpointDownstreamStage::ChunkSetCollection),
+            1
+        );
+        assert_eq!(downstream_observer.descriptor_calls(descriptor_id), 1);
+
+        let refused = std::collections::BTreeMap::from([(descriptor_id, Missing)]);
+        let cancellation_calls = std::cell::Cell::new(0_u64);
+        let cancellation = || {
+            cancellation_calls.set(cancellation_calls.get() + 1);
+            false
+        };
+        let mut refused_budget = WorkBudget::new(0, u64::MAX);
+        let mut refused_observer = RecordingCheckpointWorkObserver::default();
+        let refused_result = evaluate_prepared_checkpoints(
+            &harness,
+            &refused,
+            &mut refused_budget,
+            &cancellation,
+            &mut refused_observer,
+        );
+        assert_eq!(refused_result.stop, None);
+        assert_eq!(cancellation_calls.get(), 2);
+        assert_eq!(refused_observer.authorized_precharges, 0);
+        assert_eq!(refused_observer.descriptor_calls(descriptor_id), 0);
+        assert_report_attribution(&refused_observer, descriptor_id, false, false);
+        assert_eq!(
+            refused_budget.consumed().get(WorkCounter::CheckpointItem),
+            2
+        );
+
+        let role_denied = std::collections::BTreeMap::from([(descriptor_id, RoleDenied)]);
+        let mut attribution_n_minus_one_budget = WorkBudget::new(0, 3);
+        let mut attribution_n_minus_one_observer = RecordingCheckpointWorkObserver::default();
+        let attribution_n_minus_one = evaluate_prepared_checkpoints(
+            &harness,
+            &role_denied,
+            &mut attribution_n_minus_one_budget,
+            &crate::NeverCancelled,
+            &mut attribution_n_minus_one_observer,
+        );
+        assert_eq!(
+            attribution_n_minus_one.stop,
+            Some(CheckpointWorkStop::Budget)
+        );
+        assert!(attribution_n_minus_one.results.is_empty());
+        assert_eq!(
+            attribution_n_minus_one_budget
+                .consumed()
+                .get(WorkCounter::CheckpointItem),
+            3
+        );
+        assert_eq!(
+            attribution_n_minus_one_observer.descriptor_calls(descriptor_id),
+            0
+        );
+        assert_eq!(
+            attribution_n_minus_one_observer.descriptor_report_items(descriptor_id),
+            2
+        );
+        assert_eq!(
+            attribution_n_minus_one_observer.report_calls(
+                descriptor_id,
+                CheckpointReportAttributionStage::BranchDispositionHash
+            ),
+            1
+        );
+        assert_eq!(
+            attribution_n_minus_one_observer.report_items(
+                descriptor_id,
+                CheckpointReportAttributionStage::BranchDispositionHash
+            ),
+            0
+        );
+
+        let mut attribution_exact_budget = WorkBudget::new(0, 4);
+        let mut attribution_exact_observer = RecordingCheckpointWorkObserver::default();
+        let attribution_exact = evaluate_prepared_checkpoints(
+            &harness,
+            &role_denied,
+            &mut attribution_exact_budget,
+            &crate::NeverCancelled,
+            &mut attribution_exact_observer,
+        );
+        assert_eq!(attribution_exact.stop, None);
+        assert_eq!(attribution_exact.results.len(), 1);
+        assert_eq!(attribution_exact.results[0].status(), Status::Unauthorized);
+        assert_eq!(attribution_exact.results[0].chunk_events().len(), 1);
+        assert_eq!(
+            attribution_exact.results[0].accepted_at_control(),
+            &[harness.attribution_hash]
+        );
+        assert_eq!(
+            attribution_exact.results[0].historical_carriers(),
+            &[harness.attribution_hash]
+        );
+        assert_eq!(
+            attribution_exact_budget
+                .consumed()
+                .get(WorkCounter::CheckpointItem),
+            4
+        );
+        assert_eq!(
+            attribution_exact_observer.descriptor_calls(descriptor_id),
+            0
+        );
+        assert_report_attribution(&attribution_exact_observer, descriptor_id, true, true);
+
+        let attribution_cancel_calls = std::cell::Cell::new(0_u64);
+        let attribution_cancellation = || {
+            attribution_cancel_calls.set(attribution_cancel_calls.get() + 1);
+            attribution_cancel_calls.get() >= 4
+        };
+        let mut attribution_cancel_budget = WorkBudget::new(0, u64::MAX);
+        let mut attribution_cancel_observer = RecordingCheckpointWorkObserver::default();
+        let attribution_cancelled = evaluate_prepared_checkpoints(
+            &harness,
+            &role_denied,
+            &mut attribution_cancel_budget,
+            &attribution_cancellation,
+            &mut attribution_cancel_observer,
+        );
+        assert_eq!(
+            attribution_cancelled.stop,
+            Some(CheckpointWorkStop::Cancelled)
+        );
+        assert!(attribution_cancelled.results.is_empty());
+        assert_eq!(attribution_cancel_calls.get(), 4);
+        assert_eq!(
+            attribution_cancel_budget
+                .consumed()
+                .get(WorkCounter::CheckpointItem),
+            3
+        );
+        assert_eq!(
+            attribution_cancel_observer.descriptor_calls(descriptor_id),
+            0
+        );
+        assert_eq!(
+            attribution_cancel_observer.descriptor_report_items(descriptor_id),
+            2
+        );
+
+        let mut cancelled_budget = WorkBudget::new(0, u64::MAX);
+        let mut cancelled_observer = RecordingCheckpointWorkObserver::default();
+        let cancelled = evaluate_prepared_checkpoints(
+            &harness,
+            &authorized,
+            &mut cancelled_budget,
+            &|| true,
+            &mut cancelled_observer,
+        );
+        assert_eq!(cancelled.stop, Some(CheckpointWorkStop::Cancelled));
+        assert_eq!(cancelled_observer.authorized_precharges, 0);
+        assert_eq!(cancelled_observer.descriptor_calls(descriptor_id), 0);
+        assert_eq!(cancelled_observer.descriptor_report_items(descriptor_id), 0);
+
+        let staged_calls = std::cell::Cell::new(0_u64);
+        let staged_cancellation = || {
+            staged_calls.set(staged_calls.get() + 1);
+            staged_calls.get() >= 3
+        };
+        let mut staged_budget = WorkBudget::new(0, u64::MAX);
+        let mut staged_observer = RecordingCheckpointWorkObserver::default();
+        let staged = evaluate_prepared_checkpoints(
+            &harness,
+            &authorized,
+            &mut staged_budget,
+            &staged_cancellation,
+            &mut staged_observer,
+        );
+        assert_eq!(staged.stop, Some(CheckpointWorkStop::Cancelled));
+        assert_eq!(staged_observer.authorized_precharges, 1);
+        assert_eq!(staged_observer.descriptor_calls(descriptor_id), 1);
+    }
+
+    #[test]
+    fn refusal_report_attribution_has_exact_partial_result_boundaries() {
+        use DescriptorControlOutcome::{Missing, RoleDenied};
+
+        let harness = prepared_checkpoint_harness(&[0x40, 0x41]);
+        let first = harness.descriptor_ids[0];
+        let second = harness.descriptor_ids[1];
+        let authorizations =
+            std::collections::BTreeMap::from([(first, Missing), (second, RoleDenied)]);
+
+        let mut n_minus_one_budget = WorkBudget::new(0, 5);
+        let mut n_minus_one_observer = RecordingCheckpointWorkObserver::default();
+        let n_minus_one = evaluate_prepared_checkpoints(
+            &harness,
+            &authorizations,
+            &mut n_minus_one_budget,
+            &crate::NeverCancelled,
+            &mut n_minus_one_observer,
+        );
+        assert_eq!(n_minus_one.stop, Some(CheckpointWorkStop::Budget));
+        assert_eq!(n_minus_one.results.len(), 1);
+        assert_eq!(n_minus_one.results[0].descriptor_event(), first);
+        assert_eq!(n_minus_one.results[0].status(), Status::PendingControl);
+        assert_eq!(
+            n_minus_one_budget
+                .consumed()
+                .get(WorkCounter::CheckpointItem),
+            5
+        );
+        assert_eq!(n_minus_one_observer.descriptor_calls(first), 0);
+        assert_eq!(n_minus_one_observer.descriptor_calls(second), 0);
+        assert_report_attribution(&n_minus_one_observer, first, false, false);
+        assert_eq!(n_minus_one_observer.descriptor_report_items(second), 2);
+        assert_eq!(
+            n_minus_one_observer.report_items(
+                second,
+                CheckpointReportAttributionStage::BranchDispositionHash
+            ),
+            0
+        );
+
+        let mut exact_budget = WorkBudget::new(0, 6);
+        let mut exact_observer = RecordingCheckpointWorkObserver::default();
+        let exact = evaluate_prepared_checkpoints(
+            &harness,
+            &authorizations,
+            &mut exact_budget,
+            &crate::NeverCancelled,
+            &mut exact_observer,
+        );
+        assert_eq!(exact.stop, None);
+        assert_eq!(exact.results.len(), 2);
+        assert_eq!(exact.results[0].descriptor_event(), first);
+        assert_eq!(exact.results[1].descriptor_event(), second);
+        assert_eq!(exact.results[1].status(), Status::Unauthorized);
+        assert_eq!(exact_budget.consumed().get(WorkCounter::CheckpointItem), 6);
+        assert_report_attribution(&exact_observer, first, false, false);
+        assert_report_attribution(&exact_observer, second, true, true);
+
+        let cancellation_calls = std::cell::Cell::new(0_u64);
+        let cancellation = || {
+            cancellation_calls.set(cancellation_calls.get() + 1);
+            cancellation_calls.get() >= 6
+        };
+        let mut cancelled_budget = WorkBudget::new(0, u64::MAX);
+        let mut cancelled_observer = RecordingCheckpointWorkObserver::default();
+        let cancelled = evaluate_prepared_checkpoints(
+            &harness,
+            &authorizations,
+            &mut cancelled_budget,
+            &cancellation,
+            &mut cancelled_observer,
+        );
+        assert_eq!(cancelled.stop, Some(CheckpointWorkStop::Cancelled));
+        assert_eq!(cancelled.results.len(), 1);
+        assert_eq!(cancelled.results[0].descriptor_event(), first);
+        assert_eq!(cancellation_calls.get(), 6);
+        assert_eq!(
+            cancelled_budget.consumed().get(WorkCounter::CheckpointItem),
+            5
+        );
+        assert_eq!(cancelled_observer.descriptor_calls(first), 0);
+        assert_eq!(cancelled_observer.descriptor_calls(second), 0);
+        assert_eq!(cancelled_observer.descriptor_report_items(second), 2);
+    }
+
+    #[test]
+    fn refusal_report_attribution_meters_ordered_heads_and_chunks_exactly() {
+        let first_head = ChangeHash::from_bytes([0x11; 32]);
+        let second_head = ChangeHash::from_bytes([0x22; 32]);
+        let third_head = ChangeHash::from_bytes([0x33; 32]);
+        let harness = prepared_checkpoint_harness_with_report_shape(
+            &[0x42],
+            std::collections::BTreeSet::from([third_head, first_head, second_head, second_head]),
+            3,
+        );
+        let descriptor_id = harness.descriptor_ids[0];
+        let authorizations =
+            std::collections::BTreeMap::from([(descriptor_id, DescriptorControlOutcome::Missing)]);
+
+        let mut n_minus_one_budget = WorkBudget::new(0, 6);
+        let mut n_minus_one_observer = RecordingCheckpointWorkObserver::default();
+        let n_minus_one = evaluate_prepared_checkpoints(
+            &harness,
+            &authorizations,
+            &mut n_minus_one_budget,
+            &crate::NeverCancelled,
+            &mut n_minus_one_observer,
+        );
+        assert_eq!(n_minus_one.stop, Some(CheckpointWorkStop::Budget));
+        assert!(n_minus_one.results.is_empty());
+        assert_eq!(
+            n_minus_one_budget
+                .consumed()
+                .get(WorkCounter::CheckpointItem),
+            6
+        );
+        assert_eq!(n_minus_one_observer.descriptor_calls(descriptor_id), 0);
+        assert_eq!(
+            n_minus_one_observer.report_items(
+                descriptor_id,
+                CheckpointReportAttributionStage::IndexedChunkEvent
+            ),
+            3
+        );
+        assert_eq!(
+            n_minus_one_observer.report_items(
+                descriptor_id,
+                CheckpointReportAttributionStage::DescriptorHead
+            ),
+            2
+        );
+
+        let mut exact_budget = WorkBudget::new(0, 7);
+        let mut exact_observer = RecordingCheckpointWorkObserver::default();
+        let exact = evaluate_prepared_checkpoints(
+            &harness,
+            &authorizations,
+            &mut exact_budget,
+            &crate::NeverCancelled,
+            &mut exact_observer,
+        );
+        assert_eq!(exact.stop, None);
+        assert_eq!(exact.results.len(), 1);
+        assert_eq!(
+            exact.results[0].chunk_events(),
+            &[
+                EventId::from_bytes([0xc2; 32]),
+                EventId::from_bytes([0xc3; 32]),
+                EventId::from_bytes([0xc4; 32]),
+            ]
+        );
+        assert_eq!(
+            exact.results[0].heads(),
+            &[first_head, second_head, third_head]
+        );
+        assert_eq!(exact_budget.consumed().get(WorkCounter::CheckpointItem), 7);
+        assert_eq!(exact_observer.descriptor_calls(descriptor_id), 0);
+        assert_eq!(
+            exact_observer.report_items(
+                descriptor_id,
+                CheckpointReportAttributionStage::IndexedChunkEvent
+            ),
+            3
+        );
+        assert_eq!(
+            exact_observer.report_items(
+                descriptor_id,
+                CheckpointReportAttributionStage::DescriptorHead
+            ),
+            3
+        );
+        assert_eq!(exact_observer.descriptor_report_items(descriptor_id), 6);
+
+        let cancellation_calls = std::cell::Cell::new(0_u64);
+        let cancellation = || {
+            cancellation_calls.set(cancellation_calls.get() + 1);
+            cancellation_calls.get() >= 7
+        };
+        let mut cancelled_budget = WorkBudget::new(0, u64::MAX);
+        let mut cancelled_observer = RecordingCheckpointWorkObserver::default();
+        let cancelled = evaluate_prepared_checkpoints(
+            &harness,
+            &authorizations,
+            &mut cancelled_budget,
+            &cancellation,
+            &mut cancelled_observer,
+        );
+        assert_eq!(cancelled.stop, Some(CheckpointWorkStop::Cancelled));
+        assert!(cancelled.results.is_empty());
+        assert_eq!(cancellation_calls.get(), 7);
+        assert_eq!(
+            cancelled_budget.consumed().get(WorkCounter::CheckpointItem),
+            6
+        );
+        assert_eq!(cancelled_observer.descriptor_calls(descriptor_id), 0);
+        assert_eq!(
+            cancelled_observer.report_items(
+                descriptor_id,
+                CheckpointReportAttributionStage::DescriptorHead
+            ),
+            2
+        );
     }
 
     #[test]

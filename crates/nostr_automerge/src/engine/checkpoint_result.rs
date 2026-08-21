@@ -65,7 +65,7 @@ pub struct CheckpointVerificationResult {
 }
 
 impl CheckpointVerificationResult {
-    #[allow(clippy::too_many_arguments)]
+    #[allow(dead_code, clippy::too_many_arguments)]
     pub(crate) fn new(
         descriptor_event: EventId,
         mut chunk_events: Vec<EventId>,
@@ -79,6 +79,36 @@ impl CheckpointVerificationResult {
     ) -> Self {
         chunk_events.sort_unstable();
         chunk_events.dedup();
+        Self {
+            descriptor_event,
+            chunk_events,
+            snapshot_hash,
+            heads,
+            change_count,
+            change_set_hash,
+            historical_carriers,
+            accepted_at_control,
+            status,
+        }
+    }
+
+    /// Constructs a result from vectors already proven sorted and unique by
+    /// their trusted ordered-index or `BTreeSet` producers.
+    ///
+    /// This path deliberately performs no repair pass; callers must preserve
+    /// those producer invariants before transferring vector ownership.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn from_trusted_ordered(
+        descriptor_event: EventId,
+        chunk_events: Vec<EventId>,
+        snapshot_hash: SnapshotHash,
+        heads: Vec<ChangeHash>,
+        change_count: u64,
+        change_set_hash: [u8; 32],
+        historical_carriers: Vec<ChangeHash>,
+        accepted_at_control: Vec<ChangeHash>,
+        status: CheckpointVerificationStatus,
+    ) -> Self {
         Self {
             descriptor_event,
             chunk_events,

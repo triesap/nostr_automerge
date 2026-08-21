@@ -3,10 +3,10 @@
   "status": "in_progress",
   "rcld": 82,
   "cursor": {
-    "active_step": "step_1170",
-    "next_step": "step_1171",
+    "active_step": "step_1171",
+    "next_step": "step_1172",
     "last_step": "step_1283",
-    "remaining_checkpoint_count": 114,
+    "remaining_checkpoint_count": 113,
     "first_rcld": 82,
     "last_rcld": 94,
     "remaining_rcld_count": 13
@@ -246,6 +246,16 @@
     {
       "step": "step_1169",
       "candidate": "90fa08af72bbfc724eeadba9fb2d49389c24bf70",
+      "owner_class": "public",
+      "gate_ids": ["V-RUST"],
+      "requirement_ids": ["NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002"],
+      "finding_ids": ["FINDING_073"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1170",
+      "candidate": "13b86db7e44801b71daf6090674eb283713ba5e7",
       "owner_class": "public",
       "gate_ids": ["V-RUST"],
       "requirement_ids": ["NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002"],
