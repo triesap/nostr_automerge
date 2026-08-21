@@ -17,6 +17,9 @@ VALIDATORS = [
     "validate_runner_manifest.py", "validate_nip_reconciliation_v8.py",
     "validate_normative_clarifications_v3.py", "validate_rust_conformance_v9.py",
     "validate_interop_attestation_v9.py",
+    "validate_requirements_authority_v9.py", "validate_requirement_matrix_v9.py",
+    "validate_resource_qualification_v9.py", "validate_assurance_v9.py",
+    "validate_private_assurance_v9.py", "validate_final_identity_v8.py",
 ]
 
 
