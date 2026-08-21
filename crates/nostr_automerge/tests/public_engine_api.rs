@@ -7779,3 +7779,155 @@ fn signed_change_ingest_requires_canonical_actor_hash_control_and_bytes() {
             if diagnostic.as_str() == "automerge.chunk_type"
     ));
 }
+
+#[allow(clippy::expect_used)]
+fn evaluate_signed_reproduction_fixture(source: &str) -> EvaluationReport {
+    let fixture: serde_json::Value =
+        serde_json::from_str(source).expect("signed reproduction fixture");
+    let coordinate = fixture["coordinate"]
+        .as_str()
+        .expect("fixture coordinate")
+        .parse()
+        .expect("valid fixture coordinate");
+    let mut builder = CorpusBuilder::new();
+    for entry in fixture["raw_events"]
+        .as_array()
+        .expect("fixture raw events")
+    {
+        let data = entry["data"].as_str().expect("signed event bytes");
+        let outcome = builder.ingest_bytes(data.as_bytes());
+        assert!(
+            matches!(
+                outcome,
+                IngestOutcome::Accepted { .. }
+                    | IngestOutcome::InvalidCarrier { .. }
+                    | IngestOutcome::UnsupportedRevision { .. }
+            ),
+            "fixture event must enter the evidence corpus"
+        );
+    }
+    ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(2_000_000, 2_000_000),
+        &NeverCancelled,
+    )
+}
+
+#[test]
+#[ignore = "expected to fail until FINDING_073 closes"]
+fn finding_073_checkpoint_authorization_precedes_history() {
+    let report = evaluate_signed_reproduction_fixture(include_str!(
+        "../../../fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_invalid_control.input.json"
+    ));
+    assert_eq!(
+        report.checkpoints().first().map(|result| result.status()),
+        Some(CheckpointVerificationStatus::Unauthorized),
+        "FINDING_073 reproduced: known-invalid checkpoint control is classified pending before authorization"
+    );
+}
+
+#[test]
+#[ignore = "expected to fail until FINDING_074 closes"]
+#[allow(clippy::expect_used)]
+fn finding_074_invalid_carrier_is_independent_of_excluded_hash() {
+    let scenario = signed_engine_scenario();
+    let controller = TestSigner::from_byte(20);
+    let writer = TestSigner::from_byte(21);
+    let members = vec![(controller.public_key().to_hex(), vec!["write"])];
+    let canonical_child = signed_acl_control(
+        &controller,
+        scenario.coordinate,
+        3,
+        Some(scenario.control_id),
+        1,
+        members.clone(),
+    );
+    let invalid_child = signed_acl_control(
+        &controller,
+        scenario.coordinate,
+        4,
+        Some(scenario.control_id),
+        2,
+        members,
+    );
+    let invalid_child_id = VerifiedNip01Event::verify(invalid_child.clone())
+        .expect("signed invalid child")
+        .event_id();
+    let original =
+        VerifiedNip01Event::verify(scenario.change.clone()).expect("signed original change");
+    let invalid_claim = writer.sign(
+        &UnsignedEventDraft::new(
+            5,
+            1_624,
+            vec![
+                vec!["a".to_owned(), scenario.coordinate.to_address()],
+                vec!["e".to_owned(), invalid_child_id.to_hex()],
+                vec!["x".to_owned(), scenario.change_hash.to_hex()],
+            ],
+            original.content().to_owned(),
+        )
+        .expect("duplicate claim draft")
+        .prepare(writer.public_key())
+        .expect("duplicate claim preimage"),
+    );
+    let invalid_claim_id = VerifiedNip01Event::verify(invalid_claim.clone())
+        .expect("signed invalid claim")
+        .event_id();
+    let mut builder = CorpusBuilder::new();
+    for event in [
+        scenario.control,
+        scenario.change,
+        canonical_child,
+        invalid_child,
+        invalid_claim,
+    ] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+        &builder.finish(),
+        scenario.coordinate,
+        &mut WorkBudget::new(2_000_000, 2_000_000),
+        &NeverCancelled,
+    );
+    assert_eq!(report.excluded_changes(), [scenario.change_hash]);
+    assert_eq!(
+        event_disposition(&report, invalid_claim_id),
+        Some(ProtocolDisposition::Invalid),
+        "FINDING_074 reproduced: known-invalid carrier inherits the excluded semantic-hash outcome"
+    );
+}
+
+#[test]
+#[ignore = "expected to fail until FINDING_083 closes"]
+#[allow(clippy::expect_used)]
+fn finding_083_budget_stop_is_not_relabelled_by_cancellation_requery() {
+    let controller = TestSigner::from_byte(120);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "c0".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let observations = Cell::new(0_u64);
+    let cancellation = || {
+        let observation = observations.get().saturating_add(1);
+        observations.set(observation);
+        observation > 1
+    };
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+        &CorpusBuilder::new().finish(),
+        coordinate,
+        &mut WorkBudget::new(0, 0),
+        &cancellation,
+    );
+    assert_eq!(
+        (report.completion(), observations.get()),
+        (Completion::BudgetExhausted, 1),
+        "FINDING_083 reproduced: a typed budget stop is relabelled by a repeated cancellation observation"
+    );
+}

@@ -3345,6 +3345,19 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "expected to fail until FINDING_079 closes"]
+    fn finding_079_unsupported_carrier_does_not_create_semantic_hash_state() {
+        assert_ne!(
+            reduce_reasoned_change_outcome(
+                FinalLineageChangeState::Current,
+                &[ChangeClaimReason::UnsupportedCarrier],
+            ),
+            crate::ProtocolDisposition::UnsupportedRevision,
+            "FINDING_079 reproduced: an unverified unsupported carrier can create semantic ChangeHash state"
+        );
+    }
+
+    #[test]
     fn checkpoint_preparation_charge_stops_before_optional_work() {
         let mut exhausted = WorkBudget::new(0, 1);
         assert_eq!(
