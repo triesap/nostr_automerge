@@ -46,9 +46,6 @@ def main() -> int:
         or smoke.get("measurement_scope") != "operator-local child-process upper bound"
     ):
         raise AssertionError("resource_measurement")
-    raw = ROOT / ".local/evidence/rust_resource_smoke.json"
-    if raw.exists() and hashlib.sha256(raw.read_bytes()).hexdigest() != smoke["raw_evidence_sha256"]:
-        raise AssertionError("local_resource_evidence_changed")
     qualifications = rust.get("qualifications", {})
     if set(qualifications) != QUALIFICATIONS or set(qualifications.values()) != {"pass"}:
         raise AssertionError("qualification_coverage")

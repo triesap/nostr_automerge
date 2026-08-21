@@ -20,6 +20,7 @@ VALIDATORS = [
     "validate_requirements_authority_v9.py", "validate_requirement_matrix_v9.py",
     "validate_resource_qualification_v9.py", "validate_assurance_v9.py",
     "validate_private_assurance_v9.py", "validate_final_identity_v8.py",
+    "validate_local_gate_summary_v8.py",
 ]
 
 
