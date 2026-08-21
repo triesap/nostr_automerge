@@ -1708,7 +1708,7 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
     future_runtime = copy.deepcopy(runtime)
     future_runtime["predecessors"].append(
         {
-            "step": "step_1174",
+            "step": "step_1175",
             "candidate": "f" * 40,
             "owner_class": "public",
             "gate_ids": ["V-RUST"],
@@ -1720,19 +1720,19 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
     )
     future_runtime["cursor"].update(
         {
-            "active_step": "step_1175",
-            "next_step": "step_1176",
-            "remaining_checkpoint_count": 109,
+            "active_step": "step_1176",
+            "next_step": "step_1177",
+            "remaining_checkpoint_count": 108,
             "remaining_rcld_count": 13,
         }
     )
     future_plan = plan.replace(
-        "Active checkpoint: `step_1174`",
         "Active checkpoint: `step_1175`",
+        "Active checkpoint: `step_1176`",
         1,
     ).replace(
-        "Next checkpoint: `step_1175`",
         "Next checkpoint: `step_1176`",
+        "Next checkpoint: `step_1177`",
         1,
     )
     validate_plan_semantics(future_plan)
@@ -1745,7 +1745,7 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
         copy.deepcopy(future_runtime["predecessors"][-1])
     )
     stale_checkpoint_count = copy.deepcopy(future_runtime)
-    stale_checkpoint_count["cursor"]["remaining_checkpoint_count"] = 110
+    stale_checkpoint_count["cursor"]["remaining_checkpoint_count"] = 109
     stale_rcld_count = copy.deepcopy(future_runtime)
     stale_rcld_count["cursor"]["remaining_rcld_count"] = 14
     stale_stage_count = copy.deepcopy(future_runtime)
@@ -1768,7 +1768,7 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
         (
             "active_step",
             plan.replace(
-                "Active checkpoint: `step_1174`",
+                "Active checkpoint: `step_1175`",
                 "Active checkpoint: `step_9999`",
                 1,
             ),
@@ -1777,7 +1777,7 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
         (
             "next_step",
             plan.replace(
-                "Next checkpoint: `step_1175`",
+                "Next checkpoint: `step_1176`",
                 "Next checkpoint: `step_9998`",
                 1,
             ),

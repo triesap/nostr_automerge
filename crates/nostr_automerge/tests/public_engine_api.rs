@@ -5773,6 +5773,129 @@ fn hex32(bytes: [u8; 32]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
+#[allow(clippy::expect_used)]
+fn signed_single_chunk_checkpoint_for_scenario(
+    scenario: &SignedEngineScenario,
+    signer: &TestSigner,
+) -> (RawEventBytes, EventId, RawEventBytes, EventId) {
+    let snapshot_hash: [u8; 32] = Sha256::digest(&scenario.snapshot).into();
+    let chunk_root = nostr_automerge::checkpoint::leaf_hash(0, 1, snapshot_hash);
+    let mut change_set = Sha256::new();
+    change_set.update(b"nostr-crdt/automerge/change-set/v1");
+    change_set.update([0]);
+    change_set.update(1_u64.to_be_bytes());
+    change_set.update(scenario.change_hash.as_bytes());
+    let descriptor = signer.sign(
+        &UnsignedEventDraft::new(
+            3,
+            1_626,
+            vec![
+                vec!["a".to_owned(), scenario.coordinate.to_address()],
+                vec!["e".to_owned(), scenario.control_id.to_hex()],
+                vec!["x".to_owned(), hex32(snapshot_hash)],
+            ],
+            format!(
+                r#"{{"change_count":1,"change_set_hash":"{}","chunk_count":1,"chunk_root":"{}","chunk_size":{},"dependency_edges":0,"encoding":"automerge-save-v1","heads":["{}"],"raw_size":{},"total_ops":1,"v":1}}"#,
+                hex32(change_set.finalize().into()),
+                hex32(chunk_root),
+                scenario.snapshot.len(),
+                scenario.change_hash.to_hex(),
+                scenario.snapshot.len(),
+            ),
+        )
+        .expect("descriptor draft")
+        .prepare(signer.public_key())
+        .expect("descriptor preimage"),
+    );
+    let descriptor_id = VerifiedNip01Event::verify(descriptor.clone())
+        .expect("signed descriptor")
+        .event_id();
+    let chunk = signer.sign(
+        &UnsignedEventDraft::new(
+            4,
+            1_627,
+            vec![
+                vec!["a".to_owned(), scenario.coordinate.to_address()],
+                vec!["e".to_owned(), descriptor_id.to_hex()],
+                vec!["x".to_owned(), hex32(snapshot_hash)],
+                vec!["part".to_owned(), "0".to_owned(), "1".to_owned()],
+            ],
+            format!(
+                r#"{{"data":"{}","proof":[],"v":1}}"#,
+                base64::engine::general_purpose::STANDARD.encode(&scenario.snapshot)
+            ),
+        )
+        .expect("chunk draft")
+        .prepare(signer.public_key())
+        .expect("chunk preimage"),
+    );
+    let chunk_id = VerifiedNip01Event::verify(chunk.clone())
+        .expect("signed chunk")
+        .event_id();
+    (descriptor, descriptor_id, chunk, chunk_id)
+}
+
+struct SignedCheckpointRoleEvaluation {
+    report: EvaluationReport,
+    work: WorkCounters,
+    cancellation_checks: u64,
+    descriptor_id: EventId,
+    chunk_id: EventId,
+    control_id: EventId,
+    change_hash: ChangeHash,
+}
+
+#[allow(clippy::expect_used)]
+fn evaluate_signed_checkpoint_role_case(
+    roles_json: &str,
+    descriptor_signer: &TestSigner,
+    order: &[usize],
+    evaluation_control: CheckpointEvaluationControl,
+) -> SignedCheckpointRoleEvaluation {
+    let scenario = signed_engine_scenario_with_roles(Vec::new(), roles_json);
+    let (descriptor, descriptor_id, chunk, chunk_id) =
+        signed_single_chunk_checkpoint_for_scenario(&scenario, descriptor_signer);
+    let events = [scenario.control, scenario.change, descriptor, chunk];
+    let mut builder = CorpusBuilder::new();
+    for index in order {
+        assert!(matches!(
+            builder.ingest(events[*index].clone()),
+            IngestOutcome::Accepted { .. } | IngestOutcome::Duplicate { .. }
+        ));
+    }
+    let item_budget = match evaluation_control {
+        CheckpointEvaluationControl::ItemBudget(limit) => limit,
+        CheckpointEvaluationControl::Normal | CheckpointEvaluationControl::CancelAfter(_) => {
+            1_000_000
+        }
+    };
+    let cancellation_checks = Cell::new(0_u64);
+    let cancellation = || {
+        let current = cancellation_checks.get();
+        cancellation_checks.set(current.saturating_add(1));
+        matches!(
+            evaluation_control,
+            CheckpointEvaluationControl::CancelAfter(limit) if current >= limit
+        )
+    };
+    let mut budget = WorkBudget::new(1_000_000, item_budget);
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+        &builder.finish(),
+        scenario.coordinate,
+        &mut budget,
+        &cancellation,
+    );
+    SignedCheckpointRoleEvaluation {
+        report,
+        work: budget.consumed(),
+        cancellation_checks: cancellation_checks.get(),
+        descriptor_id,
+        chunk_id,
+        control_id: scenario.control_id,
+        change_hash: scenario.change_hash,
+    }
+}
+
 #[derive(Clone, Copy)]
 struct CheckpointCommitmentVariant {
     head: ChangeHash,
@@ -5960,6 +6083,209 @@ fn evaluate_single_chunk_variant_controlled(
         &cancellation,
     );
     (report, budget.consumed(), cancellation_checks.get())
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn signed_checkpoint_role_gate_is_exact_and_delivery_order_independent() {
+    let orders: [&[usize]; 8] = [
+        &[0, 1, 2, 3],
+        &[3, 2, 1, 0],
+        &[2, 0, 3, 1],
+        &[1, 3, 0, 2],
+        &[0, 0, 1, 1, 2, 2, 3, 3],
+        &[0, 2, 3, 1],
+        &[1, 2, 3, 0],
+        &[2, 3, 1, 0],
+    ];
+    let authorized_device = TestSigner::from_byte(21);
+    let controller = TestSigner::from_byte(20);
+    let cases = [
+        (
+            r#"["checkpoint","write"]"#,
+            &authorized_device,
+            CheckpointVerificationStatus::Verified,
+            "checkpoint role",
+        ),
+        (
+            r#"["write"]"#,
+            &authorized_device,
+            CheckpointVerificationStatus::Unauthorized,
+            "other role",
+        ),
+        (
+            r#"["checkpoint","write"]"#,
+            &controller,
+            CheckpointVerificationStatus::Unauthorized,
+            "controller without grant",
+        ),
+    ];
+
+    for (roles, signer, expected_status, case_name) in cases {
+        let baseline = evaluate_signed_checkpoint_role_case(
+            roles,
+            signer,
+            orders[0],
+            CheckpointEvaluationControl::Normal,
+        );
+        assert_eq!(
+            baseline.report.completion(),
+            Completion::Complete,
+            "{case_name}"
+        );
+        assert_eq!(
+            baseline.report.canonical_controls(),
+            [baseline.control_id],
+            "{case_name}"
+        );
+        assert_eq!(
+            baseline
+                .report
+                .control_dispositions()
+                .iter()
+                .find(|(event_id, _)| *event_id == baseline.control_id)
+                .map(|(_, disposition)| *disposition),
+            Some(ProtocolDisposition::Accepted),
+            "{case_name}"
+        );
+        let checkpoint = baseline
+            .report
+            .checkpoints()
+            .iter()
+            .find(|checkpoint| checkpoint.descriptor_event() == baseline.descriptor_id)
+            .expect("checkpoint role result");
+        assert_eq!(checkpoint.status(), expected_status, "{case_name}");
+        assert_eq!(
+            checkpoint.chunk_events(),
+            [baseline.chunk_id],
+            "{case_name}"
+        );
+        assert_eq!(
+            checkpoint.historical_carriers(),
+            [baseline.change_hash],
+            "{case_name}"
+        );
+        assert_eq!(
+            checkpoint.accepted_at_control(),
+            [baseline.change_hash],
+            "{case_name}"
+        );
+
+        let (event_outcome, expected_diagnostic, performed_snapshot_work) =
+            if expected_status == CheckpointVerificationStatus::Verified {
+                (ProtocolDisposition::Accepted, None, true)
+            } else {
+                (
+                    ProtocolDisposition::Invalid,
+                    Some("checkpoint.history"),
+                    false,
+                )
+            };
+        for event_id in [baseline.descriptor_id, baseline.chunk_id] {
+            assert_eq!(
+                event_disposition(&baseline.report, event_id),
+                Some(event_outcome),
+                "{case_name}"
+            );
+            assert_eq!(
+                event_diagnostic(&baseline.report, event_id),
+                expected_diagnostic,
+                "{case_name}"
+            );
+        }
+        assert_eq!(
+            baseline.work.get(WorkCounter::CheckpointByte) > 0,
+            performed_snapshot_work,
+            "{case_name}"
+        );
+        assert!(
+            baseline.work.get(WorkCounter::CheckpointItem) > 0,
+            "{case_name}"
+        );
+        assert!(baseline.cancellation_checks > 0, "{case_name}");
+
+        for (order_index, order) in orders.iter().enumerate().skip(1) {
+            let permuted = evaluate_signed_checkpoint_role_case(
+                roles,
+                signer,
+                order,
+                CheckpointEvaluationControl::Normal,
+            );
+            assert_eq!(
+                permuted.report.canonical_controls(),
+                baseline.report.canonical_controls(),
+                "{case_name}"
+            );
+            assert_eq!(
+                permuted.report.disposition_records(),
+                baseline.report.disposition_records(),
+                "{case_name}"
+            );
+            assert_eq!(
+                permuted.report.checkpoints(),
+                baseline.report.checkpoints(),
+                "{case_name}"
+            );
+            assert_eq!(
+                permuted.report.heads(),
+                baseline.report.heads(),
+                "{case_name}"
+            );
+            assert_eq!(
+                permuted.report.history_digest(),
+                baseline.report.history_digest(),
+                "{case_name}"
+            );
+            assert_eq!(
+                permuted.report.document(),
+                baseline.report.document(),
+                "{case_name}"
+            );
+            assert_eq!(
+                permuted.work.get(WorkCounter::CheckpointByte),
+                baseline.work.get(WorkCounter::CheckpointByte),
+                "{case_name}"
+            );
+            assert_eq!(
+                permuted.work.get(WorkCounter::CheckpointItem),
+                baseline.work.get(WorkCounter::CheckpointItem),
+                "{case_name}"
+            );
+            if order_index == 4 {
+                assert!(
+                    permuted.work.get(WorkCounter::Event) > baseline.work.get(WorkCounter::Event),
+                    "{case_name}"
+                );
+                assert_eq!(
+                    permuted.cancellation_checks, baseline.cancellation_checks,
+                    "{case_name}"
+                );
+            } else {
+                assert_eq!(permuted.work, baseline.work, "{case_name}");
+                assert_eq!(
+                    permuted.cancellation_checks, baseline.cancellation_checks,
+                    "{case_name}"
+                );
+            }
+        }
+
+        let cancelled = evaluate_signed_checkpoint_role_case(
+            roles,
+            signer,
+            orders[0],
+            CheckpointEvaluationControl::CancelAfter(0),
+        );
+        assert_eq!(
+            cancelled.report.completion(),
+            Completion::Cancelled,
+            "{case_name}"
+        );
+        assert_eq!(
+            cancelled.work.get(WorkCounter::CheckpointByte),
+            0,
+            "{case_name}"
+        );
+    }
 }
 
 #[test]
