@@ -14,17 +14,17 @@ sys.dont_write_bytecode = True
 
 from generate_requirement_matrix import rust_proof
 from generate_requirement_matrix_v3 import test_id
-from generate_requirement_matrix_v7 import EXACT_ASSERTIONS as V7_ASSERTIONS
-from generate_requirement_matrix_v7 import EXACT_FIXTURES as V7_FIXTURES
 from generate_requirement_matrix_v7 import exact_assertion_path
+from generate_requirement_matrix_v8 import EXACT_ASSERTIONS as V8_ASSERTIONS
+from generate_requirement_matrix_v8 import EXACT_FIXTURES as V8_FIXTURES
 from validate_requirement_matrix_v7 import signed_artifact_hash
 
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "fixtures/distribution/manifest_v9.json"
 ATTESTATION = ROOT / "reports/interop_typescript_v9.json"
-EXACT_FIXTURES = {key: value.copy() for key, value in V7_FIXTURES.items()}
-EXACT_ASSERTIONS = dict(V7_ASSERTIONS)
+EXACT_FIXTURES = {key: value.copy() for key, value in V8_FIXTURES.items()}
+EXACT_ASSERTIONS = dict(V8_ASSERTIONS)
 EXACT_ASSERTIONS.update({
     "NCRDT-RESOURCE-012": (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
