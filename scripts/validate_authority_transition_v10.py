@@ -1446,6 +1446,445 @@ def validate_plan_semantics(plan: str) -> None:
     )
 
 
+def plan_header_fields(plan: str) -> dict[str, str]:
+    boundary = plan.find("\n## Outcome\n")
+    require(boundary >= 0, "transition_plan_progress_header")
+    header = plan[:boundary]
+    values: dict[str, str] = {}
+    for prefix in PLAN_PROGRESS_FIELDS:
+        matches = re.findall(
+            rf"^{re.escape(prefix)}([^\n]+)$",
+            header,
+            flags=re.MULTILINE,
+        )
+        require(len(matches) == 1, f"transition_plan_progress_field:{prefix}")
+        values[prefix] = matches[0]
+    return values
+
+
+def step_rcld(number: int) -> int:
+    for rcld, first, last in RCLD_STEP_RANGES:
+        if first <= number <= last:
+            return rcld
+    raise TransitionError("transition_plan_progress_step_range")
+
+
+def plan_rcld_statuses(plan: str) -> dict[int, str]:
+    headers = list(re.finditer(r"^## RCLD (\d+) — [^\n]+$", plan, re.MULTILINE))
+    statuses: dict[int, str] = {}
+    for index, header in enumerate(headers):
+        start = header.end()
+        end = headers[index + 1].start() if index + 1 < len(headers) else len(plan)
+        matches = re.findall(r"^Status: ([^\n]+)$", plan[start:end], re.MULTILINE)
+        require(len(matches) == 1, "transition_plan_progress_rcld_status")
+        statuses[int(header.group(1))] = matches[0]
+    return statuses
+
+
+def plan_progress_groups(plan: str) -> dict[str, tuple[int, ...]]:
+    lines = plan.splitlines()
+    indexes = [index for index, line in enumerate(lines) if line in PLAN_PROGRESS_HEADINGS]
+    require(indexes, "transition_plan_progress_groups")
+    groups: dict[str, list[int]] = {}
+    current = ""
+    for line in lines[indexes[0] :]:
+        if line in PLAN_PROGRESS_HEADINGS:
+            current = line
+            require(current not in groups, "transition_plan_progress_group_duplicate")
+            groups[current] = []
+            continue
+        row = re.fullmatch(r"- RCLD (\d+) — [^\n]+", line)
+        if row is not None:
+            require(bool(current), "transition_plan_progress_group_missing")
+            groups[current].append(int(row.group(1)))
+    return {name: tuple(values) for name, values in groups.items()}
+
+
+def plan_execution_rows(plan: str) -> dict[str, tuple[str, str]]:
+    rows: dict[str, tuple[str, str]] = {}
+    for line in plan.splitlines():
+        if not line.startswith("| `step_"):
+            continue
+        fields = [field.strip() for field in line.split("|")[1:-1]]
+        require(len(fields) == 5, "transition_plan_progress_execution_shape")
+        step = fields[0].strip("`")
+        require(step not in rows, "transition_plan_progress_execution_duplicate")
+        rows[step] = (fields[1], fields[4].strip("`"))
+    return rows
+
+
+def validate_progress_predecessors(plan: str, runtime: dict[str, Any]) -> int:
+    predecessors = runtime.get("predecessors")
+    require(isinstance(predecessors, list), "transition_plan_runtime_predecessors")
+    require(10 <= len(predecessors) <= 125, "transition_plan_runtime_predecessor_count")
+    expected_keys = {
+        "step",
+        "candidate",
+        "owner_class",
+        "gate_ids",
+        "requirement_ids",
+        "finding_ids",
+        "deviation_ids",
+        "result",
+    }
+    execution = plan_execution_rows(plan)
+    candidates: list[str] = []
+    for index, row in enumerate(predecessors):
+        require(
+            isinstance(row, dict) and set(row) == expected_keys,
+            "transition_plan_runtime_predecessor_shape",
+        )
+        step = f"step_{1158 + index}"
+        require(row.get("step") == step, "transition_plan_runtime_predecessor_step")
+        candidate = row.get("candidate")
+        require(
+            isinstance(candidate, str)
+            and re.fullmatch(r"[0-9a-f]{40}", candidate) is not None,
+            "transition_plan_runtime_predecessor_candidate",
+        )
+        candidates.append(candidate)
+        require(step in execution, "transition_plan_runtime_predecessor_execution")
+        owner, gate = execution[step]
+        require(
+            row.get("owner_class")
+            == {"public Rust": "public", "private TypeScript": "opaque_private"}.get(owner),
+            "transition_plan_runtime_predecessor_owner",
+        )
+        require(row.get("gate_ids") == [gate], "transition_plan_runtime_predecessor_gate")
+        for field in ("requirement_ids", "finding_ids", "deviation_ids"):
+            values = row.get(field)
+            require(
+                isinstance(values, list)
+                and all(isinstance(value, str) for value in values),
+                f"transition_plan_runtime_predecessor_{field}_type",
+            )
+            require(
+                len(values) == len(set(values)),
+                f"transition_plan_runtime_predecessor_{field}",
+            )
+        require(row.get("result") == "pass", "transition_plan_runtime_predecessor_result")
+    require(len(candidates) == len(set(candidates)), "transition_plan_runtime_candidates")
+    return len(predecessors)
+
+
+def validate_current_plan_progress(
+    plan: str, runtime: dict[str, Any], stage: str
+) -> None:
+    status = runtime.get("status")
+    require(
+        status in {"in_progress", "code_complete_publication_held"},
+        "transition_plan_runtime_status",
+    )
+    terminal = status == "code_complete_publication_held"
+    cursor = runtime.get("cursor")
+    projection = runtime.get("authority_projection")
+    require(isinstance(cursor, dict), "transition_plan_runtime_cursor")
+    require(isinstance(projection, dict), "transition_plan_runtime_projection")
+    require(
+        set(cursor)
+        == {
+            "active_step",
+            "next_step",
+            "last_step",
+            "remaining_checkpoint_count",
+            "first_rcld",
+            "last_rcld",
+            "remaining_rcld_count",
+        },
+        "transition_plan_runtime_cursor_shape",
+    )
+    active = cursor.get("active_step")
+    following = cursor.get("next_step")
+    require(isinstance(active, str), "transition_plan_runtime_active")
+    require(isinstance(following, str), "transition_plan_runtime_next")
+    active_match = re.fullmatch(r"step_(\d{4})", active)
+    following_match = re.fullmatch(r"step_(\d{4})", following)
+    require(active_match is not None, "transition_plan_runtime_active_shape")
+    require(following_match is not None, "transition_plan_runtime_next_shape")
+    active_number = int(active_match.group(1))
+    following_number = int(following_match.group(1))
+    predecessor_count = validate_progress_predecessors(plan, runtime)
+    require(
+        active_number == 1158 + predecessor_count,
+        "transition_plan_runtime_predecessor_binding",
+    )
+    require(1168 <= active_number <= 1283, "transition_plan_runtime_active_range")
+    require(following_number == active_number + 1, "transition_plan_runtime_contiguous")
+    require(cursor.get("last_step") == "step_1283", "transition_plan_runtime_last_step")
+    active_rcld = step_rcld(active_number)
+    following_rcld = (
+        step_rcld(following_number) if following_number <= 1283 else active_rcld
+    )
+    require(runtime.get("rcld") == active_rcld, "transition_plan_runtime_rcld")
+    require(cursor.get("first_rcld") == active_rcld, "transition_plan_runtime_first_rcld")
+    require(cursor.get("last_rcld") == 94, "transition_plan_runtime_last_rcld")
+    require(
+        cursor.get("remaining_checkpoint_count")
+        == (0 if terminal else 1283 - active_number + 1),
+        "transition_plan_runtime_remaining_checkpoints",
+    )
+    require(
+        cursor.get("remaining_rcld_count")
+        == (0 if terminal else 94 - active_rcld + 1),
+        "transition_plan_runtime_remaining_rclds",
+    )
+    require(not terminal or active_number == 1283, "transition_plan_runtime_terminal_step")
+    require(
+        not terminal or stage == "distribution_complete",
+        "transition_plan_runtime_terminal_stage",
+    )
+    findings = runtime.get("findings")
+    require(isinstance(findings, dict), "transition_plan_runtime_findings")
+    require(
+        findings.get("status")
+        == (
+            "code_complete_publication_held"
+            if terminal
+            else "implementation_remediation_required"
+        ),
+        "transition_plan_runtime_finding_status",
+    )
+    require(projection.get("current_stage") == stage, "transition_plan_runtime_stage")
+    requirement_count, fixture_count, _, _ = STAGE_COUNTS[stage]
+    require(
+        projection.get("requirement_count") == requirement_count,
+        "transition_plan_runtime_requirements",
+    )
+    require(
+        projection.get("signed_fixture_count") == fixture_count,
+        "transition_plan_runtime_fixtures",
+    )
+
+    fields = plan_header_fields(plan)
+    require(
+        fields
+        == {
+            "Status: ": (
+                "code complete — publication held"
+                if terminal
+                else "in progress — approved for execution"
+            ),
+            "Active RCLD: ": f"RCLD {active_rcld}",
+            "Active checkpoint: ": f"`{active}`",
+            "Next RCLD: ": f"RCLD {following_rcld}",
+            "Next checkpoint: ": f"`{following}`",
+        },
+        "transition_plan_progress_header_binding",
+    )
+
+    completed = tuple(
+        rcld
+        for rcld, _, last in RCLD_STEP_RANGES
+        if last <= active_number
+    )
+    unfinished = tuple(
+        rcld for rcld, _, last in RCLD_STEP_RANGES if last > active_number
+    )
+    statuses = plan_rcld_statuses(plan)
+    expected_statuses = {
+        rcld: ("complete" if rcld in completed else "planned")
+        for rcld, _, _ in RCLD_STEP_RANGES
+    }
+    require(statuses == expected_statuses, "transition_plan_progress_statuses")
+    require(
+        plan_progress_groups(plan)
+        == {
+            "## Completed RCLDs": completed,
+            "## Unfinished RCLDs": unfinished,
+        },
+        "transition_plan_progress_groups_binding",
+    )
+    require(
+        plan.count(
+            "All 126 checkpoints from `step_1158` through `step_1283` "
+            + ("are complete." if terminal else "are in progress.")
+        )
+        == 1,
+        "transition_plan_progress_summary_binding",
+    )
+
+
+def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: str) -> int:
+    future_runtime = copy.deepcopy(runtime)
+    future_runtime["predecessors"].append(
+        {
+            "step": "step_1168",
+            "candidate": "f" * 40,
+            "owner_class": "public",
+            "gate_ids": ["V-FULL-RUST"],
+            "requirement_ids": [],
+            "finding_ids": [],
+            "deviation_ids": [],
+            "result": "pass",
+        }
+    )
+    future_runtime["rcld"] = 82
+    future_runtime["cursor"].update(
+        {
+            "active_step": "step_1169",
+            "next_step": "step_1170",
+            "remaining_checkpoint_count": 115,
+            "first_rcld": 82,
+            "remaining_rcld_count": 13,
+        }
+    )
+    future_plan = plan.replace(
+        "Active RCLD: RCLD 81",
+        "Active RCLD: RCLD 82",
+        1,
+    ).replace(
+        "Active checkpoint: `step_1168`",
+        "Active checkpoint: `step_1169`",
+        1,
+    ).replace(
+        "Next checkpoint: `step_1169`",
+        "Next checkpoint: `step_1170`",
+        1,
+    )
+    validate_plan_semantics(future_plan)
+    validate_current_plan_progress(future_plan, future_runtime, stage)
+
+    coordinated_runtime = copy.deepcopy(future_runtime)
+    coordinated_runtime["predecessors"].pop()
+    appended_without_cursor = copy.deepcopy(runtime)
+    appended_without_cursor["predecessors"].append(
+        copy.deepcopy(future_runtime["predecessors"][-1])
+    )
+    stale_checkpoint_count = copy.deepcopy(future_runtime)
+    stale_checkpoint_count["cursor"]["remaining_checkpoint_count"] = 116
+    stale_rcld_count = copy.deepcopy(future_runtime)
+    stale_rcld_count["cursor"]["remaining_rcld_count"] = 14
+    stale_stage_count = copy.deepcopy(future_runtime)
+    stale_stage_count["authority_projection"]["signed_fixture_count"] = 183
+    stale_finding_status = copy.deepcopy(future_runtime)
+    stale_finding_status["findings"]["status"] = "code_complete_publication_held"
+    stale_groups = future_plan.replace(
+        "## Completed RCLDs\n\n- RCLD 81 — Authority, Deviation, And Reproducible Baseline\n\n"
+        "## Unfinished RCLDs\n\n",
+        "## Completed RCLDs\n\n## Unfinished RCLDs\n\n"
+        "- RCLD 81 — Authority, Deviation, And Reproducible Baseline\n",
+        1,
+    )
+    stale_summary = future_plan.replace(
+        "All 126 checkpoints from `step_1158` through `step_1283` are in progress.",
+        "All 126 checkpoints from `step_1158` through `step_1283` remain unfinished.",
+        1,
+    )
+    mutations = (
+        (
+            "active_step",
+            plan.replace(
+                "Active checkpoint: `step_1168`",
+                "Active checkpoint: `step_9999`",
+                1,
+            ),
+            runtime,
+        ),
+        (
+            "next_step",
+            plan.replace(
+                "Next checkpoint: `step_1169`",
+                "Next checkpoint: `step_9998`",
+                1,
+            ),
+            runtime,
+        ),
+        (
+            "active_rcld",
+            plan.replace("Active RCLD: RCLD 81", "Active RCLD: RCLD 82", 1),
+            runtime,
+        ),
+        (
+            "next_rcld",
+            plan.replace("Next RCLD: RCLD 82", "Next RCLD: RCLD 81", 1),
+            runtime,
+        ),
+        (
+            "status",
+            plan.replace(
+                "Status: in progress — approved for execution",
+                "Status: planned — approved for execution",
+                1,
+            ),
+            runtime,
+        ),
+        (
+            "rcld_status",
+            plan.replace(
+                "## RCLD 81 — Authority, Deviation, And Reproducible Baseline\n\nStatus: complete",
+                "## RCLD 81 — Authority, Deviation, And Reproducible Baseline\n\nStatus: planned",
+                1,
+            ),
+            runtime,
+        ),
+        (
+            "runtime_rcld",
+            plan,
+            {**runtime, "rcld": 82},
+        ),
+        (
+            "runtime_status",
+            plan,
+            {**runtime, "status": "code_complete_publication_held"},
+        ),
+        (
+            "partial_plan_advance",
+            future_plan,
+            runtime,
+        ),
+        (
+            "coordinated_without_predecessor",
+            future_plan,
+            coordinated_runtime,
+        ),
+        (
+            "appended_without_cursor",
+            plan,
+            appended_without_cursor,
+        ),
+        (
+            "stale_checkpoint_count",
+            future_plan,
+            stale_checkpoint_count,
+        ),
+        (
+            "stale_rcld_count",
+            future_plan,
+            stale_rcld_count,
+        ),
+        (
+            "stale_stage_count",
+            future_plan,
+            stale_stage_count,
+        ),
+        (
+            "stale_finding_status",
+            future_plan,
+            stale_finding_status,
+        ),
+        (
+            "stale_groups",
+            stale_groups,
+            future_runtime,
+        ),
+        (
+            "stale_summary",
+            stale_summary,
+            future_runtime,
+        ),
+    )
+    caught = 0
+    for name, candidate, candidate_runtime in mutations:
+        require(candidate != plan or candidate_runtime != runtime, f"progress_mutation:{name}")
+        try:
+            validate_current_plan_progress(candidate, candidate_runtime, stage)
+        except TransitionError:
+            caught += 1
+            continue
+        raise TransitionError(f"progress_mutation_survived:{name}")
+    return caught
+
+
 def validate_transition_baseline(state: dict[str, Any], stage: str) -> None:
     baseline = state.get("transition_baseline")
     require(isinstance(baseline, dict), "transition_baseline")
@@ -1469,6 +1908,11 @@ def validate_transition_baseline(state: dict[str, Any], stage: str) -> None:
     plan_path, plan_sha256 = TRANSITION_BASELINE[0]
     plan = load_strict_lf_utf8(plan_path)
     validate_plan_semantics(plan)
+    validate_current_plan_progress(
+        plan,
+        load_object("implementation/runtime_ledger_v9.json"),
+        stage,
+    )
     if stage == "transition_installed":
         require(digest(plan_path) == plan_sha256, "transition_plan_initial_hash")
     for relative, expected_sha256 in TRANSITION_BASELINE[1:]:
@@ -1857,6 +2301,11 @@ def mutation_self_test(state: dict[str, Any]) -> int:
             caught += 1
             continue
         raise TransitionError(f"mutation_survived:{name}")
+    caught += current_plan_progress_self_test(
+        plan,
+        load_object("implementation/runtime_ledger_v9.json"),
+        current_stage,
+    )
     return caught
 
 

@@ -87,7 +87,7 @@ RCLD_RANGES = (
     (93, 1271, 1278),
     (94, 1279, 1283),
 )
-PUBLIC_CANDIDATES = (
+PREDECESSOR_CANDIDATES = (
     "17f2b0bb57b12558f678b80e88da36962798762f",
     "361c49936d663ada8e10b4eaccea21ef85236ff9",
     "6a0bdcc93f87955b9557323f827fad5d6e3df6da",
@@ -96,6 +96,18 @@ PUBLIC_CANDIDATES = (
     "030cccdc1763168cf2aec6571c733387a2f72a51",
     "892c1e31f9290340bd93b108cefa8c9542d83d91",
     "af3cbc1d865a2ed6491965193a045dcf1b267ba1",
+    APPROVED_CANDIDATE,
+    "e6be2e5b67031bd805429e7e2e1544916b58cabb",
+)
+CLOSURE_PATHS = frozenset(
+    {
+        "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+        "docs/execution/remediation_v9/ledger.md",
+        "implementation/runtime_ledger_v9.json",
+        "reports/spec_baseline.txt",
+        "scripts/validate_authority_transition_v10.py",
+        "scripts/validate_runtime_ledger_v9.py",
+    }
 )
 EXPECTED_GATES = (
     ("V-AUTH",),
@@ -107,6 +119,7 @@ EXPECTED_GATES = (
     ("V-RUST",),
     ("V-RUST",),
     ("V-TS",),
+    ("V-EVIDENCE",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -146,6 +159,7 @@ EXPECTED_REQUIREMENTS = (
         "NCRDT-CONF-010",
         "NCRDT-EVIDENCE-006",
     ),
+    ("NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -164,6 +178,7 @@ EXPECTED_FINDINGS = (
         "FINDING_082",
         "FINDING_084",
     ),
+    OPAQUE_FINDING_IDS,
     OPAQUE_FINDING_IDS,
 )
 FORBIDDEN_KEY_WORDS = {
@@ -412,6 +427,203 @@ def public_precedes(first: str, second: str) -> bool:
     ).returncode == 0
 
 
+def git_output(*arguments: str) -> str:
+    result = subprocess.run(
+        ("git", *arguments),
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    require(result.returncode == 0 and result.stderr == "", "closure_scope:git")
+    return result.stdout
+
+
+def parse_status_records(output: str) -> tuple[tuple[str, str], ...]:
+    records = output.split("\0")
+    require(records[-1] == "", "closure_scope:status_termination")
+    parsed: list[tuple[str, str]] = []
+    for record in records[:-1]:
+        require(len(record) >= 4 and record[2] == " ", "closure_scope:status_shape")
+        parsed.append((record[:2], record[3:]))
+    return tuple(parsed)
+
+
+def parse_diff_records(output: str) -> tuple[tuple[str, str], ...]:
+    records = output.split("\0")
+    require(records[-1] == "", "closure_scope:diff_termination")
+    fields = records[:-1]
+    require(len(fields) % 2 == 0, "closure_scope:diff_shape")
+    require(all(fields), "closure_scope:diff_shape")
+    return tuple(
+        (fields[index], fields[index + 1])
+        for index in range(0, len(fields), 2)
+    )
+
+
+def validate_closure_git_state(
+    latest: str,
+    head: str,
+    parents: tuple[str, ...],
+    worktree: tuple[tuple[str, str], ...],
+    committed: tuple[tuple[str, str], ...],
+    ignored: tuple[str, ...],
+) -> None:
+    require(HEX40.fullmatch(latest) is not None, "closure_scope:latest")
+    require(HEX40.fullmatch(head) is not None, "closure_scope:head")
+    require(len(ignored) == len(set(ignored)), "closure_scope:ignored_unique")
+    require(not CLOSURE_PATHS.intersection(ignored), "closure_scope:ignored_overlap")
+    if head == latest:
+        require(not committed, "closure_scope:premature_commit_delta")
+        require(len(worktree) == len(CLOSURE_PATHS), "closure_scope:worktree_count")
+        require({path for _, path in worktree} == CLOSURE_PATHS, "closure_scope:worktree_paths")
+        require(
+            all(status in {" M", "M "} for status, _ in worktree),
+            "closure_scope:worktree_status",
+        )
+        return
+    require(parents == (latest,), "closure_scope:parent")
+    require(not worktree, "closure_scope:postcommit_dirty")
+    require(len(committed) == len(CLOSURE_PATHS), "closure_scope:commit_count")
+    require({path for _, path in committed} == CLOSURE_PATHS, "closure_scope:commit_paths")
+    require(all(status == "M" for status, _ in committed), "closure_scope:commit_status")
+
+
+def validate_repository_closure_scope(latest: str, head: str) -> None:
+    parent_row = git_output("rev-list", "--parents", "-n", "1", head).split()
+    require(parent_row and parent_row[0] == head, "closure_scope:parent_shape")
+    worktree = parse_status_records(
+        git_output("status", "--porcelain=v1", "-z", "--untracked-files=all")
+    )
+    ignored_rows = parse_status_records(
+        git_output(
+            "status",
+            "--porcelain=v1",
+            "-z",
+            "--untracked-files=all",
+            "--ignored=matching",
+        )
+    )
+    ignored = tuple(path for status, path in ignored_rows if status == "!!")
+    committed = (
+        ()
+        if head == latest
+        else parse_diff_records(
+            git_output("diff", "--name-status", "-z", "--no-renames", latest, head)
+        )
+    )
+    validate_closure_git_state(
+        latest,
+        head,
+        tuple(parent_row[1:]),
+        worktree,
+        committed,
+        ignored,
+    )
+
+
+def closure_git_state_self_test() -> int:
+    latest = "a" * 40
+    head = "b" * 40
+    other = "c" * 40
+    intermediate = "d" * 40
+    unstaged = tuple((" M", path) for path in sorted(CLOSURE_PATHS))
+    staged = tuple(("M ", path) for path in sorted(CLOSURE_PATHS))
+    committed = tuple(("M", path) for path in sorted(CLOSURE_PATHS))
+    validate_closure_git_state(latest, latest, (other,), unstaged, (), ())
+    validate_closure_git_state(latest, latest, (other,), staged, (), (".local/",))
+    validate_closure_git_state(latest, head, (latest,), (), committed, ("ignored-output",))
+
+    mutations = (
+        ("precommit_clean", latest, (other,), (), (), ()),
+        (
+            "precommit_dirty",
+            latest,
+            (other,),
+            (*unstaged, (" M", "README.md")),
+            (),
+            (),
+        ),
+        (
+            "precommit_untracked",
+            latest,
+            (other,),
+            (*unstaged[:-1], ("??", "unexpected.txt")),
+            (),
+            (),
+        ),
+        (
+            "precommit_mixed",
+            latest,
+            (other,),
+            (("MM", unstaged[0][1]), *unstaged[1:]),
+            (),
+            (),
+        ),
+        (
+            "precommit_rename",
+            latest,
+            (other,),
+            (("R ", unstaged[0][1]), *unstaged[1:]),
+            (),
+            (),
+        ),
+        (
+            "precommit_delete",
+            latest,
+            (other,),
+            ((" D", unstaged[0][1]), *unstaged[1:]),
+            (),
+            (),
+        ),
+        ("ignored_overlap", latest, (other,), unstaged, (), (unstaged[0][1],)),
+        ("postcommit_dirty", head, (latest,), unstaged, committed, ()),
+        (
+            "postcommit_extra",
+            head,
+            (latest,),
+            (),
+            (*committed, ("M", "README.md")),
+            (),
+        ),
+        (
+            "postcommit_rename",
+            head,
+            (latest,),
+            (),
+            (("R100", committed[0][1]), *committed[1:]),
+            (),
+        ),
+        (
+            "postcommit_delete",
+            head,
+            (latest,),
+            (),
+            (("D", committed[0][1]), *committed[1:]),
+            (),
+        ),
+        ("postcommit_merge", head, (latest, other), (), committed, ()),
+        ("postcommit_deeper", head, (intermediate,), (), committed, ()),
+        ("postcommit_unrelated", head, (other,), (), committed, ()),
+    )
+    caught = 0
+    for name, candidate_head, parents, worktree, delta, ignored in mutations:
+        try:
+            validate_closure_git_state(
+                latest,
+                candidate_head,
+                parents,
+                worktree,
+                delta,
+                ignored,
+            )
+        except LedgerError:
+            caught += 1
+            continue
+        raise LedgerError(f"closure_scope_mutation_survived:{name}")
+    return caught
+
+
 def plan_execution_rows() -> dict[str, tuple[str, str]]:
     try:
         lines = (ROOT / PLAN).read_text(encoding="utf-8").splitlines()
@@ -432,11 +644,10 @@ def plan_execution_rows() -> dict[str, tuple[str, str]]:
 
 
 def expected_predecessor(index: int) -> dict[str, Any]:
-    candidate = (*PUBLIC_CANDIDATES, APPROVED_CANDIDATE)[index]
     return {
         "step": f"step_{1158 + index}",
-        "candidate": candidate,
-        "owner_class": "public" if index < 8 else "opaque_private",
+        "candidate": PREDECESSOR_CANDIDATES[index],
+        "owner_class": "opaque_private" if index == 8 else "public",
         "gate_ids": list(EXPECTED_GATES[index]),
         "requirement_ids": list(EXPECTED_REQUIREMENTS[index]),
         "finding_ids": list(EXPECTED_FINDINGS[index]),
@@ -459,7 +670,7 @@ def validate_predecessors(
     rows: Any, active: int, report: dict[str, Any]
 ) -> None:
     require(isinstance(rows, list), "predecessors:type")
-    approved = [expected_predecessor(index) for index in range(9)]
+    approved = [expected_predecessor(index) for index in range(10)]
     require(rows == approved, "predecessors:approved_projection")
     require(active == 1158 + len(approved), "predecessors:approved_cursor")
     expected_keys = {
@@ -530,7 +741,10 @@ def validate_predecessors(
         ),
         "predecessors:public_order",
     )
-    require(public_rows[-1][1] == public_head(), "predecessors:latest_public_head")
+    head = public_head()
+    latest_public = public_rows[-1][1]
+    require(is_public_ancestor(latest_public), "predecessors:latest_public_head")
+    validate_repository_closure_scope(latest_public, head)
 
 
 def validate_runtime_ledger(ledger: dict[str, Any], report: dict[str, Any]) -> None:
@@ -687,7 +901,7 @@ def mutation_self_test(report: dict[str, Any], ledger: dict[str, Any]) -> int:
     reordered_predecessor["predecessors"].reverse()
     ledger_mutations.append(("ledger_reordered", reordered_predecessor))
     stale_private = copy.deepcopy(ledger)
-    stale_private["predecessors"][-1]["candidate"] = "0" * 40
+    stale_private["predecessors"][8]["candidate"] = "0" * 40
     ledger_mutations.append(("ledger_stale_private", stale_private))
     forged_private = copy.deepcopy(ledger)
     forged_private["opaque_reproduction"]["result_identity_sha256"] = "f" * 64
@@ -711,7 +925,7 @@ def mutation_self_test(report: dict[str, Any], ledger: dict[str, Any]) -> int:
     fabricated_opaque = copy.deepcopy(ledger)
     fabricated_opaque["predecessors"].append(
         {
-            "step": "step_1167",
+            "step": "step_1168",
             "candidate": "0" * 40,
             "owner_class": "opaque_private",
             "gate_ids": ["V-BOGUS"],
@@ -721,9 +935,9 @@ def mutation_self_test(report: dict[str, Any], ledger: dict[str, Any]) -> int:
             "result": "pass",
         }
     )
-    fabricated_opaque["cursor"]["active_step"] = "step_1168"
-    fabricated_opaque["cursor"]["next_step"] = "step_1169"
-    fabricated_opaque["cursor"]["remaining_checkpoint_count"] = 116
+    fabricated_opaque["cursor"]["active_step"] = "step_1169"
+    fabricated_opaque["cursor"]["next_step"] = "step_1170"
+    fabricated_opaque["cursor"]["remaining_checkpoint_count"] = 115
     ledger_mutations.append(("ledger_unapproved_opaque_future", fabricated_opaque))
     fabricated_public = copy.deepcopy(fabricated_opaque)
     fabricated_public["predecessors"][-1]["candidate"] = (
@@ -786,10 +1000,12 @@ def main() -> int:
     validate_opaque_reproduction(report)
     validate_runtime_ledger(ledger, report)
     mutations = mutation_self_test(report, ledger)
+    closure_mutations = closure_git_state_self_test()
     print("PASS: remediation-v9 runtime ledger and opaque reproduction import")
     print(f"- predecessors={len(ledger['predecessors'])}")
     print(f"- opaque_reproductions={report['result_classes'][1]['count']}")
     print(f"- negative_mutations={mutations}")
+    print(f"- closure_scope_negative_mutations={closure_mutations}")
     return 0
 
 

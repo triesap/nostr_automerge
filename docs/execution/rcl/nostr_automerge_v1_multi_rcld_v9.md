@@ -1,6 +1,6 @@
 # nostr_automerge Draft V1 Follow-up Remediation V9 Multi-RCLD
 
-Status: planned — approved for execution
+Status: in progress — approved for execution
 Created: 2026-08-21
 Mode: rcl-durable
 Rust Cargo workspace and Git repository: repository root
@@ -17,9 +17,9 @@ Reviewed distribution-v9 manifest SHA-256: `7b4ab5d2146939d142eb92d43060ef2183c9
 Reviewed canonical-output SHA-256: `e193a7b0db3a43e9d33e612afea05bd447a5e968a45e283d098f45278d6ab6fc`
 Steps: `step_1158` through `step_1283` (126 contiguous checkpoints)
 Active RCLD: RCLD 81
-Active checkpoint: `step_1158`
-Next RCLD: RCLD 81
-Next checkpoint: `step_1158`
+Active checkpoint: `step_1168`
+Next RCLD: RCLD 82
+Next checkpoint: `step_1169`
 
 ## Outcome
 
@@ -323,7 +323,7 @@ public evidence or closure checkpoint.
 
 ## RCLD 81 — Authority, Deviation, And Reproducible Baseline
 
-Status: planned
+Status: complete
 Steps: `step_1158` through `step_1168`
 Gate: `GATE_V9_AUTHORITY`
 Depends on: completed RCLD 80
@@ -650,9 +650,12 @@ pass without regressing ordinary gates
 No local report may infer publication or production readiness from code
 completion.
 
-## Unfinished RCLDs
+## Completed RCLDs
 
 - RCLD 81 — Authority, Deviation, And Reproducible Baseline
+
+## Unfinished RCLDs
+
 - RCLD 82 — Rust Checkpoint Control Precedence
 - RCLD 83 — Private Limits Foundation And Checkpoint Parity
 - RCLD 84 — Carrier Independence, Typed Stops, And Unsupported Identity
@@ -667,4 +670,4 @@ completion.
 - RCLD 93 — Semantic Proof Catalog V10
 - RCLD 94 — Complete Local Assurance And Truthful Closure
 
-All 126 checkpoints from `step_1158` through `step_1283` remain unfinished.
+All 126 checkpoints from `step_1158` through `step_1283` are in progress.
