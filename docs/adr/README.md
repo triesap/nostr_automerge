@@ -1,8 +1,23 @@
 # Architecture decision records
 
-All imported decisions are approved for the draft-v1 implementation baseline.
-Consensus-affecting changes require a new superseding ADR and the complete
-change-control process.
+All imported decisions through ADR 0064 are approved for the current draft-v1
+implementation baseline. Consensus-affecting changes require a new superseding
+ADR and the complete change-control process.
+
+ADRs 0065 through 0071 are approved staged candidate decisions, not effective
+current protocol authority at `transition_installed`. The unchanged NIP and
+current companion remain controlling. ADRs 0065 through 0070 become effective
+only for the staged local implementation candidate at
+`companion_authority_installed`; they do not override contrary NIP text. ADR
+0071's signed-v10 distribution becomes current only at
+`distribution_complete`, and its semantic-evidence pass requires the later
+proof-catalog evidence gate. Candidate closure, release, and NIP-conformance
+remain held wherever unchanged NIP text is unresolved.
+
+The nine future requirement mappings are staged by
+`spec/authority_transition_v10.json`. Before `requirements_appended`, those
+identifiers are planned mappings and are not live rows in
+`spec/requirements.json`.
 
 | ADR | Status | Primary requirements |
 | --- | --- | --- |
@@ -70,3 +85,10 @@ change-control process.
 | [0062](adr_0062_interrupted_finalization_settlement.md) | Approved | `NCRDT-RESOURCE-012` |
 | [0063](adr_0063_dual_changehash_and_carrier_dispositions.md) | Approved | `NCRDT-DISPOSITION-004`, `NCRDT-DISPOSITION-005` |
 | [0064](adr_0064_local_nip_reconciliation.md) | Approved | `NCRDT-NIP-003`, `NCRDT-CONF-009` |
+| [0065](adr_0065_checkpoint_control_precedence.md) | Approved staged | `NCRDT-CPAUTH-001`, `NCRDT-CPAUTH-002` |
+| [0066](adr_0066_independent_carrier_and_semantic_identity.md) | Approved staged | `NCRDT-DISPOSITION-006`, `NCRDT-VERSION-002` |
+| [0067](adr_0067_revision_bound_no_progress_reports.md) | Approved staged | `NCRDT-INTERRUPT-001` |
+| [0068](adr_0068_two_tier_finalization_ledgers.md) | Approved staged | `NCRDT-RESOURCE-013` |
+| [0069](adr_0069_target_work_and_shared_raw_bytes.md) | Approved staged | `NCRDT-RESOURCE-014` |
+| [0070](adr_0070_independent_compatibility_limits_and_immutability.md) | Approved staged | `NCRDT-TS-001`, `NCRDT-LIMIT-001`, `NCRDT-LIMITS-001`, `NCRDT-STATE-002` |
+| [0071](adr_0071_signed_conformance_and_semantic_evidence_v10.md) | Approved staged | `NCRDT-CONF-010`, `NCRDT-EVIDENCE-006` |
