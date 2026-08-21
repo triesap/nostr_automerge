@@ -101,11 +101,13 @@ PREDECESSOR_CANDIDATES = (
     "5c5c54b78b02116871d2f0c4c6b3b5abf3b2b212",
     "90fa08af72bbfc724eeadba9fb2d49389c24bf70",
     "13b86db7e44801b71daf6090674eb283713ba5e7",
+    "583bb87bf3e0b6f5db06717c289a035cc0daa1cd",
 )
 CLOSURE_PATHS = frozenset(
     {
-        "crates/nostr_automerge/src/engine/checkpoint_result.rs",
+        "crates/nostr_automerge/src/control/reference_state.rs",
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "crates/nostr_automerge/tests/public_engine_api.rs",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
@@ -129,6 +131,7 @@ EXPECTED_GATES = (
     ("V-FULL-RUST",),
     ("V-RUST",),
     ("V-RUST",),
+    ("V-RESOURCE",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -172,6 +175,7 @@ EXPECTED_REQUIREMENTS = (
     APPENDED_REQUIREMENT_IDS,
     ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002"),
     ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002"),
+    ("NCRDT-CPAUTH-001", "NCRDT-RESOURCE-014"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -195,6 +199,7 @@ EXPECTED_FINDINGS = (
     REPRODUCED_IDS,
     ("FINDING_073",),
     ("FINDING_073",),
+    ("FINDING_073", "FINDING_084"),
 )
 FORBIDDEN_KEY_WORDS = {
     "source",
@@ -685,7 +690,7 @@ def validate_predecessors(
     rows: Any, active: int, report: dict[str, Any]
 ) -> None:
     require(isinstance(rows, list), "predecessors:type")
-    approved = [expected_predecessor(index) for index in range(13)]
+    approved = [expected_predecessor(index) for index in range(14)]
     require(rows == approved, "predecessors:approved_projection")
     require(active == 1158 + len(approved), "predecessors:approved_cursor")
     expected_keys = {
@@ -940,7 +945,7 @@ def mutation_self_test(report: dict[str, Any], ledger: dict[str, Any]) -> int:
     fabricated_opaque = copy.deepcopy(ledger)
     fabricated_opaque["predecessors"].append(
         {
-            "step": "step_1171",
+            "step": "step_1172",
             "candidate": "0" * 40,
             "owner_class": "opaque_private",
             "gate_ids": ["V-BOGUS"],
@@ -950,9 +955,9 @@ def mutation_self_test(report: dict[str, Any], ledger: dict[str, Any]) -> int:
             "result": "pass",
         }
     )
-    fabricated_opaque["cursor"]["active_step"] = "step_1172"
-    fabricated_opaque["cursor"]["next_step"] = "step_1173"
-    fabricated_opaque["cursor"]["remaining_checkpoint_count"] = 112
+    fabricated_opaque["cursor"]["active_step"] = "step_1173"
+    fabricated_opaque["cursor"]["next_step"] = "step_1174"
+    fabricated_opaque["cursor"]["remaining_checkpoint_count"] = 111
     ledger_mutations.append(("ledger_unapproved_opaque_future", fabricated_opaque))
     fabricated_public = copy.deepcopy(fabricated_opaque)
     fabricated_public["predecessors"][-1]["candidate"] = (

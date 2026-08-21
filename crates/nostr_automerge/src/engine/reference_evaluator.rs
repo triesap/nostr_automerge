@@ -1691,7 +1691,7 @@ const fn checkpoint_control_refusal(
 ) -> Option<CheckpointVerificationStatus> {
     match outcome {
         Some(DescriptorControlOutcome::CanonicalAuthorized) => None,
-        Some(DescriptorControlOutcome::Missing | DescriptorControlOutcome::Pending) | None => {
+        Some(DescriptorControlOutcome::Missing | DescriptorControlOutcome::Pending) => {
             Some(CheckpointVerificationStatus::PendingControl)
         }
         Some(
@@ -1702,7 +1702,8 @@ const fn checkpoint_control_refusal(
             | DescriptorControlOutcome::DynamicInvalid
             | DescriptorControlOutcome::UnsupportedRevision
             | DescriptorControlOutcome::RoleDenied,
-        ) => Some(CheckpointVerificationStatus::Unauthorized),
+        )
+        | None => Some(CheckpointVerificationStatus::Unauthorized),
     }
 }
 
@@ -3646,7 +3647,7 @@ mod tests {
             (Some(DynamicInvalid), Some(Status::Unauthorized)),
             (Some(UnsupportedRevision), Some(Status::Unauthorized)),
             (Some(RoleDenied), Some(Status::Unauthorized)),
-            (None, Some(Status::PendingControl)),
+            (None, Some(Status::Unauthorized)),
         ];
         let history_states = [
             (
@@ -4019,7 +4020,7 @@ mod tests {
                 false,
             ),
             (Some(RoleDenied), Status::Unauthorized, true, true),
-            (None, Status::PendingControl, false, false),
+            (None, Status::Unauthorized, false, false),
         ] {
             let authorizations = outcome
                 .map(|value| std::collections::BTreeMap::from([(descriptor_id, value)]))

@@ -62,6 +62,15 @@ fn event_disposition(report: &EvaluationReport, event_id: EventId) -> Option<Pro
         .map(|record| record.disposition())
 }
 
+fn event_diagnostic(report: &EvaluationReport, event_id: EventId) -> Option<&'static str> {
+    report
+        .disposition_records()
+        .iter()
+        .find(|record| record.identifier() == ProtocolItemIdentifier::event(event_id))
+        .and_then(|record| record.diagnostic())
+        .map(nostr_automerge::DiagnosticCode::as_str)
+}
+
 fn assert_checkpoint_event_dispositions(report: &EvaluationReport, expected: ProtocolDisposition) {
     for checkpoint in report.checkpoints() {
         assert_eq!(
@@ -7041,6 +7050,107 @@ fn checkpoint_pending_control_signed_fixture() {
         Some("pending_control")
     );
     validated_checkpoint_descriptor_carrier_enters_corpus();
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn checkpoint_pending_requires_missing_or_statefully_pending_control() {
+    let controller = TestSigner::from_byte(122);
+    let author = TestSigner::from_byte(123);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "7a".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let pending_control = signed_acl_control(
+        &controller,
+        coordinate,
+        1,
+        Some(EventId::from_bytes([0x7b; 32])),
+        1,
+        vec![(author.public_key().to_hex(), vec!["checkpoint"])],
+    );
+    let pending_control_id = VerifiedNip01Event::verify(pending_control.clone())
+        .expect("signed pending control")
+        .event_id();
+    let descriptor = author.sign(
+        &UnsignedEventDraft::new(
+            2,
+            1_626,
+            vec![
+                vec!["a".to_owned(), coordinate.to_address()],
+                vec!["e".to_owned(), pending_control_id.to_hex()],
+                vec!["x".to_owned(), "7c".repeat(32)],
+            ],
+            format!(
+                r#"{{"change_count":1,"change_set_hash":"{}","chunk_count":1,"chunk_root":"{}","chunk_size":1,"dependency_edges":0,"encoding":"automerge-save-v1","heads":["{}"],"raw_size":1,"total_ops":1,"v":1}}"#,
+                "7d".repeat(32),
+                "7e".repeat(32),
+                "7f".repeat(32),
+            ),
+        )
+        .expect("descriptor draft")
+        .prepare(author.public_key())
+        .expect("descriptor preimage"),
+    );
+    let descriptor_id = VerifiedNip01Event::verify(descriptor.clone())
+        .expect("signed descriptor")
+        .event_id();
+    let mut builder = CorpusBuilder::new();
+    for event in [descriptor, pending_control] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+        &builder.finish(),
+        coordinate,
+        &mut WorkBudget::new(1_000_000, 1_000_000),
+        &NeverCancelled,
+    );
+    assert_eq!(
+        report
+            .control_dispositions()
+            .iter()
+            .find(|(event_id, _)| *event_id == pending_control_id)
+            .map(|(_, disposition)| *disposition),
+        Some(ProtocolDisposition::Pending)
+    );
+    assert_eq!(
+        report.checkpoints().first().map(|result| result.status()),
+        Some(CheckpointVerificationStatus::PendingControl)
+    );
+    assert_eq!(
+        event_disposition(&report, descriptor_id),
+        Some(ProtocolDisposition::Pending)
+    );
+    assert_eq!(event_diagnostic(&report, descriptor_id), None);
+}
+
+#[test]
+fn known_invalid_checkpoint_control_is_never_pending() {
+    let report = evaluate_signed_reproduction_fixture(include_str!(
+        "../../../fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_invalid_control.input.json"
+    ));
+    assert_eq!(report.checkpoints().len(), 1);
+    let Some(checkpoint) = report.checkpoints().first() else {
+        return;
+    };
+    assert_eq!(
+        checkpoint.status(),
+        CheckpointVerificationStatus::Unauthorized
+    );
+    assert_eq!(
+        event_disposition(&report, checkpoint.descriptor_event()),
+        Some(ProtocolDisposition::Invalid)
+    );
+    assert_eq!(
+        event_diagnostic(&report, checkpoint.descriptor_event()),
+        Some("checkpoint.history")
+    );
 }
 
 #[test]

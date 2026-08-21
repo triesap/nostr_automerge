@@ -110,23 +110,36 @@ pub(crate) fn resolve_referenced_control<'a>(
     if control.coordinate() != coordinate {
         return ReferencedControlState::WrongCoordinate;
     }
-    match dispositions.get(&event_id).copied() {
+    resolve_present_control_state(
+        control,
+        dispositions.get(&event_id).copied(),
+        statefully_valid.contains(&event_id),
+    )
+}
+
+fn resolve_present_control_state(
+    control: &ValidatedControlCarrier,
+    disposition: Option<ProtocolDisposition>,
+    statefully_valid: bool,
+) -> ReferencedControlState<'_> {
+    match disposition {
         Some(ProtocolDisposition::Accepted) => ReferencedControlState::Canonical(control),
-        Some(ProtocolDisposition::Excluded) if statefully_valid.contains(&event_id) => {
+        Some(ProtocolDisposition::Excluded) if statefully_valid => {
             ReferencedControlState::NoncanonicalValid(control)
         }
-        Some(ProtocolDisposition::Pending) | None => ReferencedControlState::Pending(control),
+        Some(ProtocolDisposition::Pending) => ReferencedControlState::Pending(control),
         Some(
             ProtocolDisposition::Invalid
             | ProtocolDisposition::Excluded
             | ProtocolDisposition::UnsupportedRevision,
-        ) => ReferencedControlState::DynamicInvalid(control),
+        )
+        | None => ReferencedControlState::DynamicInvalid(control),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{ControlParentState, ReferencedControlState};
+    use super::{ControlParentState, ReferencedControlState, resolve_present_control_state};
     use crate::carrier::control::{ValidatedControlCarrier, ValidatedControlContent};
     use crate::{
         ControllerPublicKey, DocumentCoordinate, DocumentId, EventId, ProtocolDisposition,
@@ -254,5 +267,25 @@ mod tests {
             ControlParentState::UnsupportedRevision.dependent_disposition(),
             Some(ProtocolDisposition::Invalid)
         );
+    }
+
+    #[test]
+    fn only_an_explicit_pending_state_keeps_a_present_control_recoverable() {
+        let control = control();
+        assert_eq!(
+            resolve_present_control_state(&control, Some(ProtocolDisposition::Pending), false),
+            ReferencedControlState::Pending(&control)
+        );
+        for (disposition, statefully_valid) in [
+            (None, false),
+            (Some(ProtocolDisposition::Invalid), false),
+            (Some(ProtocolDisposition::Excluded), false),
+            (Some(ProtocolDisposition::UnsupportedRevision), false),
+        ] {
+            assert_eq!(
+                resolve_present_control_state(&control, disposition, statefully_valid),
+                ReferencedControlState::DynamicInvalid(&control)
+            );
+        }
     }
 }

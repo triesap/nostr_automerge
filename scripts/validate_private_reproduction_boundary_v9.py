@@ -51,8 +51,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
     {
         "../..",
         "crates/nostr_automerge/src/checkpoint/authorize.rs",
-        "crates/nostr_automerge/src/engine/checkpoint_result.rs",
+        "crates/nostr_automerge/src/control/reference_state.rs",
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "crates/nostr_automerge/tests/public_engine_api.rs",
         "deviations/step_001.md",
         "docs/adr",
         "docs/adr/README.md",
