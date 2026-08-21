@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 from pathlib import Path
@@ -65,6 +66,69 @@ def sha256(path: Path) -> str:
         for chunk in iter(lambda: source.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def validate_post_import_requirements_delta(
+    stage: str,
+    transition: dict[str, Any],
+    imported_target_sha256: Any,
+    actual_sha256: str,
+) -> None:
+    """Authorize the requirements delta only at its exact monotonic stage."""
+
+    if stage not in TRANSITION_STAGES:
+        fail("invalid requirements delta transition stage")
+    if TRANSITION_STAGES.index(stage) < REQUIREMENTS_STAGE:
+        fail("requirements delta before authorized stage")
+    transition_authority = transition.get("authority")
+    if (
+        not isinstance(imported_target_sha256, str)
+        or not isinstance(transition_authority, dict)
+        or transition_authority.get("baseline_requirements_sha256")
+        != imported_target_sha256
+        or not isinstance(transition_authority.get("live"), dict)
+        or transition_authority["live"].get("requirements_sha256") != actual_sha256
+    ):
+        fail("unbound post-import requirements delta")
+
+
+def requirements_delta_self_test(
+    stage: str,
+    transition: dict[str, Any],
+    imported_target_sha256: str,
+    actual_sha256: str,
+) -> int:
+    """Prove early, stale-baseline, and stale-live delta claims fail closed."""
+
+    mutations: list[tuple[str, str, dict[str, Any]]] = []
+    mutations.append(("early_stage", "companion_authority_installed", copy.deepcopy(transition)))
+    stale_baseline = copy.deepcopy(transition)
+    stale_baseline["authority"]["baseline_requirements_sha256"] = "0" * 64
+    mutations.append(("stale_baseline", stage, stale_baseline))
+    stale_live = copy.deepcopy(transition)
+    stale_live["authority"]["live"]["requirements_sha256"] = "0" * 64
+    mutations.append(("stale_live", stage, stale_live))
+
+    caught = 0
+    for name, candidate_stage, candidate in mutations:
+        try:
+            validate_post_import_requirements_delta(
+                candidate_stage,
+                candidate,
+                imported_target_sha256,
+                actual_sha256,
+            )
+        except AssertionError:
+            caught += 1
+            continue
+        fail(f"requirements delta mutation survived: {name}")
+    validate_post_import_requirements_delta(
+        stage,
+        transition,
+        imported_target_sha256,
+        actual_sha256,
+    )
+    return caught
 
 
 def validate_adaptation() -> list[str]:
@@ -151,15 +215,12 @@ def validate_adaptation() -> list[str]:
                 ):
                     fail(f"unbound post-import companion delta: {relative}")
             elif requirements_appended and relative == "spec/requirements.json":
-                transition_authority = transition.get("authority")
-                if (
-                    not isinstance(transition_authority, dict)
-                    or transition_authority.get("baseline_requirements_sha256")
-                    != imported_target
-                    or not isinstance(transition_authority.get("live"), dict)
-                    or transition_authority["live"].get("requirements_sha256") != actual
-                ):
-                    fail("unbound post-import requirements delta")
+                validate_post_import_requirements_delta(
+                    stage,
+                    transition,
+                    imported_target,
+                    actual,
+                )
             else:
                 fail(f"target digest mismatch: {relative}")
             permitted_deltas.add(relative)
@@ -179,10 +240,25 @@ def validate_adaptation() -> list[str]:
     if permitted_deltas != expected_deltas:
         fail("post-import companion delta inventory mismatch")
 
+    requirements_delta_mutations = 0
+    if requirements_appended:
+        requirements_item = next(
+            item
+            for item in imported_files
+            if isinstance(item, dict) and item.get("path") == "spec/requirements.json"
+        )
+        requirements_delta_mutations = requirements_delta_self_test(
+            stage,
+            transition,
+            str(requirements_item.get("target_sha256")),
+            sha256(ROOT / "spec/requirements.json"),
+        )
+
     return [
         f"imported_files={len(imported_files)}",
         f"adapted_files={adapted_count}",
         f"post_import_deltas={len(permitted_deltas)}",
+        f"requirements_delta_mutations={requirements_delta_mutations}",
         "source_manifest=pass",
     ]
 

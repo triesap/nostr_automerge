@@ -11,7 +11,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 APPLICABILITY_VALUES = {
-    "rust-and-typescript", "rust-only", "out-of-core", "explicitly-deferred",
+    "rust-and-typescript",
+    "rust-only",
+    "rust-only-evidence-with-opaque-typescript-overlay",
+    "out-of-core",
+    "explicitly-deferred",
 }
 V2_LOCAL_BOTH = {
     "NCRDT-CORE-001", "NCRDT-AUTOADAPTER-001", "NCRDT-AUTOADAPTER-002",
@@ -102,6 +106,10 @@ def main() -> int:
         if applicability == "rust-and-typescript":
             status = "applicable-local" if identifier in V2_LOCAL_BOTH else "mandatory-pass"
             row.update(status=status, proofs={"rust": rust_proof(identifier), "typescript": typescript_proof(identifier)})
+        elif applicability == "rust-only-evidence-with-opaque-typescript-overlay":
+            raise AssertionError(
+                "opaque TypeScript overlay evidence requires the v10 proof-catalog generator"
+            )
         elif applicability == "rust-only":
             row.update(status="applicable-local", proofs={"rust": rust_proof(identifier)})
         elif applicability == "explicitly-deferred":

@@ -1,7 +1,7 @@
 {
   "schema": "nostr_automerge.requirements.v6",
   "project": "nostr_automerge_v1_spec",
-  "requirement_count": 139,
+  "requirement_count": 148,
   "requirements": [
     {
       "id": "NCRDT-SCOPE-001",
@@ -835,6 +835,60 @@
       "id": "NCRDT-EVIDENCE-005",
       "section": "Exact semantic evidence",
       "text": "Every passing requirement MUST cite an exact signed fixture or exact named assertion that directly exercises its normative behavior, together with candidate identity, command, result artifact, and artifact hash.",
+      "source": "spec/CONFORMANCE.md"
+    },
+    {
+      "id": "NCRDT-CPAUTH-001",
+      "section": "Checkpoint control resolution precedence",
+      "text": "A checkpoint descriptor control reference MUST be resolved and authorized before chunk assembly, carrier-history coverage, accepted-at-control lookup, snapshot loading, or history verification is attempted.",
+      "source": "spec/CHECKPOINT_PROFILE.md"
+    },
+    {
+      "id": "NCRDT-CPAUTH-002",
+      "section": "Recoverable checkpoint control states",
+      "text": "Only a missing or statefully pending referenced control may produce a pending checkpoint descriptor. A noncanonical, wrong-kind, wrong-coordinate, statically invalid, dynamically invalid, unsupported, or role-denied control MUST produce an invalid draft-v1 descriptor outcome.",
+      "source": "spec/CHECKPOINT_PROFILE.md"
+    },
+    {
+      "id": "NCRDT-DISPOSITION-006",
+      "section": "Independent change-carrier outcomes",
+      "text": "A change-carrier Event disposition MUST be derived from that carrier claim and its referenced control or branch. An aggregate ChangeHash disposition MUST NOT convert a carrier with a known-invalid reference into accepted, pending, or excluded.",
+      "source": "spec/REPORT_CONTRACT.md"
+    },
+    {
+      "id": "NCRDT-INTERRUPT-001",
+      "section": "No-progress interruption reports",
+      "text": "A public evaluation that ends in `budget_exhausted` or `cancelled` MUST return a constant-size no-progress report. It MUST NOT expose canonical controls, protocol dispositions, evidence, checkpoints, an available or resolved manifest, integrity alerts, heads, or materialized document state.",
+      "source": "spec/REPORT_CONTRACT.md"
+    },
+    {
+      "id": "NCRDT-RESOURCE-013",
+      "section": "Two-tier finalization reservation",
+      "text": "The evaluator MUST reserve fixed no-progress fallback capacity separately from complete-report capacity. Actual complete-report passes are consumed immediately before their work; on interruption, complete-report capacity is forfeited and only fixed fallback passes are consumed.",
+      "source": "spec/REPORT_CONTRACT.md"
+    },
+    {
+      "id": "NCRDT-RESOURCE-014",
+      "section": "Target-local deterministic work",
+      "text": "Every target-proportional preparation collection, raw-byte copy or shared-reference operation, branch memo traversal, canonical derivation pass, alert copy, and disposition copy MUST be bounded, charged, cancellation-aware, or eliminated.",
+      "source": "spec/REPORT_CONTRACT.md"
+    },
+    {
+      "id": "NCRDT-VERSION-002",
+      "section": "Unsupported change identity",
+      "text": "An unsupported change carrier whose canonical Change Chunk and ChangeHash were not verified receives only an Event `unsupported_revision` outcome. Its unverified `x` tag MUST NOT create a semantic ChangeHash disposition in draft v1.",
+      "source": "spec/REPORT_CONTRACT.md"
+    },
+    {
+      "id": "NCRDT-CONF-010",
+      "section": "Signed conformance v10",
+      "text": "The checksum-bound signed v10 distribution MUST contain exactly 192 scenarios, including the corrected checkpoint expectations and new carrier, interruption, and work-boundary cases. Both implementations MUST execute all scenarios twice and under all eight delivery permutations with byte-identical canonical output and deliberate mismatch rejection.",
+      "source": "spec/CONFORMANCE.md"
+    },
+    {
+      "id": "NCRDT-EVIDENCE-006",
+      "section": "Semantically exact proof catalog",
+      "text": "Every passing requirement row MUST bind to a semantically matching exact signed fixture or named assertion through a validated proof catalog. Broad command-only proof, unrelated assertion categories, stale expectations, and missing opaque TypeScript evidence identifiers MUST be rejected.",
       "source": "spec/CONFORMANCE.md"
     }
   ]

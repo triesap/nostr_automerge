@@ -53,6 +53,86 @@ APPENDED_REQUIREMENTS = (
     "NCRDT-CONF-010",
     "NCRDT-EVIDENCE-006",
 )
+APPENDED_REQUIREMENT_ROWS = (
+    {
+        "id": "NCRDT-CPAUTH-001",
+        "section": "Checkpoint control resolution precedence",
+        "text": "A checkpoint descriptor control reference MUST be resolved and authorized before chunk assembly, carrier-history coverage, accepted-at-control lookup, snapshot loading, or history verification is attempted.",
+        "source": "spec/CHECKPOINT_PROFILE.md",
+    },
+    {
+        "id": "NCRDT-CPAUTH-002",
+        "section": "Recoverable checkpoint control states",
+        "text": "Only a missing or statefully pending referenced control may produce a pending checkpoint descriptor. A noncanonical, wrong-kind, wrong-coordinate, statically invalid, dynamically invalid, unsupported, or role-denied control MUST produce an invalid draft-v1 descriptor outcome.",
+        "source": "spec/CHECKPOINT_PROFILE.md",
+    },
+    {
+        "id": "NCRDT-DISPOSITION-006",
+        "section": "Independent change-carrier outcomes",
+        "text": "A change-carrier Event disposition MUST be derived from that carrier claim and its referenced control or branch. An aggregate ChangeHash disposition MUST NOT convert a carrier with a known-invalid reference into accepted, pending, or excluded.",
+        "source": "spec/REPORT_CONTRACT.md",
+    },
+    {
+        "id": "NCRDT-INTERRUPT-001",
+        "section": "No-progress interruption reports",
+        "text": "A public evaluation that ends in `budget_exhausted` or `cancelled` MUST return a constant-size no-progress report. It MUST NOT expose canonical controls, protocol dispositions, evidence, checkpoints, an available or resolved manifest, integrity alerts, heads, or materialized document state.",
+        "source": "spec/REPORT_CONTRACT.md",
+    },
+    {
+        "id": "NCRDT-RESOURCE-013",
+        "section": "Two-tier finalization reservation",
+        "text": "The evaluator MUST reserve fixed no-progress fallback capacity separately from complete-report capacity. Actual complete-report passes are consumed immediately before their work; on interruption, complete-report capacity is forfeited and only fixed fallback passes are consumed.",
+        "source": "spec/REPORT_CONTRACT.md",
+    },
+    {
+        "id": "NCRDT-RESOURCE-014",
+        "section": "Target-local deterministic work",
+        "text": "Every target-proportional preparation collection, raw-byte copy or shared-reference operation, branch memo traversal, canonical derivation pass, alert copy, and disposition copy MUST be bounded, charged, cancellation-aware, or eliminated.",
+        "source": "spec/REPORT_CONTRACT.md",
+    },
+    {
+        "id": "NCRDT-VERSION-002",
+        "section": "Unsupported change identity",
+        "text": "An unsupported change carrier whose canonical Change Chunk and ChangeHash were not verified receives only an Event `unsupported_revision` outcome. Its unverified `x` tag MUST NOT create a semantic ChangeHash disposition in draft v1.",
+        "source": "spec/REPORT_CONTRACT.md",
+    },
+    {
+        "id": "NCRDT-CONF-010",
+        "section": "Signed conformance v10",
+        "text": "The checksum-bound signed v10 distribution MUST contain exactly 192 scenarios, including the corrected checkpoint expectations and new carrier, interruption, and work-boundary cases. Both implementations MUST execute all scenarios twice and under all eight delivery permutations with byte-identical canonical output and deliberate mismatch rejection.",
+        "source": "spec/CONFORMANCE.md",
+    },
+    {
+        "id": "NCRDT-EVIDENCE-006",
+        "section": "Semantically exact proof catalog",
+        "text": "Every passing requirement row MUST bind to a semantically matching exact signed fixture or named assertion through a validated proof catalog. Broad command-only proof, unrelated assertion categories, stale expectations, and missing opaque TypeScript evidence identifiers MUST be rejected.",
+        "source": "spec/CONFORMANCE.md",
+    },
+)
+APPENDED_APPLICABILITY = (
+    "rust-and-typescript",
+    "rust-and-typescript",
+    "rust-and-typescript",
+    "rust-and-typescript",
+    "rust-and-typescript",
+    "rust-and-typescript",
+    "rust-and-typescript",
+    "rust-and-typescript",
+    "rust-only-evidence-with-opaque-typescript-overlay",
+)
+APPLICABILITY_VALUES = {
+    "rust-and-typescript",
+    "rust-only",
+    "rust-only-evidence-with-opaque-typescript-overlay",
+    "out-of-core",
+    "explicitly-deferred",
+}
+BASELINE_REQUIREMENT_ROWS_PROJECTION_SHA256 = (
+    "c2b145769ebdc9615872ed3b8f3bd03282b753da91db56a44f63ce3aadfa9347"
+)
+BASELINE_APPLICABILITY_PROJECTION_SHA256 = (
+    "f07219b520128b6352cdf49d3df4ce55c515506b1bec16795383ccda55edd38e"
+)
 CORRECTION_BINDINGS = (
     (
         "checkpoint_descriptor_references_invalid_control",
@@ -284,6 +364,25 @@ def ordered_digest(values: list[str]) -> str:
     ).hexdigest()
 
 
+def projection_digest(value: Any) -> str:
+    """Return the exact canonical JSON projection identity for *value*."""
+
+    return hashlib.sha256(
+        json.dumps(
+            value,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def normalized_markdown(value: str) -> str:
+    """Collapse Markdown wrapping while preserving exact token content."""
+
+    return " ".join(value.split())
+
+
 def metadata_invariant_sha256(relative: str) -> str:
     metadata = load_object(relative)
     expected = metadata.get("expected")
@@ -507,6 +606,194 @@ def validate_schema_contracts(
     require(dist_properties["files"].get("minItems") == 1, "distribution_files_bounds")
 
 
+def validate_requirement_projection(
+    registry: dict[str, Any],
+    applicability: dict[str, Any],
+    baseline_rows: list[Any],
+    source_documents: dict[str, str],
+    expected_count: int,
+) -> None:
+    """Validate the immutable prefix and exact staged v10 append projection."""
+
+    require(
+        set(registry) == {"schema", "project", "requirement_count", "requirements"},
+        "requirement_registry_keys",
+    )
+    require(
+        registry.get("schema") == "nostr_automerge.requirements.v6",
+        "requirement_registry_schema",
+    )
+    require(registry.get("project") == "nostr_automerge_v1_spec", "requirement_project")
+    require(
+        set(applicability) == {"schema", "reviewed", "classifications"},
+        "applicability_keys",
+    )
+    require(
+        applicability.get("schema")
+        == "nostr_automerge.requirements_applicability.v6",
+        "applicability_schema",
+    )
+    expected_reviewed = "2026-08-20" if expected_count == 139 else "2026-08-21"
+    require(applicability.get("reviewed") == expected_reviewed, "applicability_reviewed")
+
+    rows = registry.get("requirements")
+    classifications = applicability.get("classifications")
+    require(isinstance(rows, list), "requirement_rows")
+    require(isinstance(classifications, dict), "applicability_rows")
+    require(
+        len(rows) == registry.get("requirement_count") == expected_count,
+        "live_requirement_count",
+    )
+    require(len(classifications) == expected_count, "applicability_count")
+    require(
+        all(
+            isinstance(row, dict)
+            and set(row) == {"id", "section", "text", "source"}
+            for row in rows
+        ),
+        "requirement_row_shape",
+    )
+    identifiers = [str(row["id"]) for row in rows]
+    require(len(identifiers) == len(set(identifiers)), "requirement_ids")
+    require(list(classifications) == identifiers, "applicability_order")
+    require(
+        set(classifications.values()).issubset(APPLICABILITY_VALUES),
+        "applicability_value",
+    )
+
+    require(
+        projection_digest(rows[:139]) == BASELINE_REQUIREMENT_ROWS_PROJECTION_SHA256,
+        "requirement_prefix_projection",
+    )
+    require(
+        projection_digest(list(classifications.items())[:139])
+        == BASELINE_APPLICABILITY_PROJECTION_SHA256,
+        "applicability_prefix_projection",
+    )
+    require(
+        isinstance(baseline_rows, list) and len(baseline_rows) == 139,
+        "baseline_evidence_rows",
+    )
+    for current, baseline in zip(rows[:139], baseline_rows, strict=True):
+        require(isinstance(baseline, dict), "baseline_row_shape")
+        baseline_authority = baseline.get("authority")
+        require(isinstance(baseline_authority, dict), "baseline_row_authority")
+        identifier = current["id"]
+        require(identifier == baseline.get("id"), f"requirement_prefix_order:{identifier}")
+        require(current["source"] == baseline_authority.get("source"), f"requirement_source:{identifier}")
+        require(current["section"] == baseline_authority.get("section"), f"requirement_section:{identifier}")
+        require(
+            hashlib.sha256(current["text"].encode("utf-8")).hexdigest()
+            == baseline_authority.get("text_sha256"),
+            f"requirement_text:{identifier}",
+        )
+        require(
+            classifications.get(identifier) == baseline.get("applicability"),
+            f"requirement_applicability:{identifier}",
+        )
+
+    if expected_count == 139:
+        require(rows[139:] == [], "early_requirement_append")
+        return
+
+    require(rows[139:] == list(APPENDED_REQUIREMENT_ROWS), "requirement_append_rows")
+    require(
+        tuple(classifications[identifier] for identifier in APPENDED_REQUIREMENTS)
+        == APPENDED_APPLICABILITY,
+        "requirement_append_applicability",
+    )
+    for row in APPENDED_REQUIREMENT_ROWS:
+        source = source_documents.get(row["source"])
+        require(isinstance(source, str), f"requirement_anchor_source:{row['id']}")
+        require(
+            source.count(f"## {row['section']}\n") == 1,
+            f"requirement_anchor_heading:{row['id']}",
+        )
+        require(
+            normalized_markdown(row["text"]) in normalized_markdown(source),
+            f"requirement_anchor_text:{row['id']}",
+        )
+
+
+def requirement_projection_self_test(
+    registry: dict[str, Any],
+    applicability: dict[str, Any],
+    baseline_rows: list[Any],
+    source_documents: dict[str, str],
+) -> int:
+    """Prove exact v10 row, source, class, order, and count failures close."""
+
+    mutations: list[
+        tuple[str, dict[str, Any], dict[str, Any], dict[str, str]]
+    ] = []
+
+    def copies() -> tuple[dict[str, Any], dict[str, Any], dict[str, str]]:
+        return copy.deepcopy(registry), copy.deepcopy(applicability), source_documents.copy()
+
+    candidate, classes, sources = copies()
+    candidate["requirements"][139]["source"] = "spec/REPORT_CONTRACT.md"
+    mutations.append(("wrong_source", candidate, classes, sources))
+    candidate, classes, sources = copies()
+    candidate["requirements"][140]["section"] = "Checkpoint control resolution precedence"
+    mutations.append(("wrong_section", candidate, classes, sources))
+    candidate, classes, sources = copies()
+    candidate["requirements"][142]["text"] = candidate["requirements"][142]["text"].replace(
+        "MUST return", "MAY return", 1
+    )
+    mutations.append(("wrong_text", candidate, classes, sources))
+    candidate, classes, sources = copies()
+    classes["classifications"]["NCRDT-EVIDENCE-006"] = "rust-only"
+    mutations.append(("wrong_applicability", candidate, classes, sources))
+    candidate, classes, sources = copies()
+    classes["classifications"]["NCRDT-EVIDENCE-006"] = (
+        "rust-only-evidence-with-opaque-typescript-overlays"
+    )
+    mutations.append(("near_miss_applicability", candidate, classes, sources))
+    candidate, classes, sources = copies()
+    candidate["requirements"][139], candidate["requirements"][140] = (
+        candidate["requirements"][140],
+        candidate["requirements"][139],
+    )
+    reordered = list(classes["classifications"].items())
+    reordered[139], reordered[140] = reordered[140], reordered[139]
+    classes["classifications"] = dict(reordered)
+    mutations.append(("coordinated_order", candidate, classes, sources))
+    candidate, classes, sources = copies()
+    candidate["requirements"].pop()
+    candidate["requirement_count"] = 147
+    classes["classifications"].pop("NCRDT-EVIDENCE-006")
+    mutations.append(("coordinated_count", candidate, classes, sources))
+    candidate, classes, sources = copies()
+    old = candidate["requirements"][141]["text"]
+    new = old.replace("MUST NOT", "MAY", 1)
+    candidate["requirements"][141]["text"] = new
+    sources["spec/REPORT_CONTRACT.md"] = sources["spec/REPORT_CONTRACT.md"].replace(
+        old, new, 1
+    )
+    mutations.append(("coordinated_authority_drift", candidate, classes, sources))
+    candidate, classes, sources = copies()
+    sources["spec/CONFORMANCE.md"] = sources["spec/CONFORMANCE.md"].replace(
+        "## Signed conformance v10\n", "## Deferred signed conformance\n", 1
+    )
+    mutations.append(("missing_source_anchor", candidate, classes, sources))
+
+    caught = 0
+    for name, candidate, classes, sources in mutations:
+        try:
+            validate_requirement_projection(
+                candidate,
+                classes,
+                baseline_rows,
+                sources,
+                148,
+            )
+        except TransitionError:
+            caught += 1
+            continue
+        raise TransitionError(f"requirement_mutation_survived:{name}")
+    return caught
+
+
 def validate_requirements(state: dict[str, Any], stage: str) -> None:
     authority = state.get("authority")
     require(isinstance(authority, dict), "authority")
@@ -557,42 +844,26 @@ def validate_requirements(state: dict[str, Any], stage: str) -> None:
 
     registry = load_object("spec/requirements.json")
     applicability = load_object("spec/requirements_applicability.json")
-    rows = registry.get("requirements")
-    classifications = applicability.get("classifications")
-    require(isinstance(rows, list), "requirement_rows")
-    require(isinstance(classifications, dict), "applicability_rows")
     expected_count = STAGE_COUNTS[stage][0]
-    require(
-        len(rows) == registry.get("requirement_count") == expected_count,
-        "live_requirement_count",
-    )
-    identifiers = [row.get("id") for row in rows if isinstance(row, dict)]
-    require(len(identifiers) == len(rows) == len(set(identifiers)), "requirement_ids")
-    require(list(classifications) == identifiers, "applicability_order")
-    require(len(classifications) == expected_count, "applicability_count")
-
     baseline_rows = load_object("reports/requirements_coverage_v9.json").get("rows")
-    require(isinstance(baseline_rows, list) and len(baseline_rows) == 139, "baseline_evidence_rows")
-    for current, baseline in zip(rows[:139], baseline_rows, strict=True):
-        require(isinstance(current, dict) and isinstance(baseline, dict), "baseline_row_shape")
-        baseline_authority = baseline.get("authority")
-        require(isinstance(baseline_authority, dict), "baseline_row_authority")
-        identifier = current.get("id")
-        require(identifier == baseline.get("id"), f"requirement_prefix_order:{identifier}")
-        require(current.get("source") == baseline_authority.get("source"), f"requirement_source:{identifier}")
-        require(current.get("section") == baseline_authority.get("section"), f"requirement_section:{identifier}")
-        require(
-            hashlib.sha256(str(current.get("text", "")).encode("utf-8")).hexdigest()
-            == baseline_authority.get("text_sha256"),
-            f"requirement_text:{identifier}",
-        )
-        require(
-            classifications.get(str(identifier)) == baseline.get("applicability"),
-            f"requirement_applicability:{identifier}",
-        )
+    require(isinstance(baseline_rows, list), "baseline_evidence_rows")
+    source_documents = {
+        relative: load_strict_lf_utf8(relative)
+        for relative in {
+            row["source"] for row in APPENDED_REQUIREMENT_ROWS
+        }
+    }
+    validate_requirement_projection(
+        registry,
+        applicability,
+        baseline_rows,
+        source_documents,
+        expected_count,
+    )
+    rows = registry["requirements"]
+    identifiers = [str(row["id"]) for row in rows]
     require(
-        ordered_digest([str(identifier) for identifier in identifiers[:139]])
-        == BASELINE["ordered_requirement_ids_sha256"],
+        ordered_digest(identifiers[:139]) == BASELINE["ordered_requirement_ids_sha256"],
         "requirement_prefix_digest",
     )
     if expected_count == 139:
@@ -601,8 +872,6 @@ def validate_requirements(state: dict[str, Any], stage: str) -> None:
             digest("spec/requirements_applicability.json") == BASELINE["applicability_sha256"],
             "early_applicability_changed",
         )
-    else:
-        require(tuple(identifiers[139:]) == APPENDED_REQUIREMENTS, "requirement_append_order")
 
     live = authority.get("live")
     require(isinstance(live, dict), "live_authority")
@@ -1373,6 +1642,22 @@ def mutation_self_test(state: dict[str, Any]) -> int:
     mutations: list[tuple[str, dict[str, Any]]] = []
     current_stage = str(state["current_stage"])
     current_index = STAGES.index(current_stage)
+    caught = 0
+    if current_index >= STAGES.index("requirements_appended"):
+        registry = load_object("spec/requirements.json")
+        applicability = load_object("spec/requirements_applicability.json")
+        baseline_rows = load_object("reports/requirements_coverage_v9.json").get("rows")
+        require(isinstance(baseline_rows, list), "mutation_baseline_evidence_rows")
+        source_documents = {
+            relative: load_strict_lf_utf8(relative)
+            for relative in {row["source"] for row in APPENDED_REQUIREMENT_ROWS}
+        }
+        caught += requirement_projection_self_test(
+            registry,
+            applicability,
+            baseline_rows,
+            source_documents,
+        )
     claimed_index = current_index + 1 if current_index + 1 < len(STAGES) else current_index - 1
     skipped = copy.deepcopy(state)
     skipped["current_stage"] = STAGES[claimed_index]
@@ -1413,7 +1698,6 @@ def mutation_self_test(state: dict[str, Any]) -> int:
     rewritten_baseline["transition_baseline"]["artifacts"][0]["sha256"] = "0" * 64
     mutations.append(("transition_baseline_coordinated_hash", rewritten_baseline))
 
-    caught = 0
     for name, mutation in mutations:
         try:
             validate_state(mutation)
