@@ -199,4 +199,38 @@ mod tests {
             Err(AssemblyError::SnapshotSize)
         );
     }
+
+    #[test]
+    #[ignore = "expected to fail until FINDING_084 closes"]
+    fn finding_084_checkpoint_sort_stops_before_cancelled_work() {
+        let l0 = leaf_hash(0, 2, Sha256::digest(b"a").into());
+        let l1 = leaf_hash(1, 2, Sha256::digest(b"b").into());
+        let root = super::super::merkle_root(&[l0, l1]).unwrap_or([0; 32]);
+        let mut chunks = vec![
+            CheckpointChunk {
+                index: 1,
+                count: 2,
+                data: b"b".to_vec(),
+                proof: vec![super::super::ProofStep::left(l0)],
+            },
+            CheckpointChunk {
+                index: 0,
+                count: 2,
+                data: b"a".to_vec(),
+                proof: vec![super::super::ProofStep::right(l1)],
+            },
+        ];
+        let result = assemble_chunks(
+            &descriptor(root),
+            &mut chunks,
+            &mut WorkBudget::new(4, 4),
+            &|| true,
+        );
+        assert_eq!(result, Err(AssemblyError::Cancelled));
+        assert_eq!(
+            chunks.iter().map(|chunk| chunk.index).collect::<Vec<_>>(),
+            vec![1, 0],
+            "FINDING_084 reproduced: checkpoint chunks are sorted before cancellation is observed"
+        );
+    }
 }

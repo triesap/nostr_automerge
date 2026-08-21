@@ -3025,7 +3025,8 @@ fn charge_evaluation_work(
 mod tests {
     use super::{
         ChangeCarrierOutcome, ChangeClaimReason, CheckpointWorkStop, FinalLineageChangeState,
-        FinalizationDimension, ReportFinalizationPermit, ReportFinalizationPlan, assembly_status,
+        FinalizationDimension, FinalizationPermitError, FinalizationReservationUnit,
+        InterruptedReportPass, ReportFinalizationPermit, ReportFinalizationPlan, assembly_status,
         change_carrier_disposition, charge_checkpoint_work, join_status,
         noncanonical_branch_claim_reason, reduce_reasoned_change_outcome,
         scoped_dynamic_event_disposition_records,
@@ -3522,6 +3523,28 @@ mod tests {
             permit
                 .consume(FinalizationDimension::Invariants, 1)
                 .is_err()
+        );
+    }
+
+    #[test]
+    #[ignore = "expected to fail until FINDING_076 closes"]
+    fn finding_076_finalization_rejects_reordered_named_passes() {
+        let plan = ReportFinalizationPlan {
+            controls: 1,
+            fixed_overhead: 1,
+            ..ReportFinalizationPlan::default()
+        };
+        let mut budget = WorkBudget::new(0, 2);
+        let permit = ReportFinalizationPermit::reserve(plan, &mut budget);
+        assert!(permit.is_ok());
+        let Ok(mut permit) = permit else { return };
+        assert_eq!(
+            permit.consume_pass(FinalizationReservationUnit::new(
+                InterruptedReportPass::FixedOverhead,
+                1,
+            )),
+            Err(FinalizationPermitError),
+            "FINDING_076 reproduced: finalization accepts a named pass out of order"
         );
     }
 

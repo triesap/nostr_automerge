@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import copy
+import json
 import os
 import re
 import subprocess
@@ -32,12 +34,57 @@ CASES = (
     ),
     (
         "lib",
+        "reference::evaluate::tests::finding_075_interrupted_batch_discards_all_canonical_progress",
+        "FINDING_075 reproduced: an interrupted batch exposes partial canonical progress",
+        "left == right",
+        "crates/nostr_automerge/src/reference/evaluate.rs",
+        "(1, 2, 0, 1)",
+        "(0, 0, 0, 0)",
+    ),
+    (
+        "lib",
+        "engine::reference_evaluator::tests::finding_076_finalization_rejects_reordered_named_passes",
+        "FINDING_076 reproduced: finalization accepts a named pass out of order",
+        "left == right",
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "Ok(())",
+        "Err(FinalizationPermitError)",
+    ),
+    (
+        "lib",
+        "reference::evaluate::tests::finding_077_canonical_raw_bytes_share_one_allocation",
+        "FINDING_077 reproduced: canonical raw bytes are copied without byte accounting",
+        "left == right",
+        "crates/nostr_automerge/src/reference/evaluate.rs",
+        "(false, 0)",
+        "(true, 0)",
+    ),
+    (
+        "lib",
         "engine::reference_evaluator::tests::finding_079_unsupported_carrier_does_not_create_semantic_hash_state",
         "FINDING_079 reproduced: an unverified unsupported carrier can create semantic ChangeHash state",
         "left != right",
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
         "UnsupportedRevision",
         "UnsupportedRevision",
+    ),
+    (
+        "lib",
+        "engine::evaluation_report::tests::finding_081_incomplete_report_rejects_canonical_cross_view_state",
+        "FINDING_081 reproduced: incomplete report parts accept canonical state and arbitrary digests",
+        "left == right",
+        "crates/nostr_automerge/src/engine/evaluation_report.rs",
+        "false",
+        "true",
+    ),
+    (
+        "public_engine_api",
+        "finding_082_reevaluation_stops_before_post_incomplete_alert_work",
+        "FINDING_082 reproduced: reevaluation adds an integrity alert after incomplete finalization",
+        "left == right",
+        "crates/nostr_automerge/tests/public_engine_api.rs",
+        "1",
+        "0",
     ),
     (
         "public_engine_api",
@@ -48,6 +95,49 @@ CASES = (
         "(Cancelled, 2)",
         "(BudgetExhausted, 1)",
     ),
+    (
+        "lib",
+        "checkpoint::assemble::tests::finding_084_checkpoint_sort_stops_before_cancelled_work",
+        "FINDING_084 reproduced: checkpoint chunks are sorted before cancellation is observed",
+        "left == right",
+        "crates/nostr_automerge/src/checkpoint/assemble.rs",
+        "[0, 1]",
+        "[1, 0]",
+    ),
+)
+SEMANTIC_DIAGNOSTIC = (
+    "FINDING_078 reproduced: a semantically unrelated named assertion "
+    "passes requirement validation"
+)
+SEMANTIC_STDOUT = (
+    f"{SEMANTIC_DIAGNOSTIC}\n"
+    "observed=accepted:NCRDT-NIP01-002:"
+    "invalid_raw_corpus_has_exact_stable_diagnostics\n"
+    "desired=rejected:semantic-category-mismatch\n"
+)
+REVISION_MESSAGE = (
+    "no method named `revision` found for reference `&EvaluationReport` in the current scope"
+)
+REVISION_LABEL = "method not found in `&EvaluationReport`"
+REVISION_PACKAGE = "remediation_v9_report_revision_probe"
+REVISION_VERSION = "0.0.0"
+REVISION_SOURCE = "src/main.rs"
+REVISION_ROOT = ROOT / "tests/compile_fail/remediation_v9_report_revision"
+REVISION_MANIFEST = str(REVISION_ROOT / "Cargo.toml")
+REVISION_TARGET_SOURCE = str(REVISION_ROOT / REVISION_SOURCE)
+REVISION_PACKAGE_ID = (
+    f"path+{REVISION_ROOT.as_uri()}#{REVISION_PACKAGE}@{REVISION_VERSION}"
+)
+STRUCTURED_FAILURE_MARKERS = (
+    "could not compile",
+    "could not execute process",
+    "failed to run custom build command",
+    "linker failure",
+    "linker failed",
+    "launcher failure",
+    "process abort",
+    "extbuild: error",
+    "command not found",
 )
 TOOL_FAILURE_MARKERS = (
     "error: could not compile",
@@ -158,6 +248,312 @@ def expected_stderr_pattern(target: str) -> re.Pattern[str]:
     )
 
 
+def semantic_command() -> tuple[str, ...]:
+    return ("python3", "scripts/reproduce_requirement_matrix_v9_weakness.py")
+
+
+def revision_command() -> tuple[str, ...]:
+    return (
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "--manifest-path",
+        "tests/compile_fail/remediation_v9_report_revision/Cargo.toml",
+        "--locked",
+        "--offline",
+        "--message-format=json",
+    )
+
+
+def validate_semantic_failure(returncode: int, stdout: str, stderr: str) -> None:
+    output = stdout + stderr
+    folded = output.casefold()
+    require(returncode == 78, "wrong semantic-validator reproduction exit")
+    require(stdout == SEMANTIC_STDOUT, "malformed semantic-validator reproduction stdout")
+    require(stderr == "", "semantic-validator reproduction wrote stderr")
+    require(
+        not any(marker in folded for marker in TOOL_FAILURE_MARKERS),
+        "tool or launcher failure in semantic-validator reproduction",
+    )
+    require(
+        output.count(SEMANTIC_DIAGNOSTIC) == 1,
+        "wrong semantic-validator diagnostic cardinality",
+    )
+
+
+TARGET_KEYS = {
+    "crate_types",
+    "doc",
+    "doctest",
+    "edition",
+    "kind",
+    "name",
+    "src_path",
+    "test",
+}
+PROFILE_KEYS = {
+    "debug_assertions",
+    "debuginfo",
+    "opt_level",
+    "overflow_checks",
+    "test",
+}
+
+
+def strings(value: object) -> bool:
+    return isinstance(value, list) and all(isinstance(item, str) for item in value)
+
+
+def cargo_target_is_closed(value: object) -> bool:
+    return (
+        isinstance(value, dict)
+        and set(value) == TARGET_KEYS
+        and strings(value.get("crate_types"))
+        and isinstance(value.get("doc"), bool)
+        and isinstance(value.get("doctest"), bool)
+        and isinstance(value.get("edition"), str)
+        and strings(value.get("kind"))
+        and isinstance(value.get("name"), str)
+        and isinstance(value.get("src_path"), str)
+        and isinstance(value.get("test"), bool)
+    )
+
+
+def cargo_profile_is_closed(value: object) -> bool:
+    return (
+        isinstance(value, dict)
+        and set(value) == PROFILE_KEYS
+        and isinstance(value.get("debug_assertions"), bool)
+        and isinstance(value.get("debuginfo"), (str, int, type(None)))
+        and isinstance(value.get("opt_level"), (str, int))
+        and isinstance(value.get("overflow_checks"), bool)
+        and isinstance(value.get("test"), bool)
+    )
+
+
+def compiler_artifact_is_closed(record: dict[str, object]) -> bool:
+    return (
+        set(record)
+        == {
+            "executable",
+            "features",
+            "filenames",
+            "fresh",
+            "manifest_path",
+            "package_id",
+            "profile",
+            "reason",
+            "target",
+        }
+        and record.get("reason") == "compiler-artifact"
+        and isinstance(record.get("package_id"), str)
+        and isinstance(record.get("manifest_path"), str)
+        and cargo_target_is_closed(record.get("target"))
+        and cargo_profile_is_closed(record.get("profile"))
+        and strings(record.get("features"))
+        and strings(record.get("filenames"))
+        and isinstance(record.get("executable"), (str, type(None)))
+        and isinstance(record.get("fresh"), bool)
+    )
+
+
+def build_script_record_is_closed(record: dict[str, object]) -> bool:
+    environment = record.get("env")
+    return (
+        set(record)
+        == {
+            "cfgs",
+            "env",
+            "linked_libs",
+            "linked_paths",
+            "out_dir",
+            "package_id",
+            "reason",
+        }
+        and record.get("reason") == "build-script-executed"
+        and isinstance(record.get("package_id"), str)
+        and strings(record.get("linked_libs"))
+        and strings(record.get("linked_paths"))
+        and strings(record.get("cfgs"))
+        and isinstance(environment, list)
+        and all(
+            isinstance(item, list)
+            and len(item) == 2
+            and all(isinstance(part, str) for part in item)
+            for item in environment
+        )
+        and isinstance(record.get("out_dir"), str)
+    )
+
+
+def expected_revision_target() -> dict[str, object]:
+    return {
+        "kind": ["bin"],
+        "crate_types": ["bin"],
+        "name": REVISION_PACKAGE,
+        "src_path": REVISION_TARGET_SOURCE,
+        "edition": "2024",
+        "doc": True,
+        "doctest": False,
+        "test": True,
+    }
+
+
+def compiler_message_record_is_exact(record: dict[str, object]) -> bool:
+    return (
+        set(record)
+        == {"manifest_path", "message", "package_id", "reason", "target"}
+        and record.get("reason") == "compiler-message"
+        and record.get("package_id") == REVISION_PACKAGE_ID
+        and record.get("manifest_path") == REVISION_MANIFEST
+        and record.get("target") == expected_revision_target()
+        and isinstance(record.get("message"), dict)
+    )
+
+
+def validate_revision_failure(returncode: int, stdout: str, stderr: str) -> None:
+    require(returncode == 101, "wrong report-revision probe exit")
+    require(
+        re.fullmatch(
+            r"(?:[ \t]*(?:Blocking|Checking|Compiling|Finished|Fresh|Waiting) [^\n]+\n)*"
+            r"error: could not compile `remediation_v9_report_revision_probe` "
+            r"\(bin \"remediation_v9_report_revision_probe\"\) due to 1 previous error\n?",
+            stderr,
+        )
+        is not None,
+        "malformed report-revision cargo stderr",
+    )
+    try:
+        records = [json.loads(line) for line in stdout.splitlines()]
+    except json.JSONDecodeError as error:
+        raise ReproductionError("non-JSON report-revision cargo stdout") from error
+    require(records, "empty report-revision cargo stdout")
+    require(
+        not any(
+            marker
+            in json.dumps(records, sort_keys=True, separators=(",", ":")).casefold()
+            for marker in STRUCTURED_FAILURE_MARKERS
+        ),
+        "unrelated structured report-revision failure",
+    )
+    require(
+        records[-1] == {"reason": "build-finished", "success": False},
+        "report-revision build did not finish with one failure",
+    )
+    require(
+        len(records) >= 3
+        and all(isinstance(record, dict) for record in records)
+        and all(
+            compiler_artifact_is_closed(record)
+            or build_script_record_is_closed(record)
+            for record in records[:-3]
+        )
+        and compiler_message_record_is_exact(records[-3])
+        and compiler_message_record_is_exact(records[-2]),
+        "foreign or malformed report-revision Cargo record sequence",
+    )
+    error_record, note_record = records[-3:-1]
+    error = error_record.get("message")
+    note = note_record.get("message")
+    require(isinstance(error, dict), "missing report-revision error")
+    require(isinstance(note, dict), "missing report-revision failure note")
+    require(
+        set(error)
+        == {"rendered", "$message_type", "children", "level", "message", "spans", "code"}
+        and error.get("$message_type") == "diagnostic",
+        "wrong report-revision error schema",
+    )
+    require(
+        set(note)
+        == {"rendered", "$message_type", "children", "level", "message", "spans", "code"}
+        and note.get("$message_type") == "diagnostic",
+        "wrong report-revision note schema",
+    )
+    require(error.get("level") == "error", "wrong report-revision error level")
+    code = error.get("code")
+    require(
+        isinstance(code, dict)
+        and set(code) == {"code", "explanation"}
+        and code.get("code") == "E0599"
+        and isinstance(code.get("explanation"), str),
+        "wrong report-revision error code",
+    )
+    require(error.get("message") == REVISION_MESSAGE, "wrong report-revision message")
+    require(error.get("children") == [], "unexpected report-revision child diagnostic")
+    require(
+        error.get("rendered")
+        == "error[E0599]: no method named `revision` found for reference "
+        "`&EvaluationReport` in the current scope\n"
+        " --> src/main.rs:4:12\n"
+        "  |\n"
+        "4 |     report.revision()\n"
+        "  |            ^^^^^^^^ method not found in `&EvaluationReport`\n\n",
+        "wrong rendered report-revision diagnostic",
+    )
+    spans = error.get("spans")
+    require(isinstance(spans, list) and len(spans) == 1, "wrong report-revision span count")
+    span = spans[0]
+    require(
+        set(span)
+        == {
+            "byte_end",
+            "byte_start",
+            "column_end",
+            "column_start",
+            "expansion",
+            "file_name",
+            "is_primary",
+            "label",
+            "line_end",
+            "line_start",
+            "suggested_replacement",
+            "suggestion_applicability",
+            "text",
+        }
+        and span.get("file_name") == REVISION_SOURCE
+        and span.get("line_start") == 4
+        and span.get("line_end") == 4
+        and span.get("column_start") == 12
+        and span.get("column_end") == 20
+        and span.get("byte_start") == 139
+        and span.get("byte_end") == 147
+        and span.get("is_primary") is True
+        and span.get("expansion") is None
+        and span.get("label") == REVISION_LABEL
+        and span.get("suggested_replacement") is None
+        and span.get("suggestion_applicability") is None,
+        "wrong report-revision primary span",
+    )
+    require(
+        span.get("text")
+        == [
+            {
+                "highlight_end": 20,
+                "highlight_start": 12,
+                "text": "    report.revision()",
+            }
+        ],
+        "wrong report-revision source line",
+    )
+    require(
+        note.get("level") == "failure-note"
+        and note.get("code") is None
+        and note.get("children") == []
+        and note.get("spans") == []
+        and note.get("message")
+        == "For more information about this error, try `rustc --explain E0599`.",
+        "wrong report-revision failure note",
+    )
+    require(
+        note.get("rendered")
+        == "For more information about this error, try `rustc --explain E0599`.\n",
+        "wrong rendered report-revision failure note",
+    )
+
+
 def validate_expected_failure(
     target: str,
     test_name: str,
@@ -238,6 +634,273 @@ error: test failed, to rerun pass `-p nostr_automerge --test public_engine_api`
     return stdout, stderr
 
 
+def canonical_revision_self_test_output() -> tuple[str, str]:
+    artifact = {
+        "reason": "compiler-artifact",
+        "package_id": "registry+https://github.com/rust-lang/crates.io-index#safe@1.0.0",
+        "manifest_path": "/tmp/safe/Cargo.toml",
+        "target": {
+            "kind": ["lib"],
+            "crate_types": ["lib"],
+            "name": "safe",
+            "src_path": "/tmp/safe/src/lib.rs",
+            "edition": "2024",
+            "doc": True,
+            "doctest": True,
+            "test": True,
+        },
+        "profile": {
+            "opt_level": "0",
+            "debuginfo": "line-tables-only",
+            "debug_assertions": True,
+            "overflow_checks": True,
+            "test": False,
+        },
+        "features": [],
+        "filenames": ["/tmp/libsafe.rmeta"],
+        "executable": None,
+        "fresh": True,
+    }
+    build_script = {
+        "reason": "build-script-executed",
+        "package_id": "registry+https://github.com/rust-lang/crates.io-index#safe-sys@1.0.0",
+        "linked_libs": [],
+        "linked_paths": [],
+        "cfgs": [],
+        "env": [],
+        "out_dir": "/tmp/safe/out",
+    }
+    rendered = (
+        "error[E0599]: no method named `revision` found for reference "
+        "`&EvaluationReport` in the current scope\n"
+        " --> src/main.rs:4:12\n"
+        "  |\n"
+        "4 |     report.revision()\n"
+        "  |            ^^^^^^^^ method not found in `&EvaluationReport`\n\n"
+    )
+    error = {
+        "reason": "compiler-message",
+        "package_id": REVISION_PACKAGE_ID,
+        "manifest_path": REVISION_MANIFEST,
+        "target": expected_revision_target(),
+        "message": {
+            "rendered": rendered,
+            "$message_type": "diagnostic",
+            "children": [],
+            "level": "error",
+            "message": REVISION_MESSAGE,
+            "spans": [
+                {
+                    "byte_end": 147,
+                    "byte_start": 139,
+                    "column_end": 20,
+                    "column_start": 12,
+                    "expansion": None,
+                    "file_name": REVISION_SOURCE,
+                    "is_primary": True,
+                    "label": REVISION_LABEL,
+                    "line_end": 4,
+                    "line_start": 4,
+                    "suggested_replacement": None,
+                    "suggestion_applicability": None,
+                    "text": [
+                        {
+                            "highlight_end": 20,
+                            "highlight_start": 12,
+                            "text": "    report.revision()",
+                        }
+                    ],
+                }
+            ],
+            "code": {"code": "E0599", "explanation": "exact E0599 explanation"},
+        },
+    }
+    note_text = "For more information about this error, try `rustc --explain E0599`."
+    note = {
+        "reason": "compiler-message",
+        "package_id": REVISION_PACKAGE_ID,
+        "manifest_path": REVISION_MANIFEST,
+        "target": expected_revision_target(),
+        "message": {
+            "rendered": f"{note_text}\n",
+            "$message_type": "diagnostic",
+            "children": [],
+            "level": "failure-note",
+            "message": note_text,
+            "spans": [],
+            "code": None,
+        },
+    }
+    finished = {"reason": "build-finished", "success": False}
+    stdout = "".join(
+        json.dumps(record, separators=(",", ":")) + "\n"
+        for record in [artifact, build_script, error, note, finished]
+    )
+    stderr = (
+        'error: could not compile `remediation_v9_report_revision_probe` '
+        '(bin "remediation_v9_report_revision_probe") due to 1 previous error\n'
+    )
+    return stdout, stderr
+
+
+def special_mutation_self_test() -> int:
+    validate_semantic_failure(78, SEMANTIC_STDOUT, "")
+    semantic_mutations = (
+        ("semantic_success", 0, SEMANTIC_STDOUT, ""),
+        ("semantic_wrong_exit", 77, SEMANTIC_STDOUT, ""),
+        ("semantic_wrong_finding", 78, SEMANTIC_STDOUT.replace("FINDING_078", "FINDING_000"), ""),
+        (
+            "semantic_wrong_observed",
+            78,
+            SEMANTIC_STDOUT.replace("observed=accepted", "observed=rejected"),
+            "",
+        ),
+        (
+            "semantic_wrong_desired",
+            78,
+            SEMANTIC_STDOUT.replace("semantic-category-mismatch", "generic"),
+            "",
+        ),
+        ("semantic_extra_stdout", 78, SEMANTIC_STDOUT + "extra\n", ""),
+        ("semantic_stderr", 78, SEMANTIC_STDOUT, "warning\n"),
+        ("semantic_tool_error", 78, "error: could not compile\n", ""),
+    )
+    caught = 0
+    for name, returncode, stdout, stderr in semantic_mutations:
+        try:
+            validate_semantic_failure(returncode, stdout, stderr)
+        except ReproductionError:
+            caught += 1
+            continue
+        raise ReproductionError(f"mutation survived: {name}")
+
+    canonical_stdout, canonical_stderr = canonical_revision_self_test_output()
+    validate_revision_failure(101, canonical_stdout, canonical_stderr)
+    records = [json.loads(line) for line in canonical_stdout.splitlines()]
+
+    def packed(mutated: list[dict[str, object]]) -> str:
+        return "".join(
+            json.dumps(record, separators=(",", ":")) + "\n"
+            for record in mutated
+        )
+
+    revision_mutations: list[tuple[str, int, str, str]] = []
+    wrong_code = copy.deepcopy(records)
+    wrong_code[-3]["message"]["code"]["code"] = "E0000"
+    revision_mutations.append(
+        ("revision_wrong_code", 101, packed(wrong_code), canonical_stderr)
+    )
+    wrong_message = copy.deepcopy(records)
+    wrong_message[-3]["message"]["message"] = "wrong"
+    revision_mutations.append(
+        ("revision_wrong_message", 101, packed(wrong_message), canonical_stderr)
+    )
+    wrong_rendered = copy.deepcopy(records)
+    wrong_rendered[-3]["message"]["rendered"] += "forged\n"
+    revision_mutations.append(
+        ("revision_wrong_rendered", 101, packed(wrong_rendered), canonical_stderr)
+    )
+    wrong_span = copy.deepcopy(records)
+    wrong_span[-3]["message"]["spans"][0]["line_start"] = 5
+    revision_mutations.append(
+        ("revision_wrong_span", 101, packed(wrong_span), canonical_stderr)
+    )
+    wrong_package = copy.deepcopy(records)
+    wrong_package[-3]["package_id"] = "foreign"
+    revision_mutations.append(
+        ("revision_wrong_package", 101, packed(wrong_package), canonical_stderr)
+    )
+    child = copy.deepcopy(records)
+    child[-3]["message"]["children"] = [{"level": "help"}]
+    revision_mutations.append(
+        ("revision_child", 101, packed(child), canonical_stderr)
+    )
+    missing_note = copy.deepcopy(records)
+    missing_note.pop(-2)
+    revision_mutations.append(
+        ("revision_missing_note", 101, packed(missing_note), canonical_stderr)
+    )
+    duplicate_error = copy.deepcopy(records)
+    duplicate_error.insert(-2, copy.deepcopy(duplicate_error[-3]))
+    revision_mutations.append(
+        ("revision_duplicate_error", 101, packed(duplicate_error), canonical_stderr)
+    )
+    build_success = copy.deepcopy(records)
+    build_success[-1]["success"] = True
+    revision_mutations.append(
+        ("revision_build_success", 101, packed(build_success), canonical_stderr)
+    )
+    foreign_record = copy.deepcopy(records)
+    foreign_record.insert(0, {"reason": "future-record"})
+    revision_mutations.append(
+        ("revision_foreign_record", 101, packed(foreign_record), canonical_stderr)
+    )
+    foreign_token = copy.deepcopy(records)
+    foreign_token[-3]["package_id"] = (
+        "path+file:///foreign/remediation_v9_report_revision_probe"
+        f"#{REVISION_PACKAGE}@{REVISION_VERSION}"
+    )
+    revision_mutations.append(
+        (
+            "revision_foreign_package_containing_token",
+            101,
+            packed(foreign_token),
+            canonical_stderr,
+        )
+    )
+    schema_less_artifact = copy.deepcopy(records)
+    schema_less_artifact.insert(0, {"reason": "compiler-artifact"})
+    revision_mutations.append(
+        (
+            "revision_schema_less_compiler_artifact",
+            101,
+            packed(schema_less_artifact),
+            canonical_stderr,
+        )
+    )
+    artifact_linker_failure = copy.deepcopy(records)
+    artifact_linker_failure[0]["target"]["name"] = "foreign linker failure"
+    revision_mutations.append(
+        (
+            "revision_foreign_artifact_linker_failure",
+            101,
+            packed(artifact_linker_failure),
+            canonical_stderr,
+        )
+    )
+    build_script_linker_failure = copy.deepcopy(records)
+    build_script_linker_failure[1]["env"].append(["STATUS", "linker failure"])
+    revision_mutations.append(
+        (
+            "revision_foreign_build_script_linker_failure",
+            101,
+            packed(build_script_linker_failure),
+            canonical_stderr,
+        )
+    )
+    revision_mutations.extend(
+        [
+            ("revision_success_exit", 0, canonical_stdout, canonical_stderr),
+            ("revision_non_json", 101, "not-json\n", canonical_stderr),
+            (
+                "revision_extra_stderr",
+                101,
+                canonical_stdout,
+                canonical_stderr + "warning\n",
+            ),
+            ("revision_tool_error", 101, canonical_stdout, "error: linker failed\n"),
+        ]
+    )
+    for name, returncode, stdout, stderr in revision_mutations:
+        try:
+            validate_revision_failure(returncode, stdout, stderr)
+        except ReproductionError:
+            caught += 1
+            continue
+        raise ReproductionError(f"mutation survived: {name}")
+    return caught
+
+
 def mutation_self_test() -> int:
     target = "public_engine_api"
     test_name = "finding_000_harness_self_test"
@@ -314,7 +977,7 @@ def mutation_self_test() -> int:
             caught += 1
             continue
         raise ReproductionError(f"mutation survived: {name}")
-    return caught
+    return caught + special_mutation_self_test()
 
 
 def main() -> int:
@@ -354,7 +1017,45 @@ def main() -> int:
                 f"{error}:\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
             ) from error
         print(f"PASS: reproduced {test_name}")
-    print(f"PASS: reproduced {len(CASES)} remediation-v9 Rust findings")
+    semantic = subprocess.run(
+        semantic_command(),
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        env=environment,
+    )
+    try:
+        validate_semantic_failure(
+            semantic.returncode,
+            semantic.stdout,
+            semantic.stderr,
+        )
+    except ReproductionError as error:
+        raise ReproductionError(
+            f"{error}:\nSTDOUT:\n{semantic.stdout}\nSTDERR:\n{semantic.stderr}"
+        ) from error
+    print("PASS: reproduced semantic requirement-proof weakness")
+    revision = subprocess.run(
+        revision_command(),
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        env=environment,
+    )
+    try:
+        validate_revision_failure(
+            revision.returncode,
+            revision.stdout,
+            revision.stderr,
+        )
+    except ReproductionError as error:
+        raise ReproductionError(
+            f"{error}:\nSTDOUT:\n{revision.stdout}\nSTDERR:\n{revision.stderr}"
+        ) from error
+    print("PASS: reproduced missing typed report revision API")
+    print(f"PASS: reproduced {len(CASES) + 2} remediation-v9 Rust cases")
     return 0
 
 

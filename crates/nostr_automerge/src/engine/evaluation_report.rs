@@ -822,4 +822,43 @@ mod tests {
         assert!(!disposition_records_are_canonical(&[second, first]));
         assert!(!disposition_records_are_canonical(&[first, first]));
     }
+
+    #[test]
+    #[ignore = "expected to fail until FINDING_081 closes"]
+    #[allow(clippy::bool_assert_comparison)]
+    fn finding_081_incomplete_report_rejects_canonical_cross_view_state() {
+        let coordinate =
+            format!("31624:{}:{}", "41".repeat(32), "42".repeat(32)).parse::<DocumentCoordinate>();
+        assert!(coordinate.is_ok());
+        let Ok(coordinate) = coordinate else { return };
+        let control = EventId::from_bytes([1; 32]);
+        let hash = ChangeHash::from_bytes([2; 32]);
+        let report = EvaluationReport::from_parts(EvaluationReportParts {
+            coordinate,
+            canonical_controls: vec![control],
+            disposition_records: vec![],
+            control_dispositions: vec![(control, crate::ProtocolDisposition::Accepted)],
+            dispositions: vec![(hash, crate::ProtocolDisposition::Accepted)],
+            change_carrier_dispositions: vec![],
+            accepted_changes: vec![hash],
+            pending_changes: vec![],
+            excluded_changes: vec![],
+            invalid_changes: vec![],
+            heads: vec![hash],
+            evidence: vec![],
+            checkpoints: vec![],
+            history_digest: HistoryDigest::from_bytes([3; 32]),
+            dispositions_digest: DispositionsDigest::from_bytes([4; 32]),
+            integrity_alerts: vec![],
+            manifest: crate::ResolvedManifestAvailability::Missing,
+            completion: Completion::Cancelled,
+            failure: Some(super::EvaluationFailure::Cancelled),
+            document: None,
+        });
+        assert_eq!(
+            report.is_err(),
+            true,
+            "FINDING_081 reproduced: incomplete report parts accept canonical state and arbitrary digests"
+        );
+    }
 }

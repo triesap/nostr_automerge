@@ -7931,3 +7931,63 @@ fn finding_083_budget_stop_is_not_relabelled_by_cancellation_requery() {
         "FINDING_083 reproduced: a typed budget stop is relabelled by a repeated cancellation observation"
     );
 }
+
+#[test]
+#[ignore = "expected to fail until FINDING_082 closes"]
+#[allow(clippy::expect_used)]
+fn finding_082_reevaluation_stops_before_post_incomplete_alert_work() {
+    let controller = TestSigner::from_byte(121);
+    let writer = TestSigner::from_byte(122);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "c1".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let members = vec![(writer.public_key().to_hex(), vec!["write"])];
+    let old_control = signed_acl_control(&controller, coordinate, 1, None, 0, members.clone());
+    let new_control = signed_acl_control(&controller, coordinate, 2, None, 0, members);
+    let old_corpus = {
+        let mut builder = CorpusBuilder::new();
+        assert!(matches!(
+            builder.ingest(old_control),
+            IngestOutcome::Accepted { .. }
+        ));
+        builder.finish()
+    };
+    let new_corpus = {
+        let mut builder = CorpusBuilder::new();
+        assert!(matches!(
+            builder.ingest(new_control),
+            IngestOutcome::Accepted { .. }
+        ));
+        builder.finish()
+    };
+    let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
+    let previous = evaluator.evaluate_report(
+        &old_corpus,
+        coordinate,
+        &mut WorkBudget::new(2_000_000, 2_000_000),
+        &NeverCancelled,
+    );
+    assert_eq!(previous.completion(), Completion::Complete);
+    let mut calibration = WorkBudget::new(2_000_000, 2_000);
+    let complete_current =
+        evaluator.evaluate_report(&new_corpus, coordinate, &mut calibration, &NeverCancelled);
+    assert_eq!(complete_current.completion(), Completion::Complete);
+    let consumed_items = 2_000_u64.saturating_sub(calibration.remaining().1);
+    let current = evaluator.reevaluate_report(
+        &new_corpus,
+        coordinate,
+        &previous,
+        &mut WorkBudget::new(2_000_000, consumed_items.saturating_sub(1)),
+        &NeverCancelled,
+    );
+    assert_eq!(current.completion(), Completion::BudgetExhausted);
+    assert_eq!(
+        current.integrity_alerts().len(),
+        0,
+        "FINDING_082 reproduced: reevaluation adds an integrity alert after incomplete finalization"
+    );
+}

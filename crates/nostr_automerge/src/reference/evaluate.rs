@@ -1193,7 +1193,7 @@ mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
     use super::{
-        AcceptedAtControl, BatchChange, BatchControl, BranchEvaluationState,
+        AcceptedAtControl, BatchChange, BatchChangeMemo, BatchControl, BranchEvaluationState,
         charge_control_closures, evaluate_batch, propagate_control_parent_dispositions,
     };
     use crate::automerge_adapter::decode::decode_change;
@@ -1719,6 +1719,63 @@ mod tests {
         reversed.reverse();
         let second = evaluate_batch(reversed, &mut WorkBudget::new(0, 200), &NeverCancelled);
         assert_eq!(first, second);
+    }
+
+    #[test]
+    #[ignore = "expected to fail until FINDING_075 closes"]
+    fn finding_075_interrupted_batch_discards_all_canonical_progress() {
+        let controls = || [control(2, None, vec![]), control(1, None, vec![])];
+        let mut complete_budget = WorkBudget::new(0, 200);
+        let complete = evaluate_batch(controls(), &mut complete_budget, &NeverCancelled);
+        assert_eq!(complete.completion, Completion::Complete);
+        let consumed = 200_u64.saturating_sub(complete_budget.remaining().1);
+        let interrupted = evaluate_batch(
+            controls(),
+            &mut WorkBudget::new(0, consumed.saturating_sub(1)),
+            &NeverCancelled,
+        );
+        assert_eq!(interrupted.completion, Completion::BudgetExhausted);
+        assert_eq!(
+            (
+                interrupted.canonical_controls.len(),
+                interrupted.control_dispositions.len(),
+                interrupted.accepted_changes.len(),
+                interrupted.integrity_alerts.len(),
+            ),
+            (0, 0, 0, 0),
+            "FINDING_075 reproduced: an interrupted batch exposes partial canonical progress"
+        );
+    }
+
+    #[test]
+    #[ignore = "expected to fail until FINDING_077 closes"]
+    fn finding_077_canonical_raw_bytes_share_one_allocation() {
+        let mut value = change(7, 7, 1);
+        value.raw_change = Some(vec![0x5a; 64]);
+        let controls =
+            BTreeMap::from([(EventId::from_bytes([1; 32]), control(1, None, vec![value]))]);
+        let original = controls
+            .values()
+            .next()
+            .and_then(|control| control.changes.first())
+            .and_then(|change| change.raw_change.as_ref());
+        assert!(original.is_some());
+        let mut budget = WorkBudget::new(64, 64);
+        let retained = BatchChangeMemo::derive(&controls, &mut budget, &NeverCancelled)
+            .ok()
+            .and_then(|memo| memo.raw_changes.values().next().cloned());
+        assert!(retained.is_some());
+        let (Some(original), Some(retained)) = (original, retained) else {
+            return;
+        };
+        assert_eq!(
+            (
+                core::ptr::eq(original.as_ptr(), retained.as_ptr()),
+                budget.consumed().get(WorkCounter::DecodeByte),
+            ),
+            (true, 0),
+            "FINDING_077 reproduced: canonical raw bytes are copied without byte accounting"
+        );
     }
 
     #[test]
