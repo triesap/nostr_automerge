@@ -1,0 +1,15 @@
+{
+  "canonical_output_sha256": "e193a7b0db3a43e9d33e612afea05bd447a5e968a45e283d098f45278d6ab6fc",
+  "commit": "b7607280fec23cdf71b4a0f5b44a1a573ff16b83",
+  "deliberate_mismatch": "detected",
+  "delivery_permutations": 8,
+  "dependency_lock_sha256": "d881757529b805b8ae4da935127730fe901b8b13a71382023be161016cd35a7d",
+  "evidence_commit": "5a7c2e08702c83812f371afb9221ec7d4272c9d2",
+  "fixture_count": 180,
+  "fixture_distribution_sha256": "7b4ab5d2146939d142eb92d43060ef2183c95d1fc574132894b3c01c874c7c56",
+  "implementation_identity": "triesap/nostr_automerge_typescript",
+  "process_runs": 2,
+  "provenance": "operator-local",
+  "result": "pass",
+  "schema": "nostr_automerge.interop_attestation.v3"
+}
