@@ -1,0 +1,19 @@
+{
+  "schema": "nostr_automerge.rust_conformance.v9",
+  "status": "pass",
+  "candidate": "99314ccdd03b9112fd70aa475b11fc6762457a09",
+  "manifest_sha256": "7b4ab5d2146939d142eb92d43060ef2183c95d1fc574132894b3c01c874c7c56",
+  "cargo_lock_sha256": "6d1b886ff74637ba6682d349ab81424b0792f2cbc61cf0f213dfcf16af4f6744",
+  "rust_toolchain_sha256": "5d959dfcc98b53886ee772ba216c4f9a1b31f093b46b5b263c0d084af54e821d",
+  "scenario_count": 180,
+  "process_count": 2,
+  "permutations_per_fixture": 8,
+  "canonical_process_bytes": "identical",
+  "canonical_output_sha256": "e193a7b0db3a43e9d33e612afea05bd447a5e968a45e283d098f45278d6ab6fc",
+  "distribution_run_sha256": "17140a4c5cc1653bf7de7f4b5eb6ef8e468c063c6d2dca71bc7d52ddac24e896",
+  "deliberate_mismatch": "rejected",
+  "commands": [
+    "cargo run --quiet -p nostr_automerge_conformance --locked -- run_distribution fixtures/distribution/manifest_v9.json",
+    "python3 scripts/validate_rust_conformance_v9.py"
+  ]
+}
