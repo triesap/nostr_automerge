@@ -8,7 +8,7 @@ import hashlib
 import json
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -138,35 +138,73 @@ CORRECTION_BINDINGS = (
         "checkpoint_descriptor_references_invalid_control",
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_invalid_control.fixture.json",
         "6cc48b1dfebf97885b333f8e6bd52a4a73e3537c20f68e148800e50df2ab35ed",
-        "136a365adfcdfc66583d705a0fab7676526fb1532fec089c121e1d98cac56c9a",
+        "68ebf678c5279e794e7b845b85ef1996cde97500a4e5f9be36afa301111d162b",
+        "701863d02563b237ffe5c43547669a96f5586cfd282cd07e03a6e61c76598fd0",
+        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_invalid_control.input.json",
+        "eeb0e2828bf2383399ebdcd5178a6e294a090238d24584b35bd47cc3fea283f4",
+        "4cb458428a12b9e203ee60788f45033ad9fe3e5dca1dd246b04ebad838c36917",
+        "3879aa41fe22aacff34e54862283e7ebca820733a526c23df66c0401da73612b",
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_invalid_control.expected.json",
         "65e8b7629623f29f7c7a980780a7f3da110f9dbd1069840d65affea45db11713",
+        "0d9fb1d4560d0676f412112fe7d945b8ba4eb4901229dddecbd174c5cb5f206a",
     ),
     (
         "checkpoint_descriptor_references_unsupported_control",
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_unsupported_control.fixture.json",
         "61076b811f530bc6cd80e625c48a8090f90ce846013970d0ea5f7e4ef81fbf52",
-        "5e5e54a2d5a66737dec2232cc13fd9e385131545bd65dc379227dbaadcd5b062",
+        "8bbb015f42ad354f37d764824ca5e0cc4713c0edc388d0062d4028f248f5746a",
+        "009deb687552b4ca5e238f31b00be39f8542ced90fe1572af0aab131f22bce59",
+        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_unsupported_control.input.json",
+        "e4f04a6c46be4e40aab2a7753248dc20c731e8a09dea5317af6cc0e29e8e0e83",
+        "b2fa8ed2c35231598e1039c1ab3b178eb30dca1fadcdcb2b352d778a608c2d0e",
+        "35629435bbfb1ccb1f4ece8d5f083a5f1c19f8be64c07bb95c0297828816b358",
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_unsupported_control.expected.json",
         "ec510d417e37d55c4fff14268edee5435774d1027aa3c24f463839ab63b60fa0",
+        "146c9dac3ea8bc4cbe7950bb97c67c7943616f45f08a0159d6c44ac4aa239807",
     ),
     (
         "checkpoint_descriptor_references_wrong_kind_control",
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_kind_control.fixture.json",
         "e815bbc47509df08915cf15c3a3dea8e61ad993c137caa45e2d0bdebe23063f8",
-        "fbdcc180b46d7474b7dac53e2382192531a0a6eada596f1fed5d5634c810de21",
+        "4cd8a5af048f815edd8c98a6e8349ad63e1da3ebc520c885f013ca80759b8069",
+        "8e32ab1b97be115e506dddc52ab60e9e3f07b79c2e881529dd940f8c48ed57ac",
+        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_kind_control.input.json",
+        "13bbd062fa02035f82ca712530c7232b7110135a82c9613668eb4a6000e7e66d",
+        "aeb51d3363931564fd3ed0e4d545b5d147caeea0bae74ec6943f4a9a1651e368",
+        "4575247e4a55a678d7c91e635cfb24db833c6a0ca10d395e8c4928cb376969d8",
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_kind_control.expected.json",
         "a42a12d8222b25b4dae8303726bf3df1b9d49bb15bffe007cba49e7e10fb2a06",
+        "bd49084661b82a7f84c3182b33aa6d67d7c0c42a351ffc889173cddff8a5247a",
     ),
     (
         "checkpoint_descriptor_references_wrong_coordinate_control",
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_coordinate_control.fixture.json",
         "33d51ad73eb8aba4966924a4526c6e6b29d144edeb81859597b6d6d6eef66a89",
-        "5e6f552e368d0f8ed809fd7eabe0263a752be37c4410d3d27d7d3aa9b469bd68",
+        "4636d86823bc560a195ceb009c761198db206891be87730495c7977ce2d61ca8",
+        "be4f43648cbf64fb3f66694a021fe6482d0b5d65e1c9ead8f310a07516ac2c00",
+        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_coordinate_control.input.json",
+        "e0948a4296a8c0c568c8c5354feca9ba09a8e0dd1676cf50f561846f89bc2896",
+        "cd3f28d54ecf58f806e67f2546ac3191e73ddaeb73a1caedd3a5fe1d63b1195b",
+        "c4a7355cc5568e82b56bf43cada88c55088508661ddbca06fabb4c57b530ae39",
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_coordinate_control.expected.json",
         "81d73336b0358d53deb30e3865833be319f9d019db801d624fafbedd72f0ec3c",
+        "27c9dcd0bf518de6beab9752d6419a4cfbfddc9cf8d2081d2387ade4ef860d7f",
     ),
 )
+CORRECTION_KEYS = {
+    "fixture_id",
+    "metadata_path",
+    "baseline_metadata_sha256",
+    "metadata_invariant_sha256",
+    "corrected_metadata_sha256",
+    "input_path",
+    "baseline_input_sha256",
+    "input_invariant_sha256",
+    "corrected_input_sha256",
+    "expected_path",
+    "baseline_expected_sha256",
+    "corrected_expected_sha256",
+}
 CORRECTED_REPORTS = tuple(binding[0] for binding in CORRECTION_BINDINGS)
 NEW_FIXTURE_GROUPS = (
     (
@@ -383,18 +421,44 @@ def normalized_markdown(value: str) -> str:
     return " ".join(value.split())
 
 
-def metadata_invariant_sha256(relative: str) -> str:
-    metadata = load_object(relative)
+def metadata_invariant_sha256(
+    relative: str,
+    object_loader: Callable[[str], dict[str, Any]] = load_object,
+) -> str:
+    metadata = object_loader(relative)
     expected = metadata.get("expected")
     require(isinstance(expected, dict), f"fixture_expected:{relative}")
+    inputs = metadata.get("inputs")
+    require(
+        isinstance(inputs, list) and len(inputs) == 1 and isinstance(inputs[0], dict),
+        f"fixture_inputs:{relative}",
+    )
     normalized = copy.deepcopy(metadata)
     normalized["expected"]["sha256"] = "<expected-report-sha256>"
-    return hashlib.sha256(
-        json.dumps(normalized, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    ).hexdigest()
+    normalized["inputs"][0]["sha256"] = "<signed-scenario-sha256>"
+    return projection_digest(normalized)
 
 
-def signed_event_set_sha256(entries: list[dict[str, Any]]) -> str:
+def input_invariant_sha256(
+    relative: str,
+    object_loader: Callable[[str], dict[str, Any]] = load_object,
+) -> str:
+    """Bind every signed-scenario field except its expected-report mirror."""
+
+    scenario = object_loader(relative)
+    require(
+        isinstance(scenario.get("expected_report"), dict),
+        f"scenario_expected_report:{relative}",
+    )
+    normalized = copy.deepcopy(scenario)
+    normalized["expected_report"] = "<expected-report>"
+    return projection_digest(normalized)
+
+
+def signed_event_set_sha256(
+    entries: list[dict[str, Any]],
+    object_loader: Callable[[str], dict[str, Any]] = load_object,
+) -> str:
     value = hashlib.sha256()
     for entry in entries:
         identifier = str(entry.get("fixture_id", "")).encode("utf-8")
@@ -402,7 +466,7 @@ def signed_event_set_sha256(entries: list[dict[str, Any]]) -> str:
         value.update(identifier)
         input_paths = entry.get("input_paths")
         require(isinstance(input_paths, list) and len(input_paths) == 1, "baseline_input_paths")
-        scenario = load_object(str(input_paths[0]))
+        scenario = object_loader(str(input_paths[0]))
         require(
             scenario.get("scenario_schema") == "nostr_automerge.signed_scenario.v2",
             f"signed_scenario:{entry.get('fixture_id')}",
@@ -477,6 +541,19 @@ def validate_schema_contracts(
     require(authority.get("additionalProperties") is False, "authority_contract_open")
     require(distribution.get("additionalProperties") is False, "distribution_contract_open")
     require(evidence.get("additionalProperties") is False, "evidence_contract_open")
+    correction_rows = (
+        distribution.get("properties", {})
+        .get("corrected_expected_reports", {})
+        .get("items", {})
+    )
+    require(
+        correction_rows.get("additionalProperties") is False,
+        "correction_contract_open",
+    )
+    require(
+        set(correction_rows.get("required", [])) == CORRECTION_KEYS,
+        "correction_contract_required",
+    )
     require(
         evidence.get("properties", {}).get("artifacts", {}).get("minItems")
         == len(V9_EVIDENCE)
@@ -1141,6 +1218,170 @@ def validate_v10_manifest(
     require(files == expected["files"], "v10_manifest_file_inventory")
 
 
+def validate_fixture_correction_projection(
+    entries: list[dict[str, Any]],
+    files: list[dict[str, Any]],
+    stage: str,
+    object_loader: Callable[[str], dict[str, Any]] = load_object,
+    digest_loader: Callable[[str], str] = digest,
+) -> None:
+    """Validate the exact authorized live deltas against the sealed v9 manifest."""
+
+    require(
+        signed_event_set_sha256(entries, object_loader)
+        == BASELINE["signed_events_sha256"],
+        "baseline_signed_inputs_changed",
+    )
+    file_hashes = {
+        row.get("path"): row.get("sha256")
+        for row in files
+        if isinstance(row, dict) and isinstance(row.get("path"), str)
+    }
+    require(len(file_hashes) == len(files), "baseline_file_inventory")
+    entry_by_id = {str(entry["fixture_id"]): entry for entry in entries}
+    changed_metadata = []
+    changed_inputs = []
+    changed_reports = []
+    correction_by_id = {binding[0]: binding for binding in CORRECTION_BINDINGS}
+    for identifier, entry in entry_by_id.items():
+        metadata_path = str(entry.get("metadata_path", ""))
+        input_paths = entry.get("input_paths")
+        expected_path = str(entry.get("expected_path", ""))
+        require(
+            isinstance(input_paths, list) and len(input_paths) == 1,
+            f"baseline_inputs:{identifier}",
+        )
+        input_path = str(input_paths[0])
+        binding = correction_by_id.get(identifier)
+        if binding is None:
+            require(
+                file_hashes.get(metadata_path) == digest_loader(metadata_path),
+                f"preserved_fixture_metadata:{identifier}",
+            )
+            require(
+                file_hashes.get(input_path) == digest_loader(input_path),
+                f"preserved_fixture_input:{identifier}",
+            )
+            require(
+                file_hashes.get(expected_path) == digest_loader(expected_path),
+                f"preserved_fixture_report:{identifier}",
+            )
+        else:
+            (
+                _,
+                bound_metadata,
+                baseline_metadata,
+                metadata_invariant,
+                _,
+                bound_input,
+                baseline_input,
+                input_invariant,
+                _,
+                bound_expected,
+                baseline_expected,
+                _,
+            ) = binding
+            require(
+                (metadata_path, input_path, expected_path)
+                == (bound_metadata, bound_input, bound_expected),
+                f"correction_paths:{identifier}",
+            )
+            require(
+                file_hashes.get(metadata_path) == baseline_metadata,
+                f"correction_baseline_metadata:{identifier}",
+            )
+            require(
+                file_hashes.get(input_path) == baseline_input,
+                f"correction_baseline_input:{identifier}",
+            )
+            require(
+                file_hashes.get(expected_path) == baseline_expected,
+                f"correction_baseline_report:{identifier}",
+            )
+            require(
+                metadata_invariant_sha256(metadata_path, object_loader)
+                == metadata_invariant,
+                f"correction_metadata_invariant:{identifier}",
+            )
+            require(
+                input_invariant_sha256(input_path, object_loader) == input_invariant,
+                f"correction_input_invariant:{identifier}",
+            )
+        if file_hashes.get(metadata_path) != digest_loader(metadata_path):
+            changed_metadata.append(identifier)
+        if file_hashes.get(input_path) != digest_loader(input_path):
+            changed_inputs.append(identifier)
+        if file_hashes.get(expected_path) != digest_loader(expected_path):
+            changed_reports.append(identifier)
+    changed_metadata.sort(key=str.encode)
+    changed_inputs.sort(key=str.encode)
+    changed_reports.sort(key=str.encode)
+    _, _, correction_count, _ = STAGE_COUNTS[stage]
+    expected_changed = sorted(CORRECTED_REPORTS[:correction_count], key=str.encode)
+    require(changed_metadata == expected_changed, "authorized_metadata_changes")
+    require(changed_inputs == expected_changed, "authorized_input_changes")
+    require(changed_reports == expected_changed, "authorized_report_changes")
+    for identifier in CORRECTED_REPORTS:
+        (
+            _,
+            metadata_path,
+            baseline_metadata,
+            _,
+            corrected_metadata,
+            input_path,
+            baseline_input,
+            _,
+            corrected_input,
+            expected_path,
+            baseline_expected,
+            corrected_expected,
+        ) = correction_by_id[identifier]
+        metadata = object_loader(metadata_path)
+        scenario = object_loader(input_path)
+        if correction_count == 0:
+            require(
+                digest_loader(metadata_path) == baseline_metadata,
+                f"early_correction_metadata:{identifier}",
+            )
+            require(
+                digest_loader(input_path) == baseline_input,
+                f"early_correction_input:{identifier}",
+            )
+            require(
+                digest_loader(expected_path) == baseline_expected,
+                f"early_correction_report:{identifier}",
+            )
+            continue
+
+        live_expected = object_loader(expected_path)
+        require(
+            scenario.get("expected_report") == live_expected,
+            f"corrected_input_report_mirror:{identifier}",
+        )
+        require(
+            metadata.get("expected", {}).get("sha256")
+            == digest_loader(expected_path),
+            f"corrected_metadata_report_hash:{identifier}",
+        )
+        require(
+            metadata.get("inputs", [{}])[0].get("sha256")
+            == digest_loader(input_path),
+            f"corrected_metadata_input_hash:{identifier}",
+        )
+        require(
+            digest_loader(metadata_path) == corrected_metadata,
+            f"corrected_metadata:{identifier}",
+        )
+        require(
+            digest_loader(input_path) == corrected_input,
+            f"corrected_input:{identifier}",
+        )
+        require(
+            digest_loader(expected_path) == corrected_expected,
+            f"corrected_report:{identifier}",
+        )
+
+
 def validate_distribution(state: dict[str, Any], stage: str) -> None:
     distribution = state.get("distribution")
     require(isinstance(distribution, dict), "distribution")
@@ -1181,17 +1422,27 @@ def validate_distribution(state: dict[str, Any], stage: str) -> None:
     )
     corrections = distribution.get("corrected_expected_reports")
     require(isinstance(corrections, list), "corrected_reports")
+    require(
+        len(corrections) == len(CORRECTION_BINDINGS)
+        and all(isinstance(row, dict) and set(row) == CORRECTION_KEYS for row in corrections),
+        "corrected_report_row_shape",
+    )
     actual_corrections = tuple(
         (
             row.get("fixture_id"),
             row.get("metadata_path"),
             row.get("baseline_metadata_sha256"),
             row.get("metadata_invariant_sha256"),
+            row.get("corrected_metadata_sha256"),
+            row.get("input_path"),
+            row.get("baseline_input_sha256"),
+            row.get("input_invariant_sha256"),
+            row.get("corrected_input_sha256"),
             row.get("expected_path"),
             row.get("baseline_expected_sha256"),
+            row.get("corrected_expected_sha256"),
         )
         for row in corrections
-        if isinstance(row, dict)
     )
     require(actual_corrections == CORRECTION_BINDINGS, "corrected_report_bindings")
     groups = distribution.get("new_fixture_groups")
@@ -1211,52 +1462,9 @@ def validate_distribution(state: dict[str, Any], stage: str) -> None:
     baseline_ids = [entry.get("fixture_id") for entry in entries if isinstance(entry, dict)]
     require(len(baseline_ids) == len(entries) == len(set(baseline_ids)), "baseline_fixture_ids")
     require(ordered_digest([str(identifier) for identifier in baseline_ids]) == BASELINE["ordered_fixture_ids_sha256"], "baseline_fixture_ids_digest")
-    require(signed_event_set_sha256(entries) == BASELINE["signed_events_sha256"], "baseline_signed_inputs_changed")
-    file_hashes = {
-        row.get("path"): row.get("sha256")
-        for row in files
-        if isinstance(row, dict) and isinstance(row.get("path"), str)
-    }
-    require(len(file_hashes) == len(files), "baseline_file_inventory")
-    entry_by_id = {str(entry["fixture_id"]): entry for entry in entries}
-    changed_reports = []
-    correction_by_id = {binding[0]: binding for binding in CORRECTION_BINDINGS}
-    for identifier, entry in entry_by_id.items():
-        metadata_path = str(entry.get("metadata_path", ""))
-        input_paths = entry.get("input_paths")
-        expected_path = str(entry.get("expected_path", ""))
-        require(isinstance(input_paths, list) and len(input_paths) == 1, f"baseline_inputs:{identifier}")
-        require(
-            file_hashes.get(str(input_paths[0])) == digest(str(input_paths[0])),
-            f"preserved_fixture_input:{identifier}",
-        )
-        binding = correction_by_id.get(identifier)
-        if binding is None:
-            require(file_hashes.get(metadata_path) == digest(metadata_path), f"preserved_fixture_metadata:{identifier}")
-            require(file_hashes.get(expected_path) == digest(expected_path), f"preserved_fixture_report:{identifier}")
-        else:
-            _, bound_metadata, baseline_metadata, invariant, bound_expected, baseline_expected = binding
-            require(metadata_path == bound_metadata and expected_path == bound_expected, f"correction_paths:{identifier}")
-            require(file_hashes.get(metadata_path) == baseline_metadata, f"correction_baseline_metadata:{identifier}")
-            require(file_hashes.get(expected_path) == baseline_expected, f"correction_baseline_report:{identifier}")
-            require(metadata_invariant_sha256(metadata_path) == invariant, f"correction_metadata_invariant:{identifier}")
-        if file_hashes.get(expected_path) != digest(expected_path):
-            changed_reports.append(identifier)
-    changed_reports.sort(key=str.encode)
+    validate_fixture_correction_projection(entries, files, stage)
     expected_requirement_count, expected_fixture_count, correction_count, new_count = STAGE_COUNTS[stage]
     del expected_requirement_count
-    expected_changed = sorted(CORRECTED_REPORTS[:correction_count], key=str.encode)
-    require(changed_reports == expected_changed, "authorized_report_changes")
-    for identifier in CORRECTED_REPORTS:
-        metadata_path = Path(str(entry_by_id[identifier]["metadata_path"]))
-        metadata = load_object(metadata_path.as_posix())
-        expected_path = str(entry_by_id[identifier]["expected_path"])
-        current_expected_sha256 = digest(expected_path)
-        if correction_count == 0:
-            require(digest(metadata_path.as_posix()) == file_hashes[metadata_path.as_posix()], f"early_correction_metadata:{identifier}")
-        else:
-            require(metadata.get("expected", {}).get("sha256") == current_expected_sha256, f"corrected_metadata_hash:{identifier}")
-            require(digest(metadata_path.as_posix()) != file_hashes[metadata_path.as_posix()], f"unchanged_correction_metadata:{identifier}")
 
     discovered = discover_fixture_metadata()
     expected_new = set(NEW_FIXTURES[:new_count])
@@ -1708,10 +1916,10 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
     future_runtime = copy.deepcopy(runtime)
     future_runtime["predecessors"].append(
         {
-            "step": "step_1175",
+            "step": "step_1176",
             "candidate": "f" * 40,
             "owner_class": "public",
-            "gate_ids": ["V-RUST"],
+            "gate_ids": ["V-CONF"],
             "requirement_ids": [],
             "finding_ids": [],
             "deviation_ids": [],
@@ -1720,19 +1928,38 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
     )
     future_runtime["cursor"].update(
         {
-            "active_step": "step_1176",
-            "next_step": "step_1177",
-            "remaining_checkpoint_count": 108,
+            "active_step": "step_1177",
+            "next_step": "step_1178",
+            "remaining_checkpoint_count": 107,
             "remaining_rcld_count": 13,
         }
     )
     future_plan = plan.replace(
-        "Active checkpoint: `step_1175`",
         "Active checkpoint: `step_1176`",
+        "Active checkpoint: `step_1177`",
         1,
     ).replace(
-        "Next checkpoint: `step_1176`",
         "Next checkpoint: `step_1177`",
+        "Next checkpoint: `step_1178`",
+        1,
+    ).replace(
+        "Next RCLD: RCLD 82",
+        "Next RCLD: RCLD 83",
+        1,
+    ).replace(
+        "## RCLD 82 — Rust Checkpoint Control Precedence\n\nStatus: planned",
+        "## RCLD 82 — Rust Checkpoint Control Precedence\n\nStatus: complete",
+        1,
+    ).replace(
+        "- RCLD 81 — Authority, Deviation, And Reproducible Baseline\n\n"
+        "## Unfinished RCLDs",
+        "- RCLD 81 — Authority, Deviation, And Reproducible Baseline\n"
+        "- RCLD 82 — Rust Checkpoint Control Precedence\n\n"
+        "## Unfinished RCLDs",
+        1,
+    ).replace(
+        "## Unfinished RCLDs\n\n- RCLD 82 — Rust Checkpoint Control Precedence\n",
+        "## Unfinished RCLDs\n\n",
         1,
     )
     validate_plan_semantics(future_plan)
@@ -1745,7 +1972,7 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
         copy.deepcopy(future_runtime["predecessors"][-1])
     )
     stale_checkpoint_count = copy.deepcopy(future_runtime)
-    stale_checkpoint_count["cursor"]["remaining_checkpoint_count"] = 109
+    stale_checkpoint_count["cursor"]["remaining_checkpoint_count"] = 108
     stale_rcld_count = copy.deepcopy(future_runtime)
     stale_rcld_count["cursor"]["remaining_rcld_count"] = 14
     stale_stage_count = copy.deepcopy(future_runtime)
@@ -1753,10 +1980,12 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
     stale_finding_status = copy.deepcopy(future_runtime)
     stale_finding_status["findings"]["status"] = "code_complete_publication_held"
     stale_groups = future_plan.replace(
-        "## Completed RCLDs\n\n- RCLD 81 — Authority, Deviation, And Reproducible Baseline\n\n"
+        "## Completed RCLDs\n\n- RCLD 81 — Authority, Deviation, And Reproducible Baseline\n"
+        "- RCLD 82 — Rust Checkpoint Control Precedence\n\n"
         "## Unfinished RCLDs\n\n",
         "## Completed RCLDs\n\n## Unfinished RCLDs\n\n"
-        "- RCLD 81 — Authority, Deviation, And Reproducible Baseline\n",
+        "- RCLD 81 — Authority, Deviation, And Reproducible Baseline\n"
+        "- RCLD 82 — Rust Checkpoint Control Precedence\n",
         1,
     )
     stale_summary = future_plan.replace(
@@ -1768,7 +1997,7 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
         (
             "active_step",
             plan.replace(
-                "Active checkpoint: `step_1175`",
+                "Active checkpoint: `step_1176`",
                 "Active checkpoint: `step_9999`",
                 1,
             ),
@@ -1777,7 +2006,7 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
         (
             "next_step",
             plan.replace(
-                "Next checkpoint: `step_1176`",
+                "Next checkpoint: `step_1177`",
                 "Next checkpoint: `step_9998`",
                 1,
             ),
@@ -2076,6 +2305,216 @@ def validate_state(state: dict[str, Any]) -> None:
     validate_supersession(state)
 
 
+def expect_transition_failure(
+    name: str,
+    expected_diagnostic: str,
+    operation: Callable[[], None],
+) -> int:
+    """Require one mutation to fail at its intended closed invariant."""
+
+    try:
+        operation()
+    except TransitionError as error:
+        require(
+            str(error) == expected_diagnostic,
+            f"mutation_wrong_diagnostic:{name}",
+        )
+        return 1
+    raise TransitionError(f"mutation_survived:{name}")
+
+
+def fixture_correction_mutation_self_test(stage: str) -> int:
+    """Prove every authorized correction boundary rejects coordinated drift."""
+
+    manifest = load_object(BASE_MANIFEST_PATH)
+    entries = manifest.get("fixtures")
+    files = manifest.get("files")
+    require(isinstance(entries, list), "mutation_manifest_entries")
+    require(isinstance(files, list), "mutation_manifest_files")
+
+    def rendered(value: dict[str, Any]) -> bytes:
+        return (
+            json.dumps(
+                value,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n"
+        ).encode("utf-8")
+
+    def run(
+        name: str,
+        expected_diagnostic: str,
+        replacements: dict[str, dict[str, Any]],
+    ) -> int:
+        encoded = {relative: rendered(value) for relative, value in replacements.items()}
+
+        def object_loader(relative: str) -> dict[str, Any]:
+            if relative in replacements:
+                return copy.deepcopy(replacements[relative])
+            return load_object(relative)
+
+        def digest_loader(relative: str) -> str:
+            if relative in encoded:
+                return hashlib.sha256(encoded[relative]).hexdigest()
+            return digest(relative)
+
+        return expect_transition_failure(
+            name,
+            expected_diagnostic,
+            lambda: validate_fixture_correction_projection(
+                entries,
+                files,
+                stage,
+                object_loader,
+                digest_loader,
+            ),
+        )
+
+    caught = 0
+    correction_ids = set(CORRECTED_REPORTS)
+    fifth_entry = next(
+        entry
+        for entry in entries
+        if isinstance(entry, dict) and entry.get("fixture_id") not in correction_ids
+    )
+    fifth_id = str(fifth_entry["fixture_id"])
+    fifth_expected_path = str(fifth_entry["expected_path"])
+    fifth_report = load_object(fifth_expected_path)
+    fifth_report["mutation_probe"] = True
+    caught += run(
+        "fifth_live_fixture_delta",
+        f"preserved_fixture_report:{fifth_id}",
+        {fifth_expected_path: fifth_report},
+    )
+
+    (
+        identifier,
+        metadata_path,
+        _,
+        _,
+        _,
+        input_path,
+        _,
+        _,
+        _,
+        expected_path,
+        _,
+        _,
+    ) = CORRECTION_BINDINGS[0]
+
+    raw_event_drift = load_object(input_path)
+    raw_event_drift["raw_events"][0]["data"] += "A"
+    caught += run(
+        "raw_signed_event_drift",
+        "baseline_signed_inputs_changed",
+        {input_path: raw_event_drift},
+    )
+
+    non_report_drift = load_object(input_path)
+    non_report_drift["fixture_id"] += "_drift"
+    caught += run(
+        "non_report_input_drift",
+        f"correction_input_invariant:{identifier}",
+        {input_path: non_report_drift},
+    )
+
+    provenance_drift = load_object(metadata_path)
+    provenance_drift["provenance"]["created_at"] += "T00:00:00Z"
+    caught += run(
+        "non_checksum_metadata_provenance_drift",
+        f"correction_metadata_invariant:{identifier}",
+        {metadata_path: provenance_drift},
+    )
+
+    mirror_mismatch = load_object(expected_path)
+    mirror_mismatch["mutation_probe"] = True
+    caught += run(
+        "external_expected_embedded_mirror_mismatch",
+        f"corrected_input_report_mirror:{identifier}",
+        {expected_path: mirror_mismatch},
+    )
+
+    coordinated_report = load_object(expected_path)
+    coordinated_report["mutation_probe"] = True
+    coordinated_input = load_object(input_path)
+    coordinated_input["expected_report"] = copy.deepcopy(coordinated_report)
+    coordinated_metadata = load_object(metadata_path)
+    coordinated_metadata["expected"]["sha256"] = hashlib.sha256(
+        rendered(coordinated_report)
+    ).hexdigest()
+    coordinated_metadata["inputs"][0]["sha256"] = hashlib.sha256(
+        rendered(coordinated_input)
+    ).hexdigest()
+    caught += run(
+        "coordinated_report_input_metadata_checksum_drift",
+        f"corrected_metadata:{identifier}",
+        {
+            metadata_path: coordinated_metadata,
+            input_path: coordinated_input,
+            expected_path: coordinated_report,
+        },
+    )
+    return caught
+
+
+def correction_authority_mutation_self_test(state: dict[str, Any]) -> int:
+    """Reject stage, row-shape, path, and exact-hash near misses."""
+
+    mutations: list[tuple[str, str, dict[str, Any]]] = []
+    stage = copy.deepcopy(state)
+    stage["current_stage"] = "checkpoint_expectation_corrected"
+    mutations.append(("stage_spelling_near_miss", "current_stage", stage))
+
+    extra_key = copy.deepcopy(state)
+    extra_key["distribution"]["corrected_expected_reports"][0]["unreviewed"] = True
+    mutations.append(
+        ("correction_row_extra_key", "corrected_report_row_shape", extra_key)
+    )
+    missing_key = copy.deepcopy(state)
+    del missing_key["distribution"]["corrected_expected_reports"][0][
+        "corrected_expected_sha256"
+    ]
+    mutations.append(
+        ("correction_row_missing_key", "corrected_report_row_shape", missing_key)
+    )
+    path_near_miss = copy.deepcopy(state)
+    path_near_miss["distribution"]["corrected_expected_reports"][0][
+        "expected_path"
+    ] += ".near"
+    mutations.append(
+        ("correction_path_near_miss", "corrected_report_bindings", path_near_miss)
+    )
+    baseline_hash_near_miss = copy.deepcopy(state)
+    baseline_hash_near_miss["distribution"]["corrected_expected_reports"][0][
+        "baseline_expected_sha256"
+    ] = "0" * 64
+    mutations.append(
+        (
+            "correction_baseline_hash_near_miss",
+            "corrected_report_bindings",
+            baseline_hash_near_miss,
+        )
+    )
+    corrected_hash_near_miss = copy.deepcopy(state)
+    corrected_hash_near_miss["distribution"]["corrected_expected_reports"][0][
+        "corrected_expected_sha256"
+    ] = "0" * 64
+    mutations.append(
+        (
+            "correction_live_hash_near_miss",
+            "corrected_report_bindings",
+            corrected_hash_near_miss,
+        )
+    )
+
+    return sum(
+        expect_transition_failure(name, diagnostic, lambda value=value: validate_state(value))
+        for name, diagnostic, value in mutations
+    )
+
+
 def mutation_self_test(state: dict[str, Any]) -> int:
     mutations: list[tuple[str, dict[str, Any]]] = []
     current_stage = str(state["current_stage"])
@@ -2096,6 +2535,9 @@ def mutation_self_test(state: dict[str, Any]) -> int:
             baseline_rows,
             source_documents,
         )
+    if current_index >= STAGES.index("checkpoint_expectations_corrected"):
+        caught += fixture_correction_mutation_self_test(current_stage)
+    caught += correction_authority_mutation_self_test(state)
     claimed_index = current_index + 1 if current_index + 1 < len(STAGES) else current_index - 1
     skipped = copy.deepcopy(state)
     skipped["current_stage"] = STAGES[claimed_index]
@@ -2154,6 +2596,24 @@ def mutation_self_test(state: dict[str, Any]) -> int:
     open_fixture["$defs"]["fixture"]["additionalProperties"] = True
     weak_file = copy.deepcopy(distribution_schema)
     weak_file["$defs"]["file"]["required"].pop()
+    open_correction = copy.deepcopy(authority_schema)
+    open_correction["properties"]["distribution"]["properties"][
+        "corrected_expected_reports"
+    ]["items"]["additionalProperties"] = True
+    caught += expect_transition_failure(
+        "authority_schema_open_correction_row",
+        "correction_contract_open",
+        lambda: validate_schema_contracts(open_correction, distribution_schema),
+    )
+    weak_correction = copy.deepcopy(authority_schema)
+    weak_correction["properties"]["distribution"]["properties"][
+        "corrected_expected_reports"
+    ]["items"]["required"].pop()
+    caught += expect_transition_failure(
+        "authority_schema_weak_correction_row",
+        "correction_contract_required",
+        lambda: validate_schema_contracts(weak_correction, distribution_schema),
+    )
     for name, first, second in (
         ("authority_schema_stage", weak_authority, distribution_schema),
         ("distribution_schema_count", authority_schema, weak_distribution),

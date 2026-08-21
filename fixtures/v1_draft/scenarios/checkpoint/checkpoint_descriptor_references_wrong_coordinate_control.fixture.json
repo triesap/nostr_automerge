@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "checkpoint_descriptor_references_wrong_coordinate_control.expected.json",
-    "sha256": "81d73336b0358d53deb30e3865833be319f9d019db801d624fafbedd72f0ec3c"
+    "sha256": "27c9dcd0bf518de6beab9752d6419a4cfbfddc9cf8d2081d2387ade4ef860d7f"
   },
   "fixture_id": "checkpoint_descriptor_references_wrong_coordinate_control",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "checkpoint_descriptor_references_wrong_coordinate_control.input.json",
-      "sha256": "e0948a4296a8c0c568c8c5354feca9ba09a8e0dd1676cf50f561846f89bc2896"
+      "sha256": "c4a7355cc5568e82b56bf43cada88c55088508661ddbca06fabb4c57b530ae39"
     }
   ],
   "provenance": {

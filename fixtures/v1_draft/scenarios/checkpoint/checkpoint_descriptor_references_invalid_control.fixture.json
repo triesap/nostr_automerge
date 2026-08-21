@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "checkpoint_descriptor_references_invalid_control.expected.json",
-    "sha256": "65e8b7629623f29f7c7a980780a7f3da110f9dbd1069840d65affea45db11713"
+    "sha256": "0d9fb1d4560d0676f412112fe7d945b8ba4eb4901229dddecbd174c5cb5f206a"
   },
   "fixture_id": "checkpoint_descriptor_references_invalid_control",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "checkpoint_descriptor_references_invalid_control.input.json",
-      "sha256": "eeb0e2828bf2383399ebdcd5178a6e294a090238d24584b35bd47cc3fea283f4"
+      "sha256": "3879aa41fe22aacff34e54862283e7ebca820733a526c23df66c0401da73612b"
     }
   ],
   "provenance": {

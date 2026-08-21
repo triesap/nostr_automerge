@@ -20,14 +20,15 @@
         "heads": [],
         "historical_carriers": [],
         "snapshot_hash": "a8494911b186f768c70af6a0b84d0b0c36a154e5ad483c9f3503f4c0c173ee93",
-        "status": "pending_control"
+        "status": "unauthorized"
       }
     ],
     "completion": "complete",
     "coordinate": "31624:d983f45f02fc0391ad85b96826505f1f503f15bbfa8e7673309559d96f02eb81:d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
     "disposition_records": [
       {
-        "disposition": "pending",
+        "diagnostic": "checkpoint.history",
+        "disposition": "invalid",
         "identifier": "4e61659e3de5b332acf67f76239a0327c1ad7042c21c4f868c9d00ed08190665",
         "namespace": "event"
       },
@@ -38,12 +39,13 @@
         "namespace": "event"
       },
       {
-        "disposition": "pending",
+        "diagnostic": "checkpoint.history",
+        "disposition": "invalid",
         "identifier": "9bf854942eaa8979ca3d05f941515a750fd8e60e49a78ba231dad9e5b707336d",
         "namespace": "event"
       }
     ],
-    "dispositions_digest": "656763056f244076f999cd4d6c48915ad357705001d4afd99aa0fe2916ce3645",
+    "dispositions_digest": "f938130bb094ee68b68fe74f6517eb3bb4d5ad2b0c4285c99c577dd824c33303",
     "excluded_changes": [],
     "fixture_id": "checkpoint_descriptor_references_wrong_kind_control",
     "heads": [],

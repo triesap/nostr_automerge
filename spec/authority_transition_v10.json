@@ -2,7 +2,7 @@
   "schema": "nostr_automerge.authority_transition.v10",
   "status": "in_progress",
   "protocol_revision": "draft_2026_08",
-  "current_stage": "requirements_appended",
+  "current_stage": "checkpoint_expectations_corrected",
   "stage_order": [
     "transition_installed",
     "companion_authority_installed",
@@ -35,7 +35,7 @@
   },
   "authority": {
     "schema_path": "tools/validation/authority_transition_v10.schema.json",
-    "schema_sha256": "442d267d2a5c11e8af1db1a5a9746ba8444d6ed5cf45180e6df2e8b60b4002d6",
+    "schema_sha256": "026ed41dfe6efafb0f4045bf936115946ca4481fb9ba7d5801b48fcf489a235e",
     "nip_sha256": "0dfa683aa0f4a1c7d3df010ec95901bf4ba4094ed3adaacc26e85d95aaa4ded1",
     "baseline_companion_sha256": "58177c31eb06086d76297bbb0fc15343a8e34c15499d6e03636c63df7604bb10",
     "baseline_requirements_sha256": "a97103be86946c15d81b3fc585efa36f4884da09f91cb51a8c5adfa27b7fe8f0",
@@ -76,33 +76,57 @@
         "fixture_id": "checkpoint_descriptor_references_invalid_control",
         "metadata_path": "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_invalid_control.fixture.json",
         "baseline_metadata_sha256": "6cc48b1dfebf97885b333f8e6bd52a4a73e3537c20f68e148800e50df2ab35ed",
-        "metadata_invariant_sha256": "136a365adfcdfc66583d705a0fab7676526fb1532fec089c121e1d98cac56c9a",
+        "metadata_invariant_sha256": "68ebf678c5279e794e7b845b85ef1996cde97500a4e5f9be36afa301111d162b",
+        "corrected_metadata_sha256": "701863d02563b237ffe5c43547669a96f5586cfd282cd07e03a6e61c76598fd0",
+        "input_path": "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_invalid_control.input.json",
+        "baseline_input_sha256": "eeb0e2828bf2383399ebdcd5178a6e294a090238d24584b35bd47cc3fea283f4",
+        "input_invariant_sha256": "4cb458428a12b9e203ee60788f45033ad9fe3e5dca1dd246b04ebad838c36917",
+        "corrected_input_sha256": "3879aa41fe22aacff34e54862283e7ebca820733a526c23df66c0401da73612b",
         "expected_path": "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_invalid_control.expected.json",
-        "baseline_expected_sha256": "65e8b7629623f29f7c7a980780a7f3da110f9dbd1069840d65affea45db11713"
+        "baseline_expected_sha256": "65e8b7629623f29f7c7a980780a7f3da110f9dbd1069840d65affea45db11713",
+        "corrected_expected_sha256": "0d9fb1d4560d0676f412112fe7d945b8ba4eb4901229dddecbd174c5cb5f206a"
       },
       {
         "fixture_id": "checkpoint_descriptor_references_unsupported_control",
         "metadata_path": "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_unsupported_control.fixture.json",
         "baseline_metadata_sha256": "61076b811f530bc6cd80e625c48a8090f90ce846013970d0ea5f7e4ef81fbf52",
-        "metadata_invariant_sha256": "5e5e54a2d5a66737dec2232cc13fd9e385131545bd65dc379227dbaadcd5b062",
+        "metadata_invariant_sha256": "8bbb015f42ad354f37d764824ca5e0cc4713c0edc388d0062d4028f248f5746a",
+        "corrected_metadata_sha256": "009deb687552b4ca5e238f31b00be39f8542ced90fe1572af0aab131f22bce59",
+        "input_path": "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_unsupported_control.input.json",
+        "baseline_input_sha256": "e4f04a6c46be4e40aab2a7753248dc20c731e8a09dea5317af6cc0e29e8e0e83",
+        "input_invariant_sha256": "b2fa8ed2c35231598e1039c1ab3b178eb30dca1fadcdcb2b352d778a608c2d0e",
+        "corrected_input_sha256": "35629435bbfb1ccb1f4ece8d5f083a5f1c19f8be64c07bb95c0297828816b358",
         "expected_path": "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_unsupported_control.expected.json",
-        "baseline_expected_sha256": "ec510d417e37d55c4fff14268edee5435774d1027aa3c24f463839ab63b60fa0"
+        "baseline_expected_sha256": "ec510d417e37d55c4fff14268edee5435774d1027aa3c24f463839ab63b60fa0",
+        "corrected_expected_sha256": "146c9dac3ea8bc4cbe7950bb97c67c7943616f45f08a0159d6c44ac4aa239807"
       },
       {
         "fixture_id": "checkpoint_descriptor_references_wrong_kind_control",
         "metadata_path": "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_kind_control.fixture.json",
         "baseline_metadata_sha256": "e815bbc47509df08915cf15c3a3dea8e61ad993c137caa45e2d0bdebe23063f8",
-        "metadata_invariant_sha256": "fbdcc180b46d7474b7dac53e2382192531a0a6eada596f1fed5d5634c810de21",
+        "metadata_invariant_sha256": "4cd8a5af048f815edd8c98a6e8349ad63e1da3ebc520c885f013ca80759b8069",
+        "corrected_metadata_sha256": "8e32ab1b97be115e506dddc52ab60e9e3f07b79c2e881529dd940f8c48ed57ac",
+        "input_path": "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_kind_control.input.json",
+        "baseline_input_sha256": "13bbd062fa02035f82ca712530c7232b7110135a82c9613668eb4a6000e7e66d",
+        "input_invariant_sha256": "aeb51d3363931564fd3ed0e4d545b5d147caeea0bae74ec6943f4a9a1651e368",
+        "corrected_input_sha256": "4575247e4a55a678d7c91e635cfb24db833c6a0ca10d395e8c4928cb376969d8",
         "expected_path": "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_kind_control.expected.json",
-        "baseline_expected_sha256": "a42a12d8222b25b4dae8303726bf3df1b9d49bb15bffe007cba49e7e10fb2a06"
+        "baseline_expected_sha256": "a42a12d8222b25b4dae8303726bf3df1b9d49bb15bffe007cba49e7e10fb2a06",
+        "corrected_expected_sha256": "bd49084661b82a7f84c3182b33aa6d67d7c0c42a351ffc889173cddff8a5247a"
       },
       {
         "fixture_id": "checkpoint_descriptor_references_wrong_coordinate_control",
         "metadata_path": "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_coordinate_control.fixture.json",
         "baseline_metadata_sha256": "33d51ad73eb8aba4966924a4526c6e6b29d144edeb81859597b6d6d6eef66a89",
-        "metadata_invariant_sha256": "5e6f552e368d0f8ed809fd7eabe0263a752be37c4410d3d27d7d3aa9b469bd68",
+        "metadata_invariant_sha256": "4636d86823bc560a195ceb009c761198db206891be87730495c7977ce2d61ca8",
+        "corrected_metadata_sha256": "be4f43648cbf64fb3f66694a021fe6482d0b5d65e1c9ead8f310a07516ac2c00",
+        "input_path": "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_coordinate_control.input.json",
+        "baseline_input_sha256": "e0948a4296a8c0c568c8c5354feca9ba09a8e0dd1676cf50f561846f89bc2896",
+        "input_invariant_sha256": "cd3f28d54ecf58f806e67f2546ac3191e73ddaeb73a1caedd3a5fe1d63b1195b",
+        "corrected_input_sha256": "c4a7355cc5568e82b56bf43cada88c55088508661ddbca06fabb4c57b530ae39",
         "expected_path": "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_coordinate_control.expected.json",
-        "baseline_expected_sha256": "81d73336b0358d53deb30e3865833be319f9d019db801d624fafbedd72f0ec3c"
+        "baseline_expected_sha256": "81d73336b0358d53deb30e3865833be319f9d019db801d624fafbedd72f0ec3c",
+        "corrected_expected_sha256": "27c9dcd0bf518de6beab9752d6419a4cfbfddc9cf8d2081d2387ade4ef860d7f"
       }
     ],
     "new_fixture_groups": [

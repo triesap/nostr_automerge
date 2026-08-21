@@ -3,8 +3,8 @@ revision: draft_2026_08
 status: approved_implementation_baseline
 controlled_files: 198
 requirements: 148
-transition_stage: requirements_appended
+transition_stage: checkpoint_expectations_corrected
 historical_v9_validation: immutable_wrapper
 validators: 22
-aggregate_sha256: 5e7e96445cebbf25792166375a6d1a7008d04107748b8bb6091d27ecc01e4d99
+aggregate_sha256: dd03038e8e60cd65ff3a2186f8f37e2a2d4c06a9b787bcbeff72b846d096bafd
 result: pass

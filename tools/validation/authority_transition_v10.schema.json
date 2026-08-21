@@ -233,8 +233,14 @@
               "metadata_path",
               "baseline_metadata_sha256",
               "metadata_invariant_sha256",
+              "corrected_metadata_sha256",
+              "input_path",
+              "baseline_input_sha256",
+              "input_invariant_sha256",
+              "corrected_input_sha256",
               "expected_path",
-              "baseline_expected_sha256"
+              "baseline_expected_sha256",
+              "corrected_expected_sha256"
             ],
             "properties": {
               "fixture_id": {
@@ -250,10 +256,28 @@
               "metadata_invariant_sha256": {
                 "$ref": "#/$defs/sha256"
               },
+              "corrected_metadata_sha256": {
+                "$ref": "#/$defs/sha256"
+              },
+              "input_path": {
+                "$ref": "#/$defs/path"
+              },
+              "baseline_input_sha256": {
+                "$ref": "#/$defs/sha256"
+              },
+              "input_invariant_sha256": {
+                "$ref": "#/$defs/sha256"
+              },
+              "corrected_input_sha256": {
+                "$ref": "#/$defs/sha256"
+              },
               "expected_path": {
                 "$ref": "#/$defs/path"
               },
               "baseline_expected_sha256": {
+                "$ref": "#/$defs/sha256"
+              },
+              "corrected_expected_sha256": {
                 "$ref": "#/$defs/sha256"
               }
             }

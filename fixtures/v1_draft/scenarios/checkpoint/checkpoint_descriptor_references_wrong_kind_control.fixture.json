@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "checkpoint_descriptor_references_wrong_kind_control.expected.json",
-    "sha256": "a42a12d8222b25b4dae8303726bf3df1b9d49bb15bffe007cba49e7e10fb2a06"
+    "sha256": "bd49084661b82a7f84c3182b33aa6d67d7c0c42a351ffc889173cddff8a5247a"
   },
   "fixture_id": "checkpoint_descriptor_references_wrong_kind_control",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "checkpoint_descriptor_references_wrong_kind_control.input.json",
-      "sha256": "13bbd062fa02035f82ca712530c7232b7110135a82c9613668eb4a6000e7e66d"
+      "sha256": "4575247e4a55a678d7c91e635cfb24db833c6a0ca10d395e8c4928cb376969d8"
     }
   ],
   "provenance": {
