@@ -907,10 +907,8 @@ mod tests {
         let Ok(paths) = paths else { return };
         let mut reversed = paths.clone();
         reversed.reverse();
-        assert_eq!(
-            run_corpus(paths.clone(), None, None),
-            run_corpus(reversed, None, None)
-        );
+        let baseline = run_corpus(paths.clone(), None, None);
+        assert_eq!(baseline, run_corpus(reversed, None, None));
         let actor = root.join("examples/actor_derivation_001.fixture.json");
         let filtered = run_corpus([actor.clone()], Some("actor_derivation"), None);
         assert_eq!(filtered.total, 1);
@@ -930,8 +928,13 @@ mod tests {
             None,
             None,
         );
-        assert_eq!(failures.failed, 1);
-        assert_eq!(failures.passed + failures.failed, failures.total);
+        assert_eq!(failures.passed, baseline.passed);
+        assert_eq!(failures.total.checked_sub(baseline.total), Some(1));
+        assert_eq!(failures.failed.checked_sub(baseline.failed), Some(1));
+        assert_eq!(
+            failures.passed.checked_add(failures.failed),
+            Some(failures.total)
+        );
     }
 
     #[test]

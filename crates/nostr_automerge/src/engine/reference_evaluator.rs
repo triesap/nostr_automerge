@@ -1318,17 +1318,17 @@ fn verify_checkpoints(
 ) -> CheckpointEvaluation {
     let corpus = view.corpus();
     let prepared = (|| {
-        charge_checkpoint_work(
-            budget,
-            cancellation,
-            u64::try_from(canonical_controls.len()).unwrap_or(u64::MAX),
-        )?;
         let authorizations = checkpoint_authorizations(
             view,
             control_dispositions,
             statefully_valid_controls,
             budget,
             cancellation,
+        )?;
+        charge_checkpoint_work(
+            budget,
+            cancellation,
+            u64::try_from(canonical_controls.len()).unwrap_or(u64::MAX),
         )?;
         let chunk_sets = checkpoint_chunk_sets(view, budget, cancellation)?;
         let carrier_coverage =
@@ -1371,6 +1371,8 @@ fn verify_checkpoints(
         else {
             continue;
         };
+        let control_refusal =
+            checkpoint_control_refusal(authorizations.get(&descriptor_id).copied());
         let chunk_events =
             match checkpoint_chunk_event_ids(view, descriptor_id, budget, cancellation) {
                 Ok(events) => events,
@@ -1405,18 +1407,18 @@ fn verify_checkpoints(
         let history_refusal = coverage_result
             .and_then(|result| result.as_ref().err())
             .or_else(|| accepted_result.and_then(|result| result.as_ref().err()))
-            .map(history_refusal_status);
-        let status = history_refusal.unwrap_or_else(|| {
-            verify_one_checkpoint(
-                descriptor,
-                authorizations.get(&descriptor_id).copied(),
-                chunk_sets.get(&descriptor_id),
-                &coverage,
-                &accepted,
-                budget,
-                cancellation,
-            )
-        });
+            .copied();
+        let status =
+            checkpoint_preflight_refusal(control_refusal, history_refusal).unwrap_or_else(|| {
+                verify_one_checkpoint(
+                    descriptor,
+                    chunk_sets.get(&descriptor_id),
+                    &coverage,
+                    &accepted,
+                    budget,
+                    cancellation,
+                )
+            });
         let stop = match status {
             CheckpointVerificationStatus::BudgetExhausted => Some(CheckpointWorkStop::Budget),
             CheckpointVerificationStatus::Cancelled => Some(CheckpointWorkStop::Cancelled),
@@ -1443,6 +1445,39 @@ fn verify_checkpoints(
     CheckpointEvaluation {
         results,
         stop: None,
+    }
+}
+
+const fn checkpoint_control_refusal(
+    outcome: Option<DescriptorControlOutcome>,
+) -> Option<CheckpointVerificationStatus> {
+    match outcome {
+        Some(DescriptorControlOutcome::CanonicalAuthorized) => None,
+        Some(DescriptorControlOutcome::Missing | DescriptorControlOutcome::Pending) | None => {
+            Some(CheckpointVerificationStatus::PendingControl)
+        }
+        Some(
+            DescriptorControlOutcome::Noncanonical
+            | DescriptorControlOutcome::WrongKind
+            | DescriptorControlOutcome::WrongCoordinate
+            | DescriptorControlOutcome::StaticInvalid
+            | DescriptorControlOutcome::DynamicInvalid
+            | DescriptorControlOutcome::UnsupportedRevision
+            | DescriptorControlOutcome::RoleDenied,
+        ) => Some(CheckpointVerificationStatus::Unauthorized),
+    }
+}
+
+const fn checkpoint_preflight_refusal(
+    control_refusal: Option<CheckpointVerificationStatus>,
+    history_refusal: Option<HistoryVerificationError>,
+) -> Option<CheckpointVerificationStatus> {
+    match control_refusal {
+        Some(status) => Some(status),
+        None => match history_refusal {
+            Some(error) => Some(history_refusal_status(&error)),
+            None => None,
+        },
     }
 }
 
@@ -1480,7 +1515,6 @@ fn checkpoint_chunk_event_ids(
 
 fn verify_one_checkpoint(
     descriptor: &crate::carrier::checkpoint_descriptor::ValidatedCheckpointDescriptorCarrier,
-    authorization: Option<DescriptorControlOutcome>,
     chunks: Option<&Result<Vec<crate::checkpoint::CheckpointChunk>, JoinError>>,
     coverage: &std::collections::BTreeSet<ChangeHash>,
     accepted: &std::collections::BTreeSet<ChangeHash>,
@@ -1490,23 +1524,6 @@ fn verify_one_checkpoint(
     use crate::checkpoint::{HistoryVerificationError, VerifyError};
     if cancellation.is_cancelled() {
         return CheckpointVerificationStatus::Cancelled;
-    }
-    match authorization {
-        Some(DescriptorControlOutcome::CanonicalAuthorized) => {}
-        Some(DescriptorControlOutcome::Missing | DescriptorControlOutcome::Pending) | None => {
-            return CheckpointVerificationStatus::PendingControl;
-        }
-        Some(
-            DescriptorControlOutcome::Noncanonical
-            | DescriptorControlOutcome::WrongKind
-            | DescriptorControlOutcome::WrongCoordinate
-            | DescriptorControlOutcome::StaticInvalid
-            | DescriptorControlOutcome::DynamicInvalid
-            | DescriptorControlOutcome::UnsupportedRevision
-            | DescriptorControlOutcome::RoleDenied,
-        ) => {
-            return CheckpointVerificationStatus::Unauthorized;
-        }
     }
     if budget.charge_checkpoint_items(1).is_err() {
         return CheckpointVerificationStatus::BudgetExhausted;
@@ -3035,13 +3052,14 @@ mod tests {
         ChangeCarrierOutcome, ChangeClaimReason, CheckpointWorkStop, FinalLineageChangeState,
         FinalizationDimension, FinalizationPermitError, FinalizationReservationUnit,
         InterruptedReportPass, ReportFinalizationPermit, ReportFinalizationPlan, assembly_status,
-        change_carrier_disposition, charge_checkpoint_work, join_status,
-        noncanonical_branch_claim_reason, reduce_reasoned_change_outcome,
-        scoped_dynamic_event_disposition_records,
+        change_carrier_disposition, charge_checkpoint_work, checkpoint_control_refusal,
+        checkpoint_preflight_refusal, join_status, noncanonical_branch_claim_reason,
+        reduce_reasoned_change_outcome, scoped_dynamic_event_disposition_records,
     };
     use crate::CheckpointVerificationStatus as Status;
-    use crate::checkpoint::AssemblyError;
+    use crate::checkpoint::authorize::DescriptorControlOutcome;
     use crate::checkpoint::join::JoinError;
+    use crate::checkpoint::{AssemblyError, HistoryVerificationError};
     use crate::evidence::corpus_builder::EvidenceCorpus;
     use crate::evidence::document_view::DocumentEvidenceView;
     use crate::evidence::indexes::TrustedIndexes;
@@ -3380,6 +3398,60 @@ mod tests {
             Err(CheckpointWorkStop::Cancelled)
         );
         assert_eq!(cancelled.consumed().get(WorkCounter::CheckpointItem), 0);
+    }
+
+    #[test]
+    fn descriptor_control_and_role_state_precede_every_history_refusal() {
+        use DescriptorControlOutcome::{
+            CanonicalAuthorized, DynamicInvalid, Missing, Noncanonical, Pending, RoleDenied,
+            StaticInvalid, UnsupportedRevision, WrongCoordinate, WrongKind,
+        };
+
+        let control_states = [
+            (Some(CanonicalAuthorized), None),
+            (Some(Missing), Some(Status::PendingControl)),
+            (Some(Pending), Some(Status::PendingControl)),
+            (Some(Noncanonical), Some(Status::Unauthorized)),
+            (Some(WrongKind), Some(Status::Unauthorized)),
+            (Some(WrongCoordinate), Some(Status::Unauthorized)),
+            (Some(StaticInvalid), Some(Status::Unauthorized)),
+            (Some(DynamicInvalid), Some(Status::Unauthorized)),
+            (Some(UnsupportedRevision), Some(Status::Unauthorized)),
+            (Some(RoleDenied), Some(Status::Unauthorized)),
+            (None, Some(Status::PendingControl)),
+        ];
+        let history_states = [
+            (
+                HistoryVerificationError::UnknownControl,
+                Status::PendingControl,
+            ),
+            (
+                HistoryVerificationError::MissingCarrier,
+                Status::MissingHistoricalCarrier,
+            ),
+            (
+                HistoryVerificationError::NotAccepted,
+                Status::NotAcceptedAtControl,
+            ),
+            (HistoryVerificationError::Snapshot, Status::SnapshotLoad),
+            (HistoryVerificationError::Budget, Status::BudgetExhausted),
+            (HistoryVerificationError::Cancelled, Status::Cancelled),
+        ];
+
+        for (control, expected_control_refusal) in control_states {
+            let control_refusal = checkpoint_control_refusal(control);
+            assert_eq!(control_refusal, expected_control_refusal);
+            assert_eq!(
+                checkpoint_preflight_refusal(control_refusal, None),
+                expected_control_refusal
+            );
+            for (history, expected_history_refusal) in history_states {
+                assert_eq!(
+                    checkpoint_preflight_refusal(control_refusal, Some(history)),
+                    expected_control_refusal.or(Some(expected_history_refusal))
+                );
+            }
+        }
     }
 
     #[test]

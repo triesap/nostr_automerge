@@ -74,6 +74,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_spec.py",
         "spec/authority_transition_v10.json",
         "spec/requirements.json",
+        "tools/nostr_automerge_conformance/src/runner.rs",
         "tools/nostr_automerge_xtask/src/validate.rs",
         "tools/validation/opaque_reproduction_v9.schema.json",
         "tools/validation/runtime_ledger_v9.schema.json",
