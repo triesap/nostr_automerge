@@ -1,6 +1,6 @@
 # nostr_automerge Draft V1 Follow-up Refactor V8 Multi-RCLD
 
-Status: ready — `implementation_remediation_required`
+Status: complete — `code_complete_publication_held`
 Created: 2026-08-20
 Mode: rcl-durable
 Rust Cargo workspace and Git repository: repository root
@@ -13,10 +13,10 @@ Reviewed requirement registry SHA-256: `95a80689b3e4d661a73867673994829e7060df67
 Reviewed applicability SHA-256: `27c58584b6ab1627823fb620378f56a7038de21d7f38b6ed4baae5a64fafe87d`
 Reviewed distribution-v8 manifest SHA-256: `7f1c17d61d28857562ffbae68fa132efa3e052863434cc686b2a72234b614ada`
 Steps: `step_1096` through `step_1157` (62 contiguous checkpoints)
-Active RCLD: RCLD 79
-Active checkpoint: `step_1141`
-Next RCLD: RCLD 79
-Next checkpoint: `step_1141`
+Active RCLD: none
+Active checkpoint: none
+Next RCLD: none
+Next checkpoint: none
 
 ## Outcome
 
@@ -389,7 +389,7 @@ upstream action occurs.
 
 ## RCLD 79 — Signed Distribution V9 And Private Parity
 
-Status: active
+Status: complete
 Steps: `step_1141` through `step_1148`
 Gate: `GATE_V8_INTEROP`
 Depends on: RCLD 78
@@ -412,7 +412,7 @@ path, workflow, log, URL, or artifact leaks.
 
 ## RCLD 80 — Exact Evidence And Truthful Closure
 
-Status: planned
+Status: complete
 Steps: `step_1149` through `step_1157`
 Gate: `GATE_V8_FINAL`
 Depends on: RCLD 79
@@ -498,9 +498,4 @@ completion.
 
 ## Unfinished RCLDs
 
-- RCLD 78 — Local NIP Reconciliation
-- RCLD 79 — Signed Distribution V9 And Private Parity
-- RCLD 80 — Exact Evidence And Truthful Closure
-
-Twenty-three checkpoints remain unfinished. Execution continues with
-`step_1135`.
+None. All 62 checkpoints from `step_1096` through `step_1157` are complete.

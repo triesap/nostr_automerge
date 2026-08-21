@@ -1,7 +1,7 @@
 # Remediation V8 Execution Ledger
 
-Status: `implementation_remediation_required`
-Updated: 2026-08-20
+Status: `code_complete_publication_held`
+Updated: 2026-08-21
 
 | RCLD | Steps | Status | Gate |
 | --- | --- | --- | --- |
@@ -11,8 +11,8 @@ Updated: 2026-08-20
 | 76 | 1118–1125 | complete | `GATE_V8_RESOURCE` |
 | 77 | 1126–1134 | complete | `GATE_V8_DISPOSITION` |
 | 78 | 1135–1140 | complete | `GATE_V8_NIP` |
-| 79 | 1141–1148 | active | `GATE_V8_INTEROP` |
-| 80 | 1149–1157 | planned | `GATE_V8_FINAL` |
+| 79 | 1141–1148 | complete | `GATE_V8_INTEROP` |
+| 80 | 1149–1157 | complete | `GATE_V8_FINAL` |
 
 ## Completed checkpoints
 
@@ -113,10 +113,40 @@ Updated: 2026-08-20
   fulfilled NIP authority rows off their historical external holds, bound exact
   NIP section anchors, activated FINDING-070, proved preserved wire identities,
   and closed `GATE_V8_NIP`.
+- `step_1141` installed the signed distribution-v9 transition, schema, lock,
+  generator, and fail-closed validator while preserving all 171 prior fixtures.
+- `step_1142` generated and signed the nine required scenarios and published
+  exactly 180 checksum-bound fixtures.
+- `step_1143` ran the complete Rust distribution twice across all eight
+  permutations, bound exact canonical bytes, and rejected a mismatch.
+- `step_1144` retained private branch outcomes and referenced-branch claim
+  reduction in the owning TypeScript identity.
+- `step_1145` completed private target-scoped reuse and pass-level settlement.
+- `step_1146` emitted and checked distinct private carrier Event outcomes.
+- `step_1147` passed the complete private ordinary and signed-distribution
+  gates and created only approved opaque evidence.
+- `step_1148` compared complete Rust and TypeScript bytes, rejected mismatch,
+  audited the public/private boundary, and closed `GATE_V8_INTEROP`.
+- `step_1149` finalized the ordered 139-row authority and applicability map.
+- `step_1150` generated exact row-level Rust and opaque TypeScript evidence.
+- `step_1151` rejected eight weakened, stale, incomplete, or false evidence
+  mutations.
+- `step_1152` qualified target scaling, flood isolation, exact budgets,
+  cancellation, partial reports, constant fallback, and peak memory.
+- `step_1153` refreshed coverage, package, supply-chain, advisory, license,
+  SBOM, source-only, documentation, and policy evidence.
+- `step_1154` imported final opaque private assurance from a clean scoped
+  owning worktree.
+- `step_1155` superseded v7 and bound final public, authority, distribution,
+  evidence, and private identities.
+- `step_1156` passed both direct standard gates and all root-private local
+  workflow lanes without tracking workflow content in either source repo.
+- `step_1157` closed findings 066 through 071, retained finding 072 as holds,
+  validated all 62 checkpoints, and closed `GATE_V8_FINAL`.
 
 ## Active checkpoint
 
-`step_1141` is next. No implementation checkpoint is active between commits.
+None. Remediation v8 is complete at `code_complete_publication_held`.
 
 ## Holds
 

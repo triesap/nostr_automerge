@@ -54,6 +54,7 @@ def validate_findings_and_requirements() -> None:
     findings = load("spec/remediation_findings_v8.json").get("findings")
     require(isinstance(findings, list), "findings array")
     require(tuple(row.get("id") for row in findings if isinstance(row, dict)) == FINDINGS, "finding order")
+    require(all(isinstance(row, dict) and row.get("status") == "closed" for row in findings[:6]), "closed findings")
     require(isinstance(findings[-1], dict) and findings[-1].get("status") == "held", "finding 072 hold")
 
     additions = load("spec/remediation_v8_requirements.json")
@@ -79,10 +80,14 @@ def validate_plan_and_ledger() -> None:
     require(set(range(1096, 1158)).issubset(steps), "contiguous checkpoint inventory")
     for rcld in range(73, 81):
         require(f"## RCLD {rcld} " in plan, f"missing RCLD {rcld}")
+    require("Status: complete — `code_complete_publication_held`" in plan, "plan closure status")
     ledger = (ROOT / "docs/execution/remediation_v8/ledger.md").read_text(encoding="utf-8")
     deviations = (ROOT / "docs/execution/remediation_v8/deviations.md").read_text(encoding="utf-8")
     for value in range(1096, 1102):
         require(f"`step_{value}`" in ledger, f"missing ledger checkpoint {value}")
+    for value in range(1102, 1158):
+        require(f"`step_{value}`" in ledger, f"missing ledger checkpoint {value}")
+    require("Status: `code_complete_publication_held`" in ledger, "ledger closure status")
     for value in range(1, 6):
         require(f"`DEV-V8-00{value}`" in deviations, f"missing deviation {value}")
 
