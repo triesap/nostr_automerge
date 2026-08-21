@@ -1916,50 +1916,43 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
     future_runtime = copy.deepcopy(runtime)
     future_runtime["predecessors"].append(
         {
-            "step": "step_1176",
+            "step": "step_1177",
             "candidate": "f" * 40,
             "owner_class": "public",
-            "gate_ids": ["V-CONF"],
-            "requirement_ids": [],
-            "finding_ids": [],
+            "gate_ids": ["V-FULL-RUST"],
+            "requirement_ids": [
+                "NCRDT-CPAUTH-001",
+                "NCRDT-CPAUTH-002",
+                "NCRDT-RESOURCE-014",
+                "NCRDT-CONF-010",
+                "NCRDT-EVIDENCE-006",
+            ],
+            "finding_ids": ["FINDING_073", "FINDING_084"],
             "deviation_ids": [],
             "result": "pass",
         }
     )
+    future_runtime["rcld"] = 83
     future_runtime["cursor"].update(
         {
-            "active_step": "step_1177",
-            "next_step": "step_1178",
-            "remaining_checkpoint_count": 107,
-            "remaining_rcld_count": 13,
+            "active_step": "step_1178",
+            "next_step": "step_1179",
+            "remaining_checkpoint_count": 106,
+            "first_rcld": 83,
+            "remaining_rcld_count": 12,
         }
     )
     future_plan = plan.replace(
-        "Active checkpoint: `step_1176`",
+        "Active RCLD: RCLD 82",
+        "Active RCLD: RCLD 83",
+        1,
+    ).replace(
         "Active checkpoint: `step_1177`",
+        "Active checkpoint: `step_1178`",
         1,
     ).replace(
-        "Next checkpoint: `step_1177`",
         "Next checkpoint: `step_1178`",
-        1,
-    ).replace(
-        "Next RCLD: RCLD 82",
-        "Next RCLD: RCLD 83",
-        1,
-    ).replace(
-        "## RCLD 82 — Rust Checkpoint Control Precedence\n\nStatus: planned",
-        "## RCLD 82 — Rust Checkpoint Control Precedence\n\nStatus: complete",
-        1,
-    ).replace(
-        "- RCLD 81 — Authority, Deviation, And Reproducible Baseline\n\n"
-        "## Unfinished RCLDs",
-        "- RCLD 81 — Authority, Deviation, And Reproducible Baseline\n"
-        "- RCLD 82 — Rust Checkpoint Control Precedence\n\n"
-        "## Unfinished RCLDs",
-        1,
-    ).replace(
-        "## Unfinished RCLDs\n\n- RCLD 82 — Rust Checkpoint Control Precedence\n",
-        "## Unfinished RCLDs\n\n",
+        "Next checkpoint: `step_1179`",
         1,
     )
     validate_plan_semantics(future_plan)
@@ -1972,9 +1965,9 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
         copy.deepcopy(future_runtime["predecessors"][-1])
     )
     stale_checkpoint_count = copy.deepcopy(future_runtime)
-    stale_checkpoint_count["cursor"]["remaining_checkpoint_count"] = 108
+    stale_checkpoint_count["cursor"]["remaining_checkpoint_count"] = 107
     stale_rcld_count = copy.deepcopy(future_runtime)
-    stale_rcld_count["cursor"]["remaining_rcld_count"] = 14
+    stale_rcld_count["cursor"]["remaining_rcld_count"] = 13
     stale_stage_count = copy.deepcopy(future_runtime)
     stale_stage_count["authority_projection"]["signed_fixture_count"] = 183
     stale_finding_status = copy.deepcopy(future_runtime)
@@ -1997,7 +1990,7 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
         (
             "active_step",
             plan.replace(
-                "Active checkpoint: `step_1176`",
+                "Active checkpoint: `step_1177`",
                 "Active checkpoint: `step_9999`",
                 1,
             ),
@@ -2006,7 +1999,7 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
         (
             "next_step",
             plan.replace(
-                "Next checkpoint: `step_1177`",
+                "Next checkpoint: `step_1178`",
                 "Next checkpoint: `step_9998`",
                 1,
             ),
@@ -2019,7 +2012,7 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
         ),
         (
             "next_rcld",
-            plan.replace("Next RCLD: RCLD 82", "Next RCLD: RCLD 81", 1),
+            plan.replace("Next RCLD: RCLD 83", "Next RCLD: RCLD 82", 1),
             runtime,
         ),
         (
@@ -2034,8 +2027,8 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
         (
             "rcld_status",
             plan.replace(
-                "## RCLD 81 — Authority, Deviation, And Reproducible Baseline\n\nStatus: complete",
-                "## RCLD 81 — Authority, Deviation, And Reproducible Baseline\n\nStatus: planned",
+                "## RCLD 82 — Rust Checkpoint Control Precedence\n\nStatus: complete",
+                "## RCLD 82 — Rust Checkpoint Control Precedence\n\nStatus: planned",
                 1,
             ),
             runtime,

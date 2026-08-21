@@ -8524,7 +8524,6 @@ fn evaluate_signed_reproduction_fixture(source: &str) -> EvaluationReport {
 }
 
 #[test]
-#[ignore = "expected to fail until FINDING_073 closes"]
 fn finding_073_checkpoint_authorization_precedes_history() {
     let report = evaluate_signed_reproduction_fixture(include_str!(
         "../../../fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_invalid_control.input.json"
@@ -8532,7 +8531,7 @@ fn finding_073_checkpoint_authorization_precedes_history() {
     assert_eq!(
         report.checkpoints().first().map(|result| result.status()),
         Some(CheckpointVerificationStatus::Unauthorized),
-        "FINDING_073 reproduced: known-invalid checkpoint control is classified pending before authorization"
+        "FINDING_073 regression: known-invalid checkpoint control must be rejected before history work"
     );
 }
 

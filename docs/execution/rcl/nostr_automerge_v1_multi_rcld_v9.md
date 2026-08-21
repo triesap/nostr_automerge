@@ -17,9 +17,9 @@ Reviewed distribution-v9 manifest SHA-256: `7b4ab5d2146939d142eb92d43060ef2183c9
 Reviewed canonical-output SHA-256: `e193a7b0db3a43e9d33e612afea05bd447a5e968a45e283d098f45278d6ab6fc`
 Steps: `step_1158` through `step_1283` (126 contiguous checkpoints)
 Active RCLD: RCLD 82
-Active checkpoint: `step_1176`
-Next RCLD: RCLD 82
-Next checkpoint: `step_1177`
+Active checkpoint: `step_1177`
+Next RCLD: RCLD 83
+Next checkpoint: `step_1178`
 
 ## Outcome
 
@@ -348,7 +348,7 @@ fixed 148-row target and public/private boundary are machine-enforced.
 
 ## RCLD 82 — Rust Checkpoint Control Precedence
 
-Status: planned
+Status: complete
 Steps: `step_1169` through `step_1177`
 Gate: `GATE_V9_RUST_CHECKPOINT`
 Depends on: RCLD 81
@@ -653,10 +653,10 @@ completion.
 ## Completed RCLDs
 
 - RCLD 81 — Authority, Deviation, And Reproducible Baseline
+- RCLD 82 — Rust Checkpoint Control Precedence
 
 ## Unfinished RCLDs
 
-- RCLD 82 — Rust Checkpoint Control Precedence
 - RCLD 83 — Private Limits Foundation And Checkpoint Parity
 - RCLD 84 — Carrier Independence, Typed Stops, And Unsupported Identity
 - RCLD 85 — Rust Report Contract And No-Progress Evaluation

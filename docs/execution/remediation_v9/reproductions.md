@@ -1,12 +1,13 @@
 # Remediation V9 Rust Baseline Reproductions
 
-Status: all reviewed public Rust defects reproduced at the bound baseline
+Status: rolling closure — one regression fixed and eleven cases still reproduced
 
-Ten ignored tests encode behavior-level expected failures for the public Rust
-remediation findings. Ordinary Rust test targets remain green because the
-tests stay ignored until their closure checkpoints. The tests do not inspect
-source text and do not change protocol behavior, signed fixtures, or authority
-data.
+The `FINDING_073` checkpoint-precedence reproduction is now an enabled passing
+regression. Nine ignored tests continue to encode behavior-level expected
+failures for the still-open public Rust findings. Ordinary Rust test targets
+remain green because only the still-open cases stay ignored. The tests do not
+inspect source text and do not change protocol behavior, signed fixtures, or
+authority data.
 
 Two isolated non-libtest probes cover defects that cannot be represented as a
 passing Rust type check. A nested, lockfile-pinned compile probe remains
@@ -20,16 +21,18 @@ compiler, tool, launcher, validator, or diagnostic failures.
 Run the repository-owned expected-failure harness with:
 
 ```sh
-python3 scripts/reproduce_remediation_v9.py --expect-baseline-fail
+python3 scripts/reproduce_remediation_v9.py --verify-remediation-state
 ```
 
-The harness runs every test by its exact name and succeeds only when the test
-fails with its exact reviewed diagnostic. Rust invocations are routed through
-the configured external-build launcher.
+The harness runs every test by its exact name. It requires the fixed regression
+to be enabled and green, rejects stale ignored or expected-failure acceptance,
+and succeeds for each open case only when that case fails with its exact
+reviewed diagnostic. Rust invocations are routed through the configured
+external-build launcher.
 
 | Finding | Reproduction | Closing RCLD |
 | --- | --- | --- |
-| `FINDING_073` | A signed descriptor referencing a statically invalid control is incorrectly classified as `pending_control` before descriptor authorization controls the result. | 82 |
+| `FINDING_073` | The enabled signed regression proves that a descriptor referencing a statically invalid control is rejected before history work. | 82 (public Rust closed) |
 | `FINDING_074` | A carrier referencing a dynamically invalid control incorrectly inherits its semantic hash's final `excluded` outcome. | 84 |
 | `FINDING_075` | An interrupted internal batch retains a canonical control, two control dispositions, and an integrity alert instead of returning constant-size no progress. | 85, 86 |
 | `FINDING_076` | The coarse finalization ledger accepts the fixed-overhead pass before its preceding named passes. | 87, 88 |
@@ -41,7 +44,7 @@ the configured external-build launcher.
 | `FINDING_083` | A budget failure is relabelled as cancellation after a second observation of a stateful callback. | 84, 89 |
 | `FINDING_084` | Checkpoint assembly sorts the caller's target-sized chunk slice before observing immediate cancellation. | 82, 89 |
 
-These twelve reproduction cases cover all eleven reviewed public Rust
-findings. They are evidence for the reviewed baseline, not conformance
-fixtures. Their closing checkpoints must replace the expected failures with
-ordinary passing assertions that prove the corrected behavior.
+These twelve cases cover all eleven reviewed public Rust findings. They are
+rolling remediation evidence, not conformance fixtures. Each closing
+checkpoint must replace its expected failure with an enabled ordinary passing
+assertion that proves the corrected behavior.

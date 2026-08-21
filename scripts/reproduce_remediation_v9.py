@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reproduce remediation-v9 Rust defects without making default tests red."""
+"""Verify fixed regressions and reproduce still-open remediation-v9 Rust defects."""
 
 from __future__ import annotations
 
@@ -13,16 +13,13 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CASES = (
+FIXED_CASES = (
     (
         "public_engine_api",
         "finding_073_checkpoint_authorization_precedes_history",
-        "FINDING_073 reproduced: known-invalid checkpoint control is classified pending before authorization",
-        "left == right",
-        "crates/nostr_automerge/tests/public_engine_api.rs",
-        "Some(PendingControl)",
-        "Some(Unauthorized)",
     ),
+)
+OPEN_CASES = (
     (
         "public_engine_api",
         "finding_074_invalid_carrier_is_independent_of_excluded_hash",
@@ -169,14 +166,19 @@ def require(condition: bool, diagnostic: str) -> None:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--expect-baseline-fail", action="store_true")
+    mode.add_argument("--verify-remediation-state", action="store_true")
+    mode.add_argument(
+        "--expect-baseline-fail",
+        action="store_true",
+        help="legacy spelling for --verify-remediation-state",
+    )
     mode.add_argument("--self-test-only", action="store_true")
     return parser.parse_args()
 
 
-def command(target: str, test_name: str) -> tuple[str, ...]:
+def command(target: str, test_name: str, *, ignored: bool) -> tuple[str, ...]:
     selection = ("--lib",) if target == "lib" else ("--test", target)
-    return (
+    arguments = (
         "cargo",
         "extbuild",
         "run",
@@ -188,10 +190,12 @@ def command(target: str, test_name: str) -> tuple[str, ...]:
         *selection,
         "--locked",
         "--",
-        "--ignored",
         "--exact",
         test_name,
     )
+    if ignored:
+        return (*arguments[:-2], "--ignored", *arguments[-2:])
+    return arguments
 
 
 def expected_stdout_pattern(
@@ -246,6 +250,28 @@ def expected_stderr_pattern(target: str) -> re.Pattern[str]:
         rf"[ \t]*{runner}\n"
         rf"{re.escape(rerun)}\n?"
     )
+
+
+def expected_success_stdout_pattern(test_name: str) -> re.Pattern[str]:
+    return re.compile(
+        rf"\n"
+        rf"running 1 test\n"
+        rf"test {re.escape(test_name)} \.\.\. ok\n"
+        rf"\n"
+        rf"test result: ok\. 1 passed; 0 failed; 0 ignored; 0 measured; "
+        rf"\d+ filtered out; finished in [^\s]+\n"
+        rf"\n"
+    )
+
+
+def expected_success_stderr_pattern(target: str) -> re.Pattern[str]:
+    runner = (
+        r"Running unittests src/lib\.rs \([^\n]+\)"
+        if target == "lib"
+        else rf"Running tests/{re.escape(target)}\.rs \([^\n]+\)"
+    )
+    progress = r"[ \t]*(?:Blocking|Checking|Compiling|Finished|Fresh|Waiting) [^\n]+\n"
+    return re.compile(rf"(?:{progress})*[ \t]*{runner}\n?")
 
 
 def semantic_command() -> tuple[str, ...]:
@@ -598,6 +624,36 @@ def validate_expected_failure(
     require(output.count(diagnostic) == 1, f"wrong diagnostic cardinality for {test_name}")
 
 
+def validate_expected_success(
+    target: str,
+    test_name: str,
+    returncode: int,
+    stdout: str,
+    stderr: str,
+) -> None:
+    """Accept only one exact enabled passing regression and no stale ignore."""
+
+    require(returncode == 0, f"wrong cargo test exit for fixed {test_name}")
+    output = stdout + stderr
+    folded = output.casefold()
+    require(
+        not any(marker in folded for marker in TOOL_FAILURE_MARKERS),
+        f"tool, compiler, or launcher failure for fixed {test_name}",
+    )
+    require(
+        expected_success_stdout_pattern(test_name).fullmatch(stdout) is not None,
+        f"malformed, ignored, or noncanonical libtest stdout for fixed {test_name}",
+    )
+    require(
+        expected_success_stderr_pattern(target).fullmatch(stderr) is not None,
+        f"malformed cargo stderr for fixed {test_name}",
+    )
+    require(
+        output.count(test_name) == 1,
+        f"wrong fixed-test diagnostic cardinality for {test_name}",
+    )
+
+
 def canonical_self_test_output(
     test_name: str,
     diagnostic: str,
@@ -630,6 +686,20 @@ test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 9 filtered out; 
     stderr = """    Finished `test` profile [unoptimized] target(s) in 0.01s
      Running tests/public_engine_api.rs (/tmp/public_engine_api-hash)
 error: test failed, to rerun pass `-p nostr_automerge --test public_engine_api`
+"""
+    return stdout, stderr
+
+
+def canonical_success_self_test_output(test_name: str) -> tuple[str, str]:
+    stdout = f"""
+running 1 test
+test {test_name} ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.00s
+
+"""
+    stderr = """    Finished `test` profile [unoptimized] target(s) in 0.01s
+     Running tests/public_engine_api.rs (/tmp/public_engine_api-hash)
 """
     return stdout, stderr
 
@@ -977,6 +1047,49 @@ def mutation_self_test() -> int:
             caught += 1
             continue
         raise ReproductionError(f"mutation survived: {name}")
+    fixed_name = "finding_000_fixed_harness_self_test"
+    fixed_stdout, fixed_stderr = canonical_success_self_test_output(fixed_name)
+    validate_expected_success(
+        target,
+        fixed_name,
+        0,
+        fixed_stdout,
+        fixed_stderr,
+    )
+    fixed_boundary = "\n<<<FIXED_STDERR>>>\n"
+    fixed_canonical = fixed_stdout + fixed_boundary + fixed_stderr
+    fixed_mutations = (
+        ("fixed_wrong_exit", 101, fixed_canonical),
+        (
+            "fixed_ignored",
+            0,
+            fixed_canonical.replace(
+                f"test {fixed_name} ... ok",
+                f"test {fixed_name} ... ignored",
+            ).replace(
+                "1 passed; 0 failed; 0 ignored",
+                "0 passed; 0 failed; 1 ignored",
+            ),
+        ),
+        ("fixed_wrong_test", 0, fixed_canonical.replace(fixed_name, "wrong_test")),
+        ("fixed_zero_tests", 0, fixed_canonical.replace("running 1 test", "running 0 tests")),
+        ("fixed_two_passed", 0, fixed_canonical.replace("1 passed", "2 passed")),
+        ("fixed_extra_stdout", 0, "unexpected\n" + fixed_canonical),
+        (
+            "fixed_wrong_target",
+            0,
+            fixed_canonical.replace("tests/public_engine_api.rs", "tests/wrong.rs"),
+        ),
+        ("fixed_tool_error", 0, fixed_canonical + "error: linker failed\n"),
+    )
+    for name, returncode, packed in fixed_mutations:
+        stdout, stderr = packed.split(fixed_boundary, 1)
+        try:
+            validate_expected_success(target, fixed_name, returncode, stdout, stderr)
+        except ReproductionError:
+            caught += 1
+            continue
+        raise ReproductionError(f"mutation survived: {name}")
     return caught + special_mutation_self_test()
 
 
@@ -995,10 +1108,32 @@ def main() -> int:
             "RUST_LIB_BACKTRACE": "0",
         }
     )
-    for case in CASES:
+    for target, test_name in FIXED_CASES:
+        result = subprocess.run(
+            command(target, test_name, ignored=False),
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+            env=environment,
+        )
+        try:
+            validate_expected_success(
+                target,
+                test_name,
+                result.returncode,
+                result.stdout,
+                result.stderr,
+            )
+        except ReproductionError as error:
+            raise ReproductionError(
+                f"{error}:\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+            ) from error
+        print(f"PASS: fixed regression {test_name}")
+    for case in OPEN_CASES:
         target, test_name, *_ = case
         result = subprocess.run(
-            command(target, test_name),
+            command(target, test_name, ignored=True),
             cwd=ROOT,
             check=False,
             capture_output=True,
@@ -1055,7 +1190,8 @@ def main() -> int:
             f"{error}:\nSTDOUT:\n{revision.stdout}\nSTDERR:\n{revision.stderr}"
         ) from error
     print("PASS: reproduced missing typed report revision API")
-    print(f"PASS: reproduced {len(CASES) + 2} remediation-v9 Rust cases")
+    print(f"PASS: verified {len(FIXED_CASES)} fixed remediation-v9 Rust case")
+    print(f"PASS: reproduced {len(OPEN_CASES) + 2} still-open remediation-v9 Rust cases")
     return 0
 
 

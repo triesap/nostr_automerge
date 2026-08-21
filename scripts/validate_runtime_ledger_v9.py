@@ -106,30 +106,20 @@ PREDECESSOR_CANDIDATES = (
     "689c15c59214bd172cbadb6cf10ace0f6e2aa05d",
     "aa7d4096e3f73e23bd52239ad440d85f0eccf920",
     "c333b0f8f0297d1193b757f3fc3a893e7a9e6d92",
+    "d5b35c61e8cff82dbb10dff2676da8803236e0dc",
 )
 CLOSURE_PATHS = frozenset(
     {
+        "crates/nostr_automerge/tests/public_engine_api.rs",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_invalid_control.expected.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_invalid_control.fixture.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_invalid_control.input.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_unsupported_control.expected.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_unsupported_control.fixture.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_unsupported_control.input.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_coordinate_control.expected.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_coordinate_control.fixture.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_coordinate_control.input.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_kind_control.expected.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_kind_control.fixture.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_kind_control.input.json",
+        "docs/execution/remediation_v9/reproductions.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
+        "scripts/reproduce_remediation_v9.py",
         "scripts/validate_authority_transition_v10.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
-        "spec/authority_transition_v10.json",
-        "tools/validation/authority_transition_v10.schema.json",
     }
 )
 EXPECTED_GATES = (
@@ -151,6 +141,7 @@ EXPECTED_GATES = (
     ("V-REPORT",),
     ("V-RUST",),
     ("V-RUST",),
+    ("V-CONF",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -199,6 +190,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002"),
     ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002"),
     ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002"),
+    ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -223,6 +215,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_073",),
     ("FINDING_073",),
     ("FINDING_073", "FINDING_084"),
+    ("FINDING_073",),
     ("FINDING_073",),
     ("FINDING_073",),
     ("FINDING_073",),
@@ -717,7 +710,7 @@ def validate_predecessors(
     rows: Any, active: int, report: dict[str, Any]
 ) -> None:
     require(isinstance(rows, list), "predecessors:type")
-    approved = [expected_predecessor(index) for index in range(18)]
+    approved = [expected_predecessor(index) for index in range(19)]
     require(rows == approved, "predecessors:approved_projection")
     require(active == 1158 + len(approved), "predecessors:approved_cursor")
     expected_keys = {
@@ -972,7 +965,7 @@ def mutation_self_test(report: dict[str, Any], ledger: dict[str, Any]) -> int:
     fabricated_opaque = copy.deepcopy(ledger)
     fabricated_opaque["predecessors"].append(
         {
-            "step": "step_1176",
+            "step": "step_1177",
             "candidate": "0" * 40,
             "owner_class": "opaque_private",
             "gate_ids": ["V-BOGUS"],
@@ -982,9 +975,12 @@ def mutation_self_test(report: dict[str, Any], ledger: dict[str, Any]) -> int:
             "result": "pass",
         }
     )
-    fabricated_opaque["cursor"]["active_step"] = "step_1177"
-    fabricated_opaque["cursor"]["next_step"] = "step_1178"
-    fabricated_opaque["cursor"]["remaining_checkpoint_count"] = 107
+    fabricated_opaque["rcld"] = 83
+    fabricated_opaque["cursor"]["active_step"] = "step_1178"
+    fabricated_opaque["cursor"]["next_step"] = "step_1179"
+    fabricated_opaque["cursor"]["remaining_checkpoint_count"] = 106
+    fabricated_opaque["cursor"]["first_rcld"] = 83
+    fabricated_opaque["cursor"]["remaining_rcld_count"] = 12
     ledger_mutations.append(("ledger_unapproved_opaque_future", fabricated_opaque))
     fabricated_public = copy.deepcopy(fabricated_opaque)
     fabricated_public["predecessors"][-1]["candidate"] = (
