@@ -1,5 +1,5 @@
 use crate::carrier::VerifiedCarrier;
-use crate::checkpoint::authorize::{DescriptorAuthorization, authorize_descriptor};
+use crate::checkpoint::authorize::{DescriptorControlOutcome, authorize_descriptor};
 use crate::checkpoint::join::{JoinError, join_chunks};
 use crate::checkpoint::reference_state::resolve_referenced_descriptor;
 use crate::checkpoint::{HistoryVerificationError, historical_carrier_coverage};
@@ -1480,7 +1480,7 @@ fn checkpoint_chunk_event_ids(
 
 fn verify_one_checkpoint(
     descriptor: &crate::carrier::checkpoint_descriptor::ValidatedCheckpointDescriptorCarrier,
-    authorization: Option<DescriptorAuthorization>,
+    authorization: Option<DescriptorControlOutcome>,
     chunks: Option<&Result<Vec<crate::checkpoint::CheckpointChunk>, JoinError>>,
     coverage: &std::collections::BTreeSet<ChangeHash>,
     accepted: &std::collections::BTreeSet<ChangeHash>,
@@ -1492,11 +1492,19 @@ fn verify_one_checkpoint(
         return CheckpointVerificationStatus::Cancelled;
     }
     match authorization {
-        Some(DescriptorAuthorization::Authorized) => {}
-        Some(DescriptorAuthorization::PendingControl) | None => {
+        Some(DescriptorControlOutcome::CanonicalAuthorized) => {}
+        Some(DescriptorControlOutcome::Missing | DescriptorControlOutcome::Pending) | None => {
             return CheckpointVerificationStatus::PendingControl;
         }
-        Some(DescriptorAuthorization::Invalid) => {
+        Some(
+            DescriptorControlOutcome::Noncanonical
+            | DescriptorControlOutcome::WrongKind
+            | DescriptorControlOutcome::WrongCoordinate
+            | DescriptorControlOutcome::StaticInvalid
+            | DescriptorControlOutcome::DynamicInvalid
+            | DescriptorControlOutcome::UnsupportedRevision
+            | DescriptorControlOutcome::RoleDenied,
+        ) => {
             return CheckpointVerificationStatus::Unauthorized;
         }
     }
@@ -1730,7 +1738,7 @@ fn checkpoint_authorizations(
     statefully_valid_controls: &std::collections::BTreeSet<crate::EventId>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
-) -> Result<std::collections::BTreeMap<crate::EventId, DescriptorAuthorization>, CheckpointWorkStop>
+) -> Result<std::collections::BTreeMap<crate::EventId, DescriptorControlOutcome>, CheckpointWorkStop>
 {
     let corpus = view.corpus();
     let coordinate = view.coordinate();

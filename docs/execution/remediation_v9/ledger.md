@@ -2,7 +2,7 @@
 
 Status: `in_progress`
 
-RCLD 81 has ten committed predecessors through `step_1167`. The opaque
+RCLD 82 has eleven committed predecessors through `step_1168`. The opaque
 compatibility checkpoint is bound by one approved 40-character candidate and
 one canonical 64-character result identity. Its public projection records nine
 findings, 23 expected-failure reproductions, 276 negative mutations, one
@@ -15,14 +15,17 @@ ordinary check, and a held publication status.
 | `step_1166` | `V-TS` | pass |
 | `step_1167` | `V-EVIDENCE` | pass |
 | `step_1168` | `V-FULL-RUST` | pass |
+| `step_1169` | `V-RUST` | active |
+| `step_1170` | `V-RUST` | next |
 
 The authority projection is monotonic from `requirements_appended` to
 `distribution_complete`. It records 148 requirements now and at completion,
 and records the signed-fixture progression from 180 to 192. The execution
 cursor may advance only contiguously. `GATE_V9_AUTHORITY` closes at the exact
 `requirements_appended` transition state with 148 requirements, 180 signed
-fixtures, 20 reproduced findings, and one held finding. RCLD 82 begins with
-`step_1169`; 115 checkpoints remain through `step_1283`.
+fixtures, 20 reproduced findings, and one held finding. RCLD 82 is active at
+`step_1169`; 114 later checkpoints remain from `step_1170` through
+`step_1283`.
 
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. `FINDING_080` remains held. The maximum status
