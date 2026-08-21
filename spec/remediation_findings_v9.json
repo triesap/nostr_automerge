@@ -1,0 +1,659 @@
+{
+  "schema": "nostr_automerge.remediation_findings.v9.v1",
+  "status": "implementation_remediation_required",
+  "finding_count": 21,
+  "contract_catalog": [
+    {
+      "id": "V9-CHECKPOINT-RESOLUTION",
+      "anchor": {
+        "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+        "locator": "### Checkpoint resolution"
+      }
+    },
+    {
+      "id": "V9-CARRIER-IDENTITY",
+      "anchor": {
+        "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+        "locator": "### Carrier and semantic identity"
+      }
+    },
+    {
+      "id": "V9-CANONICAL-REPORT",
+      "anchor": {
+        "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+        "locator": "### Canonical report contract"
+      }
+    },
+    {
+      "id": "V9-TWO-TIER-FINALIZATION",
+      "anchor": {
+        "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+        "locator": "### Two-tier finalization"
+      }
+    },
+    {
+      "id": "V9-TARGET-WORK-OWNERSHIP",
+      "anchor": {
+        "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+        "locator": "### Target work and ownership"
+      }
+    },
+    {
+      "id": "V9-SEALED-LIMITS-ORDERING",
+      "anchor": {
+        "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+        "locator": "### Sealed limits and ordering"
+      }
+    },
+    {
+      "id": "V9-SIGNED-DISTRIBUTION",
+      "anchor": {
+        "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+        "locator": "## Signed Distribution V10"
+      }
+    },
+    {
+      "id": "V9-SEMANTIC-EVIDENCE",
+      "anchor": {
+        "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+        "locator": "## RCLD 93 — Semantic Proof Catalog V10"
+      }
+    },
+    {
+      "id": "V9-TRUTHFUL-CLOSURE",
+      "anchor": {
+        "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+        "locator": "## Final Status Rule"
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "FINDING_073",
+      "severity": "high",
+      "title": "Checkpoint control-state precedence is incorrect",
+      "cause": "Historical coverage is consulted before the already-derived descriptor authorization, so known unusable control references can be reported as recoverable pending state.",
+      "source_anchors": [
+        {
+          "kind": "public_source",
+          "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+          "locator": "fn verify_checkpoints("
+        },
+        {
+          "kind": "public_source",
+          "path": "crates/nostr_automerge/src/checkpoint/authorize.rs",
+          "locator": "pub(crate) fn authorize_descriptor("
+        }
+      ],
+      "governing_requirement_ids": ["NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "governing_contract_ids": ["V9-CHECKPOINT-RESOLUTION", "V9-SIGNED-DISTRIBUTION", "V9-SEMANTIC-EVIDENCE"],
+      "closure_criteria": [
+        "Resolve descriptor control state and checkpoint-role authorization before chunk assembly, historical coverage, accepted-at-control lookup, snapshot loading, or history verification.",
+        "Only missing and genuinely statefully pending controls produce pending_control.",
+        "Noncanonical, wrong-kind, wrong-coordinate, statically invalid, dynamically invalid, unsupported, and role-denied controls produce invalid descriptor and dependent chunk outcomes.",
+        "Correct exactly the authorized existing expectations and add the complete signed control-state matrix."
+      ],
+      "status": "implementation_remediation_required",
+      "rclds": [82, 83]
+    },
+    {
+      "id": "FINDING_074",
+      "severity": "high",
+      "title": "A known-invalid carrier can inherit an aggregate hash outcome",
+      "cause": "Carrier classification contains an aggregate-disposition special case, allowing a carrier with a dynamically invalid reference to inherit an excluded semantic-hash result.",
+      "source_anchors": [
+        {
+          "kind": "public_source",
+          "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+          "locator": "fn reduce_change_dispositions("
+        },
+        {
+          "kind": "public_contract",
+          "path": "spec/NIP_DRAFT.md",
+          "locator": "### Semantic ChangeHash and carrier outcomes"
+        }
+      ],
+      "governing_requirement_ids": ["NCRDT-DISPOSITION-006", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "governing_contract_ids": ["V9-CARRIER-IDENTITY", "V9-SIGNED-DISTRIBUTION", "V9-SEMANTIC-EVIDENCE"],
+      "closure_criteria": [
+        "Derive every carrier Event outcome independently from that carrier's revision, binding, reference, authorization, and branch-local result.",
+        "Map every carrier with a dynamically invalid control reference to invalid regardless of the aggregate ChangeHash outcome.",
+        "Retain excluded only for authorized claims on statefully valid branches whose own outcome is excluded.",
+        "Add signed aggregate-excluded and known-invalid-carrier scenarios."
+      ],
+      "status": "implementation_remediation_required",
+      "rclds": [84]
+    },
+    {
+      "id": "FINDING_075",
+      "severity": "medium-high",
+      "title": "Interrupted reports use an inconsistent partial-progress model",
+      "cause": "Interrupted construction can retain aggregate controls and semantic hashes while omitting branch-local and per-carrier outcomes, yielding neither a complete report nor constant-size no progress.",
+      "source_anchors": [
+        {
+          "kind": "public_source",
+          "path": "crates/nostr_automerge/src/reference/evaluate.rs",
+          "locator": "struct PreservedBatchProgress"
+        },
+        {
+          "kind": "public_source",
+          "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+          "locator": "fn prepare_interrupted_batch_report("
+        }
+      ],
+      "governing_requirement_ids": ["NCRDT-INTERRUPT-001", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "governing_contract_ids": ["V9-CANONICAL-REPORT", "V9-SIGNED-DISTRIBUTION", "V9-SEMANTIC-EVIDENCE"],
+      "closure_criteria": [
+        "Return the exact constant-size no-progress report from every incomplete public evaluation path.",
+        "Permit canonical controls, dispositions, evidence, checkpoints, manifest state, alerts, heads, and materialized state only in complete reports.",
+        "Reject every incomplete report carrying partial canonical progress or mismatched empty digests.",
+        "Remove the public partial-batch representation and prove the no-progress shape at each interruption boundary."
+      ],
+      "status": "implementation_remediation_required",
+      "rclds": [85, 86]
+    },
+    {
+      "id": "FINDING_076",
+      "severity": "medium-high",
+      "title": "Interrupted finalization is not settled at actual pass granularity",
+      "cause": "A coarse reserved dimension can cover several proportional passes while unused capacity is forfeited without distinguishing work that actually ran.",
+      "source_anchors": [
+        {
+          "kind": "public_source",
+          "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+          "locator": "struct ReportFinalizationPlan"
+        },
+        {
+          "kind": "public_source",
+          "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+          "locator": "struct ReportFinalizationPermit"
+        }
+      ],
+      "governing_requirement_ids": ["NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "governing_contract_ids": ["V9-TWO-TIER-FINALIZATION", "V9-SIGNED-DISTRIBUTION", "V9-SEMANTIC-EVIDENCE"],
+      "closure_criteria": [
+        "Use independent fixed fallback and complete-report ledgers that cannot borrow from one another.",
+        "Consume each named complete-report pass immediately before the work it owns.",
+        "On interruption, forfeit unperformed complete capacity and consume only the fixed no-progress fallback passes.",
+        "Reject missing, duplicate, reordered, overrun, underflow, early-refund, and wrong-tier ledger actions."
+      ],
+      "status": "implementation_remediation_required",
+      "rclds": [87, 88]
+    },
+    {
+      "id": "FINDING_077",
+      "severity": "medium",
+      "title": "Target-local work accounting remains incomplete",
+      "cause": "Preparation collections, retained raw-byte copies, and canonical derivation still include target-proportional work without exact charging, sharing, sealed bounds, or cancellation boundaries.",
+      "source_anchors": [
+        {
+          "kind": "public_source",
+          "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+          "locator": "fn prepare_controls("
+        },
+        {
+          "kind": "public_source",
+          "path": "crates/nostr_automerge/src/reference/evaluate.rs",
+          "locator": "fn derive_canonical_branch("
+        }
+      ],
+      "governing_requirement_ids": ["NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "governing_contract_ids": ["V9-TARGET-WORK-OWNERSHIP", "V9-SEALED-LIMITS-ORDERING", "V9-SIGNED-DISTRIBUTION", "V9-SEMANTIC-EVIDENCE"],
+      "closure_criteria": [
+        "Meter, bound, share, make cancellable, or eliminate every target-sized collection, traversal, allocation, comparison, and copy.",
+        "Retain canonical raw change bytes once through shared immutable storage across the public evaluation path.",
+        "Charge every checkpoint, dependency, closure, canonicalization, report, digest, evidence, and invariant pass to one declared owner.",
+        "Prove exact budgets, every cancellation boundary, unrelated-evidence isolation, byte identity, and bounded deterministic scaling."
+      ],
+      "status": "implementation_remediation_required",
+      "rclds": [89, 90, 91]
+    },
+    {
+      "id": "FINDING_078",
+      "severity": "high-assurance",
+      "title": "The requirement matrix is hash-bound but not semantically exact",
+      "cause": "Some passing rows accept source-name matches or broad evidence whose artifact identity is exact but whose assertion does not directly prove the governing behavior.",
+      "source_anchors": [
+        {
+          "kind": "public_source",
+          "path": "scripts/validate_requirement_matrix_v9.py",
+          "locator": "item.rsplit(\"::\", 1)[-1] not in source"
+        },
+        {
+          "kind": "public_evidence",
+          "path": "reports/requirements_coverage_v9.json",
+          "locator": "\"schema\":\"nostr_automerge.requirement_coverage.v9\""
+        }
+      ],
+      "governing_requirement_ids": ["NCRDT-EVIDENCE-006"],
+      "governing_contract_ids": ["V9-SEMANTIC-EVIDENCE"],
+      "closure_criteria": [
+        "Create a closed machine-readable proof catalog binding every evidence ID to a semantic category and exact assertion contract.",
+        "Replace source-substring and unrelated or generic proof with exact named assertions or signed fixtures.",
+        "Require exact opaque compatibility evidence identifiers for every applicable row.",
+        "Reject missing, duplicate, reordered, stale, generic, category-mismatched, false-held, and scope-leaking proof."
+      ],
+      "status": "implementation_remediation_required",
+      "rclds": [93]
+    },
+    {
+      "id": "FINDING_079",
+      "severity": "specification",
+      "title": "Unsupported-only semantic hash attribution is underspecified",
+      "cause": "The aggregate reducer can create an unsupported semantic ChangeHash outcome from an unverified carrier tag even though canonical change bytes and their hash were never verified.",
+      "source_anchors": [
+        {
+          "kind": "public_source",
+          "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+          "locator": "ChangeClaimReason::UnsupportedCarrier"
+        },
+        {
+          "kind": "public_contract",
+          "path": "spec/NIP_DRAFT.md",
+          "locator": "### Semantic ChangeHash and carrier outcomes"
+        }
+      ],
+      "governing_requirement_ids": ["NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "governing_contract_ids": ["V9-CARRIER-IDENTITY", "V9-SIGNED-DISTRIBUTION", "V9-SEMANTIC-EVIDENCE"],
+      "closure_criteria": [
+        "Give an unsupported carrier without verified canonical change bytes an Event outcome only.",
+        "Do not create a semantic ChangeHash record from an unverified x-tag claim.",
+        "Remove the unsupported-only aggregate semantic reducer branch for draft v1.",
+        "Add exact signed and assertion coverage for Event-only unsupported evidence."
+      ],
+      "status": "implementation_remediation_required",
+      "rclds": [84]
+    },
+    {
+      "id": "FINDING_080",
+      "severity": "release-hold",
+      "title": "External assurance and publication holds remain",
+      "cause": "Sustained campaigns, independent review, production approval, submission, allocation, publication, and release remain unperformed or unauthorized.",
+      "source_anchors": [
+        {
+          "kind": "public_evidence",
+          "path": "reports/external_holds_v8.json",
+          "locator": "\"result_claimed\":false"
+        },
+        {
+          "kind": "public_contract",
+          "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+          "locator": "The strongest truthful local status reachable by this sequence is"
+        }
+      ],
+      "governing_requirement_ids": [],
+      "governing_contract_ids": ["V9-TRUTHFUL-CLOSURE"],
+      "closure_criteria": [
+        "Keep external assurance and remote actions separate from local implementation completion.",
+        "Do not claim production readiness, publication, submission, adoption, allocation, deployment, or release.",
+        "Retain held status until every external activity receives separate authority and passes without regressing ordinary gates."
+      ],
+      "status": "held",
+      "rclds": [94]
+    },
+    {
+      "id": "FINDING_081",
+      "severity": "high",
+      "title": "The typed public report omits protocol revision identity and complete cross-view validation",
+      "cause": "The public report and its parts do not carry the evaluator's sealed revision, and construction does not yet enforce every complete and incomplete cross-view invariant required by all consumers.",
+      "source_anchors": [
+        {
+          "kind": "public_source",
+          "path": "crates/nostr_automerge/src/engine/evaluation_report.rs",
+          "locator": "pub struct EvaluationReport {"
+        },
+        {
+          "kind": "public_source",
+          "path": "crates/nostr_automerge/src/engine/evaluation_report.rs",
+          "locator": "pub(crate) struct EvaluationReportParts {"
+        }
+      ],
+      "governing_requirement_ids": ["NCRDT-INTERRUPT-001", "NCRDT-EVIDENCE-006"],
+      "governing_contract_ids": ["V9-CANONICAL-REPORT", "V9-SEMANTIC-EVIDENCE"],
+      "closure_criteria": [
+        "Add an additive ProtocolRevision member and getter to every public report and report-parts construction.",
+        "Update every complete and no-progress constructor, reevaluation consumer, serializer, loader, public API test, and documentation consumer.",
+        "Reject duplicate, unsorted, overlapping, extra, missing, or cross-view-inconsistent complete data without repair.",
+        "Reject nonempty protocol state and mismatched empty digests from every incomplete report."
+      ],
+      "status": "implementation_remediation_required",
+      "rclds": [85, 86]
+    },
+    {
+      "id": "FINDING_082",
+      "severity": "medium-high",
+      "title": "Reevaluation performs post-finalization work after an incomplete result",
+      "cause": "Reevaluation can continue into summary or integrity-alert comparison after either evaluation has already stopped, creating target-proportional work beyond the no-progress boundary.",
+      "source_anchors": [
+        {
+          "kind": "public_source",
+          "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+          "locator": "pub fn reevaluate("
+        },
+        {
+          "kind": "public_source",
+          "path": "crates/nostr_automerge/src/engine/evaluation_report.rs",
+          "locator": "pub fn integrity_alerts(&self)"
+        }
+      ],
+      "governing_requirement_ids": ["NCRDT-INTERRUPT-001", "NCRDT-RESOURCE-013", "NCRDT-RESOURCE-014"],
+      "governing_contract_ids": ["V9-CANONICAL-REPORT", "V9-TWO-TIER-FINALIZATION", "V9-TARGET-WORK-OWNERSHIP"],
+      "closure_criteria": [
+        "Return immediately when either reevaluation report is incomplete.",
+        "Perform no summary, alert, or canonical comparison after incomplete finalization.",
+        "Meter every complete-report comparison before target-sized work.",
+        "Prove the behavior at budget and cancellation boundaries with no post-stop work."
+      ],
+      "status": "implementation_remediation_required",
+      "rclds": [85, 87]
+    },
+    {
+      "id": "FINDING_083",
+      "severity": "high",
+      "title": "Typed local stop causes are not preserved through every boundary",
+      "cause": "Some traversal paths collapse typed budget or cancellation stops and can consult caller cancellation state again while classifying an already-observed failure.",
+      "source_anchors": [
+        {
+          "kind": "public_source",
+          "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+          "locator": "enum CheckpointWorkStop"
+        },
+        {
+          "kind": "public_source",
+          "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+          "locator": "if cancellation.is_cancelled()"
+        }
+      ],
+      "governing_requirement_ids": ["NCRDT-INTERRUPT-001", "NCRDT-RESOURCE-014"],
+      "governing_contract_ids": ["V9-CARRIER-IDENTITY", "V9-TARGET-WORK-OWNERSHIP"],
+      "closure_criteria": [
+        "Preserve the original typed budget-exhausted or cancelled cause end to end.",
+        "Observe caller cancellation only at the charging boundary that owns the work.",
+        "Do not re-query a stateful cancellation callback while relabeling an existing stop.",
+        "Add exact single-observation tests for carrier, checkpoint, and target-work interruption."
+      ],
+      "status": "implementation_remediation_required",
+      "rclds": [84, 89]
+    },
+    {
+      "id": "FINDING_084",
+      "severity": "high",
+      "title": "Checkpoint internals escape complete target-work accounting",
+      "cause": "Checkpoint assembly, copying, graph construction, operation and dependency accounting, exact closure, and cancellation checks do not yet share one complete pass inventory.",
+      "source_anchors": [
+        {
+          "kind": "public_source",
+          "path": "crates/nostr_automerge/src/checkpoint/assemble.rs",
+          "locator": "chunks.sort_by_key(|chunk| chunk.index)"
+        },
+        {
+          "kind": "public_source",
+          "path": "crates/nostr_automerge/src/checkpoint/verify.rs",
+          "locator": "pub(crate) fn verify_exact_closure_metered("
+        }
+      ],
+      "governing_requirement_ids": ["NCRDT-CPAUTH-001", "NCRDT-RESOURCE-014"],
+      "governing_contract_ids": ["V9-CHECKPOINT-RESOLUTION", "V9-TARGET-WORK-OWNERSHIP"],
+      "closure_criteria": [
+        "Charge or eliminate checkpoint sorting, chunk-set copies, descriptor joins, proof visits, assembly, snapshot work, and accepted-history copies.",
+        "Charge every decoded operation, dependency edge, graph edge, and exact-closure visit with checked arithmetic.",
+        "Place cancellation boundaries before every target-sized checkpoint pass.",
+        "Prove exact budgets and cancellation for authorized, invalid, incomplete, and complete checkpoints."
+      ],
+      "status": "implementation_remediation_required",
+      "rclds": [82, 89]
+    },
+    {
+      "id": "FINDING_085",
+      "severity": "high",
+      "title": "Compatibility checkpoint carriers are not fully validated at ingress",
+      "cause": "Descriptor and chunk field, cardinality, ordering, arithmetic, and limit checks are incomplete before deferred evaluation, so malformed carrier content can reach later processing.",
+      "source_anchors": [
+        {
+          "kind": "public_contract",
+          "path": "spec/draft_limits.json",
+          "locator": "\"name\":\"checkpoint_chunk_raw_bytes\""
+        },
+        {
+          "kind": "execution_authority",
+          "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+          "locator": "| `FINDING_085` |"
+        }
+      ],
+      "governing_requirement_ids": ["NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-LIMIT-001", "NCRDT-RESOURCE-001"],
+      "governing_contract_ids": ["V9-CHECKPOINT-RESOLUTION", "V9-SEALED-LIMITS-ORDERING"],
+      "closure_criteria": [
+        "Complete descriptor field, type, cardinality, ordering, arithmetic, and limit validation at ingress.",
+        "Complete chunk index, count, data, hash, proof-node, proof-depth, and size validation at ingress.",
+        "Prevent malformed carrier content from reaching deferred evaluation or throwing unexpectedly.",
+        "Pass exact below-limit, at-limit, and above-limit negative matrices."
+      ],
+      "status": "implementation_remediation_required",
+      "rclds": [83, 90]
+    },
+    {
+      "id": "FINDING_086",
+      "severity": "high",
+      "title": "Compatibility checkpoint states and history views are conflated",
+      "cause": "Checkpoint evaluation does not yet preserve the exhaustive control-state table, distinct carrier coverage and accepted-at-control history, and typed unexpected failures as separate results.",
+      "source_anchors": [
+        {
+          "kind": "public_contract",
+          "path": "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
+          "locator": "### Descriptor and chunk references"
+        },
+        {
+          "kind": "execution_authority",
+          "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+          "locator": "| `FINDING_086` |"
+        }
+      ],
+      "governing_requirement_ids": ["NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010"],
+      "governing_contract_ids": ["V9-CHECKPOINT-RESOLUTION", "V9-SIGNED-DISTRIBUTION"],
+      "closure_criteria": [
+        "Implement the exhaustive missing, pending, invalid-family, and canonical-authorized descriptor-control table.",
+        "Resolve control state and checkpoint role before all chunk and history work.",
+        "Keep historical carrier coverage distinct from accepted-at-control history even when fixtures make them equal.",
+        "Remove catch-all exception masking and prove zero downstream work for known-unusable controls."
+      ],
+      "status": "implementation_remediation_required",
+      "rclds": [83]
+    },
+    {
+      "id": "FINDING_087",
+      "severity": "high",
+      "title": "Compatibility ingress does not enforce every sealed limit before expansion",
+      "cause": "Encoded input ceilings and exact content, change, manifest, control, checkpoint, graph, and arithmetic limits are not all enforced before decoding, copying, or allocation.",
+      "source_anchors": [
+        {
+          "kind": "public_contract",
+          "path": "spec/draft_limits.json",
+          "locator": "\"name\":\"raw_event_bytes\""
+        },
+        {
+          "kind": "execution_authority",
+          "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+          "locator": "| `FINDING_087` |"
+        }
+      ],
+      "governing_requirement_ids": ["NCRDT-LIMIT-001", "NCRDT-RESOURCE-001", "NCRDT-RESOURCE-014"],
+      "governing_contract_ids": ["V9-SEALED-LIMITS-ORDERING", "V9-TARGET-WORK-OWNERSHIP"],
+      "closure_criteria": [
+        "Mirror every sealed draft-limit value independently and reject drift against the neutral registry.",
+        "Reject oversized raw event and content bytes before duplicate scanning, base64 decoding, expansion, copying, or allocation.",
+        "Enforce exact change, graph, manifest, control, membership, role, text, checkpoint, proof, and count limits with safe arithmetic.",
+        "Pass limit-minus-one, exact-limit, and limit-plus-one tests for every sealed family."
+      ],
+      "status": "implementation_remediation_required",
+      "rclds": [83, 90]
+    },
+    {
+      "id": "FINDING_088",
+      "severity": "high",
+      "title": "Compatibility target work, cancellation, and scaling are incomplete",
+      "cause": "Target-dependent traversals, raw-byte access, memoization, checkpoint work, materialization, reports, and deterministic scheduling lack a complete counter and cancellation ownership model.",
+      "source_anchors": [
+        {
+          "kind": "public_contract",
+          "path": "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
+          "locator": "### Coordinate-qualified dependent indexes"
+        },
+        {
+          "kind": "execution_authority",
+          "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+          "locator": "| `FINDING_088` |"
+        }
+      ],
+      "governing_requirement_ids": ["NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "governing_contract_ids": ["V9-TARGET-WORK-OWNERSHIP", "V9-SIGNED-DISTRIBUTION", "V9-SEMANTIC-EVIDENCE"],
+      "closure_criteria": [
+        "Define one typed counter and named pass owner for every target-sized operation.",
+        "Replace repeated queue sorting and linear membership with deterministic indexed structures where required for bounded scaling.",
+        "Meter and cancel control, branch, ancestry, dependency, raw-byte, memo, checkpoint, materialization, report, digest, and invariant work.",
+        "Pass exact boundaries, every cancellation boundary, unrelated floods, delivery permutations, and bounded scaling regressions."
+      ],
+      "status": "implementation_remediation_required",
+      "rclds": [91]
+    },
+    {
+      "id": "FINDING_089",
+      "severity": "high",
+      "title": "Compatibility finalization uses one tier and insufficiently hardened work inputs",
+      "cause": "Fallback and complete-report work share a finalization model, while caller limits, callback results, integer arithmetic, and unexpected local failures are not uniformly validated and typed.",
+      "source_anchors": [
+        {
+          "kind": "public_contract",
+          "path": "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
+          "locator": "### Explicit finalization settlement"
+        },
+        {
+          "kind": "execution_authority",
+          "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+          "locator": "| `FINDING_089` |"
+        }
+      ],
+      "governing_requirement_ids": ["NCRDT-RESOURCE-013", "NCRDT-RESOURCE-014", "NCRDT-CONF-010"],
+      "governing_contract_ids": ["V9-TWO-TIER-FINALIZATION", "V9-SEALED-LIMITS-ORDERING", "V9-SIGNED-DISTRIBUTION"],
+      "closure_criteria": [
+        "Validate work limits, callback inputs, safe integers, checked arithmetic, and typed local failures before use.",
+        "Implement independent fixed fallback and complete-report ledgers.",
+        "Derive exact complete passes from actual retained report dimensions and consume each immediately before work.",
+        "Settle complete, interrupted, and error paths exactly and pass zero, N-minus-one, N, N-plus-one, cancellation, callback, and mutation tests."
+      ],
+      "status": "implementation_remediation_required",
+      "rclds": [88, 90]
+    },
+    {
+      "id": "FINDING_090",
+      "severity": "high",
+      "title": "Compatibility report parsing repairs data instead of enforcing exact canonical shape",
+      "cause": "Report handling does not yet reject every unknown, missing, mistyped, duplicate, unsorted, overlapping, or cross-view-inconsistent value before normalization or deduplication.",
+      "source_anchors": [
+        {
+          "kind": "public_contract",
+          "path": "fixtures/schema/report.schema.json",
+          "locator": "\"title\": \"nostr_automerge canonical conformance report\""
+        },
+        {
+          "kind": "execution_authority",
+          "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+          "locator": "| `FINDING_090` |"
+        }
+      ],
+      "governing_requirement_ids": ["NCRDT-INTERRUPT-001", "NCRDT-DISPOSITION-005", "NCRDT-CONF-010"],
+      "governing_contract_ids": ["V9-CANONICAL-REPORT", "V9-SIGNED-DISTRIBUTION"],
+      "closure_criteria": [
+        "Enforce exact report keys, schema, revision, coordinate, completion, and closed value shapes.",
+        "Enforce exact semantic partitions, ordering, namespaces, carrier/hash relations, digests, checkpoints, alerts, assertions, and evidence relationships.",
+        "Reject duplicates and unsorted or mismatched inputs instead of normalizing, repairing, or silently deduplicating them.",
+        "Use the same exact parser and builder contract through evaluation, command output, conformance, comparison, and exports."
+      ],
+      "status": "implementation_remediation_required",
+      "rclds": [86]
+    },
+    {
+      "id": "FINDING_091",
+      "severity": "high",
+      "title": "Compatibility evidence can be changed through retained caller aliases",
+      "cause": "Retained maps, arrays, nested events, carrier objects, and raw bytes are not all deeply encapsulated, so caller mutation can alter indexes, evaluation input, or later output.",
+      "source_anchors": [
+        {
+          "kind": "public_contract",
+          "path": "spec/DATA_MODEL.md",
+          "locator": "The corpus is immutable after build."
+        },
+        {
+          "kind": "execution_authority",
+          "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+          "locator": "| `FINDING_091` |"
+        }
+      ],
+      "governing_requirement_ids": ["NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"],
+      "governing_contract_ids": ["V9-TARGET-WORK-OWNERSHIP", "V9-SEALED-LIMITS-ORDERING"],
+      "closure_criteria": [
+        "Deeply encapsulate every retained corpus event, tag, map, array, carrier record, and nested protocol object.",
+        "Retain one owned raw-change or chunk byte copy and expose no mutable internal view.",
+        "Ensure mutation of caller inputs or returned bytes cannot change indexes, evaluation bytes, or later reports.",
+        "Pass post-ingestion and post-return mutation tests for every retained family."
+      ],
+      "status": "implementation_remediation_required",
+      "rclds": [90]
+    },
+    {
+      "id": "FINDING_092",
+      "severity": "high",
+      "title": "Compatibility ordering depends on locale-sensitive comparison",
+      "cause": "Protocol-significant identifiers and traversal queues can use locale-sensitive ordering whose result is not a stable byte or code-unit order across environments.",
+      "source_anchors": [
+        {
+          "kind": "public_contract",
+          "path": "spec/CONFORMANCE.md",
+          "locator": "- accepted ChangeHashes sorted by bytes;"
+        },
+        {
+          "kind": "execution_authority",
+          "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+          "locator": "| `FINDING_092` |"
+        }
+      ],
+      "governing_requirement_ids": ["NCRDT-STATE-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "governing_contract_ids": ["V9-SEALED-LIMITS-ORDERING", "V9-SIGNED-DISTRIBUTION"],
+      "closure_criteria": [
+        "Replace every protocol-significant locale-sensitive comparison with an explicit byte or code-unit comparator.",
+        "Cover identifiers, hashes, actors, controls, fixture IDs, disposition records, heads, and traversal queues.",
+        "Prove locale changes cannot alter ordering, traversal, digest input, or report bytes.",
+        "Preserve byte-identical canonical output under every required delivery permutation."
+      ],
+      "status": "implementation_remediation_required",
+      "rclds": [90]
+    },
+    {
+      "id": "FINDING_093",
+      "severity": "high-assurance",
+      "title": "Proof can pass through source substrings or fixture-dependent omissions",
+      "cause": "Source-substring matching can treat symbol presence as proof, while compatibility evidence can omit exact mandatory assertions behind broad fixture or command claims.",
+      "source_anchors": [
+        {
+          "kind": "public_source",
+          "path": "scripts/validate_requirement_matrix_v9.py",
+          "locator": "if any(item not in source"
+        },
+        {
+          "kind": "public_evidence",
+          "path": "reports/requirements_typescript_overlay_v9.json",
+          "locator": "\"fixture_ids\""
+        }
+      ],
+      "governing_requirement_ids": ["NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "governing_contract_ids": ["V9-SIGNED-DISTRIBUTION", "V9-SEMANTIC-EVIDENCE", "V9-TRUTHFUL-CLOSURE"],
+      "closure_criteria": [
+        "Replace source-substring proof with exact executed semantic assertion and signed-vector evidence.",
+        "Require all signed scenarios, both executions, every delivery permutation, byte-exact comparison, and deliberate mismatch rejection without conditional omission.",
+        "Bind exact public and opaque compatibility evidence identifiers to every applicable requirement and finding.",
+        "Reject skipped, generic, missing, stale, mismatched, false-held, or scope-leaking evidence before truthful closure."
+      ],
+      "status": "implementation_remediation_required",
+      "rclds": [92, 93, 94]
+    }
+  ]
+}

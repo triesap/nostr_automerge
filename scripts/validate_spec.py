@@ -23,6 +23,7 @@ VALIDATORS = [
     "validate_private_assurance_v9.py", "validate_final_identity_v8.py",
     "validate_local_gate_summary_v8.py", "validate_remediation_v8_final.py",
     "validate_authority_transition_v10.py",
+    "validate_remediation_v9.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",
