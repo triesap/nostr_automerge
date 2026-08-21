@@ -17,7 +17,7 @@ mod report_json;
 mod runner;
 mod scenario;
 
-const HELP: &str = "nostr_automerge_conformance\n\nUSAGE:\n    nostr_automerge_conformance run_fixture <path>\n    nostr_automerge_conformance run_corpus <directory> [--family <name>] [--requirement <id>]\n    nostr_automerge_conformance generate_signed_profile <profile>\n    nostr_automerge_conformance --help";
+const HELP: &str = "nostr_automerge_conformance\n\nUSAGE:\n    nostr_automerge_conformance run_fixture <path>\n    nostr_automerge_conformance run_corpus <directory> [--family <name>] [--requirement <id>]\n    nostr_automerge_conformance run_distribution <manifest>\n    nostr_automerge_conformance generate_signed_profile <profile>\n    nostr_automerge_conformance --help";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct CliOutput {
@@ -46,6 +46,22 @@ fn run(args: impl IntoIterator<Item = String>) -> CliOutput {
                 code: error.exit_code(),
             },
         },
+        [command, path] if command == "run_distribution" => {
+            match runner::run_distribution(Path::new(path))
+                .and_then(|run| runner::write_distribution_run(&run))
+            {
+                Ok(bytes) => CliOutput {
+                    stdout: String::from_utf8(bytes).unwrap_or_default(),
+                    stderr: String::new(),
+                    code: 0,
+                },
+                Err(error) => CliOutput {
+                    stdout: String::new(),
+                    stderr: format!("{}\n", error.message()),
+                    code: error.exit_code(),
+                },
+            }
+        }
         [command, root, rest @ ..] if command == "run_corpus" => {
             let filters = parse_filters(rest);
             match filters.and_then(|(family, requirement)| {

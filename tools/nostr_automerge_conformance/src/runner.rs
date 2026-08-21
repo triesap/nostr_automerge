@@ -615,6 +615,98 @@ pub(crate) struct FixtureSummary {
     pub(crate) status: &'static str,
 }
 
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+pub(crate) struct DistributionRun {
+    pub(crate) canonical_output_sha256: String,
+    pub(crate) delivery_permutations: u64,
+    pub(crate) fixture_count: u64,
+    pub(crate) reports: Vec<DistributionReport>,
+    pub(crate) schema: &'static str,
+    pub(crate) status: &'static str,
+}
+
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+pub(crate) struct DistributionReport {
+    pub(crate) fixture_id: String,
+    pub(crate) report_sha256: String,
+}
+
+#[derive(Deserialize)]
+struct DistributionManifest {
+    fixtures: Vec<DistributionFixture>,
+}
+
+#[derive(Deserialize)]
+struct DistributionFixture {
+    fixture_id: String,
+    metadata_path: String,
+}
+
+pub(crate) fn run_distribution(path: &Path) -> Result<DistributionRun, RunError> {
+    let bytes = fs::read(path).map_err(|_| RunError::Fixture)?;
+    let manifest: DistributionManifest =
+        serde_json::from_slice(&bytes).map_err(|_| RunError::Fixture)?;
+    let root = path
+        .parent()
+        .and_then(Path::parent)
+        .and_then(Path::parent)
+        .ok_or(RunError::Fixture)?;
+    let mut fixtures = manifest.fixtures;
+    fixtures.sort_by(|left, right| left.fixture_id.cmp(&right.fixture_id));
+    if fixtures
+        .windows(2)
+        .any(|pair| pair[0].fixture_id == pair[1].fixture_id)
+    {
+        return Err(RunError::Fixture);
+    }
+    let mut aggregate = Sha256::new();
+    let mut reports = Vec::with_capacity(fixtures.len());
+    for fixture in fixtures {
+        let canonical = run_fixture(&root.join(&fixture.metadata_path))?;
+        update_length_prefixed(&mut aggregate, fixture.fixture_id.as_bytes())?;
+        update_length_prefixed(&mut aggregate, &canonical)?;
+        reports.push(DistributionReport {
+            fixture_id: fixture.fixture_id,
+            report_sha256: sha256_hex(&canonical),
+        });
+    }
+    Ok(DistributionRun {
+        canonical_output_sha256: digest_hex(aggregate.finalize()),
+        delivery_permutations: 8,
+        fixture_count: reports.len() as u64,
+        reports,
+        schema: "nostr_automerge.distribution_run.v1",
+        status: "pass",
+    })
+}
+
+pub(crate) fn write_distribution_run(run: &DistributionRun) -> Result<Vec<u8>, RunError> {
+    let value = serde_json::to_value(run).map_err(|_| RunError::Input)?;
+    let mut bytes = serde_json::to_vec(&value).map_err(|_| RunError::Input)?;
+    bytes.push(b'\n');
+    Ok(bytes)
+}
+
+fn update_length_prefixed(digest: &mut Sha256, bytes: &[u8]) -> Result<(), RunError> {
+    let length = u64::try_from(bytes.len()).map_err(|_| RunError::Input)?;
+    digest.update(length.to_be_bytes());
+    digest.update(bytes);
+    Ok(())
+}
+
+fn sha256_hex(bytes: &[u8]) -> String {
+    digest_hex(Sha256::digest(bytes))
+}
+
+fn digest_hex(digest: impl AsRef<[u8]>) -> String {
+    let mut encoded = String::with_capacity(64);
+    for byte in digest.as_ref() {
+        use core::fmt::Write as _;
+        let _ = write!(&mut encoded, "{byte:02x}");
+    }
+    encoded
+}
+
 pub(crate) fn discover_fixtures(root: &Path) -> Result<Vec<PathBuf>, RunError> {
     let signed_scenarios = root.join("v1_draft/scenarios");
     let discovery_root = if signed_scenarios.is_dir() {
