@@ -1,4 +1,4 @@
-use crate::{ChangeHash, Completion, EventId, SnapshotHash};
+use crate::{ChangeHash, Completion, DiagnosticCode, EventId, ProtocolDisposition, SnapshotHash};
 
 /// Stable outcome of verifying one signed checkpoint descriptor and its chunks.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -6,9 +6,9 @@ use crate::{ChangeHash, Completion, EventId, SnapshotHash};
 pub enum CheckpointVerificationStatus {
     /// Every signed, byte, graph, history, and commitment check passed.
     Verified,
-    /// The descriptor's referenced control has not been observed.
+    /// The referenced control is missing or remains statefully pending.
     PendingControl,
-    /// The descriptor signer was not authorized at its referenced control.
+    /// The referenced control is unusable or does not authorize the descriptor signer.
     Unauthorized,
     /// A chunk signer differed from the descriptor signer.
     ChunkAuthorMismatch,
@@ -48,6 +48,51 @@ pub enum CheckpointVerificationStatus {
     BudgetExhausted,
     /// The caller cancelled checkpoint verification.
     Cancelled,
+}
+
+impl CheckpointVerificationStatus {
+    pub(crate) const fn event_outcome(self) -> (ProtocolDisposition, Option<DiagnosticCode>) {
+        match self {
+            Self::Verified => (ProtocolDisposition::Accepted, None),
+            Self::PendingControl | Self::MissingChunk | Self::BudgetExhausted | Self::Cancelled => {
+                (ProtocolDisposition::Pending, None)
+            }
+            Self::Unauthorized => (
+                ProtocolDisposition::Invalid,
+                Some(DiagnosticCode::registered("checkpoint.history")),
+            ),
+            Self::ChunkAuthorMismatch
+            | Self::ChunkCoordinateMismatch
+            | Self::ChunkDescriptorMismatch
+            | Self::ChunkCountMismatch
+            | Self::DuplicateChunk
+            | Self::ChunkSizeMismatch
+            | Self::ChunkAssemblyMismatch => (
+                ProtocolDisposition::Invalid,
+                Some(DiagnosticCode::registered("checkpoint.chunk")),
+            ),
+            Self::MerkleMismatch => (
+                ProtocolDisposition::Invalid,
+                Some(DiagnosticCode::registered("checkpoint.merkle")),
+            ),
+            Self::SnapshotSizeMismatch | Self::SnapshotHashMismatch | Self::SnapshotLoad => (
+                ProtocolDisposition::Invalid,
+                Some(DiagnosticCode::registered("checkpoint.snapshot")),
+            ),
+            Self::HeadMismatch => (
+                ProtocolDisposition::Invalid,
+                Some(DiagnosticCode::registered("checkpoint.heads")),
+            ),
+            Self::CommitmentMismatch | Self::ClosureMismatch | Self::NotAcceptedAtControl => (
+                ProtocolDisposition::Invalid,
+                Some(DiagnosticCode::registered("checkpoint.history")),
+            ),
+            Self::MissingHistoricalCarrier => (
+                ProtocolDisposition::Pending,
+                Some(DiagnosticCode::registered("checkpoint.history")),
+            ),
+        }
+    }
 }
 
 /// Immutable public evidence binding for one checkpoint verification attempt.
@@ -184,6 +229,88 @@ impl CheckpointVerificationResult {
             CheckpointVerificationStatus::BudgetExhausted => Completion::BudgetExhausted,
             CheckpointVerificationStatus::Cancelled => Completion::Cancelled,
             _ => Completion::Complete,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CheckpointVerificationStatus as Status;
+    use crate::ProtocolDisposition::{Accepted, Invalid, Pending};
+
+    #[test]
+    fn every_checkpoint_status_has_one_exact_event_outcome() {
+        let cases = [
+            (Status::Verified, Accepted, None),
+            (Status::PendingControl, Pending, None),
+            (Status::Unauthorized, Invalid, Some("checkpoint.history")),
+            (
+                Status::ChunkAuthorMismatch,
+                Invalid,
+                Some("checkpoint.chunk"),
+            ),
+            (
+                Status::ChunkCoordinateMismatch,
+                Invalid,
+                Some("checkpoint.chunk"),
+            ),
+            (
+                Status::ChunkDescriptorMismatch,
+                Invalid,
+                Some("checkpoint.chunk"),
+            ),
+            (
+                Status::ChunkCountMismatch,
+                Invalid,
+                Some("checkpoint.chunk"),
+            ),
+            (Status::DuplicateChunk, Invalid, Some("checkpoint.chunk")),
+            (Status::MissingChunk, Pending, None),
+            (Status::ChunkSizeMismatch, Invalid, Some("checkpoint.chunk")),
+            (
+                Status::ChunkAssemblyMismatch,
+                Invalid,
+                Some("checkpoint.chunk"),
+            ),
+            (Status::MerkleMismatch, Invalid, Some("checkpoint.merkle")),
+            (
+                Status::SnapshotSizeMismatch,
+                Invalid,
+                Some("checkpoint.snapshot"),
+            ),
+            (
+                Status::SnapshotHashMismatch,
+                Invalid,
+                Some("checkpoint.snapshot"),
+            ),
+            (Status::SnapshotLoad, Invalid, Some("checkpoint.snapshot")),
+            (Status::HeadMismatch, Invalid, Some("checkpoint.heads")),
+            (
+                Status::CommitmentMismatch,
+                Invalid,
+                Some("checkpoint.history"),
+            ),
+            (Status::ClosureMismatch, Invalid, Some("checkpoint.history")),
+            (
+                Status::MissingHistoricalCarrier,
+                Pending,
+                Some("checkpoint.history"),
+            ),
+            (
+                Status::NotAcceptedAtControl,
+                Invalid,
+                Some("checkpoint.history"),
+            ),
+            (Status::BudgetExhausted, Pending, None),
+            (Status::Cancelled, Pending, None),
+        ];
+        for (status, disposition, diagnostic) in cases {
+            let (actual_disposition, actual_diagnostic) = status.event_outcome();
+            assert_eq!(actual_disposition, disposition);
+            assert_eq!(
+                actual_diagnostic.map(crate::DiagnosticCode::as_str),
+                diagnostic
+            );
         }
     }
 }

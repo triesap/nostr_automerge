@@ -2,9 +2,9 @@ use core::fmt;
 use std::collections::BTreeSet;
 
 use crate::{
-    ChangeHash, CheckpointVerificationResult, CheckpointVerificationStatus, Completion,
-    DispositionsDigest, DocumentCoordinate, EventId, EvidenceRecord, HistoryDigest, IntegrityAlert,
-    ProtocolDisposition, ResolvedManifestAvailability,
+    ChangeHash, CheckpointVerificationResult, Completion, DispositionsDigest, DocumentCoordinate,
+    EventId, EvidenceRecord, HistoryDigest, IntegrityAlert, ProtocolDisposition,
+    ResolvedManifestAvailability,
 };
 
 /// Stable category explaining why an evaluation did not complete.
@@ -277,28 +277,33 @@ impl EvaluationReport {
         }) {
             return Err(EvaluationError::ReportInvariant);
         }
-        let event_disposition = |event_id| {
+        let event_outcome = |event_id| {
             let identifier = ProtocolItemIdentifier::event(event_id);
             parts
                 .disposition_records
                 .binary_search_by_key(&identifier, DispositionRecord::identifier)
                 .ok()
-                .map(|index| parts.disposition_records[index].disposition())
+                .map(|index| {
+                    let record = parts.disposition_records[index];
+                    (record.disposition(), record.diagnostic())
+                })
         };
         let manifest_consistent = match &parts.manifest {
             ResolvedManifestAvailability::Missing => true,
             ResolvedManifestAvailability::Available { hints, .. } => {
-                event_disposition(hints.event_id()) == Some(ProtocolDisposition::Accepted)
+                event_outcome(hints.event_id()).map(|(disposition, _)| disposition)
+                    == Some(ProtocolDisposition::Accepted)
             }
             ResolvedManifestAvailability::Pending { hints, .. } => {
-                event_disposition(hints.event_id()) == Some(ProtocolDisposition::Pending)
+                event_outcome(hints.event_id()).map(|(disposition, _)| disposition)
+                    == Some(ProtocolDisposition::Pending)
             }
             ResolvedManifestAvailability::Unavailable {
                 event_id,
                 diagnostic,
                 ..
             } => {
-                event_disposition(*event_id)
+                event_outcome(*event_id).map(|(disposition, _)| disposition)
                     == Some(if diagnostic.as_str() == "carrier.revision" {
                         ProtocolDisposition::UnsupportedRevision
                     } else {
@@ -307,12 +312,12 @@ impl EvaluationReport {
             }
         };
         let checkpoints_consistent = parts.checkpoints.iter().all(|checkpoint| {
-            let expected = checkpoint_event_disposition(checkpoint.status());
-            event_disposition(checkpoint.descriptor_event()) == Some(expected)
+            let expected = checkpoint.status().event_outcome();
+            event_outcome(checkpoint.descriptor_event()) == Some(expected)
                 && checkpoint
                     .chunk_events()
                     .iter()
-                    .all(|event_id| event_disposition(*event_id) == Some(expected))
+                    .all(|event_id| event_outcome(*event_id) == Some(expected))
         });
         if !manifest_consistent || !checkpoints_consistent {
             return Err(EvaluationError::ReportInvariant);
@@ -514,18 +519,6 @@ fn change_carrier_dispositions_are_consistent(parts: &EvaluationReportParts) -> 
                         carrier_hash == hash && *disposition == ProtocolDisposition::Accepted
                     })
             })
-}
-
-fn checkpoint_event_disposition(status: CheckpointVerificationStatus) -> ProtocolDisposition {
-    match status {
-        CheckpointVerificationStatus::Verified => ProtocolDisposition::Accepted,
-        CheckpointVerificationStatus::PendingControl
-        | CheckpointVerificationStatus::MissingChunk
-        | CheckpointVerificationStatus::MissingHistoricalCarrier
-        | CheckpointVerificationStatus::BudgetExhausted
-        | CheckpointVerificationStatus::Cancelled => ProtocolDisposition::Pending,
-        _ => ProtocolDisposition::Invalid,
-    }
 }
 
 impl fmt::Debug for EvaluationReport {
@@ -788,6 +781,51 @@ mod tests {
             ),
         ];
         assert!(EvaluationReport::from_parts(consistent_checkpoint).is_ok());
+
+        let refused_checkpoint = CheckpointVerificationResult::new(
+            descriptor,
+            vec![chunk],
+            SnapshotHash::from_bytes([12; 32]),
+            vec![],
+            0,
+            [13; 32],
+            vec![],
+            vec![],
+            CheckpointVerificationStatus::Unauthorized,
+        );
+        let history_diagnostic = crate::DiagnosticCode::lookup("checkpoint.history");
+        assert!(history_diagnostic.is_some());
+        let mut consistent_refusal = parts();
+        consistent_refusal.checkpoints.push(refused_checkpoint);
+        consistent_refusal.disposition_records = vec![
+            DispositionRecord::new(
+                ProtocolItemIdentifier::event(descriptor),
+                crate::ProtocolDisposition::Invalid,
+                history_diagnostic,
+            ),
+            DispositionRecord::new(
+                ProtocolItemIdentifier::event(chunk),
+                crate::ProtocolDisposition::Invalid,
+                history_diagnostic,
+            ),
+        ];
+        assert!(EvaluationReport::from_parts(consistent_refusal.clone()).is_ok());
+
+        let mut missing_descriptor_diagnostic = consistent_refusal.clone();
+        missing_descriptor_diagnostic.disposition_records[0] = DispositionRecord::new(
+            ProtocolItemIdentifier::event(descriptor),
+            crate::ProtocolDisposition::Invalid,
+            None,
+        );
+        assert_invariant(missing_descriptor_diagnostic);
+
+        let mut wrong_chunk_diagnostic = consistent_refusal;
+        wrong_chunk_diagnostic.disposition_records[1] = DispositionRecord::new(
+            ProtocolItemIdentifier::event(chunk),
+            crate::ProtocolDisposition::Invalid,
+            crate::DiagnosticCode::lookup("checkpoint.chunk"),
+        );
+        assert_invariant(wrong_chunk_diagnostic);
     }
 
     #[test]

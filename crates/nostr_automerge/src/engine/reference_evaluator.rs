@@ -1226,8 +1226,7 @@ fn dynamic_event_disposition_records(
     }
 
     for checkpoint in checkpoints {
-        let disposition = checkpoint_event_disposition(checkpoint.status());
-        let diagnostic = checkpoint_event_diagnostic(checkpoint.status());
+        let (disposition, diagnostic) = checkpoint.status().event_outcome();
         records.insert(checkpoint.descriptor_event(), (disposition, diagnostic));
         for event_id in checkpoint.chunk_events() {
             records.insert(*event_id, (disposition, diagnostic));
@@ -1244,63 +1243,6 @@ fn dynamic_event_disposition_records(
             )
         })
         .collect()
-}
-
-fn checkpoint_event_disposition(status: CheckpointVerificationStatus) -> ProtocolDisposition {
-    match status {
-        CheckpointVerificationStatus::Verified => ProtocolDisposition::Accepted,
-        CheckpointVerificationStatus::PendingControl
-        | CheckpointVerificationStatus::MissingChunk
-        | CheckpointVerificationStatus::MissingHistoricalCarrier
-        | CheckpointVerificationStatus::BudgetExhausted
-        | CheckpointVerificationStatus::Cancelled => ProtocolDisposition::Pending,
-        CheckpointVerificationStatus::Unauthorized
-        | CheckpointVerificationStatus::ChunkAuthorMismatch
-        | CheckpointVerificationStatus::ChunkCoordinateMismatch
-        | CheckpointVerificationStatus::ChunkDescriptorMismatch
-        | CheckpointVerificationStatus::ChunkCountMismatch
-        | CheckpointVerificationStatus::DuplicateChunk
-        | CheckpointVerificationStatus::ChunkSizeMismatch
-        | CheckpointVerificationStatus::ChunkAssemblyMismatch
-        | CheckpointVerificationStatus::MerkleMismatch
-        | CheckpointVerificationStatus::SnapshotSizeMismatch
-        | CheckpointVerificationStatus::SnapshotHashMismatch
-        | CheckpointVerificationStatus::SnapshotLoad
-        | CheckpointVerificationStatus::HeadMismatch
-        | CheckpointVerificationStatus::CommitmentMismatch
-        | CheckpointVerificationStatus::ClosureMismatch
-        | CheckpointVerificationStatus::NotAcceptedAtControl => ProtocolDisposition::Invalid,
-    }
-}
-
-fn checkpoint_event_diagnostic(
-    status: CheckpointVerificationStatus,
-) -> Option<crate::DiagnosticCode> {
-    let code = match status {
-        CheckpointVerificationStatus::Verified
-        | CheckpointVerificationStatus::PendingControl
-        | CheckpointVerificationStatus::MissingChunk
-        | CheckpointVerificationStatus::BudgetExhausted
-        | CheckpointVerificationStatus::Cancelled => return None,
-        CheckpointVerificationStatus::ChunkAuthorMismatch
-        | CheckpointVerificationStatus::ChunkCoordinateMismatch
-        | CheckpointVerificationStatus::ChunkDescriptorMismatch
-        | CheckpointVerificationStatus::ChunkCountMismatch
-        | CheckpointVerificationStatus::DuplicateChunk
-        | CheckpointVerificationStatus::ChunkSizeMismatch
-        | CheckpointVerificationStatus::ChunkAssemblyMismatch => "checkpoint.chunk",
-        CheckpointVerificationStatus::MerkleMismatch => "checkpoint.merkle",
-        CheckpointVerificationStatus::SnapshotSizeMismatch
-        | CheckpointVerificationStatus::SnapshotHashMismatch
-        | CheckpointVerificationStatus::SnapshotLoad => "checkpoint.snapshot",
-        CheckpointVerificationStatus::HeadMismatch => "checkpoint.heads",
-        CheckpointVerificationStatus::Unauthorized
-        | CheckpointVerificationStatus::CommitmentMismatch
-        | CheckpointVerificationStatus::ClosureMismatch
-        | CheckpointVerificationStatus::MissingHistoricalCarrier
-        | CheckpointVerificationStatus::NotAcceptedAtControl => "checkpoint.history",
-    };
-    Some(crate::DiagnosticCode::registered(code))
 }
 
 struct CheckpointEvaluation {
@@ -3637,17 +3579,25 @@ mod tests {
         };
 
         let control_states = [
-            (Some(CanonicalAuthorized), None),
-            (Some(Missing), Some(Status::PendingControl)),
-            (Some(Pending), Some(Status::PendingControl)),
-            (Some(Noncanonical), Some(Status::Unauthorized)),
-            (Some(WrongKind), Some(Status::Unauthorized)),
-            (Some(WrongCoordinate), Some(Status::Unauthorized)),
-            (Some(StaticInvalid), Some(Status::Unauthorized)),
-            (Some(DynamicInvalid), Some(Status::Unauthorized)),
-            (Some(UnsupportedRevision), Some(Status::Unauthorized)),
-            (Some(RoleDenied), Some(Status::Unauthorized)),
-            (None, Some(Status::Unauthorized)),
+            (Some(CanonicalAuthorized), None, None),
+            (
+                Some(Missing),
+                Some(Status::PendingControl),
+                Some((ProtocolDisposition::Pending, None)),
+            ),
+            (
+                Some(Pending),
+                Some(Status::PendingControl),
+                Some((ProtocolDisposition::Pending, None)),
+            ),
+            (Some(Noncanonical), Some(Status::Unauthorized), None),
+            (Some(WrongKind), Some(Status::Unauthorized), None),
+            (Some(WrongCoordinate), Some(Status::Unauthorized), None),
+            (Some(StaticInvalid), Some(Status::Unauthorized), None),
+            (Some(DynamicInvalid), Some(Status::Unauthorized), None),
+            (Some(UnsupportedRevision), Some(Status::Unauthorized), None),
+            (Some(RoleDenied), Some(Status::Unauthorized), None),
+            (None, Some(Status::Unauthorized), None),
         ];
         let history_states = [
             (
@@ -3667,9 +3617,18 @@ mod tests {
             (HistoryVerificationError::Cancelled, Status::Cancelled),
         ];
 
-        for (control, expected_control_refusal) in control_states {
+        for (control, expected_control_refusal, pending_outcome) in control_states {
             let control_refusal = checkpoint_control_refusal(control);
             assert_eq!(control_refusal, expected_control_refusal);
+            if let Some(status) = control_refusal {
+                let (disposition, diagnostic) = status.event_outcome();
+                let outcome = (disposition, diagnostic.map(crate::DiagnosticCode::as_str));
+                assert_eq!(
+                    outcome,
+                    pending_outcome
+                        .unwrap_or((ProtocolDisposition::Invalid, Some("checkpoint.history")))
+                );
+            }
             assert_eq!(
                 checkpoint_preflight_refusal(control_refusal, None),
                 expected_control_refusal

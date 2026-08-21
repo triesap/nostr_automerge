@@ -7151,6 +7151,17 @@ fn known_invalid_checkpoint_control_is_never_pending() {
         event_diagnostic(&report, checkpoint.descriptor_event()),
         Some("checkpoint.history")
     );
+    assert_eq!(checkpoint.chunk_events().len(), 1);
+    for chunk_id in checkpoint.chunk_events() {
+        assert_eq!(
+            event_disposition(&report, *chunk_id),
+            Some(ProtocolDisposition::Invalid)
+        );
+        assert_eq!(
+            event_diagnostic(&report, *chunk_id),
+            Some("checkpoint.history")
+        );
+    }
 }
 
 #[test]
