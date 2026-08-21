@@ -1371,12 +1371,20 @@ def validate_state(state: dict[str, Any]) -> None:
 
 def mutation_self_test(state: dict[str, Any]) -> int:
     mutations: list[tuple[str, dict[str, Any]]] = []
+    current_stage = str(state["current_stage"])
+    current_index = STAGES.index(current_stage)
+    claimed_index = current_index + 1 if current_index + 1 < len(STAGES) else current_index - 1
     skipped = copy.deepcopy(state)
-    skipped["current_stage"] = "requirements_appended"
-    mutations.append(("skipped_stage", skipped))
-    companion_stage = copy.deepcopy(state)
-    companion_stage["current_stage"] = "companion_authority_installed"
-    mutations.append(("companion_stage_without_authority", companion_stage))
+    skipped["current_stage"] = STAGES[claimed_index]
+    mutations.append(("unbacked_stage_claim", skipped))
+    regressed = copy.deepcopy(state)
+    regressed["current_stage"] = "transition_installed"
+    mutations.append(("regressed_stage_with_companion_authority", regressed))
+    stale_companion = copy.deepcopy(state)
+    stale_companion["authority"]["live"]["companion_sha256"] = BASELINE[
+        "companion_sha256"
+    ]
+    mutations.append(("companion_stage_stale_live_binding", stale_companion))
     nip = copy.deepcopy(state)
     nip["authority"]["nip_sha256"] = "0" * 64
     mutations.append(("nip_binding", nip))

@@ -64,6 +64,10 @@ impl CorpusBuilder {
 
 ## Evaluation
 
+The signature below records the staged remediation-v9 candidate semantics. It
+becomes local implementation authority at `companion_authority_installed`
+without editing or overriding the unchanged repository-local NIP draft.
+
 ```rust
 pub struct ReferenceEvaluator { /* private */ }
 
@@ -72,15 +76,18 @@ impl ReferenceEvaluator {
 
     pub fn evaluate(
         &self,
-        coordinate: &DocumentCoordinate,
         corpus: &EvidenceCorpus,
-        budget: &WorkBudget,
-        cancellation: &dyn CancellationCheck,
-    ) -> EvaluationReport;
+        coordinate: DocumentCoordinate,
+        budget: &mut WorkBudget,
+        cancellation: &impl CancellationCheck,
+    ) -> Result<EvaluationReport, EvaluationError>;
 }
 ```
 
-No wall-clock deadline is part of evaluation.
+No wall-clock deadline is part of evaluation. Equal immutable evidence,
+coordinate, revision, budget, and cancellation boundary produce the same
+result. Typed invariant, graph, adapter, decode, apply, or projection failures
+are noncanonical `EvaluationError`s rather than protocol dispositions.
 
 ## Work budget
 
@@ -140,7 +147,18 @@ pub struct EvaluationReport {
 }
 ```
 
-All vectors are in their specified canonical order.
+All vectors are in their specified canonical order. The displayed fields are
+illustrative rather than an exhaustive constructor: the report also preserves
+the complete disposition namespaces, per-carrier Event outcomes, checkpoint
+and evidence views, manifest availability, typed local failure where exposed,
+and optional materialized document required by
+[`REPORT_CONTRACT.md`](REPORT_CONTRACT.md).
+
+A `complete` report exposes one exact canonical protocol view. A
+`budget_exhausted` or `cancelled` report exposes only the constant-size,
+revision-bound no-progress shape and empty-domain digests. Public construction
+and parsing reject duplicate, unsorted, overlapping, extra, missing, repaired,
+or cross-inconsistent report data.
 
 Materialized state may be exposed through:
 - read-only query methods;
@@ -183,6 +201,11 @@ Every error:
 - avoids raw content in Display/Debug by default;
 - preserves diagnostic source internally where safe;
 - does not use error strings as protocol logic.
+
+Local `EvaluationFailure` values, when the report API exposes them, correspond
+exactly to `budget_exhausted` or `cancelled`. They do not encode protocol
+invalidity, and later cancellation checks cannot replace the first typed stop
+cause.
 
 ## Compatibility
 

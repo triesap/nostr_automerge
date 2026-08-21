@@ -11,6 +11,29 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 ADAPTATION_PATH = ROOT / "docs/import_adaptation.json"
+ADAPTATION_SHA256 = "bcd6318fe1829f2ca4daea6496c3fcc2fe593e4323aa0bb6940820ffdd3fd168"
+POST_IMPORT_AUTHORITY_PATH = ROOT / "spec/companion_authority_v10.json"
+TRANSITION_PATH = ROOT / "spec/authority_transition_v10.json"
+TRANSITION_STAGES = (
+    "transition_installed",
+    "companion_authority_installed",
+    "requirements_appended",
+    "checkpoint_expectations_corrected",
+    "distribution_locked",
+    "checkpoint_control_fixtures_added",
+    "carrier_independence_fixtures_added",
+    "interruption_fixtures_added",
+    "target_work_fixtures_added",
+    "distribution_complete",
+)
+POST_IMPORT_STAGE = TRANSITION_STAGES.index("companion_authority_installed")
+REQUIREMENTS_STAGE = TRANSITION_STAGES.index("requirements_appended")
+AUTHORIZED_POST_IMPORT_COMPANION_DELTAS = {
+    "spec/API_CONTRACTS.md",
+    "spec/CHECKPOINT_PROFILE.md",
+    "spec/CONFORMANCE.md",
+    "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
+}
 FORBIDDEN_PUBLIC_TEXT = (
     "/" + "Users/",
     "docs/" + "handoff/",
@@ -47,6 +70,8 @@ def sha256(path: Path) -> str:
 def validate_adaptation() -> list[str]:
     """Validate the adaptation manifest and every imported target file."""
 
+    if sha256(ADAPTATION_PATH) != ADAPTATION_SHA256:
+        fail("immutable import adaptation history changed")
     adaptation = load_json(ADAPTATION_PATH)
     if adaptation.get("schema") != "nostr_automerge.import_adaptation.v1":
         fail("unsupported import adaptation schema")
@@ -68,8 +93,34 @@ def validate_adaptation() -> list[str]:
     if not isinstance(imported_files, list) or not imported_files:
         fail("imported_files must be a non-empty array")
 
+    transition = load_json(TRANSITION_PATH)
+    stage = transition.get("current_stage")
+    if stage not in TRANSITION_STAGES:
+        fail("invalid companion authority transition stage")
+    post_import = TRANSITION_STAGES.index(stage) >= POST_IMPORT_STAGE
+    requirements_appended = TRANSITION_STAGES.index(stage) >= REQUIREMENTS_STAGE
+    authority_documents: dict[str, dict[str, Any]] = {}
+    if post_import:
+        authority = load_json(POST_IMPORT_AUTHORITY_PATH)
+        if (
+            authority.get("schema") != "nostr_automerge.companion_authority.v10"
+            or authority.get("effective_stage") != "companion_authority_installed"
+        ):
+            fail("invalid post-import companion authority")
+        documents = authority.get("documents")
+        if not isinstance(documents, list):
+            fail("invalid post-import document inventory")
+        for document in documents:
+            if not isinstance(document, dict) or not isinstance(document.get("path"), str):
+                fail("invalid post-import document binding")
+            relative = document["path"]
+            if relative in authority_documents:
+                fail(f"duplicate post-import document binding: {relative}")
+            authority_documents[relative] = document
+
     seen_paths: set[str] = set()
     adapted_count = 0
+    permitted_deltas: set[str] = set()
     for item in imported_files:
         if not isinstance(item, dict):
             fail("imported file entry must be an object")
@@ -89,19 +140,49 @@ def validate_adaptation() -> list[str]:
             fail(f"imported file is missing: {relative}")
 
         actual = sha256(path)
-        if actual != item.get("target_sha256"):
-            fail(f"target digest mismatch: {relative}")
+        imported_target = item.get("target_sha256")
+        if actual != imported_target:
+            if post_import and relative in AUTHORIZED_POST_IMPORT_COMPANION_DELTAS:
+                binding = authority_documents.get(relative)
+                if (
+                    not isinstance(binding, dict)
+                    or binding.get("baseline_sha256") != imported_target
+                    or binding.get("live_sha256") != actual
+                ):
+                    fail(f"unbound post-import companion delta: {relative}")
+            elif requirements_appended and relative == "spec/requirements.json":
+                transition_authority = transition.get("authority")
+                if (
+                    not isinstance(transition_authority, dict)
+                    or transition_authority.get("baseline_requirements_sha256")
+                    != imported_target
+                    or not isinstance(transition_authority.get("live"), dict)
+                    or transition_authority["live"].get("requirements_sha256") != actual
+                ):
+                    fail("unbound post-import requirements delta")
+            else:
+                fail(f"target digest mismatch: {relative}")
+            permitted_deltas.add(relative)
         adapted = item.get("adapted")
         if not isinstance(adapted, bool):
             fail(f"adapted flag must be boolean: {relative}")
         if adapted:
             adapted_count += 1
-        elif actual != item.get("source_sha256"):
+        elif relative not in permitted_deltas and actual != item.get("source_sha256"):
             fail(f"unrecorded adaptation: {relative}")
+
+    expected_deltas: set[str] = set()
+    if post_import:
+        expected_deltas.update(AUTHORIZED_POST_IMPORT_COMPANION_DELTAS & seen_paths)
+    if requirements_appended:
+        expected_deltas.add("spec/requirements.json")
+    if permitted_deltas != expected_deltas:
+        fail("post-import companion delta inventory mismatch")
 
     return [
         f"imported_files={len(imported_files)}",
         f"adapted_files={adapted_count}",
+        f"post_import_deltas={len(permitted_deltas)}",
         "source_manifest=pass",
     ]
 

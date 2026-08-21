@@ -157,3 +157,51 @@ must be rejected.
 The distribution manifest binds the reconciled local NIP, companion,
 requirements registry, schemas, signed inputs, and expected canonical reports
 by SHA-256. A locked or incomplete transition is not conformance evidence.
+
+## Signed conformance v10
+
+This section is approved staged candidate authority at
+`companion_authority_installed`. Its 192-scenario conformance claim becomes
+current only when the closed authority transition reaches
+`distribution_complete`; the checksum-bound v9 distribution remains the
+current conformance baseline before that stage.
+
+`NCRDT-CONF-010`: The checksum-bound signed v10 distribution MUST contain
+exactly 192 scenarios, including the corrected checkpoint expectations and new
+carrier, interruption, and work-boundary cases. Both implementations MUST
+execute all scenarios twice and under all eight delivery permutations with
+byte-identical canonical output and deliberate mismatch rejection.
+
+The distribution preserves all 180 v9 scenario identities and signed input
+bytes. It authorizes exactly four checkpoint expected-report corrections and
+adds exactly twelve signed scenarios in four groups of three: checkpoint
+control precedence, independent carrier outcomes, no-progress interruption,
+and target-work boundaries. The eight permutations are `canonical`,
+`reverse`, `seed_0`, `seed_24301`, `duplicate_heavy`, `dependencies_last`,
+`controls_last`, and `invalid_before_valid`.
+
+Historical v9 evidence remains immutable and explicitly superseded. It is not
+re-evaluated or relabelled as proof of changed live authority. A passing local
+v10 result does not authorize NIP submission, event-kind allocation,
+publication, release, deployment, or production qualification.
+
+## Semantically exact proof catalog
+
+This staged section becomes a passing-evidence claim only after the 148-row
+registry, proof catalog, result artifacts, candidate identities, and required
+opaque independent-implementation overlay are all installed and validated.
+
+`NCRDT-EVIDENCE-006`: Every passing requirement row MUST bind to a semantically
+matching exact signed fixture or named assertion through a validated proof
+catalog. Broad command-only proof, unrelated assertion categories, stale
+expectations, and missing opaque TypeScript evidence identifiers MUST be
+rejected.
+
+Each proof entry binds the exact requirement and authority text,
+applicability, implementation candidate, semantic category, exact named
+assertion or signed fixture, executed command, result artifact, and artifact
+SHA-256. Cross-language rows additionally bind an opaque compatibility
+evidence identity without importing source, paths, logs, URLs, workflows, or
+runtime artifacts. Validators reject missing, duplicate, reordered, stale,
+generic, category-mismatched, false-held, scope-leaking, or hash-mismatched
+proof, and reject a passing assertion that did not execute.

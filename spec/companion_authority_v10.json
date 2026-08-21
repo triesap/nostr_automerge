@@ -1,0 +1,51 @@
+{
+  "schema": "nostr_automerge.companion_authority.v10",
+  "status": "staged_local_candidate",
+  "effective_stage": "companion_authority_installed",
+  "protocol_revision": "draft_2026_08",
+  "nip_authority": {
+    "path": "spec/NIP_DRAFT.md",
+    "sha256": "0dfa683aa0f4a1c7d3df010ec95901bf4ba4094ed3adaacc26e85d95aaa4ded1",
+    "status": "controlling_normative_authority_unchanged"
+  },
+  "documents": [
+    {
+      "path": "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
+      "baseline_sha256": "58177c31eb06086d76297bbb0fc15343a8e34c15499d6e03636c63df7604bb10",
+      "live_sha256": "14dd1a1dd622b7962b34de3d029a6e4e3bde11a5a20e3ff8a13b45fed81a59fd"
+    },
+    {
+      "path": "spec/API_CONTRACTS.md",
+      "baseline_sha256": "1114079b3f90a04895947e4b25a720a13fe8e28380cf824e2935a3fa373b8593",
+      "live_sha256": "f4fb1f1e600cb03f922867cde14cb6e696e8266662457b52eddc1c36196b262a"
+    },
+    {
+      "path": "spec/CONFORMANCE.md",
+      "baseline_sha256": "9c4118c3b67c6268ed484a5457270c0dc46a88223da571aa519beb655ec7908d",
+      "live_sha256": "d8439031d76caaeb2dd8a2af8ba2d2eed7843fb1634f90f74e5f5c6d85d8d32e"
+    },
+    {
+      "path": "spec/CHECKPOINT_PROFILE.md",
+      "baseline_sha256": "6e6c4228eba2cf90b2cf16f4bd84a384a531cbaf7fba462a59661666a9b8da76",
+      "live_sha256": "85bac3c3aea268fa0bfc559b93280a36c571ee6a79c2d588a30755a6a2588886"
+    },
+    {
+      "path": "spec/draft_limits.md",
+      "baseline_sha256": "8294556e12fd1fb7f713f732be48a5812fca5cf422e6098554efdf5559425b70",
+      "live_sha256": "c482c9906b0714e0b2f359703aa3b46a6ea5aea7f583adf67886a99b2cc135d9"
+    },
+    {
+      "path": "spec/REPORT_CONTRACT.md",
+      "baseline_sha256": null,
+      "live_sha256": "9f3c13e14e12b3a8767e1de1055067856489d1a709e1f6373e1c0286b7112521"
+    }
+  ],
+  "held_claims": [
+    "candidate_closure",
+    "nip_conformance",
+    "publication",
+    "release",
+    "deployment",
+    "production_qualification"
+  ]
+}

@@ -2,7 +2,7 @@
   "schema": "nostr_automerge.authority_transition.v10",
   "status": "in_progress",
   "protocol_revision": "draft_2026_08",
-  "current_stage": "transition_installed",
+  "current_stage": "companion_authority_installed",
   "stage_order": [
     "transition_installed",
     "companion_authority_installed",
@@ -58,7 +58,7 @@
     "live": {
       "requirements_sha256": "a97103be86946c15d81b3fc585efa36f4884da09f91cb51a8c5adfa27b7fe8f0",
       "applicability_sha256": "7cda8e59da0d8caf1f9a9985ba27c9367018c572824f092106fe5e5a8d823793",
-      "companion_sha256": "58177c31eb06086d76297bbb0fc15343a8e34c15499d6e03636c63df7604bb10"
+      "companion_sha256": "14dd1a1dd622b7962b34de3d029a6e4e3bde11a5a20e3ff8a13b45fed81a59fd"
     }
   },
   "distribution": {

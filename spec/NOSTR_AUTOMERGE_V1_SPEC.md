@@ -544,3 +544,37 @@ canonical bytes must agree, and the comparison must reject a deliberate
 mismatch. Passing this local profile does not authorize NIP submission,
 event-kind allocation, publication, release, deployment, or a production
 qualification claim.
+
+## Remediation v9 staged candidate authority
+
+The following repository-local companion contracts become effective for the
+staged remediation-v9 implementation candidate at
+`companion_authority_installed`:
+
+- [`CHECKPOINT_PROFILE.md`](CHECKPOINT_PROFILE.md), under “Checkpoint control
+  resolution precedence” and “Recoverable checkpoint control states”;
+- [`REPORT_CONTRACT.md`](REPORT_CONTRACT.md), under “Independent change-carrier
+  outcomes”, “No-progress interruption reports”, “Two-tier finalization
+  reservation”, “Target-local deterministic work”, and “Unsupported change
+  identity”;
+- [`API_CONTRACTS.md`](API_CONTRACTS.md), for the revision-bound report and
+  typed noncanonical error surface;
+- [`CONFORMANCE.md`](CONFORMANCE.md), under “Signed conformance v10” and
+  “Semantically exact proof catalog”; and
+- [`draft_limits.md`](draft_limits.md), for the separation between sealed
+  protocol limits and deterministic local target-work accounting.
+
+These contracts install exact public anchors for the nine requirements staged
+for the 148-row registry. They refine the local implementation candidate only.
+They do not edit or override the unchanged repository-local NIP draft. Where a
+candidate rule and the NIP disagree, the NIP continues to control
+NIP-conformance claims. Candidate closure, NIP conformance, publication,
+release, deployment, and production qualification remain held until every
+applicable authority and evidence gate is reconciled through its own change
+process.
+
+The staged report API adds typed revision identity without changing the
+neutral `nostr_automerge.report.v1` schema, signed input, wire value, digest
+domain, or protocol revision. The 192-scenario signed-v10 conformance contract
+does not become current until `distribution_complete`; signed v9 remains the
+current conformance baseline before that stage.
