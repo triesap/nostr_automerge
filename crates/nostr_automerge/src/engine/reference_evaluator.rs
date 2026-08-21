@@ -3906,6 +3906,22 @@ mod tests {
         }
     }
 
+    fn assert_no_downstream_stages(
+        observer: &RecordingCheckpointWorkObserver,
+        descriptor_id: EventId,
+    ) {
+        for stage in [
+            CheckpointDownstreamStage::ChunkSetCollection,
+            CheckpointDownstreamStage::ChunkEventCollection,
+            CheckpointDownstreamStage::CarrierHistoryCoverage,
+            CheckpointDownstreamStage::AcceptedAtControlLookup,
+            CheckpointDownstreamStage::SnapshotLoad,
+            CheckpointDownstreamStage::HistoryVerification,
+        ] {
+            assert_eq!(observer.calls(descriptor_id, stage), 0);
+        }
+    }
+
     fn assert_report_attribution(
         observer: &RecordingCheckpointWorkObserver,
         descriptor_id: EventId,
@@ -3956,7 +3972,7 @@ mod tests {
     }
 
     #[test]
-    fn every_refused_descriptor_family_skips_checkpoint_verification_stages() {
+    fn every_refused_descriptor_family_skips_each_checkpoint_verification_stage() {
         use DescriptorControlOutcome::{
             DynamicInvalid, Missing, Noncanonical, Pending, RoleDenied, StaticInvalid,
             UnsupportedRevision, WrongCoordinate, WrongKind,
@@ -3996,6 +4012,15 @@ mod tests {
             assert_eq!(evaluation.stop, None);
             assert_eq!(evaluation.results.len(), 1);
             assert_eq!(evaluation.results[0].status(), expected);
+            let expected_event_outcome = if expected == Status::PendingControl {
+                (ProtocolDisposition::Pending, None)
+            } else {
+                (
+                    ProtocolDisposition::Invalid,
+                    Some(crate::DiagnosticCode::registered("checkpoint.history")),
+                )
+            };
+            assert_eq!(expected.event_outcome(), expected_event_outcome);
             assert_eq!(evaluation.results[0].chunk_events().len(), 1);
             assert_eq!(
                 evaluation.results[0].accepted_at_control().len(),
@@ -4006,7 +4031,7 @@ mod tests {
                 usize::from(branch_hash)
             );
             assert_eq!(observer.authorized_precharges, 0);
-            assert_eq!(observer.descriptor_calls(descriptor_id), 0);
+            assert_no_downstream_stages(&observer, descriptor_id);
             assert_report_attribution(&observer, descriptor_id, accepted_hash, branch_hash);
             assert_eq!(
                 budget.consumed().get(WorkCounter::CheckpointItem),

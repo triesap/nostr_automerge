@@ -16,6 +16,7 @@ use nostr_automerge::{
     ManifestPendingReason, MaterializedPathElement, MaterializedScalar, MaterializedValue,
     NeverCancelled, ProtocolDisposition, ProtocolItemIdentifier, ProtocolRevision, RawEventBytes,
     ReferenceEvaluator, ResolvedManifestAvailability, VerifiedNip01Event, WorkBudget, WorkCounter,
+    WorkCounters,
 };
 use sha2::{Digest as _, Sha256};
 use support::test_signer::TestSigner;
@@ -7128,6 +7129,267 @@ fn checkpoint_pending_requires_missing_or_statefully_pending_control() {
         Some(ProtocolDisposition::Pending)
     );
     assert_eq!(event_diagnostic(&report, descriptor_id), None);
+}
+
+#[derive(Clone, Copy, Debug)]
+enum KnownUnusableDescriptorControl {
+    Noncanonical,
+    WrongKind,
+    WrongCoordinate,
+    StaticInvalid,
+    DynamicInvalid,
+    Unsupported,
+}
+
+#[derive(Clone, Copy, Debug)]
+enum ReferencedEvidenceIngress {
+    Accepted,
+    Irrelevant,
+    InvalidCarrier,
+    Unsupported,
+}
+
+#[allow(clippy::expect_used)]
+fn signed_checkpoint_for_control(
+    author: &TestSigner,
+    coordinate: DocumentCoordinate,
+    control_id: EventId,
+) -> (RawEventBytes, EventId, RawEventBytes, EventId) {
+    let data = b"a";
+    let chunk_hash: [u8; 32] = Sha256::digest(data).into();
+    let descriptor = author.sign(
+        &UnsignedEventDraft::new(
+            20,
+            1_626,
+            vec![
+                vec!["a".to_owned(), coordinate.to_address()],
+                vec!["e".to_owned(), control_id.to_hex()],
+                vec!["x".to_owned(), "a1".repeat(32)],
+            ],
+            format!(
+                r#"{{"change_count":1,"change_set_hash":"{}","chunk_count":1,"chunk_root":"{}","chunk_size":1,"dependency_edges":0,"encoding":"automerge-save-v1","heads":["{}"],"raw_size":1,"total_ops":1,"v":1}}"#,
+                "b1".repeat(32),
+                "c1".repeat(32),
+                "d1".repeat(32),
+            ),
+        )
+        .expect("descriptor draft")
+        .prepare(author.public_key())
+        .expect("descriptor preimage"),
+    );
+    let descriptor_id = VerifiedNip01Event::verify(descriptor.clone())
+        .expect("signed descriptor")
+        .event_id();
+    let chunk = author.sign(
+        &UnsignedEventDraft::new(
+            21,
+            1_627,
+            vec![
+                vec!["a".to_owned(), coordinate.to_address()],
+                vec!["e".to_owned(), descriptor_id.to_hex()],
+                vec!["x".to_owned(), hex32(chunk_hash)],
+                vec!["part".to_owned(), "0".to_owned(), "1".to_owned()],
+            ],
+            r#"{"data":"YQ==","proof":[],"v":1}"#.to_owned(),
+        )
+        .expect("chunk draft")
+        .prepare(author.public_key())
+        .expect("chunk preimage"),
+    );
+    let chunk_id = VerifiedNip01Event::verify(chunk.clone())
+        .expect("signed chunk")
+        .event_id();
+    (descriptor, descriptor_id, chunk, chunk_id)
+}
+
+#[allow(clippy::expect_used)]
+fn evaluate_known_unusable_descriptor_control(
+    family: KnownUnusableDescriptorControl,
+) -> (EvaluationReport, EventId, EventId, WorkCounters) {
+    let controller = TestSigner::from_byte(124);
+    let author = TestSigner::from_byte(125);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "81".repeat(32)
+    )
+    .parse()
+    .expect("fixed coordinate");
+    let grants = vec![(author.public_key().to_hex(), vec!["checkpoint"])];
+    let mut events = Vec::new();
+    let (control, expected_ingest) = match family {
+        KnownUnusableDescriptorControl::Noncanonical => {
+            let left = signed_acl_control(&controller, coordinate, 1, None, 0, grants.clone());
+            let right = signed_acl_control(&controller, coordinate, 2, None, 0, grants.clone());
+            let left_id = VerifiedNip01Event::verify(left.clone())
+                .expect("signed left control")
+                .event_id();
+            let right_id = VerifiedNip01Event::verify(right.clone())
+                .expect("signed right control")
+                .event_id();
+            events.extend([left, right]);
+            (left_id.max(right_id), ReferencedEvidenceIngress::Accepted)
+        }
+        KnownUnusableDescriptorControl::WrongKind => {
+            let event = controller.sign(
+                &UnsignedEventDraft::new(1, 1, Vec::new(), "known non-carrier".to_owned())
+                    .expect("non-carrier draft")
+                    .prepare(controller.public_key())
+                    .expect("non-carrier preimage"),
+            );
+            let event_id = VerifiedNip01Event::verify(event.clone())
+                .expect("signed non-carrier")
+                .event_id();
+            events.push(event);
+            (event_id, ReferencedEvidenceIngress::Irrelevant)
+        }
+        KnownUnusableDescriptorControl::WrongCoordinate => {
+            let other_coordinate: DocumentCoordinate = format!(
+                "31624:{}:{}",
+                controller.public_key().to_hex(),
+                "82".repeat(32)
+            )
+            .parse()
+            .expect("other coordinate");
+            let event =
+                signed_acl_control(&controller, other_coordinate, 1, None, 0, grants.clone());
+            let event_id = VerifiedNip01Event::verify(event.clone())
+                .expect("signed other-coordinate control")
+                .event_id();
+            events.push(event);
+            (event_id, ReferencedEvidenceIngress::Accepted)
+        }
+        KnownUnusableDescriptorControl::StaticInvalid => {
+            let event = controller.sign(
+                &UnsignedEventDraft::new(
+                    1,
+                    1_625,
+                    vec![vec!["a".to_owned(), coordinate.to_address()]],
+                    r#"{"v":1}"#.to_owned(),
+                )
+                .expect("invalid control draft")
+                .prepare(controller.public_key())
+                .expect("invalid control preimage"),
+            );
+            let event_id = VerifiedNip01Event::verify(event.clone())
+                .expect("signed invalid control")
+                .event_id();
+            events.push(event);
+            (event_id, ReferencedEvidenceIngress::InvalidCarrier)
+        }
+        KnownUnusableDescriptorControl::DynamicInvalid => {
+            let genesis = signed_acl_control(&controller, coordinate, 1, None, 0, grants.clone());
+            let genesis_id = VerifiedNip01Event::verify(genesis.clone())
+                .expect("signed genesis")
+                .event_id();
+            let child = signed_acl_control(&controller, coordinate, 2, Some(genesis_id), 2, grants);
+            let child_id = VerifiedNip01Event::verify(child.clone())
+                .expect("signed invalid child")
+                .event_id();
+            events.extend([genesis, child]);
+            (child_id, ReferencedEvidenceIngress::Accepted)
+        }
+        KnownUnusableDescriptorControl::Unsupported => {
+            let event = controller.sign(
+                &UnsignedEventDraft::new(
+                    1,
+                    1_625,
+                    vec![vec!["a".to_owned(), coordinate.to_address()]],
+                    r#"{"v":2}"#.to_owned(),
+                )
+                .expect("unsupported control draft")
+                .prepare(controller.public_key())
+                .expect("unsupported control preimage"),
+            );
+            let event_id = VerifiedNip01Event::verify(event.clone())
+                .expect("signed unsupported control")
+                .event_id();
+            events.push(event);
+            (event_id, ReferencedEvidenceIngress::Unsupported)
+        }
+    };
+    let (descriptor, descriptor_id, chunk, chunk_id) =
+        signed_checkpoint_for_control(&author, coordinate, control);
+    events.extend([descriptor, chunk]);
+
+    let mut builder = CorpusBuilder::new();
+    for event in events {
+        let event_id = VerifiedNip01Event::verify(event.clone())
+            .expect("signed family event")
+            .event_id();
+        let outcome = builder.ingest(event);
+        if event_id == control {
+            match expected_ingest {
+                ReferencedEvidenceIngress::Accepted => {
+                    assert!(matches!(outcome, IngestOutcome::Accepted { .. }))
+                }
+                ReferencedEvidenceIngress::Irrelevant => {
+                    assert!(matches!(outcome, IngestOutcome::Irrelevant { .. }))
+                }
+                ReferencedEvidenceIngress::InvalidCarrier => {
+                    assert!(matches!(outcome, IngestOutcome::InvalidCarrier { .. }))
+                }
+                ReferencedEvidenceIngress::Unsupported => {
+                    assert!(matches!(outcome, IngestOutcome::UnsupportedRevision { .. }))
+                }
+            }
+        } else {
+            assert!(matches!(outcome, IngestOutcome::Accepted { .. }));
+        }
+    }
+    let mut budget = WorkBudget::new(1_000_000, 1_000_000);
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+        &builder.finish(),
+        coordinate,
+        &mut budget,
+        &NeverCancelled,
+    );
+    (report, descriptor_id, chunk_id, budget.consumed())
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn six_known_unusable_descriptor_controls_are_invalid_before_history_work() {
+    for family in [
+        KnownUnusableDescriptorControl::Noncanonical,
+        KnownUnusableDescriptorControl::WrongKind,
+        KnownUnusableDescriptorControl::WrongCoordinate,
+        KnownUnusableDescriptorControl::StaticInvalid,
+        KnownUnusableDescriptorControl::DynamicInvalid,
+        KnownUnusableDescriptorControl::Unsupported,
+    ] {
+        let (report, descriptor_id, chunk_id, work) =
+            evaluate_known_unusable_descriptor_control(family);
+        let checkpoint = report
+            .checkpoints()
+            .iter()
+            .find(|checkpoint| checkpoint.descriptor_event() == descriptor_id)
+            .expect("known-unusable checkpoint result");
+        assert_eq!(report.completion(), Completion::Complete, "{family:?}");
+        assert_eq!(
+            checkpoint.status(),
+            CheckpointVerificationStatus::Unauthorized,
+            "{family:?}"
+        );
+        assert_eq!(checkpoint.chunk_events(), [chunk_id], "{family:?}");
+        for event_id in [descriptor_id, chunk_id] {
+            assert_eq!(
+                event_disposition(&report, event_id),
+                Some(ProtocolDisposition::Invalid),
+                "{family:?}"
+            );
+            assert_eq!(
+                event_diagnostic(&report, event_id),
+                Some("checkpoint.history"),
+                "{family:?}"
+            );
+        }
+        assert_eq!(checkpoint.completion(), Completion::Complete, "{family:?}");
+        assert!(
+            work.get(WorkCounter::CheckpointByte) == 0,
+            "{family:?} performed snapshot byte work"
+        );
+    }
 }
 
 #[test]
