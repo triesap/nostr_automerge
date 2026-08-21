@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/fixtures/schema/fixture.schema.v8.json",
+  "title": "nostr_automerge remediation-v8 signed fixture coverage",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["fixture_id", "branch_change_outcomes", "carrier_event_outcomes", "coordinate_scope", "resource_boundaries"],
+  "properties": {
+    "fixture_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_]{2,127}$"},
+    "branch_change_outcomes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"enum": ["accepted", "pending", "excluded", "invalid", "equivocation_excluded"]}
+    },
+    "carrier_event_outcomes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"enum": ["accepted", "pending", "excluded", "invalid", "unsupported_revision"]}
+    },
+    "coordinate_scope": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"enum": ["target_controls", "target_parent_edges", "target_raw_changes", "target_claims", "target_checkpoints", "target_work"]}
+    },
+    "resource_boundaries": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"enum": ["zero", "one_below", "exact", "one_above", "cancelled", "unrelated_flood", "pass_settlement"]}
+    }
+  }
+}
