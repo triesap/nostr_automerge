@@ -1,0 +1,102 @@
+{
+  "title": "nostr_automerge opaque reproduction v9",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "checkpoint",
+    "candidate",
+    "status",
+    "publication_status",
+    "finding_ids",
+    "gate_ids",
+    "result_classes",
+    "toolchain_classes",
+    "result_identity_sha256"
+  ],
+  "properties": {
+    "schema": {
+      "const": "nostr_automerge.opaque_reproduction.v9.v1"
+    },
+    "checkpoint": {
+      "const": "step_1166"
+    },
+    "candidate": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "status": {
+      "const": "pass"
+    },
+    "publication_status": {
+      "const": "held"
+    },
+    "finding_ids": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^FINDING_[0-9]{3}$"
+      }
+    },
+    "gate_ids": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "const": "V-TS"
+      }
+    },
+    "result_classes": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "class",
+          "count",
+          "status"
+        ],
+        "properties": {
+          "class": {
+            "enum": [
+              "ordinary_check",
+              "expected_failure_reproduction",
+              "negative_mutation"
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "const": "pass"
+          }
+        }
+      }
+    },
+    "toolchain_classes": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "language_runtime",
+          "package_manager",
+          "static_analyzer",
+          "unit_runner"
+        ]
+      }
+    },
+    "result_identity_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

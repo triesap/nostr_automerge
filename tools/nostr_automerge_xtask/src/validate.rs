@@ -8,6 +8,11 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "authority_transition_v10",
         "scripts/validate_authority_transition_v10.py",
     ),
+    ("runtime_ledger_v9", "scripts/validate_runtime_ledger_v9.py"),
+    (
+        "private_reproduction_boundary_v9",
+        "scripts/validate_private_reproduction_boundary_v9.py",
+    ),
     ("complete_specification", "scripts/validate_spec.py"),
     (
         "fixture_schema_checksum_snake_case",
@@ -75,13 +80,21 @@ mod tests {
             .collect::<Vec<_>>();
         assert!(names.contains(&"fixture_schema_checksum_snake_case"));
         assert!(names.contains(&"authority_transition_v10"));
+        assert!(names.contains(&"runtime_ledger_v9"));
+        assert!(names.contains(&"private_reproduction_boundary_v9"));
         assert!(names.contains(&"complete_specification"));
         assert!(names.contains(&"sealed_constants"));
         assert!(names.contains(&"automerge_boundary"));
         assert!(names.contains(&"diagnostic_registry"));
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-        let complete_spec = std::fs::read_to_string(root.join("scripts/validate_spec.py"))
-            .expect("complete specification validator is readable");
+        let complete_spec = std::fs::read_to_string(root.join("scripts/validate_spec.py"));
+        assert!(
+            complete_spec.is_ok(),
+            "complete specification validator is readable: {complete_spec:?}"
+        );
+        let Ok(complete_spec) = complete_spec else {
+            return;
+        };
         for historical in [
             "validate_fixture_distribution_v9.py",
             "validate_remediation_v8.py",

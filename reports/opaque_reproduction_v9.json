@@ -1,0 +1,45 @@
+{
+  "schema": "nostr_automerge.opaque_reproduction.v9.v1",
+  "checkpoint": "step_1166",
+  "candidate": "ad7f90268233418be95f4e640f2238a1d240858f",
+  "status": "pass",
+  "publication_status": "held",
+  "finding_ids": [
+    "FINDING_085",
+    "FINDING_086",
+    "FINDING_087",
+    "FINDING_088",
+    "FINDING_089",
+    "FINDING_090",
+    "FINDING_091",
+    "FINDING_092",
+    "FINDING_093"
+  ],
+  "gate_ids": [
+    "V-TS"
+  ],
+  "result_classes": [
+    {
+      "class": "ordinary_check",
+      "count": 1,
+      "status": "pass"
+    },
+    {
+      "class": "expected_failure_reproduction",
+      "count": 23,
+      "status": "pass"
+    },
+    {
+      "class": "negative_mutation",
+      "count": 276,
+      "status": "pass"
+    }
+  ],
+  "toolchain_classes": [
+    "language_runtime",
+    "package_manager",
+    "static_analyzer",
+    "unit_runner"
+  ],
+  "result_identity_sha256": "5678ffbb08a87fc518c4518d7f348ee4743a89c3cb1c4549061fe62707eed936"
+}

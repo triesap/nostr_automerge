@@ -1,0 +1,223 @@
+{
+  "schema": "nostr_automerge.runtime_ledger.v9.v1",
+  "status": "in_progress",
+  "rcld": 81,
+  "cursor": {
+    "active_step": "step_1167",
+    "next_step": "step_1168",
+    "last_step": "step_1283",
+    "remaining_checkpoint_count": 117,
+    "first_rcld": 81,
+    "last_rcld": 94,
+    "remaining_rcld_count": 14
+  },
+  "authority_projection": {
+    "binding": "monotonic_stage_projection",
+    "current_stage": "requirements_appended",
+    "minimum_stage": "requirements_appended",
+    "target_stage": "distribution_complete",
+    "requirement_count": 148,
+    "target_requirement_count": 148,
+    "signed_fixture_count": 180,
+    "target_signed_fixture_count": 192
+  },
+  "requirements": {
+    "preserved_prefix_count": 139,
+    "current_count": 148,
+    "target_count": 148,
+    "appended_ids": [
+      "NCRDT-CPAUTH-001",
+      "NCRDT-CPAUTH-002",
+      "NCRDT-DISPOSITION-006",
+      "NCRDT-INTERRUPT-001",
+      "NCRDT-RESOURCE-013",
+      "NCRDT-RESOURCE-014",
+      "NCRDT-VERSION-002",
+      "NCRDT-CONF-010",
+      "NCRDT-EVIDENCE-006"
+    ]
+  },
+  "findings": {
+    "registered_count": 21,
+    "reproduced_ids": [
+      "FINDING_073",
+      "FINDING_074",
+      "FINDING_075",
+      "FINDING_076",
+      "FINDING_077",
+      "FINDING_078",
+      "FINDING_079",
+      "FINDING_081",
+      "FINDING_082",
+      "FINDING_083",
+      "FINDING_084",
+      "FINDING_085",
+      "FINDING_086",
+      "FINDING_087",
+      "FINDING_088",
+      "FINDING_089",
+      "FINDING_090",
+      "FINDING_091",
+      "FINDING_092",
+      "FINDING_093"
+    ],
+    "held_ids": [
+      "FINDING_080"
+    ],
+    "status": "implementation_remediation_required"
+  },
+  "predecessors": [
+    {
+      "step": "step_1158",
+      "candidate": "17f2b0bb57b12558f678b80e88da36962798762f",
+      "owner_class": "public",
+      "gate_ids": ["V-AUTH"],
+      "requirement_ids": [],
+      "finding_ids": [],
+      "deviation_ids": ["step_1158"],
+      "result": "pass"
+    },
+    {
+      "step": "step_1159",
+      "candidate": "361c49936d663ada8e10b4eaccea21ef85236ff9",
+      "owner_class": "public",
+      "gate_ids": ["V-AUTH"],
+      "requirement_ids": [],
+      "finding_ids": [],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1160",
+      "candidate": "6a0bdcc93f87955b9557323f827fad5d6e3df6da",
+      "owner_class": "public",
+      "gate_ids": ["V-AUTH"],
+      "requirement_ids": [],
+      "finding_ids": [
+        "FINDING_073", "FINDING_074", "FINDING_075", "FINDING_076",
+        "FINDING_077", "FINDING_078", "FINDING_079", "FINDING_080",
+        "FINDING_081", "FINDING_082", "FINDING_083", "FINDING_084",
+        "FINDING_085", "FINDING_086", "FINDING_087", "FINDING_088",
+        "FINDING_089", "FINDING_090", "FINDING_091", "FINDING_092",
+        "FINDING_093"
+      ],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1161",
+      "candidate": "9587b149c39b4a180cc0e43ae4e7196cf39bc963",
+      "owner_class": "public",
+      "gate_ids": ["V-AUTH"],
+      "requirement_ids": [
+        "NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-DISPOSITION-006",
+        "NCRDT-INTERRUPT-001", "NCRDT-RESOURCE-013", "NCRDT-RESOURCE-014",
+        "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"
+      ],
+      "finding_ids": [
+        "FINDING_073", "FINDING_074", "FINDING_075", "FINDING_076",
+        "FINDING_077", "FINDING_078", "FINDING_079", "FINDING_081",
+        "FINDING_082", "FINDING_083", "FINDING_084", "FINDING_085",
+        "FINDING_086", "FINDING_087", "FINDING_088", "FINDING_089",
+        "FINDING_090", "FINDING_091", "FINDING_092", "FINDING_093"
+      ],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1162",
+      "candidate": "4c26318fe29e1cd0b018127c03278e4139448361",
+      "owner_class": "public",
+      "gate_ids": ["V-AUTH"],
+      "requirement_ids": [
+        "NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-DISPOSITION-006",
+        "NCRDT-INTERRUPT-001", "NCRDT-RESOURCE-013", "NCRDT-RESOURCE-014",
+        "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"
+      ],
+      "finding_ids": [
+        "FINDING_073", "FINDING_074", "FINDING_075", "FINDING_076",
+        "FINDING_077", "FINDING_078", "FINDING_079", "FINDING_081",
+        "FINDING_082", "FINDING_083", "FINDING_084", "FINDING_085",
+        "FINDING_086", "FINDING_087", "FINDING_088", "FINDING_089",
+        "FINDING_090", "FINDING_091", "FINDING_092", "FINDING_093"
+      ],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1163",
+      "candidate": "030cccdc1763168cf2aec6571c733387a2f72a51",
+      "owner_class": "public",
+      "gate_ids": ["V-AUTH"],
+      "requirement_ids": [
+        "NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-DISPOSITION-006",
+        "NCRDT-INTERRUPT-001", "NCRDT-RESOURCE-013", "NCRDT-RESOURCE-014",
+        "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"
+      ],
+      "finding_ids": [],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1164",
+      "candidate": "892c1e31f9290340bd93b108cefa8c9542d83d91",
+      "owner_class": "public",
+      "gate_ids": ["V-RUST"],
+      "requirement_ids": [
+        "NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-DISPOSITION-006",
+        "NCRDT-INTERRUPT-001", "NCRDT-RESOURCE-014", "NCRDT-VERSION-002",
+        "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"
+      ],
+      "finding_ids": [
+        "FINDING_073", "FINDING_074", "FINDING_079", "FINDING_083"
+      ],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1165",
+      "candidate": "af3cbc1d865a2ed6491965193a045dcf1b267ba1",
+      "owner_class": "public",
+      "gate_ids": ["V-RUST"],
+      "requirement_ids": [
+        "NCRDT-CPAUTH-001", "NCRDT-INTERRUPT-001", "NCRDT-RESOURCE-013",
+        "NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"
+      ],
+      "finding_ids": [
+        "FINDING_075", "FINDING_076", "FINDING_077", "FINDING_078",
+        "FINDING_081", "FINDING_082", "FINDING_084"
+      ],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1166",
+      "candidate": "ad7f90268233418be95f4e640f2238a1d240858f",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": [
+        "NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-LIMIT-001",
+        "NCRDT-RESOURCE-001", "NCRDT-RESOURCE-013", "NCRDT-RESOURCE-014",
+        "NCRDT-INTERRUPT-001", "NCRDT-DISPOSITION-005", "NCRDT-STATE-002",
+        "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"
+      ],
+      "finding_ids": [
+        "FINDING_085", "FINDING_086", "FINDING_087", "FINDING_088",
+        "FINDING_089", "FINDING_090", "FINDING_091", "FINDING_092",
+        "FINDING_093"
+      ],
+      "deviation_ids": [],
+      "result": "pass"
+    }
+  ],
+  "opaque_reproduction": {
+    "checkpoint": "step_1166",
+    "candidate": "ad7f90268233418be95f4e640f2238a1d240858f",
+    "result_identity_sha256": "5678ffbb08a87fc518c4518d7f348ee4743a89c3cb1c4549061fe62707eed936",
+    "finding_count": 9,
+    "reproduction_count": 23,
+    "negative_mutation_count": 276,
+    "result": "pass",
+    "publication_status": "held"
+  }
+}

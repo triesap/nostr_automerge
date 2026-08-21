@@ -24,6 +24,8 @@ VALIDATORS = [
     "validate_local_gate_summary_v8.py", "validate_remediation_v8_final.py",
     "validate_authority_transition_v10.py",
     "validate_remediation_v9.py",
+    "validate_runtime_ledger_v9.py",
+    "validate_private_reproduction_boundary_v9.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",
@@ -64,6 +66,16 @@ def controlled_files() -> list[pathlib.Path]:
         path = ROOT / name
         files.extend([path] if path.is_file() else (item for item in path.rglob("*") if item.is_file()))
     files.extend(ROOT / "scripts" / name for name in (*VALIDATORS, "validate_spec.py"))
+    files.extend(
+        ROOT / name
+        for name in (
+            "docs/execution/remediation_v9/ledger.md",
+            "implementation/runtime_ledger_v9.json",
+            "reports/opaque_reproduction_v9.json",
+            "tools/validation/opaque_reproduction_v9.schema.json",
+            "tools/validation/runtime_ledger_v9.schema.json",
+        )
+    )
     files.extend(path for path in (ROOT / "docs/adr").glob("adr_[0-9][0-9][0-9][0-9]_*.md"))
     files.append(ROOT / "docs/adr/README.md")
     files.extend(ROOT / "implementation" / name for name in ("COMMIT_SEQUENCE.md", "TYPESCRIPT_INTEROP_PLAN.md", "commit_sequence.json", "deviations/step_001.md"))
