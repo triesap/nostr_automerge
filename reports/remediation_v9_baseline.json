@@ -1,0 +1,59 @@
+{
+  "schema": "nostr_automerge.remediation_v9_baseline.v1",
+  "status": "implementation_remediation_required",
+  "review_date": "2026-08-21",
+  "planning_approval": {
+    "status": "planned_approved_for_execution",
+    "mode": "rcl-durable",
+    "active_rcld": 81,
+    "active_checkpoint": "step_1158",
+    "first_rcld": 81,
+    "last_rcld": 94,
+    "rcld_count": 14,
+    "first_checkpoint": "step_1158",
+    "last_checkpoint": "step_1283",
+    "checkpoint_count": 126,
+    "deviation_record": "implementation/deviations/step_1158.md"
+  },
+  "candidates": {
+    "public_review_head": "291bcd978fa765077b69fcaec66d9b96305b2553",
+    "protected_rust_source": "c41321207187c17cf3b92d49f737bcfa1bfb0bf4",
+    "protected_rust_evidence": "04fa12cc0067a2a524744a4fbd4257632ff97eb9",
+    "opaque_typescript_source": "b7607280fec23cdf71b4a0f5b44a1a573ff16b83",
+    "opaque_typescript_evidence": "5a7c2e08702c83812f371afb9221ec7d4272c9d2"
+  },
+  "source_classifications": {
+    "public_review_head": "public-repository-review-head",
+    "protected_rust_source": "protected-public-source-candidate",
+    "protected_rust_evidence": "protected-public-evidence-candidate",
+    "opaque_typescript_source": "opaque-cross-language-source-candidate",
+    "opaque_typescript_evidence": "opaque-cross-language-evidence-candidate"
+  },
+  "authority": {
+    "nip_sha256": "0dfa683aa0f4a1c7d3df010ec95901bf4ba4094ed3adaacc26e85d95aaa4ded1",
+    "companion_sha256": "58177c31eb06086d76297bbb0fc15343a8e34c15499d6e03636c63df7604bb10",
+    "requirements_sha256": "a97103be86946c15d81b3fc585efa36f4884da09f91cb51a8c5adfa27b7fe8f0",
+    "applicability_sha256": "7cda8e59da0d8caf1f9a9985ba27c9367018c572824f092106fe5e5a8d823793",
+    "distribution_v9_manifest_sha256": "7b4ab5d2146939d142eb92d43060ef2183c95d1fc574132894b3c01c874c7c56",
+    "canonical_output_sha256": "e193a7b0db3a43e9d33e612afea05bd447a5e968a45e283d098f45278d6ab6fc",
+    "nip_edit_authorized": false
+  },
+  "counts": {
+    "requirements": 139,
+    "signed_fixtures": 180
+  },
+  "maximum_local_claim": "code_complete_publication_held",
+  "remote_actions_authorized": false,
+  "publication_authorized": false,
+  "holds": [
+    "sustained_fuzzing",
+    "source_mutating_campaigns",
+    "sustained_generative_testing",
+    "independent_external_review",
+    "production_qualification",
+    "upstream_nip_work",
+    "event_kind_allocation",
+    "remote_publication",
+    "release"
+  ]
+}
