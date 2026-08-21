@@ -5,21 +5,13 @@ use crate::requirements::{discover_fixture_metadata, generate_coverage_report};
 
 const PYTHON_VALIDATORS: &[(&str, &str)] = &[
     (
-        "remediation_v8_authority",
-        "scripts/validate_remediation_v8.py",
-    ),
-    (
-        "nip_reconciliation_v8",
-        "scripts/validate_nip_reconciliation_v8.py",
+        "authority_transition_v10",
+        "scripts/validate_authority_transition_v10.py",
     ),
     ("complete_specification", "scripts/validate_spec.py"),
     (
         "fixture_schema_checksum_snake_case",
         "scripts/validate_fixtures.py",
-    ),
-    (
-        "fixture_distribution",
-        "scripts/validate_fixture_distribution_v9.py",
     ),
     ("sealed_constants", "scripts/validate_protocol_revision.py"),
     ("automerge_boundary", "scripts/validate_architecture.py"),
@@ -82,13 +74,31 @@ mod tests {
             .map(|(name, _)| *name)
             .collect::<Vec<_>>();
         assert!(names.contains(&"fixture_schema_checksum_snake_case"));
-        assert!(names.contains(&"fixture_distribution"));
+        assert!(names.contains(&"authority_transition_v10"));
+        assert!(names.contains(&"complete_specification"));
         assert!(names.contains(&"sealed_constants"));
         assert!(names.contains(&"automerge_boundary"));
         assert!(names.contains(&"diagnostic_registry"));
-        assert!(names.contains(&"remediation_v8_authority"));
-        assert!(names.contains(&"nip_reconciliation_v8"));
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let complete_spec = std::fs::read_to_string(root.join("scripts/validate_spec.py"))
+            .expect("complete specification validator is readable");
+        for historical in [
+            "validate_fixture_distribution_v9.py",
+            "validate_remediation_v8.py",
+            "validate_nip_reconciliation_v8.py",
+            "validate_rust_conformance_v9.py",
+            "validate_interop_attestation_v9.py",
+            "validate_requirements_authority_v9.py",
+            "validate_requirement_matrix_v9.py",
+            "validate_resource_qualification_v9.py",
+            "validate_assurance_v9.py",
+            "validate_private_assurance_v9.py",
+            "validate_final_identity_v8.py",
+            "validate_local_gate_summary_v8.py",
+            "validate_remediation_v8_final.py",
+        ] {
+            assert!(complete_spec.contains(historical));
+        }
         let report = validate_repository(&root);
         assert!(report.is_ok(), "{report:?}");
         let Ok(report) = report else { return };

@@ -1,0 +1,213 @@
+{
+  "schema": "nostr_automerge.authority_transition.v10",
+  "status": "in_progress",
+  "protocol_revision": "draft_2026_08",
+  "current_stage": "transition_installed",
+  "stage_order": [
+    "transition_installed",
+    "companion_authority_installed",
+    "requirements_appended",
+    "checkpoint_expectations_corrected",
+    "distribution_locked",
+    "checkpoint_control_fixtures_added",
+    "carrier_independence_fixtures_added",
+    "interruption_fixtures_added",
+    "target_work_fixtures_added",
+    "distribution_complete"
+  ],
+  "transition_baseline": {
+    "status": "step_1158_bound",
+    "plan_binding": "initial_exact_then_immutable_projection",
+    "artifacts": [
+      {
+        "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+        "sha256": "ddd58da3450108d9e73f0d6872ee4399419ebeeba35aa63c1c2c464a56552029"
+      },
+      {
+        "path": "implementation/deviations/step_1158.md",
+        "sha256": "b787b9fa8787604fa11abad37e727b5e15544ac4b5abf38bb75f8c0e18ad8891"
+      },
+      {
+        "path": "reports/remediation_v9_baseline.json",
+        "sha256": "e5b6567712364e57dfd99a2fd653ba63f51865622b902c4b9c26a50e0001f127"
+      }
+    ]
+  },
+  "authority": {
+    "schema_path": "tools/validation/authority_transition_v10.schema.json",
+    "schema_sha256": "442d267d2a5c11e8af1db1a5a9746ba8444d6ed5cf45180e6df2e8b60b4002d6",
+    "nip_sha256": "0dfa683aa0f4a1c7d3df010ec95901bf4ba4094ed3adaacc26e85d95aaa4ded1",
+    "baseline_companion_sha256": "58177c31eb06086d76297bbb0fc15343a8e34c15499d6e03636c63df7604bb10",
+    "baseline_requirements_sha256": "a97103be86946c15d81b3fc585efa36f4884da09f91cb51a8c5adfa27b7fe8f0",
+    "baseline_applicability_sha256": "7cda8e59da0d8caf1f9a9985ba27c9367018c572824f092106fe5e5a8d823793",
+    "baseline_ordered_requirement_ids_sha256": "1763ff189bde8a7cb2743a13450105b40faa7575eb9b4fb2730aa49a0836d071",
+    "baseline_requirement_count": 139,
+    "preserved_prefix_count": 139,
+    "target_requirement_count": 148,
+    "appended_ids": [
+      "NCRDT-CPAUTH-001",
+      "NCRDT-CPAUTH-002",
+      "NCRDT-DISPOSITION-006",
+      "NCRDT-INTERRUPT-001",
+      "NCRDT-RESOURCE-013",
+      "NCRDT-RESOURCE-014",
+      "NCRDT-VERSION-002",
+      "NCRDT-CONF-010",
+      "NCRDT-EVIDENCE-006"
+    ],
+    "live": {
+      "requirements_sha256": "a97103be86946c15d81b3fc585efa36f4884da09f91cb51a8c5adfa27b7fe8f0",
+      "applicability_sha256": "7cda8e59da0d8caf1f9a9985ba27c9367018c572824f092106fe5e5a8d823793",
+      "companion_sha256": "58177c31eb06086d76297bbb0fc15343a8e34c15499d6e03636c63df7604bb10"
+    }
+  },
+  "distribution": {
+    "schema_path": "fixtures/schema/distribution.schema.v10.json",
+    "schema_sha256": "4c61490648e97f53ed074561794a7dfa5c39d60817846cfa6d6489cd8570b818",
+    "baseline_manifest": "fixtures/distribution/manifest_v9.json",
+    "baseline_manifest_sha256": "7b4ab5d2146939d142eb92d43060ef2183c95d1fc574132894b3c01c874c7c56",
+    "baseline_fixture_count": 180,
+    "preserved_fixture_count": 180,
+    "target_fixture_count": 192,
+    "baseline_ordered_fixture_ids_sha256": "06f35baa3f56013232ab0c708bccaabe09348865038374d28c629d1689139082",
+    "baseline_signed_events_sha256": "329c6946e3c56f94da3159c3e3d38b685f818da9c632f02fd868b0ccf05d401b",
+    "corrected_expected_reports": [
+      {
+        "fixture_id": "checkpoint_descriptor_references_invalid_control",
+        "metadata_path": "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_invalid_control.fixture.json",
+        "baseline_metadata_sha256": "6cc48b1dfebf97885b333f8e6bd52a4a73e3537c20f68e148800e50df2ab35ed",
+        "metadata_invariant_sha256": "136a365adfcdfc66583d705a0fab7676526fb1532fec089c121e1d98cac56c9a",
+        "expected_path": "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_invalid_control.expected.json",
+        "baseline_expected_sha256": "65e8b7629623f29f7c7a980780a7f3da110f9dbd1069840d65affea45db11713"
+      },
+      {
+        "fixture_id": "checkpoint_descriptor_references_unsupported_control",
+        "metadata_path": "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_unsupported_control.fixture.json",
+        "baseline_metadata_sha256": "61076b811f530bc6cd80e625c48a8090f90ce846013970d0ea5f7e4ef81fbf52",
+        "metadata_invariant_sha256": "5e5e54a2d5a66737dec2232cc13fd9e385131545bd65dc379227dbaadcd5b062",
+        "expected_path": "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_unsupported_control.expected.json",
+        "baseline_expected_sha256": "ec510d417e37d55c4fff14268edee5435774d1027aa3c24f463839ab63b60fa0"
+      },
+      {
+        "fixture_id": "checkpoint_descriptor_references_wrong_kind_control",
+        "metadata_path": "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_kind_control.fixture.json",
+        "baseline_metadata_sha256": "e815bbc47509df08915cf15c3a3dea8e61ad993c137caa45e2d0bdebe23063f8",
+        "metadata_invariant_sha256": "fbdcc180b46d7474b7dac53e2382192531a0a6eada596f1fed5d5634c810de21",
+        "expected_path": "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_kind_control.expected.json",
+        "baseline_expected_sha256": "a42a12d8222b25b4dae8303726bf3df1b9d49bb15bffe007cba49e7e10fb2a06"
+      },
+      {
+        "fixture_id": "checkpoint_descriptor_references_wrong_coordinate_control",
+        "metadata_path": "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_coordinate_control.fixture.json",
+        "baseline_metadata_sha256": "33d51ad73eb8aba4966924a4526c6e6b29d144edeb81859597b6d6d6eef66a89",
+        "metadata_invariant_sha256": "5e6f552e368d0f8ed809fd7eabe0263a752be37c4410d3d27d7d3aa9b469bd68",
+        "expected_path": "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_coordinate_control.expected.json",
+        "baseline_expected_sha256": "81d73336b0358d53deb30e3865833be319f9d019db801d624fafbedd72f0ec3c"
+      }
+    ],
+    "new_fixture_groups": [
+      {
+        "group": "checkpoint_control",
+        "fixture_ids": [
+          "checkpoint_descriptor_references_noncanonical_control",
+          "checkpoint_descriptor_references_dynamic_invalid_control",
+          "checkpoint_descriptor_references_canonical_without_checkpoint_role"
+        ]
+      },
+      {
+        "group": "carrier_independence",
+        "fixture_ids": [
+          "excluded_hash_with_dynamic_invalid_duplicate_carrier",
+          "pruned_hash_with_invalid_control_carrier",
+          "equivocation_excluded_hash_with_invalid_control_carrier"
+        ]
+      },
+      {
+        "group": "interruption_no_progress",
+        "fixture_ids": [
+          "interrupted_after_branch_evaluation_returns_no_progress",
+          "interrupted_after_claim_reduction_returns_no_progress",
+          "interrupted_after_checkpoint_resolution_returns_no_progress"
+        ]
+      },
+      {
+        "group": "target_work",
+        "fixture_ids": [
+          "target_preparation_exact_budget",
+          "target_raw_memo_exact_budget",
+          "canonical_derivation_exact_budget"
+        ]
+      }
+    ]
+  },
+  "v9_evidence": {
+    "status": "historical_superseded_non_current",
+    "superseded_by": "spec/authority_transition_v10.json",
+    "artifacts": [
+      {
+        "path": "reports/evidence_supersession_v8.json",
+        "sha256": "8306063cd8ff11ed86bf9faaba5efd04c46c98b133d5239cd154d067e8458c4c"
+      },
+      {
+        "path": "reports/external_holds_v8.json",
+        "sha256": "69c04d7183042c9b3935e4f2df3d6335ae76fbdaebb2dc249a021d227f172942"
+      },
+      {
+        "path": "reports/final_candidate_identity_v8.json",
+        "sha256": "b3d03079fc5418a7d8295c4196ff43669f3689a106fafa00f38c3b0a1bc3e0ae"
+      },
+      {
+        "path": "reports/interop_combined_v9.json",
+        "sha256": "cd501c2e15010b17e3a58dc977ae6ea1e5022c3b42b1c24e01512e10be0c3b0f"
+      },
+      {
+        "path": "reports/interop_evidence_mutations_v9.json",
+        "sha256": "89a2ea147028887af3128d40a869f6fa3946216b16980296c0f25b3a245ae022"
+      },
+      {
+        "path": "reports/interop_rust_v9.json",
+        "sha256": "42668996e5aab5d58ebc8ae4b8831b77fa648f9bf727c4a8650316b034789a81"
+      },
+      {
+        "path": "reports/interop_typescript_v9.json",
+        "sha256": "a8dd711a9064a2455bd20423f39f7644f0d76fd9ff24f53a85ef52a220d2ccf2"
+      },
+      {
+        "path": "reports/ordinary_assurance_v9.json",
+        "sha256": "e3f99dea04bd744829aadd6a6bceff4a75c7b81440e0820bf9cfd26defb6b955"
+      },
+      {
+        "path": "reports/private_assurance_v9.json",
+        "sha256": "565018940e4bde29bc8e755cf3248fe77900f2f53d850e28713ccecfec083bea"
+      },
+      {
+        "path": "reports/remediation_v8_final.json",
+        "sha256": "e484b87f7a8e1e034a63e25a80493aa9146b78e19ccc46a483d0bcd568c84e8f"
+      },
+      {
+        "path": "reports/requirements_authority_v9.json",
+        "sha256": "96e466abee8f33d8f86183283f544d85b8e123d7c678f7bd61f343665bd5564c"
+      },
+      {
+        "path": "reports/requirements_coverage_v9.json",
+        "sha256": "996f1f1b480170d1308427d40833105fd1432fcd6b656abc98892f9458cbcdcb"
+      },
+      {
+        "path": "reports/requirements_evidence_mutations_v9.json",
+        "sha256": "99fe9bf4dc862e74efdc2f0a7b3e36292d599e8fe17202278e9c3562834bed2c"
+      },
+      {
+        "path": "reports/requirements_typescript_overlay_v9.json",
+        "sha256": "e4ce85caa05ce85676bc08ae8375c20a22f8fd863478c71163263d242dd2563d"
+      },
+      {
+        "path": "reports/resource_qualification_v9.json",
+        "sha256": "4d82877e114a5f9206b9d5858bea3f0a8eab3f8b70d32e57e642046101172c4e"
+      },
+      {
+        "path": "reports/rust_conformance_v9.json",
+        "sha256": "bdde3b0312c9a08da78aa00930dc43496c71ed6cc2107bde41ae1bc4412ed932"
+      }
+    ]
+  }
+}

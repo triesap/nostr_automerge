@@ -1,0 +1,326 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/tools/validation/authority_transition_v10.schema.json",
+  "title": "nostr_automerge authority transition v10",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Z0-9][A-Z0-9_-]{2,127}$"
+    },
+    "path": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-zA-Z0-9_./-]+$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "transition_installed",
+        "companion_authority_installed",
+        "requirements_appended",
+        "checkpoint_expectations_corrected",
+        "distribution_locked",
+        "checkpoint_control_fixtures_added",
+        "carrier_independence_fixtures_added",
+        "interruption_fixtures_added",
+        "target_work_fixtures_added",
+        "distribution_complete"
+      ]
+    }
+  },
+  "required": [
+    "schema",
+    "status",
+    "protocol_revision",
+    "current_stage",
+    "stage_order",
+    "transition_baseline",
+    "authority",
+    "distribution",
+    "v9_evidence"
+  ],
+  "properties": {
+    "schema": {
+      "const": "nostr_automerge.authority_transition.v10"
+    },
+    "status": {
+      "const": "in_progress"
+    },
+    "protocol_revision": {
+      "const": "draft_2026_08"
+    },
+    "current_stage": {
+      "$ref": "#/$defs/stage"
+    },
+    "stage_order": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/stage"
+      }
+    },
+    "transition_baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "plan_binding", "artifacts"],
+      "properties": {
+        "status": {
+          "const": "step_1158_bound"
+        },
+        "plan_binding": {
+          "const": "initial_exact_then_immutable_projection"
+        },
+        "artifacts": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256"],
+            "properties": {
+              "path": {
+                "$ref": "#/$defs/path"
+              },
+              "sha256": {
+                "$ref": "#/$defs/sha256"
+              }
+            }
+          }
+        }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_path",
+        "schema_sha256",
+        "nip_sha256",
+        "baseline_companion_sha256",
+        "baseline_requirements_sha256",
+        "baseline_applicability_sha256",
+        "baseline_ordered_requirement_ids_sha256",
+        "baseline_requirement_count",
+        "preserved_prefix_count",
+        "target_requirement_count",
+        "appended_ids",
+        "live"
+      ],
+      "properties": {
+        "schema_path": {
+          "const": "tools/validation/authority_transition_v10.schema.json"
+        },
+        "schema_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "nip_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "baseline_companion_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "baseline_requirements_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "baseline_applicability_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "baseline_ordered_requirement_ids_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "baseline_requirement_count": {
+          "const": 139
+        },
+        "preserved_prefix_count": {
+          "const": 139
+        },
+        "target_requirement_count": {
+          "const": 148
+        },
+        "appended_ids": {
+          "type": "array",
+          "minItems": 9,
+          "maxItems": 9,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "live": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "requirements_sha256",
+            "applicability_sha256",
+            "companion_sha256"
+          ],
+          "properties": {
+            "requirements_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "applicability_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "companion_sha256": {
+              "$ref": "#/$defs/sha256"
+            }
+          }
+        }
+      }
+    },
+    "distribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_path",
+        "schema_sha256",
+        "baseline_manifest",
+        "baseline_manifest_sha256",
+        "baseline_fixture_count",
+        "preserved_fixture_count",
+        "target_fixture_count",
+        "baseline_ordered_fixture_ids_sha256",
+        "baseline_signed_events_sha256",
+        "corrected_expected_reports",
+        "new_fixture_groups"
+      ],
+      "properties": {
+        "schema_path": {
+          "const": "fixtures/schema/distribution.schema.v10.json"
+        },
+        "schema_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "baseline_manifest": {
+          "const": "fixtures/distribution/manifest_v9.json"
+        },
+        "baseline_manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "baseline_fixture_count": {
+          "const": 180
+        },
+        "preserved_fixture_count": {
+          "const": 180
+        },
+        "target_fixture_count": {
+          "const": 192
+        },
+        "baseline_ordered_fixture_ids_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "baseline_signed_events_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "corrected_expected_reports": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fixture_id",
+              "metadata_path",
+              "baseline_metadata_sha256",
+              "metadata_invariant_sha256",
+              "expected_path",
+              "baseline_expected_sha256"
+            ],
+            "properties": {
+              "fixture_id": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9_]{2,127}$"
+              },
+              "metadata_path": {
+                "$ref": "#/$defs/path"
+              },
+              "baseline_metadata_sha256": {
+                "$ref": "#/$defs/sha256"
+              },
+              "metadata_invariant_sha256": {
+                "$ref": "#/$defs/sha256"
+              },
+              "expected_path": {
+                "$ref": "#/$defs/path"
+              },
+              "baseline_expected_sha256": {
+                "$ref": "#/$defs/sha256"
+              }
+            }
+          }
+        },
+        "new_fixture_groups": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["group", "fixture_ids"],
+            "properties": {
+              "group": {
+                "enum": [
+                  "checkpoint_control",
+                  "carrier_independence",
+                  "interruption_no_progress",
+                  "target_work"
+                ]
+              },
+              "fixture_ids": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9_]{2,127}$"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "v9_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "superseded_by", "artifacts"],
+      "properties": {
+        "status": {
+          "const": "historical_superseded_non_current"
+        },
+        "superseded_by": {
+          "const": "spec/authority_transition_v10.json"
+        },
+        "artifacts": {
+          "type": "array",
+          "minItems": 16,
+          "maxItems": 16,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256"],
+            "properties": {
+              "path": {
+                "$ref": "#/$defs/path"
+              },
+              "sha256": {
+                "$ref": "#/$defs/sha256"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

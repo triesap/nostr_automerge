@@ -3,6 +3,7 @@
 
 import argparse
 import hashlib
+import json
 import pathlib
 import subprocess
 import sys
@@ -20,9 +21,39 @@ VALIDATORS = [
     "validate_requirements_authority_v9.py", "validate_requirement_matrix_v9.py",
     "validate_resource_qualification_v9.py", "validate_assurance_v9.py",
     "validate_private_assurance_v9.py", "validate_final_identity_v8.py",
+    "validate_local_gate_summary_v8.py", "validate_remediation_v8_final.py",
+    "validate_authority_transition_v10.py",
+]
+HISTORICAL_VALIDATORS = {
+    "validate_fixture_distribution_v9.py",
+    "validate_remediation_v8.py",
+    "validate_nip_reconciliation_v8.py",
+    "validate_rust_conformance_v9.py",
+    "validate_interop_attestation_v9.py",
+    "validate_requirements_authority_v9.py",
+    "validate_requirement_matrix_v9.py",
+    "validate_resource_qualification_v9.py",
+    "validate_assurance_v9.py",
+    "validate_private_assurance_v9.py",
+    "validate_final_identity_v8.py",
     "validate_local_gate_summary_v8.py",
     "validate_remediation_v8_final.py",
-]
+}
+
+
+def transition_stage() -> str:
+    transition = json.loads((ROOT / "spec/authority_transition_v10.json").read_text())
+    stage = transition.get("current_stage")
+    order = transition.get("stage_order")
+    if not isinstance(stage, str) or not isinstance(order, list) or stage not in order:
+        raise SystemExit("FAIL: invalid v10 authority transition stage")
+    return stage
+
+
+def active_validators(stage: str) -> list[str]:
+    if stage == "transition_installed":
+        return VALIDATORS
+    return [validator for validator in VALIDATORS if validator not in HISTORICAL_VALIDATORS]
 
 
 def controlled_files() -> list[pathlib.Path]:
@@ -38,21 +69,23 @@ def controlled_files() -> list[pathlib.Path]:
     return sorted(files, key=lambda item: item.relative_to(ROOT).as_posix().encode())
 
 
-def report() -> str:
+def report(stage: str, validators: list[str]) -> str:
     aggregate = hashlib.sha256()
     for path in controlled_files():
         relative = path.relative_to(ROOT).as_posix().encode()
         data = path.read_bytes()
         aggregate.update(len(relative).to_bytes(4, "big") + relative)
         aggregate.update(len(data).to_bytes(8, "big") + data)
-    requirements = __import__("json").loads((ROOT / "spec/requirements.json").read_text())["requirements"]
+    requirements = json.loads((ROOT / "spec/requirements.json").read_text())["requirements"]
     return "\n".join((
         "nostr_automerge specification baseline",
         "revision: draft_2026_08",
         "status: approved_implementation_baseline",
         f"controlled_files: {len(controlled_files())}",
         f"requirements: {len(requirements)}",
-        f"validators: {len(VALIDATORS)}",
+        f"transition_stage: {stage}",
+        f"historical_v9_validation: {'direct' if stage == 'transition_installed' else 'immutable_wrapper'}",
+        f"validators: {len(validators)}",
         f"aggregate_sha256: {aggregate.hexdigest()}",
         "result: pass",
         "",
@@ -63,12 +96,14 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--print-report", action="store_true")
     args = parser.parse_args()
-    for validator in VALIDATORS:
+    stage = transition_stage()
+    validators = active_validators(stage)
+    for validator in validators:
         result = subprocess.run([sys.executable, str(ROOT / "scripts" / validator)], cwd=ROOT, capture_output=True, text=True, check=False)
         if result.returncode:
             sys.stderr.write(result.stdout + result.stderr)
             raise SystemExit(f"FAIL: {validator}")
-    current = report()
+    current = report(stage, validators)
     if args.print_report:
         print(current, end="")
         return
@@ -76,7 +111,8 @@ def main() -> None:
     if current != expected:
         raise SystemExit("FAIL: stale specification baseline report")
     print("PASS: complete specification baseline")
-    print(f"- validators={len(VALIDATORS)}")
+    print(f"- validators={len(validators)}")
+    print(f"- historical_v9={'direct' if stage == 'transition_installed' else 'immutable_wrapper'}")
     print(f"- report_sha256={hashlib.sha256(current.encode()).hexdigest()}")
 
 
