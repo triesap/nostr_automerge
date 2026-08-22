@@ -58,7 +58,7 @@
     "live": {
       "requirements_sha256": "f6e6070de7a5fc707f8488ced3a031f7dfc36d11c7477d800c3d3c33d532e6ba",
       "applicability_sha256": "c5380b7fe4e16f7a750ee0b48b64bc7e4c29fd5851f34125980e4413f7d55712",
-      "companion_sha256": "14dd1a1dd622b7962b34de3d029a6e4e3bde11a5a20e3ff8a13b45fed81a59fd"
+      "companion_sha256": "a81ad7f3e5cc7e386a9313f6d5355afc1ec95757a5c9a4051ea94b79eafeceb0"
     }
   },
   "distribution": {

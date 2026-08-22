@@ -13,7 +13,8 @@
     "predecessors",
     "opaque_reproduction",
     "opaque_checkpoint",
-    "checkpoint_parity"
+    "checkpoint_parity",
+    "opaque_carrier"
   ],
   "properties": {
     "schema": {"const": "nostr_automerge.runtime_ledger.v9.v1"},
@@ -203,6 +204,36 @@
         "signed_event_count": {"const": 75},
         "engine_vector_count": {"const": 11},
         "delivery_order_count": {"const": 8},
+        "result": {"const": "pass"},
+        "publication_status": {"const": "held"}
+      }
+    },
+    "opaque_carrier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpoint", "candidate", "candidate_count", "result_identity_sha256",
+        "result_class_count", "carrier_reason_count", "aggregate_sequence_count",
+        "lineage_count", "aggregate_row_count", "signed_construction_count",
+        "minimum_delivery_order_count", "nip_sha256",
+        "wire_domain_projection_sha256", "execution_result", "result",
+        "publication_status"
+      ],
+      "properties": {
+        "checkpoint": {"const": "step_1194"},
+        "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "candidate_count": {"const": 3},
+        "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "result_class_count": {"const": 4},
+        "carrier_reason_count": {"const": 6},
+        "aggregate_sequence_count": {"const": 1555},
+        "lineage_count": {"const": 3},
+        "aggregate_row_count": {"const": 4665},
+        "signed_construction_count": {"const": 8},
+        "minimum_delivery_order_count": {"const": 2},
+        "nip_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "wire_domain_projection_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "execution_result": {"const": "pass"},
         "result": {"const": "pass"},
         "publication_status": {"const": "held"}
       }

@@ -1,0 +1,98 @@
+{
+  "title": "nostr_automerge opaque carrier evidence v9",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "checkpoint", "stage", "status", "publication_status",
+    "candidate_chain", "gate_ids", "result_counts", "result_classes",
+    "authority_identities", "execution_class", "execution_result",
+    "result_identity_sha256"
+  ],
+  "properties": {
+    "schema": {"const": "nostr_automerge.opaque_carrier.v9.v1"},
+    "checkpoint": {"const": "step_1194"},
+    "stage": {"const": "carrier_parity_candidate"},
+    "status": {"const": "pass"},
+    "publication_status": {"const": "held"},
+    "candidate_chain": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["checkpoint", "candidate", "result"],
+        "properties": {
+          "checkpoint": {"type": "string", "pattern": "^step_119[2-4]$"},
+          "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "result": {"const": "pass"}
+        }
+      }
+    },
+    "gate_ids": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {"const": "V-TS"}
+    },
+    "result_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "carrier_reasons", "aggregate_sequences", "lineages",
+        "aggregate_rows", "signed_constructions",
+        "minimum_delivery_orders_per_construction"
+      ],
+      "properties": {
+        "carrier_reasons": {"const": 6},
+        "aggregate_sequences": {"const": 1555},
+        "lineages": {"const": 3},
+        "aggregate_rows": {"const": 4665},
+        "signed_constructions": {"const": 8},
+        "minimum_delivery_orders_per_construction": {"const": 2}
+      }
+    },
+    "result_classes": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["class", "result"],
+        "properties": {
+          "class": {
+            "enum": [
+              "carrier_event_independence",
+              "unsupported_event_only_identity",
+              "typed_stop_cause_preservation",
+              "delivery_order_invariance"
+            ]
+          },
+          "result": {"const": "pass"}
+        }
+      }
+    },
+    "authority_identities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nip_sha256", "companion_sha256", "api_sha256",
+        "report_contract_sha256", "wire_domain_projection_sha256"
+      ],
+      "properties": {
+        "nip_sha256": {"$ref": "#/$defs/sha256"},
+        "companion_sha256": {"$ref": "#/$defs/sha256"},
+        "api_sha256": {"$ref": "#/$defs/sha256"},
+        "report_contract_sha256": {"$ref": "#/$defs/sha256"},
+        "wire_domain_projection_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "execution_class": {"const": "environment_independent"},
+    "execution_result": {"const": "pass"},
+    "result_identity_sha256": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

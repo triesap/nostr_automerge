@@ -16,6 +16,7 @@ from typing import Any
 sys.dont_write_bytecode = True
 
 from validate_runtime_ledger_v9 import (
+    APPROVED_WIRE_DOMAINS,
     ABSOLUTE_PATH_TEXT,
     CASE_TEXT,
     COMMAND_TEXT,
@@ -34,15 +35,18 @@ ROOT = Path(__file__).resolve().parents[1]
 JSON_RECORDS = (
     "reports/opaque_reproduction_v9.json",
     "reports/opaque_checkpoint_v9.json",
+    "reports/opaque_carrier_v9.json",
     "reports/checkpoint_parity_v9.json",
     "implementation/runtime_ledger_v9.json",
     "tools/validation/opaque_reproduction_v9.schema.json",
     "tools/validation/opaque_checkpoint_v9.schema.json",
+    "tools/validation/opaque_carrier_v9.schema.json",
     "tools/validation/checkpoint_parity_v9.schema.json",
     "tools/validation/runtime_ledger_v9.schema.json",
 )
 TEXT_RECORDS = ("docs/execution/remediation_v9/ledger.md",)
 PYTHON_SURFACES = (
+    "scripts/validate_companion_specs.py",
     "scripts/validate_checkpoint_parity_v9.py",
     "scripts/validate_runtime_ledger_v9.py",
     "scripts/validate_private_reproduction_boundary_v9.py",
@@ -56,14 +60,21 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
     {
         "../..",
         "crates/nostr_automerge/src/checkpoint/authorize.rs",
+        "crates/nostr_automerge/src/checkpoint/mod.rs",
+        "crates/nostr_automerge/src/checkpoint/verify.rs",
+        "crates/nostr_automerge/src/conformance/dispositions_digest.rs",
+        "crates/nostr_automerge/src/conformance/history_digest.rs",
         "crates/nostr_automerge/src/engine/checkpoint_result.rs",
         "crates/nostr_automerge/src/engine/evaluation_report.rs",
         "crates/nostr_automerge/src/control/reference_state.rs",
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "crates/nostr_automerge/src/types/actor_id.rs",
         "crates/nostr_automerge/tests/public_engine_api.rs",
         "deviations/step_001.md",
         "docs/adr",
         "docs/adr/README.md",
+        "docs/import_adaptation.json",
+        "docs/provenance/source_package_manifest.json",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "docs/execution/remediation_v9/reproductions.md",
@@ -88,11 +99,13 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "implementation/runtime_ledger_v9.json",
         "reports/checkpoint_parity_v9.json",
         "reports/opaque_checkpoint_v9.json",
+        "reports/opaque_carrier_v9.json",
         "reports/opaque_reproduction_v9.json",
         "reports/spec_baseline.txt",
         "scripts/validate_architecture.py",
         "scripts/validate_authority_transition_v10.py",
         "scripts/validate_checkpoint_parity_v9.py",
+        "scripts/validate_companion_specs.py",
         "scripts/validate_diagnostics.py",
         "scripts/validate_fixtures.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
@@ -102,12 +115,21 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_runtime_ledger_v9.py",
         "scripts/validate_spec.py",
         "spec/authority_transition_v10.json",
+        "spec/companion_authority_v10.json",
+        "spec/API_CONTRACTS.md",
+        "spec/CHECKPOINT_PROFILE.md",
+        "spec/CONFORMANCE.md",
+        "spec/NIP_DRAFT.md",
+        "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
+        "spec/REPORT_CONTRACT.md",
+        "spec/draft_limits.md",
         "spec/remediation_findings_v9.json",
         "spec/requirements.json",
         "tools/nostr_automerge_xtask/src/validate.rs",
         "tools/validation/checkpoint_parity_v9.schema.json",
         "tools/validation/opaque_reproduction_v9.schema.json",
         "tools/validation/opaque_checkpoint_v9.schema.json",
+        "tools/validation/opaque_carrier_v9.schema.json",
         "tools/validation/authority_transition_v10.schema.json",
         "tools/validation/runtime_ledger_v9.schema.json",
     }
@@ -150,7 +172,9 @@ def validate_source_literal(
 
 
 def is_public_route(value: str) -> bool:
-    return value in LEGITIMATE_PUBLIC_ROUTES
+    return value in LEGITIMATE_PUBLIC_ROUTES or value in {
+        row["value"] for row in APPROVED_WIRE_DOMAINS
+    }
 
 
 def python_comments(source: str, relative: str) -> list[str]:

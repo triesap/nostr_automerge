@@ -115,6 +115,21 @@ pub enum ProtocolDisposition {
 }
 ```
 
+## Carrier Event and semantic ChangeHash identities
+
+The report preserves two independent identity layers. Every attributable
+change carrier receives one Event outcome derived from that carrier's signed
+revision, payload binding, control reference, authorization, and branch-local
+result. A semantic `ChangeHash` outcome exists only after supported canonical
+change bytes have been verified and their hash computed under the sealed
+profile. Aggregate semantic reduction never rewrites a known-invalid carrier
+Event.
+
+An unsupported carrier whose canonical change bytes and hash were not verified
+remains visible as an Event with `unsupported_revision`. Its unverified `x` tag
+does not create a semantic disposition, dependency identity, accepted-state
+entry, head, or aggregate-reducer input.
+
 ## Local completion
 
 ```rust

@@ -75,8 +75,8 @@ BASELINE_HASHES: dict[str, str | None] = {
 # declaration from being changed together. A later authorized authority edit
 # must update the document, manifest, and this reviewed pin in one checkpoint.
 INSTALLED_LIVE_HASHES = {
-    "spec/NOSTR_AUTOMERGE_V1_SPEC.md": "14dd1a1dd622b7962b34de3d029a6e4e3bde11a5a20e3ff8a13b45fed81a59fd",
-    "spec/API_CONTRACTS.md": "f4fb1f1e600cb03f922867cde14cb6e696e8266662457b52eddc1c36196b262a",
+    "spec/NOSTR_AUTOMERGE_V1_SPEC.md": "a81ad7f3e5cc7e386a9313f6d5355afc1ec95757a5c9a4051ea94b79eafeceb0",
+    "spec/API_CONTRACTS.md": "ce7f2992292b2f5159ff25dc555b29265fea0ec475d39fc65fc60344b76ca37a",
     "spec/CONFORMANCE.md": "d8439031d76caaeb2dd8a2af8ba2d2eed7843fb1634f90f74e5f5c6d85d8d32e",
     "spec/CHECKPOINT_PROFILE.md": "85bac3c3aea268fa0bfc559b93280a36c571ee6a79c2d588a30755a6a2588886",
     "spec/draft_limits.md": "c482c9906b0714e0b2f359703aa3b46a6ea5aea7f583adf67886a99b2cc135d9",
@@ -151,6 +151,9 @@ FORBIDDEN_CONTRADICTIONS = (
     "noncanonical control may produce a pending checkpoint descriptor",
     "fallback and complete ledgers may borrow",
     "unverified `x` tag creates a semantic changehash",
+    "all-unsupported claims are unsupported",
+    "only unsupported claims is `unsupported_revision`",
+    "only unsupported carriers is `unsupported_revision`",
 )
 
 
@@ -304,6 +307,18 @@ def validate_post_import_authority(
     api = normalized(decoded["spec/API_CONTRACTS.md"])
     require("Result<EvaluationReport, EvaluationError>" in api, "api_typed_error")
     require("constant-size, revision-bound no-progress shape" in api, "api_no_progress")
+    for required in (
+        "The report preserves two independent identity layers.",
+        "Aggregate semantic reduction never rewrites a known-invalid carrier Event.",
+        "Its unverified `x` tag does not create a semantic disposition",
+    ):
+        require(normalized(required) in api, "api_carrier_identity")
+    for required in (
+        "Every verified semantic change yields exactly one represented hash outcome.",
+        "remains Event-only evidence and does not enter semantic hash reduction",
+        "supplies no semantic reducer input",
+    ):
+        require(normalized(required) in companion, "companion_carrier_identity")
     limits = normalized(decoded["spec/draft_limits.md"])
     require("fixed no-progress fallback ledger" in limits, "resource_fallback")
     require("Unrelated-coordinate evidence cannot change target work consumption" in limits, "resource_scope")

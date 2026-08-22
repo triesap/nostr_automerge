@@ -3,10 +3,10 @@
   "status": "in_progress",
   "rcld": 84,
   "cursor": {
-    "active_step": "step_1191",
-    "next_step": "step_1192",
+    "active_step": "step_1195",
+    "next_step": "step_1196",
     "last_step": "step_1283",
-    "remaining_checkpoint_count": 93,
+    "remaining_checkpoint_count": 89,
     "first_rcld": 84,
     "last_rcld": 94,
     "remaining_rcld_count": 11
@@ -462,6 +462,46 @@
       "finding_ids": ["FINDING_079"],
       "deviation_ids": [],
       "result": "pass"
+    },
+    {
+      "step": "step_1191",
+      "candidate": "976d6edb0349ae87d5e477e95ae6f3d7dbd89303",
+      "owner_class": "public",
+      "gate_ids": ["V-RUST"],
+      "requirement_ids": ["NCRDT-DISPOSITION-006", "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_074", "FINDING_079"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1192",
+      "candidate": "8810916c290583fa340691198037aaeca1301d53",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-DISPOSITION-006", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_074"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1193",
+      "candidate": "4a8c1d7451d11e6fc10c203b494567f40e28cd3c",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_079"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1194",
+      "candidate": "1164da991972b9df44b9fc873caa8dd5e76944e4",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-DISPOSITION-006", "NCRDT-INTERRUPT-001", "NCRDT-RESOURCE-014", "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_074", "FINDING_079", "FINDING_083"],
+      "deviation_ids": [],
+      "result": "pass"
     }
   ],
   "opaque_reproduction": {
@@ -499,6 +539,24 @@
     "signed_event_count": 75,
     "engine_vector_count": 11,
     "delivery_order_count": 8,
+    "result": "pass",
+    "publication_status": "held"
+  },
+  "opaque_carrier": {
+    "checkpoint": "step_1194",
+    "candidate": "1164da991972b9df44b9fc873caa8dd5e76944e4",
+    "candidate_count": 3,
+    "result_identity_sha256": "79c6ba747d8b92cdc7691eaedbf2910d7c0cb51f8330c8968c9e72f540bef286",
+    "result_class_count": 4,
+    "carrier_reason_count": 6,
+    "aggregate_sequence_count": 1555,
+    "lineage_count": 3,
+    "aggregate_row_count": 4665,
+    "signed_construction_count": 8,
+    "minimum_delivery_order_count": 2,
+    "nip_sha256": "0dfa683aa0f4a1c7d3df010ec95901bf4ba4094ed3adaacc26e85d95aaa4ded1",
+    "wire_domain_projection_sha256": "4f07dc65ffe3803a3217436cb4810dad6fb493b756f8a603e86f1bc11f276867",
+    "execution_result": "pass",
     "result": "pass",
     "publication_status": "held"
   }

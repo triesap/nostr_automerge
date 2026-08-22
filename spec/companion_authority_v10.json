@@ -12,12 +12,12 @@
     {
       "path": "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
       "baseline_sha256": "58177c31eb06086d76297bbb0fc15343a8e34c15499d6e03636c63df7604bb10",
-      "live_sha256": "14dd1a1dd622b7962b34de3d029a6e4e3bde11a5a20e3ff8a13b45fed81a59fd"
+      "live_sha256": "a81ad7f3e5cc7e386a9313f6d5355afc1ec95757a5c9a4051ea94b79eafeceb0"
     },
     {
       "path": "spec/API_CONTRACTS.md",
       "baseline_sha256": "1114079b3f90a04895947e4b25a720a13fe8e28380cf824e2935a3fa373b8593",
-      "live_sha256": "f4fb1f1e600cb03f922867cde14cb6e696e8266662457b52eddc1c36196b262a"
+      "live_sha256": "ce7f2992292b2f5159ff25dc555b29265fea0ec475d39fc65fc60344b76ca37a"
     },
     {
       "path": "spec/CONFORMANCE.md",

@@ -19,6 +19,8 @@ REPORT_SCHEMA = "tools/validation/opaque_reproduction_v9.schema.json"
 CHECKPOINT_REPORT = "reports/opaque_checkpoint_v9.json"
 CHECKPOINT_REPORT_SCHEMA = "tools/validation/opaque_checkpoint_v9.schema.json"
 PARITY_REPORT = "reports/checkpoint_parity_v9.json"
+CARRIER_REPORT = "reports/opaque_carrier_v9.json"
+CARRIER_REPORT_SCHEMA = "tools/validation/opaque_carrier_v9.schema.json"
 LEDGER = "implementation/runtime_ledger_v9.json"
 LEDGER_SCHEMA = "tools/validation/runtime_ledger_v9.schema.json"
 PLAN = "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md"
@@ -30,7 +32,7 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "bbab189460863af3992a7e920bc134da08ff5354040a4873bd78fd6ebdc43717"
+    "f0c5a479a63c19a6f211887787d74019f066ae70de4ed9247fbf073edf7b0f99"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
@@ -40,6 +42,89 @@ APPROVED_CHECKPOINT_RESULT_IDENTITY = (
 )
 APPROVED_CHECKPOINT_PARITY_RESULT_IDENTITY = (
     "b55220e99db3bf33ff9473c820a7fc4a59fb60d3fb90e847a903d94a5939606b"
+)
+CARRIER_REPORT_SCHEMA_PROJECTION = (
+    "76ec535eae06398fe33a04274eab50bdc2e3da77937c714f74baaac2f5788380"
+)
+APPROVED_CARRIER_RESULT_IDENTITY = (
+    "79c6ba747d8b92cdc7691eaedbf2910d7c0cb51f8330c8968c9e72f540bef286"
+)
+APPROVED_CARRIER_CHAIN = (
+    {
+        "checkpoint": "step_1192",
+        "candidate": "8810916c290583fa340691198037aaeca1301d53",
+        "result": "pass",
+    },
+    {
+        "checkpoint": "step_1193",
+        "candidate": "4a8c1d7451d11e6fc10c203b494567f40e28cd3c",
+        "result": "pass",
+    },
+    {
+        "checkpoint": "step_1194",
+        "candidate": "1164da991972b9df44b9fc873caa8dd5e76944e4",
+        "result": "pass",
+    },
+)
+APPROVED_CARRIER_COUNTS = {
+    "carrier_reasons": 6,
+    "aggregate_sequences": 1_555,
+    "lineages": 3,
+    "aggregate_rows": 4_665,
+    "signed_constructions": 8,
+    "minimum_delivery_orders_per_construction": 2,
+}
+APPROVED_CARRIER_RESULTS = (
+    {"class": "carrier_event_independence", "result": "pass"},
+    {"class": "unsupported_event_only_identity", "result": "pass"},
+    {"class": "typed_stop_cause_preservation", "result": "pass"},
+    {"class": "delivery_order_invariance", "result": "pass"},
+)
+APPROVED_WIRE_DOMAINS = (
+    {"class": "actor", "value": "nostr-crdt/automerge/actor/v1"},
+    {"class": "change_set", "value": "nostr-crdt/automerge/change-set/v1"},
+    {"class": "checkpoint_merkle", "value": "nostr-crdt/checkpoint-merkle/v1"},
+    {"class": "dispositions", "value": "nostr-crdt/automerge/dispositions/v1\0"},
+    {"class": "history", "value": "nostr-crdt/automerge/history/v1\0"},
+)
+APPROVED_CARRIER_AUTHORITY_IDENTITIES = {
+    "nip_sha256": "0dfa683aa0f4a1c7d3df010ec95901bf4ba4094ed3adaacc26e85d95aaa4ded1",
+    "companion_sha256": "a81ad7f3e5cc7e386a9313f6d5355afc1ec95757a5c9a4051ea94b79eafeceb0",
+    "api_sha256": "ce7f2992292b2f5159ff25dc555b29265fea0ec475d39fc65fc60344b76ca37a",
+    "report_contract_sha256": "9f3c13e14e12b3a8767e1de1055067856489d1a709e1f6373e1c0286b7112521",
+    "wire_domain_projection_sha256": "4f07dc65ffe3803a3217436cb4810dad6fb493b756f8a603e86f1bc11f276867",
+}
+WIRE_DOMAIN_SOURCE_BINDINGS = (
+    (
+        "crates/nostr_automerge/src/types/actor_id.rs",
+        "df6cb6f60ad9a74b64f9e1a4d8d74b1470a12745598e37d8c715a4837bef88db",
+        b"nostr-crdt/automerge/actor/v1",
+    ),
+    (
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "3c133d1ab910984a06eccb4cd2311e7329b47c262ffa75339366b18b59d23440",
+        b"nostr-crdt/automerge/change-set/v1",
+    ),
+    (
+        "crates/nostr_automerge/src/checkpoint/verify.rs",
+        "d65c5dc7dbfe11c911ea6724de32001105fba789ce3e7aa2a8edae80b56c9c26",
+        b"nostr-crdt/automerge/change-set/v1",
+    ),
+    (
+        "crates/nostr_automerge/src/checkpoint/mod.rs",
+        "b6f2c84eec205643bfe7e0f684307f605e3576a17d80bb10eda37b7c1de2c8d8",
+        b"nostr-crdt/checkpoint-merkle/v1",
+    ),
+    (
+        "crates/nostr_automerge/src/conformance/dispositions_digest.rs",
+        "74b7680ce9700170fbb49391a688143b8746f3b380adc670396d7fccc050e44b",
+        b"nostr-crdt/automerge/dispositions/v1\\0",
+    ),
+    (
+        "crates/nostr_automerge/src/conformance/history_digest.rs",
+        "b71a0d33caf2694b416019417eb058715d818de476eaa2a6078345f67cb20a4d",
+        b"nostr-crdt/automerge/history/v1\\0",
+    ),
 )
 APPROVED_CHECKPOINT_IDENTITIES = (
     ("checkpoint_lock", "b52dc6948a87ea49ae8fb1fcf8a47233e726dacb699624732bc66f54b621e8f5"),
@@ -159,19 +244,36 @@ PREDECESSOR_CANDIDATES = (
     "486ca0f4442693bb0039d502b21b8f4e9d4c87f9",
     "7ad18008b90e62b2c7dc8cfaa25980520f6921d7",
     "bdfa8695473658eb7c216004cfc56ca0656a82c5",
+    "976d6edb0349ae87d5e477e95ae6f3d7dbd89303",
+    "8810916c290583fa340691198037aaeca1301d53",
+    "4a8c1d7451d11e6fc10c203b494567f40e28cd3c",
+    "1164da991972b9df44b9fc873caa8dd5e76944e4",
 )
 CLOSURE_PATHS = frozenset(
     {
-        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "crates/nostr_automerge/tests/public_engine_api.rs",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
+        "reports/opaque_carrier_v9.json",
         "reports/spec_baseline.txt",
+        "scripts/validate_companion_specs.py",
+        "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
+        "scripts/validate_spec.py",
+        "spec/API_CONTRACTS.md",
+        "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
+        "spec/authority_transition_v10.json",
+        "spec/companion_authority_v10.json",
+        "tools/validation/opaque_carrier_v9.schema.json",
+        "tools/validation/runtime_ledger_v9.schema.json",
     }
 )
-CLOSURE_NEW_PATHS = frozenset()
+CLOSURE_NEW_PATHS = frozenset(
+    {
+        "reports/opaque_carrier_v9.json",
+        "tools/validation/opaque_carrier_v9.schema.json",
+    }
+)
 EXPECTED_GATES = (
     ("V-AUTH",),
     ("V-AUTH",),
@@ -206,6 +308,10 @@ EXPECTED_GATES = (
     ("V-RUST",),
     ("V-RUST",),
     ("V-RUST",),
+    ("V-RUST",),
+    ("V-TS",),
+    ("V-TS",),
+    ("V-TS",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -269,6 +375,17 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-DISPOSITION-006", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-DISPOSITION-006", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-DISPOSITION-006", "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-DISPOSITION-006", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    (
+        "NCRDT-DISPOSITION-006",
+        "NCRDT-INTERRUPT-001",
+        "NCRDT-RESOURCE-014",
+        "NCRDT-VERSION-002",
+        "NCRDT-CONF-010",
+        "NCRDT-EVIDENCE-006",
+    ),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -312,6 +429,10 @@ EXPECTED_FINDINGS = (
     ("FINDING_074",),
     ("FINDING_074",),
     ("FINDING_079",),
+    ("FINDING_074", "FINDING_079"),
+    ("FINDING_074",),
+    ("FINDING_079",),
+    ("FINDING_074", "FINDING_079", "FINDING_083"),
 )
 FORBIDDEN_KEY_WORDS = {
     "source",
@@ -381,6 +502,13 @@ def projection_digest(value: Any) -> str:
             separators=(",", ":"),
         ).encode("utf-8")
     ).hexdigest()
+
+
+def file_digest(relative: str) -> str:
+    try:
+        return hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()
+    except OSError as error:
+        raise LedgerError(f"file_digest:{relative}") from error
 
 
 def normalized_key_words(value: str) -> tuple[str, ...]:
@@ -598,6 +726,149 @@ def validate_opaque_checkpoint(report: dict[str, Any]) -> None:
         "checkpoint_opaque:identity",
     )
     validate_no_leak(report, "checkpoint_opaque:boundary")
+
+
+def validate_wire_domain_projection() -> None:
+    require(
+        projection_digest(list(APPROVED_WIRE_DOMAINS))
+        == APPROVED_CARRIER_AUTHORITY_IDENTITIES[
+            "wire_domain_projection_sha256"
+        ],
+        "carrier_opaque:wire_domain_projection",
+    )
+    require(
+        len(WIRE_DOMAIN_SOURCE_BINDINGS) == 6
+        and len(APPROVED_WIRE_DOMAINS) == 5,
+        "carrier_opaque:wire_domain_count",
+    )
+    for relative, expected_sha256, needle in WIRE_DOMAIN_SOURCE_BINDINGS:
+        try:
+            source = (ROOT / relative).read_bytes()
+        except OSError as error:
+            raise LedgerError(f"carrier_opaque:wire_domain_source:{relative}") from error
+        require(
+            hashlib.sha256(source).hexdigest() == expected_sha256,
+            f"carrier_opaque:wire_domain_source_identity:{relative}",
+        )
+        require(source.count(needle) >= 1, f"carrier_opaque:wire_domain:{relative}")
+
+
+def validate_opaque_carrier(report: dict[str, Any]) -> None:
+    expected_keys = (
+        "schema",
+        "checkpoint",
+        "stage",
+        "status",
+        "publication_status",
+        "candidate_chain",
+        "gate_ids",
+        "result_counts",
+        "result_classes",
+        "authority_identities",
+        "execution_class",
+        "execution_result",
+        "result_identity_sha256",
+    )
+    require(tuple(report) == expected_keys, "carrier_opaque:keys")
+    require(
+        report.get("schema") == "nostr_automerge.opaque_carrier.v9.v1",
+        "carrier_opaque:schema",
+    )
+    require(report.get("checkpoint") == "step_1194", "carrier_opaque:checkpoint")
+    require(
+        report.get("stage") == "carrier_parity_candidate",
+        "carrier_opaque:stage",
+    )
+    require(report.get("status") == "pass", "carrier_opaque:status")
+    require(report.get("publication_status") == "held", "carrier_opaque:publication")
+    require(
+        report.get("candidate_chain") == list(APPROVED_CARRIER_CHAIN),
+        "carrier_opaque:candidate_chain",
+    )
+    require(
+        all(
+            tuple(row) == ("checkpoint", "candidate", "result")
+            for row in report["candidate_chain"]
+        ),
+        "carrier_opaque:candidate_row_order",
+    )
+    require(
+        all(HEX40.fullmatch(row["candidate"]) is not None for row in APPROVED_CARRIER_CHAIN),
+        "carrier_opaque:candidate_shape",
+    )
+    require(report.get("gate_ids") == ["V-TS"], "carrier_opaque:gates")
+    require(
+        report.get("result_counts") == APPROVED_CARRIER_COUNTS,
+        "carrier_opaque:counts",
+    )
+    require(
+        tuple(report["result_counts"]) == tuple(APPROVED_CARRIER_COUNTS),
+        "carrier_opaque:count_order",
+    )
+    require(
+        report.get("result_classes") == list(APPROVED_CARRIER_RESULTS),
+        "carrier_opaque:results",
+    )
+    require(
+        all(tuple(row) == ("class", "result") for row in report["result_classes"]),
+        "carrier_opaque:result_row_order",
+    )
+    require(
+        report.get("authority_identities")
+        == APPROVED_CARRIER_AUTHORITY_IDENTITIES,
+        "carrier_opaque:authority_identities",
+    )
+    require(
+        tuple(report["authority_identities"])
+        == tuple(APPROVED_CARRIER_AUTHORITY_IDENTITIES),
+        "carrier_opaque:authority_identity_order",
+    )
+    require(
+        all(
+            isinstance(value, str) and HEX64.fullmatch(value) is not None
+            for value in APPROVED_CARRIER_AUTHORITY_IDENTITIES.values()
+        ),
+        "carrier_opaque:authority_identity_shape",
+    )
+    require(
+        file_digest("spec/NIP_DRAFT.md")
+        == APPROVED_CARRIER_AUTHORITY_IDENTITIES["nip_sha256"],
+        "carrier_opaque:nip_identity",
+    )
+    require(
+        file_digest("spec/NOSTR_AUTOMERGE_V1_SPEC.md")
+        == APPROVED_CARRIER_AUTHORITY_IDENTITIES["companion_sha256"],
+        "carrier_opaque:companion_identity",
+    )
+    require(
+        file_digest("spec/API_CONTRACTS.md")
+        == APPROVED_CARRIER_AUTHORITY_IDENTITIES["api_sha256"],
+        "carrier_opaque:api_identity",
+    )
+    require(
+        file_digest("spec/REPORT_CONTRACT.md")
+        == APPROVED_CARRIER_AUTHORITY_IDENTITIES["report_contract_sha256"],
+        "carrier_opaque:report_contract_identity",
+    )
+    validate_wire_domain_projection()
+    require(
+        report.get("execution_class") == "environment_independent",
+        "carrier_opaque:execution_class",
+    )
+    require(report.get("execution_result") == "pass", "carrier_opaque:execution_result")
+    identity = report.get("result_identity_sha256")
+    require(
+        isinstance(identity, str) and HEX64.fullmatch(identity) is not None,
+        "carrier_opaque:identity_shape",
+    )
+    projection = copy.deepcopy(report)
+    projection.pop("result_identity_sha256")
+    require(
+        projection_digest(projection) == APPROVED_CARRIER_RESULT_IDENTITY,
+        "carrier_opaque:projection",
+    )
+    require(identity == APPROVED_CARRIER_RESULT_IDENTITY, "carrier_opaque:identity")
+    validate_no_leak(report, "carrier_opaque:boundary")
 
 
 def step_number(value: Any, diagnostic: str) -> int:
@@ -878,7 +1149,11 @@ def expected_predecessor(index: int) -> dict[str, Any]:
     return {
         "step": f"step_{1158 + index}",
         "candidate": PREDECESSOR_CANDIDATES[index],
-        "owner_class": "opaque_private" if index == 8 or 20 <= index <= 26 else "public",
+        "owner_class": (
+            "opaque_private"
+            if index == 8 or 20 <= index <= 26 or 34 <= index <= 36
+            else "public"
+        ),
         "gate_ids": list(EXPECTED_GATES[index]),
         "requirement_ids": list(EXPECTED_REQUIREMENTS[index]),
         "finding_ids": list(EXPECTED_FINDINGS[index]),
@@ -902,9 +1177,10 @@ def validate_predecessors(
     active: int,
     reproduction: dict[str, Any],
     checkpoint: dict[str, Any],
+    carrier: dict[str, Any],
 ) -> None:
     require(isinstance(rows, list), "predecessors:type")
-    approved = [expected_predecessor(index) for index in range(33)]
+    approved = [expected_predecessor(index) for index in range(37)]
     require(rows == approved, "predecessors:approved_projection")
     require(active == 1158 + len(approved), "predecessors:approved_cursor")
     expected_keys = {
@@ -952,7 +1228,7 @@ def validate_predecessors(
                 reproduction["result_identity_sha256"] == APPROVED_RESULT_IDENTITY,
                 f"predecessor:{index}:opaque_result",
             )
-        else:
+        elif 20 <= index <= 26:
             checkpoint_row = checkpoint["candidate_chain"][index - 20]
             require(
                 row["step"] == checkpoint_row["checkpoint"],
@@ -965,6 +1241,20 @@ def validate_predecessors(
             require(
                 checkpoint_row["result"] == row["result"],
                 f"predecessor:{index}:checkpoint_result",
+            )
+        else:
+            carrier_row = carrier["candidate_chain"][index - 34]
+            require(
+                row["step"] == carrier_row["checkpoint"],
+                f"predecessor:{index}:carrier_step",
+            )
+            require(
+                candidate == carrier_row["candidate"],
+                f"predecessor:{index}:carrier_candidate",
+            )
+            require(
+                carrier_row["result"] == row["result"],
+                f"predecessor:{index}:carrier_result",
             )
         for field, authorized in (
             ("gate_ids", None),
@@ -1006,6 +1296,7 @@ def validate_runtime_ledger(
     reproduction: dict[str, Any],
     checkpoint: dict[str, Any],
     parity: dict[str, Any],
+    carrier: dict[str, Any],
 ) -> None:
     expected_keys = {
         "schema",
@@ -1019,6 +1310,7 @@ def validate_runtime_ledger(
         "opaque_reproduction",
         "opaque_checkpoint",
         "checkpoint_parity",
+        "opaque_carrier",
     }
     require(set(ledger) == expected_keys, "ledger:keys")
     require(ledger.get("schema") == "nostr_automerge.runtime_ledger.v9.v1", "ledger:schema")
@@ -1111,7 +1403,7 @@ def validate_runtime_ledger(
         "ledger:findings",
     )
     validate_predecessors(
-        ledger.get("predecessors"), active, reproduction, checkpoint
+        ledger.get("predecessors"), active, reproduction, checkpoint, carrier
     )
     require(
         ledger.get("opaque_reproduction")
@@ -1170,6 +1462,33 @@ def validate_runtime_ledger(
         },
         "ledger:parity_binding",
     )
+    carrier_counts = carrier["result_counts"]
+    require(
+        ledger.get("opaque_carrier")
+        == {
+            "checkpoint": carrier["checkpoint"],
+            "candidate": carrier["candidate_chain"][-1]["candidate"],
+            "candidate_count": len(carrier["candidate_chain"]),
+            "result_identity_sha256": carrier["result_identity_sha256"],
+            "result_class_count": len(carrier["result_classes"]),
+            "carrier_reason_count": carrier_counts["carrier_reasons"],
+            "aggregate_sequence_count": carrier_counts["aggregate_sequences"],
+            "lineage_count": carrier_counts["lineages"],
+            "aggregate_row_count": carrier_counts["aggregate_rows"],
+            "signed_construction_count": carrier_counts["signed_constructions"],
+            "minimum_delivery_order_count": carrier_counts[
+                "minimum_delivery_orders_per_construction"
+            ],
+            "nip_sha256": carrier["authority_identities"]["nip_sha256"],
+            "wire_domain_projection_sha256": carrier["authority_identities"][
+                "wire_domain_projection_sha256"
+            ],
+            "execution_result": carrier["execution_result"],
+            "result": carrier["status"],
+            "publication_status": carrier["publication_status"],
+        },
+        "ledger:carrier_binding",
+    )
     validate_no_leak(ledger, "ledger:boundary")
 
 
@@ -1177,6 +1496,7 @@ def mutation_self_test(
     reproduction: dict[str, Any],
     checkpoint: dict[str, Any],
     parity: dict[str, Any],
+    carrier: dict[str, Any],
     ledger: dict[str, Any],
 ) -> int:
     report_mutations: list[tuple[str, dict[str, Any]]] = []
@@ -1247,6 +1567,95 @@ def mutation_self_test(
     ).decode()
     checkpoint_mutations.append(("checkpoint_leak", checkpoint_leak))
 
+    carrier_mutations: list[tuple[str, dict[str, Any]]] = []
+    carrier_missing = copy.deepcopy(carrier)
+    carrier_missing.pop("stage")
+    carrier_mutations.append(("carrier_missing", carrier_missing))
+    carrier_extra = copy.deepcopy(carrier)
+    carrier_extra["note"] = "held"
+    carrier_mutations.append(("carrier_extra", carrier_extra))
+    carrier_key_order = copy.deepcopy(carrier)
+    carrier_key_order["schema"] = carrier_key_order.pop("schema")
+    carrier_mutations.append(("carrier_key_order", carrier_key_order))
+    carrier_order = copy.deepcopy(carrier)
+    carrier_order["candidate_chain"].reverse()
+    carrier_mutations.append(("carrier_candidate_order", carrier_order))
+    carrier_row_order = copy.deepcopy(carrier)
+    carrier_row_order["candidate_chain"][0]["checkpoint"] = carrier_row_order[
+        "candidate_chain"
+    ][0].pop("checkpoint")
+    carrier_mutations.append(("carrier_candidate_row_order", carrier_row_order))
+    carrier_duplicate = copy.deepcopy(carrier)
+    carrier_duplicate["candidate_chain"][1] = copy.deepcopy(
+        carrier_duplicate["candidate_chain"][0]
+    )
+    carrier_mutations.append(("carrier_candidate_duplicate", carrier_duplicate))
+    carrier_candidate = copy.deepcopy(carrier)
+    carrier_candidate["candidate_chain"][0]["candidate"] = "0" * 40
+    carrier_mutations.append(("carrier_candidate", carrier_candidate))
+    carrier_chain_result = copy.deepcopy(carrier)
+    carrier_chain_result["candidate_chain"][0]["result"] = "fail"
+    carrier_mutations.append(("carrier_chain_result", carrier_chain_result))
+    for key in APPROVED_CARRIER_COUNTS:
+        carrier_count = copy.deepcopy(carrier)
+        carrier_count["result_counts"][key] += 1
+        carrier_mutations.append((f"carrier_count_{key}", carrier_count))
+    carrier_count_order = copy.deepcopy(carrier)
+    carrier_count_order["result_counts"]["carrier_reasons"] = carrier_count_order[
+        "result_counts"
+    ].pop("carrier_reasons")
+    carrier_mutations.append(("carrier_count_order", carrier_count_order))
+    carrier_result_order = copy.deepcopy(carrier)
+    carrier_result_order["result_classes"].reverse()
+    carrier_mutations.append(("carrier_result_order", carrier_result_order))
+    carrier_result_row_order = copy.deepcopy(carrier)
+    carrier_result_row_order["result_classes"][0]["class"] = carrier_result_row_order[
+        "result_classes"
+    ][0].pop("class")
+    carrier_mutations.append(("carrier_result_row_order", carrier_result_row_order))
+    carrier_result_missing = copy.deepcopy(carrier)
+    carrier_result_missing["result_classes"].pop()
+    carrier_mutations.append(("carrier_result_missing", carrier_result_missing))
+    carrier_result_extra = copy.deepcopy(carrier)
+    carrier_result_extra["result_classes"].append(
+        {"class": "carrier_event_independence", "result": "pass"}
+    )
+    carrier_mutations.append(("carrier_result_extra", carrier_result_extra))
+    carrier_result = copy.deepcopy(carrier)
+    carrier_result["result_classes"][0]["result"] = "fail"
+    carrier_mutations.append(("carrier_result", carrier_result))
+    carrier_stage = copy.deepcopy(carrier)
+    carrier_stage["stage"] = "distribution_complete"
+    carrier_mutations.append(("carrier_stage", carrier_stage))
+    carrier_execution = copy.deepcopy(carrier)
+    carrier_execution["execution_result"] = "fail"
+    carrier_mutations.append(("carrier_execution", carrier_execution))
+    for key in APPROVED_CARRIER_AUTHORITY_IDENTITIES:
+        carrier_hash = copy.deepcopy(carrier)
+        carrier_hash["authority_identities"][key] = "f" * 64
+        carrier_mutations.append((f"carrier_hash_{key}", carrier_hash))
+    carrier_authority_order = copy.deepcopy(carrier)
+    carrier_authority_order["authority_identities"]["nip_sha256"] = (
+        carrier_authority_order["authority_identities"].pop("nip_sha256")
+    )
+    carrier_mutations.append(("carrier_authority_order", carrier_authority_order))
+    carrier_projection = copy.deepcopy(carrier)
+    carrier_projection["result_identity_sha256"] = "f" * 64
+    carrier_mutations.append(("carrier_projection", carrier_projection))
+    carrier_coordinated = copy.deepcopy(carrier)
+    carrier_coordinated["result_counts"]["aggregate_rows"] += 1
+    coordinated_projection = copy.deepcopy(carrier_coordinated)
+    coordinated_projection.pop("result_identity_sha256")
+    carrier_coordinated["result_identity_sha256"] = projection_digest(
+        coordinated_projection
+    )
+    carrier_mutations.append(("carrier_coordinated", carrier_coordinated))
+    carrier_leak = copy.deepcopy(carrier)
+    carrier_leak["stage"] = bytes(
+        (104, 116, 116, 112, 115, 58, 47, 47, 105, 110, 118, 97, 108, 105, 100)
+    ).decode()
+    carrier_mutations.append(("carrier_leak", carrier_leak))
+
     ledger_mutations: list[tuple[str, dict[str, Any]]] = []
     missing_predecessor = copy.deepcopy(ledger)
     missing_predecessor["predecessors"].pop()
@@ -1280,6 +1689,21 @@ def mutation_self_test(
     parity_count_drift = copy.deepcopy(ledger)
     parity_count_drift["checkpoint_parity"]["state_count"] += 1
     ledger_mutations.append(("ledger_parity_count", parity_count_drift))
+    stale_carrier = copy.deepcopy(ledger)
+    stale_carrier["predecessors"][-1]["candidate"] = "0" * 40
+    ledger_mutations.append(("ledger_stale_carrier", stale_carrier))
+    forged_carrier = copy.deepcopy(ledger)
+    forged_carrier["opaque_carrier"]["result_identity_sha256"] = "f" * 64
+    ledger_mutations.append(("ledger_forged_carrier", forged_carrier))
+    carrier_count_drift = copy.deepcopy(ledger)
+    carrier_count_drift["opaque_carrier"]["aggregate_row_count"] += 1
+    ledger_mutations.append(("ledger_carrier_count", carrier_count_drift))
+    carrier_nip_drift = copy.deepcopy(ledger)
+    carrier_nip_drift["opaque_carrier"]["nip_sha256"] = "f" * 64
+    ledger_mutations.append(("ledger_carrier_nip", carrier_nip_drift))
+    carrier_wire_drift = copy.deepcopy(ledger)
+    carrier_wire_drift["opaque_carrier"]["wire_domain_projection_sha256"] = "f" * 64
+    ledger_mutations.append(("ledger_carrier_wire", carrier_wire_drift))
     coordinated_parity = copy.deepcopy(parity)
     coordinated_parity["result_identity_sha256"] = "f" * 64
     coordinated_ledger = copy.deepcopy(ledger)
@@ -1342,9 +1766,18 @@ def mutation_self_test(
             caught += 1
             continue
         raise LedgerError(f"mutation_survived:{name}")
+    for name, mutation in carrier_mutations:
+        try:
+            validate_opaque_carrier(mutation)
+        except LedgerError:
+            caught += 1
+            continue
+        raise LedgerError(f"mutation_survived:{name}")
     for name, mutation in ledger_mutations:
         try:
-            validate_runtime_ledger(mutation, reproduction, checkpoint, parity)
+            validate_runtime_ledger(
+                mutation, reproduction, checkpoint, parity, carrier
+            )
         except LedgerError:
             caught += 1
             continue
@@ -1355,6 +1788,7 @@ def mutation_self_test(
             reproduction,
             checkpoint,
             coordinated_parity,
+            carrier,
         )
     except LedgerError:
         caught += 1
@@ -1363,39 +1797,98 @@ def mutation_self_test(
 
     report_schema = load_object(REPORT_SCHEMA)
     checkpoint_schema = load_object(CHECKPOINT_REPORT_SCHEMA)
+    carrier_schema = load_object(CARRIER_REPORT_SCHEMA)
     ledger_schema = load_object(LEDGER_SCHEMA)
     schema_mutations = []
     open_report = copy.deepcopy(report_schema)
     open_report["additionalProperties"] = True
     schema_mutations.append(
-        ("schema_open_report", open_report, checkpoint_schema, ledger_schema)
+        (
+            "schema_open_report",
+            open_report,
+            checkpoint_schema,
+            carrier_schema,
+            ledger_schema,
+        )
     )
     weak_report = copy.deepcopy(report_schema)
     weak_report["required"].pop()
     schema_mutations.append(
-        ("schema_weak_report", weak_report, checkpoint_schema, ledger_schema)
+        (
+            "schema_weak_report",
+            weak_report,
+            checkpoint_schema,
+            carrier_schema,
+            ledger_schema,
+        )
     )
     open_checkpoint = copy.deepcopy(checkpoint_schema)
     open_checkpoint["properties"]["result_counts"]["additionalProperties"] = True
     schema_mutations.append(
-        ("schema_open_checkpoint_counts", report_schema, open_checkpoint, ledger_schema)
+        (
+            "schema_open_checkpoint_counts",
+            report_schema,
+            open_checkpoint,
+            carrier_schema,
+            ledger_schema,
+        )
     )
     weak_checkpoint = copy.deepcopy(checkpoint_schema)
     weak_checkpoint["properties"]["candidate_chain"]["items"]["required"].pop()
     schema_mutations.append(
-        ("schema_weak_checkpoint_chain", report_schema, weak_checkpoint, ledger_schema)
+        (
+            "schema_weak_checkpoint_chain",
+            report_schema,
+            weak_checkpoint,
+            carrier_schema,
+            ledger_schema,
+        )
+    )
+    open_carrier = copy.deepcopy(carrier_schema)
+    open_carrier["properties"]["result_counts"]["additionalProperties"] = True
+    schema_mutations.append(
+        (
+            "schema_open_carrier_counts",
+            report_schema,
+            checkpoint_schema,
+            open_carrier,
+            ledger_schema,
+        )
+    )
+    weak_carrier = copy.deepcopy(carrier_schema)
+    weak_carrier["properties"]["candidate_chain"]["items"]["required"].pop()
+    schema_mutations.append(
+        (
+            "schema_weak_carrier_chain",
+            report_schema,
+            checkpoint_schema,
+            weak_carrier,
+            ledger_schema,
+        )
     )
     open_ledger = copy.deepcopy(ledger_schema)
     open_ledger["properties"]["predecessors"]["items"]["additionalProperties"] = True
     schema_mutations.append(
-        ("schema_open_predecessor", report_schema, checkpoint_schema, open_ledger)
+        (
+            "schema_open_predecessor",
+            report_schema,
+            checkpoint_schema,
+            carrier_schema,
+            open_ledger,
+        )
     )
     weak_ledger = copy.deepcopy(ledger_schema)
     weak_ledger["properties"]["cursor"]["required"].pop()
     schema_mutations.append(
-        ("schema_weak_cursor", report_schema, checkpoint_schema, weak_ledger)
+        (
+            "schema_weak_cursor",
+            report_schema,
+            checkpoint_schema,
+            carrier_schema,
+            weak_ledger,
+        )
     )
-    for name, first, second, third in schema_mutations:
+    for name, first, second, third, fourth in schema_mutations:
         try:
             validate_schema_contract(first, "opaque_schema", REPORT_SCHEMA_PROJECTION)
             validate_schema_contract(
@@ -1403,7 +1896,12 @@ def mutation_self_test(
                 "checkpoint_schema",
                 CHECKPOINT_REPORT_SCHEMA_PROJECTION,
             )
-            validate_schema_contract(third, "ledger_schema", LEDGER_SCHEMA_PROJECTION)
+            validate_schema_contract(
+                third,
+                "carrier_schema",
+                CARRIER_REPORT_SCHEMA_PROJECTION,
+            )
+            validate_schema_contract(fourth, "ledger_schema", LEDGER_SCHEMA_PROJECTION)
         except LedgerError:
             caught += 1
             continue
@@ -1415,6 +1913,7 @@ def main() -> int:
     reproduction = load_object(REPORT)
     checkpoint = load_object(CHECKPOINT_REPORT)
     parity = load_object(PARITY_REPORT)
+    carrier = load_object(CARRIER_REPORT)
     ledger = load_object(LEDGER)
     validate_schema_contract(
         load_object(REPORT_SCHEMA), "opaque_schema", REPORT_SCHEMA_PROJECTION
@@ -1425,12 +1924,20 @@ def main() -> int:
         CHECKPOINT_REPORT_SCHEMA_PROJECTION,
     )
     validate_schema_contract(
+        load_object(CARRIER_REPORT_SCHEMA),
+        "carrier_schema",
+        CARRIER_REPORT_SCHEMA_PROJECTION,
+    )
+    validate_schema_contract(
         load_object(LEDGER_SCHEMA), "ledger_schema", LEDGER_SCHEMA_PROJECTION
     )
     validate_opaque_reproduction(reproduction)
     validate_opaque_checkpoint(checkpoint)
-    validate_runtime_ledger(ledger, reproduction, checkpoint, parity)
-    mutations = mutation_self_test(reproduction, checkpoint, parity, ledger)
+    validate_opaque_carrier(carrier)
+    validate_runtime_ledger(ledger, reproduction, checkpoint, parity, carrier)
+    mutations = mutation_self_test(
+        reproduction, checkpoint, parity, carrier, ledger
+    )
     closure_mutations = closure_git_state_self_test()
     print("PASS: remediation-v9 runtime ledger and opaque reproduction import")
     print(f"- predecessors={len(ledger['predecessors'])}")
@@ -1438,6 +1945,8 @@ def main() -> int:
     print(f"- checkpoint_candidates={len(checkpoint['candidate_chain'])}")
     print(f"- checkpoint_identities={len(checkpoint['result_identities'])}")
     print(f"- checkpoint_parity_states={parity['comparison']['state_count']}")
+    print(f"- carrier_candidates={len(carrier['candidate_chain'])}")
+    print(f"- carrier_matrix_rows={carrier['result_counts']['aggregate_rows']}")
     print(f"- negative_mutations={mutations}")
     print(f"- closure_scope_negative_mutations={closure_mutations}")
     return 0

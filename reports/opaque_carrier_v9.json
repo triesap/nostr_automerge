@@ -1,0 +1,37 @@
+{
+  "schema": "nostr_automerge.opaque_carrier.v9.v1",
+  "checkpoint": "step_1194",
+  "stage": "carrier_parity_candidate",
+  "status": "pass",
+  "publication_status": "held",
+  "candidate_chain": [
+    {"checkpoint": "step_1192", "candidate": "8810916c290583fa340691198037aaeca1301d53", "result": "pass"},
+    {"checkpoint": "step_1193", "candidate": "4a8c1d7451d11e6fc10c203b494567f40e28cd3c", "result": "pass"},
+    {"checkpoint": "step_1194", "candidate": "1164da991972b9df44b9fc873caa8dd5e76944e4", "result": "pass"}
+  ],
+  "gate_ids": ["V-TS"],
+  "result_counts": {
+    "carrier_reasons": 6,
+    "aggregate_sequences": 1555,
+    "lineages": 3,
+    "aggregate_rows": 4665,
+    "signed_constructions": 8,
+    "minimum_delivery_orders_per_construction": 2
+  },
+  "result_classes": [
+    {"class": "carrier_event_independence", "result": "pass"},
+    {"class": "unsupported_event_only_identity", "result": "pass"},
+    {"class": "typed_stop_cause_preservation", "result": "pass"},
+    {"class": "delivery_order_invariance", "result": "pass"}
+  ],
+  "authority_identities": {
+    "nip_sha256": "0dfa683aa0f4a1c7d3df010ec95901bf4ba4094ed3adaacc26e85d95aaa4ded1",
+    "companion_sha256": "a81ad7f3e5cc7e386a9313f6d5355afc1ec95757a5c9a4051ea94b79eafeceb0",
+    "api_sha256": "ce7f2992292b2f5159ff25dc555b29265fea0ec475d39fc65fc60344b76ca37a",
+    "report_contract_sha256": "9f3c13e14e12b3a8767e1de1055067856489d1a709e1f6373e1c0286b7112521",
+    "wire_domain_projection_sha256": "4f07dc65ffe3803a3217436cb4810dad6fb493b756f8a603e86f1bc11f276867"
+  },
+  "execution_class": "environment_independent",
+  "execution_result": "pass",
+  "result_identity_sha256": "79c6ba747d8b92cdc7691eaedbf2910d7c0cb51f8330c8968c9e72f540bef286"
+}

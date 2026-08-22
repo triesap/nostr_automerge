@@ -211,9 +211,11 @@ A hash already in the selected accepted base is not a current-epoch candidate.
 Final hash disposition is reduced against the final canonical lineage: final
 accepted closure is accepted; state accepted at a canonical ancestor but pruned
 from the final lineage is excluded; otherwise unresolved claims are pending,
-noncanonical valid claims are excluded, all-unsupported claims are unsupported,
-and remaining conclusive failures are invalid. Every attributable validated
-change carrier yields exactly one represented hash outcome.
+noncanonical valid claims are excluded, and remaining conclusive failures are
+invalid. Every verified semantic change yields exactly one represented hash
+outcome. An unsupported carrier whose canonical change bytes and computed hash
+were not verified remains Event-only evidence and does not enter semantic hash
+reduction.
 
 ### Prior epoch knowledge
 
@@ -275,9 +277,11 @@ reason. For every target `ChangeHash`, apply the first matching rule:
 3. any genuinely unresolved claim or selected-epoch dependency is `pending`;
 4. any otherwise-valid noncanonical or current-branch excluded result is
    `excluded`;
-5. a nonempty set containing only unsupported claims is
-   `unsupported_revision`;
-6. every remaining conclusive known-v1 failure is `invalid`.
+5. every remaining conclusive known-v1 failure is `invalid`.
+
+An unsupported carrier without verified canonical change bytes and a computed
+hash has only its independent Event outcome. Its unverified `x` tag does not
+enter this semantic reducer or create a `ChangeHash` disposition.
 
 Accepted state cannot be poisoned, and canonical pruning outranks a later
 pending duplicate.
@@ -361,10 +365,12 @@ invalid, and a terminal control authorizes no change.
 Reduce each target `ChangeHash` by the first matching rule: final accepted
 closure is `accepted`; a canonical ancestor accepted then pruned is `excluded`;
 any genuinely unresolved claim is `pending`; an otherwise-valid noncanonical
-or current-branch-excluded claim is `excluded`; a nonempty claim set containing
-only unsupported carriers is `unsupported_revision`; every remaining conclusive
+or current-branch-excluded claim is `excluded`; every remaining conclusive
 failure is `invalid`. Accepted and canonical-pruned lineage outrank later
 duplicate claims, while pending outranks noncanonical and conclusive failures.
+An unsupported carrier whose canonical bytes and computed hash were not
+verified remains solely in the Event layer and supplies no semantic reducer
+input.
 
 ### Complete dependency knowledge
 
