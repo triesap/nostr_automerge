@@ -1,0 +1,62 @@
+{
+  "schema": "nostr_automerge.carrier_gate.v9.v1",
+  "checkpoint": "step_1196",
+  "gate_id": "GATE_V9_CARRIER",
+  "authority_stage": "checkpoint_expectations_corrected",
+  "status": "pass",
+  "publication_status": "held",
+  "requirement_ids": [
+    "NCRDT-DISPOSITION-006",
+    "NCRDT-INTERRUPT-001",
+    "NCRDT-RESOURCE-014",
+    "NCRDT-VERSION-002",
+    "NCRDT-CONF-010",
+    "NCRDT-EVIDENCE-006"
+  ],
+  "public_predecessor": {
+    "checkpoint": "step_1195",
+    "candidate": "97ae7bf137807c9771dd6f9577ff8bcdd6dcc28b",
+    "parent": "976d6edb0349ae87d5e477e95ae6f3d7dbd89303",
+    "scope_entry_count": 15,
+    "scope_identity_sha256": "9d7a285d9e9f9fc3b6c566aa6bd776030df8f2ee078d0e254c696446a462f0fd"
+  },
+  "imported_carrier_identity_sha256": "79c6ba747d8b92cdc7691eaedbf2910d7c0cb51f8330c8968c9e72f540bef286",
+  "public_matrix": {
+    "carrier_reason_count": 6,
+    "aggregate_sequence_count": 1555,
+    "lineage_count": 3,
+    "aggregate_row_count": 4665,
+    "focused_check_count": 5,
+    "result_identity_sha256": "ba63fea0d4d7cb6f29543f1990308b1b1a7b747fc9ee98943cd4d0e65666815e"
+  },
+  "conformance": {
+    "candidate": "976d6edb0349ae87d5e477e95ae6f3d7dbd89303",
+    "signed_scenario_count": 180,
+    "process_count": 2,
+    "delivery_order_count": 8,
+    "canonical_process_bytes": "identical",
+    "manifest_sha256": "7b4ab5d2146939d142eb92d43060ef2183c95d1fc574132894b3c01c874c7c56",
+    "canonical_output_sha256": "84f370b201945c844396406acfb022faa2bdadb32d96206511474a00218770cb",
+    "distribution_run_sha256": "74b24f58fe9c20da082dd9ae4c1b344e8468c00a70dbd710adf724ab70ed14c4",
+    "result": "pass"
+  },
+  "regressions": {
+    "fixed_count": 4,
+    "open_count": 8,
+    "result": "pass"
+  },
+  "authority_identities": {
+    "nip_sha256": "0dfa683aa0f4a1c7d3df010ec95901bf4ba4094ed3adaacc26e85d95aaa4ded1",
+    "requirements_sha256": "f6e6070de7a5fc707f8488ced3a031f7dfc36d11c7477d800c3d3c33d532e6ba",
+    "applicability_sha256": "c5380b7fe4e16f7a750ee0b48b64bc7e4c29fd5851f34125980e4413f7d55712",
+    "wire_domain_projection_sha256": "4f07dc65ffe3803a3217436cb4810dad6fb493b756f8a603e86f1bc11f276867"
+  },
+  "result_classes": [
+    {"class": "public_focused", "result": "pass"},
+    {"class": "opaque_compatibility", "result": "pass"},
+    {"class": "conformance_two_process", "result": "pass"},
+    {"class": "report_validation", "result": "pass"},
+    {"class": "full_public", "result": "pass"}
+  ],
+  "result_identity_sha256": "c1ca1069632a7145ab163fc6279fb94fd554781acf992450e9a1f8a26e93176d"
+}

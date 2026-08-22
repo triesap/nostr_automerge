@@ -1,0 +1,114 @@
+{
+  "title": "nostr_automerge carrier gate v9",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "checkpoint", "gate_id", "authority_stage", "status",
+    "publication_status", "requirement_ids", "public_predecessor",
+    "imported_carrier_identity_sha256", "public_matrix", "conformance",
+    "regressions", "authority_identities", "result_classes",
+    "result_identity_sha256"
+  ],
+  "properties": {
+    "schema": {"const": "nostr_automerge.carrier_gate.v9.v1"},
+    "checkpoint": {"const": "step_1196"},
+    "gate_id": {"const": "GATE_V9_CARRIER"},
+    "authority_stage": {"const": "checkpoint_expectations_corrected"},
+    "status": {"const": "pass"},
+    "publication_status": {"const": "held"},
+    "requirement_ids": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^NCRDT-[A-Z0-9]+(?:-[A-Z0-9]+)*$"}
+    },
+    "public_predecessor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checkpoint", "candidate", "parent", "scope_entry_count", "scope_identity_sha256"],
+      "properties": {
+        "checkpoint": {"const": "step_1195"},
+        "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "parent": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "scope_entry_count": {"const": 15},
+        "scope_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "imported_carrier_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "public_matrix": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "carrier_reason_count", "aggregate_sequence_count", "lineage_count",
+        "aggregate_row_count", "focused_check_count", "result_identity_sha256"
+      ],
+      "properties": {
+        "carrier_reason_count": {"const": 6},
+        "aggregate_sequence_count": {"const": 1555},
+        "lineage_count": {"const": 3},
+        "aggregate_row_count": {"const": 4665},
+        "focused_check_count": {"const": 5},
+        "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "conformance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate", "signed_scenario_count", "process_count",
+        "delivery_order_count", "canonical_process_bytes",
+        "manifest_sha256", "canonical_output_sha256", "distribution_run_sha256",
+        "result"
+      ],
+      "properties": {
+        "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "signed_scenario_count": {"const": 180},
+        "process_count": {"const": 2},
+        "delivery_order_count": {"const": 8},
+        "canonical_process_bytes": {"const": "identical"},
+        "manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "canonical_output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "distribution_run_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "result": {"const": "pass"}
+      }
+    },
+    "regressions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fixed_count", "open_count", "result"],
+      "properties": {
+        "fixed_count": {"const": 4},
+        "open_count": {"const": 8},
+        "result": {"const": "pass"}
+      }
+    },
+    "authority_identities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nip_sha256", "requirements_sha256", "applicability_sha256", "wire_domain_projection_sha256"],
+      "properties": {
+        "nip_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "requirements_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "applicability_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "wire_domain_projection_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "result_classes": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["class", "result"],
+        "properties": {
+          "class": {"enum": ["public_focused", "opaque_compatibility", "conformance_two_process", "report_validation", "full_public"]},
+          "result": {"const": "pass"}
+        }
+      }
+    },
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

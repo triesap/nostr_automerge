@@ -14,7 +14,8 @@
     "opaque_reproduction",
     "opaque_checkpoint",
     "checkpoint_parity",
-    "opaque_carrier"
+    "opaque_carrier",
+    "carrier_gate"
   ],
   "properties": {
     "schema": {"const": "nostr_automerge.runtime_ledger.v9.v1"},
@@ -234,6 +235,31 @@
         "nip_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "wire_domain_projection_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "execution_result": {"const": "pass"},
+        "result": {"const": "pass"},
+        "publication_status": {"const": "held"}
+      }
+    },
+    "carrier_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpoint", "gate_id", "public_candidate",
+        "public_scope_identity_sha256", "opaque_result_identity_sha256",
+        "public_matrix_identity_sha256", "signed_scenario_count",
+        "fixed_regression_count", "open_regression_count",
+        "result_identity_sha256", "result", "publication_status"
+      ],
+      "properties": {
+        "checkpoint": {"const": "step_1196"},
+        "gate_id": {"const": "GATE_V9_CARRIER"},
+        "public_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "public_scope_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "opaque_result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "public_matrix_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "signed_scenario_count": {"const": 180},
+        "fixed_regression_count": {"const": 4},
+        "open_regression_count": {"const": 8},
+        "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "result": {"const": "pass"},
         "publication_status": {"const": "held"}
       }

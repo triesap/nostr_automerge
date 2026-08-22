@@ -2,7 +2,7 @@
 
 Status: `in_progress`
 
-RCLD 84 has 37 committed predecessors through `step_1194`. The opaque
+RCLD 84 has 38 committed predecessors through `step_1195`. The opaque
 compatibility checkpoint is bound by one approved 40-character candidate and
 one canonical 64-character result identity. Its public projection records nine
 findings, 23 expected-failure reproductions, 276 negative mutations, one
@@ -30,6 +30,13 @@ identity, preserve typed stop causes, and remain delivery-order invariant. The
 same closed record pins the unchanged NIP snapshot and ordered wire-domain
 projection together with the reconciled companion and API identities.
 
+The carrier-gate closure binds the exact public `step_1195` candidate and its
+15-entry scope projection to the imported carrier result, the 4,665-row public
+matrix, the 180-scenario two-process conformance projection, four fixed and
+eight open Rust regressions, and the unchanged authority identities. Its five
+ordered result classes cover focused public behavior, opaque compatibility,
+conformance, report validation, and the full public gate.
+
 | Checkpoint range | Lane | Result |
 | --- | --- | --- |
 | `step_1158`–`step_1163` | `V-AUTH` | pass |
@@ -55,8 +62,9 @@ projection together with the reconciled companion and API identities.
 | `step_1190` | `V-RUST` | pass |
 | `step_1191` | `V-RUST` | pass |
 | `step_1192`–`step_1194` | `V-TS` | pass |
-| `step_1195` | `V-EVIDENCE` | active |
-| `step_1196` | `V-FULL-RUST` | next |
+| `step_1195` | `V-EVIDENCE` | pass |
+| `step_1196` | `V-FULL-RUST` | active |
+| `step_1197` | `V-REPORT` | next |
 
 The authority projection is monotonic from `checkpoint_expectations_corrected` to
 `distribution_complete`. It records 148 requirements now and at completion,
@@ -71,9 +79,16 @@ fixtures, 20 reproduced findings, and one held finding. The enabled
 conformance corpus, transition validators, and full public gates close
 `GATE_V9_RUST_CHECKPOINT` at `step_1177`. The seven opaque checkpoint
 candidates and their two public parity checkpoints close through `step_1186`;
-the public carrier matrix and three opaque private candidates close through
-`step_1194`; `step_1195` is active, and 89
-checkpoints including the active checkpoint remain through `step_1283`.
+the public carrier matrix, three opaque private candidates, and the public
+evidence import close through `step_1195`; `GATE_V9_CARRIER` closes at
+`step_1196` against source candidate
+`976d6edb0349ae87d5e477e95ae6f3d7dbd89303` and two byte-identical current
+distribution runs (`84f370b201945c844396406acfb022faa2bdadb32d96206511474a00218770cb`
+canonical output and
+`74b24f58fe9c20da082dd9ae4c1b344e8468c00a70dbd710adf724ab70ed14c4`
+serialized output). The earlier signed-v9 conformance report remains an
+immutable historical record and is not the carrier closure authority. There are 88
+checkpoints including the active checkpoint remaining through `step_1283`.
 
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,

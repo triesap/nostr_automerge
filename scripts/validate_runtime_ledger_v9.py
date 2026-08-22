@@ -21,6 +21,7 @@ CHECKPOINT_REPORT_SCHEMA = "tools/validation/opaque_checkpoint_v9.schema.json"
 PARITY_REPORT = "reports/checkpoint_parity_v9.json"
 CARRIER_REPORT = "reports/opaque_carrier_v9.json"
 CARRIER_REPORT_SCHEMA = "tools/validation/opaque_carrier_v9.schema.json"
+CARRIER_GATE_REPORT = "reports/carrier_gate_v9.json"
 LEDGER = "implementation/runtime_ledger_v9.json"
 LEDGER_SCHEMA = "tools/validation/runtime_ledger_v9.schema.json"
 PLAN = "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md"
@@ -32,7 +33,7 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "f0c5a479a63c19a6f211887787d74019f066ae70de4ed9247fbf073edf7b0f99"
+    "a64b8e2cf77294a64fb4f70c9662ae5a6b02f7ba8e83c9cc842fd515145c4d87"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
@@ -48,6 +49,9 @@ CARRIER_REPORT_SCHEMA_PROJECTION = (
 )
 APPROVED_CARRIER_RESULT_IDENTITY = (
     "79c6ba747d8b92cdc7691eaedbf2910d7c0cb51f8330c8968c9e72f540bef286"
+)
+APPROVED_CARRIER_GATE_RESULT_IDENTITY = (
+    "c1ca1069632a7145ab163fc6279fb94fd554781acf992450e9a1f8a26e93176d"
 )
 APPROVED_CARRIER_CHAIN = (
     {
@@ -248,30 +252,30 @@ PREDECESSOR_CANDIDATES = (
     "8810916c290583fa340691198037aaeca1301d53",
     "4a8c1d7451d11e6fc10c203b494567f40e28cd3c",
     "1164da991972b9df44b9fc873caa8dd5e76944e4",
+    "97ae7bf137807c9771dd6f9577ff8bcdd6dcc28b",
 )
 CLOSURE_PATHS = frozenset(
     {
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
-        "reports/opaque_carrier_v9.json",
+        "reports/carrier_gate_v9.json",
         "reports/spec_baseline.txt",
-        "scripts/validate_companion_specs.py",
+        "scripts/validate_carrier_gate_v9.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
+        "scripts/validate_rust_conformance_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
         "scripts/validate_spec.py",
-        "spec/API_CONTRACTS.md",
-        "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
-        "spec/authority_transition_v10.json",
-        "spec/companion_authority_v10.json",
-        "tools/validation/opaque_carrier_v9.schema.json",
+        "tools/nostr_automerge_xtask/src/validate.rs",
+        "tools/validation/carrier_gate_v9.schema.json",
         "tools/validation/runtime_ledger_v9.schema.json",
     }
 )
 CLOSURE_NEW_PATHS = frozenset(
     {
-        "reports/opaque_carrier_v9.json",
-        "tools/validation/opaque_carrier_v9.schema.json",
+        "reports/carrier_gate_v9.json",
+        "scripts/validate_carrier_gate_v9.py",
+        "tools/validation/carrier_gate_v9.schema.json",
     }
 )
 EXPECTED_GATES = (
@@ -312,6 +316,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-TS",),
     ("V-TS",),
+    ("V-EVIDENCE",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -386,6 +391,14 @@ EXPECTED_REQUIREMENTS = (
         "NCRDT-CONF-010",
         "NCRDT-EVIDENCE-006",
     ),
+    (
+        "NCRDT-DISPOSITION-006",
+        "NCRDT-INTERRUPT-001",
+        "NCRDT-RESOURCE-014",
+        "NCRDT-VERSION-002",
+        "NCRDT-CONF-010",
+        "NCRDT-EVIDENCE-006",
+    ),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -432,6 +445,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_074", "FINDING_079"),
     ("FINDING_074",),
     ("FINDING_079",),
+    ("FINDING_074", "FINDING_079", "FINDING_083"),
     ("FINDING_074", "FINDING_079", "FINDING_083"),
 )
 FORBIDDEN_KEY_WORDS = {
@@ -1180,7 +1194,7 @@ def validate_predecessors(
     carrier: dict[str, Any],
 ) -> None:
     require(isinstance(rows, list), "predecessors:type")
-    approved = [expected_predecessor(index) for index in range(37)]
+    approved = [expected_predecessor(index) for index in range(38)]
     require(rows == approved, "predecessors:approved_projection")
     require(active == 1158 + len(approved), "predecessors:approved_cursor")
     expected_keys = {
@@ -1297,6 +1311,7 @@ def validate_runtime_ledger(
     checkpoint: dict[str, Any],
     parity: dict[str, Any],
     carrier: dict[str, Any],
+    carrier_gate: dict[str, Any],
 ) -> None:
     expected_keys = {
         "schema",
@@ -1311,6 +1326,7 @@ def validate_runtime_ledger(
         "opaque_checkpoint",
         "checkpoint_parity",
         "opaque_carrier",
+        "carrier_gate",
     }
     require(set(ledger) == expected_keys, "ledger:keys")
     require(ledger.get("schema") == "nostr_automerge.runtime_ledger.v9.v1", "ledger:schema")
@@ -1489,6 +1505,37 @@ def validate_runtime_ledger(
         },
         "ledger:carrier_binding",
     )
+    require(
+        carrier_gate.get("result_identity_sha256")
+        == APPROVED_CARRIER_GATE_RESULT_IDENTITY,
+        "ledger:carrier_gate_result_identity",
+    )
+    require(
+        ledger.get("carrier_gate")
+        == {
+            "checkpoint": carrier_gate["checkpoint"],
+            "gate_id": carrier_gate["gate_id"],
+            "public_candidate": carrier_gate["public_predecessor"]["candidate"],
+            "public_scope_identity_sha256": carrier_gate["public_predecessor"][
+                "scope_identity_sha256"
+            ],
+            "opaque_result_identity_sha256": carrier_gate[
+                "imported_carrier_identity_sha256"
+            ],
+            "public_matrix_identity_sha256": carrier_gate["public_matrix"][
+                "result_identity_sha256"
+            ],
+            "signed_scenario_count": carrier_gate["conformance"][
+                "signed_scenario_count"
+            ],
+            "fixed_regression_count": carrier_gate["regressions"]["fixed_count"],
+            "open_regression_count": carrier_gate["regressions"]["open_count"],
+            "result_identity_sha256": carrier_gate["result_identity_sha256"],
+            "result": carrier_gate["status"],
+            "publication_status": carrier_gate["publication_status"],
+        },
+        "ledger:carrier_gate_binding",
+    )
     validate_no_leak(ledger, "ledger:boundary")
 
 
@@ -1497,6 +1544,7 @@ def mutation_self_test(
     checkpoint: dict[str, Any],
     parity: dict[str, Any],
     carrier: dict[str, Any],
+    carrier_gate: dict[str, Any],
     ledger: dict[str, Any],
 ) -> int:
     report_mutations: list[tuple[str, dict[str, Any]]] = []
@@ -1704,6 +1752,15 @@ def mutation_self_test(
     carrier_wire_drift = copy.deepcopy(ledger)
     carrier_wire_drift["opaque_carrier"]["wire_domain_projection_sha256"] = "f" * 64
     ledger_mutations.append(("ledger_carrier_wire", carrier_wire_drift))
+    forged_carrier_gate = copy.deepcopy(ledger)
+    forged_carrier_gate["carrier_gate"]["result_identity_sha256"] = "f" * 64
+    ledger_mutations.append(("ledger_forged_carrier_gate", forged_carrier_gate))
+    stale_carrier_scope = copy.deepcopy(ledger)
+    stale_carrier_scope["carrier_gate"]["public_scope_identity_sha256"] = "f" * 64
+    ledger_mutations.append(("ledger_carrier_scope", stale_carrier_scope))
+    stale_carrier_public = copy.deepcopy(ledger)
+    stale_carrier_public["carrier_gate"]["public_candidate"] = "0" * 40
+    ledger_mutations.append(("ledger_carrier_public", stale_carrier_public))
     coordinated_parity = copy.deepcopy(parity)
     coordinated_parity["result_identity_sha256"] = "f" * 64
     coordinated_ledger = copy.deepcopy(ledger)
@@ -1776,7 +1833,7 @@ def mutation_self_test(
     for name, mutation in ledger_mutations:
         try:
             validate_runtime_ledger(
-                mutation, reproduction, checkpoint, parity, carrier
+                mutation, reproduction, checkpoint, parity, carrier, carrier_gate
             )
         except LedgerError:
             caught += 1
@@ -1789,6 +1846,7 @@ def mutation_self_test(
             checkpoint,
             coordinated_parity,
             carrier,
+            carrier_gate,
         )
     except LedgerError:
         caught += 1
@@ -1914,6 +1972,7 @@ def main() -> int:
     checkpoint = load_object(CHECKPOINT_REPORT)
     parity = load_object(PARITY_REPORT)
     carrier = load_object(CARRIER_REPORT)
+    carrier_gate = load_object(CARRIER_GATE_REPORT)
     ledger = load_object(LEDGER)
     validate_schema_contract(
         load_object(REPORT_SCHEMA), "opaque_schema", REPORT_SCHEMA_PROJECTION
@@ -1934,9 +1993,11 @@ def main() -> int:
     validate_opaque_reproduction(reproduction)
     validate_opaque_checkpoint(checkpoint)
     validate_opaque_carrier(carrier)
-    validate_runtime_ledger(ledger, reproduction, checkpoint, parity, carrier)
+    validate_runtime_ledger(
+        ledger, reproduction, checkpoint, parity, carrier, carrier_gate
+    )
     mutations = mutation_self_test(
-        reproduction, checkpoint, parity, carrier, ledger
+        reproduction, checkpoint, parity, carrier, carrier_gate, ledger
     )
     closure_mutations = closure_git_state_self_test()
     print("PASS: remediation-v9 runtime ledger and opaque reproduction import")
@@ -1947,6 +2008,7 @@ def main() -> int:
     print(f"- checkpoint_parity_states={parity['comparison']['state_count']}")
     print(f"- carrier_candidates={len(carrier['candidate_chain'])}")
     print(f"- carrier_matrix_rows={carrier['result_counts']['aggregate_rows']}")
+    print(f"- carrier_gate_identity={carrier_gate['result_identity_sha256']}")
     print(f"- negative_mutations={mutations}")
     print(f"- closure_scope_negative_mutations={closure_mutations}")
     return 0

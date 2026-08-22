@@ -36,20 +36,32 @@ JSON_RECORDS = (
     "reports/opaque_reproduction_v9.json",
     "reports/opaque_checkpoint_v9.json",
     "reports/opaque_carrier_v9.json",
+    "reports/carrier_gate_v9.json",
     "reports/checkpoint_parity_v9.json",
     "implementation/runtime_ledger_v9.json",
     "tools/validation/opaque_reproduction_v9.schema.json",
     "tools/validation/opaque_checkpoint_v9.schema.json",
     "tools/validation/opaque_carrier_v9.schema.json",
+    "tools/validation/carrier_gate_v9.schema.json",
     "tools/validation/checkpoint_parity_v9.schema.json",
     "tools/validation/runtime_ledger_v9.schema.json",
 )
 TEXT_RECORDS = ("docs/execution/remediation_v9/ledger.md",)
+LEGITIMATE_PUBLIC_COMMANDS = frozenset(
+    {
+        "cargo run --quiet -p nostr_automerge_conformance --locked -- run_distribution fixtures/distribution/manifest_v9.json",
+        "git",
+        "python3 scripts/validate_rust_conformance_v9.py",
+        "run_distribution fixtures/distribution/manifest_v9.json",
+    }
+)
 PYTHON_SURFACES = (
     "scripts/validate_companion_specs.py",
     "scripts/validate_checkpoint_parity_v9.py",
+    "scripts/validate_carrier_gate_v9.py",
     "scripts/validate_runtime_ledger_v9.py",
     "scripts/validate_private_reproduction_boundary_v9.py",
+    "scripts/validate_rust_conformance_v9.py",
     "scripts/validate_spec.py",
 )
 OTHER_SURFACES = (
@@ -81,6 +93,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "docs/provenance",
         "fixtures/v1_draft/scenarios/checkpoint",
         "fixtures/v1_draft/scenarios/checkpoints",
+        "fixtures/distribution/manifest_v9.json",
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_invalid_control.expected.json",
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_invalid_control.fixture.json",
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_invalid_control.input.json",
@@ -93,23 +106,28 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_kind_control.expected.json",
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_kind_control.fixture.json",
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_kind_control.input.json",
+        "fixtures/v1_draft",
         "fixtures/README.md",
         "fixtures/examples",
         "fixtures/schema",
         "implementation/runtime_ledger_v9.json",
         "reports/checkpoint_parity_v9.json",
+        "reports/carrier_gate_v9.json",
         "reports/opaque_checkpoint_v9.json",
         "reports/opaque_carrier_v9.json",
         "reports/opaque_reproduction_v9.json",
+        "reports/rust_conformance_v9.json",
         "reports/spec_baseline.txt",
         "scripts/validate_architecture.py",
         "scripts/validate_authority_transition_v10.py",
         "scripts/validate_checkpoint_parity_v9.py",
+        "scripts/validate_carrier_gate_v9.py",
         "scripts/validate_companion_specs.py",
         "scripts/validate_diagnostics.py",
         "scripts/validate_fixtures.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_protocol_revision.py",
+        "scripts/validate_rust_conformance_v9.py",
         "scripts/reproduce_remediation_v9.py",
         "scripts/validate_remediation_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
@@ -125,8 +143,11 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "spec/draft_limits.md",
         "spec/remediation_findings_v9.json",
         "spec/requirements.json",
+        "spec/requirements_applicability.json",
         "tools/nostr_automerge_xtask/src/validate.rs",
+        "tools/nostr_automerge_conformance",
         "tools/validation/checkpoint_parity_v9.schema.json",
+        "tools/validation/carrier_gate_v9.schema.json",
         "tools/validation/opaque_reproduction_v9.schema.json",
         "tools/validation/opaque_checkpoint_v9.schema.json",
         "tools/validation/opaque_carrier_v9.schema.json",
@@ -172,7 +193,7 @@ def validate_source_literal(
 
 
 def is_public_route(value: str) -> bool:
-    return value in LEGITIMATE_PUBLIC_ROUTES or value in {
+    return value in LEGITIMATE_PUBLIC_ROUTES or value in LEGITIMATE_PUBLIC_COMMANDS or value in {
         row["value"] for row in APPROVED_WIRE_DOMAINS
     }
 
@@ -319,11 +340,22 @@ def validate_source_surfaces() -> None:
                 value,
                 f"source:{relative}:{index}",
                 allow_command_token=(
-                    (value == "git" and relative == "scripts/validate_runtime_ledger_v9.py")
+                    (
+                        value == "git"
+                        and relative
+                        in {
+                            "scripts/validate_carrier_gate_v9.py",
+                            "scripts/validate_runtime_ledger_v9.py",
+                        }
+                    )
                     or (
-                        value in {"git", "python3"}
+                        value in {"git", "python3"} | LEGITIMATE_PUBLIC_COMMANDS
                         and relative
                         == "scripts/validate_private_reproduction_boundary_v9.py"
+                    )
+                    or (
+                        value in LEGITIMATE_PUBLIC_COMMANDS
+                        and relative == "scripts/validate_rust_conformance_v9.py"
                     )
                 ),
             )
