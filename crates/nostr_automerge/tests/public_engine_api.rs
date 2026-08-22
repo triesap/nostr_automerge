@@ -12,11 +12,11 @@ use nostr_automerge::authoring::{ActorState, AuthoringDocument, Operation, Unsig
 use nostr_automerge::{
     ActorId, CancellationCheck, ChangeHash, CheckpointVerificationStatus, ChunkHash, Completion,
     CorpusBuilder, DocumentCoordinate, EvaluationError, EvaluationFailure, EvaluationReport,
-    EventId, EvidenceCorpus, EvidenceStatus, IngestOutcome, ManifestControlStatus,
-    ManifestPendingReason, MaterializedPathElement, MaterializedScalar, MaterializedValue,
-    NeverCancelled, ProtocolDisposition, ProtocolItemIdentifier, ProtocolRevision, RawEventBytes,
-    ReferenceEvaluator, ResolvedManifestAvailability, VerifiedNip01Event, WorkBudget, WorkCounter,
-    WorkCounters,
+    EventId, EvidenceCorpus, EvidenceIdentifier, EvidenceStatus, IngestOutcome,
+    ManifestControlStatus, ManifestPendingReason, MaterializedPathElement, MaterializedScalar,
+    MaterializedValue, NeverCancelled, ProtocolDisposition, ProtocolItemIdentifier,
+    ProtocolRevision, RawEventBytes, ReferenceEvaluator, ResolvedManifestAvailability,
+    VerifiedNip01Event, WorkBudget, WorkCounter, WorkCounters,
 };
 use sha2::{Digest as _, Sha256};
 use support::test_signer::TestSigner;
@@ -8606,6 +8606,73 @@ fn finding_074_invalid_carrier_is_independent_of_excluded_hash() {
         Some(ProtocolDisposition::Invalid),
         "FINDING_074 regression: a known-invalid carrier must remain invalid when its semantic hash is excluded"
     );
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn finding_079_unsupported_carrier_does_not_create_semantic_hash_state() {
+    let scenario = signed_engine_scenario();
+    let device = TestSigner::from_byte(21);
+    let unsupported = device.sign(
+        &UnsignedEventDraft::new(
+            2,
+            1_626,
+            vec![
+                vec!["a".to_owned(), scenario.coordinate.to_address()],
+                vec!["e".to_owned(), scenario.control_id.to_hex()],
+                vec!["x".to_owned(), scenario.change_hash.to_hex()],
+            ],
+            r#"{"v":2}"#.to_owned(),
+        )
+        .expect("unsupported carrier draft")
+        .prepare(device.public_key())
+        .expect("unsupported carrier preimage"),
+    );
+    let unsupported_id = VerifiedNip01Event::verify(unsupported.clone())
+        .expect("signed unsupported carrier")
+        .event_id();
+    let mut builder = CorpusBuilder::new();
+    assert!(matches!(
+        builder.ingest(scenario.control),
+        IngestOutcome::Accepted { .. }
+    ));
+    assert!(matches!(
+        builder.ingest(unsupported),
+        IngestOutcome::UnsupportedRevision { event_id, diagnostic }
+            if event_id == unsupported_id && diagnostic.as_str() == "carrier.revision"
+    ));
+    let corpus = builder.finish();
+    assert!(corpus.change_hashes().next().is_none());
+    assert!(corpus.records().any(|record| {
+        record.identifier() == EvidenceIdentifier::Event(unsupported_id)
+            && record.status() == EvidenceStatus::Unsupported
+            && record
+                .diagnostic()
+                .is_some_and(|diagnostic| diagnostic.as_str() == "carrier.revision")
+    }));
+
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+        &corpus,
+        scenario.coordinate,
+        &mut WorkBudget::new(2_000_000, 2_000_000),
+        &NeverCancelled,
+    );
+    assert_eq!(
+        event_disposition(&report, unsupported_id),
+        Some(ProtocolDisposition::UnsupportedRevision)
+    );
+    assert_eq!(
+        event_diagnostic(&report, unsupported_id),
+        Some("carrier.revision")
+    );
+    assert!(report.dispositions().is_empty());
+    assert!(report.disposition_records().iter().all(|record| {
+        record.identifier() != ProtocolItemIdentifier::ChangeHash(scenario.change_hash)
+    }));
+    assert!(report.accepted_changes().is_empty());
+    assert!(report.pending_changes().is_empty());
+    assert!(report.excluded_changes().is_empty());
+    assert!(report.heads().is_empty());
 }
 
 #[test]

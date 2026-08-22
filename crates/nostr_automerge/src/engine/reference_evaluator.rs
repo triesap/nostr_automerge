@@ -655,11 +655,6 @@ enum ChangeClaimReason {
     AuthorizedCurrentExcluded,
     InvalidReferencedControl,
     Unauthorized,
-    #[allow(
-        dead_code,
-        reason = "unsupported-only semantic identity remains a staged aggregate input"
-    )]
-    UnsupportedCarrier,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -668,7 +663,6 @@ enum AggregateChangeContribution {
     Unresolved,
     AuthorizedExcluded,
     ConclusiveInvalid,
-    UnsupportedCarrier,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -706,7 +700,6 @@ const fn change_carrier_disposition(reason: ChangeClaimReason) -> ProtocolDispos
         ChangeClaimReason::InvalidReferencedControl | ChangeClaimReason::Unauthorized => {
             ProtocolDisposition::Invalid
         }
-        ChangeClaimReason::UnsupportedCarrier => ProtocolDisposition::UnsupportedRevision,
     }
 }
 
@@ -721,7 +714,6 @@ const fn aggregate_change_contribution(reason: ChangeClaimReason) -> AggregateCh
         ChangeClaimReason::InvalidReferencedControl | ChangeClaimReason::Unauthorized => {
             AggregateChangeContribution::ConclusiveInvalid
         }
-        ChangeClaimReason::UnsupportedCarrier => AggregateChangeContribution::UnsupportedCarrier,
     }
 }
 
@@ -730,7 +722,6 @@ impl ChangeClaimReason {
         let code = match self {
             Self::InvalidReferencedControl => "control.parent",
             Self::Unauthorized => "change.actor",
-            Self::UnsupportedCarrier => "carrier.revision",
             Self::AuthorizedCanonical
             | Self::UnresolvedControl
             | Self::AuthorizedNoncanonical
@@ -898,12 +889,6 @@ fn reduce_aggregate_change_outcome(
         ProtocolDisposition::Pending
     } else if contributions.contains(&AggregateChangeContribution::AuthorizedExcluded) {
         ProtocolDisposition::Excluded
-    } else if !contributions.is_empty()
-        && contributions
-            .iter()
-            .all(|state| *state == AggregateChangeContribution::UnsupportedCarrier)
-    {
-        ProtocolDisposition::UnsupportedRevision
     } else {
         ProtocolDisposition::Invalid
     }
@@ -3455,12 +3440,8 @@ mod tests {
 
     #[test]
     fn aggregate_change_outcome_uses_final_precedence() {
-        use crate::ProtocolDisposition::{
-            Accepted, Excluded, Invalid, Pending, UnsupportedRevision,
-        };
-        use AggregateChangeContribution::{
-            AuthorizedExcluded, ConclusiveInvalid, Unresolved, UnsupportedCarrier,
-        };
+        use crate::ProtocolDisposition::{Accepted, Excluded, Invalid, Pending};
+        use AggregateChangeContribution::{AuthorizedExcluded, ConclusiveInvalid, Unresolved};
         assert_eq!(
             reduce_aggregate_change_outcome(FinalLineageChangeState::Accepted, &[Unresolved]),
             Accepted
@@ -3494,34 +3475,22 @@ mod tests {
             Excluded
         );
         assert_eq!(
-            reduce_aggregate_change_outcome(
-                FinalLineageChangeState::Current,
-                &[UnsupportedCarrier, UnsupportedCarrier]
-            ),
-            UnsupportedRevision
-        );
-        assert_eq!(
-            reduce_aggregate_change_outcome(
-                FinalLineageChangeState::Current,
-                &[UnsupportedCarrier, ConclusiveInvalid]
-            ),
+            reduce_aggregate_change_outcome(FinalLineageChangeState::Current, &[ConclusiveInvalid]),
             Invalid
         );
     }
 
     #[test]
     fn change_carrier_outcome_reason_mapping_is_exhaustive() {
-        use crate::ProtocolDisposition::{
-            Accepted, Excluded, Invalid, Pending, UnsupportedRevision,
-        };
+        use crate::ProtocolDisposition::{Accepted, Excluded, Invalid, Pending};
         use ChangeClaimReason::{
             AuthorizedCanonical, AuthorizedCurrentExcluded, AuthorizedNoncanonical,
-            InvalidReferencedControl, Unauthorized, UnresolvedControl, UnsupportedCarrier,
+            InvalidReferencedControl, Unauthorized, UnresolvedControl,
         };
 
         use AggregateChangeContribution::{
             AuthorizedCanonical as AggregateAuthorizedCanonical, AuthorizedExcluded,
-            ConclusiveInvalid, Unresolved, UnsupportedCarrier as AggregateUnsupportedCarrier,
+            ConclusiveInvalid, Unresolved,
         };
 
         for (reason, carrier_disposition, aggregate_contribution) in [
@@ -3531,11 +3500,6 @@ mod tests {
             (UnresolvedControl, Pending, Unresolved),
             (InvalidReferencedControl, Invalid, ConclusiveInvalid),
             (Unauthorized, Invalid, ConclusiveInvalid),
-            (
-                UnsupportedCarrier,
-                UnsupportedRevision,
-                AggregateUnsupportedCarrier,
-            ),
         ] {
             assert_eq!(change_carrier_disposition(reason), carrier_disposition);
             assert_eq!(
@@ -3593,12 +3557,8 @@ mod tests {
 
     #[test]
     fn aggregate_reduction_cannot_rewrite_an_invalid_carrier() {
-        use crate::ProtocolDisposition::{
-            Accepted, Excluded, Invalid, Pending, UnsupportedRevision,
-        };
-        use AggregateChangeContribution::{
-            AuthorizedExcluded, ConclusiveInvalid, Unresolved, UnsupportedCarrier,
-        };
+        use crate::ProtocolDisposition::{Accepted, Excluded, Invalid, Pending};
+        use AggregateChangeContribution::{AuthorizedExcluded, ConclusiveInvalid, Unresolved};
         let valid = noncanonical_branch_claim_reason(Some(Accepted));
         let invalid = noncanonical_branch_claim_reason(Some(Invalid));
         let invalid_carrier = ChangeCarrierOutcome::new(
@@ -3633,11 +3593,6 @@ mod tests {
             ),
             (
                 FinalLineageChangeState::Current,
-                vec![UnsupportedCarrier],
-                UnsupportedRevision,
-            ),
-            (
-                FinalLineageChangeState::Current,
                 vec![ConclusiveInvalid],
                 Invalid,
             ),
@@ -3665,12 +3620,6 @@ mod tests {
                 .map(crate::DiagnosticCode::as_str),
             Some("change.actor")
         );
-        assert_eq!(
-            ChangeClaimReason::UnsupportedCarrier
-                .diagnostic()
-                .map(crate::DiagnosticCode::as_str),
-            Some("carrier.revision")
-        );
         assert!(
             ChangeClaimReason::AuthorizedCanonical
                 .diagnostic()
@@ -3681,12 +3630,9 @@ mod tests {
 
     #[test]
     fn aggregate_change_precedence_matrix_is_complete() {
-        use crate::ProtocolDisposition::{
-            Accepted, Excluded, Invalid, Pending, UnsupportedRevision,
-        };
+        use crate::ProtocolDisposition::{Accepted, Excluded, Invalid, Pending};
         use AggregateChangeContribution::{
             AuthorizedCanonical, AuthorizedExcluded, ConclusiveInvalid, Unresolved,
-            UnsupportedCarrier,
         };
         let cases = [
             (
@@ -3721,16 +3667,6 @@ mod tests {
             ),
             (
                 FinalLineageChangeState::Current,
-                vec![UnsupportedCarrier, UnsupportedCarrier],
-                UnsupportedRevision,
-            ),
-            (
-                FinalLineageChangeState::Current,
-                vec![UnsupportedCarrier, ConclusiveInvalid],
-                Invalid,
-            ),
-            (
-                FinalLineageChangeState::Current,
                 vec![ConclusiveInvalid],
                 Invalid,
             ),
@@ -3746,19 +3682,6 @@ mod tests {
                 expected
             );
         }
-    }
-
-    #[test]
-    #[ignore = "expected to fail until FINDING_079 closes"]
-    fn finding_079_unsupported_carrier_does_not_create_semantic_hash_state() {
-        assert_ne!(
-            reduce_aggregate_change_outcome(
-                FinalLineageChangeState::Current,
-                &[AggregateChangeContribution::UnsupportedCarrier],
-            ),
-            crate::ProtocolDisposition::UnsupportedRevision,
-            "FINDING_079 reproduced: an unverified unsupported carrier can create semantic ChangeHash state"
-        );
     }
 
     #[test]

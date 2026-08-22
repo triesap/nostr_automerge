@@ -245,7 +245,7 @@
         {
           "kind": "public_source",
           "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-          "locator": "ChangeClaimReason::UnsupportedCarrier"
+          "locator": "fn reduce_aggregate_change_outcome("
         },
         {
           "kind": "public_contract",

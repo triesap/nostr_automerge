@@ -24,6 +24,10 @@ FIXED_CASES = (
     ),
     (
         "public_engine_api",
+        "finding_079_unsupported_carrier_does_not_create_semantic_hash_state",
+    ),
+    (
+        "public_engine_api",
         "finding_083_budget_stop_is_not_relabelled_by_cancellation_requery",
     ),
 )
@@ -54,15 +58,6 @@ OPEN_CASES = (
         "crates/nostr_automerge/src/reference/evaluate.rs",
         "(false, 0)",
         "(true, 0)",
-    ),
-    (
-        "lib",
-        "engine::reference_evaluator::tests::finding_079_unsupported_carrier_does_not_create_semantic_hash_state",
-        "FINDING_079 reproduced: an unverified unsupported carrier can create semantic ChangeHash state",
-        "left != right",
-        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "UnsupportedRevision",
-        "UnsupportedRevision",
     ),
     (
         "lib",
