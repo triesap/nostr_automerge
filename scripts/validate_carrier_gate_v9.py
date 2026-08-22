@@ -30,6 +30,7 @@ SCHEMA = "tools/validation/carrier_gate_v9.schema.json"
 OPAQUE_CARRIER = "reports/opaque_carrier_v9.json"
 STEP_1195_CANDIDATE = "97ae7bf137807c9771dd6f9577ff8bcdd6dcc28b"
 STEP_1195_PARENT = "976d6edb0349ae87d5e477e95ae6f3d7dbd89303"
+STEP_1196_CANDIDATE = "52fafad799c5eb60a1d1a8b28bf214c0c8d21437"
 STEP_1195_SCOPE_IDENTITY = (
     "9d7a285d9e9f9fc3b6c566aa6bd776030df8f2ee078d0e254c696446a462f0fd"
 )
@@ -122,6 +123,14 @@ CONFORMANCE_SOURCE_PATHS = (
     "fixtures/distribution/manifest_v9.json",
     "fixtures/v1_draft",
 )
+CONFORMANCE_ADDITIVE_REPORT_PATHS = (
+    "crates/nostr_automerge/src/engine/evaluation_report.rs",
+    "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+    "crates/nostr_automerge/tests/public_engine_api.rs",
+)
+CONFORMANCE_ADDITIVE_REPORT_PROJECTION = (
+    "eff0deef2ad7ded3e6c8db373641ea7a310e41bd8d6bee38ed7f04a2f25ce869"
+)
 
 
 def git_bytes(*arguments: str) -> bytes:
@@ -155,10 +164,19 @@ def validate_step_1195_scope() -> None:
 
 
 def public_matrix_identity() -> str:
+    require(
+        git_bytes("rev-parse", f"{STEP_1196_CANDIDATE}^").decode().strip()
+        == STEP_1195_CANDIDATE,
+        "carrier_gate:closure_parent",
+    )
     bindings: list[dict[str, str]] = []
     for classification, relative, expected in PUBLIC_BINDINGS:
-        require(file_digest(relative) == expected, f"carrier_gate:binding:{classification}")
-        source = (ROOT / relative).read_text(encoding="utf-8")
+        source_bytes = git_bytes("show", f"{STEP_1196_CANDIDATE}:{relative}")
+        require(
+            hashlib.sha256(source_bytes).hexdigest() == expected,
+            f"carrier_gate:binding:{classification}",
+        )
+        source = source_bytes.decode("utf-8")
         for check in BINDING_CHECKS[classification]:
             require(check in source, f"carrier_gate:check:{classification}:{check}")
         bindings.append({"class": classification, "sha256": expected})
@@ -175,23 +193,104 @@ def public_matrix_identity() -> str:
     return identity
 
 
-def rust_source_commit() -> str:
-    result = subprocess.run(
-        (
-            "git",
-            "log",
-            "-1",
-            "--format=%H",
+def conformance_source_diff(target: str | None) -> tuple[tuple[str, ...], bytes]:
+    arguments = [
+        "diff",
+        "--no-ext-diff",
+        "--unified=0",
+        "--no-renames",
+        CONFORMANCE["candidate"],
+    ]
+    if target is not None:
+        arguments.append(target)
+    arguments.extend(("--", *CONFORMANCE_SOURCE_PATHS))
+    patch = git_bytes(*arguments)
+
+    name_arguments = [
+        "diff",
+        "--name-only",
+        "-z",
+        "--no-renames",
+        CONFORMANCE["candidate"],
+    ]
+    if target is not None:
+        name_arguments.append(target)
+    name_arguments.extend(("--", *CONFORMANCE_SOURCE_PATHS))
+    encoded = git_bytes(*name_arguments)
+    require(encoded.endswith(b"\0"), "carrier_gate:semantic_source_names")
+    names = tuple(value.decode("utf-8") for value in encoded[:-1].split(b"\0"))
+    return names, patch
+
+
+def validate_conformance_source_projection(
+    names: tuple[str, ...], patch: bytes
+) -> None:
+    require(
+        names == CONFORMANCE_ADDITIVE_REPORT_PATHS,
+        "carrier_gate:semantic_source_paths",
+    )
+    require(
+        hashlib.sha256(patch).hexdigest()
+        == CONFORMANCE_ADDITIVE_REPORT_PROJECTION,
+        "carrier_gate:semantic_source_projection",
+    )
+
+
+def validate_committed_additive_report_child(
+    parent: str, names: tuple[str, ...], patch: bytes
+) -> None:
+    require(parent == STEP_1196_CANDIDATE, "carrier_gate:postcommit_parent")
+    validate_conformance_source_projection(names, patch)
+
+
+def validate_current_conformance_source() -> None:
+    names, patch = conformance_source_diff(None)
+    validate_conformance_source_projection(names, patch)
+
+
+def conformance_source_mutation_self_test() -> int:
+    require(
+        git_bytes(
+            "diff",
+            "--quiet",
+            CONFORMANCE["candidate"],
+            STEP_1196_CANDIDATE,
             "--",
             *CONFORMANCE_SOURCE_PATHS,
-        ),
-        cwd=ROOT,
-        check=False,
-        capture_output=True,
-        text=True,
+        )
+        == b"",
+        "carrier_gate:pre_additive_source",
     )
-    require(result.returncode == 0 and result.stderr == "", "carrier_gate:source_candidate")
-    return result.stdout.strip()
+    committed_names, committed_patch = conformance_source_diff("HEAD")
+    committed_parent = git_bytes("rev-parse", "HEAD^").decode().strip()
+    validate_committed_additive_report_child(
+        committed_parent, committed_names, committed_patch
+    )
+
+    mutations = (
+        (committed_parent, committed_names[:-1], committed_patch),
+        (committed_parent, tuple(reversed(committed_names)), committed_patch),
+        (
+            committed_parent,
+            committed_names + ("crates/nostr_automerge/src/checkpoint/mod.rs",),
+            committed_patch,
+        ),
+        (
+            committed_parent,
+            committed_names,
+            committed_patch + b"semantic-source-drift\n",
+        ),
+        ("0" * 40, committed_names, committed_patch),
+    )
+    caught = 0
+    for parent, names, patch in mutations:
+        try:
+            validate_committed_additive_report_child(parent, names, patch)
+        except LedgerError:
+            caught += 1
+            continue
+        raise LedgerError("carrier_gate_semantic_source_mutation_survived")
+    return caught
 
 
 def expected_distribution_hashes(
@@ -242,16 +341,7 @@ def validate_conformance_inventory() -> int:
         )
         fixture_ids.append(fixture_id)
     require(len(fixture_ids) == len(set(fixture_ids)), "carrier_gate:fixture_unique")
-    require(
-        rust_source_commit() == CONFORMANCE["candidate"],
-        "carrier_gate:source_candidate",
-    )
-    source_diff = subprocess.run(
-        ("git", "diff", "--quiet", "HEAD", "--", *CONFORMANCE_SOURCE_PATHS),
-        cwd=ROOT,
-        check=False,
-    )
-    require(source_diff.returncode == 0, "carrier_gate:source_worktree")
+    validate_current_conformance_source()
     canonical_output, distribution_run = expected_distribution_hashes(fixtures)
     require(
         canonical_output == CONFORMANCE["canonical_output_sha256"],
@@ -442,11 +532,13 @@ def main() -> int:
     validate_opaque_carrier(opaque)
     validate_carrier_gate(report, opaque)
     mutations = mutation_self_test(report, opaque)
+    source_mutations = conformance_source_mutation_self_test()
     print("PASS: carrier and unsupported identity gate")
     print(f"- public_scope_entries={report['public_predecessor']['scope_entry_count']}")
     print(f"- carrier_matrix_rows={report['public_matrix']['aggregate_row_count']}")
     print(f"- conformance_scenarios={report['conformance']['signed_scenario_count']}")
     print(f"- negative_mutations={mutations}")
+    print(f"- semantic_source_negative_mutations={source_mutations}")
     return 0
 
 

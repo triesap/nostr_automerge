@@ -489,6 +489,7 @@ impl ReferenceEvaluator {
             })?;
         let report = EvaluationReport::from_parts(EvaluationReportParts {
             coordinate,
+            revision: self.revision,
             canonical_controls: batch.canonical_controls,
             disposition_records,
             control_dispositions,
@@ -2440,6 +2441,7 @@ fn prepare_no_progress_interrupted_report(
         })
         .map_err(|_| EvaluationError::ReportInvariant)?;
     build_no_progress_interrupted_report(
+        revision,
         coordinate,
         completion,
         failure,
@@ -2490,6 +2492,7 @@ fn compact_interrupted_report(
         Completion::Complete => return Err(EvaluationError::ReportInvariant),
     };
     build_no_progress_interrupted_report(
+        revision,
         coordinate,
         completion,
         failure,
@@ -2499,6 +2502,7 @@ fn compact_interrupted_report(
 }
 
 fn build_no_progress_interrupted_report(
+    revision: ProtocolRevision,
     coordinate: DocumentCoordinate,
     completion: Completion,
     failure: EvaluationFailure,
@@ -2507,6 +2511,7 @@ fn build_no_progress_interrupted_report(
 ) -> Result<EvaluationReport, EvaluationError> {
     EvaluationReport::from_parts(EvaluationReportParts {
         coordinate,
+        revision,
         canonical_controls: Vec::new(),
         disposition_records: Vec::new(),
         control_dispositions: Vec::new(),
@@ -2653,6 +2658,7 @@ fn prepare_interrupted_batch_report(
         .map_err(|_| EvaluationError::ReportInvariant)?;
     EvaluationReport::from_parts(EvaluationReportParts {
         coordinate,
+        revision,
         canonical_controls: batch.canonical_controls,
         disposition_records,
         control_dispositions,

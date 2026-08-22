@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 
 use crate::{
     ChangeHash, CheckpointVerificationResult, Completion, DispositionsDigest, DocumentCoordinate,
-    EventId, EvidenceRecord, HistoryDigest, IntegrityAlert, ProtocolDisposition,
+    EventId, EvidenceRecord, HistoryDigest, IntegrityAlert, ProtocolDisposition, ProtocolRevision,
     ResolvedManifestAvailability,
 };
 
@@ -154,6 +154,7 @@ fn disposition_records_are_canonical(records: &[DispositionRecord]) -> bool {
 #[derive(Clone, PartialEq, Eq)]
 pub struct EvaluationReport {
     coordinate: DocumentCoordinate,
+    revision: ProtocolRevision,
     canonical_controls: Vec<EventId>,
     disposition_records: Vec<DispositionRecord>,
     control_dispositions: Vec<(EventId, ProtocolDisposition)>,
@@ -177,6 +178,7 @@ pub struct EvaluationReport {
 #[derive(Clone)]
 pub(crate) struct EvaluationReportParts {
     pub(crate) coordinate: DocumentCoordinate,
+    pub(crate) revision: ProtocolRevision,
     pub(crate) canonical_controls: Vec<EventId>,
     pub(crate) disposition_records: Vec<DispositionRecord>,
     pub(crate) control_dispositions: Vec<(EventId, ProtocolDisposition)>,
@@ -339,6 +341,7 @@ impl EvaluationReport {
         }
         Ok(Self {
             coordinate: parts.coordinate,
+            revision: parts.revision,
             canonical_controls: parts.canonical_controls,
             disposition_records: parts.disposition_records,
             control_dispositions: parts.control_dispositions,
@@ -364,6 +367,12 @@ impl EvaluationReport {
     #[must_use]
     pub const fn coordinate(&self) -> DocumentCoordinate {
         self.coordinate
+    }
+
+    /// Returns the sealed protocol revision used for this evaluation.
+    #[must_use]
+    pub const fn revision(&self) -> ProtocolRevision {
+        self.revision
     }
 
     /// Returns the canonical control chain in evaluation order.
@@ -570,6 +579,7 @@ mod tests {
         let Ok(coordinate) = coordinate else { return };
         let parts = || EvaluationReportParts {
             coordinate,
+            revision: crate::ProtocolRevision::draft_v1(),
             canonical_controls: vec![EventId::from_bytes([1; 32])],
             disposition_records: vec![],
             control_dispositions: vec![(
@@ -618,6 +628,7 @@ mod tests {
         let hash = ChangeHash::from_bytes([2; 32]);
         let parts = || EvaluationReportParts {
             coordinate,
+            revision: crate::ProtocolRevision::draft_v1(),
             canonical_controls: vec![EventId::from_bytes([1; 32])],
             disposition_records: vec![],
             control_dispositions: vec![(
@@ -873,6 +884,7 @@ mod tests {
         let hash = ChangeHash::from_bytes([2; 32]);
         let report = EvaluationReport::from_parts(EvaluationReportParts {
             coordinate,
+            revision: crate::ProtocolRevision::draft_v1(),
             canonical_controls: vec![control],
             disposition_records: vec![],
             control_dispositions: vec![(control, crate::ProtocolDisposition::Accepted)],

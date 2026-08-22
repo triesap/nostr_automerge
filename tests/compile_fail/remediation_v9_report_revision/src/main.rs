@@ -1,7 +1,6 @@
 use nostr_automerge::{EvaluationReport, ProtocolRevision};
 
-fn report_revision(report: &EvaluationReport) -> ProtocolRevision {
-    report.revision()
+fn main() {
+    let revision_getter: fn(&EvaluationReport) -> ProtocolRevision = EvaluationReport::revision;
+    let _ = revision_getter;
 }
-
-fn main() {}

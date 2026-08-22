@@ -1,22 +1,24 @@
 # Remediation V9 Rust Baseline Reproductions
 
-Status: rolling closure — four regressions fixed and eight cases still reproduced
+Status: rolling closure — five regression cases fixed and seven cases still reproduced
 
 The `FINDING_073` checkpoint-precedence, `FINDING_074` carrier-independence,
 `FINDING_079` unsupported-identity, and `FINDING_083` typed-stop reproductions
-are now enabled passing regressions. Six ignored tests continue to encode behavior-level expected failures for
-the still-open public Rust findings. Ordinary Rust test targets remain green
-because only the still-open cases stay ignored. The tests do not inspect source
-text and do not change protocol behavior, signed fixtures, or authority data.
+are now enabled passing regressions. The typed report-revision compile probe is
+also fixed. Six ignored tests and the semantic-proof probe continue to encode
+behavior-level expected failures for the still-open public Rust findings.
+Ordinary Rust test targets remain green because only the still-open cases stay
+ignored. The tests do not inspect source text and do not change protocol
+behavior, signed fixtures, or authority data.
 
-Two isolated non-libtest probes cover defects that cannot be represented as a
-passing Rust type check. A nested, lockfile-pinned compile probe remains
-outside the repository workspace and proves that `EvaluationReport::revision`
-is absent through one exact `E0599` diagnostic. A validator mutation replaces
-one exact assertion with a semantically unrelated assertion from the same test
-artifact and proves that the signed-v9 evidence validator accepts it. The main
-harness checks both probes' complete output streams and rejects unrelated
-compiler, tool, launcher, validator, or diagnostic failures.
+Two isolated non-libtest probes cover API and evidence behavior outside the
+ordinary test targets. The nested, lockfile-pinned compile probe remains
+outside the repository workspace and now proves that
+`EvaluationReport::revision` returns `ProtocolRevision`. A validator mutation
+replaces one exact assertion with a semantically unrelated assertion from the
+same test artifact and proves that the signed-v9 evidence validator accepts
+it. The main harness checks both probes' complete output streams and rejects
+unrelated compiler, tool, launcher, validator, or diagnostic failures.
 
 Run the repository-owned expected-failure harness with:
 
@@ -39,7 +41,7 @@ external-build launcher.
 | `FINDING_077` | Canonical raw change bytes are copied into the target memo rather than retained through one shared immutable allocation. | 89, 90, 91 |
 | `FINDING_078` | Replacing a requirement's named assertion with a semantically unrelated assertion in the same artifact still passes signed-v9 requirement validation. | 93 |
 | `FINDING_079` | The enabled signed regression proves that an unsupported Event and its diagnostic remain visible without its unverified `x` tag entering the semantic `ChangeHash` indexes or report namespace. | 84 (public Rust closed) |
-| `FINDING_081` | The typed report lacks a revision getter, and its parts constructor accepts an incomplete report containing canonical state and arbitrary nonempty-domain digests. | 85, 86 |
+| `FINDING_081` | The typed report revision getter is fixed; its parts constructor still accepts an incomplete report containing canonical state and arbitrary nonempty-domain digests. | 85, 86 |
 | `FINDING_082` | Reevaluation compares canonical summaries after the current evaluation stops and adds a reorganization alert to an incomplete report. | 85, 87 |
 | `FINDING_083` | The enabled regression preserves budget exhaustion after one stateful cancellation observation; carrier-claim charging now propagates either typed stop without re-querying. | 84 (public carrier path closed), 89 |
 | `FINDING_084` | Checkpoint assembly sorts the caller's target-sized chunk slice before observing immediate cancellation. | 82, 89 |

@@ -16,7 +16,8 @@ use nostr_automerge::{
     ManifestControlStatus, ManifestPendingReason, MaterializedPathElement, MaterializedScalar,
     MaterializedValue, NeverCancelled, ProtocolDisposition, ProtocolItemIdentifier,
     ProtocolRevision, RawEventBytes, ReferenceEvaluator, ResolvedManifestAvailability,
-    VerifiedNip01Event, WorkBudget, WorkCounter, WorkCounters,
+    VerifiedNip01Event, WorkBudget, WorkCounter, WorkCounters, canonical_dispositions_digest,
+    canonical_history_digest,
 };
 use sha2::{Digest as _, Sha256};
 use support::test_signer::TestSigner;
@@ -651,6 +652,34 @@ fn reference_evaluator_api_is_sealed_and_repository_owned() {
     assert!(!public_root.contains("BatchChange"));
     assert!(!public_root.contains("OpaqueDocumentView"));
     assert!(!public_root.contains("IndexValidity"));
+}
+
+#[test]
+#[allow(clippy::expect_used)]
+fn evaluation_report_exposes_its_sealed_protocol_revision() {
+    let revision = ProtocolRevision::draft_v1();
+    let coordinate: DocumentCoordinate = format!("31624:{}:{}", "41".repeat(32), "42".repeat(32))
+        .parse()
+        .expect("fixed coordinate");
+    let report = ReferenceEvaluator::new(revision)
+        .evaluate(
+            &CorpusBuilder::new().finish(),
+            coordinate,
+            &mut WorkBudget::new(0, 0),
+            &NeverCancelled,
+        )
+        .expect("no-progress report");
+
+    assert_eq!(report.revision(), revision);
+    assert_eq!(report.revision().identifier(), "draft_2026_08");
+    assert_eq!(
+        Some(report.history_digest()),
+        canonical_history_digest(revision, coordinate, &[], &[], &[]).ok()
+    );
+    assert_eq!(
+        Some(report.dispositions_digest()),
+        canonical_dispositions_digest(revision, coordinate, &[]).ok()
+    );
 }
 
 #[test]

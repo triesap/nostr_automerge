@@ -20,7 +20,7 @@
   "properties": {
     "schema": {"const": "nostr_automerge.runtime_ledger.v9.v1"},
     "status": {"enum": ["in_progress", "code_complete_publication_held"]},
-    "rcld": {"type": "integer", "minimum": 81, "maximum": 94},
+    "rcld": {"type": "integer", "minimum": 85, "maximum": 94},
     "cursor": {
       "type": "object",
       "additionalProperties": false,
@@ -32,10 +32,10 @@
         "active_step": {"type": "string", "pattern": "^step_1[0-9]{3}$"},
         "next_step": {"type": "string", "pattern": "^step_1[0-9]{3}$"},
         "last_step": {"const": "step_1283"},
-        "remaining_checkpoint_count": {"type": "integer", "minimum": 0, "maximum": 117},
-        "first_rcld": {"type": "integer", "minimum": 81, "maximum": 94},
+        "remaining_checkpoint_count": {"type": "integer", "minimum": 0, "maximum": 87},
+        "first_rcld": {"type": "integer", "minimum": 85, "maximum": 94},
         "last_rcld": {"const": 94},
-        "remaining_rcld_count": {"type": "integer", "minimum": 0, "maximum": 14}
+        "remaining_rcld_count": {"type": "integer", "minimum": 0, "maximum": 10}
       }
     },
     "authority_projection": {

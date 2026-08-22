@@ -565,6 +565,60 @@ def validate_revision_failure(returncode: int, stdout: str, stderr: str) -> None
     )
 
 
+def revision_artifact_is_exact(record: dict[str, object]) -> bool:
+    return (
+        compiler_artifact_is_closed(record)
+        and record.get("package_id") == REVISION_PACKAGE_ID
+        and record.get("manifest_path") == REVISION_MANIFEST
+        and record.get("target") == expected_revision_target()
+        and record.get("features") == []
+        and record.get("executable") is None
+        and isinstance(record.get("filenames"), list)
+        and len(record["filenames"]) == 1
+    )
+
+
+def validate_revision_success(returncode: int, stdout: str, stderr: str) -> None:
+    require(returncode == 0, "wrong fixed report-revision probe exit")
+    require(
+        re.fullmatch(
+            r"(?:[ \t]*(?:Blocking|Checking|Compiling|Finished|Fresh|Waiting) [^\n]+\n?)*",
+            stderr,
+        )
+        is not None,
+        "malformed fixed report-revision cargo stderr",
+    )
+    try:
+        records = [json.loads(line) for line in stdout.splitlines()]
+    except json.JSONDecodeError as error:
+        raise ReproductionError("non-JSON fixed report-revision cargo stdout") from error
+    require(records, "empty fixed report-revision cargo stdout")
+    require(
+        records[-1] == {"reason": "build-finished", "success": True},
+        "fixed report-revision build did not finish successfully",
+    )
+    require(
+        all(
+            compiler_artifact_is_closed(record)
+            or build_script_record_is_closed(record)
+            for record in records[:-1]
+        ),
+        "foreign fixed report-revision Cargo record",
+    )
+    require(
+        sum(revision_artifact_is_exact(record) for record in records[:-1]) == 1,
+        "fixed report-revision artifact cardinality",
+    )
+    require(
+        not any(
+            marker
+            in json.dumps(records, sort_keys=True, separators=(",", ":")).casefold()
+            for marker in STRUCTURED_FAILURE_MARKERS
+        ),
+        "unrelated structured fixed report-revision failure",
+    )
+
+
 def validate_expected_failure(
     target: str,
     test_name: str,
@@ -798,6 +852,32 @@ def canonical_revision_self_test_output() -> tuple[str, str]:
     return stdout, stderr
 
 
+def canonical_revision_success_self_test_output() -> tuple[str, str]:
+    artifact = {
+        "reason": "compiler-artifact",
+        "package_id": REVISION_PACKAGE_ID,
+        "manifest_path": REVISION_MANIFEST,
+        "target": expected_revision_target(),
+        "profile": {
+            "opt_level": "0",
+            "debuginfo": "line-tables-only",
+            "debug_assertions": True,
+            "overflow_checks": True,
+            "test": False,
+        },
+        "features": [],
+        "filenames": ["/tmp/libremediation_v9_report_revision_probe.rmeta"],
+        "executable": None,
+        "fresh": False,
+    }
+    finished = {"reason": "build-finished", "success": True}
+    stdout = "".join(
+        json.dumps(record, separators=(",", ":")) + "\n"
+        for record in [artifact, finished]
+    )
+    return stdout, ""
+
+
 def special_mutation_self_test() -> int:
     validate_semantic_failure(78, SEMANTIC_STDOUT, "")
     semantic_mutations = (
@@ -949,6 +1029,32 @@ def special_mutation_self_test() -> int:
     for name, returncode, stdout, stderr in revision_mutations:
         try:
             validate_revision_failure(returncode, stdout, stderr)
+        except ReproductionError:
+            caught += 1
+            continue
+        raise ReproductionError(f"mutation survived: {name}")
+    fixed_stdout, fixed_stderr = canonical_revision_success_self_test_output()
+    validate_revision_success(0, fixed_stdout, fixed_stderr)
+    fixed_records = [json.loads(line) for line in fixed_stdout.splitlines()]
+    fixed_mutations: list[tuple[str, int, str, str]] = [
+        ("fixed_revision_wrong_exit", 101, fixed_stdout, fixed_stderr),
+        ("fixed_revision_non_json", 0, "not-json\n", fixed_stderr),
+        ("fixed_revision_stderr", 0, fixed_stdout, "error: linker failed\n"),
+    ]
+    missing_artifact = fixed_records[1:]
+    fixed_mutations.append(("fixed_revision_missing_artifact", 0, packed(missing_artifact), ""))
+    failed_finish = copy.deepcopy(fixed_records)
+    failed_finish[-1]["success"] = False
+    fixed_mutations.append(("fixed_revision_failed_finish", 0, packed(failed_finish), ""))
+    wrong_target = copy.deepcopy(fixed_records)
+    wrong_target[0]["target"]["name"] = "foreign"
+    fixed_mutations.append(("fixed_revision_wrong_target", 0, packed(wrong_target), ""))
+    duplicate_artifact = copy.deepcopy(fixed_records)
+    duplicate_artifact.insert(1, copy.deepcopy(duplicate_artifact[0]))
+    fixed_mutations.append(("fixed_revision_duplicate_artifact", 0, packed(duplicate_artifact), ""))
+    for name, returncode, stdout, stderr in fixed_mutations:
+        try:
+            validate_revision_success(returncode, stdout, stderr)
         except ReproductionError:
             caught += 1
             continue
@@ -1165,7 +1271,7 @@ def main() -> int:
         env=environment,
     )
     try:
-        validate_revision_failure(
+        validate_revision_success(
             revision.returncode,
             revision.stdout,
             revision.stderr,
@@ -1174,9 +1280,9 @@ def main() -> int:
         raise ReproductionError(
             f"{error}:\nSTDOUT:\n{revision.stdout}\nSTDERR:\n{revision.stderr}"
         ) from error
-    print("PASS: reproduced missing typed report revision API")
-    print(f"PASS: verified {len(FIXED_CASES)} fixed remediation-v9 Rust cases")
-    print(f"PASS: reproduced {len(OPEN_CASES) + 2} still-open remediation-v9 Rust cases")
+    print("PASS: fixed typed report revision API")
+    print(f"PASS: verified {len(FIXED_CASES) + 1} fixed remediation-v9 Rust cases")
+    print(f"PASS: reproduced {len(OPEN_CASES) + 1} still-open remediation-v9 Rust cases")
     return 0
 
 

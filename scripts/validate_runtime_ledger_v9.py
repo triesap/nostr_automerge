@@ -33,7 +33,7 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "a64b8e2cf77294a64fb4f70c9662ae5a6b02f7ba8e83c9cc842fd515145c4d87"
+    "5542f276cdf7342bd69c0acb53b33a91ae5e0ce39c77f74dca6406945aa94695"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
@@ -106,7 +106,7 @@ WIRE_DOMAIN_SOURCE_BINDINGS = (
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "3c133d1ab910984a06eccb4cd2311e7329b47c262ffa75339366b18b59d23440",
+        "c99c80e90390680c899a9b5fb8a6fa37839bb7c4878f18fefcfa6ee9c552f1b9",
         b"nostr-crdt/automerge/change-set/v1",
     ),
     (
@@ -253,31 +253,28 @@ PREDECESSOR_CANDIDATES = (
     "4a8c1d7451d11e6fc10c203b494567f40e28cd3c",
     "1164da991972b9df44b9fc873caa8dd5e76944e4",
     "97ae7bf137807c9771dd6f9577ff8bcdd6dcc28b",
+    "52fafad799c5eb60a1d1a8b28bf214c0c8d21437",
 )
 CLOSURE_PATHS = frozenset(
     {
+        "crates/nostr_automerge/src/engine/evaluation_report.rs",
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "crates/nostr_automerge/tests/public_engine_api.rs",
+        "docs/api/public_engine.md",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
+        "docs/execution/remediation_v9/reproductions.md",
         "implementation/runtime_ledger_v9.json",
-        "reports/carrier_gate_v9.json",
         "reports/spec_baseline.txt",
+        "scripts/reproduce_remediation_v9.py",
         "scripts/validate_carrier_gate_v9.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
-        "scripts/validate_rust_conformance_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
-        "scripts/validate_spec.py",
-        "tools/nostr_automerge_xtask/src/validate.rs",
-        "tools/validation/carrier_gate_v9.schema.json",
+        "tests/compile_fail/remediation_v9_report_revision/src/main.rs",
         "tools/validation/runtime_ledger_v9.schema.json",
     }
 )
-CLOSURE_NEW_PATHS = frozenset(
-    {
-        "reports/carrier_gate_v9.json",
-        "scripts/validate_carrier_gate_v9.py",
-        "tools/validation/carrier_gate_v9.schema.json",
-    }
-)
+CLOSURE_NEW_PATHS = frozenset()
 EXPECTED_GATES = (
     ("V-AUTH",),
     ("V-AUTH",),
@@ -317,6 +314,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-TS",),
     ("V-EVIDENCE",),
+    ("V-FULL-RUST",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -399,6 +397,14 @@ EXPECTED_REQUIREMENTS = (
         "NCRDT-CONF-010",
         "NCRDT-EVIDENCE-006",
     ),
+    (
+        "NCRDT-DISPOSITION-006",
+        "NCRDT-INTERRUPT-001",
+        "NCRDT-RESOURCE-014",
+        "NCRDT-VERSION-002",
+        "NCRDT-CONF-010",
+        "NCRDT-EVIDENCE-006",
+    ),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -445,6 +451,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_074", "FINDING_079"),
     ("FINDING_074",),
     ("FINDING_079",),
+    ("FINDING_074", "FINDING_079", "FINDING_083"),
     ("FINDING_074", "FINDING_079", "FINDING_083"),
     ("FINDING_074", "FINDING_079", "FINDING_083"),
 )
@@ -978,6 +985,10 @@ def validate_closure_git_state(
     require(HEX40.fullmatch(latest) is not None, "closure_scope:latest")
     require(HEX40.fullmatch(head) is not None, "closure_scope:head")
     require(len(ignored) == len(set(ignored)), "closure_scope:ignored_unique")
+    require(
+        len(worktree) == len({path for _, path in worktree}),
+        "closure_scope:worktree_unique",
+    )
     require(not CLOSURE_PATHS.intersection(ignored), "closure_scope:ignored_overlap")
     if head == latest:
         require(not committed, "closure_scope:premature_commit_delta")
@@ -988,7 +999,14 @@ def validate_closure_git_state(
             require(status in expected, f"closure_scope:worktree_status:{path}")
         return
     require(parents == (latest,), "closure_scope:parent")
-    require(not worktree, "closure_scope:postcommit_dirty")
+    require(
+        {path for _, path in worktree}.issubset(CLOSURE_PATHS),
+        "closure_scope:postcommit_dirty",
+    )
+    require(
+        all(status in {" M", "M "} for status, _ in worktree),
+        "closure_scope:postcommit_status",
+    )
     require(len(committed) == len(CLOSURE_PATHS), "closure_scope:commit_count")
     require({path for _, path in committed} == CLOSURE_PATHS, "closure_scope:commit_paths")
     for status, path in committed:
@@ -1049,6 +1067,14 @@ def closure_git_state_self_test() -> int:
     validate_closure_git_state(latest, latest, (other,), unstaged, (), ())
     validate_closure_git_state(latest, latest, (other,), staged, (), (".local/",))
     validate_closure_git_state(latest, head, (latest,), (), committed, ("ignored-output",))
+    validate_closure_git_state(
+        latest,
+        head,
+        (latest,),
+        ((" M", committed[0][1]),),
+        committed,
+        (),
+    )
 
     mutations = (
         ("precommit_clean", latest, (other,), (), (), ()),
@@ -1093,7 +1119,14 @@ def closure_git_state_self_test() -> int:
             (),
         ),
         ("ignored_overlap", latest, (other,), unstaged, (), (unstaged[0][1],)),
-        ("postcommit_dirty", head, (latest,), unstaged, committed, ()),
+        (
+            "postcommit_foreign_dirty",
+            head,
+            (latest,),
+            ((" M", "README.md"),),
+            committed,
+            (),
+        ),
         (
             "postcommit_extra",
             head,
@@ -1194,7 +1227,7 @@ def validate_predecessors(
     carrier: dict[str, Any],
 ) -> None:
     require(isinstance(rows, list), "predecessors:type")
-    approved = [expected_predecessor(index) for index in range(38)]
+    approved = [expected_predecessor(index) for index in range(39)]
     require(rows == approved, "predecessors:approved_projection")
     require(active == 1158 + len(approved), "predecessors:approved_cursor")
     expected_keys = {
