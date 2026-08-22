@@ -13,7 +13,6 @@ use crate::control::genesis::classify_genesis;
 use crate::control::reference_state::{
     ControlParentState, ReferencedControlState, resolve_referenced_control,
 };
-use crate::control::reorganization::detect_reorganization;
 use crate::control::validate::ControlEnvelope;
 use crate::evidence::corpus_builder::ManifestSelectionState;
 use crate::evidence::document_view::DocumentEvidenceView;
@@ -36,7 +35,8 @@ use crate::{
 use super::evaluation_report::{
     AttributableCarrierOutcome, CompleteReportFieldAuthority, CompleteReportWitness,
     DispositionRecord, EvaluationError, EvaluationFailure, EvaluationReport, EvaluationReportParts,
-    ProtocolItemIdentifier, REPORT_INVARIANT_ITEMS,
+    ProtocolItemIdentifier, REPORT_INVARIANT_ITEMS, ReevaluationComparisonStage,
+    ReevaluationConstructionError,
 };
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 
@@ -52,16 +52,20 @@ pub struct ReferenceEvaluator {
 
 #[cfg(test)]
 std::thread_local! {
-    static REEVALUATION_SUMMARY_OBSERVATIONS: std::cell::Cell<u64> = const {
-        std::cell::Cell::new(0)
+    static REEVALUATION_STAGE_OBSERVATIONS: std::cell::Cell<[u64; 5]> = const {
+        std::cell::Cell::new([0; 5])
     };
 }
 
-#[cfg(test)]
-fn observe_reevaluation_summary() {
-    REEVALUATION_SUMMARY_OBSERVATIONS.with(|observations| {
-        observations.set(observations.get().saturating_add(1));
+fn observe_reevaluation_stage(stage: ReevaluationComparisonStage) {
+    #[cfg(test)]
+    REEVALUATION_STAGE_OBSERVATIONS.with(|observations| {
+        let mut counts = observations.get();
+        counts[stage.index()] = counts[stage.index()].saturating_add(1);
+        observations.set(counts);
     });
+    #[cfg(not(test))]
+    let _ = stage;
 }
 
 impl ReferenceEvaluator {
@@ -550,56 +554,26 @@ impl ReferenceEvaluator {
             return Err(EvaluationError::ReportInvariant);
         }
         let current = self.evaluate(corpus, coordinate, budget, cancellation)?;
-        if previous.coordinate() != coordinate {
-            return Ok(current);
-        }
-        #[cfg(test)]
-        observe_reevaluation_summary();
-        if let Err(completion) =
-            charge_reevaluation_comparison(previous, &current, budget, cancellation)
-        {
-            if previous.completion() == Completion::Complete
-                && current.completion() == Completion::Complete
-            {
-                return compact_interrupted_report(self.revision, coordinate, completion);
-            }
-            return Ok(current);
-        }
-        let reorganization = detect_reorganization(
-            &previous.control_chain_summary(),
-            &current.control_chain_summary(),
-        );
         if previous.completion() != Completion::Complete
             || current.completion() != Completion::Complete
         {
             return Ok(current);
         }
-        let mut integrity_alerts = current.integrity_alerts().to_vec();
-        integrity_alerts.extend(reorganization);
-        EvaluationReport::from_reevaluation(current, previous, integrity_alerts)
+        if previous.coordinate() != coordinate {
+            return Ok(current);
+        }
+        match EvaluationReport::from_reevaluation(current, previous, |stage| {
+            charge_evaluation_work(budget, cancellation, WorkCounter::Assertion, 1)?;
+            observe_reevaluation_stage(stage);
+            Ok(())
+        }) {
+            Ok(report) => Ok(report),
+            Err(ReevaluationConstructionError::Stopped(completion)) => {
+                compact_interrupted_report(self.revision, coordinate, completion)
+            }
+            Err(ReevaluationConstructionError::Invariant) => Err(EvaluationError::ReportInvariant),
+        }
     }
-}
-
-fn charge_reevaluation_comparison(
-    previous: &EvaluationReport,
-    current: &EvaluationReport,
-    budget: &mut WorkBudget,
-    cancellation: &impl CancellationCheck,
-) -> Result<(), Completion> {
-    let item_count = [
-        previous.canonical_controls().len(),
-        current.canonical_controls().len(),
-        previous.accepted_changes().len(),
-        current.accepted_changes().len(),
-        current.integrity_alerts().len(),
-    ]
-    .into_iter()
-    .try_fold(2_u64, |total, count| {
-        total.checked_add(u64::try_from(count).ok()?)
-    })
-    .and_then(|total| total.checked_mul(2))
-    .unwrap_or(u64::MAX);
-    charge_evaluation_work(budget, cancellation, WorkCounter::Assertion, item_count)
 }
 
 fn additional_prior_knowledge(
@@ -3136,7 +3110,7 @@ mod tests {
         ChangeClaimReason, CheckpointDownstreamStage, CheckpointReportAttributionStage,
         CheckpointWorkObserver, CheckpointWorkStop, FinalLineageChangeState, FinalizationDimension,
         FinalizationPermitError, FinalizationReservationUnit, InterruptedReportPass,
-        PreparedCheckpointInputs, REEVALUATION_SUMMARY_OBSERVATIONS, ReferenceEvaluator,
+        PreparedCheckpointInputs, REEVALUATION_STAGE_OBSERVATIONS, ReferenceEvaluator,
         ReportFinalizationPermit, ReportFinalizationPlan, aggregate_change_contribution,
         assembly_status, change_carrier_disposition, charge_checkpoint_work,
         checkpoint_control_refusal, checkpoint_preflight_refusal, join_status,
@@ -3171,7 +3145,6 @@ mod tests {
     use sha2::{Digest, Sha256};
 
     #[test]
-    #[ignore = "expected to fail until FINDING_082 closes"]
     fn finding_082_reevaluation_stops_before_post_incomplete_alert_work() {
         let coordinate = DocumentCoordinate::new(
             ControllerPublicKey::from_bytes([0xc1; 32]),
@@ -3188,7 +3161,7 @@ mod tests {
         assert!(previous.is_ok());
         let Ok(previous) = previous else { return };
         assert_eq!(previous.completion(), crate::Completion::Complete);
-        REEVALUATION_SUMMARY_OBSERVATIONS.with(|observations| observations.set(0));
+        REEVALUATION_STAGE_OBSERVATIONS.with(|observations| observations.set([0; 5]));
 
         let current = evaluator.reevaluate(
             &corpus,
@@ -3200,11 +3173,140 @@ mod tests {
         assert!(current.is_ok());
         let Ok(current) = current else { return };
         assert_eq!(current.completion(), crate::Completion::BudgetExhausted);
-        let observations = REEVALUATION_SUMMARY_OBSERVATIONS.with(std::cell::Cell::get);
+        let observations = REEVALUATION_STAGE_OBSERVATIONS.with(std::cell::Cell::get);
         assert_eq!(
-            observations, 0,
+            observations, [0; 5],
             "FINDING_082 reproduced: reevaluation performs summary work after incomplete finalization"
         );
+
+        let previous_incomplete = evaluator.evaluate(
+            &corpus,
+            coordinate,
+            &mut WorkBudget::new(0, 0),
+            &crate::NeverCancelled,
+        );
+        assert!(previous_incomplete.is_ok());
+        let Ok(previous_incomplete) = previous_incomplete else {
+            return;
+        };
+        assert_eq!(
+            previous_incomplete.completion(),
+            crate::Completion::BudgetExhausted
+        );
+        REEVALUATION_STAGE_OBSERVATIONS.with(|observations| observations.set([0; 5]));
+        let current = evaluator.reevaluate(
+            &corpus,
+            coordinate,
+            &previous_incomplete,
+            &mut WorkBudget::new(1_000_000, 1_000_000),
+            &crate::NeverCancelled,
+        );
+        assert!(current.is_ok());
+        let Ok(current) = current else { return };
+        assert_eq!(current.completion(), crate::Completion::Complete);
+        let observations = REEVALUATION_STAGE_OBSERVATIONS.with(std::cell::Cell::get);
+        assert_eq!(
+            observations, [0; 5],
+            "an incomplete previous report must bypass all reevaluation stages"
+        );
+    }
+
+    #[test]
+    fn complete_reevaluation_has_exact_final_budget_and_cancellation_boundaries() {
+        let coordinate = DocumentCoordinate::new(
+            ControllerPublicKey::from_bytes([0xd1; 32]),
+            DocumentId::from_bytes([0xd2; 32]),
+        );
+        let corpus = crate::CorpusBuilder::new().finish();
+        let evaluator = ReferenceEvaluator::new(crate::ProtocolRevision::draft_v1());
+        let previous = evaluator.evaluate(
+            &corpus,
+            coordinate,
+            &mut WorkBudget::new(1_000_000, 1_000_000),
+            &crate::NeverCancelled,
+        );
+        assert!(previous.is_ok());
+        let Ok(previous) = previous else { return };
+
+        let calls = std::cell::Cell::new(0_u64);
+        let counting = || {
+            calls.set(calls.get().saturating_add(1));
+            false
+        };
+        let mut measured = WorkBudget::new(1_000_000, 1_000_000);
+        REEVALUATION_STAGE_OBSERVATIONS.with(|observations| observations.set([0; 5]));
+        let complete =
+            evaluator.reevaluate(&corpus, coordinate, &previous, &mut measured, &counting);
+        assert!(complete.is_ok());
+        let Ok(complete) = complete else { return };
+        assert_eq!(complete.completion(), crate::Completion::Complete);
+        let full_observations = REEVALUATION_STAGE_OBSERVATIONS.with(std::cell::Cell::get);
+        assert!(full_observations.into_iter().all(|count| count > 0));
+        let exact_items = 1_000_000_u64.saturating_sub(measured.remaining().1);
+        let exact_calls = calls.get();
+        assert!(exact_items > 0 && exact_calls > 0);
+
+        let mut short = WorkBudget::new(1_000_000, exact_items.saturating_sub(1));
+        REEVALUATION_STAGE_OBSERVATIONS.with(|observations| observations.set([0; 5]));
+        let stopped = evaluator.reevaluate(
+            &corpus,
+            coordinate,
+            &previous,
+            &mut short,
+            &crate::NeverCancelled,
+        );
+        assert!(stopped.is_ok());
+        let Ok(stopped) = stopped else { return };
+        assert_eq!(stopped.completion(), crate::Completion::BudgetExhausted);
+        assert!(stopped.integrity_alerts().is_empty());
+        let short_observations = REEVALUATION_STAGE_OBSERVATIONS.with(std::cell::Cell::get);
+        assert_eq!(
+            short_observations[4],
+            full_observations[4].saturating_sub(1),
+            "N-1 must stop before final construction work"
+        );
+
+        let mut exact = WorkBudget::new(1_000_000, exact_items);
+        REEVALUATION_STAGE_OBSERVATIONS.with(|observations| observations.set([0; 5]));
+        let at_boundary = evaluator.reevaluate(
+            &corpus,
+            coordinate,
+            &previous,
+            &mut exact,
+            &crate::NeverCancelled,
+        );
+        assert_eq!(at_boundary, Ok(complete.clone()));
+        assert_eq!(exact.remaining().1, 0);
+        assert_eq!(
+            REEVALUATION_STAGE_OBSERVATIONS.with(std::cell::Cell::get),
+            full_observations
+        );
+
+        let cancellation_calls = std::cell::Cell::new(0_u64);
+        let cancel_at_final_boundary = || {
+            let call = cancellation_calls.get().saturating_add(1);
+            cancellation_calls.set(call);
+            call == exact_calls
+        };
+        REEVALUATION_STAGE_OBSERVATIONS.with(|observations| observations.set([0; 5]));
+        let cancelled = evaluator.reevaluate(
+            &corpus,
+            coordinate,
+            &previous,
+            &mut WorkBudget::new(1_000_000, 1_000_000),
+            &cancel_at_final_boundary,
+        );
+        assert!(cancelled.is_ok());
+        let Ok(cancelled) = cancelled else { return };
+        assert_eq!(cancelled.completion(), crate::Completion::Cancelled);
+        assert!(cancelled.integrity_alerts().is_empty());
+        assert_eq!(
+            cancellation_calls.get(),
+            exact_calls,
+            "a typed cancellation stop must not be re-queried"
+        );
+        let cancelled_observations = REEVALUATION_STAGE_OBSERVATIONS.with(std::cell::Cell::get);
+        assert_eq!(cancelled_observations, short_observations);
     }
 
     #[test]

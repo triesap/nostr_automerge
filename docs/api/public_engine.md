@@ -91,7 +91,15 @@ closed and expected reports never provide assertion selectors or values.
 Reevaluation constructs a new validated report rather than mutating an already
 sealed report. A canonical-control reorganization binds the exact previous and
 current complete reports, including prior-only affected change hashes, and its
-comparison work is charged before either summary is materialized.
+comparison work is charged before every summary item, relationship item,
+current-alert item, and final construction operation. Canonical alert
+comparisons are performed immediately after their successful charge and the
+validated alert is then constructed without a second traversal. If either report is
+incomplete, reevaluation returns the current report immediately without
+observing either summary or doing alert work. A budget or cancellation stop at
+a complete-report comparison boundary produces the same canonical no-progress
+shape and retains the original typed stop cause without another cancellation
+query.
 
 The API is alpha. Public type and method names may change before a stable crate
 release. Protocol dispositions, canonical ordering, and digest bytes follow the

@@ -88,6 +88,23 @@ impl CanonicalControlReorganizationAlert {
         })
     }
 
+    /// Constructs an alert after the engine has validated these exact fields.
+    ///
+    /// This crate-private boundary deliberately performs no validation traversal:
+    /// reevaluation validates each relationship comparison immediately after its
+    /// work charge. Public callers must use [`Self::new`].
+    pub(crate) fn from_validated_parts(
+        previous_tip: EventId,
+        new_tip: EventId,
+        affected_changes: Vec<ChangeHash>,
+    ) -> Self {
+        Self {
+            previous_tip,
+            new_tip,
+            affected_changes,
+        }
+    }
+
     /// Returns the previously selected tip.
     #[must_use]
     pub const fn previous_tip(&self) -> EventId {

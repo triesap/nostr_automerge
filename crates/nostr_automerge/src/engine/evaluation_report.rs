@@ -3,12 +3,13 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use sha2::{Digest, Sha256};
 
-use crate::control::reorganization::{ControlChainSummary, detect_reorganization};
+#[cfg(test)]
+use crate::control::reorganization::ControlChainSummary;
 use crate::evidence::document_view::DocumentEvidenceView;
 use crate::{
-    ChangeHash, CheckpointVerificationResult, Completion, DispositionsDigest, DocumentCoordinate,
-    EventId, EvidenceRecord, HistoryDigest, IntegrityAlert, ProtocolDisposition, ProtocolRevision,
-    ResolvedManifestAvailability,
+    CanonicalControlReorganizationAlert, ChangeHash, CheckpointVerificationResult, Completion,
+    DispositionsDigest, DocumentCoordinate, EventId, EvidenceRecord, HistoryDigest, IntegrityAlert,
+    ProtocolDisposition, ProtocolRevision, ResolvedManifestAvailability,
 };
 
 /// Stable category explaining why an evaluation did not complete.
@@ -381,6 +382,46 @@ impl ReportConstructionPath {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ReevaluationComparisonStage {
+    PreviousSummary,
+    CurrentSummary,
+    Relationship,
+    CurrentAlertPrefix,
+    FinalConstruction,
+}
+
+impl ReevaluationComparisonStage {
+    pub(crate) const ALL: [Self; 5] = [
+        Self::PreviousSummary,
+        Self::CurrentSummary,
+        Self::Relationship,
+        Self::CurrentAlertPrefix,
+        Self::FinalConstruction,
+    ];
+
+    pub(crate) const fn index(self) -> usize {
+        match self {
+            Self::PreviousSummary => 0,
+            Self::CurrentSummary => 1,
+            Self::Relationship => 2,
+            Self::CurrentAlertPrefix => 3,
+            Self::FinalConstruction => 4,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ReevaluationConstructionError {
+    Stopped(Completion),
+    Invariant,
+}
+
+struct ReevaluationControlSummary<'a> {
+    controls: &'a [EventId],
+    accepted_at_tip: &'a [ChangeHash],
+}
+
 impl EvaluationReport {
     pub(crate) fn from_complete_parts(
         parts: EvaluationReportParts,
@@ -396,37 +437,41 @@ impl EvaluationReport {
     }
 
     pub(crate) fn from_reevaluation(
-        current: Self,
+        mut current: Self,
         previous: &Self,
-        integrity_alerts: Vec<IntegrityAlert>,
-    ) -> Result<Self, EvaluationError> {
+        mut charge: impl FnMut(ReevaluationComparisonStage) -> Result<(), Completion>,
+    ) -> Result<Self, ReevaluationConstructionError> {
         if current.completion != Completion::Complete
             || previous.completion != Completion::Complete
             || current.revision != previous.revision
             || current.coordinate != previous.coordinate
         {
-            return Err(EvaluationError::ReportInvariant);
+            return Err(ReevaluationConstructionError::Invariant);
         }
-        let previous_summary = previous.control_chain_summary();
-        let current_summary = current.control_chain_summary();
-        let reorganization = detect_reorganization(&previous_summary, &current_summary);
-        let expected_len = current
-            .integrity_alerts
-            .len()
-            .checked_add(usize::from(reorganization.is_some()))
-            .ok_or(EvaluationError::ReportInvariant)?;
-        if integrity_alerts.len() != expected_len
-            || !integrity_alerts.starts_with(&current.integrity_alerts)
-            || integrity_alerts.get(current.integrity_alerts.len()) != reorganization.as_ref()
-        {
-            return Err(EvaluationError::ReportInvariant);
-        }
+        let previous_summary = charged_control_chain_summary(
+            previous,
+            ReevaluationComparisonStage::PreviousSummary,
+            &mut charge,
+        )?;
+        let current_summary = charged_control_chain_summary(
+            &current,
+            ReevaluationComparisonStage::CurrentSummary,
+            &mut charge,
+        )?;
+        let reorganization =
+            charged_detect_reorganization(&previous_summary, &current_summary, &mut charge)?;
+        let current_alerts = core::mem::take(&mut current.integrity_alerts);
+        let integrity_alerts =
+            charged_reevaluation_alerts(current_alerts, reorganization, &mut charge)?;
+        charge(ReevaluationComparisonStage::FinalConstruction)
+            .map_err(ReevaluationConstructionError::Stopped)?;
         Ok(Self {
             integrity_alerts,
             ..current
         })
     }
 
+    #[cfg(test)]
     pub(crate) fn control_chain_summary(&self) -> ControlChainSummary {
         let mut changes_by_control = BTreeMap::new();
         if let Some(tip) = self.canonical_controls.last().copied() {
@@ -748,6 +793,268 @@ impl EvaluationReport {
     pub const fn document(&self) -> Option<&MaterializedDocumentView> {
         self.document.as_ref()
     }
+}
+
+fn charge_reevaluation<F>(
+    charge: &mut F,
+    stage: ReevaluationComparisonStage,
+) -> Result<(), ReevaluationConstructionError>
+where
+    F: FnMut(ReevaluationComparisonStage) -> Result<(), Completion> + ?Sized,
+{
+    charge(stage).map_err(ReevaluationConstructionError::Stopped)
+}
+
+fn charged_control_chain_summary<'a, F>(
+    report: &'a EvaluationReport,
+    stage: ReevaluationComparisonStage,
+    charge: &mut F,
+) -> Result<ReevaluationControlSummary<'a>, ReevaluationConstructionError>
+where
+    F: FnMut(ReevaluationComparisonStage) -> Result<(), Completion> + ?Sized,
+{
+    charge_reevaluation(charge, stage)?;
+    let control_count = report.canonical_controls.len();
+    for index in 0..control_count {
+        charge_reevaluation(charge, stage)?;
+        report
+            .canonical_controls
+            .get(index)
+            .ok_or(ReevaluationConstructionError::Invariant)?;
+    }
+
+    charge_reevaluation(charge, stage)?;
+    let accepted_count = report.accepted_changes.len();
+    if report.canonical_controls.is_empty() && accepted_count != 0 {
+        return Err(ReevaluationConstructionError::Invariant);
+    }
+    for index in 0..accepted_count {
+        charge_reevaluation(charge, stage)?;
+        report
+            .accepted_changes
+            .get(index)
+            .ok_or(ReevaluationConstructionError::Invariant)?;
+    }
+    Ok(ReevaluationControlSummary {
+        controls: &report.canonical_controls,
+        accepted_at_tip: &report.accepted_changes,
+    })
+}
+
+fn charged_detect_reorganization<F>(
+    previous: &ReevaluationControlSummary<'_>,
+    current: &ReevaluationControlSummary<'_>,
+    charge: &mut F,
+) -> Result<Option<IntegrityAlert>, ReevaluationConstructionError>
+where
+    F: FnMut(ReevaluationComparisonStage) -> Result<(), Completion> + ?Sized,
+{
+    let stage = ReevaluationComparisonStage::Relationship;
+    charge_reevaluation(charge, stage)?;
+    let previous_count = previous.controls.len();
+    let current_count = current.controls.len();
+    if previous_count == 0 || current_count == 0 {
+        return Ok(None);
+    }
+
+    let shared_count = previous_count.min(current_count);
+    let mut common = 0;
+    while common < shared_count {
+        charge_reevaluation(charge, stage)?;
+        let previous_control = previous
+            .controls
+            .get(common)
+            .ok_or(ReevaluationConstructionError::Invariant)?;
+        let current_control = current
+            .controls
+            .get(common)
+            .ok_or(ReevaluationConstructionError::Invariant)?;
+        if previous_control != current_control {
+            break;
+        }
+        common += 1;
+    }
+    if common == previous_count && previous_count <= current_count {
+        return Ok(None);
+    }
+
+    let mut affected = Vec::new();
+    if common < previous_count {
+        affected = charged_merge_changes(&affected, previous.accepted_at_tip, charge)?;
+    }
+    if common < current_count {
+        affected = charged_merge_changes(&affected, current.accepted_at_tip, charge)?;
+    }
+
+    charge_reevaluation(charge, stage)?;
+    let previous_tip = previous
+        .controls
+        .last()
+        .copied()
+        .ok_or(ReevaluationConstructionError::Invariant)?;
+    let current_tip = current
+        .controls
+        .last()
+        .copied()
+        .ok_or(ReevaluationConstructionError::Invariant)?;
+    let alert =
+        charged_canonical_reorganization_alert(previous_tip, current_tip, affected, charge)?;
+    Ok(Some(IntegrityAlert::CanonicalControlReorganization(alert)))
+}
+
+fn charged_canonical_reorganization_alert<F>(
+    previous_tip: EventId,
+    current_tip: EventId,
+    affected: Vec<ChangeHash>,
+    charge: &mut F,
+) -> Result<CanonicalControlReorganizationAlert, ReevaluationConstructionError>
+where
+    F: FnMut(ReevaluationComparisonStage) -> Result<(), Completion> + ?Sized,
+{
+    charged_canonical_reorganization_alert_with_observer(
+        previous_tip,
+        current_tip,
+        affected,
+        charge,
+        &mut |_, _| {},
+    )
+}
+
+fn charged_canonical_reorganization_alert_with_observer<F, O>(
+    previous_tip: EventId,
+    current_tip: EventId,
+    affected: Vec<ChangeHash>,
+    charge: &mut F,
+    comparison_observer: &mut O,
+) -> Result<CanonicalControlReorganizationAlert, ReevaluationConstructionError>
+where
+    F: FnMut(ReevaluationComparisonStage) -> Result<(), Completion> + ?Sized,
+    O: FnMut(usize, std::cmp::Ordering) + ?Sized,
+{
+    let stage = ReevaluationComparisonStage::Relationship;
+    let affected_count = affected.len();
+    for index in 1..affected_count {
+        charge_reevaluation(charge, stage)?;
+        let left = affected
+            .get(index.saturating_sub(1))
+            .ok_or(ReevaluationConstructionError::Invariant)?;
+        let right = affected
+            .get(index)
+            .ok_or(ReevaluationConstructionError::Invariant)?;
+        let ordering = left.cmp(right);
+        comparison_observer(index.saturating_sub(1), ordering);
+        if ordering != std::cmp::Ordering::Less {
+            return Err(ReevaluationConstructionError::Invariant);
+        }
+    }
+    charge_reevaluation(charge, stage)?;
+    let tip_ordering = previous_tip.cmp(&current_tip);
+    comparison_observer(affected_count, tip_ordering);
+    if tip_ordering == std::cmp::Ordering::Equal {
+        return Err(ReevaluationConstructionError::Invariant);
+    }
+    Ok(CanonicalControlReorganizationAlert::from_validated_parts(
+        previous_tip,
+        current_tip,
+        affected,
+    ))
+}
+
+fn charged_merge_changes<F>(
+    left: &[ChangeHash],
+    right: &[ChangeHash],
+    charge: &mut F,
+) -> Result<Vec<ChangeHash>, ReevaluationConstructionError>
+where
+    F: FnMut(ReevaluationComparisonStage) -> Result<(), Completion> + ?Sized,
+{
+    let stage = ReevaluationComparisonStage::Relationship;
+    charge_reevaluation(charge, stage)?;
+    let left_count = left.len();
+    let right_count = right.len();
+    let mut left_index = 0;
+    let mut right_index = 0;
+    let mut left_value = None;
+    let mut right_value = None;
+    let mut merged = Vec::new();
+
+    while left_index < left_count
+        || right_index < right_count
+        || left_value.is_some()
+        || right_value.is_some()
+    {
+        if left_value.is_none() && left_index < left_count {
+            charge_reevaluation(charge, stage)?;
+            left_value = left.get(left_index).copied();
+            if left_value.is_none() {
+                return Err(ReevaluationConstructionError::Invariant);
+            }
+            left_index += 1;
+        }
+        if right_value.is_none() && right_index < right_count {
+            charge_reevaluation(charge, stage)?;
+            right_value = right.get(right_index).copied();
+            if right_value.is_none() {
+                return Err(ReevaluationConstructionError::Invariant);
+            }
+            right_index += 1;
+        }
+
+        charge_reevaluation(charge, stage)?;
+        let value = match (left_value, right_value) {
+            (Some(left), Some(right)) => match left.cmp(&right) {
+                std::cmp::Ordering::Less => {
+                    left_value = None;
+                    left
+                }
+                std::cmp::Ordering::Greater => {
+                    right_value = None;
+                    right
+                }
+                std::cmp::Ordering::Equal => {
+                    left_value = None;
+                    right_value = None;
+                    left
+                }
+            },
+            (Some(left), None) => {
+                left_value = None;
+                left
+            }
+            (None, Some(right)) => {
+                right_value = None;
+                right
+            }
+            (None, None) => return Err(ReevaluationConstructionError::Invariant),
+        };
+        charge_reevaluation(charge, stage)?;
+        merged.push(value);
+    }
+    Ok(merged)
+}
+
+fn charged_reevaluation_alerts<F>(
+    mut current: Vec<IntegrityAlert>,
+    reorganization: Option<IntegrityAlert>,
+    charge: &mut F,
+) -> Result<Vec<IntegrityAlert>, ReevaluationConstructionError>
+where
+    F: FnMut(ReevaluationComparisonStage) -> Result<(), Completion> + ?Sized,
+{
+    let stage = ReevaluationComparisonStage::CurrentAlertPrefix;
+    charge_reevaluation(charge, stage)?;
+    let alert_count = current.len();
+    for index in 0..alert_count {
+        charge_reevaluation(charge, stage)?;
+        current
+            .get(index)
+            .ok_or(ReevaluationConstructionError::Invariant)?;
+    }
+    if let Some(reorganization) = reorganization {
+        charge_reevaluation(charge, stage)?;
+        current.push(reorganization);
+    }
+    Ok(current)
 }
 
 fn no_progress_parts_are_canonical(parts: &EvaluationReportParts) -> bool {
@@ -1330,11 +1637,14 @@ fn strictly_sorted<T: Ord>(values: &[T]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{
-        AttributableCarrierOutcome, CompleteReportFieldAuthority, CompleteReportSourceAuthority,
-        CompleteReportWitness, DispositionRecord, EvaluationReport, EvaluationReportParts,
-        ProtocolItemIdentifier, ReportConstructionPath, detect_reorganization,
-        disposition_records_are_canonical,
+        AttributableCarrierOutcome, CanonicalControlReorganizationAlert,
+        CompleteReportFieldAuthority, CompleteReportSourceAuthority, CompleteReportWitness,
+        DispositionRecord, EvaluationReport, EvaluationReportParts, ProtocolItemIdentifier,
+        ReevaluationComparisonStage, ReevaluationConstructionError, ReevaluationControlSummary,
+        ReportConstructionPath, charged_canonical_reorganization_alert_with_observer,
+        charged_detect_reorganization, disposition_records_are_canonical,
     };
+    use crate::control::reorganization::detect_reorganization;
     use std::collections::{BTreeMap, BTreeSet};
 
     #[test]
@@ -1750,62 +2060,10 @@ mod tests {
         };
         let base_alert = current.integrity_alerts()[0].clone();
         let canonical = vec![base_alert.clone(), reorganization.clone()];
-        let report =
-            EvaluationReport::from_reevaluation(current.clone(), &previous, canonical.clone());
+        let report = EvaluationReport::from_reevaluation(current.clone(), &previous, |_| Ok(()));
         assert!(report.is_ok());
         let Ok(report) = report else { return };
         assert_eq!(report.integrity_alerts(), canonical);
-
-        for (name, mutation) in [
-            ("missing", vec![base_alert.clone()]),
-            (
-                "extra",
-                vec![
-                    base_alert.clone(),
-                    reorganization.clone(),
-                    reorganization.clone(),
-                ],
-            ),
-            ("order", vec![reorganization.clone(), base_alert.clone()]),
-            (
-                "duplicate",
-                vec![
-                    base_alert.clone(),
-                    base_alert.clone(),
-                    reorganization.clone(),
-                ],
-            ),
-        ] {
-            assert_eq!(
-                EvaluationReport::from_reevaluation(current.clone(), &previous, mutation),
-                Err(super::EvaluationError::ReportInvariant),
-                "{name}"
-            );
-        }
-
-        let previous_tip = previous.canonical_controls().last().copied();
-        let current_tip = current.canonical_controls().last().copied();
-        assert!(previous_tip.is_some() && current_tip.is_some());
-        let (Some(previous_tip), Some(current_tip)) = (previous_tip, current_tip) else {
-            return;
-        };
-        let forged = crate::CanonicalControlReorganizationAlert::new(
-            previous_tip,
-            current_tip,
-            vec![ChangeHash::from_bytes([99; 32])],
-        )
-        .ok()
-        .map(IntegrityAlert::CanonicalControlReorganization);
-        assert!(forged.is_some());
-        let Some(forged) = forged else { return };
-        assert_eq!(
-            EvaluationReport::from_reevaluation(
-                current.clone(),
-                &previous,
-                vec![base_alert, forged],
-            ),
-            Err(super::EvaluationError::ReportInvariant)
-        );
 
         let mut injected_parts = complete_matrix_parts();
         assert!(injected_parts.is_some());
@@ -1818,6 +2076,333 @@ mod tests {
             complete_report(injected_parts.clone(), &injected_authority),
             Err(super::EvaluationError::ReportInvariant)
         );
+    }
+
+    #[test]
+    fn reevaluation_comparison_is_charged_per_item_and_preserves_typed_stops() {
+        let Some((previous, current, _)) = reevaluation_report_pair() else {
+            return;
+        };
+
+        let mut full_trace = Vec::new();
+        let complete = EvaluationReport::from_reevaluation(current.clone(), &previous, |stage| {
+            full_trace.push(stage);
+            Ok(())
+        });
+        assert!(complete.is_ok());
+        assert!(!full_trace.is_empty());
+        assert!(
+            full_trace
+                .windows(2)
+                .all(|pair| pair[0].index() <= pair[1].index())
+        );
+        for stage in ReevaluationComparisonStage::ALL {
+            assert!(
+                full_trace.contains(&stage),
+                "missing charged stage {stage:?}"
+            );
+        }
+
+        for stage in ReevaluationComparisonStage::ALL {
+            let stage_end = full_trace
+                .iter()
+                .rposition(|candidate| *candidate == stage)
+                .map(|index| index + 1);
+            assert!(stage_end.is_some());
+            let Some(stage_end) = stage_end else { continue };
+            let n = u64::try_from(stage_end).unwrap_or(u64::MAX);
+
+            let mut budget = crate::WorkBudget::new(0, n.saturating_sub(1));
+            let mut observed = Vec::new();
+            let stopped =
+                EvaluationReport::from_reevaluation(current.clone(), &previous, |candidate| {
+                    budget
+                        .charge(crate::WorkCounter::Assertion, 1)
+                        .map_err(|_| Completion::BudgetExhausted)?;
+                    observed.push(candidate);
+                    Ok(())
+                });
+            assert_eq!(
+                stopped,
+                Err(ReevaluationConstructionError::Stopped(
+                    Completion::BudgetExhausted
+                )),
+                "{stage:?} N-1"
+            );
+            assert_eq!(observed, full_trace[..stage_end.saturating_sub(1)]);
+
+            let mut budget = crate::WorkBudget::new(0, n);
+            let mut observed = Vec::new();
+            let at_boundary =
+                EvaluationReport::from_reevaluation(current.clone(), &previous, |candidate| {
+                    budget
+                        .charge(crate::WorkCounter::Assertion, 1)
+                        .map_err(|_| Completion::BudgetExhausted)?;
+                    observed.push(candidate);
+                    Ok(())
+                });
+            assert_eq!(observed, full_trace[..stage_end]);
+            if stage == ReevaluationComparisonStage::FinalConstruction {
+                assert!(at_boundary.is_ok(), "{stage:?} N");
+            } else {
+                assert_eq!(
+                    at_boundary,
+                    Err(ReevaluationConstructionError::Stopped(
+                        Completion::BudgetExhausted
+                    )),
+                    "{stage:?} N"
+                );
+            }
+
+            let stop_index = stage_end.saturating_sub(1);
+            let mut callback_calls = 0_usize;
+            let mut observed = Vec::new();
+            let cancelled =
+                EvaluationReport::from_reevaluation(current.clone(), &previous, |candidate| {
+                    let call = callback_calls;
+                    callback_calls = callback_calls.saturating_add(1);
+                    if call == stop_index {
+                        return Err(Completion::Cancelled);
+                    }
+                    observed.push(candidate);
+                    Ok(())
+                });
+            assert_eq!(
+                cancelled,
+                Err(ReevaluationConstructionError::Stopped(
+                    Completion::Cancelled
+                )),
+                "{stage:?} cancellation"
+            );
+            assert_eq!(callback_calls, stage_end);
+            assert_eq!(observed, full_trace[..stop_index]);
+        }
+    }
+
+    #[test]
+    fn reevaluation_comparison_does_not_mask_an_unexpected_callback_panic() {
+        #[derive(Debug, PartialEq, Eq)]
+        struct UnexpectedComparisonFailure(u8);
+
+        let Some((previous, current, _)) = reevaluation_report_pair() else {
+            return;
+        };
+        let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _ = EvaluationReport::from_reevaluation(current, &previous, |stage| {
+                if stage == ReevaluationComparisonStage::Relationship {
+                    std::panic::resume_unwind(Box::new(UnexpectedComparisonFailure(82)));
+                }
+                Ok(())
+            });
+        }));
+        assert!(panic.is_err());
+        let Err(panic) = panic else { return };
+        assert_eq!(
+            panic.downcast_ref::<UnexpectedComparisonFailure>(),
+            Some(&UnexpectedComparisonFailure(82))
+        );
+    }
+
+    #[test]
+    fn canonical_alert_comparisons_are_interleaved_with_successful_charges() {
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        enum Observation {
+            Charge,
+            Comparison(usize, std::cmp::Ordering),
+        }
+
+        let previous_tip = EventId::from_bytes([100; 32]);
+        let current_tip = EventId::from_bytes([101; 32]);
+        let affected = vec![
+            ChangeHash::from_bytes([102; 32]),
+            ChangeHash::from_bytes([103; 32]),
+            ChangeHash::from_bytes([104; 32]),
+        ];
+        let observations = std::cell::RefCell::new(Vec::new());
+        let result = charged_canonical_reorganization_alert_with_observer(
+            previous_tip,
+            current_tip,
+            affected.clone(),
+            &mut |_| {
+                observations.borrow_mut().push(Observation::Charge);
+                Ok(())
+            },
+            &mut |index, ordering| {
+                observations
+                    .borrow_mut()
+                    .push(Observation::Comparison(index, ordering));
+            },
+        );
+        assert!(result.is_ok());
+        assert_eq!(
+            observations.into_inner(),
+            vec![
+                Observation::Charge,
+                Observation::Comparison(0, std::cmp::Ordering::Less),
+                Observation::Charge,
+                Observation::Comparison(1, std::cmp::Ordering::Less),
+                Observation::Charge,
+                Observation::Comparison(3, std::cmp::Ordering::Less),
+            ]
+        );
+
+        let comparison_count = affected.len();
+        let mut budget = crate::WorkBudget::new(
+            0,
+            u64::try_from(comparison_count.saturating_sub(1)).unwrap_or(u64::MAX),
+        );
+        let mut comparisons = 0_usize;
+        let stopped = charged_canonical_reorganization_alert_with_observer(
+            previous_tip,
+            current_tip,
+            affected.clone(),
+            &mut |_| {
+                budget
+                    .charge(crate::WorkCounter::Assertion, 1)
+                    .map_err(|_| Completion::BudgetExhausted)
+            },
+            &mut |_, _| comparisons = comparisons.saturating_add(1),
+        );
+        assert_eq!(
+            stopped,
+            Err(ReevaluationConstructionError::Stopped(
+                Completion::BudgetExhausted
+            ))
+        );
+        assert_eq!(comparisons, comparison_count.saturating_sub(1));
+
+        for cancelled_comparison in 0..comparison_count {
+            let mut callback_calls = 0_usize;
+            let mut comparisons = 0_usize;
+            let stopped = charged_canonical_reorganization_alert_with_observer(
+                previous_tip,
+                current_tip,
+                affected.clone(),
+                &mut |_| {
+                    let call = callback_calls;
+                    callback_calls = callback_calls.saturating_add(1);
+                    if call == cancelled_comparison {
+                        Err(Completion::Cancelled)
+                    } else {
+                        Ok(())
+                    }
+                },
+                &mut |_, _| comparisons = comparisons.saturating_add(1),
+            );
+            assert_eq!(
+                stopped,
+                Err(ReevaluationConstructionError::Stopped(
+                    Completion::Cancelled
+                ))
+            );
+            assert_eq!(callback_calls, cancelled_comparison.saturating_add(1));
+            assert_eq!(comparisons, cancelled_comparison);
+        }
+
+        for noncanonical in [
+            vec![affected[0], affected[0]],
+            vec![affected[1], affected[0]],
+        ] {
+            let result = charged_canonical_reorganization_alert_with_observer(
+                previous_tip,
+                current_tip,
+                noncanonical,
+                &mut |_| Ok(()),
+                &mut |_, _| {},
+            );
+            assert_eq!(result, Err(ReevaluationConstructionError::Invariant));
+        }
+        let equal_tip = charged_canonical_reorganization_alert_with_observer(
+            previous_tip,
+            previous_tip,
+            Vec::new(),
+            &mut |_| Ok(()),
+            &mut |_, _| {},
+        );
+        assert_eq!(equal_tip, Err(ReevaluationConstructionError::Invariant));
+        assert!(
+            CanonicalControlReorganizationAlert::new(
+                previous_tip,
+                current_tip,
+                vec![affected[0], affected[0]],
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn charged_reevaluation_relationship_matches_the_canonical_state_table() {
+        let root = EventId::from_bytes([90; 32]);
+        let old = EventId::from_bytes([91; 32]);
+        let new = EventId::from_bytes([92; 32]);
+        let extension = EventId::from_bytes([93; 32]);
+        let old_change = ChangeHash::from_bytes([94; 32]);
+        let new_change = ChangeHash::from_bytes([95; 32]);
+
+        let cases = [
+            ("empty", Vec::new(), Vec::new(), Vec::new(), Vec::new()),
+            (
+                "identical",
+                vec![root, old],
+                vec![old_change],
+                vec![root, old],
+                vec![old_change],
+            ),
+            (
+                "extension",
+                vec![root, old],
+                vec![old_change],
+                vec![root, old, extension],
+                vec![old_change, new_change],
+            ),
+            (
+                "rollback",
+                vec![root, old],
+                vec![old_change],
+                vec![root],
+                vec![new_change],
+            ),
+            (
+                "fork",
+                vec![root, old],
+                vec![old_change],
+                vec![root, new],
+                vec![new_change],
+            ),
+        ];
+
+        for (name, previous_controls, previous_changes, current_controls, current_changes) in cases
+        {
+            let legacy = |controls: Vec<EventId>, changes: Vec<ChangeHash>| {
+                let mut changes_by_control = BTreeMap::new();
+                if let Some(tip) = controls.last().copied() {
+                    changes_by_control.insert(tip, changes.iter().copied().collect());
+                }
+                crate::control::reorganization::ControlChainSummary {
+                    controls,
+                    changes_by_control,
+                }
+            };
+            let expected = detect_reorganization(
+                &legacy(previous_controls.clone(), previous_changes.clone()),
+                &legacy(current_controls.clone(), current_changes.clone()),
+            );
+            let previous = ReevaluationControlSummary {
+                controls: &previous_controls,
+                accepted_at_tip: &previous_changes,
+            };
+            let current = ReevaluationControlSummary {
+                controls: &current_controls,
+                accepted_at_tip: &current_changes,
+            };
+            let mut observations = 0_u64;
+            let actual = charged_detect_reorganization(&previous, &current, &mut |_| {
+                observations = observations.saturating_add(1);
+                Ok(())
+            });
+            assert_eq!(actual, Ok(expected), "{name}");
+            assert!(observations > 0, "{name}");
+        }
     }
 
     #[test]

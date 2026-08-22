@@ -38,6 +38,10 @@ FIXED_CASES = (
         "lib",
         "engine::evaluation_report::tests::finding_081_incomplete_report_rejects_canonical_cross_view_state",
     ),
+    (
+        "lib",
+        "engine::reference_evaluator::tests::finding_082_reevaluation_stops_before_post_incomplete_alert_work",
+    ),
 )
 OPEN_CASES = (
     (
@@ -57,15 +61,6 @@ OPEN_CASES = (
         "crates/nostr_automerge/src/reference/evaluate.rs",
         "(false, 0)",
         "(true, 0)",
-    ),
-    (
-        "lib",
-        "engine::reference_evaluator::tests::finding_082_reevaluation_stops_before_post_incomplete_alert_work",
-        "FINDING_082 reproduced: reevaluation performs summary work after incomplete finalization",
-        "left == right",
-        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "1",
-        "0",
     ),
     (
         "lib",

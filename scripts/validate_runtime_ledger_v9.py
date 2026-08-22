@@ -261,6 +261,7 @@ PREDECESSOR_CANDIDATES = (
     "4eeb074d160739300451561bcae267010d5353fc",
     "36458c459db30c8b6cf1f5da6fb6ef1a5df01db3",
     "7431706c1f54bfaf5ad6b7d7f69819ec3c1ab320",
+    "7f73902d2272c56012b65cc5700d9ccad2a85783",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -279,11 +280,15 @@ REPORT_REVISION_INVENTORY = (
 REPORT_REVISION_SOURCE_BINDINGS = (
     (
         "crates/nostr_automerge/src/engine/evaluation_report.rs",
-        "1d29dc39a1e90f5becc749b78ce56fd4592e4a935988a48597c88849175787fa",
+        "60cdf47bed3c414d08f7af944ad1c675337b4f0eb889b380352231ddcc32d5c9",
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "687efba4e3516acc62860656fa459d9098749e1c81bddf68224cb6ba8661c68f",
+        "816060f0d66ded5664fdf63b5164d353e28d31df743583673f386566e595c1db",
+    ),
+    (
+        "crates/nostr_automerge/src/integrity.rs",
+        "9f52c2543cf59a5ef112a561d137415ced360c6b6294c7ff2bc561a9a649b364",
     ),
     (
         "crates/nostr_automerge/src/reference/evaluate.rs",
@@ -322,9 +327,7 @@ CLOSURE_PATHS = frozenset(
     {
         "crates/nostr_automerge/src/engine/evaluation_report.rs",
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "crates/nostr_automerge/src/reference/evaluate.rs",
-        "crates/nostr_automerge/tests/public_engine_api.rs",
-        "crates/nostr_automerge/tests/remediation_v8_reproductions.rs",
+        "crates/nostr_automerge/src/integrity.rs",
         "docs/api/public_engine.md",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
@@ -334,9 +337,7 @@ CLOSURE_PATHS = frozenset(
         "scripts/reproduce_remediation_v9.py",
         "scripts/validate_carrier_gate_v9.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
-        "scripts/validate_remediation_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
-        "spec/remediation_findings_v9.json",
     }
 )
 CLOSURE_NEW_PATHS = frozenset()
@@ -386,6 +387,7 @@ EXPECTED_GATES = (
     ("V-REPORT",),
     ("V-REPORT",),
     ("V-REPORT",),
+    ("V-RUST",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -482,6 +484,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-DISPOSITION-006", "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-DISPOSITION-006", "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-INTERRUPT-001", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -537,6 +540,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_081",),
     ("FINDING_081",),
     ("FINDING_081",),
+    ("FINDING_075",),
 )
 FORBIDDEN_KEY_WORDS = {
     "source",
@@ -658,6 +662,9 @@ def validate_report_revision_inventory(
     reference = source_values[
         "crates/nostr_automerge/src/engine/reference_evaluator.rs"
     ].decode("utf-8")
+    integrity = source_values["crates/nostr_automerge/src/integrity.rs"].decode(
+        "utf-8"
+    )
     batch = source_values["crates/nostr_automerge/src/reference/evaluate.rs"].decode(
         "utf-8"
     )
@@ -682,6 +689,12 @@ def validate_report_revision_inventory(
     scenario = source_values[
         "tools/nostr_automerge_conformance/src/scenario.rs"
     ].decode("utf-8")
+    reorganization_impl = integrity.split(
+        "impl CanonicalControlReorganizationAlert {", 1
+    )[1].split("/// Returns the previously selected tip.", 1)[0]
+    public_alert_constructor, trusted_alert_constructor = reorganization_impl.split(
+        "pub(crate) fn from_validated_parts(", 1
+    )
 
     for identifier in ("complete", "no_progress"):
         require(
@@ -752,6 +765,60 @@ def validate_report_revision_inventory(
     require(
         "if previous.revision() != self.revision" in reference,
         "report_inventory:reevaluation_revision",
+    )
+    reevaluation = reference.split("pub fn reevaluate(", 1)[1].split(
+        "\n    }\n}\n", 1
+    )[0]
+    incomplete_guard = reevaluation.find(
+        "if previous.completion() != Completion::Complete\n"
+        "            || current.completion() != Completion::Complete"
+    )
+    coordinate_guard = reevaluation.find("if previous.coordinate() != coordinate")
+    comparison = reevaluation.find("EvaluationReport::from_reevaluation(")
+    require(
+        0 <= incomplete_guard < coordinate_guard < comparison
+        and "charge_reevaluation_comparison" not in reference
+        and "detect_reorganization(" not in reevaluation
+        and "observe_reevaluation_stage(stage);" in reevaluation,
+        "report_inventory:reevaluation_stop_order",
+    )
+    require(
+        "enum ReevaluationComparisonStage" in evaluation
+        and "Self::PreviousSummary" in evaluation
+        and "Self::CurrentSummary" in evaluation
+        and "Self::Relationship" in evaluation
+        and "Self::CurrentAlertPrefix" in evaluation
+        and "Self::FinalConstruction" in evaluation
+        and "fn charged_control_chain_summary" in evaluation
+        and "fn charged_detect_reorganization" in evaluation
+        and "fn charged_canonical_reorganization_alert_with_observer" in evaluation
+        and "fn charged_merge_changes" in evaluation
+        and "fn charged_reevaluation_alerts" in evaluation
+        and "affected.insert(" not in evaluation
+        and "reevaluation_comparison_is_charged_per_item_and_preserves_typed_stops"
+        in evaluation
+        and "reevaluation_comparison_does_not_mask_an_unexpected_callback_panic"
+        in evaluation
+        and "charged_reevaluation_relationship_matches_the_canonical_state_table"
+        in evaluation
+        and "canonical_alert_comparisons_are_interleaved_with_successful_charges"
+        in evaluation
+        and "CanonicalControlReorganizationAlert::new(previous_tip, current_tip, affected)"
+        not in evaluation
+        and evaluation.count(
+            "CanonicalControlReorganizationAlert::from_validated_parts("
+        )
+        == 1
+        and "canonical(&affected_changes, 0)?;" in public_alert_constructor
+        and "previous_tip == new_tip" in public_alert_constructor
+        and "canonical(" not in trusted_alert_constructor
+        and ".windows(" not in trusted_alert_constructor
+        and ".cmp(" not in trusted_alert_constructor
+        and "previous_tip == new_tip" not in trusted_alert_constructor
+        and "complete_reevaluation_has_exact_final_budget_and_cancellation_boundaries"
+        in reference
+        and "#[ignore = \"expected to fail until FINDING_082 closes\"]" not in reference,
+        "report_inventory:reevaluation_metering",
     )
     require(
         "pub const fn revision(&self) -> ProtocolRevision" in evaluation,
