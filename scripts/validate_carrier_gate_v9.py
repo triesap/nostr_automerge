@@ -36,6 +36,7 @@ STEP_1198_CANDIDATE = "0fc39bfaedb156c3a6c3b914dd09791303c8d0b6"
 STEP_1199_CANDIDATE = "a52281455f350faee6408d6c508295598379f439"
 STEP_1200_CANDIDATE = "4eeb074d160739300451561bcae267010d5353fc"
 STEP_1201_CANDIDATE = "36458c459db30c8b6cf1f5da6fb6ef1a5df01db3"
+STEP_1202_CANDIDATE = "7431706c1f54bfaf5ad6b7d7f69819ec3c1ab320"
 STEP_1195_SCOPE_IDENTITY = (
     "9d7a285d9e9f9fc3b6c566aa6bd776030df8f2ee078d0e254c696446a462f0fd"
 )
@@ -136,12 +137,26 @@ PRE_STEP_1202_ADDITIVE_REPORT_PATHS = (
     "tools/nostr_automerge_conformance/src/fixture_generation.rs",
     "tools/nostr_automerge_conformance/src/runner.rs",
 )
-CONFORMANCE_ADDITIVE_REPORT_PATHS = (
+STEP_1202_ADDITIVE_REPORT_PATHS = (
     "crates/nostr_automerge/src/automerge_adapter/materialized_view.rs",
     *PRE_STEP_1202_ADDITIVE_REPORT_PATHS,
 )
-CONFORMANCE_ADDITIVE_REPORT_PROJECTION = (
+STEP_1202_ADDITIVE_REPORT_PROJECTION = (
     "3d8732e63982b19352cbdef6fe6c4b31f7bf50928f73651e12035c42e4255170"
+)
+CONFORMANCE_ADDITIVE_REPORT_PATHS = (
+    "crates/nostr_automerge/src/automerge_adapter/materialized_view.rs",
+    "crates/nostr_automerge/src/engine/evaluation_report.rs",
+    "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+    "crates/nostr_automerge/src/reference/evaluate.rs",
+    "crates/nostr_automerge/tests/public_engine_api.rs",
+    "crates/nostr_automerge/tests/remediation_v8_reproductions.rs",
+    "tools/nostr_automerge_conformance/src/expected.rs",
+    "tools/nostr_automerge_conformance/src/fixture_generation.rs",
+    "tools/nostr_automerge_conformance/src/runner.rs",
+)
+CONFORMANCE_ADDITIVE_REPORT_PROJECTION = (
+    "5a6294997598c6e502276d678d2bc996864d893c458db94ce1db58e3c5fdb481"
 )
 STEP_1200_ADDITIVE_REPORT_PROJECTION = (
     "375f23fb40523f90635f5bdb794f0ebbf062c21c677bbb2410af3fb3bf3d20dc"
@@ -360,26 +375,42 @@ def conformance_source_mutation_self_test() -> int:
         STEP_1201_ADDITIVE_REPORT_PROJECTION,
         PRE_STEP_1202_ADDITIVE_REPORT_PATHS,
     )
+    require(
+        git_bytes("rev-parse", f"{STEP_1202_CANDIDATE}^").decode().strip()
+        == STEP_1201_CANDIDATE,
+        "carrier_gate:complete_field_report_parent",
+    )
+    complete_field_names, complete_field_patch = conformance_source_diff(
+        STEP_1202_CANDIDATE
+    )
+    validate_committed_additive_report_child(
+        STEP_1201_CANDIDATE,
+        STEP_1201_CANDIDATE,
+        complete_field_names,
+        complete_field_patch,
+        STEP_1202_ADDITIVE_REPORT_PROJECTION,
+        STEP_1202_ADDITIVE_REPORT_PATHS,
+    )
     committed_names, committed_patch = conformance_source_diff(None)
-    committed_parent = STEP_1201_CANDIDATE
+    committed_parent = STEP_1202_CANDIDATE
     validate_committed_additive_report_child(
         committed_parent,
-        STEP_1201_CANDIDATE,
+        STEP_1202_CANDIDATE,
         committed_names,
         committed_patch,
         CONFORMANCE_ADDITIVE_REPORT_PROJECTION,
     )
     head = git_bytes("rev-parse", "HEAD").decode().strip()
-    if head != STEP_1201_CANDIDATE:
+    if head != STEP_1202_CANDIDATE:
         require(
             git_bytes("rev-parse", "HEAD^").decode().strip()
-            == STEP_1201_CANDIDATE,
+            == STEP_1202_CANDIDATE,
             "carrier_gate:actual_postcommit_parent",
         )
         actual_names, actual_patch = conformance_source_diff("HEAD")
         validate_committed_additive_report_child(
-            STEP_1201_CANDIDATE,
-            STEP_1201_CANDIDATE,
+            STEP_1202_CANDIDATE,
+            STEP_1202_CANDIDATE,
             actual_names,
             actual_patch,
             CONFORMANCE_ADDITIVE_REPORT_PROJECTION,
@@ -405,7 +436,7 @@ def conformance_source_mutation_self_test() -> int:
         try:
             validate_committed_additive_report_child(
                 parent,
-                STEP_1201_CANDIDATE,
+                STEP_1202_CANDIDATE,
                 names,
                 patch,
                 CONFORMANCE_ADDITIVE_REPORT_PROJECTION,

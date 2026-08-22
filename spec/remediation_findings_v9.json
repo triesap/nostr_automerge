@@ -133,12 +133,12 @@
         {
           "kind": "public_source",
           "path": "crates/nostr_automerge/src/reference/evaluate.rs",
-          "locator": "struct PreservedBatchProgress"
+          "locator": "fn no_progress_batch_report("
         },
         {
           "kind": "public_source",
           "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-          "locator": "fn prepare_interrupted_batch_report("
+          "locator": "fn prepare_no_progress_interrupted_report("
         }
       ],
       "governing_requirement_ids": ["NCRDT-INTERRUPT-001", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],

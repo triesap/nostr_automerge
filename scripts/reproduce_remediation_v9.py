@@ -23,6 +23,10 @@ FIXED_CASES = (
         "finding_074_invalid_carrier_is_independent_of_excluded_hash",
     ),
     (
+        "lib",
+        "reference::evaluate::tests::finding_075_interrupted_batch_discards_all_canonical_progress",
+    ),
+    (
         "public_engine_api",
         "finding_079_unsupported_carrier_does_not_create_semantic_hash_state",
     ),
@@ -36,15 +40,6 @@ FIXED_CASES = (
     ),
 )
 OPEN_CASES = (
-    (
-        "lib",
-        "reference::evaluate::tests::finding_075_interrupted_batch_discards_all_canonical_progress",
-        "FINDING_075 reproduced: an interrupted batch exposes partial canonical progress",
-        "left == right",
-        "crates/nostr_automerge/src/reference/evaluate.rs",
-        "(1, 2, 0, 1)",
-        "(0, 0, 0, 0)",
-    ),
     (
         "lib",
         "engine::reference_evaluator::tests::finding_076_finalization_rejects_reordered_named_passes",

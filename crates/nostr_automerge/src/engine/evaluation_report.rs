@@ -367,17 +367,15 @@ impl CompleteReportFieldAuthority {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum ReportConstructionPath {
     Complete,
-    InterruptedBatch,
     NoProgress,
 }
 
 impl ReportConstructionPath {
-    pub(crate) const ALL: [Self; 3] = [Self::Complete, Self::InterruptedBatch, Self::NoProgress];
+    pub(crate) const ALL: [Self; 2] = [Self::Complete, Self::NoProgress];
 
     pub(crate) const fn identifier(self) -> &'static str {
         match self {
             Self::Complete => "complete",
-            Self::InterruptedBatch => "interrupted_batch",
             Self::NoProgress => "no_progress",
         }
     }
@@ -389,12 +387,6 @@ impl EvaluationReport {
         witness: CompleteReportWitness<'_>,
     ) -> Result<Self, EvaluationError> {
         Self::from_parts(ReportConstructionPath::Complete, parts, Some(witness))
-    }
-
-    pub(crate) fn from_interrupted_batch_parts(
-        parts: EvaluationReportParts,
-    ) -> Result<Self, EvaluationError> {
-        Self::from_parts(ReportConstructionPath::InterruptedBatch, parts, None)
     }
 
     pub(crate) fn from_no_progress_parts(
@@ -455,7 +447,7 @@ impl EvaluationReport {
             (construction, parts.completion),
             (ReportConstructionPath::Complete, Completion::Complete)
                 | (
-                    ReportConstructionPath::InterruptedBatch | ReportConstructionPath::NoProgress,
+                    ReportConstructionPath::NoProgress,
                     Completion::BudgetExhausted | Completion::Cancelled,
                 )
         );
@@ -1348,16 +1340,13 @@ mod tests {
     #[test]
     fn report_construction_inventory_is_closed_and_ordered() {
         let identifiers = ReportConstructionPath::ALL.map(ReportConstructionPath::identifier);
-        assert_eq!(
-            identifiers,
-            ["complete", "interrupted_batch", "no_progress"]
-        );
+        assert_eq!(identifiers, ["complete", "no_progress"]);
 
         for invalid in [
-            &["complete", "interrupted_batch"][..],
-            &["complete", "interrupted_batch", "no_progress", "alternate"][..],
-            &["interrupted_batch", "complete", "no_progress"][..],
-            &["complete", "stale", "no_progress"][..],
+            &["complete"][..],
+            &["complete", "no_progress", "alternate"][..],
+            &["no_progress", "complete"][..],
+            &["complete", "stale"][..],
         ] {
             assert_ne!(invalid, identifiers);
         }
@@ -2534,7 +2523,6 @@ mod tests {
             return;
         };
         assert!(EvaluationReport::from_no_progress_parts(parts.clone()).is_ok());
-        assert!(EvaluationReport::from_interrupted_batch_parts(parts.clone()).is_ok());
 
         let event = EventId::from_bytes([1; 32]);
         let second_event = EventId::from_bytes([2; 32]);
@@ -2679,7 +2667,7 @@ mod tests {
         complete.completion = Completion::Complete;
         complete.failure = None;
         assert_eq!(
-            EvaluationReport::from_interrupted_batch_parts(complete),
+            EvaluationReport::from_no_progress_parts(complete),
             Err(super::EvaluationError::ReportInvariant)
         );
     }
@@ -2783,7 +2771,7 @@ mod tests {
         let mut incomplete_with_document = parts();
         incomplete_with_document.completion = Completion::Cancelled;
         incomplete_with_document.failure = Some(super::EvaluationFailure::Cancelled);
-        assert!(EvaluationReport::from_interrupted_batch_parts(incomplete_with_document).is_err());
+        assert!(EvaluationReport::from_no_progress_parts(incomplete_with_document).is_err());
     }
 
     #[test]
@@ -3089,7 +3077,7 @@ mod tests {
         let Ok(coordinate) = coordinate else { return };
         let control = EventId::from_bytes([1; 32]);
         let hash = ChangeHash::from_bytes([2; 32]);
-        let report = EvaluationReport::from_interrupted_batch_parts(EvaluationReportParts {
+        let report = EvaluationReport::from_no_progress_parts(EvaluationReportParts {
             coordinate,
             revision: crate::ProtocolRevision::draft_v1(),
             canonical_controls: vec![control],

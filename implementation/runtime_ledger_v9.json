@@ -3,10 +3,10 @@
   "status": "in_progress",
   "rcld": 85,
   "cursor": {
-    "active_step": "step_1202",
-    "next_step": "step_1203",
+    "active_step": "step_1203",
+    "next_step": "step_1204",
     "last_step": "step_1283",
-    "remaining_checkpoint_count": 82,
+    "remaining_checkpoint_count": 81,
     "first_rcld": 85,
     "last_rcld": 94,
     "remaining_rcld_count": 10
@@ -566,6 +566,16 @@
     {
       "step": "step_1201",
       "candidate": "36458c459db30c8b6cf1f5da6fb6ef1a5df01db3",
+      "owner_class": "public",
+      "gate_ids": ["V-REPORT"],
+      "requirement_ids": ["NCRDT-DISPOSITION-006", "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_081"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1202",
+      "candidate": "7431706c1f54bfaf5ad6b7d7f69819ec3c1ab320",
       "owner_class": "public",
       "gate_ids": ["V-REPORT"],
       "requirement_ids": ["NCRDT-DISPOSITION-006", "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],

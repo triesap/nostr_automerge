@@ -2,7 +2,7 @@
 
 Status: `in_progress`
 
-RCLD 85 has 44 committed predecessors through `step_1201`. The opaque
+RCLD 85 has 45 committed predecessors through `step_1202`. The opaque
 compatibility checkpoint is bound by one approved 40-character candidate and
 one canonical 64-character result identity. Its public projection records nine
 findings, 23 expected-failure reproductions, 276 negative mutations, one
@@ -69,13 +69,13 @@ conformance, report validation, and the full public gate.
 | `step_1199` | `V-REPORT` | pass |
 | `step_1200` | `V-REPORT` | pass |
 | `step_1201` | `V-REPORT` | pass |
-| `step_1202` | `V-REPORT` | active |
-| `step_1203` | `V-RUST` | next |
+| `step_1202` | `V-REPORT` | pass |
+| `step_1203` | `V-RUST` | active |
+| `step_1204` | `V-RESOURCE` | next |
 
-The active report checkpoint binds a closed inventory of three construction
-families and nine revision consumers to exact reviewed source identities.
-Complete, no-progress, and preserved interrupted-batch construction all carry
-the evaluator revision. Public access, reevaluation, conformance projection,
+The completed report-authority checkpoint binds a closed inventory of complete
+and no-progress construction plus nine revision consumers to exact reviewed
+source identities. Public access, reevaluation, conformance projection,
 metadata and signed-input loading, expected-report validation, canonical
 serialization, fixture generation, and public test builders agree on that
 identity. Expected reports remain comparison data and cannot select or provide
@@ -111,7 +111,7 @@ values in the `ControlEvent`, `ChangeHash`, and `Event` namespaces remain
 distinct identities. Missing, extra, duplicate, reordered, cross-namespaced,
 or disposition-inconsistent records fail closed without repair.
 
-The active exact-field checkpoint recomputes the history and dispositions
+The completed exact-field checkpoint recomputes the history and dispositions
 digests from the report revision, coordinate, and exact canonical views. It
 binds evidence, checkpoint results, integrity alerts, manifest resolution, and
 canonical materialized document bytes to domain-separated evaluator authority,
@@ -120,6 +120,14 @@ causal relationships. Conformance assertions are independently regenerated
 from signed requirement identities and materialized state. Missing, extra,
 duplicate, reordered, rewritten, stale-digest, and coordinated rehash
 mutations fail closed without sorting, deduplication, inference, or repair.
+
+The active construction checkpoint deletes the preserved-progress batch
+representation and the separate interrupted-batch public constructor. A typed
+internal stop now clears every derived batch field, and all public interruption
+boundaries enter the same canonical no-progress constructor. Source and
+behavior inventories reject missing, extra, reordered, alternate, or restored
+hybrid construction paths. Reevaluation's post-stop summary behavior remains
+staged for `step_1204`.
 
 The authority projection is monotonic from `checkpoint_expectations_corrected` to
 `distribution_complete`. It records 148 requirements now and at completion,
@@ -142,13 +150,13 @@ distribution runs (`84f370b201945c844396406acfb022faa2bdadb32d96206511474a002187
 canonical output and
 `74b24f58fe9c20da082dd9ae4c1b344e8468c00a70dbd710adf724ab70ed14c4`
 serialized output). The earlier signed-v9 conformance report remains an
-immutable historical record and is not the carrier closure authority. There are 82
+immutable historical record and is not the carrier closure authority. There are 81
 checkpoints including the active checkpoint remaining through `step_1283`.
 
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
-`FINDING_079`, and `FINDING_083` regressions and the typed report-revision case
-and incomplete no-progress report cases are fixed; six exact behavior cases
+`FINDING_075`, `FINDING_079`, and `FINDING_083` regressions and the typed
+report-revision and incomplete-report cases are fixed; five exact behavior cases
 remain open.
 `FINDING_080` remains held. The maximum status
 remains `implementation_remediation_required` while the refactor sequence is

@@ -1,12 +1,12 @@
 # Remediation V9 Rust Baseline Reproductions
 
-Status: rolling closure — six regression cases fixed and six cases still reproduced
+Status: rolling closure — seven regression cases fixed and five cases still reproduced
 
 The `FINDING_073` checkpoint-precedence, `FINDING_074` carrier-independence,
-`FINDING_079` unsupported-identity, and `FINDING_083` typed-stop reproductions
-are now enabled passing regressions. The `FINDING_081` incomplete-report
-regression and typed report-revision compile probe are also fixed. Five ignored
-tests and the semantic-proof probe continue to encode
+`FINDING_075` no-progress, `FINDING_079` unsupported-identity, and `FINDING_083`
+typed-stop reproductions are now enabled passing regressions. The `FINDING_081`
+incomplete-report regression and typed report-revision compile probe are also
+fixed. Four ignored tests and the semantic-proof probe continue to encode
 behavior-level expected failures for the still-open public Rust findings.
 Ordinary Rust test targets remain green because only the still-open cases stay
 ignored. The tests do not inspect source text and do not change protocol
@@ -37,7 +37,7 @@ external-build launcher.
 | --- | --- | --- |
 | `FINDING_073` | The enabled signed regression proves that a descriptor referencing a statically invalid control is rejected before history work. | 82 (public Rust closed) |
 | `FINDING_074` | The enabled signed regression proves that a carrier referencing a dynamically invalid control remains invalid even when its semantic hash is excluded. | 84 (dynamic-invalid special case closed; broader separation continues in `step_1189`) |
-| `FINDING_075` | An interrupted internal batch retains a canonical control, two control dispositions, and an integrity alert instead of returning constant-size no progress. | 85, 86 |
+| `FINDING_075` | The enabled batch regression proves that budget exhaustion and cancellation return exact empty typed no-progress state without retained controls, dispositions, accepted history, heads, alerts, or document. | 85 (public Rust closed), 86 |
 | `FINDING_076` | The coarse finalization ledger accepts the fixed-overhead pass before its preceding named passes. | 87, 88 |
 | `FINDING_077` | Canonical raw change bytes are copied into the target memo rather than retained through one shared immutable allocation. | 89, 90, 91 |
 | `FINDING_078` | Replacing a requirement's named assertion with a semantically unrelated assertion in the same artifact still passes signed-v9 requirement validation. | 93 |

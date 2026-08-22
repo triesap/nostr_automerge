@@ -3726,7 +3726,8 @@ fn every_v3_work_counter_boundary() {
     assert_eq!(covered.len(), 10);
     let evaluator_source = include_str!("../src/engine/reference_evaluator.rs");
     assert!(evaluator_source.contains("build_control_ancestry_index"));
-    assert!(evaluator_source.contains("prepare_interrupted_batch_report"));
+    assert!(evaluator_source.contains("prepare_no_progress_interrupted_report"));
+    assert!(!evaluator_source.contains("prepare_interrupted_batch_report"));
     assert!(!evaluator_source.contains("fn checkpoint_refusals"));
 
     let scenario = signed_engine_scenario();

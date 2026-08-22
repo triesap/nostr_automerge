@@ -260,11 +260,11 @@ PREDECESSOR_CANDIDATES = (
     "a52281455f350faee6408d6c508295598379f439",
     "4eeb074d160739300451561bcae267010d5353fc",
     "36458c459db30c8b6cf1f5da6fb6ef1a5df01db3",
+    "7431706c1f54bfaf5ad6b7d7f69819ec3c1ab320",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
     {"class": "constructor", "id": "complete"},
-    {"class": "constructor", "id": "interrupted_batch"},
     {"class": "constructor", "id": "no_progress"},
     {"class": "consumer", "id": "canonical_report_serializer"},
     {"class": "consumer", "id": "conformance_engine_projection"},
@@ -279,15 +279,19 @@ REPORT_REVISION_INVENTORY = (
 REPORT_REVISION_SOURCE_BINDINGS = (
     (
         "crates/nostr_automerge/src/engine/evaluation_report.rs",
-        "8e9b90c9d555ea21aee6efdf09e535bbe1a31746511be15a333bc52598b604e3",
+        "1d29dc39a1e90f5becc749b78ce56fd4592e4a935988a48597c88849175787fa",
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "448e02cc31f5805019ccff6887885a4f73db6603476fe1f96dea586e531bff3e",
+        "687efba4e3516acc62860656fa459d9098749e1c81bddf68224cb6ba8661c68f",
+    ),
+    (
+        "crates/nostr_automerge/src/reference/evaluate.rs",
+        "bc7e9276132f996410897ae6b2f2ae4efebe1a42161462b0e787b131cb1d978e",
     ),
     (
         "crates/nostr_automerge/tests/public_engine_api.rs",
-        "cf1f40d6447fb2c0a41ba3ee188dc84f5475c953018e80adaa563c7df49bfd05",
+        "4c081c30c21343d18a0b094e1f22ee65be91f2db64c2d8c9a734552c75fcda51",
     ),
     (
         "tools/nostr_automerge_conformance/src/expected.rs",
@@ -316,20 +320,23 @@ REPORT_REVISION_SOURCE_BINDINGS = (
 )
 CLOSURE_PATHS = frozenset(
     {
-        "crates/nostr_automerge/src/automerge_adapter/materialized_view.rs",
         "crates/nostr_automerge/src/engine/evaluation_report.rs",
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "crates/nostr_automerge/src/reference/evaluate.rs",
         "crates/nostr_automerge/tests/public_engine_api.rs",
+        "crates/nostr_automerge/tests/remediation_v8_reproductions.rs",
         "docs/api/public_engine.md",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
+        "docs/execution/remediation_v9/reproductions.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
+        "scripts/reproduce_remediation_v9.py",
         "scripts/validate_carrier_gate_v9.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
+        "scripts/validate_remediation_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
-        "tools/nostr_automerge_conformance/src/runner.rs",
-        "tools/validation/runtime_ledger_v9.schema.json",
+        "spec/remediation_findings_v9.json",
     }
 )
 CLOSURE_NEW_PATHS = frozenset()
@@ -373,6 +380,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-EVIDENCE",),
     ("V-FULL-RUST",),
+    ("V-REPORT",),
     ("V-REPORT",),
     ("V-REPORT",),
     ("V-REPORT",),
@@ -473,6 +481,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-DISPOSITION-006", "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-DISPOSITION-006", "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -522,6 +531,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_074", "FINDING_079", "FINDING_083"),
     ("FINDING_074", "FINDING_079", "FINDING_083"),
     ("FINDING_074", "FINDING_079", "FINDING_083"),
+    ("FINDING_081",),
     ("FINDING_081",),
     ("FINDING_081",),
     ("FINDING_081",),
@@ -629,8 +639,7 @@ def validate_report_revision_inventory(
         "report_inventory:unique",
     )
     require(
-        [row["id"] for row in inventory[:3]]
-        == ["complete", "interrupted_batch", "no_progress"],
+        [row["id"] for row in inventory[:2]] == ["complete", "no_progress"],
         "report_inventory:constructors",
     )
     source_values = report_revision_sources() if sources is None else sources
@@ -649,6 +658,9 @@ def validate_report_revision_inventory(
     reference = source_values[
         "crates/nostr_automerge/src/engine/reference_evaluator.rs"
     ].decode("utf-8")
+    batch = source_values["crates/nostr_automerge/src/reference/evaluate.rs"].decode(
+        "utf-8"
+    )
     public_api = source_values[
         "crates/nostr_automerge/tests/public_engine_api.rs"
     ].decode("utf-8")
@@ -671,7 +683,7 @@ def validate_report_revision_inventory(
         "tools/nostr_automerge_conformance/src/scenario.rs"
     ].decode("utf-8")
 
-    for identifier in ("complete", "interrupted_batch", "no_progress"):
+    for identifier in ("complete", "no_progress"):
         require(
             evaluation.count(f"fn from_{identifier}_parts(") == 1,
             f"report_inventory:constructor:{identifier}",
@@ -686,7 +698,9 @@ def validate_report_revision_inventory(
     )
     require(
         evaluation.count("fn from_parts(") == 1
-        and "ReportConstructionPath::ALL" in evaluation,
+        and "ReportConstructionPath::ALL" in evaluation
+        and "InterruptedBatch" not in evaluation
+        and "from_interrupted_batch_parts" not in evaluation,
         "report_inventory:closed_construction",
     )
     require(
@@ -725,8 +739,14 @@ def validate_report_revision_inventory(
     )
     require(
         "prepare_no_progress_interrupted_report(" in reference
-        and "batch.failure != Some(failure)" in reference
-        and "assert_exact_no_progress_report(&report)" in public_api,
+        and "reserved_batch_report" not in reference
+        and "prepare_interrupted_batch_report" not in reference
+        and "NoProgressConstructionPath" not in reference
+        and "assert_exact_no_progress_report(&report)" in public_api
+        and "fn no_progress_batch_report(" in batch
+        and "struct PreservedBatchProgress" not in batch
+        and "fn finding_075_interrupted_batch_discards_all_canonical_progress()" in batch
+        and '#[ignore = "expected to fail until FINDING_075 closes"]' not in batch,
         "report_inventory:no_progress_production",
     )
     require(
@@ -816,6 +836,16 @@ def report_revision_inventory_self_test() -> int:
             "crates/nostr_automerge/src/engine/evaluation_report.rs",
             b"fn from_parts(",
             b"fn bypass_from_parts(",
+        ),
+        (
+            "crates/nostr_automerge/src/engine/evaluation_report.rs",
+            b"fn from_no_progress_parts(",
+            b"fn from_hybrid_parts(",
+        ),
+        (
+            "crates/nostr_automerge/src/reference/evaluate.rs",
+            b"fn no_progress_batch_report(",
+            b"fn preserved_batch_report(",
         ),
         (
             "tools/nostr_automerge_conformance/src/expected.rs",

@@ -18,7 +18,7 @@ edges, decoded bytes, applied changes, checkpoint bytes, and assertions. Every
 charge is atomic. A failed or overflowing charge leaves both remaining capacity
 and consumed counters unchanged. The evaluator checks cancellation only at
 documented deterministic boundaries, so the same evidence, limit, and boundary
-always produce the same partial result.
+always produce the same local-stop result.
 
 `CorpusBuilder::ingest_bytes` always applies the strict raw-size, JSON, NIP-01,
 signature, revision, and carrier validators. An `IngestOutcome` describes the
@@ -36,13 +36,15 @@ raw event content or materialized document bytes.
 
 The repository keeps a closed construction and consumer inventory for report
 revision identity. Complete evaluation, constant-size no-progress evaluation,
-and the temporarily preserved interrupted-batch path are the only report
-constructors. Reevaluation rejects a report from another revision before
-comparing state. Conformance metadata, signed-scenario inputs, expected-report
-loading, canonical report serialization, and public test builders all validate
-or project the same typed revision. Expected reports are comparison data only:
-they cannot select or supply actual report fields. Typed state assertions are
-derived from the input requirement profile and the materialized engine state.
+and no other construction family are the complete report-construction
+inventory. Internal batch interruption discards all derived progress before
+the public no-progress constructor runs. Reevaluation rejects a report from
+another revision before comparing state. Conformance metadata, signed-scenario
+inputs, expected-report loading, canonical report serialization, and public
+test builders all validate or project the same typed revision. Expected
+reports are comparison data only: they cannot select or supply actual report
+fields. Typed state assertions are derived from the input requirement profile
+and the materialized engine state.
 
 `Completion::Complete` guarantees that scheduling, Automerge application,
 materialization, and applied-head agreement succeeded and that a real immutable

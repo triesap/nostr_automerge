@@ -141,48 +141,60 @@ impl ReferenceEvaluator {
             };
         let mut batch =
             evaluate_batch_with_prior(controls, &additional_prior, budget, cancellation);
-        if !matches!(
-            batch.failure,
-            None | Some(EvaluationFailure::BudgetExhausted | EvaluationFailure::Cancelled)
-        ) {
-            let error = match batch.failure {
-                Some(EvaluationFailure::Graph) => EvaluationError::Graph,
-                Some(EvaluationFailure::Decode) => EvaluationError::Decode,
-                Some(EvaluationFailure::Apply) => EvaluationError::Apply,
-                Some(
-                    EvaluationFailure::InvalidEvidence
-                    | EvaluationFailure::InvariantViolation
-                    | EvaluationFailure::BudgetExhausted
-                    | EvaluationFailure::Cancelled,
-                )
-                | None => EvaluationError::ReportInvariant,
-            };
-            return Err(settle_reserved_error(&mut finalization, error));
+        match (batch.completion, batch.failure) {
+            (Completion::Complete, None) => {}
+            (Completion::BudgetExhausted, Some(EvaluationFailure::BudgetExhausted)) => {
+                return reserved_interrupted_report(
+                    self.revision,
+                    coordinate,
+                    Completion::BudgetExhausted,
+                    &mut finalization,
+                );
+            }
+            (Completion::Cancelled, Some(EvaluationFailure::Cancelled)) => {
+                return reserved_interrupted_report(
+                    self.revision,
+                    coordinate,
+                    Completion::Cancelled,
+                    &mut finalization,
+                );
+            }
+            (Completion::Complete, Some(EvaluationFailure::Graph)) => {
+                return Err(settle_reserved_error(
+                    &mut finalization,
+                    EvaluationError::Graph,
+                ));
+            }
+            (Completion::Complete, Some(EvaluationFailure::Decode)) => {
+                return Err(settle_reserved_error(
+                    &mut finalization,
+                    EvaluationError::Decode,
+                ));
+            }
+            (Completion::Complete, Some(EvaluationFailure::Apply)) => {
+                return Err(settle_reserved_error(
+                    &mut finalization,
+                    EvaluationError::Apply,
+                ));
+            }
+            _ => {
+                return Err(settle_reserved_error(
+                    &mut finalization,
+                    EvaluationError::ReportInvariant,
+                ));
+            }
         }
         let mut control_disposition_map = preliminary_control_dispositions;
         control_disposition_map.extend(core::mem::take(&mut batch.control_dispositions));
         batch.control_dispositions = control_disposition_map;
-        if batch.completion != Completion::Complete {
-            return reserved_batch_report(
-                self.revision,
-                coordinate,
-                batch,
-                ResolvedManifestAvailability::Missing,
-                Vec::new(),
-                &mut finalization,
-            );
-        }
         let change_carrier_dispositions =
             match reduce_change_dispositions(&view, &mut batch, budget, cancellation) {
                 Ok(dispositions) => dispositions,
                 Err(completion) => {
-                    interrupt_batch(&mut batch, completion);
-                    return reserved_batch_report(
+                    return reserved_interrupted_report(
                         self.revision,
                         coordinate,
-                        batch,
-                        ResolvedManifestAvailability::Missing,
-                        Vec::new(),
+                        completion,
                         &mut finalization,
                     );
                 }
@@ -190,13 +202,10 @@ impl ReferenceEvaluator {
         if let Err(completion) =
             charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)
         {
-            interrupt_batch(&mut batch, completion);
-            return reserved_batch_report(
+            return reserved_interrupted_report(
                 self.revision,
                 coordinate,
-                batch,
-                ResolvedManifestAvailability::Missing,
-                Vec::new(),
+                completion,
                 &mut finalization,
             );
         }
@@ -213,13 +222,10 @@ impl ReferenceEvaluator {
             WorkCounter::Control,
             control_record_work,
         ) {
-            interrupt_batch(&mut batch, completion);
-            return reserved_batch_report(
+            return reserved_interrupted_report(
                 self.revision,
                 coordinate,
-                batch,
-                manifest,
-                Vec::new(),
+                completion,
                 &mut finalization,
             );
         }
@@ -250,15 +256,10 @@ impl ReferenceEvaluator {
         );
         let checkpoints = checkpoint_evaluation.results;
         if let Some(stop) = checkpoint_evaluation.stop {
-            interrupt_batch(&mut batch, stop.completion());
-        }
-        if batch.completion != Completion::Complete {
-            return reserved_batch_report(
+            return reserved_interrupted_report(
                 self.revision,
                 coordinate,
-                batch,
-                manifest,
-                checkpoints,
+                stop.completion(),
                 &mut finalization,
             );
         }
@@ -269,13 +270,10 @@ impl ReferenceEvaluator {
             WorkCounter::GraphNode,
             disposition_work.saturating_mul(5),
         ) {
-            interrupt_batch(&mut batch, completion);
-            return reserved_batch_report(
+            return reserved_interrupted_report(
                 self.revision,
                 coordinate,
-                batch,
-                manifest,
-                checkpoints,
+                completion,
                 &mut finalization,
             );
         }
@@ -294,35 +292,26 @@ impl ReferenceEvaluator {
             WorkCounter::Carrier,
             event_record_work.saturating_mul(3),
         ) {
-            interrupt_batch(&mut batch, completion);
-            return reserved_batch_report(
+            return reserved_interrupted_report(
                 self.revision,
                 coordinate,
-                batch,
-                manifest,
-                checkpoints,
+                completion,
                 &mut finalization,
             );
         }
         let Some(descriptor_reference_work) = view.checkpoint_reference_work() else {
-            interrupt_batch(&mut batch, Completion::BudgetExhausted);
-            return reserved_batch_report(
+            return reserved_interrupted_report(
                 self.revision,
                 coordinate,
-                batch,
-                manifest,
-                checkpoints,
+                Completion::BudgetExhausted,
                 &mut finalization,
             );
         };
         if let Err(stop) = charge_checkpoint_work(budget, cancellation, descriptor_reference_work) {
-            interrupt_batch(&mut batch, stop.completion());
-            return reserved_batch_report(
+            return reserved_interrupted_report(
                 self.revision,
                 coordinate,
-                batch,
-                manifest,
-                checkpoints,
+                stop.completion(),
                 &mut finalization,
             );
         }
@@ -353,13 +342,10 @@ impl ReferenceEvaluator {
         if let Err(completion) =
             charge_evaluation_work(budget, cancellation, WorkCounter::Assertion, digest_work)
         {
-            interrupt_batch(&mut batch, completion);
-            return reserved_batch_report(
+            return reserved_interrupted_report(
                 self.revision,
                 coordinate,
-                batch,
-                manifest,
-                checkpoints,
+                completion,
                 &mut finalization,
             );
         }
@@ -386,24 +372,18 @@ impl ReferenceEvaluator {
         let document = match projection {
             Ok(document) => document,
             Err(crate::automerge_adapter::materialized_view::ProjectionError::Budget) => {
-                interrupt_batch(&mut batch, Completion::BudgetExhausted);
-                return reserved_batch_report(
+                return reserved_interrupted_report(
                     self.revision,
                     coordinate,
-                    batch,
-                    manifest,
-                    checkpoints,
+                    Completion::BudgetExhausted,
                     &mut finalization,
                 );
             }
             Err(crate::automerge_adapter::materialized_view::ProjectionError::Cancelled) => {
-                interrupt_batch(&mut batch, Completion::Cancelled);
-                return reserved_batch_report(
+                return reserved_interrupted_report(
                     self.revision,
                     coordinate,
-                    batch,
-                    manifest,
-                    checkpoints,
+                    Completion::Cancelled,
                     &mut finalization,
                 );
             }
@@ -418,13 +398,10 @@ impl ReferenceEvaluator {
         if let Err(completion) =
             charge_evaluation_work(budget, cancellation, WorkCounter::Event, evidence_work)
         {
-            interrupt_batch(&mut batch, completion);
-            return reserved_batch_report(
+            return reserved_interrupted_report(
                 self.revision,
                 coordinate,
-                batch,
-                manifest,
-                checkpoints,
+                completion,
                 &mut finalization,
             );
         }
@@ -2535,14 +2512,8 @@ fn reserved_interrupted_report(
     completion: Completion,
     permit: &mut ReportFinalizationPermit,
 ) -> Result<EvaluationReport, EvaluationError> {
-    let report = prepare_no_progress_interrupted_report(
-        revision,
-        coordinate,
-        completion,
-        NoProgressConstructionPath::NoProgress,
-        permit,
-    )
-    .map_err(|error| settle_reserved_error(permit, error))?;
+    let report = prepare_no_progress_interrupted_report(revision, coordinate, completion, permit)
+        .map_err(|error| settle_reserved_error(permit, error))?;
     permit
         .forfeit_all_remaining()
         .map_err(|_| EvaluationError::ReportInvariant)?;
@@ -2556,7 +2527,6 @@ fn prepare_no_progress_interrupted_report(
     revision: ProtocolRevision,
     coordinate: DocumentCoordinate,
     completion: Completion,
-    construction: NoProgressConstructionPath,
     permit: &mut ReportFinalizationPermit,
 ) -> Result<EvaluationReport, EvaluationError> {
     permit
@@ -2594,34 +2564,7 @@ fn prepare_no_progress_interrupted_report(
         failure,
         history_digest,
         dispositions_digest,
-        construction,
     )
-}
-
-fn reserved_batch_report(
-    revision: ProtocolRevision,
-    coordinate: DocumentCoordinate,
-    batch: BatchEvaluationReport,
-    manifest: ResolvedManifestAvailability,
-    checkpoints: Vec<CheckpointVerificationResult>,
-    permit: &mut ReportFinalizationPermit,
-) -> Result<EvaluationReport, EvaluationError> {
-    let report = prepare_interrupted_batch_report(
-        revision,
-        coordinate,
-        batch,
-        manifest,
-        checkpoints,
-        permit,
-    )
-    .map_err(|error| settle_reserved_error(permit, error))?;
-    permit
-        .forfeit_all_remaining()
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    permit
-        .finish_interrupted()
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    Ok(report)
 }
 
 fn compact_interrupted_report(
@@ -2646,14 +2589,7 @@ fn compact_interrupted_report(
         failure,
         history_digest,
         dispositions_digest,
-        NoProgressConstructionPath::NoProgress,
     )
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum NoProgressConstructionPath {
-    NoProgress,
-    InterruptedBatch,
 }
 
 fn build_no_progress_interrupted_report(
@@ -2663,7 +2599,6 @@ fn build_no_progress_interrupted_report(
     failure: EvaluationFailure,
     history_digest: crate::HistoryDigest,
     dispositions_digest: crate::DispositionsDigest,
-    construction: NoProgressConstructionPath,
 ) -> Result<EvaluationReport, EvaluationError> {
     let parts = EvaluationReportParts {
         coordinate,
@@ -2688,48 +2623,7 @@ fn build_no_progress_interrupted_report(
         failure: Some(failure),
         document: None,
     };
-    match construction {
-        NoProgressConstructionPath::NoProgress => EvaluationReport::from_no_progress_parts(parts),
-        NoProgressConstructionPath::InterruptedBatch => {
-            EvaluationReport::from_interrupted_batch_parts(parts)
-        }
-    }
-    .map_err(|_| EvaluationError::ReportInvariant)
-}
-
-fn prepare_interrupted_batch_report(
-    revision: ProtocolRevision,
-    coordinate: DocumentCoordinate,
-    batch: BatchEvaluationReport,
-    _manifest: ResolvedManifestAvailability,
-    _checkpoints: Vec<CheckpointVerificationResult>,
-    permit: &mut ReportFinalizationPermit,
-) -> Result<EvaluationReport, EvaluationError> {
-    let failure = match batch.completion {
-        Completion::BudgetExhausted => EvaluationFailure::BudgetExhausted,
-        Completion::Cancelled => EvaluationFailure::Cancelled,
-        Completion::Complete => return Err(EvaluationError::ReportInvariant),
-    };
-    if batch.failure != Some(failure) {
-        return Err(EvaluationError::ReportInvariant);
-    }
-    prepare_no_progress_interrupted_report(
-        revision,
-        coordinate,
-        batch.completion,
-        NoProgressConstructionPath::InterruptedBatch,
-        permit,
-    )
-}
-
-fn interrupt_batch(batch: &mut BatchEvaluationReport, completion: Completion) {
-    batch.completion = completion;
-    batch.failure = Some(match completion {
-        Completion::BudgetExhausted => EvaluationFailure::BudgetExhausted,
-        Completion::Cancelled => EvaluationFailure::Cancelled,
-        Completion::Complete => EvaluationFailure::InvariantViolation,
-    });
-    batch.materialized_document = None;
+    EvaluationReport::from_no_progress_parts(parts).map_err(|_| EvaluationError::ReportInvariant)
 }
 
 fn prepare_controls(
@@ -4974,30 +4868,21 @@ mod tests {
     }
 
     #[test]
-    fn reserved_report_wrappers_consume_without_optional_expansion() {
+    fn reserved_no_progress_wrapper_consumes_without_optional_expansion() {
         let source = include_str!("reference_evaluator.rs");
-        for (start, end) in [
-            (
-                "fn reserved_interrupted_report(",
-                "fn reserved_batch_report(",
-            ),
-            (
-                "fn reserved_batch_report(",
-                "fn compact_interrupted_report(",
-            ),
-        ] {
-            let wrapper = source
-                .split_once(start)
-                .and_then(|(_, rest)| rest.split_once(end))
-                .map(|(body, _)| body)
-                .unwrap_or_default();
-            assert!(
-                wrapper.contains(".consume(")
-                    || wrapper.contains(".consume_pass(")
-                    || wrapper.contains("prepare_")
-            );
-            assert!(!wrapper.contains("view."));
-        }
+        let wrapper = source
+            .split_once("fn reserved_interrupted_report(")
+            .and_then(|(_, rest)| rest.split_once("fn compact_interrupted_report("))
+            .map(|(body, _)| body)
+            .unwrap_or_default();
+        assert!(wrapper.contains(".consume_pass(") || wrapper.contains("prepare_"));
+        assert!(!wrapper.contains("view."));
+        let obsolete_reserved = ["reserved_", "batch_report"].concat();
+        let obsolete_preparation = ["prepare_", "interrupted_batch_report"].concat();
+        let obsolete_construction = ["NoProgress", "ConstructionPath"].concat();
+        assert!(!source.contains(&obsolete_reserved));
+        assert!(!source.contains(&obsolete_preparation));
+        assert!(!source.contains(&obsolete_construction));
     }
 
     #[test]
@@ -5024,6 +4909,7 @@ mod tests {
         assert!(!evaluation.contains("map_err(|_| EvaluationError::"));
         assert!(evaluation.contains("settle_reserved_error(&mut finalization"));
         assert!(evaluation.contains("reserved_interrupted_report("));
-        assert!(evaluation.contains("reserved_batch_report("));
+        let obsolete_reserved = ["reserved_", "batch_report("].concat();
+        assert!(!evaluation.contains(&obsolete_reserved));
     }
 }
