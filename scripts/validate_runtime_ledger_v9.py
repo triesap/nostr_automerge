@@ -33,7 +33,7 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "3a9370e26c7315b57169335bd0fa530c9c94e1e1247d4ebdf1fd700eaa2dcd12"
+    "727d6da69895aa56345c335ee5865c07a724c1293626abacced27bc97bb279d5"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
@@ -106,7 +106,7 @@ WIRE_DOMAIN_SOURCE_BINDINGS = (
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "3643a2947aac1495696280f76a03bfa7abca25cbee4cb53f19987c18369aa58b",
+        "c72fde7143136f5a7ad6c883379f96586c417a5f2d9ef63b7b88cf845d61f666",
         b"nostr-crdt/automerge/change-set/v1",
     ),
     (
@@ -257,6 +257,7 @@ PREDECESSOR_CANDIDATES = (
     "676581e0e84bb1fe483bb05108a2a3b723770e77",
     "0fc39bfaedb156c3a6c3b914dd09791303c8d0b6",
     "a52281455f350faee6408d6c508295598379f439",
+    "4eeb074d160739300451561bcae267010d5353fc",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -276,11 +277,11 @@ REPORT_REVISION_INVENTORY = (
 REPORT_REVISION_SOURCE_BINDINGS = (
     (
         "crates/nostr_automerge/src/engine/evaluation_report.rs",
-        "eb740ff309539320165dbb0f24edb76c530dda7909e5b57521fd200dc0a6d772",
+        "0e16ca3619f4e6124b72b609d9d81e1bf64d3b22aa4fb47a1e2bcf0185831a8d",
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "3643a2947aac1495696280f76a03bfa7abca25cbee4cb53f19987c18369aa58b",
+        "c72fde7143136f5a7ad6c883379f96586c417a5f2d9ef63b7b88cf845d61f666",
     ),
     (
         "crates/nostr_automerge/tests/public_engine_api.rs",
@@ -366,6 +367,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-EVIDENCE",),
     ("V-FULL-RUST",),
+    ("V-REPORT",),
     ("V-REPORT",),
     ("V-REPORT",),
     ("V-REPORT",),
@@ -462,6 +464,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -511,6 +514,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_074", "FINDING_079", "FINDING_083"),
     ("FINDING_074", "FINDING_079", "FINDING_083"),
     ("FINDING_074", "FINDING_079", "FINDING_083"),
+    ("FINDING_081",),
     ("FINDING_081",),
     ("FINDING_081",),
     ("FINDING_081",),
@@ -689,6 +693,8 @@ def validate_report_revision_inventory(
         and evaluation.count("fn complete_parts_are_canonical(") == 1
         and evaluation.count("fn canonical_control_chain_matches(") == 1
         and evaluation.count("fn semantic_partitions_match(") == 1
+        and evaluation.count("struct AttributableCarrierOutcome") == 1
+        and evaluation.count("fn carrier_outcomes_match(") == 1
         and "complete_report_rejects_every_partition_control_and_head_mutation"
         in evaluation,
         "report_inventory:complete_shape",
@@ -699,6 +705,14 @@ def validate_report_revision_inventory(
         and "accepted_state.map(AcceptedAtControl::accepted_closure)" in reference
         and "accepted_state.map(AcceptedAtControl::frontier_heads)" in reference,
         "report_inventory:complete_witness",
+    )
+    require(
+        "struct EventDispositionRecords" in reference
+        and "AttributableCarrierOutcome::verified_change(" in reference
+        and "AttributableCarrierOutcome::event_only(" in reference
+        and "outcome.reason.diagnostic()" in reference
+        and "complete_report_carrier_coverage_and_namespaces_are_exact" in evaluation,
+        "report_inventory:carrier_witness",
     )
     require(
         "prepare_no_progress_interrupted_report(" in reference

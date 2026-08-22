@@ -67,6 +67,15 @@ canonical control's evaluated closure and frontier. Duplicate, missing, extra,
 overlapping, or unsorted values are rejected without repair, and a complete
 report always has a materialized document and no local failure.
 
+The complete-report witness also fixes the exact attributable carrier set.
+Every supported change carrier has one `Event` record and one verified
+`ChangeHash` association, while every verified semantic hash has one
+namespaced semantic record and at least one carrier. Carrier records preserve
+their own outcome and diagnostic even when another valid carrier makes the
+aggregate change accepted. Invalid and unsupported unverified change carriers
+remain `Event`-only. `ControlEvent`, `ChangeHash`, and `Event` are distinct
+identity namespaces even when their underlying 32 bytes are equal.
+
 The API is alpha. Public type and method names may change before a stable crate
 release. Protocol dispositions, canonical ordering, and digest bytes follow the
 sealed draft-v1 profile and are not caller-selectable. Evaluation is a complete

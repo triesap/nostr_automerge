@@ -6,5 +6,5 @@ requirements: 148
 transition_stage: checkpoint_expectations_corrected
 historical_v9_validation: immutable_wrapper
 validators: 24
-aggregate_sha256: 8ab33f91fa788746c85ad6d14dbd269837b66f35f7ae661e14e0c8618b7650c2
+aggregate_sha256: f0522f682faabb7ca04df254ff9dc5856bba9f666171e46811d4a0a0d3972976
 result: pass

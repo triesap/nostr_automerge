@@ -200,10 +200,64 @@ pub(crate) struct EvaluationReportParts {
     pub(crate) document: Option<MaterializedDocumentView>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct AttributableCarrierOutcome {
+    event_id: EventId,
+    change_hash: Option<ChangeHash>,
+    disposition: ProtocolDisposition,
+    diagnostic: Option<crate::DiagnosticCode>,
+}
+
+impl AttributableCarrierOutcome {
+    pub(crate) const fn verified_change(
+        event_id: EventId,
+        change_hash: ChangeHash,
+        disposition: ProtocolDisposition,
+        diagnostic: Option<crate::DiagnosticCode>,
+    ) -> Self {
+        Self {
+            event_id,
+            change_hash: Some(change_hash),
+            disposition,
+            diagnostic,
+        }
+    }
+
+    pub(crate) const fn event_only(
+        event_id: EventId,
+        disposition: ProtocolDisposition,
+        diagnostic: Option<crate::DiagnosticCode>,
+    ) -> Self {
+        Self {
+            event_id,
+            change_hash: None,
+            disposition,
+            diagnostic,
+        }
+    }
+
+    pub(crate) const fn event_id(self) -> EventId {
+        self.event_id
+    }
+
+    pub(crate) const fn change_hash(self) -> Option<ChangeHash> {
+        self.change_hash
+    }
+
+    pub(crate) const fn disposition(self) -> ProtocolDisposition {
+        self.disposition
+    }
+
+    pub(crate) const fn diagnostic(self) -> Option<crate::DiagnosticCode> {
+        self.diagnostic
+    }
+}
+
 #[derive(Clone, Copy)]
 pub(crate) struct CompleteReportWitness<'a> {
     control_children: Option<&'a BTreeMap<Option<EventId>, BTreeSet<EventId>>>,
     semantic_dispositions: &'a BTreeMap<ChangeHash, ProtocolDisposition>,
+    carrier_outcomes: &'a BTreeMap<EventId, AttributableCarrierOutcome>,
     accepted_changes: Option<&'a BTreeSet<ChangeHash>>,
     heads: Option<&'a BTreeSet<ChangeHash>>,
 }
@@ -212,12 +266,14 @@ impl<'a> CompleteReportWitness<'a> {
     pub(crate) const fn new(
         control_children: Option<&'a BTreeMap<Option<EventId>, BTreeSet<EventId>>>,
         semantic_dispositions: &'a BTreeMap<ChangeHash, ProtocolDisposition>,
+        carrier_outcomes: &'a BTreeMap<EventId, AttributableCarrierOutcome>,
         accepted_changes: Option<&'a BTreeSet<ChangeHash>>,
         heads: Option<&'a BTreeSet<ChangeHash>>,
     ) -> Self {
         Self {
             control_children,
             semantic_dispositions,
+            carrier_outcomes,
             accepted_changes,
             heads,
         }
@@ -333,9 +389,6 @@ impl EvaluationReport {
                 .windows(2)
                 .all(|pair| pair[0].descriptor_event() < pair[1].descriptor_event())
         {
-            return Err(EvaluationError::ReportInvariant);
-        }
-        if !change_carrier_dispositions_are_consistent(&parts) {
             return Err(EvaluationError::ReportInvariant);
         }
         let accepted = parts
@@ -637,6 +690,7 @@ fn complete_parts_are_canonical(
             .iter()
             .map(|(hash, disposition)| (*hash, *disposition)))
         || !semantic_partitions_match(parts)
+        || !carrier_outcomes_match(parts, witness.carrier_outcomes)
     {
         return false;
     }
@@ -714,48 +768,64 @@ fn semantic_partitions_match(parts: &EvaluationReportParts) -> bool {
             && parts
                 .disposition_records
                 .binary_search_by_key(&identifier, DispositionRecord::identifier)
-                .is_ok_and(|index| parts.disposition_records[index].disposition() == *disposition)
+                .is_ok_and(|index| {
+                    let record = parts.disposition_records[index];
+                    record.disposition() == *disposition && record.diagnostic().is_none()
+                })
     })
 }
 
-fn change_carrier_dispositions_are_consistent(parts: &EvaluationReportParts) -> bool {
-    let carrier_records_match =
-        parts
+fn carrier_outcomes_match(
+    parts: &EvaluationReportParts,
+    expected: &BTreeMap<EventId, AttributableCarrierOutcome>,
+) -> bool {
+    if expected
+        .iter()
+        .any(|(event_id, outcome)| *event_id != outcome.event_id())
+        || !parts
             .change_carrier_dispositions
             .iter()
-            .all(|(event_id, hash, carrier_disposition)| {
-                let event_identifier = ProtocolItemIdentifier::event(*event_id);
-                let event_matches = parts
-                    .disposition_records
-                    .binary_search_by_key(&event_identifier, DispositionRecord::identifier)
-                    .is_ok_and(|index| {
-                        parts.disposition_records[index].disposition() == *carrier_disposition
-                    });
-                let hash_matches = parts
+            .copied()
+            .eq(expected.values().filter_map(|outcome| {
+                outcome
+                    .change_hash()
+                    .map(|hash| (outcome.event_id(), hash, outcome.disposition()))
+            }))
+        || expected.values().any(|outcome| {
+            let identifier = ProtocolItemIdentifier::event(outcome.event_id());
+            !parts
+                .disposition_records
+                .binary_search_by_key(&identifier, DispositionRecord::identifier)
+                .is_ok_and(|index| {
+                    let record = parts.disposition_records[index];
+                    record.disposition() == outcome.disposition()
+                        && record.diagnostic() == outcome.diagnostic()
+                })
+        })
+        || expected
+            .values()
+            .filter_map(|outcome| outcome.change_hash())
+            .any(|hash| {
+                parts
                     .dispositions
-                    .binary_search_by_key(hash, |(candidate, _)| *candidate)
-                    .is_ok_and(|index| {
-                        *carrier_disposition != ProtocolDisposition::Accepted
-                            || parts.dispositions[index].1 == ProtocolDisposition::Accepted
-                    });
-                event_matches && hash_matches
-            });
-    if !carrier_records_match {
+                    .binary_search_by_key(&hash, |(candidate, _)| *candidate)
+                    .is_err()
+            })
+    {
         return false;
     }
-    parts.completion != Completion::Complete
-        || parts
-            .dispositions
-            .iter()
-            .filter(|(_, disposition)| *disposition == ProtocolDisposition::Accepted)
-            .all(|(hash, _)| {
-                parts
-                    .change_carrier_dispositions
-                    .iter()
-                    .any(|(_, carrier_hash, disposition)| {
-                        carrier_hash == hash && *disposition == ProtocolDisposition::Accepted
-                    })
-            })
+
+    parts.dispositions.iter().all(|(hash, disposition)| {
+        let mut matching = expected
+            .values()
+            .filter(|outcome| outcome.change_hash() == Some(*hash));
+        let Some(first) = matching.next() else {
+            return false;
+        };
+        let has_accepted = first.disposition() == ProtocolDisposition::Accepted
+            || matching.any(|outcome| outcome.disposition() == ProtocolDisposition::Accepted);
+        (*disposition == ProtocolDisposition::Accepted) == has_accepted
+    })
 }
 
 impl fmt::Debug for EvaluationReport {
@@ -791,8 +861,9 @@ fn strictly_sorted<T: Ord>(values: &[T]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{
-        CompleteReportWitness, DispositionRecord, EvaluationReport, EvaluationReportParts,
-        ProtocolItemIdentifier, ReportConstructionPath, disposition_records_are_canonical,
+        AttributableCarrierOutcome, CompleteReportWitness, DispositionRecord, EvaluationReport,
+        EvaluationReportParts, ProtocolItemIdentifier, ReportConstructionPath,
+        disposition_records_are_canonical,
     };
     use std::collections::{BTreeMap, BTreeSet};
 
@@ -823,6 +894,7 @@ mod tests {
         has_controls: bool,
         control_children: BTreeMap<Option<EventId>, BTreeSet<EventId>>,
         semantic_dispositions: BTreeMap<ChangeHash, crate::ProtocolDisposition>,
+        carrier_outcomes: BTreeMap<EventId, AttributableCarrierOutcome>,
         accepted_changes: BTreeSet<ChangeHash>,
         heads: BTreeSet<ChangeHash>,
     }
@@ -842,10 +914,32 @@ mod tests {
                         .insert(pair[1]);
                 }
             }
+            let carrier_outcomes = parts
+                .change_carrier_dispositions
+                .iter()
+                .map(|(event_id, hash, disposition)| {
+                    let identifier = ProtocolItemIdentifier::event(*event_id);
+                    let diagnostic = parts
+                        .disposition_records
+                        .binary_search_by_key(&identifier, DispositionRecord::identifier)
+                        .ok()
+                        .and_then(|index| parts.disposition_records[index].diagnostic());
+                    (
+                        *event_id,
+                        AttributableCarrierOutcome::verified_change(
+                            *event_id,
+                            *hash,
+                            *disposition,
+                            diagnostic,
+                        ),
+                    )
+                })
+                .collect();
             Self {
                 has_controls: !parts.canonical_controls.is_empty(),
                 control_children,
                 semantic_dispositions: parts.dispositions.iter().copied().collect(),
+                carrier_outcomes,
                 accepted_changes: parts.accepted_changes.iter().copied().collect(),
                 heads: parts.heads.iter().copied().collect(),
             }
@@ -855,6 +949,7 @@ mod tests {
             CompleteReportWitness::new(
                 Some(&self.control_children),
                 &self.semantic_dispositions,
+                &self.carrier_outcomes,
                 self.has_controls.then_some(&self.accepted_changes),
                 self.has_controls.then_some(&self.heads),
             )
@@ -929,11 +1024,9 @@ mod tests {
         let hashes = (1_u8..=9)
             .map(|value| ChangeHash::from_bytes([value; 32]))
             .collect::<Vec<_>>();
-        let carriers = [
-            EventId::from_bytes([20; 32]),
-            EventId::from_bytes([21; 32]),
-            EventId::from_bytes([22; 32]),
-        ];
+        let carriers = (20_u8..=28)
+            .map(|value| EventId::from_bytes([value; 32]))
+            .collect::<Vec<_>>();
         let dispositions = vec![
             (hashes[0], crate::ProtocolDisposition::Accepted),
             (hashes[1], crate::ProtocolDisposition::Accepted),
@@ -968,17 +1061,22 @@ mod tests {
         }))
         .chain(
             carriers
-                .into_iter()
-                .zip(hashes.iter())
-                .map(|(event_id, _)| {
+                .iter()
+                .zip(dispositions.iter())
+                .map(|(event_id, (_, disposition))| {
                     DispositionRecord::new(
-                        ProtocolItemIdentifier::event(event_id),
-                        crate::ProtocolDisposition::Accepted,
-                        Some(crate::DiagnosticCode::registered("change.actor")),
+                        ProtocolItemIdentifier::event(*event_id),
+                        *disposition,
+                        None,
                     )
                 }),
         )
         .collect();
+        let change_carrier_dispositions = carriers
+            .iter()
+            .zip(dispositions.iter())
+            .map(|(event_id, (hash, disposition))| (*event_id, *hash, *disposition))
+            .collect();
         Some(EvaluationReportParts {
             coordinate,
             revision: crate::ProtocolRevision::draft_v1(),
@@ -990,11 +1088,7 @@ mod tests {
                 (rejected, crate::ProtocolDisposition::Excluded),
             ],
             dispositions,
-            change_carrier_dispositions: vec![
-                (carriers[0], hashes[0], crate::ProtocolDisposition::Accepted),
-                (carriers[1], hashes[1], crate::ProtocolDisposition::Accepted),
-                (carriers[2], hashes[2], crate::ProtocolDisposition::Accepted),
-            ],
+            change_carrier_dispositions,
             accepted_changes: hashes[0..3].to_vec(),
             pending_changes: hashes[3..5].to_vec(),
             excluded_changes: hashes[5..7].to_vec(),
@@ -1024,7 +1118,10 @@ mod tests {
             &parts,
             authority.witness()
         ));
-        assert!(super::change_carrier_dispositions_are_consistent(&parts));
+        assert!(super::carrier_outcomes_match(
+            &parts,
+            &authority.carrier_outcomes
+        ));
         assert!(super::disposition_records_are_canonical(
             &parts.disposition_records
         ));
@@ -1205,6 +1302,389 @@ mod tests {
         assert!("gg".repeat(32).parse::<ChangeHash>().is_err());
         assert!("AA".repeat(32).parse::<EventId>().is_err());
         assert!("gg".repeat(32).parse::<EventId>().is_err());
+    }
+
+    fn complete_carrier_matrix_parts() -> Option<(EvaluationReportParts, CompleteTestAuthority)> {
+        let mut parts = complete_matrix_parts()?;
+        let reused_bytes_event = EventId::from_bytes([1; 32]);
+        let mixed_invalid_event = EventId::from_bytes([29; 32]);
+        let unsupported_event = EventId::from_bytes([30; 32]);
+        let accepted_hash = parts.accepted_changes[0];
+        parts.change_carrier_dispositions.insert(
+            0,
+            (
+                reused_bytes_event,
+                accepted_hash,
+                crate::ProtocolDisposition::Accepted,
+            ),
+        );
+        parts.change_carrier_dispositions.push((
+            mixed_invalid_event,
+            accepted_hash,
+            crate::ProtocolDisposition::Invalid,
+        ));
+        parts.disposition_records.extend([
+            DispositionRecord::new(
+                ProtocolItemIdentifier::event(reused_bytes_event),
+                crate::ProtocolDisposition::Accepted,
+                None,
+            ),
+            DispositionRecord::new(
+                ProtocolItemIdentifier::event(mixed_invalid_event),
+                crate::ProtocolDisposition::Invalid,
+                Some(crate::DiagnosticCode::registered("change.actor")),
+            ),
+            DispositionRecord::new(
+                ProtocolItemIdentifier::event(unsupported_event),
+                crate::ProtocolDisposition::UnsupportedRevision,
+                Some(crate::DiagnosticCode::registered("carrier.revision")),
+            ),
+        ]);
+        parts
+            .disposition_records
+            .sort_by_key(DispositionRecord::identifier);
+        let mut authority = CompleteTestAuthority::for_parts(&parts);
+        authority.carrier_outcomes.insert(
+            unsupported_event,
+            AttributableCarrierOutcome::event_only(
+                unsupported_event,
+                crate::ProtocolDisposition::UnsupportedRevision,
+                Some(crate::DiagnosticCode::registered("carrier.revision")),
+            ),
+        );
+        Some((parts, authority))
+    }
+
+    #[test]
+    fn complete_report_carrier_coverage_and_namespaces_are_exact() {
+        let Some((parts, authority)) = complete_carrier_matrix_parts() else {
+            return;
+        };
+        let accepted_hash = parts.accepted_changes[0];
+        let accepted_event = EventId::from_bytes([1; 32]);
+        let mixed_invalid_event = EventId::from_bytes([29; 32]);
+        let unsupported_event = EventId::from_bytes([30; 32]);
+        let semantic_identifier = ProtocolItemIdentifier::from(accepted_hash);
+        assert_eq!(accepted_event.as_bytes(), accepted_hash.as_bytes());
+        assert!(parts.disposition_records.iter().any(|record| {
+            record.identifier() == ProtocolItemIdentifier::control_event(accepted_event)
+        }));
+        assert!(
+            parts.disposition_records.iter().any(|record| {
+                record.identifier() == ProtocolItemIdentifier::from(accepted_hash)
+            })
+        );
+        assert!(parts.disposition_records.iter().any(|record| {
+            record.identifier() == ProtocolItemIdentifier::event(accepted_event)
+        }));
+        assert_eq!(
+            parts
+                .dispositions
+                .binary_search_by_key(&accepted_hash, |(hash, _)| *hash)
+                .ok()
+                .map(|index| parts.dispositions[index].1),
+            Some(crate::ProtocolDisposition::Accepted)
+        );
+        assert_eq!(
+            authority
+                .carrier_outcomes
+                .get(&accepted_event)
+                .map(|outcome| outcome.disposition()),
+            Some(crate::ProtocolDisposition::Accepted)
+        );
+        assert_eq!(
+            authority
+                .carrier_outcomes
+                .get(&mixed_invalid_event)
+                .map(|outcome| (outcome.change_hash(), outcome.disposition())),
+            Some((Some(accepted_hash), crate::ProtocolDisposition::Invalid)),
+            "an accepted aggregate does not rewrite its invalid duplicate carrier"
+        );
+        assert!(complete_report(parts.clone(), &authority).is_ok());
+        assert_eq!(
+            authority
+                .carrier_outcomes
+                .get(&unsupported_event)
+                .and_then(|outcome| outcome.change_hash()),
+            None,
+            "an unsupported unverified x tag remains Event-only"
+        );
+
+        let assert_rejected = |name: &str, mutation: EvaluationReportParts| {
+            assert_eq!(
+                complete_report(mutation, &authority),
+                Err(super::EvaluationError::ReportInvariant),
+                "{name}"
+            );
+        };
+
+        let mut mutation = parts.clone();
+        mutation.change_carrier_dispositions.remove(0);
+        assert_rejected("carrier_missing", mutation);
+        let mut mutation = parts.clone();
+        mutation.change_carrier_dispositions.push((
+            EventId::from_bytes([31; 32]),
+            accepted_hash,
+            crate::ProtocolDisposition::Accepted,
+        ));
+        mutation.disposition_records.push(DispositionRecord::new(
+            ProtocolItemIdentifier::event(EventId::from_bytes([31; 32])),
+            crate::ProtocolDisposition::Accepted,
+            None,
+        ));
+        assert_rejected("carrier_and_event_coordinated_extra", mutation);
+        let mut mutation = parts.clone();
+        mutation
+            .change_carrier_dispositions
+            .push(mutation.change_carrier_dispositions[0]);
+        assert_rejected("carrier_duplicate", mutation);
+        let mut mutation = parts.clone();
+        mutation.change_carrier_dispositions.swap(0, 1);
+        assert_rejected("carrier_unsorted", mutation);
+        let mut mutation = parts.clone();
+        mutation.change_carrier_dispositions[0].1 = parts.pending_changes[0];
+        assert_rejected("carrier_wrong_hash", mutation);
+        let mut mutation = parts.clone();
+        mutation.change_carrier_dispositions[0].2 = crate::ProtocolDisposition::Invalid;
+        assert_rejected("carrier_wrong_outcome", mutation);
+        let mut mutation = parts.clone();
+        let unrepresented_hash = ChangeHash::from_bytes([31; 32]);
+        let unrepresented_event = EventId::from_bytes([31; 32]);
+        mutation.change_carrier_dispositions.push((
+            unrepresented_event,
+            unrepresented_hash,
+            crate::ProtocolDisposition::Invalid,
+        ));
+        mutation.disposition_records.push(DispositionRecord::new(
+            ProtocolItemIdentifier::event(unrepresented_event),
+            crate::ProtocolDisposition::Invalid,
+            Some(crate::DiagnosticCode::registered("change.actor")),
+        ));
+        let forged_authority = CompleteTestAuthority::for_parts(&mutation);
+        assert_eq!(
+            complete_report(mutation, &forged_authority),
+            Err(super::EvaluationError::ReportInvariant),
+            "a verified carrier cannot omit its semantic ChangeHash record"
+        );
+
+        let accepted_event_identifier = ProtocolItemIdentifier::event(accepted_event);
+        let mixed_invalid_identifier = ProtocolItemIdentifier::event(mixed_invalid_event);
+        let unsupported_identifier = ProtocolItemIdentifier::event(unsupported_event);
+        let mut mutation = parts.clone();
+        mutation
+            .disposition_records
+            .retain(|record| record.identifier() != accepted_event_identifier);
+        assert_rejected("carrier_with_no_event_record", mutation);
+        let mut mutation = parts.clone();
+        let index = mutation
+            .disposition_records
+            .binary_search_by_key(&mixed_invalid_identifier, DispositionRecord::identifier);
+        assert!(index.is_ok());
+        if let Ok(index) = index {
+            mutation.disposition_records[index] = DispositionRecord::new(
+                mixed_invalid_identifier,
+                crate::ProtocolDisposition::Accepted,
+                Some(crate::DiagnosticCode::registered("change.actor")),
+            );
+        }
+        assert_rejected("carrier_event_outcome_mismatch", mutation);
+        let mut mutation = parts.clone();
+        let index = mutation
+            .disposition_records
+            .binary_search_by_key(&mixed_invalid_identifier, DispositionRecord::identifier);
+        assert!(index.is_ok());
+        if let Ok(index) = index {
+            mutation.disposition_records[index] = DispositionRecord::new(
+                mixed_invalid_identifier,
+                crate::ProtocolDisposition::Invalid,
+                Some(crate::DiagnosticCode::registered("control.parent")),
+            );
+        }
+        assert_rejected("carrier_event_diagnostic_mismatch", mutation);
+        let mut mutation = parts.clone();
+        let index = mutation
+            .disposition_records
+            .binary_search_by_key(&semantic_identifier, DispositionRecord::identifier);
+        assert!(index.is_ok());
+        if let Ok(index) = index {
+            mutation.disposition_records[index] = DispositionRecord::new(
+                semantic_identifier,
+                crate::ProtocolDisposition::Accepted,
+                Some(crate::DiagnosticCode::registered("change.actor")),
+            );
+        }
+        assert_rejected("change_hash_record_diagnostic_mismatch", mutation);
+        let mut mutation = parts.clone();
+        let index = mutation
+            .disposition_records
+            .binary_search_by_key(&unsupported_identifier, DispositionRecord::identifier);
+        assert!(index.is_ok());
+        if let Ok(index) = index {
+            mutation.disposition_records[index] = DispositionRecord::new(
+                unsupported_identifier,
+                crate::ProtocolDisposition::UnsupportedRevision,
+                None,
+            );
+        }
+        assert_rejected("unsupported_event_diagnostic_missing", mutation);
+        let mut mutation = parts.clone();
+        let duplicate = mutation
+            .disposition_records
+            .binary_search_by_key(&accepted_event_identifier, DispositionRecord::identifier)
+            .ok()
+            .map(|index| mutation.disposition_records[index]);
+        assert!(duplicate.is_some());
+        if let Some(duplicate) = duplicate {
+            mutation.disposition_records.push(duplicate);
+            mutation
+                .disposition_records
+                .sort_by_key(DispositionRecord::identifier);
+        }
+        assert_rejected("carrier_event_record_duplicate", mutation);
+        let mut mutation = parts.clone();
+        let event_start = mutation.disposition_records.partition_point(|record| {
+            !matches!(record.identifier(), ProtocolItemIdentifier::Event(_))
+        });
+        mutation
+            .disposition_records
+            .swap(event_start, event_start + 1);
+        assert_rejected("carrier_event_record_unsorted", mutation);
+
+        let mut mutation = parts.clone();
+        let index = mutation
+            .disposition_records
+            .binary_search_by_key(&accepted_event_identifier, DispositionRecord::identifier);
+        assert!(index.is_ok());
+        if let Ok(index) = index {
+            mutation.disposition_records[index] = DispositionRecord::new(
+                ProtocolItemIdentifier::from(ChangeHash::from_bytes([1; 32])),
+                crate::ProtocolDisposition::Accepted,
+                None,
+            );
+        }
+        mutation
+            .disposition_records
+            .sort_by_key(DispositionRecord::identifier);
+        assert_rejected("carrier_event_retyped_as_change_hash", mutation);
+        let mut mutation = parts.clone();
+        let index = mutation
+            .disposition_records
+            .binary_search_by_key(&semantic_identifier, DispositionRecord::identifier);
+        assert!(index.is_ok());
+        if let Ok(index) = index {
+            mutation.disposition_records[index] = DispositionRecord::new(
+                ProtocolItemIdentifier::event(accepted_event),
+                crate::ProtocolDisposition::Accepted,
+                None,
+            );
+        }
+        mutation
+            .disposition_records
+            .sort_by_key(DispositionRecord::identifier);
+        assert_rejected("change_hash_retyped_as_carrier_event", mutation);
+
+        let coordinated_hash = ChangeHash::from_bytes([31; 32]);
+        let coordinated_event = EventId::from_bytes([31; 32]);
+        let mut mutation = parts.clone();
+        mutation
+            .dispositions
+            .push((coordinated_hash, crate::ProtocolDisposition::Invalid));
+        mutation.invalid_changes.push(coordinated_hash);
+        mutation.change_carrier_dispositions.push((
+            coordinated_event,
+            coordinated_hash,
+            crate::ProtocolDisposition::Invalid,
+        ));
+        mutation.disposition_records.extend([
+            DispositionRecord::new(
+                ProtocolItemIdentifier::from(coordinated_hash),
+                crate::ProtocolDisposition::Invalid,
+                None,
+            ),
+            DispositionRecord::new(
+                ProtocolItemIdentifier::event(coordinated_event),
+                crate::ProtocolDisposition::Invalid,
+                Some(crate::DiagnosticCode::registered("change.actor")),
+            ),
+        ]);
+        mutation
+            .disposition_records
+            .sort_by_key(DispositionRecord::identifier);
+        assert_rejected("carrier_hash_partition_records_coordinated_extra", mutation);
+
+        let removed_hash = parts.invalid_changes[1];
+        let removed_event = parts
+            .change_carrier_dispositions
+            .iter()
+            .find_map(|(event_id, hash, _)| (*hash == removed_hash).then_some(*event_id));
+        assert!(removed_event.is_some());
+        let mut mutation = parts.clone();
+        mutation
+            .dispositions
+            .retain(|(hash, _)| *hash != removed_hash);
+        mutation
+            .invalid_changes
+            .retain(|hash| *hash != removed_hash);
+        mutation
+            .change_carrier_dispositions
+            .retain(|(_, hash, _)| *hash != removed_hash);
+        mutation.disposition_records.retain(|record| {
+            record.identifier() != ProtocolItemIdentifier::from(removed_hash)
+                && removed_event.is_none_or(|event_id| {
+                    record.identifier() != ProtocolItemIdentifier::event(event_id)
+                })
+        });
+        assert_rejected(
+            "carrier_hash_partition_records_coordinated_missing",
+            mutation,
+        );
+
+        let pending_hash = parts.pending_changes[0];
+        let mut mutation = parts.clone();
+        let pending_events = mutation
+            .change_carrier_dispositions
+            .iter()
+            .filter_map(|(event_id, hash, _)| (*hash == pending_hash).then_some(*event_id))
+            .collect::<BTreeSet<_>>();
+        mutation
+            .change_carrier_dispositions
+            .retain(|(_, hash, _)| *hash != pending_hash);
+        mutation.disposition_records.retain(|record| {
+            !matches!(record.identifier(), ProtocolItemIdentifier::Event(event_id) if pending_events.contains(&event_id))
+        });
+        assert_rejected("verified_hash_without_carrier", mutation);
+
+        let mut forged_authority = CompleteTestAuthority::for_parts(&parts);
+        forged_authority
+            .semantic_dispositions
+            .insert(accepted_hash, crate::ProtocolDisposition::Invalid);
+        forged_authority.accepted_changes.remove(&accepted_hash);
+        let mut mutation = parts.clone();
+        let disposition_index = mutation
+            .dispositions
+            .binary_search_by_key(&accepted_hash, |(hash, _)| *hash);
+        assert!(disposition_index.is_ok());
+        if let Ok(index) = disposition_index {
+            mutation.dispositions[index].1 = crate::ProtocolDisposition::Invalid;
+        }
+        mutation.accepted_changes.remove(0);
+        mutation.invalid_changes.insert(0, accepted_hash);
+        let semantic_index = mutation
+            .disposition_records
+            .binary_search_by_key(&semantic_identifier, DispositionRecord::identifier);
+        assert!(semantic_index.is_ok());
+        if let Ok(index) = semantic_index {
+            mutation.disposition_records[index] = DispositionRecord::new(
+                semantic_identifier,
+                crate::ProtocolDisposition::Invalid,
+                None,
+            );
+        }
+        assert_eq!(
+            complete_report(mutation, &forged_authority),
+            Err(super::EvaluationError::ReportInvariant),
+            "an accepted carrier dominates a forged nonaccepted aggregate"
+        );
     }
 
     #[test]

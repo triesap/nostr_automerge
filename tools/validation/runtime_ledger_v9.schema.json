@@ -32,7 +32,7 @@
         "active_step": {"type": "string", "pattern": "^step_1[0-9]{3}$"},
         "next_step": {"type": "string", "pattern": "^step_1[0-9]{3}$"},
         "last_step": {"const": "step_1283"},
-        "remaining_checkpoint_count": {"type": "integer", "minimum": 0, "maximum": 84},
+        "remaining_checkpoint_count": {"type": "integer", "minimum": 0, "maximum": 83},
         "first_rcld": {"type": "integer", "minimum": 85, "maximum": 94},
         "last_rcld": {"const": 94},
         "remaining_rcld_count": {"type": "integer", "minimum": 0, "maximum": 10}

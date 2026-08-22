@@ -34,8 +34,9 @@ use crate::{
 };
 
 use super::evaluation_report::{
-    CompleteReportWitness, DispositionRecord, EvaluationError, EvaluationFailure, EvaluationReport,
-    EvaluationReportParts, ProtocolItemIdentifier, REPORT_INVARIANT_ITEMS,
+    AttributableCarrierOutcome, CompleteReportWitness, DispositionRecord, EvaluationError,
+    EvaluationFailure, EvaluationReport, EvaluationReportParts, ProtocolItemIdentifier,
+    REPORT_INVARIANT_ITEMS,
 };
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 
@@ -334,7 +335,7 @@ impl ReferenceEvaluator {
             Ok(records) => records,
             Err(error) => return Err(settle_reserved_error(&mut finalization, error)),
         };
-        disposition_records.extend(event_records);
+        disposition_records.extend(event_records.records);
         let accepted_changes = disposition_hashes(&dispositions, ProtocolDisposition::Accepted);
         let heads = batch.heads.iter().copied().collect::<Vec<_>>();
         let pending_changes = disposition_hashes(&dispositions, ProtocolDisposition::Pending);
@@ -508,6 +509,7 @@ impl ReferenceEvaluator {
         let witness = CompleteReportWitness::new(
             view.parent_relationships(),
             &batch.dispositions,
+            &event_records.carrier_outcomes,
             accepted_state.map(AcceptedAtControl::accepted_closure),
             accepted_state.map(AcceptedAtControl::frontier_heads),
         );
@@ -995,32 +997,96 @@ fn project_document(
         .transpose()
 }
 
+struct EventDispositionRecords {
+    records: Vec<DispositionRecord>,
+    carrier_outcomes: std::collections::BTreeMap<crate::EventId, AttributableCarrierOutcome>,
+}
+
 fn event_disposition_records(
     view: &DocumentEvidenceView<'_>,
     change_carrier_dispositions: &std::collections::BTreeMap<crate::EventId, ChangeCarrierOutcome>,
     manifest: &ResolvedManifestAvailability,
     checkpoints: &[CheckpointVerificationResult],
-) -> Result<Vec<DispositionRecord>, EvaluationError> {
+) -> Result<EventDispositionRecords, EvaluationError> {
     let corpus = view.corpus();
-    let expected_change_carriers = view
-        .reportable_event_ids()
-        .filter_map(|event_id| match corpus.events.get(event_id) {
-            Some(EventEvidence::VerifiedCarrier {
+    let mut verified_change_count = 0_usize;
+    let mut carrier_outcomes = std::collections::BTreeMap::new();
+    for event_id in view.reportable_event_ids() {
+        let Some(evidence) = corpus.events.get(event_id) else {
+            return Err(EvaluationError::ReportInvariant);
+        };
+        let outcome = match evidence {
+            EventEvidence::VerifiedCarrier {
                 carrier: VerifiedCarrier::Change(change),
                 ..
-            }) => Some((*event_id, (change.change_hash(), change.control_id()))),
+            } => {
+                let Some(next_count) = verified_change_count.checked_add(1) else {
+                    return Err(EvaluationError::ReportInvariant);
+                };
+                verified_change_count = next_count;
+                let Some(outcome) = change_carrier_dispositions.get(event_id) else {
+                    return Err(EvaluationError::ReportInvariant);
+                };
+                if *event_id != outcome.event_id
+                    || change.event_id() != *event_id
+                    || change.change_hash() != outcome.change_hash
+                    || change.control_id() != outcome.control_id
+                {
+                    return Err(EvaluationError::ReportInvariant);
+                }
+                Some(AttributableCarrierOutcome::verified_change(
+                    *event_id,
+                    outcome.change_hash,
+                    outcome.disposition,
+                    outcome.reason.diagnostic(),
+                ))
+            }
+            EventEvidence::InvalidCarrier {
+                event, diagnostic, ..
+            } if event.kind() == 1_624 => {
+                if event.event_id() != *event_id {
+                    return Err(EvaluationError::ReportInvariant);
+                }
+                Some(AttributableCarrierOutcome::event_only(
+                    *event_id,
+                    ProtocolDisposition::Invalid,
+                    Some(*diagnostic),
+                ))
+            }
+            EventEvidence::UnsupportedRevision {
+                carrier: VerifiedCarrier::UnsupportedRevision { event, .. },
+                diagnostic,
+                ..
+            } if event.kind() == 1_624 => {
+                if event.event_id() != *event_id {
+                    return Err(EvaluationError::ReportInvariant);
+                }
+                Some(AttributableCarrierOutcome::event_only(
+                    *event_id,
+                    ProtocolDisposition::UnsupportedRevision,
+                    Some(*diagnostic),
+                ))
+            }
+            EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::UnsupportedRevision { event, .. },
+                ..
+            } if event.kind() == 1_624 => {
+                if event.event_id() != *event_id {
+                    return Err(EvaluationError::ReportInvariant);
+                }
+                Some(AttributableCarrierOutcome::event_only(
+                    *event_id,
+                    ProtocolDisposition::UnsupportedRevision,
+                    Some(crate::DiagnosticCode::registered("carrier.revision")),
+                ))
+            }
             _ => None,
-        })
-        .collect::<std::collections::BTreeMap<_, _>>();
-    if expected_change_carriers.len() != change_carrier_dispositions.len()
-        || change_carrier_dispositions
-            .iter()
-            .any(|(event_id, outcome)| {
-                *event_id != outcome.event_id
-                    || expected_change_carriers.get(event_id)
-                        != Some(&(outcome.change_hash, outcome.control_id))
-            })
-    {
+        };
+        if let Some(outcome) = outcome {
+            carrier_outcomes.insert(*event_id, outcome);
+        }
+    }
+    if verified_change_count != change_carrier_dispositions.len() {
         return Err(EvaluationError::ReportInvariant);
     }
     let represented_events = view
@@ -1189,16 +1255,19 @@ fn event_disposition_records(
     {
         return Err(EvaluationError::ReportInvariant);
     }
-    Ok(records
-        .into_iter()
-        .map(|(event_id, (disposition, diagnostic))| {
-            DispositionRecord::new(
-                ProtocolItemIdentifier::event(event_id),
-                disposition,
-                diagnostic,
-            )
-        })
-        .collect())
+    Ok(EventDispositionRecords {
+        records: records
+            .into_iter()
+            .map(|(event_id, (disposition, diagnostic))| {
+                DispositionRecord::new(
+                    ProtocolItemIdentifier::event(event_id),
+                    disposition,
+                    diagnostic,
+                )
+            })
+            .collect(),
+        carrier_outcomes,
+    })
 }
 
 fn scoped_dynamic_event_disposition_records(
