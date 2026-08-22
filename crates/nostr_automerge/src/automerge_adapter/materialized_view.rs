@@ -290,8 +290,27 @@ impl MaterializedDocumentView {
         Self::empty()
     }
 
+    #[cfg(test)]
+    pub(crate) fn nonempty_for_test() -> Result<Self, ProjectionError> {
+        use automerge::transaction::Transactable as _;
+
+        let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+        {
+            let mut transaction = document.transaction();
+            transaction
+                .put(ROOT, "step1202", true)
+                .map_err(|_| ProjectionError::Invalid)?;
+            transaction.commit();
+        }
+        Self::from_canonical_bytes(document.save_nocompress())
+    }
+
     pub(crate) fn from_canonical_bytes(canonical_bytes: Vec<u8>) -> Result<Self, ProjectionError> {
         Self::project_canonical_bytes(canonical_bytes, None)
+    }
+
+    pub(crate) fn canonical_bytes(&self) -> &[u8] {
+        &self.canonical_bytes
     }
 
     pub(crate) fn from_canonical_bytes_metered(

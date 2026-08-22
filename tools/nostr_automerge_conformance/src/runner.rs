@@ -9,11 +9,11 @@ use sha2::{Digest, Sha256};
 
 use nostr_automerge::{
     CheckpointVerificationStatus, Completion, ControllerPublicKey, CorpusBuilder, DevicePublicKey,
-    DocumentCoordinate, DocumentId, EvidenceIdentifier, EvidenceStatus, IngestOutcome,
-    IntegrityAlert, MaterializedMark, MaterializedMarkExpansion, MaterializedObjectType,
-    MaterializedPathElement, MaterializedScalar, MaterializedValue, NeverCancelled,
-    ProtocolRevision, ReferenceEvaluator, WorkBudget, canonical_dispositions_digest,
-    canonical_history_digest,
+    DocumentCoordinate, DocumentId, EvaluationReport, EvidenceIdentifier, EvidenceStatus,
+    IngestOutcome, IntegrityAlert, MaterializedMark, MaterializedMarkExpansion,
+    MaterializedObjectType, MaterializedPathElement, MaterializedScalar, MaterializedValue,
+    NeverCancelled, ProtocolRevision, ReferenceEvaluator, WorkBudget,
+    canonical_dispositions_digest, canonical_history_digest,
 };
 
 use crate::checksum::verify_fixture_files;
@@ -189,35 +189,7 @@ pub(crate) fn generic_report(
     scenario: ScenarioInput,
     assertion_policy: StateAssertionPolicy,
 ) -> Result<ExpectedReport, RunError> {
-    let coordinate = scenario.coordinate.parse().map_err(|_| RunError::Input)?;
-    let mut builder = CorpusBuilder::new();
-    for raw in scenario.raw_events {
-        let raw = raw.decode().map_err(|_| RunError::Input)?;
-        let _ = builder.ingest_bytes(&raw);
-    }
-    let corpus = builder.finish();
-    let mut budget = WorkBudget::new(scenario.budget.max_bytes, scenario.budget.max_items);
-    let report = if let Some(cancel_after) = scenario.cancel_after {
-        let calls = std::cell::Cell::new(0_u64);
-        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
-            &corpus,
-            coordinate,
-            &mut budget,
-            &|| {
-                let current = calls.get();
-                calls.set(current.saturating_add(1));
-                current >= cancel_after
-            },
-        )
-    } else {
-        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
-            &corpus,
-            coordinate,
-            &mut budget,
-            &NeverCancelled,
-        )
-    }
-    .map_err(|_| RunError::Evaluation)?;
+    let report = evaluate_scenario(scenario)?;
     let mut output = ExpectedReport::empty(
         fixture_id,
         report.revision(),
@@ -297,7 +269,9 @@ pub(crate) fn generic_report(
         .iter()
         .map(integrity_alert)
         .collect();
-    output.state_assertions = materialized_state_assertions(&report, assertion_policy)?;
+    let state_assertions = materialized_state_assertions(&report, assertion_policy)?;
+    validate_materialized_state_assertions(&report, assertion_policy, &state_assertions)?;
+    output.state_assertions = state_assertions;
     output.checkpoints = report
         .checkpoints()
         .iter()
@@ -330,6 +304,38 @@ pub(crate) fn generic_report(
         })
         .collect();
     Ok(output)
+}
+
+fn evaluate_scenario(scenario: ScenarioInput) -> Result<EvaluationReport, RunError> {
+    let coordinate = scenario.coordinate.parse().map_err(|_| RunError::Input)?;
+    let mut builder = CorpusBuilder::new();
+    for raw in scenario.raw_events {
+        let raw = raw.decode().map_err(|_| RunError::Input)?;
+        let _ = builder.ingest_bytes(&raw);
+    }
+    let corpus = builder.finish();
+    let mut budget = WorkBudget::new(scenario.budget.max_bytes, scenario.budget.max_items);
+    if let Some(cancel_after) = scenario.cancel_after {
+        let calls = std::cell::Cell::new(0_u64);
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+            &corpus,
+            coordinate,
+            &mut budget,
+            &|| {
+                let current = calls.get();
+                calls.set(current.saturating_add(1));
+                current >= cancel_after
+            },
+        )
+    } else {
+        ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
+            &corpus,
+            coordinate,
+            &mut budget,
+            &NeverCancelled,
+        )
+    }
+    .map_err(|_| RunError::Evaluation)
 }
 
 fn materialized_state_assertions(
@@ -380,6 +386,17 @@ fn materialized_state_assertions(
         expected: materialized_mark(mark),
     }));
     Ok(assertions)
+}
+
+fn validate_materialized_state_assertions(
+    report: &nostr_automerge::EvaluationReport,
+    policy: StateAssertionPolicy,
+    assertions: &[StateAssertion],
+) -> Result<(), RunError> {
+    let expected = materialized_state_assertions(report, policy)?;
+    (assertions == expected)
+        .then_some(())
+        .ok_or(RunError::Evaluation)
 }
 
 fn checkpoint_status(status: CheckpointVerificationStatus) -> &'static str {
@@ -815,8 +832,9 @@ mod tests {
     use nostr_automerge::ProtocolRevision;
 
     use super::{
-        RunError, StateAssertionPolicy, compare_expected, discover_fixtures, generic_report,
-        run_corpus, run_fixture,
+        RunError, StateAssertionPolicy, compare_expected, discover_fixtures, evaluate_scenario,
+        generic_report, materialized_state_assertions, run_corpus, run_fixture,
+        state_assertion_policy, validate_materialized_state_assertions,
     };
     use crate::fixture::load_fixture;
     use crate::scenario::SignedScenarioInput;
@@ -1054,5 +1072,93 @@ mod tests {
             expected: serde_json::json!({"type":"mark","name":"poison"}),
         });
         assert_eq!(super::signed_permutation_report(signed, policy), baseline);
+    }
+
+    #[test]
+    fn signed_requirements_and_materialized_state_reject_assertion_mutations() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let fixture_path =
+            root.join("fixtures/v1_draft/scenarios/projection/projection_all_scalars.fixture.json");
+        let fixture = load_fixture(&fixture_path);
+        assert!(fixture.is_ok());
+        let Ok(fixture) = fixture else { return };
+        let Some(base) = fixture_path.parent() else {
+            return;
+        };
+        let input = fs::read(base.join(&fixture.inputs[0].path));
+        assert!(input.is_ok());
+        let Ok(input) = input else { return };
+        let signed = SignedScenarioInput::parse(&input);
+        assert!(signed.is_ok());
+        let Ok(signed) = signed else { return };
+        assert_eq!(signed.requirements, fixture.requirements);
+        let policy = state_assertion_policy(&signed.requirements);
+        assert_eq!(policy, StateAssertionPolicy::CompleteMaterializedState);
+        let report = evaluate_scenario(signed.into_scenario());
+        assert!(report.is_ok());
+        let Ok(report) = report else { return };
+        assert!(
+            report
+                .document()
+                .is_some_and(|document| !document.entries().is_empty())
+        );
+        let assertions = materialized_state_assertions(&report, policy);
+        assert!(assertions.is_ok());
+        let Ok(assertions) = assertions else { return };
+        assert!(!assertions.is_empty());
+        assert_eq!(
+            validate_materialized_state_assertions(&report, policy, &assertions),
+            Ok(())
+        );
+
+        let mut missing = assertions.clone();
+        missing.pop();
+        assert_eq!(
+            validate_materialized_state_assertions(&report, policy, &missing),
+            Err(RunError::Evaluation)
+        );
+        let mut extra = assertions.clone();
+        extra.push(StateAssertion {
+            path: vec![serde_json::json!("forged")],
+            expected: serde_json::json!(true),
+        });
+        assert_eq!(
+            validate_materialized_state_assertions(&report, policy, &extra),
+            Err(RunError::Evaluation)
+        );
+        let mut reordered = assertions.clone();
+        reordered.reverse();
+        assert_eq!(
+            validate_materialized_state_assertions(&report, policy, &reordered),
+            Err(RunError::Evaluation)
+        );
+        let mut rewritten = assertions.clone();
+        rewritten[0].expected = serde_json::json!({"coordinated": "rewrite"});
+        assert_eq!(
+            validate_materialized_state_assertions(&report, policy, &rewritten),
+            Err(RunError::Evaluation)
+        );
+        assert_eq!(
+            validate_materialized_state_assertions(
+                &report,
+                StateAssertionPolicy::None,
+                &assertions,
+            ),
+            Err(RunError::Evaluation)
+        );
+    }
+
+    #[test]
+    fn signed_complete_report_field_families_pass_from_independent_inputs() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/v1_draft/scenarios");
+        for relative in [
+            "projection/projection_all_scalars.fixture.json",
+            "checkpoints/checkpoints_multichunk.fixture.json",
+            "manifest/manifest_dynamic_canonical_control.fixture.json",
+            "equivocation/equivocation_first_conflict.fixture.json",
+        ] {
+            let path = root.join(relative);
+            assert!(run_fixture(&path).is_ok(), "{relative}");
+        }
     }
 }

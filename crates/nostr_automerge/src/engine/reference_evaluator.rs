@@ -13,7 +13,7 @@ use crate::control::genesis::classify_genesis;
 use crate::control::reference_state::{
     ControlParentState, ReferencedControlState, resolve_referenced_control,
 };
-use crate::control::reorganization::{ControlChainSummary, detect_reorganization};
+use crate::control::reorganization::detect_reorganization;
 use crate::control::validate::ControlEnvelope;
 use crate::evidence::corpus_builder::ManifestSelectionState;
 use crate::evidence::document_view::DocumentEvidenceView;
@@ -34,9 +34,9 @@ use crate::{
 };
 
 use super::evaluation_report::{
-    AttributableCarrierOutcome, CompleteReportWitness, DispositionRecord, EvaluationError,
-    EvaluationFailure, EvaluationReport, EvaluationReportParts, ProtocolItemIdentifier,
-    REPORT_INVARIANT_ITEMS,
+    AttributableCarrierOutcome, CompleteReportFieldAuthority, CompleteReportWitness,
+    DispositionRecord, EvaluationError, EvaluationFailure, EvaluationReport, EvaluationReportParts,
+    ProtocolItemIdentifier, REPORT_INVARIANT_ITEMS,
 };
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 
@@ -506,12 +506,21 @@ impl ReferenceEvaluator {
             .canonical_controls
             .last()
             .and_then(|control| batch.accepted_at_control.get(control));
+        let field_authority = CompleteReportFieldAuthority::derive(
+            &evidence,
+            &checkpoints,
+            &batch.integrity_alerts,
+            &manifest,
+            document.as_ref(),
+        );
         let witness = CompleteReportWitness::new(
             view.parent_relationships(),
             &batch.dispositions,
             &event_records.carrier_outcomes,
             accepted_state.map(AcceptedAtControl::accepted_closure),
             accepted_state.map(AcceptedAtControl::frontier_heads),
+            crate::engine::evaluation_report::CompleteReportSourceAuthority::Engine(&view),
+            field_authority,
         );
         let report = EvaluationReport::from_complete_parts(
             EvaluationReportParts {
@@ -563,27 +572,57 @@ impl ReferenceEvaluator {
         if previous.revision() != self.revision {
             return Err(EvaluationError::ReportInvariant);
         }
-        let mut current = self.evaluate(corpus, coordinate, budget, cancellation)?;
+        let current = self.evaluate(corpus, coordinate, budget, cancellation)?;
         if previous.coordinate() != coordinate {
             return Ok(current);
         }
         #[cfg(test)]
         observe_reevaluation_summary();
-        let summarize = |report: &EvaluationReport| {
-            let mut changes_by_control = std::collections::BTreeMap::new();
-            if let Some(tip) = report.canonical_controls().last().copied() {
-                changes_by_control.insert(tip, report.accepted_changes().iter().copied().collect());
+        if let Err(completion) =
+            charge_reevaluation_comparison(previous, &current, budget, cancellation)
+        {
+            if previous.completion() == Completion::Complete
+                && current.completion() == Completion::Complete
+            {
+                return compact_interrupted_report(self.revision, coordinate, completion);
             }
-            ControlChainSummary {
-                controls: report.canonical_controls().to_vec(),
-                changes_by_control,
-            }
-        };
-        if let Some(alert) = detect_reorganization(&summarize(previous), &summarize(&current)) {
-            current.push_integrity_alert(alert);
+            return Ok(current);
         }
-        Ok(current)
+        let reorganization = detect_reorganization(
+            &previous.control_chain_summary(),
+            &current.control_chain_summary(),
+        );
+        if previous.completion() != Completion::Complete
+            || current.completion() != Completion::Complete
+        {
+            return Ok(current);
+        }
+        let mut integrity_alerts = current.integrity_alerts().to_vec();
+        integrity_alerts.extend(reorganization);
+        EvaluationReport::from_reevaluation(current, previous, integrity_alerts)
     }
+}
+
+fn charge_reevaluation_comparison(
+    previous: &EvaluationReport,
+    current: &EvaluationReport,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<(), Completion> {
+    let item_count = [
+        previous.canonical_controls().len(),
+        current.canonical_controls().len(),
+        previous.accepted_changes().len(),
+        current.accepted_changes().len(),
+        current.integrity_alerts().len(),
+    ]
+    .into_iter()
+    .try_fold(2_u64, |total, count| {
+        total.checked_add(u64::try_from(count).ok()?)
+    })
+    .and_then(|total| total.checked_mul(2))
+    .unwrap_or(u64::MAX);
+    charge_evaluation_work(budget, cancellation, WorkCounter::Assertion, item_count)
 }
 
 fn additional_prior_knowledge(

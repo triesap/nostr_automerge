@@ -76,6 +76,21 @@ aggregate change accepted. Invalid and unsupported unverified change carriers
 remain `Event`-only. `ControlEvent`, `ChangeHash`, and `Event` are distinct
 identity namespaces even when their underlying 32 bytes are equal.
 
+Complete construction independently recomputes both canonical digests and
+matches evidence, checkpoint outcomes, integrity alerts, manifest resolution,
+and the materialized document against a domain-separated authority sealed from
+the evaluator's trusted results before report ownership transfer. Checkpoint
+sub-vectors must already be strictly ordered and unique, manifest and alert
+records must retain their causal Event and semantic relationships, and no
+constructor sorts, deduplicates, fills, or repairs these views. Conformance
+state assertions are recomputed from the signed requirement profile and the
+materialized document; missing, extra, reordered, or rewritten assertions fail
+closed and expected reports never provide assertion selectors or values.
+Reevaluation constructs a new validated report rather than mutating an already
+sealed report. A canonical-control reorganization binds the exact previous and
+current complete reports, including prior-only affected change hashes, and its
+comparison work is charged before either summary is materialized.
+
 The API is alpha. Public type and method names may change before a stable crate
 release. Protocol dispositions, canonical ordering, and digest bytes follow the
 sealed draft-v1 profile and are not caller-selectable. Evaluation is a complete

@@ -1,6 +1,10 @@
 use core::fmt;
 use std::collections::{BTreeMap, BTreeSet};
 
+use sha2::{Digest, Sha256};
+
+use crate::control::reorganization::{ControlChainSummary, detect_reorganization};
+use crate::evidence::document_view::DocumentEvidenceView;
 use crate::{
     ChangeHash, CheckpointVerificationResult, Completion, DispositionsDigest, DocumentCoordinate,
     EventId, EvidenceRecord, HistoryDigest, IntegrityAlert, ProtocolDisposition, ProtocolRevision,
@@ -260,6 +264,8 @@ pub(crate) struct CompleteReportWitness<'a> {
     carrier_outcomes: &'a BTreeMap<EventId, AttributableCarrierOutcome>,
     accepted_changes: Option<&'a BTreeSet<ChangeHash>>,
     heads: Option<&'a BTreeSet<ChangeHash>>,
+    source_authority: CompleteReportSourceAuthority<'a>,
+    field_authority: CompleteReportFieldAuthority,
 }
 
 impl<'a> CompleteReportWitness<'a> {
@@ -269,6 +275,8 @@ impl<'a> CompleteReportWitness<'a> {
         carrier_outcomes: &'a BTreeMap<EventId, AttributableCarrierOutcome>,
         accepted_changes: Option<&'a BTreeSet<ChangeHash>>,
         heads: Option<&'a BTreeSet<ChangeHash>>,
+        source_authority: CompleteReportSourceAuthority<'a>,
+        field_authority: CompleteReportFieldAuthority,
     ) -> Self {
         Self {
             control_children,
@@ -276,7 +284,83 @@ impl<'a> CompleteReportWitness<'a> {
             carrier_outcomes,
             accepted_changes,
             heads,
+            source_authority,
+            field_authority,
         }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum CompleteReportSourceAuthority<'a> {
+    Engine(&'a DocumentEvidenceView<'a>),
+    #[cfg(test)]
+    TestEvidence(&'a [EvidenceRecord]),
+}
+
+impl CompleteReportSourceAuthority<'_> {
+    fn matches(self, parts: &EvaluationReportParts) -> bool {
+        match self {
+            Self::Engine(view) => {
+                parts.evidence.iter().copied().eq(view.records())
+                    && parts
+                        .checkpoints
+                        .iter()
+                        .map(CheckpointVerificationResult::descriptor_event)
+                        .eq(view
+                            .checkpoint_descriptor_event_ids()
+                            .into_iter()
+                            .flatten()
+                            .copied())
+                    && parts.checkpoints.iter().all(|checkpoint| {
+                        checkpoint.chunk_events().iter().copied().eq(view
+                            .checkpoint_chunk_event_ids(checkpoint.descriptor_event())
+                            .into_iter()
+                            .flatten()
+                            .copied())
+                    })
+                    && resolved_manifest_event_id(&parts.manifest)
+                        == view.selected_manifest().map(|selection| selection.event_id)
+            }
+            #[cfg(test)]
+            Self::TestEvidence(evidence) => parts.evidence == evidence,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct CompleteReportFieldAuthority {
+    evidence: [u8; 32],
+    checkpoints: [u8; 32],
+    integrity_alerts: [u8; 32],
+    manifest: [u8; 32],
+    document: [u8; 32],
+}
+
+impl CompleteReportFieldAuthority {
+    pub(crate) fn derive(
+        evidence: &[EvidenceRecord],
+        checkpoints: &[CheckpointVerificationResult],
+        integrity_alerts: &[IntegrityAlert],
+        manifest: &ResolvedManifestAvailability,
+        document: Option<&MaterializedDocumentView>,
+    ) -> Self {
+        Self {
+            evidence: evidence_authority(evidence),
+            checkpoints: checkpoint_authority(checkpoints),
+            integrity_alerts: alert_authority(integrity_alerts),
+            manifest: manifest_authority(manifest),
+            document: document_authority(document),
+        }
+    }
+
+    fn matches(self, parts: &EvaluationReportParts) -> bool {
+        self == Self::derive(
+            &parts.evidence,
+            &parts.checkpoints,
+            &parts.integrity_alerts,
+            &parts.manifest,
+            parts.document.as_ref(),
+        )
     }
 }
 
@@ -317,6 +401,49 @@ impl EvaluationReport {
         parts: EvaluationReportParts,
     ) -> Result<Self, EvaluationError> {
         Self::from_parts(ReportConstructionPath::NoProgress, parts, None)
+    }
+
+    pub(crate) fn from_reevaluation(
+        current: Self,
+        previous: &Self,
+        integrity_alerts: Vec<IntegrityAlert>,
+    ) -> Result<Self, EvaluationError> {
+        if current.completion != Completion::Complete
+            || previous.completion != Completion::Complete
+            || current.revision != previous.revision
+            || current.coordinate != previous.coordinate
+        {
+            return Err(EvaluationError::ReportInvariant);
+        }
+        let previous_summary = previous.control_chain_summary();
+        let current_summary = current.control_chain_summary();
+        let reorganization = detect_reorganization(&previous_summary, &current_summary);
+        let expected_len = current
+            .integrity_alerts
+            .len()
+            .checked_add(usize::from(reorganization.is_some()))
+            .ok_or(EvaluationError::ReportInvariant)?;
+        if integrity_alerts.len() != expected_len
+            || !integrity_alerts.starts_with(&current.integrity_alerts)
+            || integrity_alerts.get(current.integrity_alerts.len()) != reorganization.as_ref()
+        {
+            return Err(EvaluationError::ReportInvariant);
+        }
+        Ok(Self {
+            integrity_alerts,
+            ..current
+        })
+    }
+
+    pub(crate) fn control_chain_summary(&self) -> ControlChainSummary {
+        let mut changes_by_control = BTreeMap::new();
+        if let Some(tip) = self.canonical_controls.last().copied() {
+            changes_by_control.insert(tip, self.accepted_changes.iter().copied().collect());
+        }
+        ControlChainSummary {
+            controls: self.canonical_controls.clone(),
+            changes_by_control,
+        }
     }
 
     fn from_parts(
@@ -448,24 +575,28 @@ impl EvaluationReport {
         let manifest_consistent = match &parts.manifest {
             ResolvedManifestAvailability::Missing => true,
             ResolvedManifestAvailability::Available { hints, .. } => {
-                event_outcome(hints.event_id()).map(|(disposition, _)| disposition)
-                    == Some(ProtocolDisposition::Accepted)
+                hints.coordinate() == parts.coordinate
+                    && event_outcome(hints.event_id())
+                        == Some((ProtocolDisposition::Accepted, None))
             }
             ResolvedManifestAvailability::Pending { hints, .. } => {
-                event_outcome(hints.event_id()).map(|(disposition, _)| disposition)
-                    == Some(ProtocolDisposition::Pending)
+                hints.coordinate() == parts.coordinate
+                    && event_outcome(hints.event_id()) == Some((ProtocolDisposition::Pending, None))
             }
             ResolvedManifestAvailability::Unavailable {
                 event_id,
                 diagnostic,
                 ..
             } => {
-                event_outcome(*event_id).map(|(disposition, _)| disposition)
-                    == Some(if diagnostic.as_str() == "carrier.revision" {
-                        ProtocolDisposition::UnsupportedRevision
-                    } else {
-                        ProtocolDisposition::Invalid
-                    })
+                event_outcome(*event_id)
+                    == Some((
+                        if diagnostic.as_str() == "carrier.revision" {
+                            ProtocolDisposition::UnsupportedRevision
+                        } else {
+                            ProtocolDisposition::Invalid
+                        },
+                        Some(*diagnostic),
+                    ))
             }
         };
         let checkpoints_consistent = parts.checkpoints.iter().all(|checkpoint| {
@@ -608,12 +739,6 @@ impl EvaluationReport {
         &self.integrity_alerts
     }
 
-    pub(crate) fn push_integrity_alert(&mut self, alert: IntegrityAlert) {
-        if !self.integrity_alerts.contains(&alert) {
-            self.integrity_alerts.push(alert);
-        }
-    }
-
     /// Returns local evaluation completion without changing protocol dispositions.
     #[must_use]
     pub const fn completion(&self) -> Completion {
@@ -663,11 +788,305 @@ fn no_progress_parts_are_canonical(parts: &EvaluationReportParts) -> bool {
         && parts.dispositions_digest == dispositions_digest
 }
 
+fn authority_hasher(domain: &[u8]) -> Sha256 {
+    let mut hasher = Sha256::new();
+    hasher.update(b"nostr-automerge-report-authority-v1\0");
+    hasher.update((domain.len() as u128).to_be_bytes());
+    hasher.update(domain);
+    hasher
+}
+
+fn authority_bytes(hasher: Sha256) -> [u8; 32] {
+    hasher.finalize().into()
+}
+
+fn hash_len(hasher: &mut Sha256, len: usize) {
+    hasher.update((len as u128).to_be_bytes());
+}
+
+fn hash_slice(hasher: &mut Sha256, bytes: &[u8]) {
+    hash_len(hasher, bytes.len());
+    hasher.update(bytes);
+}
+
+fn hash_diagnostic(hasher: &mut Sha256, diagnostic: Option<crate::DiagnosticCode>) {
+    match diagnostic {
+        Some(diagnostic) => {
+            hasher.update([1]);
+            hash_slice(hasher, diagnostic.as_str().as_bytes());
+        }
+        None => hasher.update([0]),
+    }
+}
+
+fn evidence_authority(records: &[EvidenceRecord]) -> [u8; 32] {
+    let mut hasher = authority_hasher(b"evidence");
+    hash_len(&mut hasher, records.len());
+    for record in records {
+        match record.identifier() {
+            crate::EvidenceIdentifier::Event(event_id) => {
+                hasher.update([0]);
+                hasher.update(event_id.as_bytes());
+            }
+            crate::EvidenceIdentifier::InvalidRawSha256(checksum) => {
+                hasher.update([1]);
+                hasher.update(checksum);
+            }
+        }
+        hasher.update([evidence_status_code(record.status())]);
+        hash_diagnostic(&mut hasher, record.diagnostic());
+    }
+    authority_bytes(hasher)
+}
+
+fn checkpoint_authority(checkpoints: &[CheckpointVerificationResult]) -> [u8; 32] {
+    let mut hasher = authority_hasher(b"checkpoints");
+    hash_len(&mut hasher, checkpoints.len());
+    for checkpoint in checkpoints {
+        hasher.update(checkpoint.descriptor_event().as_bytes());
+        hash_len(&mut hasher, checkpoint.chunk_events().len());
+        for event_id in checkpoint.chunk_events() {
+            hasher.update(event_id.as_bytes());
+        }
+        hasher.update(checkpoint.snapshot_hash().as_bytes());
+        hash_len(&mut hasher, checkpoint.heads().len());
+        for hash in checkpoint.heads() {
+            hasher.update(hash.as_bytes());
+        }
+        hasher.update(checkpoint.change_count().to_be_bytes());
+        hasher.update(checkpoint.change_set_hash());
+        hash_len(&mut hasher, checkpoint.historical_carriers().len());
+        for hash in checkpoint.historical_carriers() {
+            hasher.update(hash.as_bytes());
+        }
+        hash_len(&mut hasher, checkpoint.accepted_at_control().len());
+        for hash in checkpoint.accepted_at_control() {
+            hasher.update(hash.as_bytes());
+        }
+        hasher.update([checkpoint_status_code(checkpoint.status())]);
+    }
+    authority_bytes(hasher)
+}
+
+fn alert_authority(alerts: &[IntegrityAlert]) -> [u8; 32] {
+    let mut hasher = authority_hasher(b"integrity-alerts");
+    hash_len(&mut hasher, alerts.len());
+    for alert in alerts {
+        match alert {
+            IntegrityAlert::ControllerEquivocation(alert) => {
+                hasher.update([0]);
+                match alert.parent_control() {
+                    Some(parent) => {
+                        hasher.update([1]);
+                        hasher.update(parent.as_bytes());
+                    }
+                    None => hasher.update([0]),
+                }
+                hash_len(&mut hasher, alert.candidate_controls().len());
+                for event_id in alert.candidate_controls() {
+                    hasher.update(event_id.as_bytes());
+                }
+                hasher.update(alert.selected_control().as_bytes());
+            }
+            IntegrityAlert::CanonicalControlReorganization(alert) => {
+                hasher.update([1]);
+                hasher.update(alert.previous_tip().as_bytes());
+                hasher.update(alert.new_tip().as_bytes());
+                hash_len(&mut hasher, alert.affected_changes().len());
+                for hash in alert.affected_changes() {
+                    hasher.update(hash.as_bytes());
+                }
+            }
+            IntegrityAlert::DeviceEquivocation(alert) => {
+                hasher.update([2]);
+                hasher.update(alert.actor_id().as_bytes());
+                hasher.update(alert.first_sequence().to_be_bytes());
+                hash_len(&mut hasher, alert.conflicting_changes().len());
+                for hash in alert.conflicting_changes() {
+                    hasher.update(hash.as_bytes());
+                }
+                hash_len(&mut hasher, alert.affected_descendants().len());
+                for hash in alert.affected_descendants() {
+                    hasher.update(hash.as_bytes());
+                }
+            }
+            IntegrityAlert::PotentialClonedDeviceKey(alert) => {
+                hasher.update([3]);
+                hasher.update(alert.actor_id().as_bytes());
+                hasher.update(alert.first_sequence().to_be_bytes());
+                hash_len(&mut hasher, alert.carrier_event_ids().len());
+                for event_id in alert.carrier_event_ids() {
+                    hasher.update(event_id.as_bytes());
+                }
+            }
+            IntegrityAlert::CheckpointMismatch(alert) => {
+                hasher.update([4]);
+                hasher.update(alert.descriptor_event_id().as_bytes());
+                hash_slice(&mut hasher, alert.code().as_str().as_bytes());
+            }
+        }
+    }
+    authority_bytes(hasher)
+}
+
+fn hash_manifest_hints(hasher: &mut Sha256, hints: &crate::ManifestHints) {
+    hasher.update(hints.event_id().as_bytes());
+    hasher.update(hints.coordinate().controller().as_bytes());
+    hasher.update(hints.coordinate().document_id().as_bytes());
+    hasher.update(hints.control().as_bytes());
+    match hints.checkpoint() {
+        Some(checkpoint) => {
+            hasher.update([1]);
+            hasher.update(checkpoint.as_bytes());
+        }
+        None => hasher.update([0]),
+    }
+    hash_len(hasher, hints.relays().len());
+    for relay in hints.relays() {
+        hash_slice(hasher, relay.as_bytes());
+    }
+}
+
+fn manifest_authority(manifest: &ResolvedManifestAvailability) -> [u8; 32] {
+    let mut hasher = authority_hasher(b"manifest");
+    match manifest {
+        ResolvedManifestAvailability::Missing => hasher.update([0]),
+        ResolvedManifestAvailability::Available {
+            hints,
+            control_status,
+        } => {
+            hasher.update([1]);
+            hash_manifest_hints(&mut hasher, hints);
+            hasher.update([manifest_control_status_code(*control_status)]);
+        }
+        ResolvedManifestAvailability::Pending { hints, reason } => {
+            hasher.update([2]);
+            hash_manifest_hints(&mut hasher, hints);
+            hasher.update([manifest_pending_reason_code(*reason)]);
+        }
+        ResolvedManifestAvailability::Unavailable {
+            event_id,
+            control,
+            diagnostic,
+        } => {
+            hasher.update([3]);
+            hasher.update(event_id.as_bytes());
+            match control {
+                Some(control) => {
+                    hasher.update([1]);
+                    hasher.update(control.as_bytes());
+                }
+                None => hasher.update([0]),
+            }
+            hash_slice(&mut hasher, diagnostic.as_str().as_bytes());
+        }
+    }
+    authority_bytes(hasher)
+}
+
+fn document_authority(document: Option<&MaterializedDocumentView>) -> [u8; 32] {
+    let mut hasher = authority_hasher(b"materialized-document");
+    match document {
+        Some(document) => {
+            hasher.update([1]);
+            hash_slice(&mut hasher, document.canonical_bytes());
+        }
+        None => hasher.update([0]),
+    }
+    authority_bytes(hasher)
+}
+
+const fn evidence_status_code(status: crate::EvidenceStatus) -> u8 {
+    match status {
+        crate::EvidenceStatus::Valid => 0,
+        crate::EvidenceStatus::Pending => 1,
+        crate::EvidenceStatus::Invalid => 2,
+        crate::EvidenceStatus::Unsupported => 3,
+        crate::EvidenceStatus::Irrelevant => 4,
+        crate::EvidenceStatus::Duplicate => 5,
+    }
+}
+
+const fn checkpoint_status_code(status: crate::CheckpointVerificationStatus) -> u8 {
+    use crate::CheckpointVerificationStatus as Status;
+    match status {
+        Status::Verified => 0,
+        Status::PendingControl => 1,
+        Status::Unauthorized => 2,
+        Status::ChunkAuthorMismatch => 3,
+        Status::ChunkCoordinateMismatch => 4,
+        Status::ChunkDescriptorMismatch => 5,
+        Status::ChunkCountMismatch => 6,
+        Status::DuplicateChunk => 7,
+        Status::MissingChunk => 8,
+        Status::ChunkSizeMismatch => 9,
+        Status::ChunkAssemblyMismatch => 10,
+        Status::MerkleMismatch => 11,
+        Status::SnapshotSizeMismatch => 12,
+        Status::SnapshotHashMismatch => 13,
+        Status::SnapshotLoad => 14,
+        Status::HeadMismatch => 15,
+        Status::CommitmentMismatch => 16,
+        Status::ClosureMismatch => 17,
+        Status::MissingHistoricalCarrier => 18,
+        Status::NotAcceptedAtControl => 19,
+        Status::BudgetExhausted => 20,
+        Status::Cancelled => 21,
+    }
+}
+
+const fn manifest_control_status_code(status: crate::ManifestControlStatus) -> u8 {
+    match status {
+        crate::ManifestControlStatus::Canonical => 0,
+        crate::ManifestControlStatus::Noncanonical => 1,
+    }
+}
+
+const fn manifest_pending_reason_code(reason: crate::ManifestPendingReason) -> u8 {
+    match reason {
+        crate::ManifestPendingReason::MissingControl => 0,
+        crate::ManifestPendingReason::ControlPending => 1,
+    }
+}
+
+const fn resolved_manifest_event_id(manifest: &ResolvedManifestAvailability) -> Option<EventId> {
+    match manifest {
+        ResolvedManifestAvailability::Missing => None,
+        ResolvedManifestAvailability::Available { hints, .. }
+        | ResolvedManifestAvailability::Pending { hints, .. } => Some(hints.event_id()),
+        ResolvedManifestAvailability::Unavailable { event_id, .. } => Some(*event_id),
+    }
+}
+
 fn complete_parts_are_canonical(
     parts: &EvaluationReportParts,
     witness: CompleteReportWitness<'_>,
 ) -> bool {
-    if parts.failure.is_some() || parts.document.is_none() {
+    let Ok(history_digest) = crate::canonical_history_digest(
+        parts.revision,
+        parts.coordinate,
+        &parts.canonical_controls,
+        &parts.accepted_changes,
+        &parts.heads,
+    ) else {
+        return false;
+    };
+    let Ok(dispositions_digest) = crate::canonical_dispositions_digest(
+        parts.revision,
+        parts.coordinate,
+        &parts.disposition_records,
+    ) else {
+        return false;
+    };
+    if parts.failure.is_some()
+        || parts.document.is_none()
+        || parts.history_digest != history_digest
+        || parts.dispositions_digest != dispositions_digest
+        || !witness.source_authority.matches(parts)
+        || !witness.field_authority.matches(parts)
+        || !checkpoint_records_are_canonical(&parts.checkpoints)
+        || !integrity_alerts_are_causal(parts, witness.control_children, witness.carrier_outcomes)
+    {
         return false;
     }
     let canonical_controls = parts
@@ -716,6 +1135,64 @@ fn complete_parts_are_canonical(
         }
         (false, None, None) | (_, Some(_), None) | (_, None, Some(_)) => false,
     }
+}
+
+fn checkpoint_records_are_canonical(checkpoints: &[CheckpointVerificationResult]) -> bool {
+    checkpoints.iter().all(|checkpoint| {
+        strictly_sorted(checkpoint.chunk_events())
+            && strictly_sorted(checkpoint.heads())
+            && strictly_sorted(checkpoint.historical_carriers())
+            && strictly_sorted(checkpoint.accepted_at_control())
+    })
+}
+
+fn integrity_alerts_are_causal(
+    parts: &EvaluationReportParts,
+    control_children: Option<&BTreeMap<Option<EventId>, BTreeSet<EventId>>>,
+    carrier_outcomes: &BTreeMap<EventId, AttributableCarrierOutcome>,
+) -> bool {
+    parts.integrity_alerts.iter().all(|alert| match alert {
+        IntegrityAlert::ControllerEquivocation(alert) => {
+            let Some(children) =
+                control_children.and_then(|children| children.get(&alert.parent_control()))
+            else {
+                return false;
+            };
+            alert
+                .candidate_controls()
+                .iter()
+                .all(|event_id| children.contains(event_id))
+                && alert.candidate_controls().iter().all(|event_id| {
+                    parts
+                        .control_dispositions
+                        .binary_search_by_key(event_id, |(candidate, _)| *candidate)
+                        .is_ok()
+                })
+        }
+        IntegrityAlert::CanonicalControlReorganization(_) => false,
+        IntegrityAlert::DeviceEquivocation(alert) => alert
+            .conflicting_changes()
+            .iter()
+            .chain(alert.affected_descendants())
+            .all(|hash| {
+                parts
+                    .dispositions
+                    .binary_search_by_key(hash, |(candidate, _)| *candidate)
+                    .is_ok()
+            }),
+        IntegrityAlert::PotentialClonedDeviceKey(alert) => alert
+            .carrier_event_ids()
+            .iter()
+            .all(|event_id| carrier_outcomes.contains_key(event_id)),
+        IntegrityAlert::CheckpointMismatch(alert) => parts
+            .checkpoints
+            .binary_search_by_key(&alert.descriptor_event_id(), |checkpoint| {
+                checkpoint.descriptor_event()
+            })
+            .is_ok_and(|index| {
+                parts.checkpoints[index].status().event_outcome().1 == Some(alert.code())
+            }),
+    })
 }
 
 fn canonical_control_chain_matches(
@@ -861,8 +1338,9 @@ fn strictly_sorted<T: Ord>(values: &[T]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{
-        AttributableCarrierOutcome, CompleteReportWitness, DispositionRecord, EvaluationReport,
-        EvaluationReportParts, ProtocolItemIdentifier, ReportConstructionPath,
+        AttributableCarrierOutcome, CompleteReportFieldAuthority, CompleteReportSourceAuthority,
+        CompleteReportWitness, DispositionRecord, EvaluationReport, EvaluationReportParts,
+        ProtocolItemIdentifier, ReportConstructionPath, detect_reorganization,
         disposition_records_are_canonical,
     };
     use std::collections::{BTreeMap, BTreeSet};
@@ -897,6 +1375,8 @@ mod tests {
         carrier_outcomes: BTreeMap<EventId, AttributableCarrierOutcome>,
         accepted_changes: BTreeSet<ChangeHash>,
         heads: BTreeSet<ChangeHash>,
+        evidence: Vec<crate::EvidenceRecord>,
+        fields: CompleteReportFieldAuthority,
     }
 
     impl CompleteTestAuthority {
@@ -942,6 +1422,14 @@ mod tests {
                 carrier_outcomes,
                 accepted_changes: parts.accepted_changes.iter().copied().collect(),
                 heads: parts.heads.iter().copied().collect(),
+                evidence: parts.evidence.clone(),
+                fields: CompleteReportFieldAuthority::derive(
+                    &parts.evidence,
+                    &parts.checkpoints,
+                    &parts.integrity_alerts,
+                    &parts.manifest,
+                    parts.document.as_ref(),
+                ),
             }
         }
 
@@ -952,6 +1440,8 @@ mod tests {
                 &self.carrier_outcomes,
                 self.has_controls.then_some(&self.accepted_changes),
                 self.has_controls.then_some(&self.heads),
+                CompleteReportSourceAuthority::TestEvidence(&self.evidence),
+                self.fields,
             )
         }
     }
@@ -1077,7 +1567,7 @@ mod tests {
             .zip(dispositions.iter())
             .map(|(event_id, (hash, disposition))| (*event_id, *hash, *disposition))
             .collect();
-        Some(EvaluationReportParts {
+        let mut parts = EvaluationReportParts {
             coordinate,
             revision: crate::ProtocolRevision::draft_v1(),
             canonical_controls: vec![root, child],
@@ -1096,8 +1586,8 @@ mod tests {
             heads: hashes[1..3].to_vec(),
             evidence: Vec::new(),
             checkpoints: Vec::new(),
-            history_digest: HistoryDigest::from_bytes([13; 32]),
-            dispositions_digest: DispositionsDigest::from_bytes([14; 32]),
+            history_digest: HistoryDigest::from_bytes([0; 32]),
+            dispositions_digest: DispositionsDigest::from_bytes([0; 32]),
             integrity_alerts: Vec::new(),
             manifest: crate::ResolvedManifestAvailability::Missing,
             completion: Completion::Complete,
@@ -1105,7 +1595,357 @@ mod tests {
             document:
                 crate::automerge_adapter::materialized_view::MaterializedDocumentView::empty_for_test()
                     .ok(),
-        })
+        };
+        parts.history_digest = crate::canonical_history_digest(
+            parts.revision,
+            parts.coordinate,
+            &parts.canonical_controls,
+            &parts.accepted_changes,
+            &parts.heads,
+        )
+        .ok()?;
+        parts.dispositions_digest = crate::canonical_dispositions_digest(
+            parts.revision,
+            parts.coordinate,
+            &parts.disposition_records,
+        )
+        .ok()?;
+        Some(parts)
+    }
+
+    fn recompute_complete_digests(parts: &mut EvaluationReportParts) -> Option<()> {
+        parts.history_digest = crate::canonical_history_digest(
+            parts.revision,
+            parts.coordinate,
+            &parts.canonical_controls,
+            &parts.accepted_changes,
+            &parts.heads,
+        )
+        .ok()?;
+        parts.dispositions_digest = crate::canonical_dispositions_digest(
+            parts.revision,
+            parts.coordinate,
+            &parts.disposition_records,
+        )
+        .ok()?;
+        Some(())
+    }
+
+    fn complete_exact_field_parts() -> Option<EvaluationReportParts> {
+        let mut parts = complete_matrix_parts()?;
+        let manifest_event = EventId::from_bytes([40; 32]);
+        let descriptor_event = EventId::from_bytes([41; 32]);
+        let chunk_event = EventId::from_bytes([42; 32]);
+        let hints = crate::ManifestHints::new(
+            manifest_event,
+            parts.coordinate,
+            parts.canonical_controls[1],
+            Some(descriptor_event),
+            vec!["wss://relay.example".to_owned()],
+        );
+        parts.manifest = crate::ResolvedManifestAvailability::Available {
+            hints,
+            control_status: crate::ManifestControlStatus::Canonical,
+        };
+        parts
+            .checkpoints
+            .push(CheckpointVerificationResult::from_trusted_ordered(
+                descriptor_event,
+                vec![chunk_event],
+                SnapshotHash::from_bytes([43; 32]),
+                parts.heads.clone(),
+                u64::try_from(parts.accepted_changes.len()).ok()?,
+                [44; 32],
+                parts.accepted_changes.clone(),
+                parts.accepted_changes.clone(),
+                CheckpointVerificationStatus::Verified,
+            ));
+        parts.disposition_records.extend([
+            DispositionRecord::new(
+                ProtocolItemIdentifier::event(manifest_event),
+                crate::ProtocolDisposition::Accepted,
+                None,
+            ),
+            DispositionRecord::new(
+                ProtocolItemIdentifier::event(descriptor_event),
+                crate::ProtocolDisposition::Accepted,
+                None,
+            ),
+            DispositionRecord::new(
+                ProtocolItemIdentifier::event(chunk_event),
+                crate::ProtocolDisposition::Accepted,
+                None,
+            ),
+        ]);
+        parts
+            .disposition_records
+            .sort_by_key(DispositionRecord::identifier);
+        let mut corpus = crate::CorpusBuilder::new();
+        let _ = corpus.ingest_bytes(b"{}");
+        parts.evidence = corpus.finish().records().collect();
+        let alert = crate::DeviceEquivocationAlert::new(
+            crate::ActorId::from_bytes([45; 32]),
+            1,
+            vec![parts.invalid_changes[0], parts.invalid_changes[1]],
+            Vec::new(),
+        )
+        .ok()?;
+        parts
+            .integrity_alerts
+            .push(IntegrityAlert::DeviceEquivocation(alert));
+        recompute_complete_digests(&mut parts)?;
+        Some(parts)
+    }
+
+    fn nonempty_document() -> Option<crate::MaterializedDocumentView> {
+        crate::automerge_adapter::materialized_view::MaterializedDocumentView::nonempty_for_test()
+            .ok()
+    }
+
+    fn replace_canonical_tip(parts: &mut EvaluationReportParts, tip: EventId) -> Option<()> {
+        let prior = *parts.canonical_controls.get(1)?;
+        parts.canonical_controls[1] = tip;
+        let control_index = parts
+            .control_dispositions
+            .binary_search_by_key(&prior, |(event_id, _)| *event_id)
+            .ok()?;
+        parts.control_dispositions[control_index].0 = tip;
+        parts
+            .control_dispositions
+            .sort_by_key(|(event_id, _)| *event_id);
+        let identifier = ProtocolItemIdentifier::control_event(prior);
+        let record_index = parts
+            .disposition_records
+            .binary_search_by_key(&identifier, DispositionRecord::identifier)
+            .ok()?;
+        parts.disposition_records[record_index] = DispositionRecord::new(
+            ProtocolItemIdentifier::control_event(tip),
+            crate::ProtocolDisposition::Accepted,
+            None,
+        );
+        parts
+            .disposition_records
+            .sort_by_key(DispositionRecord::identifier);
+        recompute_complete_digests(parts)
+    }
+
+    fn reevaluation_report_pair() -> Option<(EvaluationReport, EvaluationReport, IntegrityAlert)> {
+        let mut current_parts = complete_matrix_parts()?;
+        let base_alert = crate::DeviceEquivocationAlert::new(
+            crate::ActorId::from_bytes([80; 32]),
+            1,
+            current_parts.invalid_changes.clone(),
+            Vec::new(),
+        )
+        .ok()?;
+        current_parts
+            .integrity_alerts
+            .push(IntegrityAlert::DeviceEquivocation(base_alert));
+        let mut previous_parts = current_parts.clone();
+        replace_canonical_tip(&mut previous_parts, EventId::from_bytes([2; 32]))?;
+        let current_authority = CompleteTestAuthority::for_parts(&current_parts);
+        let previous_authority = CompleteTestAuthority::for_parts(&previous_parts);
+        let current = complete_report(current_parts, &current_authority).ok()?;
+        let previous = complete_report(previous_parts, &previous_authority).ok()?;
+        let alert = detect_reorganization(
+            &previous.control_chain_summary(),
+            &current.control_chain_summary(),
+        )?;
+        Some((previous, current, alert))
+    }
+
+    #[test]
+    fn reevaluation_alert_construction_is_exact_and_cannot_bypass_validation() {
+        let Some((previous, current, reorganization)) = reevaluation_report_pair() else {
+            return;
+        };
+        let base_alert = current.integrity_alerts()[0].clone();
+        let canonical = vec![base_alert.clone(), reorganization.clone()];
+        let report =
+            EvaluationReport::from_reevaluation(current.clone(), &previous, canonical.clone());
+        assert!(report.is_ok());
+        let Ok(report) = report else { return };
+        assert_eq!(report.integrity_alerts(), canonical);
+
+        for (name, mutation) in [
+            ("missing", vec![base_alert.clone()]),
+            (
+                "extra",
+                vec![
+                    base_alert.clone(),
+                    reorganization.clone(),
+                    reorganization.clone(),
+                ],
+            ),
+            ("order", vec![reorganization.clone(), base_alert.clone()]),
+            (
+                "duplicate",
+                vec![
+                    base_alert.clone(),
+                    base_alert.clone(),
+                    reorganization.clone(),
+                ],
+            ),
+        ] {
+            assert_eq!(
+                EvaluationReport::from_reevaluation(current.clone(), &previous, mutation),
+                Err(super::EvaluationError::ReportInvariant),
+                "{name}"
+            );
+        }
+
+        let previous_tip = previous.canonical_controls().last().copied();
+        let current_tip = current.canonical_controls().last().copied();
+        assert!(previous_tip.is_some() && current_tip.is_some());
+        let (Some(previous_tip), Some(current_tip)) = (previous_tip, current_tip) else {
+            return;
+        };
+        let forged = crate::CanonicalControlReorganizationAlert::new(
+            previous_tip,
+            current_tip,
+            vec![ChangeHash::from_bytes([99; 32])],
+        )
+        .ok()
+        .map(IntegrityAlert::CanonicalControlReorganization);
+        assert!(forged.is_some());
+        let Some(forged) = forged else { return };
+        assert_eq!(
+            EvaluationReport::from_reevaluation(
+                current.clone(),
+                &previous,
+                vec![base_alert, forged],
+            ),
+            Err(super::EvaluationError::ReportInvariant)
+        );
+
+        let mut injected_parts = complete_matrix_parts();
+        assert!(injected_parts.is_some());
+        let Some(ref mut injected_parts) = injected_parts else {
+            return;
+        };
+        injected_parts.integrity_alerts.push(reorganization.clone());
+        let injected_authority = CompleteTestAuthority::for_parts(injected_parts);
+        assert_eq!(
+            complete_report(injected_parts.clone(), &injected_authority),
+            Err(super::EvaluationError::ReportInvariant)
+        );
+    }
+
+    #[test]
+    fn complete_report_rejects_exact_field_and_coordinated_rewrite_mutations() {
+        let Some(parts) = complete_exact_field_parts() else {
+            return;
+        };
+        let authority = CompleteTestAuthority::for_parts(&parts);
+        assert!(complete_report(parts.clone(), &authority).is_ok());
+        let assert_rejected = |name: &str, mutation: EvaluationReportParts| {
+            assert_eq!(
+                complete_report(mutation, &authority),
+                Err(super::EvaluationError::ReportInvariant),
+                "{name}"
+            );
+        };
+
+        let mut mutation = parts.clone();
+        mutation.history_digest = HistoryDigest::from_bytes([70; 32]);
+        assert_rejected("history_digest", mutation);
+        let mut mutation = parts.clone();
+        mutation.dispositions_digest = DispositionsDigest::from_bytes([71; 32]);
+        assert_rejected("dispositions_digest", mutation);
+        let mut mutation = parts.clone();
+        mutation.evidence.clear();
+        assert_rejected("evidence_missing", mutation);
+        let mut mutation = parts.clone();
+        mutation.evidence.push(parts.evidence[0]);
+        assert_rejected("evidence_duplicate", mutation);
+        let mut mutation = parts.clone();
+        mutation.integrity_alerts.clear();
+        assert_rejected("integrity_alert_missing", mutation);
+        let mut mutation = parts.clone();
+        mutation.manifest = crate::ResolvedManifestAvailability::Missing;
+        assert_rejected("manifest_rewritten", mutation);
+        let mut mutation = parts.clone();
+        mutation.document = nonempty_document();
+        assert_rejected("materialized_document_content", mutation);
+
+        let checkpoint = &parts.checkpoints[0];
+        let changed_checkpoint = CheckpointVerificationResult::from_trusted_ordered(
+            checkpoint.descriptor_event(),
+            checkpoint.chunk_events().to_vec(),
+            SnapshotHash::from_bytes([72; 32]),
+            checkpoint.heads().to_vec(),
+            checkpoint.change_count(),
+            checkpoint.change_set_hash(),
+            checkpoint.historical_carriers().to_vec(),
+            checkpoint.accepted_at_control().to_vec(),
+            checkpoint.status(),
+        );
+        let mut mutation = parts.clone();
+        mutation.checkpoints[0] = changed_checkpoint;
+        assert_rejected("checkpoint_commitment", mutation);
+
+        let unsorted_checkpoint = CheckpointVerificationResult::from_trusted_ordered(
+            checkpoint.descriptor_event(),
+            vec![EventId::from_bytes([43; 32]), EventId::from_bytes([42; 32])],
+            checkpoint.snapshot_hash(),
+            checkpoint.heads().to_vec(),
+            checkpoint.change_count(),
+            checkpoint.change_set_hash(),
+            checkpoint.historical_carriers().to_vec(),
+            checkpoint.accepted_at_control().to_vec(),
+            checkpoint.status(),
+        );
+        let mut mutation = parts.clone();
+        mutation.checkpoints[0] = unsorted_checkpoint;
+        assert_rejected("checkpoint_unsorted_chunks", mutation);
+
+        let mut mutation = parts.clone();
+        mutation.accepted_changes.pop();
+        mutation.heads.pop();
+        assert!(recompute_complete_digests(&mut mutation).is_some());
+        assert_rejected("coordinated_history_rehash", mutation);
+
+        let descriptor = checkpoint.descriptor_event();
+        let changed_checkpoint = CheckpointVerificationResult::from_trusted_ordered(
+            descriptor,
+            checkpoint.chunk_events().to_vec(),
+            checkpoint.snapshot_hash(),
+            checkpoint.heads().to_vec(),
+            checkpoint.change_count(),
+            checkpoint.change_set_hash(),
+            checkpoint.historical_carriers().to_vec(),
+            checkpoint.accepted_at_control().to_vec(),
+            CheckpointVerificationStatus::PendingControl,
+        );
+        let mut mutation = parts.clone();
+        mutation.checkpoints[0] = changed_checkpoint;
+        for event_id in
+            core::iter::once(descriptor).chain(checkpoint.chunk_events().iter().copied())
+        {
+            let identifier = ProtocolItemIdentifier::event(event_id);
+            let index = mutation
+                .disposition_records
+                .binary_search_by_key(&identifier, DispositionRecord::identifier);
+            assert!(index.is_ok());
+            if let Ok(index) = index {
+                mutation.disposition_records[index] =
+                    DispositionRecord::new(identifier, crate::ProtocolDisposition::Pending, None);
+            }
+        }
+        assert!(recompute_complete_digests(&mut mutation).is_some());
+        assert_rejected("coordinated_checkpoint_and_disposition_rehash", mutation);
+
+        let manifest_event = match &parts.manifest {
+            crate::ResolvedManifestAvailability::Available { hints, .. } => hints.event_id(),
+            _ => return,
+        };
+        let mut mutation = parts.clone();
+        mutation.manifest = crate::ResolvedManifestAvailability::Missing;
+        mutation
+            .disposition_records
+            .retain(|record| record.identifier() != ProtocolItemIdentifier::event(manifest_event));
+        assert!(recompute_complete_digests(&mut mutation).is_some());
+        assert_rejected("coordinated_manifest_and_record_rewrite", mutation);
     }
 
     #[test]
@@ -1343,6 +2183,7 @@ mod tests {
         parts
             .disposition_records
             .sort_by_key(DispositionRecord::identifier);
+        recompute_complete_digests(&mut parts)?;
         let mut authority = CompleteTestAuthority::for_parts(&parts);
         authority.carrier_outcomes.insert(
             unsupported_event,
@@ -1953,23 +2794,42 @@ mod tests {
         let Ok(coordinate) = coordinate else { return };
         let hash = ChangeHash::from_bytes([2; 32]);
         let carrier_id = EventId::from_bytes([9; 32]);
+        let canonical_controls = vec![EventId::from_bytes([1; 32])];
+        let disposition_records = vec![
+            DispositionRecord::new(
+                ProtocolItemIdentifier::from(hash),
+                crate::ProtocolDisposition::Accepted,
+                None,
+            ),
+            DispositionRecord::new(
+                ProtocolItemIdentifier::event(carrier_id),
+                crate::ProtocolDisposition::Accepted,
+                None,
+            ),
+        ];
+        let history_digest = crate::canonical_history_digest(
+            crate::ProtocolRevision::draft_v1(),
+            coordinate,
+            &canonical_controls,
+            &[hash],
+            &[hash],
+        );
+        let dispositions_digest = crate::canonical_dispositions_digest(
+            crate::ProtocolRevision::draft_v1(),
+            coordinate,
+            &disposition_records,
+        );
+        assert!(history_digest.is_ok() && dispositions_digest.is_ok());
+        let (Ok(history_digest), Ok(dispositions_digest)) = (history_digest, dispositions_digest)
+        else {
+            return;
+        };
         let parts = || {
             EvaluationReportParts {
             coordinate,
             revision: crate::ProtocolRevision::draft_v1(),
-            canonical_controls: vec![EventId::from_bytes([1; 32])],
-            disposition_records: vec![
-                DispositionRecord::new(
-                    ProtocolItemIdentifier::from(hash),
-                    crate::ProtocolDisposition::Accepted,
-                    None,
-                ),
-                DispositionRecord::new(
-                    ProtocolItemIdentifier::event(carrier_id),
-                    crate::ProtocolDisposition::Accepted,
-                    None,
-                ),
-            ],
+            canonical_controls: canonical_controls.clone(),
+            disposition_records: disposition_records.clone(),
             control_dispositions: vec![(
                 EventId::from_bytes([1; 32]),
                 crate::ProtocolDisposition::Accepted,
@@ -1987,8 +2847,8 @@ mod tests {
             heads: vec![hash],
             evidence: vec![],
             checkpoints: vec![],
-            history_digest: HistoryDigest::from_bytes([3; 32]),
-            dispositions_digest: DispositionsDigest::from_bytes([4; 32]),
+            history_digest,
+            dispositions_digest,
             integrity_alerts: vec![],
             manifest: crate::ResolvedManifestAvailability::Missing,
             completion: Completion::Complete,
@@ -2134,7 +2994,10 @@ mod tests {
                 None,
             ),
         ]);
-        assert!(complete_report(consistent_checkpoint, &authority).is_ok());
+        assert!(recompute_complete_digests(&mut consistent_checkpoint).is_some());
+        let consistent_checkpoint_authority =
+            CompleteTestAuthority::for_parts(&consistent_checkpoint);
+        assert!(complete_report(consistent_checkpoint, &consistent_checkpoint_authority).is_ok());
 
         let refused_checkpoint = CheckpointVerificationResult::new(
             descriptor,
@@ -2163,7 +3026,9 @@ mod tests {
                 history_diagnostic,
             ),
         ]);
-        assert!(complete_report(consistent_refusal.clone(), &authority).is_ok());
+        assert!(recompute_complete_digests(&mut consistent_refusal).is_some());
+        let consistent_refusal_authority = CompleteTestAuthority::for_parts(&consistent_refusal);
+        assert!(complete_report(consistent_refusal.clone(), &consistent_refusal_authority).is_ok());
 
         let mut missing_descriptor_diagnostic = consistent_refusal.clone();
         missing_descriptor_diagnostic.disposition_records[2] = DispositionRecord::new(

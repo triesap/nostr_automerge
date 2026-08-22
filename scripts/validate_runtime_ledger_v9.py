@@ -33,7 +33,7 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "727d6da69895aa56345c335ee5865c07a724c1293626abacced27bc97bb279d5"
+    "2046aa213199116396684db1f6e28cdc535977abb04ec7b252eb831efa60b3a4"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
@@ -53,6 +53,7 @@ APPROVED_CARRIER_RESULT_IDENTITY = (
 APPROVED_CARRIER_GATE_RESULT_IDENTITY = (
     "c1ca1069632a7145ab163fc6279fb94fd554781acf992450e9a1f8a26e93176d"
 )
+CARRIER_GATE_CLOSURE_CANDIDATE = "52fafad799c5eb60a1d1a8b28bf214c0c8d21437"
 APPROVED_CARRIER_CHAIN = (
     {
         "checkpoint": "step_1192",
@@ -106,7 +107,7 @@ WIRE_DOMAIN_SOURCE_BINDINGS = (
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "c72fde7143136f5a7ad6c883379f96586c417a5f2d9ef63b7b88cf845d61f666",
+        "3c133d1ab910984a06eccb4cd2311e7329b47c262ffa75339366b18b59d23440",
         b"nostr-crdt/automerge/change-set/v1",
     ),
     (
@@ -258,6 +259,7 @@ PREDECESSOR_CANDIDATES = (
     "0fc39bfaedb156c3a6c3b914dd09791303c8d0b6",
     "a52281455f350faee6408d6c508295598379f439",
     "4eeb074d160739300451561bcae267010d5353fc",
+    "36458c459db30c8b6cf1f5da6fb6ef1a5df01db3",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -277,15 +279,15 @@ REPORT_REVISION_INVENTORY = (
 REPORT_REVISION_SOURCE_BINDINGS = (
     (
         "crates/nostr_automerge/src/engine/evaluation_report.rs",
-        "0e16ca3619f4e6124b72b609d9d81e1bf64d3b22aa4fb47a1e2bcf0185831a8d",
+        "8e9b90c9d555ea21aee6efdf09e535bbe1a31746511be15a333bc52598b604e3",
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "c72fde7143136f5a7ad6c883379f96586c417a5f2d9ef63b7b88cf845d61f666",
+        "448e02cc31f5805019ccff6887885a4f73db6603476fe1f96dea586e531bff3e",
     ),
     (
         "crates/nostr_automerge/tests/public_engine_api.rs",
-        "44b6aa915d3513200a5ff5b4b40ed462e4256ee7be20f808c9d965c6e1d06d23",
+        "cf1f40d6447fb2c0a41ba3ee188dc84f5475c953018e80adaa563c7df49bfd05",
     ),
     (
         "tools/nostr_automerge_conformance/src/expected.rs",
@@ -305,7 +307,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "tools/nostr_automerge_conformance/src/runner.rs",
-        "27edf328fcdc8e6a31d02e04d61e78f750ef38bc28a076556ffa2294e337e6f6",
+        "64a538efd6029431542c347421539749cab5926c30322aebb39f3ea61fc66efa",
     ),
     (
         "tools/nostr_automerge_conformance/src/scenario.rs",
@@ -314,15 +316,19 @@ REPORT_REVISION_SOURCE_BINDINGS = (
 )
 CLOSURE_PATHS = frozenset(
     {
+        "crates/nostr_automerge/src/automerge_adapter/materialized_view.rs",
         "crates/nostr_automerge/src/engine/evaluation_report.rs",
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "crates/nostr_automerge/tests/public_engine_api.rs",
         "docs/api/public_engine.md",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
         "scripts/validate_carrier_gate_v9.py",
+        "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
+        "tools/nostr_automerge_conformance/src/runner.rs",
         "tools/validation/runtime_ledger_v9.schema.json",
     }
 )
@@ -367,6 +373,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-EVIDENCE",),
     ("V-FULL-RUST",),
+    ("V-REPORT",),
     ("V-REPORT",),
     ("V-REPORT",),
     ("V-REPORT",),
@@ -465,6 +472,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-DISPOSITION-006", "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -514,6 +522,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_074", "FINDING_079", "FINDING_083"),
     ("FINDING_074", "FINDING_079", "FINDING_083"),
     ("FINDING_074", "FINDING_079", "FINDING_083"),
+    ("FINDING_081",),
     ("FINDING_081",),
     ("FINDING_081",),
     ("FINDING_081",),
@@ -1077,11 +1086,22 @@ def validate_wire_domain_projection() -> None:
         and len(APPROVED_WIRE_DOMAINS) == 5,
         "carrier_opaque:wire_domain_count",
     )
+    require(
+        is_public_ancestor(CARRIER_GATE_CLOSURE_CANDIDATE),
+        "carrier_opaque:wire_domain_candidate",
+    )
     for relative, expected_sha256, needle in WIRE_DOMAIN_SOURCE_BINDINGS:
-        try:
-            source = (ROOT / relative).read_bytes()
-        except OSError as error:
-            raise LedgerError(f"carrier_opaque:wire_domain_source:{relative}") from error
+        result = subprocess.run(
+            ("git", "show", f"{CARRIER_GATE_CLOSURE_CANDIDATE}:{relative}"),
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+        )
+        require(
+            result.returncode == 0 and result.stderr == b"",
+            f"carrier_opaque:wire_domain_source:{relative}",
+        )
+        source = result.stdout
         require(
             hashlib.sha256(source).hexdigest() == expected_sha256,
             f"carrier_opaque:wire_domain_source_identity:{relative}",

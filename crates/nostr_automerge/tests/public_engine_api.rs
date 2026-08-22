@@ -8459,7 +8459,7 @@ fn late_lower_control_id_reorganizes_and_replays_signed_state() {
     assert_eq!(before.accepted_changes(), [higher_hash]);
     assert_eq!(before.heads(), [higher_hash]);
     let mut after_builder = CorpusBuilder::new();
-    for event in [parent, higher, higher_change, lower, lower_change] {
+    for event in [parent, lower, lower_change] {
         assert!(matches!(
             after_builder.ingest(event),
             IngestOutcome::Accepted { .. }
@@ -8477,18 +8477,29 @@ fn late_lower_control_id_reorganizes_and_replays_signed_state() {
     assert_eq!(after.accepted_changes(), [lower_hash]);
     assert_eq!(after.heads(), [lower_hash]);
     assert!(
-        after
+        !after
             .dispositions()
-            .contains(&(higher_hash, ProtocolDisposition::Excluded))
+            .iter()
+            .any(|(hash, _)| *hash == higher_hash)
     );
-    assert!(after.integrity_alerts().iter().any(|alert| matches!(
-        alert,
-        nostr_automerge::IntegrityAlert::ControllerEquivocation { .. }
-    )));
-    assert!(after.integrity_alerts().iter().any(|alert| matches!(
-        alert,
-        nostr_automerge::IntegrityAlert::CanonicalControlReorganization(_)
-    )));
+    let reorganization = after
+        .integrity_alerts()
+        .iter()
+        .find_map(|alert| match alert {
+            nostr_automerge::IntegrityAlert::CanonicalControlReorganization(details) => {
+                Some(details)
+            }
+            _ => None,
+        });
+    assert!(reorganization.is_some());
+    let Some(reorganization) = reorganization else {
+        return;
+    };
+    let mut exact_affected = vec![higher_hash, lower_hash];
+    exact_affected.sort();
+    assert_eq!(reorganization.previous_tip(), higher_id);
+    assert_eq!(reorganization.new_tip(), lower_id);
+    assert_eq!(reorganization.affected_changes(), exact_affected);
     assert!(after.document().is_some_and(|view| !view.is_empty()));
 }
 
