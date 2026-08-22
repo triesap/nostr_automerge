@@ -1,0 +1,36 @@
+{
+  "schema": "nostr_automerge.opaque_checkpoint.v9.v1",
+  "checkpoint": "step_1184",
+  "stage": "checkpoint_parity_candidate",
+  "status": "pass",
+  "publication_status": "held",
+  "candidate_chain": [
+    {"checkpoint": "step_1178", "candidate": "573ae02e2331042f47a0b11acbc8bd620b6322fb", "result": "pass"},
+    {"checkpoint": "step_1179", "candidate": "d17cb63f29a5b976b13ba8096e385c4146b00337", "result": "pass"},
+    {"checkpoint": "step_1180", "candidate": "f3d72cf5ee8fe802da712f20d70cb35414f48a1b", "result": "pass"},
+    {"checkpoint": "step_1181", "candidate": "91286873369f99f4364a179aac8a4c514e0dfbcf", "result": "pass"},
+    {"checkpoint": "step_1182", "candidate": "6f9e956ba77652de29fbf85a1a94d0a4cd4a8dc1", "result": "pass"},
+    {"checkpoint": "step_1183", "candidate": "b09085c78bfe664500f596589a93ac25ff9981c7", "result": "pass"},
+    {"checkpoint": "step_1184", "candidate": "d956d20699508ec8e54b660fa634ff68df323846", "result": "pass"}
+  ],
+  "gate_ids": ["V-TS"],
+  "result_counts": {
+    "signed_scenarios": 22,
+    "signed_events": 75,
+    "engine_vectors": 11,
+    "delivery_orders": 8,
+    "fixed_regressions": 5,
+    "open_regressions": 18
+  },
+  "execution_class": "environment_independent",
+  "execution_result": "pass",
+  "result_identities": [
+    {"class": "checkpoint_lock", "sha256": "b52dc6948a87ea49ae8fb1fcf8a47233e726dacb699624732bc66f54b621e8f5"},
+    {"class": "checkpoint_manifest", "sha256": "e14fd6f95642f4970921628096e7b942c82b6931e7d31cad248b89240983aff3"},
+    {"class": "signed_event_projection", "sha256": "3cec0ac2f2fa96b06af4a369e76cea559baceb3eb10e0b17fcf2086bf7781f16"},
+    {"class": "checkpoint_report_projection", "sha256": "631759d0441b25f4c99d91406fca386eb4b29a23c86521071274ad293345c00d"},
+    {"class": "corrected_expectation_projection", "sha256": "170d72de39705b0a3aa71cb9c2a7b22a27f6597b1bc5ae8f12d965f0cf30a908"},
+    {"class": "checkpoint_attestation", "sha256": "0f96a6e235953aaf5fa06a4023eb98211776799165d10f0b4f653dc887571d18"}
+  ],
+  "result_identity_sha256": "a92222c28f7afa12831e18658de88235c8905b93b25d25bae7477e295edf2813"
+}

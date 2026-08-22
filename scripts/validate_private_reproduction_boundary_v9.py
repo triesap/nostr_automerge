@@ -33,8 +33,10 @@ from validate_runtime_ledger_v9 import (
 ROOT = Path(__file__).resolve().parents[1]
 JSON_RECORDS = (
     "reports/opaque_reproduction_v9.json",
+    "reports/opaque_checkpoint_v9.json",
     "implementation/runtime_ledger_v9.json",
     "tools/validation/opaque_reproduction_v9.schema.json",
+    "tools/validation/opaque_checkpoint_v9.schema.json",
     "tools/validation/runtime_ledger_v9.schema.json",
 )
 TEXT_RECORDS = ("docs/execution/remediation_v9/ledger.md",)
@@ -79,6 +81,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "fixtures/examples",
         "fixtures/schema",
         "implementation/runtime_ledger_v9.json",
+        "reports/opaque_checkpoint_v9.json",
         "reports/opaque_reproduction_v9.json",
         "reports/spec_baseline.txt",
         "scripts/validate_architecture.py",
@@ -94,6 +97,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "spec/requirements.json",
         "tools/nostr_automerge_xtask/src/validate.rs",
         "tools/validation/opaque_reproduction_v9.schema.json",
+        "tools/validation/opaque_checkpoint_v9.schema.json",
         "tools/validation/authority_transition_v10.schema.json",
         "tools/validation/runtime_ledger_v9.schema.json",
     }

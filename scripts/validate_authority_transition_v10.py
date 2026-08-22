@@ -1913,84 +1913,54 @@ def validate_current_plan_progress(
 
 
 def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: str) -> int:
-    future_runtime = copy.deepcopy(runtime)
-    future_runtime["predecessors"].append(
-        {
-            "step": "step_1177",
-            "candidate": "f" * 40,
-            "owner_class": "public",
-            "gate_ids": ["V-FULL-RUST"],
-            "requirement_ids": [
-                "NCRDT-CPAUTH-001",
-                "NCRDT-CPAUTH-002",
-                "NCRDT-RESOURCE-014",
-                "NCRDT-CONF-010",
-                "NCRDT-EVIDENCE-006",
-            ],
-            "finding_ids": ["FINDING_073", "FINDING_084"],
-            "deviation_ids": [],
-            "result": "pass",
-        }
-    )
-    future_runtime["rcld"] = 83
-    future_runtime["cursor"].update(
-        {
-            "active_step": "step_1178",
-            "next_step": "step_1179",
-            "remaining_checkpoint_count": 106,
-            "first_rcld": 83,
-            "remaining_rcld_count": 12,
-        }
-    )
-    future_plan = plan.replace(
-        "Active RCLD: RCLD 82",
-        "Active RCLD: RCLD 83",
-        1,
-    ).replace(
-        "Active checkpoint: `step_1177`",
-        "Active checkpoint: `step_1178`",
-        1,
-    ).replace(
-        "Next checkpoint: `step_1178`",
-        "Next checkpoint: `step_1179`",
-        1,
-    )
-    validate_plan_semantics(future_plan)
-    validate_current_plan_progress(future_plan, future_runtime, stage)
+    cursor = runtime["cursor"]
+    active = cursor["active_step"]
+    following = cursor["next_step"]
+    active_number = int(active.removeprefix("step_"))
+    following_number = int(following.removeprefix("step_"))
+    active_rcld = step_rcld(active_number)
+    following_rcld = step_rcld(following_number)
 
-    coordinated_runtime = copy.deepcopy(future_runtime)
-    coordinated_runtime["predecessors"].pop()
-    appended_without_cursor = copy.deepcopy(runtime)
-    appended_without_cursor["predecessors"].append(
-        copy.deepcopy(future_runtime["predecessors"][-1])
+    def rcld_title(value: int) -> str:
+        match = re.search(rf"^## RCLD {value} — ([^\n]+)$", plan, re.MULTILINE)
+        require(match is not None, "progress_self_test:rcld_title")
+        return match.group(1)
+
+    def set_rcld_status(value: str, rcld: int, before: str, after: str) -> str:
+        heading = f"## RCLD {rcld} — {rcld_title(rcld)}\n\nStatus: {before}"
+        replacement = f"## RCLD {rcld} — {rcld_title(rcld)}\n\nStatus: {after}"
+        changed = value.replace(heading, replacement, 1)
+        require(changed != value, "progress_self_test:rcld_status")
+        return changed
+
+    def move_to_completed(value: str, rcld: int) -> str:
+        line = f"- RCLD {rcld} — {rcld_title(rcld)}\n"
+        changed = value.replace(line, "", 1)
+        require(changed != value, "progress_self_test:remove_unfinished")
+        marker = "\n## Unfinished RCLDs\n"
+        changed = changed.replace(marker, f"{line}{marker}", 1)
+        require(changed.count(line) == 1, "progress_self_test:insert_completed")
+        return changed
+
+    def move_to_unfinished(value: str, rcld: int) -> str:
+        line = f"- RCLD {rcld} — {rcld_title(rcld)}\n"
+        changed = value.replace(line, "", 1)
+        require(changed != value, "progress_self_test:remove_completed")
+        marker = "## Unfinished RCLDs\n\n"
+        changed = changed.replace(marker, f"{marker}{line}", 1)
+        require(changed.count(line) == 1, "progress_self_test:insert_unfinished")
+        return changed
+
+    current_rcld_complete = next(
+        last <= active_number for rcld, _, last in RCLD_STEP_RANGES if rcld == active_rcld
     )
-    stale_checkpoint_count = copy.deepcopy(future_runtime)
-    stale_checkpoint_count["cursor"]["remaining_checkpoint_count"] = 107
-    stale_rcld_count = copy.deepcopy(future_runtime)
-    stale_rcld_count["cursor"]["remaining_rcld_count"] = 13
-    stale_stage_count = copy.deepcopy(future_runtime)
-    stale_stage_count["authority_projection"]["signed_fixture_count"] = 183
-    stale_finding_status = copy.deepcopy(future_runtime)
-    stale_finding_status["findings"]["status"] = "code_complete_publication_held"
-    stale_groups = future_plan.replace(
-        "## Completed RCLDs\n\n- RCLD 81 — Authority, Deviation, And Reproducible Baseline\n"
-        "- RCLD 82 — Rust Checkpoint Control Precedence\n\n"
-        "## Unfinished RCLDs\n\n",
-        "## Completed RCLDs\n\n## Unfinished RCLDs\n\n"
-        "- RCLD 81 — Authority, Deviation, And Reproducible Baseline\n"
-        "- RCLD 82 — Rust Checkpoint Control Precedence\n",
-        1,
-    )
-    stale_summary = future_plan.replace(
-        "All 126 checkpoints from `step_1158` through `step_1283` are in progress.",
-        "All 126 checkpoints from `step_1158` through `step_1283` remain unfinished.",
-        1,
-    )
-    mutations = (
+    rcld_status_before = "complete" if current_rcld_complete else "planned"
+    rcld_status_after = "planned" if current_rcld_complete else "complete"
+    mutations: list[tuple[str, str, dict[str, Any]]] = [
         (
             "active_step",
             plan.replace(
-                "Active checkpoint: `step_1177`",
+                f"Active checkpoint: `{active}`",
                 "Active checkpoint: `step_9999`",
                 1,
             ),
@@ -1999,7 +1969,7 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
         (
             "next_step",
             plan.replace(
-                "Next checkpoint: `step_1178`",
+                f"Next checkpoint: `{following}`",
                 "Next checkpoint: `step_9998`",
                 1,
             ),
@@ -2007,12 +1977,20 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
         ),
         (
             "active_rcld",
-            plan.replace("Active RCLD: RCLD 82", "Active RCLD: RCLD 81", 1),
+            plan.replace(
+                f"Active RCLD: RCLD {active_rcld}",
+                f"Active RCLD: RCLD {94 if active_rcld != 94 else 93}",
+                1,
+            ),
             runtime,
         ),
         (
             "next_rcld",
-            plan.replace("Next RCLD: RCLD 83", "Next RCLD: RCLD 82", 1),
+            plan.replace(
+                f"Next RCLD: RCLD {following_rcld}",
+                f"Next RCLD: RCLD {94 if following_rcld != 94 else 93}",
+                1,
+            ),
             runtime,
         ),
         (
@@ -2026,69 +2004,134 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
         ),
         (
             "rcld_status",
-            plan.replace(
-                "## RCLD 82 — Rust Checkpoint Control Precedence\n\nStatus: complete",
-                "## RCLD 82 — Rust Checkpoint Control Precedence\n\nStatus: planned",
-                1,
+            set_rcld_status(
+                plan,
+                active_rcld,
+                rcld_status_before,
+                rcld_status_after,
             ),
             runtime,
         ),
         (
             "runtime_rcld",
             plan,
-            {**runtime, "rcld": 81},
+            {**runtime, "rcld": 94 if active_rcld != 94 else 93},
         ),
         (
             "runtime_status",
             plan,
             {**runtime, "status": "code_complete_publication_held"},
         ),
-        (
-            "partial_plan_advance",
-            future_plan,
-            runtime,
-        ),
-        (
-            "coordinated_without_predecessor",
-            future_plan,
-            coordinated_runtime,
-        ),
-        (
-            "appended_without_cursor",
-            plan,
-            appended_without_cursor,
-        ),
-        (
-            "stale_checkpoint_count",
-            future_plan,
-            stale_checkpoint_count,
-        ),
-        (
-            "stale_rcld_count",
-            future_plan,
-            stale_rcld_count,
-        ),
-        (
-            "stale_stage_count",
-            future_plan,
-            stale_stage_count,
-        ),
-        (
-            "stale_finding_status",
-            future_plan,
-            stale_finding_status,
-        ),
-        (
-            "stale_groups",
-            stale_groups,
-            future_runtime,
-        ),
-        (
-            "stale_summary",
-            stale_summary,
-            future_runtime,
-        ),
-    )
+    ]
+
+    if active_number < 1283:
+        future_active_number = active_number + 1
+        future_following_number = active_number + 2
+        future_active = f"step_{future_active_number}"
+        future_following = f"step_{future_following_number}"
+        future_rcld = step_rcld(future_active_number)
+        future_following_rcld = (
+            step_rcld(future_following_number)
+            if future_following_number <= 1283
+            else future_rcld
+        )
+        owner, gate = plan_execution_rows(plan)[active]
+        owner_class = {
+            "public Rust": "public",
+            "private TypeScript": "opaque_private",
+        }[owner]
+        candidates = {row["candidate"] for row in runtime["predecessors"]}
+        candidate = hashlib.sha256(active.encode("utf-8")).hexdigest()[:40]
+        while candidate in candidates:
+            candidate = hashlib.sha256(candidate.encode("utf-8")).hexdigest()[:40]
+
+        future_runtime = copy.deepcopy(runtime)
+        future_runtime["predecessors"].append(
+            {
+                "step": active,
+                "candidate": candidate,
+                "owner_class": owner_class,
+                "gate_ids": [gate],
+                "requirement_ids": [],
+                "finding_ids": [],
+                "deviation_ids": [],
+                "result": "pass",
+            }
+        )
+        future_runtime["rcld"] = future_rcld
+        future_runtime["cursor"].update(
+            {
+                "active_step": future_active,
+                "next_step": future_following,
+                "remaining_checkpoint_count": 1283 - future_active_number + 1,
+                "first_rcld": future_rcld,
+                "remaining_rcld_count": 94 - future_rcld + 1,
+            }
+        )
+        future_plan = plan.replace(
+            f"Active RCLD: RCLD {active_rcld}",
+            f"Active RCLD: RCLD {future_rcld}",
+            1,
+        ).replace(
+            f"Active checkpoint: `{active}`",
+            f"Active checkpoint: `{future_active}`",
+            1,
+        ).replace(
+            f"Next RCLD: RCLD {following_rcld}",
+            f"Next RCLD: RCLD {future_following_rcld}",
+            1,
+        ).replace(
+            f"Next checkpoint: `{following}`",
+            f"Next checkpoint: `{future_following}`",
+            1,
+        )
+        newly_completed = tuple(
+            rcld
+            for rcld, _, last in RCLD_STEP_RANGES
+            if active_number < last <= future_active_number
+        )
+        for rcld in newly_completed:
+            future_plan = set_rcld_status(future_plan, rcld, "planned", "complete")
+            future_plan = move_to_completed(future_plan, rcld)
+        validate_plan_semantics(future_plan)
+        validate_current_plan_progress(future_plan, future_runtime, stage)
+
+        coordinated_runtime = copy.deepcopy(future_runtime)
+        coordinated_runtime["predecessors"].pop()
+        appended_without_cursor = copy.deepcopy(runtime)
+        appended_without_cursor["predecessors"].append(
+            copy.deepcopy(future_runtime["predecessors"][-1])
+        )
+        stale_checkpoint_count = copy.deepcopy(future_runtime)
+        stale_checkpoint_count["cursor"]["remaining_checkpoint_count"] += 1
+        stale_rcld_count = copy.deepcopy(future_runtime)
+        stale_rcld_count["cursor"]["remaining_rcld_count"] += 1
+        stale_stage_count = copy.deepcopy(future_runtime)
+        stale_stage_count["authority_projection"]["signed_fixture_count"] += 1
+        stale_finding_status = copy.deepcopy(future_runtime)
+        stale_finding_status["findings"]["status"] = "code_complete_publication_held"
+        completed_rclds = tuple(
+            rcld for rcld, _, last in RCLD_STEP_RANGES if last <= future_active_number
+        )
+        stale_groups = move_to_unfinished(future_plan, completed_rclds[-1])
+        stale_summary = future_plan.replace(
+            "All 126 checkpoints from `step_1158` through `step_1283` are in progress.",
+            "All 126 checkpoints from `step_1158` through `step_1283` remain unfinished.",
+            1,
+        )
+        mutations.extend(
+            (
+                ("partial_plan_advance", future_plan, runtime),
+                ("coordinated_without_predecessor", future_plan, coordinated_runtime),
+                ("appended_without_cursor", plan, appended_without_cursor),
+                ("stale_checkpoint_count", future_plan, stale_checkpoint_count),
+                ("stale_rcld_count", future_plan, stale_rcld_count),
+                ("stale_stage_count", future_plan, stale_stage_count),
+                ("stale_finding_status", future_plan, stale_finding_status),
+                ("stale_groups", stale_groups, future_runtime),
+                ("stale_summary", stale_summary, future_runtime),
+            )
+        )
     caught = 0
     for name, candidate, candidate_runtime in mutations:
         require(candidate != plan or candidate_runtime != runtime, f"progress_mutation:{name}")

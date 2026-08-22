@@ -71,7 +71,9 @@ def controlled_files() -> list[pathlib.Path]:
         for name in (
             "docs/execution/remediation_v9/ledger.md",
             "implementation/runtime_ledger_v9.json",
+            "reports/opaque_checkpoint_v9.json",
             "reports/opaque_reproduction_v9.json",
+            "tools/validation/opaque_checkpoint_v9.schema.json",
             "tools/validation/opaque_reproduction_v9.schema.json",
             "tools/validation/runtime_ledger_v9.schema.json",
         )

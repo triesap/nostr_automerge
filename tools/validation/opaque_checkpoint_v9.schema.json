@@ -1,0 +1,78 @@
+{
+  "title": "nostr_automerge opaque checkpoint v9",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "checkpoint", "stage", "status", "publication_status",
+    "candidate_chain", "gate_ids", "result_counts", "execution_class",
+    "execution_result", "result_identities", "result_identity_sha256"
+  ],
+  "properties": {
+    "schema": {"const": "nostr_automerge.opaque_checkpoint.v9.v1"},
+    "checkpoint": {"const": "step_1184"},
+    "stage": {"const": "checkpoint_parity_candidate"},
+    "status": {"const": "pass"},
+    "publication_status": {"const": "held"},
+    "candidate_chain": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["checkpoint", "candidate", "result"],
+        "properties": {
+          "checkpoint": {"type": "string", "pattern": "^step_1[0-9]{3}$"},
+          "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "result": {"const": "pass"}
+        }
+      }
+    },
+    "gate_ids": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "uniqueItems": true,
+      "items": {"const": "V-TS"}
+    },
+    "result_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "signed_scenarios", "signed_events", "engine_vectors",
+        "delivery_orders", "fixed_regressions", "open_regressions"
+      ],
+      "properties": {
+        "signed_scenarios": {"const": 22},
+        "signed_events": {"const": 75},
+        "engine_vectors": {"const": 11},
+        "delivery_orders": {"const": 8},
+        "fixed_regressions": {"const": 5},
+        "open_regressions": {"const": 18}
+      }
+    },
+    "execution_class": {"const": "environment_independent"},
+    "execution_result": {"const": "pass"},
+    "result_identities": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["class", "sha256"],
+        "properties": {
+          "class": {
+            "enum": [
+              "checkpoint_lock", "checkpoint_manifest", "signed_event_projection",
+              "checkpoint_report_projection", "corrected_expectation_projection",
+              "checkpoint_attestation"
+            ]
+          },
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    },
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

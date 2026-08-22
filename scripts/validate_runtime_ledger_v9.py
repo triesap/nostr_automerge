@@ -16,6 +16,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 REPORT = "reports/opaque_reproduction_v9.json"
 REPORT_SCHEMA = "tools/validation/opaque_reproduction_v9.schema.json"
+CHECKPOINT_REPORT = "reports/opaque_checkpoint_v9.json"
+CHECKPOINT_REPORT_SCHEMA = "tools/validation/opaque_checkpoint_v9.schema.json"
 LEDGER = "implementation/runtime_ledger_v9.json"
 LEDGER_SCHEMA = "tools/validation/runtime_ledger_v9.schema.json"
 PLAN = "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md"
@@ -27,7 +29,39 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "aa774adf2f8fdfd1da5370623f2f5deda68667516e057e0ce278af58d5b5e855"
+    "5bc008954662f093019106a26673f9c8954ff2c06f79f819f876de059422bf39"
+)
+CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
+    "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
+)
+APPROVED_CHECKPOINT_RESULT_IDENTITY = (
+    "a92222c28f7afa12831e18658de88235c8905b93b25d25bae7477e295edf2813"
+)
+APPROVED_CHECKPOINT_IDENTITIES = (
+    ("checkpoint_lock", "b52dc6948a87ea49ae8fb1fcf8a47233e726dacb699624732bc66f54b621e8f5"),
+    ("checkpoint_manifest", "e14fd6f95642f4970921628096e7b942c82b6931e7d31cad248b89240983aff3"),
+    ("signed_event_projection", "3cec0ac2f2fa96b06af4a369e76cea559baceb3eb10e0b17fcf2086bf7781f16"),
+    ("checkpoint_report_projection", "631759d0441b25f4c99d91406fca386eb4b29a23c86521071274ad293345c00d"),
+    ("corrected_expectation_projection", "170d72de39705b0a3aa71cb9c2a7b22a27f6597b1bc5ae8f12d965f0cf30a908"),
+    ("checkpoint_attestation", "0f96a6e235953aaf5fa06a4023eb98211776799165d10f0b4f653dc887571d18"),
+)
+APPROVED_CHECKPOINT_CHAIN = tuple(
+    {
+        "checkpoint": f"step_{1178 + index}",
+        "candidate": candidate,
+        "result": "pass",
+    }
+    for index, candidate in enumerate(
+        (
+            "573ae02e2331042f47a0b11acbc8bd620b6322fb",
+            "d17cb63f29a5b976b13ba8096e385c4146b00337",
+            "f3d72cf5ee8fe802da712f20d70cb35414f48a1b",
+            "91286873369f99f4364a179aac8a4c514e0dfbcf",
+            "6f9e956ba77652de29fbf85a1a94d0a4cd4a8dc1",
+            "b09085c78bfe664500f596589a93ac25ff9981c7",
+            "d956d20699508ec8e54b660fa634ff68df323846",
+        )
+    )
 )
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
@@ -107,19 +141,34 @@ PREDECESSOR_CANDIDATES = (
     "aa7d4096e3f73e23bd52239ad440d85f0eccf920",
     "c333b0f8f0297d1193b757f3fc3a893e7a9e6d92",
     "d5b35c61e8cff82dbb10dff2676da8803236e0dc",
+    "2cfc9ec1551be581f76f0041bd70a83e59fef5c0",
+    "573ae02e2331042f47a0b11acbc8bd620b6322fb",
+    "d17cb63f29a5b976b13ba8096e385c4146b00337",
+    "f3d72cf5ee8fe802da712f20d70cb35414f48a1b",
+    "91286873369f99f4364a179aac8a4c514e0dfbcf",
+    "6f9e956ba77652de29fbf85a1a94d0a4cd4a8dc1",
+    "b09085c78bfe664500f596589a93ac25ff9981c7",
+    "d956d20699508ec8e54b660fa634ff68df323846",
 )
 CLOSURE_PATHS = frozenset(
     {
-        "crates/nostr_automerge/tests/public_engine_api.rs",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
-        "docs/execution/remediation_v9/reproductions.md",
         "implementation/runtime_ledger_v9.json",
+        "reports/opaque_checkpoint_v9.json",
         "reports/spec_baseline.txt",
-        "scripts/reproduce_remediation_v9.py",
         "scripts/validate_authority_transition_v10.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
+        "scripts/validate_spec.py",
+        "tools/validation/opaque_checkpoint_v9.schema.json",
+        "tools/validation/runtime_ledger_v9.schema.json",
+    }
+)
+CLOSURE_NEW_PATHS = frozenset(
+    {
+        "reports/opaque_checkpoint_v9.json",
+        "tools/validation/opaque_checkpoint_v9.schema.json",
     }
 )
 EXPECTED_GATES = (
@@ -142,6 +191,14 @@ EXPECTED_GATES = (
     ("V-RUST",),
     ("V-RUST",),
     ("V-CONF",),
+    ("V-FULL-RUST",),
+    ("V-TS",),
+    ("V-TS",),
+    ("V-TS",),
+    ("V-TS",),
+    ("V-TS",),
+    ("V-TS",),
+    ("V-TS",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -191,6 +248,14 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002"),
     ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002"),
     ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010"),
+    ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010"),
+    ("NCRDT-LIMIT-001", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-CPAUTH-001", "NCRDT-RESOURCE-014"),
+    ("NCRDT-CPAUTH-001", "NCRDT-RESOURCE-014"),
+    ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002"),
+    ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-RESOURCE-014"),
+    ("NCRDT-DISPOSITION-005", "NCRDT-STATE-002"),
+    ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -220,6 +285,14 @@ EXPECTED_FINDINGS = (
     ("FINDING_073",),
     ("FINDING_073",),
     ("FINDING_073",),
+    ("FINDING_073",),
+    ("FINDING_087",),
+    ("FINDING_085",),
+    ("FINDING_085",),
+    ("FINDING_086",),
+    ("FINDING_086",),
+    ("FINDING_086",),
+    ("FINDING_085", "FINDING_086"),
 )
 FORBIDDEN_KEY_WORDS = {
     "source",
@@ -419,6 +492,95 @@ def validate_opaque_reproduction(report: dict[str, Any]) -> None:
     validate_no_leak(report, "opaque:boundary")
 
 
+def validate_opaque_checkpoint(report: dict[str, Any]) -> None:
+    expected_keys = {
+        "schema",
+        "checkpoint",
+        "stage",
+        "status",
+        "publication_status",
+        "candidate_chain",
+        "gate_ids",
+        "result_counts",
+        "execution_class",
+        "execution_result",
+        "result_identities",
+        "result_identity_sha256",
+    }
+    require(set(report) == expected_keys, "checkpoint_opaque:keys")
+    require(
+        report.get("schema") == "nostr_automerge.opaque_checkpoint.v9.v1",
+        "checkpoint_opaque:schema",
+    )
+    require(report.get("checkpoint") == "step_1184", "checkpoint_opaque:checkpoint")
+    require(
+        report.get("stage") == "checkpoint_parity_candidate",
+        "checkpoint_opaque:stage",
+    )
+    require(report.get("status") == "pass", "checkpoint_opaque:status")
+    require(report.get("publication_status") == "held", "checkpoint_opaque:publication")
+    require(
+        report.get("candidate_chain") == list(APPROVED_CHECKPOINT_CHAIN),
+        "checkpoint_opaque:candidate_chain",
+    )
+    require(
+        all(
+            HEX40.fullmatch(row["candidate"]) is not None
+            for row in APPROVED_CHECKPOINT_CHAIN
+        ),
+        "checkpoint_opaque:candidate_shape",
+    )
+    require(report.get("gate_ids") == ["V-TS"], "checkpoint_opaque:gates")
+    require(
+        report.get("result_counts")
+        == {
+            "signed_scenarios": 22,
+            "signed_events": 75,
+            "engine_vectors": 11,
+            "delivery_orders": 8,
+            "fixed_regressions": 5,
+            "open_regressions": 18,
+        },
+        "checkpoint_opaque:counts",
+    )
+    require(
+        report.get("execution_class") == "environment_independent",
+        "checkpoint_opaque:execution_class",
+    )
+    require(
+        report.get("execution_result") == "pass",
+        "checkpoint_opaque:execution_result",
+    )
+    require(
+        report.get("result_identities")
+        == [
+            {"class": identity_class, "sha256": digest}
+            for identity_class, digest in APPROVED_CHECKPOINT_IDENTITIES
+        ],
+        "checkpoint_opaque:result_identities",
+    )
+    require(
+        all(HEX64.fullmatch(digest) is not None for _, digest in APPROVED_CHECKPOINT_IDENTITIES),
+        "checkpoint_opaque:identity_shape",
+    )
+    identity = report.get("result_identity_sha256")
+    require(
+        isinstance(identity, str) and HEX64.fullmatch(identity) is not None,
+        "checkpoint_opaque:projection_shape",
+    )
+    projection = copy.deepcopy(report)
+    projection.pop("result_identity_sha256")
+    require(
+        projection_digest(projection) == APPROVED_CHECKPOINT_RESULT_IDENTITY,
+        "checkpoint_opaque:projection",
+    )
+    require(
+        identity == APPROVED_CHECKPOINT_RESULT_IDENTITY,
+        "checkpoint_opaque:identity",
+    )
+    validate_no_leak(report, "checkpoint_opaque:boundary")
+
+
 def step_number(value: Any, diagnostic: str) -> int:
     require(isinstance(value, str), f"{diagnostic}:type")
     match = STEP.fullmatch(value)
@@ -517,16 +679,17 @@ def validate_closure_git_state(
         require(not committed, "closure_scope:premature_commit_delta")
         require(len(worktree) == len(CLOSURE_PATHS), "closure_scope:worktree_count")
         require({path for _, path in worktree} == CLOSURE_PATHS, "closure_scope:worktree_paths")
-        require(
-            all(status in {" M", "M "} for status, _ in worktree),
-            "closure_scope:worktree_status",
-        )
+        for status, path in worktree:
+            expected = {"??", "A "} if path in CLOSURE_NEW_PATHS else {" M", "M "}
+            require(status in expected, f"closure_scope:worktree_status:{path}")
         return
     require(parents == (latest,), "closure_scope:parent")
     require(not worktree, "closure_scope:postcommit_dirty")
     require(len(committed) == len(CLOSURE_PATHS), "closure_scope:commit_count")
     require({path for _, path in committed} == CLOSURE_PATHS, "closure_scope:commit_paths")
-    require(all(status == "M" for status, _ in committed), "closure_scope:commit_status")
+    for status, path in committed:
+        expected = "A" if path in CLOSURE_NEW_PATHS else "M"
+        require(status == expected, f"closure_scope:commit_status:{path}")
 
 
 def validate_repository_closure_scope(latest: str, head: str) -> None:
@@ -567,9 +730,18 @@ def closure_git_state_self_test() -> int:
     head = "b" * 40
     other = "c" * 40
     intermediate = "d" * 40
-    unstaged = tuple((" M", path) for path in sorted(CLOSURE_PATHS))
-    staged = tuple(("M ", path) for path in sorted(CLOSURE_PATHS))
-    committed = tuple(("M", path) for path in sorted(CLOSURE_PATHS))
+    unstaged = tuple(
+        ("??" if path in CLOSURE_NEW_PATHS else " M", path)
+        for path in sorted(CLOSURE_PATHS)
+    )
+    staged = tuple(
+        ("A " if path in CLOSURE_NEW_PATHS else "M ", path)
+        for path in sorted(CLOSURE_PATHS)
+    )
+    committed = tuple(
+        ("A" if path in CLOSURE_NEW_PATHS else "M", path)
+        for path in sorted(CLOSURE_PATHS)
+    )
     validate_closure_git_state(latest, latest, (other,), unstaged, (), ())
     validate_closure_git_state(latest, latest, (other,), staged, (), (".local/",))
     validate_closure_git_state(latest, head, (latest,), (), committed, ("ignored-output",))
@@ -687,7 +859,7 @@ def expected_predecessor(index: int) -> dict[str, Any]:
     return {
         "step": f"step_{1158 + index}",
         "candidate": PREDECESSOR_CANDIDATES[index],
-        "owner_class": "opaque_private" if index == 8 else "public",
+        "owner_class": "opaque_private" if index == 8 or index >= 20 else "public",
         "gate_ids": list(EXPECTED_GATES[index]),
         "requirement_ids": list(EXPECTED_REQUIREMENTS[index]),
         "finding_ids": list(EXPECTED_FINDINGS[index]),
@@ -707,10 +879,13 @@ def known_requirement_ids() -> set[str]:
 
 
 def validate_predecessors(
-    rows: Any, active: int, report: dict[str, Any]
+    rows: Any,
+    active: int,
+    reproduction: dict[str, Any],
+    checkpoint: dict[str, Any],
 ) -> None:
     require(isinstance(rows, list), "predecessors:type")
-    approved = [expected_predecessor(index) for index in range(19)]
+    approved = [expected_predecessor(index) for index in range(27)]
     require(rows == approved, "predecessors:approved_projection")
     require(active == 1158 + len(approved), "predecessors:approved_cursor")
     expected_keys = {
@@ -745,12 +920,32 @@ def validate_predecessors(
         if owner == "public":
             require(is_public_ancestor(candidate), f"predecessor:{index}:ancestry")
             public_rows.append((row["step"], candidate))
-        else:
-            require(row["step"] == report["checkpoint"], f"predecessor:{index}:opaque_step")
-            require(candidate == report["candidate"], f"predecessor:{index}:opaque_candidate")
+        elif index == 8:
             require(
-                report["result_identity_sha256"] == APPROVED_RESULT_IDENTITY,
+                row["step"] == reproduction["checkpoint"],
+                f"predecessor:{index}:opaque_step",
+            )
+            require(
+                candidate == reproduction["candidate"],
+                f"predecessor:{index}:opaque_candidate",
+            )
+            require(
+                reproduction["result_identity_sha256"] == APPROVED_RESULT_IDENTITY,
                 f"predecessor:{index}:opaque_result",
+            )
+        else:
+            checkpoint_row = checkpoint["candidate_chain"][index - 20]
+            require(
+                row["step"] == checkpoint_row["checkpoint"],
+                f"predecessor:{index}:checkpoint_step",
+            )
+            require(
+                candidate == checkpoint_row["candidate"],
+                f"predecessor:{index}:checkpoint_candidate",
+            )
+            require(
+                checkpoint_row["result"] == row["result"],
+                f"predecessor:{index}:checkpoint_result",
             )
         for field, authorized in (
             ("gate_ids", None),
@@ -787,7 +982,11 @@ def validate_predecessors(
     validate_repository_closure_scope(latest_public, head)
 
 
-def validate_runtime_ledger(ledger: dict[str, Any], report: dict[str, Any]) -> None:
+def validate_runtime_ledger(
+    ledger: dict[str, Any],
+    reproduction: dict[str, Any],
+    checkpoint: dict[str, Any],
+) -> None:
     expected_keys = {
         "schema",
         "status",
@@ -798,6 +997,7 @@ def validate_runtime_ledger(ledger: dict[str, Any], report: dict[str, Any]) -> N
         "findings",
         "predecessors",
         "opaque_reproduction",
+        "opaque_checkpoint",
     }
     require(set(ledger) == expected_keys, "ledger:keys")
     require(ledger.get("schema") == "nostr_automerge.runtime_ledger.v9.v1", "ledger:schema")
@@ -889,44 +1089,119 @@ def validate_runtime_ledger(ledger: dict[str, Any], report: dict[str, Any]) -> N
         },
         "ledger:findings",
     )
-    validate_predecessors(ledger.get("predecessors"), active, report)
+    validate_predecessors(
+        ledger.get("predecessors"), active, reproduction, checkpoint
+    )
     require(
         ledger.get("opaque_reproduction")
         == {
-            "checkpoint": report["checkpoint"],
-            "candidate": report["candidate"],
-            "result_identity_sha256": report["result_identity_sha256"],
-            "finding_count": len(report["finding_ids"]),
-            "reproduction_count": report["result_classes"][1]["count"],
-            "negative_mutation_count": report["result_classes"][2]["count"],
-            "result": report["status"],
-            "publication_status": report["publication_status"],
+            "checkpoint": reproduction["checkpoint"],
+            "candidate": reproduction["candidate"],
+            "result_identity_sha256": reproduction["result_identity_sha256"],
+            "finding_count": len(reproduction["finding_ids"]),
+            "reproduction_count": reproduction["result_classes"][1]["count"],
+            "negative_mutation_count": reproduction["result_classes"][2]["count"],
+            "result": reproduction["status"],
+            "publication_status": reproduction["publication_status"],
         },
         "ledger:opaque_binding",
+    )
+    checkpoint_counts = checkpoint["result_counts"]
+    require(
+        ledger.get("opaque_checkpoint")
+        == {
+            "checkpoint": checkpoint["checkpoint"],
+            "candidate": checkpoint["candidate_chain"][-1]["candidate"],
+            "candidate_count": len(checkpoint["candidate_chain"]),
+            "result_identity_sha256": checkpoint["result_identity_sha256"],
+            "result_identity_count": len(checkpoint["result_identities"]),
+            "signed_scenario_count": checkpoint_counts["signed_scenarios"],
+            "signed_event_count": checkpoint_counts["signed_events"],
+            "engine_vector_count": checkpoint_counts["engine_vectors"],
+            "delivery_order_count": checkpoint_counts["delivery_orders"],
+            "fixed_regression_count": checkpoint_counts["fixed_regressions"],
+            "open_regression_count": checkpoint_counts["open_regressions"],
+            "execution_result": checkpoint["execution_result"],
+            "result": checkpoint["status"],
+            "publication_status": checkpoint["publication_status"],
+        },
+        "ledger:checkpoint_binding",
     )
     validate_no_leak(ledger, "ledger:boundary")
 
 
-def mutation_self_test(report: dict[str, Any], ledger: dict[str, Any]) -> int:
+def mutation_self_test(
+    reproduction: dict[str, Any],
+    checkpoint: dict[str, Any],
+    ledger: dict[str, Any],
+) -> int:
     report_mutations: list[tuple[str, dict[str, Any]]] = []
-    missing = copy.deepcopy(report)
+    missing = copy.deepcopy(reproduction)
     missing.pop("candidate")
     report_mutations.append(("opaque_missing", missing))
-    duplicate = copy.deepcopy(report)
+    duplicate = copy.deepcopy(reproduction)
     duplicate["finding_ids"][1] = duplicate["finding_ids"][0]
     report_mutations.append(("opaque_duplicate", duplicate))
-    reordered = copy.deepcopy(report)
+    reordered = copy.deepcopy(reproduction)
     reordered["finding_ids"].reverse()
     report_mutations.append(("opaque_reordered", reordered))
-    stale = copy.deepcopy(report)
+    stale = copy.deepcopy(reproduction)
     stale["candidate"] = "b7607280fec23cdf71b4a0f5b44a1a573ff16b83"
     report_mutations.append(("opaque_stale", stale))
-    forged = copy.deepcopy(report)
+    forged = copy.deepcopy(reproduction)
     forged["result_identity_sha256"] = "f" * 64
     report_mutations.append(("opaque_forged", forged))
-    generic = copy.deepcopy(report)
+    generic = copy.deepcopy(reproduction)
     generic["result_classes"][1]["class"] = "generic"
     report_mutations.append(("opaque_generic", generic))
+
+    checkpoint_mutations: list[tuple[str, dict[str, Any]]] = []
+    checkpoint_missing = copy.deepcopy(checkpoint)
+    checkpoint_missing.pop("stage")
+    checkpoint_mutations.append(("checkpoint_missing", checkpoint_missing))
+    checkpoint_extra = copy.deepcopy(checkpoint)
+    checkpoint_extra["note"] = "held"
+    checkpoint_mutations.append(("checkpoint_extra", checkpoint_extra))
+    checkpoint_order = copy.deepcopy(checkpoint)
+    checkpoint_order["candidate_chain"].reverse()
+    checkpoint_mutations.append(("checkpoint_order", checkpoint_order))
+    checkpoint_candidate = copy.deepcopy(checkpoint)
+    checkpoint_candidate["candidate_chain"][0]["candidate"] = "0" * 40
+    checkpoint_mutations.append(("checkpoint_candidate", checkpoint_candidate))
+    checkpoint_chain_result = copy.deepcopy(checkpoint)
+    checkpoint_chain_result["candidate_chain"][0]["result"] = "fail"
+    checkpoint_mutations.append(("checkpoint_chain_result", checkpoint_chain_result))
+    for key in (
+        "signed_scenarios",
+        "signed_events",
+        "engine_vectors",
+        "delivery_orders",
+        "fixed_regressions",
+        "open_regressions",
+    ):
+        checkpoint_count = copy.deepcopy(checkpoint)
+        checkpoint_count["result_counts"][key] += 1
+        checkpoint_mutations.append((f"checkpoint_count_{key}", checkpoint_count))
+    checkpoint_result = copy.deepcopy(checkpoint)
+    checkpoint_result["execution_result"] = "fail"
+    checkpoint_mutations.append(("checkpoint_result", checkpoint_result))
+    checkpoint_stage = copy.deepcopy(checkpoint)
+    checkpoint_stage["stage"] = "distribution_complete"
+    checkpoint_mutations.append(("checkpoint_stage", checkpoint_stage))
+    checkpoint_identity_order = copy.deepcopy(checkpoint)
+    checkpoint_identity_order["result_identities"].reverse()
+    checkpoint_mutations.append(("checkpoint_identity_order", checkpoint_identity_order))
+    checkpoint_hash = copy.deepcopy(checkpoint)
+    checkpoint_hash["result_identities"][0]["sha256"] = "f" * 64
+    checkpoint_mutations.append(("checkpoint_hash", checkpoint_hash))
+    checkpoint_projection = copy.deepcopy(checkpoint)
+    checkpoint_projection["result_identity_sha256"] = "f" * 64
+    checkpoint_mutations.append(("checkpoint_projection", checkpoint_projection))
+    checkpoint_leak = copy.deepcopy(checkpoint)
+    checkpoint_leak["stage"] = bytes(
+        (104, 116, 116, 112, 115, 58, 47, 47, 105, 110, 118, 97, 108, 105, 100)
+    ).decode()
+    checkpoint_mutations.append(("checkpoint_leak", checkpoint_leak))
 
     ledger_mutations: list[tuple[str, dict[str, Any]]] = []
     missing_predecessor = copy.deepcopy(ledger)
@@ -946,6 +1221,15 @@ def mutation_self_test(report: dict[str, Any], ledger: dict[str, Any]) -> int:
     forged_private = copy.deepcopy(ledger)
     forged_private["opaque_reproduction"]["result_identity_sha256"] = "f" * 64
     ledger_mutations.append(("ledger_forged_private", forged_private))
+    stale_checkpoint = copy.deepcopy(ledger)
+    stale_checkpoint["predecessors"][-1]["candidate"] = "0" * 40
+    ledger_mutations.append(("ledger_stale_checkpoint", stale_checkpoint))
+    forged_checkpoint = copy.deepcopy(ledger)
+    forged_checkpoint["opaque_checkpoint"]["result_identity_sha256"] = "f" * 64
+    ledger_mutations.append(("ledger_forged_checkpoint", forged_checkpoint))
+    checkpoint_count_drift = copy.deepcopy(ledger)
+    checkpoint_count_drift["opaque_checkpoint"]["signed_event_count"] += 1
+    ledger_mutations.append(("ledger_checkpoint_count", checkpoint_count_drift))
     stale_cursor = copy.deepcopy(ledger)
     stale_cursor["cursor"]["active_step"] = "step_1166"
     ledger_mutations.append(("ledger_stale_cursor", stale_cursor))
@@ -997,33 +1281,64 @@ def mutation_self_test(report: dict[str, Any], ledger: dict[str, Any]) -> int:
             caught += 1
             continue
         raise LedgerError(f"mutation_survived:{name}")
+    for name, mutation in checkpoint_mutations:
+        try:
+            validate_opaque_checkpoint(mutation)
+        except LedgerError:
+            caught += 1
+            continue
+        raise LedgerError(f"mutation_survived:{name}")
     for name, mutation in ledger_mutations:
         try:
-            validate_runtime_ledger(mutation, report)
+            validate_runtime_ledger(mutation, reproduction, checkpoint)
         except LedgerError:
             caught += 1
             continue
         raise LedgerError(f"mutation_survived:{name}")
 
     report_schema = load_object(REPORT_SCHEMA)
+    checkpoint_schema = load_object(CHECKPOINT_REPORT_SCHEMA)
     ledger_schema = load_object(LEDGER_SCHEMA)
     schema_mutations = []
     open_report = copy.deepcopy(report_schema)
     open_report["additionalProperties"] = True
-    schema_mutations.append(("schema_open_report", open_report, ledger_schema))
+    schema_mutations.append(
+        ("schema_open_report", open_report, checkpoint_schema, ledger_schema)
+    )
     weak_report = copy.deepcopy(report_schema)
     weak_report["required"].pop()
-    schema_mutations.append(("schema_weak_report", weak_report, ledger_schema))
+    schema_mutations.append(
+        ("schema_weak_report", weak_report, checkpoint_schema, ledger_schema)
+    )
+    open_checkpoint = copy.deepcopy(checkpoint_schema)
+    open_checkpoint["properties"]["result_counts"]["additionalProperties"] = True
+    schema_mutations.append(
+        ("schema_open_checkpoint_counts", report_schema, open_checkpoint, ledger_schema)
+    )
+    weak_checkpoint = copy.deepcopy(checkpoint_schema)
+    weak_checkpoint["properties"]["candidate_chain"]["items"]["required"].pop()
+    schema_mutations.append(
+        ("schema_weak_checkpoint_chain", report_schema, weak_checkpoint, ledger_schema)
+    )
     open_ledger = copy.deepcopy(ledger_schema)
     open_ledger["properties"]["predecessors"]["items"]["additionalProperties"] = True
-    schema_mutations.append(("schema_open_predecessor", report_schema, open_ledger))
+    schema_mutations.append(
+        ("schema_open_predecessor", report_schema, checkpoint_schema, open_ledger)
+    )
     weak_ledger = copy.deepcopy(ledger_schema)
     weak_ledger["properties"]["cursor"]["required"].pop()
-    schema_mutations.append(("schema_weak_cursor", report_schema, weak_ledger))
-    for name, first, second in schema_mutations:
+    schema_mutations.append(
+        ("schema_weak_cursor", report_schema, checkpoint_schema, weak_ledger)
+    )
+    for name, first, second, third in schema_mutations:
         try:
             validate_schema_contract(first, "opaque_schema", REPORT_SCHEMA_PROJECTION)
-            validate_schema_contract(second, "ledger_schema", LEDGER_SCHEMA_PROJECTION)
+            validate_schema_contract(
+                second,
+                "checkpoint_schema",
+                CHECKPOINT_REPORT_SCHEMA_PROJECTION,
+            )
+            validate_schema_contract(third, "ledger_schema", LEDGER_SCHEMA_PROJECTION)
         except LedgerError:
             caught += 1
             continue
@@ -1032,21 +1347,30 @@ def mutation_self_test(report: dict[str, Any], ledger: dict[str, Any]) -> int:
 
 
 def main() -> int:
-    report = load_object(REPORT)
+    reproduction = load_object(REPORT)
+    checkpoint = load_object(CHECKPOINT_REPORT)
     ledger = load_object(LEDGER)
     validate_schema_contract(
         load_object(REPORT_SCHEMA), "opaque_schema", REPORT_SCHEMA_PROJECTION
     )
     validate_schema_contract(
+        load_object(CHECKPOINT_REPORT_SCHEMA),
+        "checkpoint_schema",
+        CHECKPOINT_REPORT_SCHEMA_PROJECTION,
+    )
+    validate_schema_contract(
         load_object(LEDGER_SCHEMA), "ledger_schema", LEDGER_SCHEMA_PROJECTION
     )
-    validate_opaque_reproduction(report)
-    validate_runtime_ledger(ledger, report)
-    mutations = mutation_self_test(report, ledger)
+    validate_opaque_reproduction(reproduction)
+    validate_opaque_checkpoint(checkpoint)
+    validate_runtime_ledger(ledger, reproduction, checkpoint)
+    mutations = mutation_self_test(reproduction, checkpoint, ledger)
     closure_mutations = closure_git_state_self_test()
     print("PASS: remediation-v9 runtime ledger and opaque reproduction import")
     print(f"- predecessors={len(ledger['predecessors'])}")
-    print(f"- opaque_reproductions={report['result_classes'][1]['count']}")
+    print(f"- opaque_reproductions={reproduction['result_classes'][1]['count']}")
+    print(f"- checkpoint_candidates={len(checkpoint['candidate_chain'])}")
+    print(f"- checkpoint_identities={len(checkpoint['result_identities'])}")
     print(f"- negative_mutations={mutations}")
     print(f"- closure_scope_negative_mutations={closure_mutations}")
     return 0

@@ -1,15 +1,15 @@
 {
   "schema": "nostr_automerge.runtime_ledger.v9.v1",
   "status": "in_progress",
-  "rcld": 82,
+  "rcld": 83,
   "cursor": {
-    "active_step": "step_1177",
-    "next_step": "step_1178",
+    "active_step": "step_1185",
+    "next_step": "step_1186",
     "last_step": "step_1283",
-    "remaining_checkpoint_count": 107,
-    "first_rcld": 82,
+    "remaining_checkpoint_count": 99,
+    "first_rcld": 83,
     "last_rcld": 94,
-    "remaining_rcld_count": 13
+    "remaining_rcld_count": 12
   },
   "authority_projection": {
     "binding": "monotonic_stage_projection",
@@ -322,6 +322,86 @@
       "finding_ids": ["FINDING_073"],
       "deviation_ids": [],
       "result": "pass"
+    },
+    {
+      "step": "step_1177",
+      "candidate": "2cfc9ec1551be581f76f0041bd70a83e59fef5c0",
+      "owner_class": "public",
+      "gate_ids": ["V-FULL-RUST"],
+      "requirement_ids": ["NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010"],
+      "finding_ids": ["FINDING_073"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1178",
+      "candidate": "573ae02e2331042f47a0b11acbc8bd620b6322fb",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-LIMIT-001", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_087"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1179",
+      "candidate": "d17cb63f29a5b976b13ba8096e385c4146b00337",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-CPAUTH-001", "NCRDT-RESOURCE-014"],
+      "finding_ids": ["FINDING_085"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1180",
+      "candidate": "f3d72cf5ee8fe802da712f20d70cb35414f48a1b",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-CPAUTH-001", "NCRDT-RESOURCE-014"],
+      "finding_ids": ["FINDING_085"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1181",
+      "candidate": "91286873369f99f4364a179aac8a4c514e0dfbcf",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002"],
+      "finding_ids": ["FINDING_086"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1182",
+      "candidate": "6f9e956ba77652de29fbf85a1a94d0a4cd4a8dc1",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-RESOURCE-014"],
+      "finding_ids": ["FINDING_086"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1183",
+      "candidate": "b09085c78bfe664500f596589a93ac25ff9981c7",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-DISPOSITION-005", "NCRDT-STATE-002"],
+      "finding_ids": ["FINDING_086"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1184",
+      "candidate": "d956d20699508ec8e54b660fa634ff68df323846",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_085", "FINDING_086"],
+      "deviation_ids": [],
+      "result": "pass"
     }
   ],
   "opaque_reproduction": {
@@ -331,6 +411,22 @@
     "finding_count": 9,
     "reproduction_count": 23,
     "negative_mutation_count": 276,
+    "result": "pass",
+    "publication_status": "held"
+  },
+  "opaque_checkpoint": {
+    "checkpoint": "step_1184",
+    "candidate": "d956d20699508ec8e54b660fa634ff68df323846",
+    "candidate_count": 7,
+    "result_identity_sha256": "a92222c28f7afa12831e18658de88235c8905b93b25d25bae7477e295edf2813",
+    "result_identity_count": 6,
+    "signed_scenario_count": 22,
+    "signed_event_count": 75,
+    "engine_vector_count": 11,
+    "delivery_order_count": 8,
+    "fixed_regression_count": 5,
+    "open_regression_count": 18,
+    "execution_result": "pass",
     "result": "pass",
     "publication_status": "held"
   }

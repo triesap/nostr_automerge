@@ -11,7 +11,8 @@
     "requirements",
     "findings",
     "predecessors",
-    "opaque_reproduction"
+    "opaque_reproduction",
+    "opaque_checkpoint"
   ],
   "properties": {
     "schema": {"const": "nostr_automerge.runtime_ledger.v9.v1"},
@@ -154,6 +155,32 @@
         "finding_count": {"const": 9},
         "reproduction_count": {"const": 23},
         "negative_mutation_count": {"const": 276},
+        "result": {"const": "pass"},
+        "publication_status": {"const": "held"}
+      }
+    },
+    "opaque_checkpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpoint", "candidate", "candidate_count", "result_identity_sha256",
+        "result_identity_count", "signed_scenario_count", "signed_event_count",
+        "engine_vector_count", "delivery_order_count", "fixed_regression_count",
+        "open_regression_count", "execution_result", "result", "publication_status"
+      ],
+      "properties": {
+        "checkpoint": {"const": "step_1184"},
+        "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "candidate_count": {"const": 7},
+        "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "result_identity_count": {"const": 6},
+        "signed_scenario_count": {"const": 22},
+        "signed_event_count": {"const": 75},
+        "engine_vector_count": {"const": 11},
+        "delivery_order_count": {"const": 8},
+        "fixed_regression_count": {"const": 5},
+        "open_regression_count": {"const": 18},
+        "execution_result": {"const": "pass"},
         "result": {"const": "pass"},
         "publication_status": {"const": "held"}
       }
