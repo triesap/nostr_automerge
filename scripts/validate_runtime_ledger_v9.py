@@ -33,7 +33,7 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "5542f276cdf7342bd69c0acb53b33a91ae5e0ce39c77f74dca6406945aa94695"
+    "031d64ae004d4c7708544847d9e7dc254569cb09737a0624d5388bd7120eb557"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
@@ -106,7 +106,7 @@ WIRE_DOMAIN_SOURCE_BINDINGS = (
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "c99c80e90390680c899a9b5fb8a6fa37839bb7c4878f18fefcfa6ee9c552f1b9",
+        "8377628489360b275f6d8940f79751c6fd232ee70fcf9df1953227160740167b",
         b"nostr-crdt/automerge/change-set/v1",
     ),
     (
@@ -254,6 +254,60 @@ PREDECESSOR_CANDIDATES = (
     "1164da991972b9df44b9fc873caa8dd5e76944e4",
     "97ae7bf137807c9771dd6f9577ff8bcdd6dcc28b",
     "52fafad799c5eb60a1d1a8b28bf214c0c8d21437",
+    "676581e0e84bb1fe483bb05108a2a3b723770e77",
+)
+REPORT_REVISION = "draft_2026_08"
+REPORT_REVISION_INVENTORY = (
+    {"class": "constructor", "id": "complete"},
+    {"class": "constructor", "id": "interrupted_batch"},
+    {"class": "constructor", "id": "no_progress"},
+    {"class": "consumer", "id": "canonical_report_serializer"},
+    {"class": "consumer", "id": "conformance_engine_projection"},
+    {"class": "consumer", "id": "expected_report_loader"},
+    {"class": "consumer", "id": "fixture_generation_builder"},
+    {"class": "consumer", "id": "fixture_metadata_loader"},
+    {"class": "consumer", "id": "public_getter"},
+    {"class": "consumer", "id": "public_test_builder"},
+    {"class": "consumer", "id": "reevaluation"},
+    {"class": "consumer", "id": "signed_scenario_loader"},
+)
+REPORT_REVISION_SOURCE_BINDINGS = (
+    (
+        "crates/nostr_automerge/src/engine/evaluation_report.rs",
+        "8082bf008ec8902e59ccf4a98345e6a5a4b308c7b1f169c3af1db4f7e57f4fb6",
+    ),
+    (
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "8377628489360b275f6d8940f79751c6fd232ee70fcf9df1953227160740167b",
+    ),
+    (
+        "crates/nostr_automerge/tests/public_engine_api.rs",
+        "e8988901f6b737c387673a45ef7dbaad3359d2f7cb2ce34d5497b55b2445d5d0",
+    ),
+    (
+        "tools/nostr_automerge_conformance/src/expected.rs",
+        "d73cae7ab1eff53a02d876bbfbb2dca748a6ef9a4206a6b1343a26649a9537da",
+    ),
+    (
+        "tools/nostr_automerge_conformance/src/fixture.rs",
+        "ce7e0967c3f38c88fe71acb577681e2addfad714b49209bafad32dba85269186",
+    ),
+    (
+        "tools/nostr_automerge_conformance/src/fixture_generation.rs",
+        "fd6ccb9cad5c3067f31c9447c50ec73f6b30cb62a4a9d8fc8f9278fc9eadfb4b",
+    ),
+    (
+        "tools/nostr_automerge_conformance/src/report_json.rs",
+        "dd25ccceb009b97ee3b168448845db3101ae412644db2dad6bd90098a4e3a1d9",
+    ),
+    (
+        "tools/nostr_automerge_conformance/src/runner.rs",
+        "ee49cac067acba1f292fb394b78f2a954ed310b5b2d22476d71c1150f34ee0f4",
+    ),
+    (
+        "tools/nostr_automerge_conformance/src/scenario.rs",
+        "34101987dbadebabca69bcff0e926fff07c6494f32fb8da671799cf4fb6279d4",
+    ),
 )
 CLOSURE_PATHS = frozenset(
     {
@@ -263,14 +317,14 @@ CLOSURE_PATHS = frozenset(
         "docs/api/public_engine.md",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
-        "docs/execution/remediation_v9/reproductions.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
-        "scripts/reproduce_remediation_v9.py",
         "scripts/validate_carrier_gate_v9.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
-        "tests/compile_fail/remediation_v9_report_revision/src/main.rs",
+        "tools/nostr_automerge_conformance/src/expected.rs",
+        "tools/nostr_automerge_conformance/src/fixture_generation.rs",
+        "tools/nostr_automerge_conformance/src/runner.rs",
         "tools/validation/runtime_ledger_v9.schema.json",
     }
 )
@@ -315,6 +369,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-EVIDENCE",),
     ("V-FULL-RUST",),
+    ("V-REPORT",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -405,6 +460,7 @@ EXPECTED_REQUIREMENTS = (
         "NCRDT-CONF-010",
         "NCRDT-EVIDENCE-006",
     ),
+    ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -454,6 +510,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_074", "FINDING_079", "FINDING_083"),
     ("FINDING_074", "FINDING_079", "FINDING_083"),
     ("FINDING_074", "FINDING_079", "FINDING_083"),
+    ("FINDING_081",),
 )
 FORBIDDEN_KEY_WORDS = {
     "source",
@@ -530,6 +587,212 @@ def file_digest(relative: str) -> str:
         return hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()
     except OSError as error:
         raise LedgerError(f"file_digest:{relative}") from error
+
+
+def report_revision_sources() -> dict[str, bytes]:
+    sources: dict[str, bytes] = {}
+    for relative, _ in REPORT_REVISION_SOURCE_BINDINGS:
+        try:
+            sources[relative] = (ROOT / relative).read_bytes()
+        except OSError as error:
+            raise LedgerError(f"report_inventory:source:{relative}") from error
+    return sources
+
+
+def validate_report_revision_inventory(
+    inventory: tuple[dict[str, str], ...] = REPORT_REVISION_INVENTORY,
+    sources: dict[str, bytes] | None = None,
+) -> None:
+    require(inventory == REPORT_REVISION_INVENTORY, "report_inventory:rows")
+    require(
+        all(tuple(row) == ("class", "id") for row in inventory),
+        "report_inventory:row_shape",
+    )
+    require(
+        len({row["id"] for row in inventory}) == len(inventory),
+        "report_inventory:unique",
+    )
+    require(
+        [row["id"] for row in inventory[:3]]
+        == ["complete", "interrupted_batch", "no_progress"],
+        "report_inventory:constructors",
+    )
+    source_values = report_revision_sources() if sources is None else sources
+    expected_paths = tuple(relative for relative, _ in REPORT_REVISION_SOURCE_BINDINGS)
+    require(tuple(source_values) == expected_paths, "report_inventory:source_order")
+    for relative, expected_sha256 in REPORT_REVISION_SOURCE_BINDINGS:
+        source = source_values[relative]
+        require(
+            hashlib.sha256(source).hexdigest() == expected_sha256,
+            f"report_inventory:source_identity:{relative}",
+        )
+
+    evaluation = source_values[
+        "crates/nostr_automerge/src/engine/evaluation_report.rs"
+    ].decode("utf-8")
+    reference = source_values[
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs"
+    ].decode("utf-8")
+    public_api = source_values[
+        "crates/nostr_automerge/tests/public_engine_api.rs"
+    ].decode("utf-8")
+    expected = source_values[
+        "tools/nostr_automerge_conformance/src/expected.rs"
+    ].decode("utf-8")
+    fixture = source_values[
+        "tools/nostr_automerge_conformance/src/fixture.rs"
+    ].decode("utf-8")
+    generation = source_values[
+        "tools/nostr_automerge_conformance/src/fixture_generation.rs"
+    ].decode("utf-8")
+    report_json = source_values[
+        "tools/nostr_automerge_conformance/src/report_json.rs"
+    ].decode("utf-8")
+    runner = source_values[
+        "tools/nostr_automerge_conformance/src/runner.rs"
+    ].decode("utf-8")
+    scenario = source_values[
+        "tools/nostr_automerge_conformance/src/scenario.rs"
+    ].decode("utf-8")
+
+    for identifier in ("complete", "interrupted_batch", "no_progress"):
+        require(
+            evaluation.count(f"fn from_{identifier}_parts(") == 1,
+            f"report_inventory:constructor:{identifier}",
+        )
+        require(
+            reference.count(f"EvaluationReport::from_{identifier}_parts(") == 1,
+            f"report_inventory:construction_call:{identifier}",
+        )
+    require(
+        reference.count("EvaluationReport::from_parts(") == 0,
+        "report_inventory:alternate_construction",
+    )
+    require(
+        evaluation.count("fn from_parts(") == 1
+        and "ReportConstructionPath::ALL" in evaluation,
+        "report_inventory:closed_construction",
+    )
+    require(
+        "if previous.revision() != self.revision" in reference,
+        "report_inventory:reevaluation_revision",
+    )
+    require(
+        "pub const fn revision(&self) -> ProtocolRevision" in evaluation,
+        "report_inventory:getter",
+    )
+    require(
+        public_api.count("assert_eq!(report.revision(), self.revision())") == 2,
+        "report_inventory:test_builder",
+    )
+    require(
+        "ProtocolRevision::lookup(&report.revision).is_none()" in expected
+        and "revision: nostr_automerge::ProtocolRevision" in expected,
+        "report_inventory:expected_loader",
+    )
+    require(
+        "fixture.revision != REVISION" in fixture,
+        "report_inventory:fixture_loader",
+    )
+    require(
+        "value.revision != REVISION" in scenario,
+        "report_inventory:scenario_loader",
+    )
+    require(
+        "validate_expected(report)?" in report_json,
+        "report_inventory:serializer",
+    )
+    require(
+        "state_assertion_policy(requirements)" in generation,
+        "report_inventory:generation_builder",
+    )
+    require(
+        "assertion_policy: StateAssertionPolicy" in runner
+        and "state_assertion_policy(&fixture.requirements)" in runner
+        and "output.revision = report.revision().identifier().to_owned();" in runner
+        and "expected_report_values_never_drive_engine_output" in runner,
+        "report_inventory:engine_projection",
+    )
+    runner_production = runner.split("#[cfg(test)]", 1)[0]
+    for forbidden in (
+        "mut output: ExpectedReport",
+        "expected.clone()",
+        "state_assertion_queries",
+        "assertion_queries",
+    ):
+        require(
+            forbidden not in runner_production,
+            f"report_inventory:expected_driven:{forbidden}",
+        )
+    require(
+        REPORT_REVISION in fixture and REPORT_REVISION in scenario,
+        "report_inventory:revision_identity",
+    )
+
+
+def report_revision_inventory_self_test() -> int:
+    sources = report_revision_sources()
+    inventory_mutations = (
+        REPORT_REVISION_INVENTORY[:-1],
+        (*REPORT_REVISION_INVENTORY, {"class": "consumer", "id": "alternate"}),
+        tuple(reversed(REPORT_REVISION_INVENTORY)),
+        (
+            {"class": "constructor", "id": "stale"},
+            *REPORT_REVISION_INVENTORY[1:],
+        ),
+        (
+            {"class": "consumer", "id": "complete"},
+            *REPORT_REVISION_INVENTORY[1:],
+        ),
+    )
+    source_mutations: list[dict[str, bytes]] = []
+    for relative in sources:
+        mutation = dict(sources)
+        mutation[relative] += b"\n// alternate report revision path\n"
+        source_mutations.append(mutation)
+    for relative, old, new in (
+        (
+            "crates/nostr_automerge/src/engine/evaluation_report.rs",
+            b"fn from_parts(",
+            b"fn bypass_from_parts(",
+        ),
+        (
+            "tools/nostr_automerge_conformance/src/expected.rs",
+            b"ProtocolRevision::lookup",
+            b"ProtocolRevision::draft_v1",
+        ),
+        (
+            "tools/nostr_automerge_conformance/src/runner.rs",
+            b"assertion_policy: StateAssertionPolicy",
+            b"mut output: ExpectedReport",
+        ),
+        (
+            "tools/nostr_automerge_conformance/src/runner.rs",
+            b"report.revision().identifier()",
+            b"ProtocolRevision::draft_v1().identifier()",
+        ),
+    ):
+        mutation = dict(sources)
+        require(old in mutation[relative], "report_inventory:self_test_anchor")
+        mutation[relative] = mutation[relative].replace(old, new, 1)
+        source_mutations.append(mutation)
+
+    caught = 0
+    for mutation in inventory_mutations:
+        try:
+            validate_report_revision_inventory(mutation, sources)
+        except LedgerError:
+            caught += 1
+            continue
+        raise LedgerError("report_inventory_mutation_survived:inventory")
+    for mutation in source_mutations:
+        try:
+            validate_report_revision_inventory(REPORT_REVISION_INVENTORY, mutation)
+        except LedgerError:
+            caught += 1
+            continue
+        raise LedgerError("report_inventory_mutation_survived:source")
+    return caught
 
 
 def normalized_key_words(value: str) -> tuple[str, ...]:
@@ -1227,7 +1490,9 @@ def validate_predecessors(
     carrier: dict[str, Any],
 ) -> None:
     require(isinstance(rows, list), "predecessors:type")
-    approved = [expected_predecessor(index) for index in range(39)]
+    approved = [
+        expected_predecessor(index) for index in range(len(PREDECESSOR_CANDIDATES))
+    ]
     require(rows == approved, "predecessors:approved_projection")
     require(active == 1158 + len(approved), "predecessors:approved_cursor")
     expected_keys = {
@@ -2026,6 +2291,7 @@ def main() -> int:
     validate_opaque_reproduction(reproduction)
     validate_opaque_checkpoint(checkpoint)
     validate_opaque_carrier(carrier)
+    validate_report_revision_inventory()
     validate_runtime_ledger(
         ledger, reproduction, checkpoint, parity, carrier, carrier_gate
     )
@@ -2033,6 +2299,7 @@ def main() -> int:
         reproduction, checkpoint, parity, carrier, carrier_gate, ledger
     )
     closure_mutations = closure_git_state_self_test()
+    report_inventory_mutations = report_revision_inventory_self_test()
     print("PASS: remediation-v9 runtime ledger and opaque reproduction import")
     print(f"- predecessors={len(ledger['predecessors'])}")
     print(f"- opaque_reproductions={reproduction['result_classes'][1]['count']}")
@@ -2042,6 +2309,8 @@ def main() -> int:
     print(f"- carrier_candidates={len(carrier['candidate_chain'])}")
     print(f"- carrier_matrix_rows={carrier['result_counts']['aggregate_rows']}")
     print(f"- carrier_gate_identity={carrier_gate['result_identity_sha256']}")
+    print(f"- report_revision_inventory={len(REPORT_REVISION_INVENTORY)}")
+    print(f"- report_inventory_negative_mutations={report_inventory_mutations}")
     print(f"- negative_mutations={mutations}")
     print(f"- closure_scope_negative_mutations={closure_mutations}")
     return 0

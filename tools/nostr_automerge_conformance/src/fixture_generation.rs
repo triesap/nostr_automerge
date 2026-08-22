@@ -15,9 +15,9 @@ use secp256k1::{Keypair, Secp256k1, SecretKey};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
-use crate::expected::{ExpectedReport, StateAssertion};
+use crate::expected::StateAssertion;
 use crate::report_json::write_canonical_report;
-use crate::runner::generic_report;
+use crate::runner::{StateAssertionPolicy, generic_report, state_assertion_policy};
 use crate::scenario::{RawScenarioEvent, ScenarioBudget, ScenarioInput};
 
 pub(crate) fn generate(profile: &str) -> Result<(), String> {
@@ -719,6 +719,7 @@ fn minimum_complete_item_budget_for_events(
     while lower < upper {
         let middle = lower + (upper - lower) / 2;
         let report = generic_report(
+            "minimum_complete_item_budget",
             ScenarioInput {
                 scenario_schema: "nostr_automerge.scenario.v1".to_owned(),
                 coordinate: coordinate.to_address(),
@@ -732,7 +733,7 @@ fn minimum_complete_item_budget_for_events(
                 },
                 cancel_after: None,
             },
-            ExpectedReport::empty("minimum_complete_item_budget", &coordinate.to_address()),
+            StateAssertionPolicy::None,
         )
         .map_err(|error| error.message().to_owned())?;
         if report.completion == "complete" {
@@ -5390,9 +5391,11 @@ fn write_fixture_with_execution(
         budget,
         cancel_after,
     };
-    let mut template = ExpectedReport::empty(fixture_id, &coordinate_text);
-    template.state_assertions = state_assertions;
-    let report = generic_report(scenario, template).map_err(|error| error.message().to_owned())?;
+    let report = generic_report(fixture_id, scenario, state_assertion_policy(requirements))
+        .map_err(|error| error.message().to_owned())?;
+    if report.state_assertions != state_assertions {
+        return Err("generated state assertions do not match the evaluator report".to_owned());
+    }
     let expected_bytes = write_canonical_report(&report)
         .map_err(|error| format!("{error:?}: {:?}", report.disposition_records))?;
     let expected_value: Value =

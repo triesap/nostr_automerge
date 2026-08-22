@@ -200,8 +200,53 @@ pub(crate) struct EvaluationReportParts {
     pub(crate) document: Option<MaterializedDocumentView>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ReportConstructionPath {
+    Complete,
+    InterruptedBatch,
+    NoProgress,
+}
+
+impl ReportConstructionPath {
+    pub(crate) const ALL: [Self; 3] = [Self::Complete, Self::InterruptedBatch, Self::NoProgress];
+
+    pub(crate) const fn identifier(self) -> &'static str {
+        match self {
+            Self::Complete => "complete",
+            Self::InterruptedBatch => "interrupted_batch",
+            Self::NoProgress => "no_progress",
+        }
+    }
+}
+
 impl EvaluationReport {
-    pub(crate) fn from_parts(parts: EvaluationReportParts) -> Result<Self, EvaluationError> {
+    pub(crate) fn from_complete_parts(
+        parts: EvaluationReportParts,
+    ) -> Result<Self, EvaluationError> {
+        Self::from_parts(ReportConstructionPath::Complete, parts)
+    }
+
+    pub(crate) fn from_interrupted_batch_parts(
+        parts: EvaluationReportParts,
+    ) -> Result<Self, EvaluationError> {
+        Self::from_parts(ReportConstructionPath::InterruptedBatch, parts)
+    }
+
+    pub(crate) fn from_no_progress_parts(
+        parts: EvaluationReportParts,
+    ) -> Result<Self, EvaluationError> {
+        Self::from_parts(ReportConstructionPath::NoProgress, parts)
+    }
+
+    fn from_parts(
+        construction: ReportConstructionPath,
+        parts: EvaluationReportParts,
+    ) -> Result<Self, EvaluationError> {
+        match construction {
+            ReportConstructionPath::Complete
+            | ReportConstructionPath::InterruptedBatch
+            | ReportConstructionPath::NoProgress => {}
+        }
         if parts
             .canonical_controls
             .iter()
@@ -564,8 +609,26 @@ fn strictly_sorted<T: Ord>(values: &[T]) -> bool {
 mod tests {
     use super::{
         DispositionRecord, EvaluationReport, EvaluationReportParts, ProtocolItemIdentifier,
-        disposition_records_are_canonical,
+        ReportConstructionPath, disposition_records_are_canonical,
     };
+
+    #[test]
+    fn report_construction_inventory_is_closed_and_ordered() {
+        let identifiers = ReportConstructionPath::ALL.map(ReportConstructionPath::identifier);
+        assert_eq!(
+            identifiers,
+            ["complete", "interrupted_batch", "no_progress"]
+        );
+
+        for invalid in [
+            &["complete", "interrupted_batch"][..],
+            &["complete", "interrupted_batch", "no_progress", "alternate"][..],
+            &["interrupted_batch", "complete", "no_progress"][..],
+            &["complete", "stale", "no_progress"][..],
+        ] {
+            assert_ne!(invalid, identifiers);
+        }
+    }
     use crate::{
         ChangeHash, CheckpointVerificationResult, CheckpointVerificationStatus, Completion,
         DispositionsDigest, DocumentCoordinate, EventId, HistoryDigest, SnapshotHash,
@@ -603,7 +666,7 @@ mod tests {
             failure: None,
             document: None,
         };
-        let report = EvaluationReport::from_parts(parts());
+        let report = EvaluationReport::from_parts(ReportConstructionPath::Complete, parts());
         assert!(report.is_err());
 
         let mut invalid = parts();
@@ -611,12 +674,18 @@ mod tests {
             ChangeHash::from_bytes([2; 32]),
             ChangeHash::from_bytes([1; 32]),
         ];
-        assert!(EvaluationReport::from_parts(invalid).is_err());
+        assert!(EvaluationReport::from_parts(ReportConstructionPath::Complete, invalid).is_err());
 
         let mut incomplete_with_document = parts();
         incomplete_with_document.completion = Completion::Cancelled;
         incomplete_with_document.failure = Some(super::EvaluationFailure::Cancelled);
-        assert!(EvaluationReport::from_parts(incomplete_with_document).is_ok());
+        assert!(
+            EvaluationReport::from_parts(
+                ReportConstructionPath::InterruptedBatch,
+                incomplete_with_document,
+            )
+            .is_ok()
+        );
     }
 
     #[test]
@@ -652,7 +721,9 @@ mod tests {
             failure: Some(super::EvaluationFailure::Cancelled),
             document: None,
         };
-        assert!(EvaluationReport::from_parts(parts()).is_ok());
+        assert!(
+            EvaluationReport::from_parts(ReportConstructionPath::InterruptedBatch, parts()).is_ok()
+        );
 
         let carrier_id = EventId::from_bytes([9; 32]);
         let mut carrier_consistent = parts();
@@ -670,11 +741,23 @@ mod tests {
         ];
         carrier_consistent.change_carrier_dispositions =
             vec![(carrier_id, hash, crate::ProtocolDisposition::Accepted)];
-        assert!(EvaluationReport::from_parts(carrier_consistent.clone()).is_ok());
+        assert!(
+            EvaluationReport::from_parts(
+                ReportConstructionPath::InterruptedBatch,
+                carrier_consistent.clone(),
+            )
+            .is_ok()
+        );
 
         let mut missing_carrier_record = carrier_consistent.clone();
         missing_carrier_record.disposition_records.pop();
-        assert!(EvaluationReport::from_parts(missing_carrier_record).is_err());
+        assert!(
+            EvaluationReport::from_parts(
+                ReportConstructionPath::InterruptedBatch,
+                missing_carrier_record,
+            )
+            .is_err()
+        );
 
         let mut duplicate_carrier = carrier_consistent.clone();
         duplicate_carrier.change_carrier_dispositions.push((
@@ -682,15 +765,27 @@ mod tests {
             hash,
             crate::ProtocolDisposition::Accepted,
         ));
-        assert!(EvaluationReport::from_parts(duplicate_carrier).is_err());
+        assert!(
+            EvaluationReport::from_parts(
+                ReportConstructionPath::InterruptedBatch,
+                duplicate_carrier,
+            )
+            .is_err()
+        );
 
         let mut wrong_carrier_hash = carrier_consistent;
         wrong_carrier_hash.change_carrier_dispositions[0].1 = ChangeHash::from_bytes([8; 32]);
-        assert!(EvaluationReport::from_parts(wrong_carrier_hash).is_err());
+        assert!(
+            EvaluationReport::from_parts(
+                ReportConstructionPath::InterruptedBatch,
+                wrong_carrier_hash,
+            )
+            .is_err()
+        );
 
         let assert_invariant = |parts| {
             assert_eq!(
-                EvaluationReport::from_parts(parts),
+                EvaluationReport::from_parts(ReportConstructionPath::InterruptedBatch, parts),
                 Err(super::EvaluationError::ReportInvariant)
             );
         };
@@ -791,7 +886,13 @@ mod tests {
                 None,
             ),
         ];
-        assert!(EvaluationReport::from_parts(consistent_checkpoint).is_ok());
+        assert!(
+            EvaluationReport::from_parts(
+                ReportConstructionPath::InterruptedBatch,
+                consistent_checkpoint,
+            )
+            .is_ok()
+        );
 
         let refused_checkpoint = CheckpointVerificationResult::new(
             descriptor,
@@ -820,7 +921,13 @@ mod tests {
                 history_diagnostic,
             ),
         ];
-        assert!(EvaluationReport::from_parts(consistent_refusal.clone()).is_ok());
+        assert!(
+            EvaluationReport::from_parts(
+                ReportConstructionPath::InterruptedBatch,
+                consistent_refusal.clone(),
+            )
+            .is_ok()
+        );
 
         let mut missing_descriptor_diagnostic = consistent_refusal.clone();
         missing_descriptor_diagnostic.disposition_records[0] = DispositionRecord::new(
@@ -882,29 +989,32 @@ mod tests {
         let Ok(coordinate) = coordinate else { return };
         let control = EventId::from_bytes([1; 32]);
         let hash = ChangeHash::from_bytes([2; 32]);
-        let report = EvaluationReport::from_parts(EvaluationReportParts {
-            coordinate,
-            revision: crate::ProtocolRevision::draft_v1(),
-            canonical_controls: vec![control],
-            disposition_records: vec![],
-            control_dispositions: vec![(control, crate::ProtocolDisposition::Accepted)],
-            dispositions: vec![(hash, crate::ProtocolDisposition::Accepted)],
-            change_carrier_dispositions: vec![],
-            accepted_changes: vec![hash],
-            pending_changes: vec![],
-            excluded_changes: vec![],
-            invalid_changes: vec![],
-            heads: vec![hash],
-            evidence: vec![],
-            checkpoints: vec![],
-            history_digest: HistoryDigest::from_bytes([3; 32]),
-            dispositions_digest: DispositionsDigest::from_bytes([4; 32]),
-            integrity_alerts: vec![],
-            manifest: crate::ResolvedManifestAvailability::Missing,
-            completion: Completion::Cancelled,
-            failure: Some(super::EvaluationFailure::Cancelled),
-            document: None,
-        });
+        let report = EvaluationReport::from_parts(
+            ReportConstructionPath::InterruptedBatch,
+            EvaluationReportParts {
+                coordinate,
+                revision: crate::ProtocolRevision::draft_v1(),
+                canonical_controls: vec![control],
+                disposition_records: vec![],
+                control_dispositions: vec![(control, crate::ProtocolDisposition::Accepted)],
+                dispositions: vec![(hash, crate::ProtocolDisposition::Accepted)],
+                change_carrier_dispositions: vec![],
+                accepted_changes: vec![hash],
+                pending_changes: vec![],
+                excluded_changes: vec![],
+                invalid_changes: vec![],
+                heads: vec![hash],
+                evidence: vec![],
+                checkpoints: vec![],
+                history_digest: HistoryDigest::from_bytes([3; 32]),
+                dispositions_digest: DispositionsDigest::from_bytes([4; 32]),
+                integrity_alerts: vec![],
+                manifest: crate::ResolvedManifestAvailability::Missing,
+                completion: Completion::Cancelled,
+                failure: Some(super::EvaluationFailure::Cancelled),
+                document: None,
+            },
+        );
         assert_eq!(
             report.is_err(),
             true,

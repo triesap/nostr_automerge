@@ -176,8 +176,11 @@ impl ReferenceEvaluatorTestExt for ReferenceEvaluator {
         budget: &mut WorkBudget,
         cancellation: &impl CancellationCheck,
     ) -> EvaluationReport {
-        self.evaluate(corpus, coordinate, budget, cancellation)
-            .expect("reference evaluation")
+        let report = self
+            .evaluate(corpus, coordinate, budget, cancellation)
+            .expect("reference evaluation");
+        assert_eq!(report.revision(), self.revision());
+        report
     }
 
     fn reevaluate_report(
@@ -188,8 +191,12 @@ impl ReferenceEvaluatorTestExt for ReferenceEvaluator {
         budget: &mut WorkBudget,
         cancellation: &impl CancellationCheck,
     ) -> EvaluationReport {
-        self.reevaluate(corpus, coordinate, previous, budget, cancellation)
-            .expect("reference reevaluation")
+        let report = self
+            .reevaluate(corpus, coordinate, previous, budget, cancellation)
+            .expect("reference reevaluation");
+        assert_eq!(previous.revision(), self.revision());
+        assert_eq!(report.revision(), self.revision());
+        report
     }
 }
 

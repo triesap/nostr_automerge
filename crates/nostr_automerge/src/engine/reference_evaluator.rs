@@ -487,7 +487,7 @@ impl ReferenceEvaluator {
             .map_err(|_| {
                 settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
             })?;
-        let report = EvaluationReport::from_parts(EvaluationReportParts {
+        let report = EvaluationReport::from_complete_parts(EvaluationReportParts {
             coordinate,
             revision: self.revision,
             canonical_controls: batch.canonical_controls,
@@ -531,6 +531,9 @@ impl ReferenceEvaluator {
         budget: &mut WorkBudget,
         cancellation: &impl CancellationCheck,
     ) -> Result<EvaluationReport, EvaluationError> {
+        if previous.revision() != self.revision {
+            return Err(EvaluationError::ReportInvariant);
+        }
         let mut current = self.evaluate(corpus, coordinate, budget, cancellation)?;
         if previous.coordinate() != coordinate {
             return Ok(current);
@@ -2509,7 +2512,7 @@ fn build_no_progress_interrupted_report(
     history_digest: crate::HistoryDigest,
     dispositions_digest: crate::DispositionsDigest,
 ) -> Result<EvaluationReport, EvaluationError> {
-    EvaluationReport::from_parts(EvaluationReportParts {
+    EvaluationReport::from_no_progress_parts(EvaluationReportParts {
         coordinate,
         revision,
         canonical_controls: Vec::new(),
@@ -2656,7 +2659,7 @@ fn prepare_interrupted_batch_report(
             REPORT_INVARIANT_ITEMS,
         ))
         .map_err(|_| EvaluationError::ReportInvariant)?;
-    EvaluationReport::from_parts(EvaluationReportParts {
+    EvaluationReport::from_interrupted_batch_parts(EvaluationReportParts {
         coordinate,
         revision,
         canonical_controls: batch.canonical_controls,

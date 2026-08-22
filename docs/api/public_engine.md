@@ -34,6 +34,16 @@ budget exhaustion or cancellation changes `Completion`; it does not rewrite a
 protocol disposition. Default debug output reports counts and never includes
 raw event content or materialized document bytes.
 
+The repository keeps a closed construction and consumer inventory for report
+revision identity. Complete evaluation, constant-size no-progress evaluation,
+and the temporarily preserved interrupted-batch path are the only report
+constructors. Reevaluation rejects a report from another revision before
+comparing state. Conformance metadata, signed-scenario inputs, expected-report
+loading, canonical report serialization, and public test builders all validate
+or project the same typed revision. Expected reports are comparison data only:
+they cannot select or supply actual report fields. Typed state assertions are
+derived from the input requirement profile and the materialized engine state.
+
 `Completion::Complete` guarantees that scheduling, Automerge application,
 materialization, and applied-head agreement succeeded and that a real immutable
 document view is present, including for an empty accepted history.

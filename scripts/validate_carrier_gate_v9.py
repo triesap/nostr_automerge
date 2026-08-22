@@ -31,6 +31,7 @@ OPAQUE_CARRIER = "reports/opaque_carrier_v9.json"
 STEP_1195_CANDIDATE = "97ae7bf137807c9771dd6f9577ff8bcdd6dcc28b"
 STEP_1195_PARENT = "976d6edb0349ae87d5e477e95ae6f3d7dbd89303"
 STEP_1196_CANDIDATE = "52fafad799c5eb60a1d1a8b28bf214c0c8d21437"
+STEP_1197_CANDIDATE = "676581e0e84bb1fe483bb05108a2a3b723770e77"
 STEP_1195_SCOPE_IDENTITY = (
     "9d7a285d9e9f9fc3b6c566aa6bd776030df8f2ee078d0e254c696446a462f0fd"
 )
@@ -127,9 +128,12 @@ CONFORMANCE_ADDITIVE_REPORT_PATHS = (
     "crates/nostr_automerge/src/engine/evaluation_report.rs",
     "crates/nostr_automerge/src/engine/reference_evaluator.rs",
     "crates/nostr_automerge/tests/public_engine_api.rs",
+    "tools/nostr_automerge_conformance/src/expected.rs",
+    "tools/nostr_automerge_conformance/src/fixture_generation.rs",
+    "tools/nostr_automerge_conformance/src/runner.rs",
 )
 CONFORMANCE_ADDITIVE_REPORT_PROJECTION = (
-    "eff0deef2ad7ded3e6c8db373641ea7a310e41bd8d6bee38ed7f04a2f25ce869"
+    "36b45bcdf4c106f91c203be704bff67ab825a484168f0210156e11a0b30ce17f"
 )
 
 
@@ -239,7 +243,7 @@ def validate_conformance_source_projection(
 def validate_committed_additive_report_child(
     parent: str, names: tuple[str, ...], patch: bytes
 ) -> None:
-    require(parent == STEP_1196_CANDIDATE, "carrier_gate:postcommit_parent")
+    require(parent == STEP_1197_CANDIDATE, "carrier_gate:postcommit_parent")
     validate_conformance_source_projection(names, patch)
 
 
@@ -261,11 +265,27 @@ def conformance_source_mutation_self_test() -> int:
         == b"",
         "carrier_gate:pre_additive_source",
     )
-    committed_names, committed_patch = conformance_source_diff("HEAD")
-    committed_parent = git_bytes("rev-parse", "HEAD^").decode().strip()
+    require(
+        git_bytes("rev-parse", f"{STEP_1197_CANDIDATE}^").decode().strip()
+        == STEP_1196_CANDIDATE,
+        "carrier_gate:report_predecessor_parent",
+    )
+    committed_names, committed_patch = conformance_source_diff(None)
+    committed_parent = STEP_1197_CANDIDATE
     validate_committed_additive_report_child(
         committed_parent, committed_names, committed_patch
     )
+    head = git_bytes("rev-parse", "HEAD").decode().strip()
+    if head != STEP_1197_CANDIDATE:
+        require(
+            git_bytes("rev-parse", "HEAD^").decode().strip()
+            == STEP_1197_CANDIDATE,
+            "carrier_gate:actual_postcommit_parent",
+        )
+        actual_names, actual_patch = conformance_source_diff("HEAD")
+        validate_committed_additive_report_child(
+            STEP_1197_CANDIDATE, actual_names, actual_patch
+        )
 
     mutations = (
         (committed_parent, committed_names[:-1], committed_patch),

@@ -9,9 +9,11 @@ use sha2::{Digest, Sha256};
 
 use nostr_automerge::{
     CheckpointVerificationStatus, Completion, ControllerPublicKey, CorpusBuilder, DevicePublicKey,
-    DocumentId, EvidenceIdentifier, EvidenceStatus, IntegrityAlert, MaterializedMark,
-    MaterializedMarkExpansion, MaterializedObjectType, MaterializedPathElement, MaterializedScalar,
-    MaterializedValue, NeverCancelled, ProtocolRevision, ReferenceEvaluator, WorkBudget,
+    DocumentCoordinate, DocumentId, EvidenceIdentifier, EvidenceStatus, IngestOutcome,
+    IntegrityAlert, MaterializedMark, MaterializedMarkExpansion, MaterializedObjectType,
+    MaterializedPathElement, MaterializedScalar, MaterializedValue, NeverCancelled,
+    ProtocolRevision, ReferenceEvaluator, WorkBudget, canonical_dispositions_digest,
+    canonical_history_digest,
 };
 
 use crate::checksum::verify_fixture_files;
@@ -61,6 +63,23 @@ struct ActorDerivationInput {
     document_id: String,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum StateAssertionPolicy {
+    None,
+    CompleteMaterializedState,
+}
+
+pub(crate) fn state_assertion_policy(requirements: &[impl AsRef<str>]) -> StateAssertionPolicy {
+    if requirements
+        .iter()
+        .any(|requirement| requirement.as_ref() == "NCRDT-STATE-002")
+    {
+        StateAssertionPolicy::CompleteMaterializedState
+    } else {
+        StateAssertionPolicy::None
+    }
+}
+
 pub(crate) fn run_fixture(path: &Path) -> Result<Vec<u8>, RunError> {
     let fixture = if is_normative_signed_fixture(path) {
         load_normative_fixture(path)
@@ -72,6 +91,7 @@ pub(crate) fn run_fixture(path: &Path) -> Result<Vec<u8>, RunError> {
     verify_fixture_files(&fixture, base).map_err(|_| RunError::Checksum)?;
     let expected =
         load_expected(&base.join(&fixture.expected.report_path)).map_err(|_| RunError::Expected)?;
+    let assertion_policy = state_assertion_policy(&fixture.requirements);
     if fixture.inputs.len() != 1 {
         return Err(RunError::Input);
     }
@@ -89,16 +109,17 @@ pub(crate) fn run_fixture(path: &Path) -> Result<Vec<u8>, RunError> {
         {
             return Err(RunError::Expected);
         }
-        signed_permutation_report(signed, expected.clone())?
+        signed_permutation_report(signed, assertion_policy)?
     } else if fixture.fixture_id.starts_with("scenario_") {
         generic_report(
+            &fixture.fixture_id,
             ScenarioInput::parse(&input).map_err(|_| RunError::Input)?,
-            expected.clone(),
+            assertion_policy,
         )?
     } else if fixture.fixture_id == "actor_derivation_001" {
         let input: ActorDerivationInput =
             serde_json::from_slice(&input).map_err(|_| RunError::Input)?;
-        actor_derivation_report(expected.clone(), &input)?
+        actor_derivation_report(&fixture.fixture_id, &input)?
     } else {
         return Err(RunError::Input);
     };
@@ -108,34 +129,25 @@ pub(crate) fn run_fixture(path: &Path) -> Result<Vec<u8>, RunError> {
 
 fn signed_permutation_report(
     signed: SignedScenarioInput,
-    expected: ExpectedReport,
+    assertion_policy: StateAssertionPolicy,
 ) -> Result<ExpectedReport, RunError> {
-    let invalid_ids = expected
-        .invalid_events
-        .iter()
-        .chain(expected.unsupported_events.iter())
-        .map(ToString::to_string)
-        .collect::<std::collections::BTreeSet<_>>();
+    let fixture_id = signed.fixture_id.clone();
     let permutations = required_delivery_permutations(
         &signed.raw_events,
         |event| event_kind(event) == Some(1624),
         |event| event_kind(event) == Some(1625),
-        |event| {
-            event_id_text(event)
-                .map(|identifier| invalid_ids.contains(&identifier))
-                .unwrap_or(true)
-        },
+        raw_event_is_invalid,
     );
     let mut baseline = None;
     for permutation in permutations {
         let report = generic_report(
+            &fixture_id,
             signed
                 .clone()
                 .with_raw_events(permutation.events)
                 .into_scenario(),
-            expected.clone(),
+            assertion_policy,
         )?;
-        compare_expected(&report, &expected)?;
         if let Some(canonical) = &baseline {
             if canonical != &report {
                 return Err(RunError::Mismatch);
@@ -155,8 +167,16 @@ fn event_kind(event: &crate::scenario::EncodedRawEventV2) -> Option<u64> {
     event_value(event)?.get("kind")?.as_u64()
 }
 
-fn event_id_text(event: &crate::scenario::EncodedRawEventV2) -> Option<String> {
-    event_value(event)?.get("id")?.as_str().map(str::to_owned)
+fn raw_event_is_invalid(event: &crate::scenario::EncodedRawEventV2) -> bool {
+    let Ok(raw) = event.decoded() else {
+        return true;
+    };
+    matches!(
+        CorpusBuilder::new().ingest_bytes(&raw),
+        IngestOutcome::Invalid { .. }
+            | IngestOutcome::InvalidCarrier { .. }
+            | IngestOutcome::UnsupportedRevision { .. }
+    )
 }
 
 fn is_normative_signed_fixture(path: &Path) -> bool {
@@ -165,8 +185,9 @@ fn is_normative_signed_fixture(path: &Path) -> bool {
 }
 
 pub(crate) fn generic_report(
+    fixture_id: &str,
     scenario: ScenarioInput,
-    mut output: ExpectedReport,
+    assertion_policy: StateAssertionPolicy,
 ) -> Result<ExpectedReport, RunError> {
     let coordinate = scenario.coordinate.parse().map_err(|_| RunError::Input)?;
     let mut builder = CorpusBuilder::new();
@@ -197,7 +218,13 @@ pub(crate) fn generic_report(
         )
     }
     .map_err(|_| RunError::Evaluation)?;
+    let mut output = ExpectedReport::empty(
+        fixture_id,
+        report.revision(),
+        &report.coordinate().to_address(),
+    );
     output.coordinate = report.coordinate().to_address();
+    output.revision = report.revision().identifier().to_owned();
     output.canonical_controls = report
         .canonical_controls()
         .iter()
@@ -270,38 +297,7 @@ pub(crate) fn generic_report(
         .iter()
         .map(integrity_alert)
         .collect();
-    let document = report.document();
-    let assertions = core::mem::take(&mut output.state_assertions);
-    let mut resolved_assertions = Vec::new();
-    for mut assertion in assertions {
-        if assertion.expected.get("type").and_then(Value::as_str) == Some("all_branch_descendants")
-        {
-            let document = document.ok_or(RunError::Input)?;
-            for entry in document.entries().iter().filter(|entry| {
-                entry
-                    .path()
-                    .iter()
-                    .any(|element| element.branch_identity().is_some())
-            }) {
-                resolved_assertions.push(StateAssertion {
-                    path: materialized_path_json(entry.path()),
-                    expected: materialized_conflicts(entry.conflicts()),
-                });
-            }
-            continue;
-        }
-        let path = materialized_path(&assertion.path)?;
-        let document = document.ok_or(RunError::Input)?;
-        if assertion.expected.get("type").and_then(Value::as_str) == Some("mark") {
-            let mark = exactly_one(document.marks(), |mark| mark.path() == path)?;
-            assertion.expected = materialized_mark(mark);
-        } else {
-            let entry = exactly_one(document.entries(), |entry| entry.path() == path)?;
-            assertion.expected = materialized_conflicts(entry.conflicts());
-        }
-        resolved_assertions.push(assertion);
-    }
-    output.state_assertions = resolved_assertions;
+    output.state_assertions = materialized_state_assertions(&report, assertion_policy)?;
     output.checkpoints = report
         .checkpoints()
         .iter()
@@ -336,13 +332,54 @@ pub(crate) fn generic_report(
     Ok(output)
 }
 
-fn exactly_one<T>(values: &[T], mut matches: impl FnMut(&T) -> bool) -> Result<&T, RunError> {
-    let mut found = values.iter().filter(|value| matches(value));
-    let value = found.next().ok_or(RunError::Input)?;
-    if found.next().is_some() {
-        return Err(RunError::Input);
+fn materialized_state_assertions(
+    report: &nostr_automerge::EvaluationReport,
+    policy: StateAssertionPolicy,
+) -> Result<Vec<StateAssertion>, RunError> {
+    if policy == StateAssertionPolicy::None {
+        return Ok(Vec::new());
     }
-    Ok(value)
+    let document = report.document().ok_or(RunError::Input)?;
+    let mut assertions = document
+        .entries()
+        .iter()
+        .filter(|entry| {
+            !entry
+                .conflicts()
+                .iter()
+                .all(|conflict| matches!(conflict.value(), MaterializedValue::Object { .. }))
+                && !document
+                    .marks()
+                    .iter()
+                    .any(|mark| mark.path() == entry.path())
+        })
+        .map(|entry| {
+            let operation = entry
+                .conflicts()
+                .first()
+                .ok_or(RunError::Evaluation)?
+                .operation_id();
+            let (counter, actor) = operation.split_once('@').ok_or(RunError::Evaluation)?;
+            let counter = counter.parse::<u64>().map_err(|_| RunError::Evaluation)?;
+            Ok((
+                (counter, actor.to_owned()),
+                StateAssertion {
+                    path: materialized_path_json(entry.path()),
+                    expected: materialized_conflicts(entry.conflicts()),
+                },
+            ))
+        })
+        .collect::<Result<Vec<_>, RunError>>()?;
+    assertions.sort_by(|left, right| left.0.cmp(&right.0));
+    let mut assertions = assertions
+        .into_iter()
+        .map(|(_, assertion)| assertion)
+        .collect::<Vec<_>>();
+    assertions.extend(document.marks().iter().map(|mark| StateAssertion {
+        path: materialized_path_json(mark.path()),
+        expected: materialized_mark(mark),
+    }));
+    Ok(assertions)
 }
 
 fn checkpoint_status(status: CheckpointVerificationStatus) -> &'static str {
@@ -380,39 +417,6 @@ fn hex_bytes(bytes: [u8; 32]) -> String {
         let _ = write!(value, "{byte:02x}");
     }
     value
-}
-
-fn materialized_path(path: &[Value]) -> Result<Vec<MaterializedPathElement>, RunError> {
-    path.iter()
-        .map(|part| {
-            if let Some(key) = part.as_str() {
-                Ok(MaterializedPathElement::Key(key.to_owned()))
-            } else if let Some(index) = part.as_u64() {
-                Ok(MaterializedPathElement::Index(index))
-            } else if let Some(branch) = part.as_object() {
-                if branch.len() != 4 || branch.get("type").and_then(Value::as_str) != Some("branch")
-                {
-                    return Err(RunError::Expected);
-                }
-                Ok(MaterializedPathElement::branch(
-                    branch
-                        .get("parent_object_id")
-                        .and_then(Value::as_str)
-                        .ok_or(RunError::Expected)?,
-                    branch
-                        .get("operation_id")
-                        .and_then(Value::as_str)
-                        .ok_or(RunError::Expected)?,
-                    branch
-                        .get("child_object_id")
-                        .and_then(Value::as_str)
-                        .ok_or(RunError::Expected)?,
-                ))
-            } else {
-                Err(RunError::Expected)
-            }
-        })
-        .collect()
 }
 
 fn materialized_path_json(path: &[MaterializedPathElement]) -> Vec<Value> {
@@ -565,7 +569,7 @@ fn evidence_ids(report: &nostr_automerge::EvaluationReport, status: EvidenceStat
 }
 
 fn actor_derivation_report(
-    mut report: ExpectedReport,
+    fixture_id: &str,
     input: &ActorDerivationInput,
 ) -> Result<ExpectedReport, RunError> {
     let controller =
@@ -586,10 +590,21 @@ fn actor_derivation_report(
     let mut value = Map::new();
     value.insert("type".to_owned(), Value::String("bytes32".to_owned()));
     value.insert("value".to_owned(), Value::String(encoded));
-    let Some(assertion) = report.state_assertions.first_mut() else {
-        return Err(RunError::Expected);
-    };
-    assertion.expected = Value::Object(value);
+    let coordinate = format!("31624:{}:{}", input.controller, input.document_id)
+        .parse::<DocumentCoordinate>()
+        .map_err(|_| RunError::Input)?;
+    let revision = ProtocolRevision::draft_v1();
+    let mut report = ExpectedReport::empty(fixture_id, revision, &coordinate.to_address());
+    report.history_digest = canonical_history_digest(revision, coordinate, &[], &[], &[])
+        .map_err(|_| RunError::Evaluation)?
+        .to_hex();
+    report.dispositions_digest = canonical_dispositions_digest(revision, coordinate, &[])
+        .map_err(|_| RunError::Evaluation)?
+        .to_hex();
+    report.state_assertions.push(StateAssertion {
+        path: vec![Value::String("derived_actor_id".to_owned())],
+        expected: Value::Object(value),
+    });
     Ok(report)
 }
 
@@ -797,9 +812,11 @@ pub(crate) fn write_corpus_summary(summary: &CorpusSummary) -> Result<Vec<u8>, R
 mod tests {
     use std::{fs, path::Path};
 
+    use nostr_automerge::ProtocolRevision;
+
     use super::{
-        RunError, compare_expected, discover_fixtures, exactly_one, generic_report,
-        materialized_path, run_corpus, run_fixture,
+        RunError, StateAssertionPolicy, compare_expected, discover_fixtures, generic_report,
+        run_corpus, run_fixture,
     };
     use crate::fixture::load_fixture;
     use crate::scenario::SignedScenarioInput;
@@ -847,41 +864,8 @@ mod tests {
             .join("../../fixtures/v1_draft/scenarios/dependencies/dependencies_late_recovery.fixture.json");
         assert!(run_fixture(&fixture).is_ok());
     }
-    use crate::expected::load_expected;
+    use crate::expected::{StateAssertion, load_expected};
     use crate::scenario::ScenarioInput;
-
-    #[test]
-    fn ambiguous_assertion_selection_is_rejected() {
-        let values = [1_u8, 1, 2];
-        assert_eq!(exactly_one(&values, |value| *value == 2), Ok(&2));
-        assert_eq!(
-            exactly_one(&values, |value| *value == 3),
-            Err(RunError::Input)
-        );
-        assert_eq!(
-            exactly_one(&values, |value| *value == 1),
-            Err(RunError::Input)
-        );
-    }
-
-    #[test]
-    fn neutral_branch_path_maps_to_the_public_projection_type() {
-        let path = materialized_path(&[
-            serde_json::json!("root"),
-            serde_json::json!({
-                "type":"branch",
-                "parent_object_id":"_root",
-                "operation_id":"1@actor",
-                "child_object_id":"1@actor"
-            }),
-        ]);
-        let Ok(path) = path else { return };
-        assert_eq!(path.len(), 2);
-        assert_eq!(
-            path[1].branch_identity(),
-            Some(("_root", "1@actor", "1@actor"))
-        );
-    }
 
     #[test]
     fn expected_mismatch_has_stable_exit_code() {
@@ -954,16 +938,57 @@ mod tests {
         let parsed = ScenarioInput::parse(&serde_json::to_vec(&scenario).unwrap_or_default());
         assert!(parsed.is_ok());
         let Ok(parsed) = parsed else { return };
-        let expected =
-            load_expected(&root.join("fixtures/examples/actor_derivation_001.expected.json"));
-        assert!(expected.is_ok());
-        let Ok(mut expected) = expected else { return };
-        expected.state_assertions.clear();
-        let actual = generic_report(parsed, expected);
+        let actual = generic_report(
+            "scenario_generic_raw_event",
+            parsed,
+            StateAssertionPolicy::None,
+        );
         assert!(actual.is_ok());
         let Ok(actual) = actual else { return };
         assert_eq!(actual.completion, "complete");
+        assert_eq!(actual.revision, ProtocolRevision::draft_v1().identifier());
         assert!(actual.canonical_controls.is_empty());
         assert!(actual.accepted_changes.is_empty());
+    }
+
+    #[test]
+    fn expected_report_values_never_drive_engine_output() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let fixture_path =
+            root.join("fixtures/v1_draft/scenarios/projection/projection_all_scalars.fixture.json");
+        let fixture = load_fixture(&fixture_path);
+        assert!(fixture.is_ok());
+        let Ok(fixture) = fixture else { return };
+        let base = fixture_path.parent();
+        assert!(base.is_some());
+        let Some(base) = base else { return };
+        let expected = load_expected(&base.join(&fixture.expected.report_path));
+        assert!(expected.is_ok());
+        let Ok(expected) = expected else { return };
+        let input = fs::read(base.join(&fixture.inputs[0].path));
+        assert!(input.is_ok());
+        let Ok(input) = input else { return };
+        let signed = SignedScenarioInput::parse(&input);
+        assert!(signed.is_ok());
+        let Ok(signed) = signed else { return };
+
+        let policy = super::state_assertion_policy(&fixture.requirements);
+        assert_eq!(policy, StateAssertionPolicy::CompleteMaterializedState);
+        let baseline = super::signed_permutation_report(signed.clone(), policy);
+        assert_eq!(baseline, Ok(expected.clone()));
+
+        let mut poisoned = expected;
+        poisoned.revision = "draft_2026_09".to_owned();
+        poisoned.completion = "cancelled".to_owned();
+        poisoned.canonical_controls = vec!["ff".repeat(32)];
+        poisoned.history_digest = "ee".repeat(32);
+        poisoned.dispositions_digest = "dd".repeat(32);
+        poisoned.state_assertions.reverse();
+        poisoned.state_assertions.pop();
+        poisoned.state_assertions.push(StateAssertion {
+            path: vec![serde_json::json!("poison-selector")],
+            expected: serde_json::json!({"type":"mark","name":"poison"}),
+        });
+        assert_eq!(super::signed_permutation_report(signed, policy), baseline);
     }
 }

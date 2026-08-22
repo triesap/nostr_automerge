@@ -2,7 +2,7 @@
 
 Status: `in_progress`
 
-RCLD 85 has 39 committed predecessors through `step_1196`. The opaque
+RCLD 85 has 40 committed predecessors through `step_1197`. The opaque
 compatibility checkpoint is bound by one approved 40-character candidate and
 one canonical 64-character result identity. Its public projection records nine
 findings, 23 expected-failure reproductions, 276 negative mutations, one
@@ -64,8 +64,20 @@ conformance, report validation, and the full public gate.
 | `step_1192`–`step_1194` | `V-TS` | pass |
 | `step_1195` | `V-EVIDENCE` | pass |
 | `step_1196` | `V-FULL-RUST` | pass |
-| `step_1197` | `V-REPORT` | active |
-| `step_1198` | `V-REPORT` | next |
+| `step_1197` | `V-REPORT` | pass |
+| `step_1198` | `V-REPORT` | active |
+| `step_1199` | `V-REPORT` | next |
+
+The active report checkpoint binds a closed inventory of three construction
+families and nine revision consumers to exact reviewed source identities.
+Complete, no-progress, and preserved interrupted-batch construction all carry
+the evaluator revision. Public access, reevaluation, conformance projection,
+metadata and signed-input loading, expected-report validation, canonical
+serialization, fixture generation, and public test builders agree on that
+identity. Expected reports remain comparison data and cannot select or provide
+actual report output; the typed state projection policy comes from the
+repository-owned fixture requirement inventory and the materialized engine
+state.
 
 The authority projection is monotonic from `checkpoint_expectations_corrected` to
 `distribution_complete`. It records 148 requirements now and at completion,
@@ -88,7 +100,7 @@ distribution runs (`84f370b201945c844396406acfb022faa2bdadb32d96206511474a002187
 canonical output and
 `74b24f58fe9c20da082dd9ae4c1b344e8468c00a70dbd710adf724ab70ed14c4`
 serialized output). The earlier signed-v9 conformance report remains an
-immutable historical record and is not the carrier closure authority. There are 87
+immutable historical record and is not the carrier closure authority. There are 86
 checkpoints including the active checkpoint remaining through `step_1283`.
 
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`

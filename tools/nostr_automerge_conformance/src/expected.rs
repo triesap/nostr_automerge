@@ -36,11 +36,15 @@ pub(crate) struct ExpectedReport {
 }
 
 impl ExpectedReport {
-    pub(crate) fn empty(fixture_id: &str, coordinate: &str) -> Self {
+    pub(crate) fn empty(
+        fixture_id: &str,
+        revision: nostr_automerge::ProtocolRevision,
+        coordinate: &str,
+    ) -> Self {
         Self {
             report_schema: "nostr_automerge.report.v1".to_owned(),
             fixture_id: fixture_id.to_owned(),
-            revision: "draft_2026_08".to_owned(),
+            revision: revision.identifier().to_owned(),
             coordinate: coordinate.to_owned(),
             canonical_controls: Vec::new(),
             disposition_records: Vec::new(),
@@ -111,7 +115,7 @@ pub(crate) fn load_expected(path: &Path) -> Result<ExpectedReport, ExpectedError
 
 pub(crate) fn validate_expected(report: &ExpectedReport) -> Result<(), ExpectedError> {
     if report.report_schema != "nostr_automerge.report.v1"
-        || report.revision != "draft_2026_08"
+        || nostr_automerge::ProtocolRevision::lookup(&report.revision).is_none()
         || !matches!(
             report.completion.as_str(),
             "complete" | "budget_exhausted" | "cancelled"
@@ -347,6 +351,13 @@ mod tests {
         let mut wrong_schema = report.clone();
         wrong_schema.report_schema = "nostr_automerge.report.v2".to_owned();
         assert_eq!(validate_expected(&wrong_schema), Err(ExpectedError::Schema));
+
+        let mut wrong_revision = report.clone();
+        wrong_revision.revision = "draft_2026_09".to_owned();
+        assert_eq!(
+            validate_expected(&wrong_revision),
+            Err(ExpectedError::Schema)
+        );
 
         let mut branch = report.clone();
         branch.state_assertions[0].path.push(serde_json::json!({
