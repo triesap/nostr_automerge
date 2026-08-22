@@ -33,7 +33,7 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "031d64ae004d4c7708544847d9e7dc254569cb09737a0624d5388bd7120eb557"
+    "b769e135c69e491711c215db9f07414e68aecc7e3a643ed94d78d7f751197332"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
@@ -106,7 +106,7 @@ WIRE_DOMAIN_SOURCE_BINDINGS = (
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "8377628489360b275f6d8940f79751c6fd232ee70fcf9df1953227160740167b",
+        "8a5989ba520c7acd1f0ba0b9315d2bd6a8287e218d81f1987e53dac20274e007",
         b"nostr-crdt/automerge/change-set/v1",
     ),
     (
@@ -255,6 +255,7 @@ PREDECESSOR_CANDIDATES = (
     "97ae7bf137807c9771dd6f9577ff8bcdd6dcc28b",
     "52fafad799c5eb60a1d1a8b28bf214c0c8d21437",
     "676581e0e84bb1fe483bb05108a2a3b723770e77",
+    "0fc39bfaedb156c3a6c3b914dd09791303c8d0b6",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -274,15 +275,15 @@ REPORT_REVISION_INVENTORY = (
 REPORT_REVISION_SOURCE_BINDINGS = (
     (
         "crates/nostr_automerge/src/engine/evaluation_report.rs",
-        "8082bf008ec8902e59ccf4a98345e6a5a4b308c7b1f169c3af1db4f7e57f4fb6",
+        "7159b63b4debd089aa0e48b4467d1faeb84834936926b90c53bfeaeee5a9d60a",
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "8377628489360b275f6d8940f79751c6fd232ee70fcf9df1953227160740167b",
+        "8a5989ba520c7acd1f0ba0b9315d2bd6a8287e218d81f1987e53dac20274e007",
     ),
     (
         "crates/nostr_automerge/tests/public_engine_api.rs",
-        "e8988901f6b737c387673a45ef7dbaad3359d2f7cb2ce34d5497b55b2445d5d0",
+        "44b6aa915d3513200a5ff5b4b40ed462e4256ee7be20f808c9d965c6e1d06d23",
     ),
     (
         "tools/nostr_automerge_conformance/src/expected.rs",
@@ -302,7 +303,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "tools/nostr_automerge_conformance/src/runner.rs",
-        "ee49cac067acba1f292fb394b78f2a954ed310b5b2d22476d71c1150f34ee0f4",
+        "27edf328fcdc8e6a31d02e04d61e78f750ef38bc28a076556ffa2294e337e6f6",
     ),
     (
         "tools/nostr_automerge_conformance/src/scenario.rs",
@@ -317,13 +318,12 @@ CLOSURE_PATHS = frozenset(
         "docs/api/public_engine.md",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
+        "docs/execution/remediation_v9/reproductions.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
+        "scripts/reproduce_remediation_v9.py",
         "scripts/validate_carrier_gate_v9.py",
-        "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
-        "tools/nostr_automerge_conformance/src/expected.rs",
-        "tools/nostr_automerge_conformance/src/fixture_generation.rs",
         "tools/nostr_automerge_conformance/src/runner.rs",
         "tools/validation/runtime_ledger_v9.schema.json",
     }
@@ -369,6 +369,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-EVIDENCE",),
     ("V-FULL-RUST",),
+    ("V-REPORT",),
     ("V-REPORT",),
 )
 EXPECTED_REQUIREMENTS = (
@@ -461,6 +462,7 @@ EXPECTED_REQUIREMENTS = (
         "NCRDT-EVIDENCE-006",
     ),
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -510,6 +512,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_074", "FINDING_079", "FINDING_083"),
     ("FINDING_074", "FINDING_079", "FINDING_083"),
     ("FINDING_074", "FINDING_079", "FINDING_083"),
+    ("FINDING_081",),
     ("FINDING_081",),
 )
 FORBIDDEN_KEY_WORDS = {
@@ -674,6 +677,20 @@ def validate_report_revision_inventory(
         "report_inventory:closed_construction",
     )
     require(
+        evaluation.count("fn no_progress_parts_are_canonical(") == 1
+        and "incomplete_report_shape_rejects_every_nonempty_or_mismatched_field"
+        in evaluation
+        and "budget_and_cancel_no_progress_reports_differ_only_by_typed_stop"
+        in evaluation,
+        "report_inventory:no_progress_shape",
+    )
+    require(
+        "prepare_no_progress_interrupted_report(" in reference
+        and "batch.failure != Some(failure)" in reference
+        and "assert_exact_no_progress_report(&report)" in public_api,
+        "report_inventory:no_progress_production",
+    )
+    require(
         "if previous.revision() != self.revision" in reference,
         "report_inventory:reevaluation_revision",
     )
@@ -712,6 +729,11 @@ def validate_report_revision_inventory(
         and "output.revision = report.revision().identifier().to_owned();" in runner
         and "expected_report_values_never_drive_engine_output" in runner,
         "report_inventory:engine_projection",
+    )
+    require(
+        "report.completion() != Completion::Complete" in runner
+        and "incomplete_engine_report_projects_exact_empty_neutral_state" in runner,
+        "report_inventory:no_progress_projection",
     )
     runner_production = runner.split("#[cfg(test)]", 1)[0]
     for forbidden in (

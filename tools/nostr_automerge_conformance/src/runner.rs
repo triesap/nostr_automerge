@@ -336,7 +336,7 @@ fn materialized_state_assertions(
     report: &nostr_automerge::EvaluationReport,
     policy: StateAssertionPolicy,
 ) -> Result<Vec<StateAssertion>, RunError> {
-    if policy == StateAssertionPolicy::None {
+    if report.completion() != Completion::Complete || policy == StateAssertionPolicy::None {
         return Ok(Vec::new());
     }
     let document = report.document().ok_or(RunError::Input)?;
@@ -949,6 +949,70 @@ mod tests {
         assert_eq!(actual.revision, ProtocolRevision::draft_v1().identifier());
         assert!(actual.canonical_controls.is_empty());
         assert!(actual.accepted_changes.is_empty());
+    }
+
+    #[test]
+    fn incomplete_engine_report_projects_exact_empty_neutral_state() {
+        let coordinate = format!("31624:{}:{}", "31".repeat(32), "32".repeat(32));
+        let scenario = serde_json::json!({
+            "budget": {"max_bytes": 0, "max_items": 0},
+            "cancel_after": null,
+            "coordinate": coordinate,
+            "raw_events": ["{}"],
+            "scenario_schema": "nostr_automerge.scenario.v1"
+        });
+        let parsed = ScenarioInput::parse(&serde_json::to_vec(&scenario).unwrap_or_default());
+        assert!(parsed.is_ok());
+        let Ok(parsed) = parsed else { return };
+        let actual = generic_report(
+            "scenario_no_progress",
+            parsed,
+            StateAssertionPolicy::CompleteMaterializedState,
+        );
+        assert!(actual.is_ok());
+        let Ok(actual) = actual else { return };
+        assert_eq!(actual.completion, "budget_exhausted");
+        assert_eq!(actual.revision, ProtocolRevision::draft_v1().identifier());
+        assert_eq!(actual.coordinate, coordinate);
+        assert!(actual.canonical_controls.is_empty());
+        assert!(actual.disposition_records.is_empty());
+        assert!(actual.accepted_changes.is_empty());
+        assert!(actual.pending_changes.is_empty());
+        assert!(actual.excluded_changes.is_empty());
+        assert!(actual.invalid_changes.is_empty());
+        assert!(actual.invalid_events.is_empty());
+        assert!(actual.unsupported_events.is_empty());
+        assert!(actual.heads.is_empty());
+        assert!(actual.integrity_alerts.is_empty());
+        assert!(actual.checkpoints.is_empty());
+        assert!(actual.state_assertions.is_empty());
+        let coordinate = actual
+            .coordinate
+            .parse::<nostr_automerge::DocumentCoordinate>();
+        assert!(coordinate.is_ok());
+        let Ok(coordinate) = coordinate else { return };
+        assert_eq!(
+            actual.history_digest,
+            nostr_automerge::canonical_history_digest(
+                ProtocolRevision::draft_v1(),
+                coordinate,
+                &[],
+                &[],
+                &[],
+            )
+            .map(|digest| digest.to_hex())
+            .unwrap_or_default()
+        );
+        assert_eq!(
+            actual.dispositions_digest,
+            nostr_automerge::canonical_dispositions_digest(
+                ProtocolRevision::draft_v1(),
+                coordinate,
+                &[],
+            )
+            .map(|digest| digest.to_hex())
+            .unwrap_or_default()
+        );
     }
 
     #[test]

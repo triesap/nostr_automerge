@@ -242,10 +242,28 @@ impl EvaluationReport {
         construction: ReportConstructionPath,
         parts: EvaluationReportParts,
     ) -> Result<Self, EvaluationError> {
-        match construction {
-            ReportConstructionPath::Complete
-            | ReportConstructionPath::InterruptedBatch
-            | ReportConstructionPath::NoProgress => {}
+        let completion_matches_construction = matches!(
+            (construction, parts.completion),
+            (ReportConstructionPath::Complete, Completion::Complete)
+                | (
+                    ReportConstructionPath::InterruptedBatch | ReportConstructionPath::NoProgress,
+                    Completion::BudgetExhausted | Completion::Cancelled,
+                )
+        );
+        let completion_matches_failure = matches!(
+            (parts.completion, parts.failure),
+            (Completion::Complete, None)
+                | (
+                    Completion::BudgetExhausted,
+                    Some(EvaluationFailure::BudgetExhausted)
+                )
+                | (Completion::Cancelled, Some(EvaluationFailure::Cancelled))
+        );
+        if !completion_matches_construction || !completion_matches_failure {
+            return Err(EvaluationError::ReportInvariant);
+        }
+        if parts.completion != Completion::Complete && !no_progress_parts_are_canonical(&parts) {
+            return Err(EvaluationError::ReportInvariant);
         }
         if parts
             .canonical_controls
@@ -367,18 +385,6 @@ impl EvaluationReport {
                     .all(|event_id| event_outcome(*event_id) == Some(expected))
         });
         if !manifest_consistent || !checkpoints_consistent {
-            return Err(EvaluationError::ReportInvariant);
-        }
-        let completion_matches_failure = matches!(
-            (parts.completion, parts.failure),
-            (Completion::Complete, None)
-                | (
-                    Completion::BudgetExhausted,
-                    Some(EvaluationFailure::BudgetExhausted)
-                )
-                | (Completion::Cancelled, Some(EvaluationFailure::Cancelled))
-        );
-        if !completion_matches_failure {
             return Err(EvaluationError::ReportInvariant);
         }
         if (parts.completion == Completion::Complete) != parts.document.is_some() {
@@ -535,6 +541,36 @@ impl EvaluationReport {
     }
 }
 
+fn no_progress_parts_are_canonical(parts: &EvaluationReportParts) -> bool {
+    let Ok(history_digest) =
+        crate::canonical_history_digest(parts.revision, parts.coordinate, &[], &[], &[])
+    else {
+        return false;
+    };
+    let Ok(dispositions_digest) =
+        crate::canonical_dispositions_digest(parts.revision, parts.coordinate, &[])
+    else {
+        return false;
+    };
+    parts.canonical_controls.is_empty()
+        && parts.disposition_records.is_empty()
+        && parts.control_dispositions.is_empty()
+        && parts.dispositions.is_empty()
+        && parts.change_carrier_dispositions.is_empty()
+        && parts.accepted_changes.is_empty()
+        && parts.pending_changes.is_empty()
+        && parts.excluded_changes.is_empty()
+        && parts.invalid_changes.is_empty()
+        && parts.heads.is_empty()
+        && parts.evidence.is_empty()
+        && parts.checkpoints.is_empty()
+        && parts.integrity_alerts.is_empty()
+        && matches!(parts.manifest, ResolvedManifestAvailability::Missing)
+        && parts.document.is_none()
+        && parts.history_digest == history_digest
+        && parts.dispositions_digest == dispositions_digest
+}
+
 fn change_carrier_dispositions_are_consistent(parts: &EvaluationReportParts) -> bool {
     let carrier_records_match =
         parts
@@ -631,8 +667,256 @@ mod tests {
     }
     use crate::{
         ChangeHash, CheckpointVerificationResult, CheckpointVerificationStatus, Completion,
-        DispositionsDigest, DocumentCoordinate, EventId, HistoryDigest, SnapshotHash,
+        DispositionsDigest, DocumentCoordinate, EventId, HistoryDigest, IntegrityAlert,
+        SnapshotHash,
     };
+
+    fn no_progress_parts(completion: Completion) -> Option<EvaluationReportParts> {
+        let coordinate = format!("31624:{}:{}", "41".repeat(32), "42".repeat(32))
+            .parse::<DocumentCoordinate>()
+            .ok()?;
+        let revision = crate::ProtocolRevision::draft_v1();
+        let history_digest =
+            crate::canonical_history_digest(revision, coordinate, &[], &[], &[]).ok()?;
+        let dispositions_digest =
+            crate::canonical_dispositions_digest(revision, coordinate, &[]).ok()?;
+        let failure = match completion {
+            Completion::BudgetExhausted => super::EvaluationFailure::BudgetExhausted,
+            Completion::Cancelled => super::EvaluationFailure::Cancelled,
+            Completion::Complete => return None,
+        };
+        Some(EvaluationReportParts {
+            coordinate,
+            revision,
+            canonical_controls: Vec::new(),
+            disposition_records: Vec::new(),
+            control_dispositions: Vec::new(),
+            dispositions: Vec::new(),
+            change_carrier_dispositions: Vec::new(),
+            accepted_changes: Vec::new(),
+            pending_changes: Vec::new(),
+            excluded_changes: Vec::new(),
+            invalid_changes: Vec::new(),
+            heads: Vec::new(),
+            evidence: Vec::new(),
+            checkpoints: Vec::new(),
+            history_digest,
+            dispositions_digest,
+            integrity_alerts: Vec::new(),
+            manifest: crate::ResolvedManifestAvailability::Missing,
+            completion,
+            failure: Some(failure),
+            document: None,
+        })
+    }
+
+    #[test]
+    fn incomplete_report_shape_rejects_every_nonempty_or_mismatched_field() {
+        let Some(parts) = no_progress_parts(Completion::Cancelled) else {
+            return;
+        };
+        assert!(EvaluationReport::from_no_progress_parts(parts.clone()).is_ok());
+        assert!(EvaluationReport::from_interrupted_batch_parts(parts.clone()).is_ok());
+
+        let event = EventId::from_bytes([1; 32]);
+        let second_event = EventId::from_bytes([2; 32]);
+        let hash = ChangeHash::from_bytes([3; 32]);
+        let disposition_record = DispositionRecord::new(
+            ProtocolItemIdentifier::event(event),
+            crate::ProtocolDisposition::Invalid,
+            crate::DiagnosticCode::lookup("carrier.kind"),
+        );
+        let checkpoint = CheckpointVerificationResult::new(
+            event,
+            vec![second_event],
+            SnapshotHash::from_bytes([4; 32]),
+            Vec::new(),
+            0,
+            [5; 32],
+            Vec::new(),
+            Vec::new(),
+            CheckpointVerificationStatus::PendingControl,
+        );
+        let mut corpus = crate::CorpusBuilder::new();
+        let _ = corpus.ingest_bytes(b"{}");
+        let Some(evidence) = corpus.finish().records().next() else {
+            return;
+        };
+        let alert = crate::ControllerEquivocationAlert::new(None, vec![event, second_event], event)
+            .ok()
+            .map(IntegrityAlert::ControllerEquivocation);
+        let Some(alert) = alert else { return };
+        let Some(manifest_diagnostic) = crate::DiagnosticCode::lookup("carrier.kind") else {
+            return;
+        };
+        let document =
+            crate::automerge_adapter::materialized_view::MaterializedDocumentView::empty_for_test()
+                .ok();
+        let Some(document) = document else { return };
+
+        let assert_rejected = |name: &str, mutation: EvaluationReportParts| {
+            assert_eq!(
+                EvaluationReport::from_no_progress_parts(mutation),
+                Err(super::EvaluationError::ReportInvariant),
+                "{name}"
+            );
+        };
+        let mut mutations = Vec::new();
+
+        let mut mutation = parts.clone();
+        mutation.canonical_controls.push(event);
+        mutations.push(("canonical_controls", mutation));
+        let mut mutation = parts.clone();
+        mutation.disposition_records.push(disposition_record);
+        mutations.push(("disposition_records", mutation));
+        let mut mutation = parts.clone();
+        mutation
+            .control_dispositions
+            .push((event, crate::ProtocolDisposition::Invalid));
+        mutations.push(("control_dispositions", mutation));
+        let mut mutation = parts.clone();
+        mutation
+            .dispositions
+            .push((hash, crate::ProtocolDisposition::Invalid));
+        mutations.push(("dispositions", mutation));
+        let mut mutation = parts.clone();
+        mutation.change_carrier_dispositions.push((
+            event,
+            hash,
+            crate::ProtocolDisposition::Invalid,
+        ));
+        mutations.push(("change_carrier_dispositions", mutation));
+        for (name, select) in [
+            ("accepted_changes", 0_u8),
+            ("pending_changes", 1),
+            ("excluded_changes", 2),
+            ("invalid_changes", 3),
+            ("heads", 4),
+        ] {
+            let mut mutation = parts.clone();
+            match select {
+                0 => mutation.accepted_changes.push(hash),
+                1 => mutation.pending_changes.push(hash),
+                2 => mutation.excluded_changes.push(hash),
+                3 => mutation.invalid_changes.push(hash),
+                _ => mutation.heads.push(hash),
+            }
+            mutations.push((name, mutation));
+        }
+        let mut mutation = parts.clone();
+        mutation.evidence.push(evidence);
+        mutations.push(("evidence", mutation));
+        let mut mutation = parts.clone();
+        mutation.checkpoints.push(checkpoint);
+        mutations.push(("checkpoints", mutation));
+        let mut mutation = parts.clone();
+        mutation.history_digest = HistoryDigest::from_bytes([6; 32]);
+        mutations.push(("history_digest", mutation));
+        let mut mutation = parts.clone();
+        mutation.dispositions_digest = DispositionsDigest::from_bytes([7; 32]);
+        mutations.push(("dispositions_digest", mutation));
+        let mut mutation = parts.clone();
+        mutation.integrity_alerts.push(alert);
+        mutations.push(("integrity_alerts", mutation));
+        let mut mutation = parts.clone();
+        mutation.manifest = crate::ResolvedManifestAvailability::Unavailable {
+            event_id: event,
+            control: None,
+            diagnostic: manifest_diagnostic,
+        };
+        mutations.push(("manifest", mutation));
+        let mut mutation = parts.clone();
+        mutation.document = Some(document);
+        mutations.push(("document", mutation));
+        let mut mutation = parts.clone();
+        let Some(other_coordinate) = format!("31624:{}:{}", "51".repeat(32), "52".repeat(32))
+            .parse::<DocumentCoordinate>()
+            .ok()
+        else {
+            return;
+        };
+        mutation.coordinate = other_coordinate;
+        mutations.push(("coordinate_digest_binding", mutation));
+        let mut mutation = parts.clone();
+        mutation.failure = None;
+        mutations.push(("missing_failure", mutation));
+        let mut mutation = parts.clone();
+        mutation.failure = Some(super::EvaluationFailure::BudgetExhausted);
+        mutations.push(("wrong_failure", mutation));
+        let mut mutation = parts.clone();
+        mutation.completion = Completion::Complete;
+        mutation.failure = None;
+        mutations.push(("wrong_completion", mutation));
+
+        for (name, mutation) in mutations {
+            assert_rejected(name, mutation);
+        }
+        assert_eq!(crate::ProtocolRevision::lookup("draft_2026_09"), None);
+        assert_eq!(
+            EvaluationReport::from_complete_parts(parts.clone()),
+            Err(super::EvaluationError::ReportInvariant)
+        );
+        let mut complete = parts;
+        complete.completion = Completion::Complete;
+        complete.failure = None;
+        assert_eq!(
+            EvaluationReport::from_interrupted_batch_parts(complete),
+            Err(super::EvaluationError::ReportInvariant)
+        );
+    }
+
+    #[test]
+    fn budget_and_cancel_no_progress_reports_differ_only_by_typed_stop() {
+        let Some(budget_parts) = no_progress_parts(Completion::BudgetExhausted) else {
+            return;
+        };
+        let Some(cancel_parts) = no_progress_parts(Completion::Cancelled) else {
+            return;
+        };
+        let budget = EvaluationReport::from_no_progress_parts(budget_parts);
+        let cancelled = EvaluationReport::from_no_progress_parts(cancel_parts);
+        assert!(budget.is_ok() && cancelled.is_ok());
+        let (Ok(budget), Ok(cancelled)) = (budget, cancelled) else {
+            return;
+        };
+        assert_eq!(budget.coordinate(), cancelled.coordinate());
+        assert_eq!(budget.revision(), cancelled.revision());
+        assert_eq!(budget.canonical_controls(), cancelled.canonical_controls());
+        assert_eq!(
+            budget.disposition_records(),
+            cancelled.disposition_records()
+        );
+        assert_eq!(
+            budget.control_dispositions(),
+            cancelled.control_dispositions()
+        );
+        assert_eq!(budget.dispositions(), cancelled.dispositions());
+        assert_eq!(budget.accepted_changes(), cancelled.accepted_changes());
+        assert_eq!(budget.pending_changes(), cancelled.pending_changes());
+        assert_eq!(budget.excluded_changes(), cancelled.excluded_changes());
+        assert_eq!(budget.invalid_changes(), cancelled.invalid_changes());
+        assert_eq!(budget.heads(), cancelled.heads());
+        assert_eq!(budget.evidence(), cancelled.evidence());
+        assert_eq!(budget.checkpoints(), cancelled.checkpoints());
+        assert_eq!(budget.history_digest(), cancelled.history_digest());
+        assert_eq!(
+            budget.dispositions_digest(),
+            cancelled.dispositions_digest()
+        );
+        assert_eq!(budget.integrity_alerts(), cancelled.integrity_alerts());
+        assert_eq!(budget.manifest(), cancelled.manifest());
+        assert_eq!(budget.document(), cancelled.document());
+        assert_eq!(budget.completion(), Completion::BudgetExhausted);
+        assert_eq!(cancelled.completion(), Completion::Cancelled);
+        assert_eq!(
+            budget.failure(),
+            Some(super::EvaluationFailure::BudgetExhausted)
+        );
+        assert_eq!(
+            cancelled.failure(),
+            Some(super::EvaluationFailure::Cancelled)
+        );
+    }
 
     #[test]
     fn evaluation_report_api_enforces_ordering_and_redacts_document() {
@@ -684,7 +968,7 @@ mod tests {
                 ReportConstructionPath::InterruptedBatch,
                 incomplete_with_document,
             )
-            .is_ok()
+            .is_err()
         );
     }
 
@@ -695,17 +979,34 @@ mod tests {
         assert!(coordinate.is_ok());
         let Ok(coordinate) = coordinate else { return };
         let hash = ChangeHash::from_bytes([2; 32]);
-        let parts = || EvaluationReportParts {
+        let carrier_id = EventId::from_bytes([9; 32]);
+        let parts = || {
+            EvaluationReportParts {
             coordinate,
             revision: crate::ProtocolRevision::draft_v1(),
             canonical_controls: vec![EventId::from_bytes([1; 32])],
-            disposition_records: vec![],
+            disposition_records: vec![
+                DispositionRecord::new(
+                    ProtocolItemIdentifier::from(hash),
+                    crate::ProtocolDisposition::Accepted,
+                    None,
+                ),
+                DispositionRecord::new(
+                    ProtocolItemIdentifier::event(carrier_id),
+                    crate::ProtocolDisposition::Accepted,
+                    None,
+                ),
+            ],
             control_dispositions: vec![(
                 EventId::from_bytes([1; 32]),
                 crate::ProtocolDisposition::Accepted,
             )],
             dispositions: vec![(hash, crate::ProtocolDisposition::Accepted)],
-            change_carrier_dispositions: vec![],
+            change_carrier_dispositions: vec![(
+                carrier_id,
+                hash,
+                crate::ProtocolDisposition::Accepted,
+            )],
             accepted_changes: vec![hash],
             pending_changes: vec![],
             excluded_changes: vec![],
@@ -717,15 +1018,13 @@ mod tests {
             dispositions_digest: DispositionsDigest::from_bytes([4; 32]),
             integrity_alerts: vec![],
             manifest: crate::ResolvedManifestAvailability::Missing,
-            completion: Completion::Cancelled,
-            failure: Some(super::EvaluationFailure::Cancelled),
-            document: None,
+            completion: Completion::Complete,
+            failure: None,
+            document: crate::automerge_adapter::materialized_view::MaterializedDocumentView::empty_for_test().ok(),
+        }
         };
-        assert!(
-            EvaluationReport::from_parts(ReportConstructionPath::InterruptedBatch, parts()).is_ok()
-        );
+        assert!(EvaluationReport::from_parts(ReportConstructionPath::Complete, parts()).is_ok());
 
-        let carrier_id = EventId::from_bytes([9; 32]);
         let mut carrier_consistent = parts();
         carrier_consistent.disposition_records = vec![
             DispositionRecord::new(
@@ -743,7 +1042,7 @@ mod tests {
             vec![(carrier_id, hash, crate::ProtocolDisposition::Accepted)];
         assert!(
             EvaluationReport::from_parts(
-                ReportConstructionPath::InterruptedBatch,
+                ReportConstructionPath::Complete,
                 carrier_consistent.clone(),
             )
             .is_ok()
@@ -752,11 +1051,8 @@ mod tests {
         let mut missing_carrier_record = carrier_consistent.clone();
         missing_carrier_record.disposition_records.pop();
         assert!(
-            EvaluationReport::from_parts(
-                ReportConstructionPath::InterruptedBatch,
-                missing_carrier_record,
-            )
-            .is_err()
+            EvaluationReport::from_parts(ReportConstructionPath::Complete, missing_carrier_record,)
+                .is_err()
         );
 
         let mut duplicate_carrier = carrier_consistent.clone();
@@ -766,26 +1062,20 @@ mod tests {
             crate::ProtocolDisposition::Accepted,
         ));
         assert!(
-            EvaluationReport::from_parts(
-                ReportConstructionPath::InterruptedBatch,
-                duplicate_carrier,
-            )
-            .is_err()
+            EvaluationReport::from_parts(ReportConstructionPath::Complete, duplicate_carrier,)
+                .is_err()
         );
 
         let mut wrong_carrier_hash = carrier_consistent;
         wrong_carrier_hash.change_carrier_dispositions[0].1 = ChangeHash::from_bytes([8; 32]);
         assert!(
-            EvaluationReport::from_parts(
-                ReportConstructionPath::InterruptedBatch,
-                wrong_carrier_hash,
-            )
-            .is_err()
+            EvaluationReport::from_parts(ReportConstructionPath::Complete, wrong_carrier_hash,)
+                .is_err()
         );
 
         let assert_invariant = |parts| {
             assert_eq!(
-                EvaluationReport::from_parts(ReportConstructionPath::InterruptedBatch, parts),
+                EvaluationReport::from_parts(ReportConstructionPath::Complete, parts),
                 Err(super::EvaluationError::ReportInvariant)
             );
         };
@@ -835,12 +1125,11 @@ mod tests {
         assert_invariant(foreign_head);
 
         let mut completion_mismatch = parts();
-        completion_mismatch.failure = None;
+        completion_mismatch.failure = Some(super::EvaluationFailure::Cancelled);
         assert_invariant(completion_mismatch);
 
         let mut document_mismatch = parts();
-        document_mismatch.completion = Completion::Complete;
-        document_mismatch.failure = None;
+        document_mismatch.document = None;
         assert_invariant(document_mismatch);
 
         let descriptor = EventId::from_bytes([10; 32]);
@@ -858,7 +1147,7 @@ mod tests {
         );
         let mut inconsistent_checkpoint = parts();
         inconsistent_checkpoint.checkpoints.push(checkpoint.clone());
-        inconsistent_checkpoint.disposition_records = vec![
+        inconsistent_checkpoint.disposition_records.extend([
             DispositionRecord::new(
                 ProtocolItemIdentifier::event(descriptor),
                 crate::ProtocolDisposition::Accepted,
@@ -869,12 +1158,12 @@ mod tests {
                 crate::ProtocolDisposition::Pending,
                 None,
             ),
-        ];
+        ]);
         assert_invariant(inconsistent_checkpoint);
 
         let mut consistent_checkpoint = parts();
         consistent_checkpoint.checkpoints.push(checkpoint);
-        consistent_checkpoint.disposition_records = vec![
+        consistent_checkpoint.disposition_records.extend([
             DispositionRecord::new(
                 ProtocolItemIdentifier::event(descriptor),
                 crate::ProtocolDisposition::Accepted,
@@ -885,13 +1174,10 @@ mod tests {
                 crate::ProtocolDisposition::Accepted,
                 None,
             ),
-        ];
+        ]);
         assert!(
-            EvaluationReport::from_parts(
-                ReportConstructionPath::InterruptedBatch,
-                consistent_checkpoint,
-            )
-            .is_ok()
+            EvaluationReport::from_parts(ReportConstructionPath::Complete, consistent_checkpoint,)
+                .is_ok()
         );
 
         let refused_checkpoint = CheckpointVerificationResult::new(
@@ -909,7 +1195,7 @@ mod tests {
         assert!(history_diagnostic.is_some());
         let mut consistent_refusal = parts();
         consistent_refusal.checkpoints.push(refused_checkpoint);
-        consistent_refusal.disposition_records = vec![
+        consistent_refusal.disposition_records.extend([
             DispositionRecord::new(
                 ProtocolItemIdentifier::event(descriptor),
                 crate::ProtocolDisposition::Invalid,
@@ -920,17 +1206,17 @@ mod tests {
                 crate::ProtocolDisposition::Invalid,
                 history_diagnostic,
             ),
-        ];
+        ]);
         assert!(
             EvaluationReport::from_parts(
-                ReportConstructionPath::InterruptedBatch,
+                ReportConstructionPath::Complete,
                 consistent_refusal.clone(),
             )
             .is_ok()
         );
 
         let mut missing_descriptor_diagnostic = consistent_refusal.clone();
-        missing_descriptor_diagnostic.disposition_records[0] = DispositionRecord::new(
+        missing_descriptor_diagnostic.disposition_records[2] = DispositionRecord::new(
             ProtocolItemIdentifier::event(descriptor),
             crate::ProtocolDisposition::Invalid,
             None,
@@ -938,7 +1224,7 @@ mod tests {
         assert_invariant(missing_descriptor_diagnostic);
 
         let mut wrong_chunk_diagnostic = consistent_refusal;
-        wrong_chunk_diagnostic.disposition_records[1] = DispositionRecord::new(
+        wrong_chunk_diagnostic.disposition_records[3] = DispositionRecord::new(
             ProtocolItemIdentifier::event(chunk),
             crate::ProtocolDisposition::Invalid,
             crate::DiagnosticCode::lookup("checkpoint.chunk"),
@@ -980,7 +1266,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "expected to fail until FINDING_081 closes"]
     #[allow(clippy::bool_assert_comparison)]
     fn finding_081_incomplete_report_rejects_canonical_cross_view_state() {
         let coordinate =
@@ -1018,7 +1303,7 @@ mod tests {
         assert_eq!(
             report.is_err(),
             true,
-            "FINDING_081 reproduced: incomplete report parts accept canonical state and arbitrary digests"
+            "FINDING_081 regression: incomplete report parts must reject canonical state and arbitrary digests"
         );
     }
 }

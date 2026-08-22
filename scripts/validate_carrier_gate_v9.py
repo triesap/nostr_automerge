@@ -32,6 +32,7 @@ STEP_1195_CANDIDATE = "97ae7bf137807c9771dd6f9577ff8bcdd6dcc28b"
 STEP_1195_PARENT = "976d6edb0349ae87d5e477e95ae6f3d7dbd89303"
 STEP_1196_CANDIDATE = "52fafad799c5eb60a1d1a8b28bf214c0c8d21437"
 STEP_1197_CANDIDATE = "676581e0e84bb1fe483bb05108a2a3b723770e77"
+STEP_1198_CANDIDATE = "0fc39bfaedb156c3a6c3b914dd09791303c8d0b6"
 STEP_1195_SCOPE_IDENTITY = (
     "9d7a285d9e9f9fc3b6c566aa6bd776030df8f2ee078d0e254c696446a462f0fd"
 )
@@ -133,6 +134,9 @@ CONFORMANCE_ADDITIVE_REPORT_PATHS = (
     "tools/nostr_automerge_conformance/src/runner.rs",
 )
 CONFORMANCE_ADDITIVE_REPORT_PROJECTION = (
+    "80b9b759a96fe974a6f79081f7cddaccf1dd02cb458d058c097d9ed2c6ebc708"
+)
+STEP_1198_ADDITIVE_REPORT_PROJECTION = (
     "36b45bcdf4c106f91c203be704bff67ab825a484168f0210156e11a0b30ce17f"
 )
 
@@ -227,7 +231,7 @@ def conformance_source_diff(target: str | None) -> tuple[tuple[str, ...], bytes]
 
 
 def validate_conformance_source_projection(
-    names: tuple[str, ...], patch: bytes
+    names: tuple[str, ...], patch: bytes, expected_projection: str
 ) -> None:
     require(
         names == CONFORMANCE_ADDITIVE_REPORT_PATHS,
@@ -235,21 +239,27 @@ def validate_conformance_source_projection(
     )
     require(
         hashlib.sha256(patch).hexdigest()
-        == CONFORMANCE_ADDITIVE_REPORT_PROJECTION,
+        == expected_projection,
         "carrier_gate:semantic_source_projection",
     )
 
 
 def validate_committed_additive_report_child(
-    parent: str, names: tuple[str, ...], patch: bytes
+    parent: str,
+    expected_parent: str,
+    names: tuple[str, ...],
+    patch: bytes,
+    expected_projection: str,
 ) -> None:
-    require(parent == STEP_1197_CANDIDATE, "carrier_gate:postcommit_parent")
-    validate_conformance_source_projection(names, patch)
+    require(parent == expected_parent, "carrier_gate:postcommit_parent")
+    validate_conformance_source_projection(names, patch, expected_projection)
 
 
 def validate_current_conformance_source() -> None:
     names, patch = conformance_source_diff(None)
-    validate_conformance_source_projection(names, patch)
+    validate_conformance_source_projection(
+        names, patch, CONFORMANCE_ADDITIVE_REPORT_PROJECTION
+    )
 
 
 def conformance_source_mutation_self_test() -> int:
@@ -270,21 +280,42 @@ def conformance_source_mutation_self_test() -> int:
         == STEP_1196_CANDIDATE,
         "carrier_gate:report_predecessor_parent",
     )
-    committed_names, committed_patch = conformance_source_diff(None)
-    committed_parent = STEP_1197_CANDIDATE
+    require(
+        git_bytes("rev-parse", f"{STEP_1198_CANDIDATE}^").decode().strip()
+        == STEP_1197_CANDIDATE,
+        "carrier_gate:report_inventory_parent",
+    )
+    inventory_names, inventory_patch = conformance_source_diff(STEP_1198_CANDIDATE)
     validate_committed_additive_report_child(
-        committed_parent, committed_names, committed_patch
+        STEP_1197_CANDIDATE,
+        STEP_1197_CANDIDATE,
+        inventory_names,
+        inventory_patch,
+        STEP_1198_ADDITIVE_REPORT_PROJECTION,
+    )
+    committed_names, committed_patch = conformance_source_diff(None)
+    committed_parent = STEP_1198_CANDIDATE
+    validate_committed_additive_report_child(
+        committed_parent,
+        STEP_1198_CANDIDATE,
+        committed_names,
+        committed_patch,
+        CONFORMANCE_ADDITIVE_REPORT_PROJECTION,
     )
     head = git_bytes("rev-parse", "HEAD").decode().strip()
-    if head != STEP_1197_CANDIDATE:
+    if head != STEP_1198_CANDIDATE:
         require(
             git_bytes("rev-parse", "HEAD^").decode().strip()
-            == STEP_1197_CANDIDATE,
+            == STEP_1198_CANDIDATE,
             "carrier_gate:actual_postcommit_parent",
         )
         actual_names, actual_patch = conformance_source_diff("HEAD")
         validate_committed_additive_report_child(
-            STEP_1197_CANDIDATE, actual_names, actual_patch
+            STEP_1198_CANDIDATE,
+            STEP_1198_CANDIDATE,
+            actual_names,
+            actual_patch,
+            CONFORMANCE_ADDITIVE_REPORT_PROJECTION,
         )
 
     mutations = (
@@ -305,7 +336,13 @@ def conformance_source_mutation_self_test() -> int:
     caught = 0
     for parent, names, patch in mutations:
         try:
-            validate_committed_additive_report_child(parent, names, patch)
+            validate_committed_additive_report_child(
+                parent,
+                STEP_1198_CANDIDATE,
+                names,
+                patch,
+                CONFORMANCE_ADDITIVE_REPORT_PROJECTION,
+            )
         except LedgerError:
             caught += 1
             continue

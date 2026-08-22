@@ -49,6 +49,20 @@ pub struct ReferenceEvaluator {
     revision: ProtocolRevision,
 }
 
+#[cfg(test)]
+std::thread_local! {
+    static REEVALUATION_SUMMARY_OBSERVATIONS: std::cell::Cell<u64> = const {
+        std::cell::Cell::new(0)
+    };
+}
+
+#[cfg(test)]
+fn observe_reevaluation_summary() {
+    REEVALUATION_SUMMARY_OBSERVATIONS.with(|observations| {
+        observations.set(observations.get().saturating_add(1));
+    });
+}
+
 impl ReferenceEvaluator {
     /// Creates an evaluator for the sealed protocol revision.
     #[must_use]
@@ -538,6 +552,8 @@ impl ReferenceEvaluator {
         if previous.coordinate() != coordinate {
             return Ok(current);
         }
+        #[cfg(test)]
+        observe_reevaluation_summary();
         let summarize = |report: &EvaluationReport| {
             let mut changes_by_control = std::collections::BTreeMap::new();
             if let Some(tip) = report.canonical_controls().last().copied() {
@@ -2398,8 +2414,14 @@ fn reserved_interrupted_report(
     completion: Completion,
     permit: &mut ReportFinalizationPermit,
 ) -> Result<EvaluationReport, EvaluationError> {
-    let report = prepare_no_progress_interrupted_report(revision, coordinate, completion, permit)
-        .map_err(|error| settle_reserved_error(permit, error))?;
+    let report = prepare_no_progress_interrupted_report(
+        revision,
+        coordinate,
+        completion,
+        NoProgressConstructionPath::NoProgress,
+        permit,
+    )
+    .map_err(|error| settle_reserved_error(permit, error))?;
     permit
         .forfeit_all_remaining()
         .map_err(|_| EvaluationError::ReportInvariant)?;
@@ -2413,6 +2435,7 @@ fn prepare_no_progress_interrupted_report(
     revision: ProtocolRevision,
     coordinate: DocumentCoordinate,
     completion: Completion,
+    construction: NoProgressConstructionPath,
     permit: &mut ReportFinalizationPermit,
 ) -> Result<EvaluationReport, EvaluationError> {
     permit
@@ -2450,6 +2473,7 @@ fn prepare_no_progress_interrupted_report(
         failure,
         history_digest,
         dispositions_digest,
+        construction,
     )
 }
 
@@ -2501,7 +2525,14 @@ fn compact_interrupted_report(
         failure,
         history_digest,
         dispositions_digest,
+        NoProgressConstructionPath::NoProgress,
     )
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum NoProgressConstructionPath {
+    NoProgress,
+    InterruptedBatch,
 }
 
 fn build_no_progress_interrupted_report(
@@ -2511,8 +2542,9 @@ fn build_no_progress_interrupted_report(
     failure: EvaluationFailure,
     history_digest: crate::HistoryDigest,
     dispositions_digest: crate::DispositionsDigest,
+    construction: NoProgressConstructionPath,
 ) -> Result<EvaluationReport, EvaluationError> {
-    EvaluationReport::from_no_progress_parts(EvaluationReportParts {
+    let parts = EvaluationReportParts {
         coordinate,
         revision,
         canonical_controls: Vec::new(),
@@ -2534,7 +2566,13 @@ fn build_no_progress_interrupted_report(
         completion,
         failure: Some(failure),
         document: None,
-    })
+    };
+    match construction {
+        NoProgressConstructionPath::NoProgress => EvaluationReport::from_no_progress_parts(parts),
+        NoProgressConstructionPath::InterruptedBatch => {
+            EvaluationReport::from_interrupted_batch_parts(parts)
+        }
+    }
     .map_err(|_| EvaluationError::ReportInvariant)
 }
 
@@ -2542,147 +2580,25 @@ fn prepare_interrupted_batch_report(
     revision: ProtocolRevision,
     coordinate: DocumentCoordinate,
     batch: BatchEvaluationReport,
-    manifest: ResolvedManifestAvailability,
-    checkpoints: Vec<CheckpointVerificationResult>,
+    _manifest: ResolvedManifestAvailability,
+    _checkpoints: Vec<CheckpointVerificationResult>,
     permit: &mut ReportFinalizationPermit,
 ) -> Result<EvaluationReport, EvaluationError> {
-    if batch.completion == Completion::Complete
-        || !matches!(
-            batch.failure,
-            Some(EvaluationFailure::BudgetExhausted | EvaluationFailure::Cancelled)
-        )
-    {
+    let failure = match batch.completion {
+        Completion::BudgetExhausted => EvaluationFailure::BudgetExhausted,
+        Completion::Cancelled => EvaluationFailure::Cancelled,
+        Completion::Complete => return Err(EvaluationError::ReportInvariant),
+    };
+    if batch.failure != Some(failure) {
         return Err(EvaluationError::ReportInvariant);
     }
-    permit
-        .consume_pass(FinalizationReservationUnit::new(
-            InterruptedReportPass::Controls,
-            u64::try_from(batch.control_dispositions.len()).unwrap_or(u64::MAX),
-        ))
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    let control_dispositions = batch.control_dispositions.into_iter().collect::<Vec<_>>();
-    permit
-        .consume_pass(FinalizationReservationUnit::new(
-            InterruptedReportPass::Changes,
-            u64::try_from(batch.dispositions.len()).unwrap_or(u64::MAX),
-        ))
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    let dispositions = batch.dispositions.into_iter().collect::<Vec<_>>();
-    let mut disposition_records = control_dispositions
-        .iter()
-        .map(|(event_id, disposition)| {
-            DispositionRecord::new(
-                ProtocolItemIdentifier::control_event(*event_id),
-                *disposition,
-                None,
-            )
-        })
-        .collect::<Vec<_>>();
-    disposition_records.extend(dispositions.iter().map(|(hash, disposition)| {
-        DispositionRecord::new(ProtocolItemIdentifier::from(*hash), *disposition, None)
-    }));
-    let checkpoint_units = checkpoints
-        .iter()
-        .try_fold(0_u64, |total, checkpoint| {
-            total.checked_add(
-                u64::try_from(1_usize.saturating_add(checkpoint.chunk_events().len()))
-                    .unwrap_or(u64::MAX),
-            )
-        })
-        .unwrap_or(u64::MAX);
-    permit
-        .consume_pass(FinalizationReservationUnit::new(
-            InterruptedReportPass::Checkpoints,
-            checkpoint_units,
-        ))
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    let event_units = checkpoint_units.saturating_add(u64::from(!matches!(
-        manifest,
-        ResolvedManifestAvailability::Missing
-    )));
-    permit
-        .consume_pass(FinalizationReservationUnit::new(
-            InterruptedReportPass::Events,
-            event_units,
-        ))
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    disposition_records.extend(dynamic_event_disposition_records(&manifest, &checkpoints));
-    let accepted_changes = disposition_hashes(&dispositions, ProtocolDisposition::Accepted);
-    let pending_changes = disposition_hashes(&dispositions, ProtocolDisposition::Pending);
-    let excluded_changes = disposition_hashes(&dispositions, ProtocolDisposition::Excluded);
-    let invalid_changes = disposition_hashes(&dispositions, ProtocolDisposition::Invalid);
-    let heads = batch.heads.into_iter().collect::<Vec<_>>();
-    let digest_units = u64::try_from(
-        batch
-            .canonical_controls
-            .len()
-            .saturating_add(accepted_changes.len())
-            .saturating_add(heads.len())
-            .saturating_add(disposition_records.len())
-            .saturating_add(8),
-    )
-    .unwrap_or(u64::MAX);
-    permit
-        .consume_pass(FinalizationReservationUnit::new(
-            InterruptedReportPass::Digests,
-            digest_units,
-        ))
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    let history_digest = history_digest(
+    prepare_no_progress_interrupted_report(
         revision,
         coordinate,
-        &batch.canonical_controls,
-        &accepted_changes,
-        &heads,
+        batch.completion,
+        NoProgressConstructionPath::InterruptedBatch,
+        permit,
     )
-    .map_err(|_| EvaluationError::ReportInvariant)?;
-    let disposition_items =
-        disposition_items(&disposition_records).map_err(|_| EvaluationError::ReportInvariant)?;
-    let dispositions_digest = dispositions_digest(revision, coordinate, &disposition_items)
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    permit
-        .consume_pass(FinalizationReservationUnit::new(
-            InterruptedReportPass::Evidence,
-            0,
-        ))
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    let evidence = Vec::new();
-    permit
-        .consume_pass(FinalizationReservationUnit::new(
-            InterruptedReportPass::FixedOverhead,
-            8,
-        ))
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    permit
-        .consume_pass(FinalizationReservationUnit::new(
-            InterruptedReportPass::Invariants,
-            REPORT_INVARIANT_ITEMS,
-        ))
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    EvaluationReport::from_interrupted_batch_parts(EvaluationReportParts {
-        coordinate,
-        revision,
-        canonical_controls: batch.canonical_controls,
-        disposition_records,
-        control_dispositions,
-        dispositions,
-        change_carrier_dispositions: Vec::new(),
-        accepted_changes,
-        pending_changes,
-        excluded_changes,
-        invalid_changes,
-        heads,
-        evidence,
-        checkpoints,
-        history_digest,
-        dispositions_digest,
-        integrity_alerts: batch.integrity_alerts,
-        manifest,
-        completion: batch.completion,
-        failure: batch.failure,
-        document: None,
-    })
-    .map_err(|_| EvaluationError::ReportInvariant)
 }
 
 fn interrupt_batch(batch: &mut BatchEvaluationReport, completion: Completion) {
@@ -3205,10 +3121,11 @@ mod tests {
         ChangeClaimReason, CheckpointDownstreamStage, CheckpointReportAttributionStage,
         CheckpointWorkObserver, CheckpointWorkStop, FinalLineageChangeState, FinalizationDimension,
         FinalizationPermitError, FinalizationReservationUnit, InterruptedReportPass,
-        PreparedCheckpointInputs, ReportFinalizationPermit, ReportFinalizationPlan,
-        aggregate_change_contribution, assembly_status, change_carrier_disposition,
-        charge_checkpoint_work, checkpoint_control_refusal, checkpoint_preflight_refusal,
-        join_status, noncanonical_branch_claim_reason, reduce_aggregate_change_outcome,
+        PreparedCheckpointInputs, REEVALUATION_SUMMARY_OBSERVATIONS, ReferenceEvaluator,
+        ReportFinalizationPermit, ReportFinalizationPlan, aggregate_change_contribution,
+        assembly_status, change_carrier_disposition, charge_checkpoint_work,
+        checkpoint_control_refusal, checkpoint_preflight_refusal, join_status,
+        noncanonical_branch_claim_reason, reduce_aggregate_change_outcome,
         reduce_change_dispositions, scoped_dynamic_event_disposition_records,
         verify_prepared_checkpoints,
     };
@@ -3237,6 +3154,43 @@ mod tests {
         ResolvedManifestAvailability, SnapshotHash, WorkBudget, WorkCounter,
     };
     use sha2::{Digest, Sha256};
+
+    #[test]
+    #[ignore = "expected to fail until FINDING_082 closes"]
+    fn finding_082_reevaluation_stops_before_post_incomplete_alert_work() {
+        let coordinate = DocumentCoordinate::new(
+            ControllerPublicKey::from_bytes([0xc1; 32]),
+            DocumentId::from_bytes([0xc2; 32]),
+        );
+        let corpus = crate::CorpusBuilder::new().finish();
+        let evaluator = ReferenceEvaluator::new(crate::ProtocolRevision::draft_v1());
+        let previous = evaluator.evaluate(
+            &corpus,
+            coordinate,
+            &mut WorkBudget::new(1_000_000, 1_000_000),
+            &crate::NeverCancelled,
+        );
+        assert!(previous.is_ok());
+        let Ok(previous) = previous else { return };
+        assert_eq!(previous.completion(), crate::Completion::Complete);
+        REEVALUATION_SUMMARY_OBSERVATIONS.with(|observations| observations.set(0));
+
+        let current = evaluator.reevaluate(
+            &corpus,
+            coordinate,
+            &previous,
+            &mut WorkBudget::new(0, 0),
+            &crate::NeverCancelled,
+        );
+        assert!(current.is_ok());
+        let Ok(current) = current else { return };
+        assert_eq!(current.completion(), crate::Completion::BudgetExhausted);
+        let observations = REEVALUATION_SUMMARY_OBSERVATIONS.with(std::cell::Cell::get);
+        assert_eq!(
+            observations, 0,
+            "FINDING_082 reproduced: reevaluation performs summary work after incomplete finalization"
+        );
+    }
 
     #[test]
     fn carrier_claim_traversal_preserves_the_original_typed_stop() {
@@ -4929,7 +4883,7 @@ mod tests {
     fn report_validation_precedes_finalization_refund() {
         let source = include_str!("reference_evaluator.rs");
         let complete_path = source
-            .split_once("let report = EvaluationReport::from_parts")
+            .split_once("let report = EvaluationReport::from_complete_parts")
             .map(|(_, path)| path)
             .unwrap_or_default();
         let validation = complete_path.find("settle_reserved_error(&mut finalization");

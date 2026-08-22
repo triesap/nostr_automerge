@@ -30,6 +30,10 @@ FIXED_CASES = (
         "public_engine_api",
         "finding_083_budget_stop_is_not_relabelled_by_cancellation_requery",
     ),
+    (
+        "lib",
+        "engine::evaluation_report::tests::finding_081_incomplete_report_rejects_canonical_cross_view_state",
+    ),
 )
 OPEN_CASES = (
     (
@@ -61,19 +65,10 @@ OPEN_CASES = (
     ),
     (
         "lib",
-        "engine::evaluation_report::tests::finding_081_incomplete_report_rejects_canonical_cross_view_state",
-        "FINDING_081 reproduced: incomplete report parts accept canonical state and arbitrary digests",
+        "engine::reference_evaluator::tests::finding_082_reevaluation_stops_before_post_incomplete_alert_work",
+        "FINDING_082 reproduced: reevaluation performs summary work after incomplete finalization",
         "left == right",
-        "crates/nostr_automerge/src/engine/evaluation_report.rs",
-        "false",
-        "true",
-    ),
-    (
-        "public_engine_api",
-        "finding_082_reevaluation_stops_before_post_incomplete_alert_work",
-        "FINDING_082 reproduced: reevaluation adds an integrity alert after incomplete finalization",
-        "left == right",
-        "crates/nostr_automerge/tests/public_engine_api.rs",
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
         "1",
         "0",
     ),

@@ -51,7 +51,12 @@ document view is present, including for an empty accepted history.
 matching `EvaluationFailure` category explains why evaluation stopped without
 reclassifying accepted, pending, invalid, or excluded protocol evidence.
 Non-capacity failures are `EvaluationError` values, never completion values. An
-incomplete report never exposes a document assembled from partial work.
+incomplete report contains only its coordinate, revision, matching typed stop,
+canonical empty history and dispositions digests, a missing manifest, and empty
+protocol collections. It never exposes dispositions, evidence, checkpoints,
+alerts, state assertions, or a document assembled from partial work. Report
+construction rejects a nonempty field or a digest not recomputed from the empty
+coordinate-and-revision-bound views.
 
 The API is alpha. Public type and method names may change before a stable crate
 release. Protocol dispositions, canonical ordering, and digest bytes follow the

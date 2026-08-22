@@ -1,11 +1,12 @@
 # Remediation V9 Rust Baseline Reproductions
 
-Status: rolling closure — five regression cases fixed and seven cases still reproduced
+Status: rolling closure — six regression cases fixed and six cases still reproduced
 
 The `FINDING_073` checkpoint-precedence, `FINDING_074` carrier-independence,
 `FINDING_079` unsupported-identity, and `FINDING_083` typed-stop reproductions
-are now enabled passing regressions. The typed report-revision compile probe is
-also fixed. Six ignored tests and the semantic-proof probe continue to encode
+are now enabled passing regressions. The `FINDING_081` incomplete-report
+regression and typed report-revision compile probe are also fixed. Five ignored
+tests and the semantic-proof probe continue to encode
 behavior-level expected failures for the still-open public Rust findings.
 Ordinary Rust test targets remain green because only the still-open cases stay
 ignored. The tests do not inspect source text and do not change protocol
@@ -41,8 +42,8 @@ external-build launcher.
 | `FINDING_077` | Canonical raw change bytes are copied into the target memo rather than retained through one shared immutable allocation. | 89, 90, 91 |
 | `FINDING_078` | Replacing a requirement's named assertion with a semantically unrelated assertion in the same artifact still passes signed-v9 requirement validation. | 93 |
 | `FINDING_079` | The enabled signed regression proves that an unsupported Event and its diagnostic remain visible without its unverified `x` tag entering the semantic `ChangeHash` indexes or report namespace. | 84 (public Rust closed) |
-| `FINDING_081` | The typed report revision getter is fixed; its parts constructor still accepts an incomplete report containing canonical state and arbitrary nonempty-domain digests. | 85, 86 |
-| `FINDING_082` | Reevaluation compares canonical summaries after the current evaluation stops and adds a reorganization alert to an incomplete report. | 85, 87 |
+| `FINDING_081` | The enabled constructor regression independently mutates every incomplete report field family and rejects nonempty protocol state, mismatched stop evidence, and noncanonical empty digests. | 85 (public Rust closed), 86 |
+| `FINDING_082` | Reevaluation still enters canonical-summary work after the current evaluation stops, even though the exact no-progress shape prevents a retained alert. | 85, 87 |
 | `FINDING_083` | The enabled regression preserves budget exhaustion after one stateful cancellation observation; carrier-claim charging now propagates either typed stop without re-querying. | 84 (public carrier path closed), 89 |
 | `FINDING_084` | Checkpoint assembly sorts the caller's target-sized chunk slice before observing immediate cancellation. | 82, 89 |
 

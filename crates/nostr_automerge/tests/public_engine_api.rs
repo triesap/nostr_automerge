@@ -56,6 +56,40 @@ fn assert_canonical_control_outcomes_are_consistent(report: &EvaluationReport) {
     }
 }
 
+fn assert_exact_no_progress_report(report: &EvaluationReport) {
+    assert_ne!(report.completion(), Completion::Complete);
+    assert_eq!(
+        report.failure(),
+        Some(match report.completion() {
+            Completion::BudgetExhausted => EvaluationFailure::BudgetExhausted,
+            Completion::Cancelled => EvaluationFailure::Cancelled,
+            Completion::Complete => return,
+        })
+    );
+    assert!(report.canonical_controls().is_empty());
+    assert!(report.disposition_records().is_empty());
+    assert!(report.control_dispositions().is_empty());
+    assert!(report.dispositions().is_empty());
+    assert!(report.accepted_changes().is_empty());
+    assert!(report.pending_changes().is_empty());
+    assert!(report.excluded_changes().is_empty());
+    assert!(report.invalid_changes().is_empty());
+    assert!(report.heads().is_empty());
+    assert!(report.evidence().is_empty());
+    assert!(report.checkpoints().is_empty());
+    assert!(report.integrity_alerts().is_empty());
+    assert_eq!(report.manifest(), &ResolvedManifestAvailability::Missing);
+    assert!(report.document().is_none());
+    assert_eq!(
+        Some(report.history_digest()),
+        canonical_history_digest(report.revision(), report.coordinate(), &[], &[], &[],).ok()
+    );
+    assert_eq!(
+        Some(report.dispositions_digest()),
+        canonical_dispositions_digest(report.revision(), report.coordinate(), &[]).ok()
+    );
+}
+
 fn event_disposition(report: &EvaluationReport, event_id: EventId) -> Option<ProtocolDisposition> {
     report
         .disposition_records()
@@ -121,6 +155,7 @@ fn evaluation_errors_are_noncanonical() {
         )
         .expect("budget report");
     assert_eq!(budget.completion(), Completion::BudgetExhausted);
+    assert_exact_no_progress_report(&budget);
     let cancelled = ReferenceEvaluator::new(ProtocolRevision::draft_v1())
         .evaluate(
             &empty,
@@ -130,6 +165,7 @@ fn evaluation_errors_are_noncanonical() {
         )
         .expect("cancelled report");
     assert_eq!(cancelled.completion(), Completion::Cancelled);
+    assert_exact_no_progress_report(&cancelled);
 }
 
 #[test]
@@ -3337,8 +3373,7 @@ fn event_and_carrier_work_exhaustion_precedes_state() {
 
     assert_eq!(report.completion(), Completion::BudgetExhausted);
     assert_eq!(report.failure(), Some(EvaluationFailure::BudgetExhausted));
-    assert!(report.canonical_controls().is_empty());
-    assert!(report.accepted_changes().is_empty());
+    assert_exact_no_progress_report(&report);
     assert_eq!(budget.consumed().get(WorkCounter::Event), 0);
     assert_eq!(budget.consumed().get(WorkCounter::Carrier), 0);
     assert_eq!(budget.consumed().get(WorkCounter::Assertion), 0);
@@ -3366,10 +3401,7 @@ fn cancellation_before_control_evaluation_fabricates_no_state() {
 
     assert_eq!(report.completion(), Completion::Cancelled);
     assert_eq!(report.failure(), Some(EvaluationFailure::Cancelled));
-    assert!(report.canonical_controls().is_empty());
-    assert!(report.dispositions().is_empty());
-    assert!(report.accepted_changes().is_empty());
-    assert!(report.document().is_none());
+    assert_exact_no_progress_report(&report);
     assert_eq!(budget.remaining(), (1_000_000, 1_000));
 }
 
@@ -3391,6 +3423,7 @@ fn zero_budget_target_entry_consumes_no_work() {
         &NeverCancelled,
     );
     assert_eq!(report.completion(), Completion::BudgetExhausted);
+    assert_exact_no_progress_report(&report);
     for counter in [
         WorkCounter::Event,
         WorkCounter::Carrier,
@@ -3520,9 +3553,7 @@ fn automerge_decode_work_is_bounded_before_state() {
         &NeverCancelled,
     );
     assert_eq!(report.completion(), Completion::BudgetExhausted);
-    assert_eq!(report.canonical_controls(), [scenario.control_id]);
-    assert_eq!(report.accepted_changes(), [scenario.change_hash]);
-    assert!(report.document().is_none());
+    assert_exact_no_progress_report(&report);
     assert!(exhausted.consumed().get(WorkCounter::DecodeByte) < decode_bytes);
 }
 
@@ -3555,14 +3586,12 @@ fn automerge_application_and_materialization_are_charged() {
         &NeverCancelled,
     );
     assert_eq!(report.completion(), Completion::BudgetExhausted);
-    assert_eq!(report.accepted_changes(), [scenario.change_hash]);
-    assert_eq!(report.history_digest(), measured_report.history_digest());
+    assert_exact_no_progress_report(&report);
+    assert_ne!(report.history_digest(), measured_report.history_digest());
     assert_ne!(
         report.dispositions_digest(),
-        measured_report.dispositions_digest(),
-        "the interrupted report has not finalized the carrier Event record"
+        measured_report.dispositions_digest()
     );
-    assert!(report.document().is_none());
     assert_eq!(exhausted.consumed().get(WorkCounter::ApplyChange), 3);
     assert_eq!(exhausted.remaining().1, 0);
 }
@@ -3775,14 +3804,7 @@ fn cancellation_is_safe_at_every_evaluator_boundary() {
         );
         assert_eq!(report.completion(), Completion::Cancelled, "{cancel_at}");
         assert_eq!(report.failure(), Some(EvaluationFailure::Cancelled));
-        assert_canonical_control_outcomes_are_consistent(&report);
-        assert!(report.document().is_none());
-        assert!(
-            report
-                .heads()
-                .iter()
-                .all(|head| report.accepted_changes().contains(head))
-        );
+        assert_exact_no_progress_report(&report);
     }
 }
 
@@ -3826,7 +3848,11 @@ fn every_item_budget_boundary_preserves_canonical_control_outcomes() {
             &mut WorkBudget::new(1_000_000, item_budget),
             &NeverCancelled,
         );
-        assert_canonical_control_outcomes_are_consistent(&report);
+        if report.completion() == Completion::Complete {
+            assert_canonical_control_outcomes_are_consistent(&report);
+        } else {
+            assert_exact_no_progress_report(&report);
+        }
         if report.disposition_records() == complete.disposition_records()
             && report.canonical_controls() == complete.canonical_controls()
             && report.heads() == complete.heads()
@@ -6864,41 +6890,21 @@ fn checkpoint_interruption_is_non_authoritative() {
     assert!(counters.get(WorkCounter::CheckpointItem) > 0);
     let budgeted = (0..=1_000).find_map(|limit| {
         let (report, _, _) = run(CheckpointEvaluationControl::ItemBudget(limit));
-        (report.completion() == Completion::BudgetExhausted
-            && report.accepted_changes() == baseline.accepted_changes()
-            && report.heads() == baseline.heads()
-            && report.history_digest() == baseline.history_digest()
-            && report.checkpoints().iter().all(|checkpoint| {
-                checkpoint.status() == CheckpointVerificationStatus::BudgetExhausted
-            }))
-        .then_some(report)
+        (report.completion() == Completion::BudgetExhausted).then_some(report)
     });
     assert!(budgeted.is_some());
     let Some(budgeted) = budgeted else { return };
     assert_eq!(budgeted.completion(), Completion::BudgetExhausted);
-    assert_eq!(budgeted.accepted_changes(), baseline.accepted_changes());
-    assert_eq!(budgeted.heads(), baseline.heads());
-    assert_eq!(budgeted.history_digest(), baseline.history_digest());
-    assert!(budgeted.checkpoints().iter().all(|checkpoint| {
-        checkpoint.status() == CheckpointVerificationStatus::BudgetExhausted
-    }));
+    assert_exact_no_progress_report(&budgeted);
 
     let cancelled = (0..checks).find_map(|limit| {
         let (report, _, _) = run(CheckpointEvaluationControl::CancelAfter(limit));
-        (report.accepted_changes() == baseline.accepted_changes()
-            && report.heads() == baseline.heads()
-            && report.history_digest() == baseline.history_digest()
-            && report
-                .checkpoints()
-                .iter()
-                .all(|checkpoint| checkpoint.status() == CheckpointVerificationStatus::Cancelled))
-        .then_some(report)
+        (report.completion() == Completion::Cancelled).then_some(report)
     });
     assert!(cancelled.is_some());
-    assert_eq!(
-        cancelled.map(|report| report.completion()),
-        Some(Completion::Cancelled)
-    );
+    let Some(cancelled) = cancelled else { return };
+    assert_exact_no_progress_report(&cancelled);
+    assert_eq!(baseline.completion(), Completion::Complete);
 }
 
 #[test]
@@ -6953,18 +6959,16 @@ fn adversarial_many_checkpoints_stop_without_refusal_expansion() {
     let mut high = 10_000_000_u64;
     while low < high {
         let middle = low + (high - low) / 2;
-        if evaluate(middle).checkpoints().is_empty() {
+        if evaluate(middle).completion() != Completion::Complete {
             low = middle.saturating_add(1);
         } else {
             high = middle;
         }
     }
-    let interrupted = evaluate(low);
+    assert!(low > 0);
+    let interrupted = evaluate(low.saturating_sub(1));
     assert_eq!(interrupted.completion(), Completion::BudgetExhausted);
-    assert!(!interrupted.checkpoints().is_empty());
-    assert!(interrupted.checkpoints().len() < complete.checkpoints().len());
-    assert_eq!(interrupted.accepted_changes(), complete.accepted_changes());
-    assert_eq!(interrupted.history_digest(), complete.history_digest());
+    assert_exact_no_progress_report(&interrupted);
 }
 
 #[allow(clippy::expect_used)]
@@ -8923,65 +8927,5 @@ fn finding_083_budget_stop_is_not_relabelled_by_cancellation_requery() {
         (report.completion(), observations.get()),
         (Completion::BudgetExhausted, 1),
         "FINDING_083 regression: budget exhaustion must not be relabelled by a repeated cancellation observation"
-    );
-}
-
-#[test]
-#[ignore = "expected to fail until FINDING_082 closes"]
-#[allow(clippy::expect_used)]
-fn finding_082_reevaluation_stops_before_post_incomplete_alert_work() {
-    let controller = TestSigner::from_byte(121);
-    let writer = TestSigner::from_byte(122);
-    let coordinate: DocumentCoordinate = format!(
-        "31624:{}:{}",
-        controller.public_key().to_hex(),
-        "c1".repeat(32)
-    )
-    .parse()
-    .expect("fixed coordinate");
-    let members = vec![(writer.public_key().to_hex(), vec!["write"])];
-    let old_control = signed_acl_control(&controller, coordinate, 1, None, 0, members.clone());
-    let new_control = signed_acl_control(&controller, coordinate, 2, None, 0, members);
-    let old_corpus = {
-        let mut builder = CorpusBuilder::new();
-        assert!(matches!(
-            builder.ingest(old_control),
-            IngestOutcome::Accepted { .. }
-        ));
-        builder.finish()
-    };
-    let new_corpus = {
-        let mut builder = CorpusBuilder::new();
-        assert!(matches!(
-            builder.ingest(new_control),
-            IngestOutcome::Accepted { .. }
-        ));
-        builder.finish()
-    };
-    let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
-    let previous = evaluator.evaluate_report(
-        &old_corpus,
-        coordinate,
-        &mut WorkBudget::new(2_000_000, 2_000_000),
-        &NeverCancelled,
-    );
-    assert_eq!(previous.completion(), Completion::Complete);
-    let mut calibration = WorkBudget::new(2_000_000, 2_000);
-    let complete_current =
-        evaluator.evaluate_report(&new_corpus, coordinate, &mut calibration, &NeverCancelled);
-    assert_eq!(complete_current.completion(), Completion::Complete);
-    let consumed_items = 2_000_u64.saturating_sub(calibration.remaining().1);
-    let current = evaluator.reevaluate_report(
-        &new_corpus,
-        coordinate,
-        &previous,
-        &mut WorkBudget::new(2_000_000, consumed_items.saturating_sub(1)),
-        &NeverCancelled,
-    );
-    assert_eq!(current.completion(), Completion::BudgetExhausted);
-    assert_eq!(
-        current.integrity_alerts().len(),
-        0,
-        "FINDING_082 reproduced: reevaluation adds an integrity alert after incomplete finalization"
     );
 }
