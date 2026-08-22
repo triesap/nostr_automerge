@@ -655,6 +655,19 @@ enum ChangeClaimReason {
     AuthorizedCurrentExcluded,
     InvalidReferencedControl,
     Unauthorized,
+    #[allow(
+        dead_code,
+        reason = "unsupported-only semantic identity remains a staged aggregate input"
+    )]
+    UnsupportedCarrier,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum AggregateChangeContribution {
+    AuthorizedCanonical,
+    Unresolved,
+    AuthorizedExcluded,
+    ConclusiveInvalid,
     UnsupportedCarrier,
 }
 
@@ -694,6 +707,21 @@ const fn change_carrier_disposition(reason: ChangeClaimReason) -> ProtocolDispos
             ProtocolDisposition::Invalid
         }
         ChangeClaimReason::UnsupportedCarrier => ProtocolDisposition::UnsupportedRevision,
+    }
+}
+
+const fn aggregate_change_contribution(reason: ChangeClaimReason) -> AggregateChangeContribution {
+    match reason {
+        ChangeClaimReason::AuthorizedCanonical => AggregateChangeContribution::AuthorizedCanonical,
+        ChangeClaimReason::UnresolvedControl => AggregateChangeContribution::Unresolved,
+        ChangeClaimReason::AuthorizedNoncanonical
+        | ChangeClaimReason::AuthorizedCurrentExcluded => {
+            AggregateChangeContribution::AuthorizedExcluded
+        }
+        ChangeClaimReason::InvalidReferencedControl | ChangeClaimReason::Unauthorized => {
+            AggregateChangeContribution::ConclusiveInvalid
+        }
+        ChangeClaimReason::UnsupportedCarrier => AggregateChangeContribution::UnsupportedCarrier,
     }
 }
 
@@ -754,6 +782,7 @@ fn reduce_change_dispositions(
             FinalLineageChangeState::Current
         };
         let mut outcomes = Vec::new();
+        let mut aggregate_contributions = Vec::new();
         for event_id in view.change_claim_event_ids(hash) {
             charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)?;
             let Some(claim) = corpus.indexes.changes.claims_by_event.get(&event_id) else {
@@ -838,6 +867,7 @@ fn reduce_change_dispositions(
                     ChangeClaimReason::InvalidReferencedControl
                 }
             };
+            aggregate_contributions.push(aggregate_change_contribution(reason));
             outcomes.push(ChangeCarrierOutcome::new(
                 claim.event_id,
                 claim.change_hash,
@@ -845,11 +875,7 @@ fn reduce_change_dispositions(
                 reason,
             ));
         }
-        let states = outcomes
-            .iter()
-            .map(|outcome| outcome.reason)
-            .collect::<Vec<_>>();
-        let disposition = reduce_reasoned_change_outcome(lineage, &states);
+        let disposition = reduce_aggregate_change_outcome(lineage, &aggregate_contributions);
         batch.dispositions.insert(hash, disposition);
         change_carrier_dispositions.extend(
             outcomes
@@ -860,24 +886,22 @@ fn reduce_change_dispositions(
     Ok(change_carrier_dispositions)
 }
 
-fn reduce_reasoned_change_outcome(
+fn reduce_aggregate_change_outcome(
     lineage: FinalLineageChangeState,
-    claims: &[ChangeClaimReason],
+    contributions: &[AggregateChangeContribution],
 ) -> ProtocolDisposition {
     if lineage == FinalLineageChangeState::Accepted {
         ProtocolDisposition::Accepted
     } else if lineage == FinalLineageChangeState::CanonicalPruned {
         ProtocolDisposition::Excluded
-    } else if claims.contains(&ChangeClaimReason::UnresolvedControl) {
+    } else if contributions.contains(&AggregateChangeContribution::Unresolved) {
         ProtocolDisposition::Pending
-    } else if claims.contains(&ChangeClaimReason::AuthorizedNoncanonical)
-        || claims.contains(&ChangeClaimReason::AuthorizedCurrentExcluded)
-    {
+    } else if contributions.contains(&AggregateChangeContribution::AuthorizedExcluded) {
         ProtocolDisposition::Excluded
-    } else if !claims.is_empty()
-        && claims
+    } else if !contributions.is_empty()
+        && contributions
             .iter()
-            .all(|state| *state == ChangeClaimReason::UnsupportedCarrier)
+            .all(|state| *state == AggregateChangeContribution::UnsupportedCarrier)
     {
         ProtocolDisposition::UnsupportedRevision
     } else {
@@ -3183,15 +3207,16 @@ fn charge_evaluation_work(
 #[cfg(test)]
 mod tests {
     use super::{
-        BatchEvaluationReport, ChangeCarrierOutcome, ChangeClaimReason, CheckpointDownstreamStage,
-        CheckpointReportAttributionStage, CheckpointWorkObserver, CheckpointWorkStop,
-        FinalLineageChangeState, FinalizationDimension, FinalizationPermitError,
-        FinalizationReservationUnit, InterruptedReportPass, PreparedCheckpointInputs,
-        ReportFinalizationPermit, ReportFinalizationPlan, assembly_status,
-        change_carrier_disposition, charge_checkpoint_work, checkpoint_control_refusal,
-        checkpoint_preflight_refusal, join_status, noncanonical_branch_claim_reason,
-        reduce_change_dispositions, reduce_reasoned_change_outcome,
-        scoped_dynamic_event_disposition_records, verify_prepared_checkpoints,
+        AggregateChangeContribution, BatchEvaluationReport, ChangeCarrierOutcome,
+        ChangeClaimReason, CheckpointDownstreamStage, CheckpointReportAttributionStage,
+        CheckpointWorkObserver, CheckpointWorkStop, FinalLineageChangeState, FinalizationDimension,
+        FinalizationPermitError, FinalizationReservationUnit, InterruptedReportPass,
+        PreparedCheckpointInputs, ReportFinalizationPermit, ReportFinalizationPlan,
+        aggregate_change_contribution, assembly_status, change_carrier_disposition,
+        charge_checkpoint_work, checkpoint_control_refusal, checkpoint_preflight_refusal,
+        join_status, noncanonical_branch_claim_reason, reduce_aggregate_change_outcome,
+        reduce_change_dispositions, scoped_dynamic_event_disposition_records,
+        verify_prepared_checkpoints,
     };
     use crate::CheckpointVerificationStatus as Status;
     use crate::authoring::{ActorState, AuthoringDocument};
@@ -3429,71 +3454,56 @@ mod tests {
     }
 
     #[test]
-    fn reasoned_change_outcome_uses_final_precedence() {
+    fn aggregate_change_outcome_uses_final_precedence() {
         use crate::ProtocolDisposition::{
             Accepted, Excluded, Invalid, Pending, UnsupportedRevision,
         };
+        use AggregateChangeContribution::{
+            AuthorizedExcluded, ConclusiveInvalid, Unresolved, UnsupportedCarrier,
+        };
         assert_eq!(
-            reduce_reasoned_change_outcome(
-                FinalLineageChangeState::Accepted,
-                &[ChangeClaimReason::UnresolvedControl]
-            ),
+            reduce_aggregate_change_outcome(FinalLineageChangeState::Accepted, &[Unresolved]),
             Accepted
         );
         assert_eq!(
-            reduce_reasoned_change_outcome(
+            reduce_aggregate_change_outcome(
                 FinalLineageChangeState::CanonicalPruned,
-                &[ChangeClaimReason::UnresolvedControl]
+                &[Unresolved]
             ),
             Excluded
         );
         assert_eq!(
-            reduce_reasoned_change_outcome(
+            reduce_aggregate_change_outcome(
                 FinalLineageChangeState::Current,
-                &[
-                    ChangeClaimReason::AuthorizedNoncanonical,
-                    ChangeClaimReason::UnresolvedControl
-                ]
+                &[AuthorizedExcluded, Unresolved]
             ),
             Pending
         );
         assert_eq!(
-            reduce_reasoned_change_outcome(
+            reduce_aggregate_change_outcome(
                 FinalLineageChangeState::Current,
-                &[
-                    ChangeClaimReason::InvalidReferencedControl,
-                    ChangeClaimReason::UnresolvedControl
-                ]
+                &[ConclusiveInvalid, Unresolved]
             ),
             Pending
         );
         assert_eq!(
-            reduce_reasoned_change_outcome(
+            reduce_aggregate_change_outcome(
                 FinalLineageChangeState::Current,
-                &[
-                    ChangeClaimReason::AuthorizedNoncanonical,
-                    ChangeClaimReason::InvalidReferencedControl
-                ]
+                &[AuthorizedExcluded, ConclusiveInvalid]
             ),
             Excluded
         );
         assert_eq!(
-            reduce_reasoned_change_outcome(
+            reduce_aggregate_change_outcome(
                 FinalLineageChangeState::Current,
-                &[
-                    ChangeClaimReason::UnsupportedCarrier,
-                    ChangeClaimReason::UnsupportedCarrier
-                ]
+                &[UnsupportedCarrier, UnsupportedCarrier]
             ),
             UnsupportedRevision
         );
         assert_eq!(
-            reduce_reasoned_change_outcome(
+            reduce_aggregate_change_outcome(
                 FinalLineageChangeState::Current,
-                &[
-                    ChangeClaimReason::UnsupportedCarrier,
-                    ChangeClaimReason::InvalidReferencedControl
-                ]
+                &[UnsupportedCarrier, ConclusiveInvalid]
             ),
             Invalid
         );
@@ -3509,23 +3519,36 @@ mod tests {
             InvalidReferencedControl, Unauthorized, UnresolvedControl, UnsupportedCarrier,
         };
 
-        for (reason, expected) in [
-            (AuthorizedCanonical, Accepted),
-            (AuthorizedNoncanonical, Excluded),
-            (AuthorizedCurrentExcluded, Excluded),
-            (UnresolvedControl, Pending),
-            (InvalidReferencedControl, Invalid),
-            (Unauthorized, Invalid),
-            (UnsupportedCarrier, UnsupportedRevision),
+        use AggregateChangeContribution::{
+            AuthorizedCanonical as AggregateAuthorizedCanonical, AuthorizedExcluded,
+            ConclusiveInvalid, Unresolved, UnsupportedCarrier as AggregateUnsupportedCarrier,
+        };
+
+        for (reason, carrier_disposition, aggregate_contribution) in [
+            (AuthorizedCanonical, Accepted, AggregateAuthorizedCanonical),
+            (AuthorizedNoncanonical, Excluded, AuthorizedExcluded),
+            (AuthorizedCurrentExcluded, Excluded, AuthorizedExcluded),
+            (UnresolvedControl, Pending, Unresolved),
+            (InvalidReferencedControl, Invalid, ConclusiveInvalid),
+            (Unauthorized, Invalid, ConclusiveInvalid),
+            (
+                UnsupportedCarrier,
+                UnsupportedRevision,
+                AggregateUnsupportedCarrier,
+            ),
         ] {
-            assert_eq!(change_carrier_disposition(reason), expected);
+            assert_eq!(change_carrier_disposition(reason), carrier_disposition);
+            assert_eq!(
+                aggregate_change_contribution(reason),
+                aggregate_contribution
+            );
             let outcome = ChangeCarrierOutcome::new(
                 crate::EventId::from_bytes([1; 32]),
                 crate::ChangeHash::from_bytes([2; 32]),
                 crate::EventId::from_bytes([3; 32]),
                 reason,
             );
-            assert_eq!(outcome.disposition, expected);
+            assert_eq!(outcome.disposition, carrier_disposition);
             assert_eq!(outcome.reason, reason);
         }
     }
@@ -3569,16 +3592,15 @@ mod tests {
     }
 
     #[test]
-    fn valid_carrier_dominates_invalid_carrier_without_hiding_it() {
-        use crate::ProtocolDisposition::{Accepted, Excluded, Invalid};
+    fn aggregate_reduction_cannot_rewrite_an_invalid_carrier() {
+        use crate::ProtocolDisposition::{
+            Accepted, Excluded, Invalid, Pending, UnsupportedRevision,
+        };
+        use AggregateChangeContribution::{
+            AuthorizedExcluded, ConclusiveInvalid, Unresolved, UnsupportedCarrier,
+        };
         let valid = noncanonical_branch_claim_reason(Some(Accepted));
         let invalid = noncanonical_branch_claim_reason(Some(Invalid));
-        let accepted_carrier = ChangeCarrierOutcome::new(
-            crate::EventId::from_bytes([1; 32]),
-            crate::ChangeHash::from_bytes([2; 32]),
-            crate::EventId::from_bytes([3; 32]),
-            ChangeClaimReason::AuthorizedCanonical,
-        );
         let invalid_carrier = ChangeCarrierOutcome::new(
             crate::EventId::from_bytes([4; 32]),
             crate::ChangeHash::from_bytes([2; 32]),
@@ -3587,20 +3609,46 @@ mod tests {
         );
         assert_eq!(valid, ChangeClaimReason::AuthorizedNoncanonical);
         assert_eq!(invalid, ChangeClaimReason::InvalidReferencedControl);
-        assert_eq!(accepted_carrier.disposition, Accepted);
         assert_eq!(invalid_carrier.disposition, Invalid);
-        assert_eq!(
-            reduce_reasoned_change_outcome(FinalLineageChangeState::Current, &[valid, invalid],),
-            Excluded
-        );
-        assert_eq!(
-            reduce_reasoned_change_outcome(FinalLineageChangeState::Accepted, &[valid, invalid],),
-            Accepted
-        );
-        assert_eq!(
-            invalid_carrier.disposition, Invalid,
-            "aggregate acceptance must not overwrite the invalid carrier outcome"
-        );
+        for (lineage, contributions, aggregate) in [
+            (
+                FinalLineageChangeState::Accepted,
+                vec![ConclusiveInvalid],
+                Accepted,
+            ),
+            (
+                FinalLineageChangeState::CanonicalPruned,
+                vec![ConclusiveInvalid],
+                Excluded,
+            ),
+            (
+                FinalLineageChangeState::Current,
+                vec![Unresolved, ConclusiveInvalid],
+                Pending,
+            ),
+            (
+                FinalLineageChangeState::Current,
+                vec![AuthorizedExcluded, ConclusiveInvalid],
+                Excluded,
+            ),
+            (
+                FinalLineageChangeState::Current,
+                vec![UnsupportedCarrier],
+                UnsupportedRevision,
+            ),
+            (
+                FinalLineageChangeState::Current,
+                vec![ConclusiveInvalid],
+                Invalid,
+            ),
+        ] {
+            assert_eq!(
+                reduce_aggregate_change_outcome(lineage, &contributions),
+                aggregate
+            );
+            assert_eq!(invalid_carrier.disposition, Invalid);
+            assert_eq!(invalid_carrier.reason, ChangeClaimReason::Unauthorized);
+        }
     }
 
     #[test]
@@ -3632,43 +3680,43 @@ mod tests {
     }
 
     #[test]
-    fn reasoned_change_precedence_matrix_is_complete() {
+    fn aggregate_change_precedence_matrix_is_complete() {
         use crate::ProtocolDisposition::{
             Accepted, Excluded, Invalid, Pending, UnsupportedRevision,
         };
-        use ChangeClaimReason::{
-            AuthorizedCanonical, AuthorizedCurrentExcluded, AuthorizedNoncanonical,
-            InvalidReferencedControl, Unauthorized, UnresolvedControl, UnsupportedCarrier,
+        use AggregateChangeContribution::{
+            AuthorizedCanonical, AuthorizedExcluded, ConclusiveInvalid, Unresolved,
+            UnsupportedCarrier,
         };
         let cases = [
             (
                 FinalLineageChangeState::Accepted,
-                vec![UnresolvedControl],
+                vec![Unresolved],
                 Accepted,
             ),
             (
                 FinalLineageChangeState::CanonicalPruned,
-                vec![UnresolvedControl, InvalidReferencedControl],
+                vec![Unresolved, ConclusiveInvalid],
                 Excluded,
             ),
             (
                 FinalLineageChangeState::Current,
-                vec![UnresolvedControl, AuthorizedNoncanonical],
+                vec![Unresolved, AuthorizedExcluded],
                 Pending,
             ),
             (
                 FinalLineageChangeState::Current,
-                vec![UnresolvedControl, InvalidReferencedControl],
+                vec![Unresolved, ConclusiveInvalid],
                 Pending,
             ),
             (
                 FinalLineageChangeState::Current,
-                vec![AuthorizedNoncanonical, InvalidReferencedControl],
+                vec![AuthorizedExcluded, ConclusiveInvalid],
                 Excluded,
             ),
             (
                 FinalLineageChangeState::Current,
-                vec![AuthorizedCurrentExcluded, Unauthorized],
+                vec![AuthorizedExcluded, ConclusiveInvalid],
                 Excluded,
             ),
             (
@@ -3678,12 +3726,12 @@ mod tests {
             ),
             (
                 FinalLineageChangeState::Current,
-                vec![UnsupportedCarrier, InvalidReferencedControl],
+                vec![UnsupportedCarrier, ConclusiveInvalid],
                 Invalid,
             ),
             (
                 FinalLineageChangeState::Current,
-                vec![Unauthorized],
+                vec![ConclusiveInvalid],
                 Invalid,
             ),
             (
@@ -3692,8 +3740,11 @@ mod tests {
                 Invalid,
             ),
         ];
-        for (lineage, claims, expected) in cases {
-            assert_eq!(reduce_reasoned_change_outcome(lineage, &claims), expected);
+        for (lineage, contributions, expected) in cases {
+            assert_eq!(
+                reduce_aggregate_change_outcome(lineage, &contributions),
+                expected
+            );
         }
     }
 
@@ -3701,9 +3752,9 @@ mod tests {
     #[ignore = "expected to fail until FINDING_079 closes"]
     fn finding_079_unsupported_carrier_does_not_create_semantic_hash_state() {
         assert_ne!(
-            reduce_reasoned_change_outcome(
+            reduce_aggregate_change_outcome(
                 FinalLineageChangeState::Current,
-                &[ChangeClaimReason::UnsupportedCarrier],
+                &[AggregateChangeContribution::UnsupportedCarrier],
             ),
             crate::ProtocolDisposition::UnsupportedRevision,
             "FINDING_079 reproduced: an unverified unsupported carrier can create semantic ChangeHash state"

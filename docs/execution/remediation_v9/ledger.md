@@ -2,7 +2,7 @@
 
 Status: `in_progress`
 
-RCLD 84 has 30 committed predecessors through `step_1187`. The opaque
+RCLD 84 has 31 committed predecessors through `step_1188`. The opaque
 compatibility checkpoint is bound by one approved 40-character candidate and
 one canonical 64-character result identity. Its public projection records nine
 findings, 23 expected-failure reproductions, 276 negative mutations, one
@@ -41,8 +41,9 @@ execution result is `pass`, and its publication status is `held`.
 | `step_1185` | `V-EVIDENCE` | pass |
 | `step_1186` | `V-CONF` | pass |
 | `step_1187` | `V-RESOURCE` | pass |
-| `step_1188` | `V-RUST` | active |
-| `step_1189` | `V-RUST` | next |
+| `step_1188` | `V-RUST` | pass |
+| `step_1189` | `V-RUST` | active |
+| `step_1190` | `V-RUST` | next |
 
 The authority projection is monotonic from `checkpoint_expectations_corrected` to
 `distribution_complete`. It records 148 requirements now and at completion,
@@ -57,7 +58,7 @@ fixtures, 20 reproduced findings, and one held finding. The enabled
 conformance corpus, transition validators, and full public gates close
 `GATE_V9_RUST_CHECKPOINT` at `step_1177`. The seven opaque checkpoint
 candidates and their two public parity checkpoints close through `step_1186`;
-`step_1188` is active, and 96
+`step_1189` is active, and 95
 checkpoints including the active checkpoint remain through `step_1283`.
 
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`

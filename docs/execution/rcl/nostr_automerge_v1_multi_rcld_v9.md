@@ -17,9 +17,9 @@ Reviewed distribution-v9 manifest SHA-256: `7b4ab5d2146939d142eb92d43060ef2183c9
 Reviewed canonical-output SHA-256: `e193a7b0db3a43e9d33e612afea05bd447a5e968a45e283d098f45278d6ab6fc`
 Steps: `step_1158` through `step_1283` (126 contiguous checkpoints)
 Active RCLD: RCLD 84
-Active checkpoint: `step_1188`
+Active checkpoint: `step_1189`
 Next RCLD: RCLD 84
-Next checkpoint: `step_1189`
+Next checkpoint: `step_1190`
 
 ## Outcome
 
