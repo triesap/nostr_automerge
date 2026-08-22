@@ -85,12 +85,11 @@ impl ReferenceEvaluator {
         {
             Ok(permit) => permit,
             Err(()) => {
-                let completion = if cancellation.is_cancelled() {
-                    Completion::Cancelled
-                } else {
-                    Completion::BudgetExhausted
-                };
-                return compact_interrupted_report(self.revision, coordinate, completion);
+                return compact_interrupted_report(
+                    self.revision,
+                    coordinate,
+                    Completion::BudgetExhausted,
+                );
             }
         };
         if let Err(completion) = charge_ingress(&view, budget, cancellation) {
@@ -754,121 +753,106 @@ fn reduce_change_dispositions(
         } else {
             FinalLineageChangeState::Current
         };
-        let outcomes = view
-            .change_claim_event_ids(hash)
-            .filter_map(|event_id| {
-                if charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1).is_err() {
-                    return Some(Err(()));
-                }
-                let claim = corpus.indexes.changes.claims_by_event.get(&event_id)?;
-                let semantic = corpus.indexes.changes.semantic_by_hash.get(&hash)?;
-                let state = resolve_referenced_control(
-                    corpus,
-                    claim.control_id,
-                    view.coordinate(),
-                    &batch.control_dispositions,
-                    &batch.statefully_valid_controls,
-                );
-                let reason = match state {
-                    ReferencedControlState::Canonical(control) => {
-                        if charge_evaluation_work(
-                            budget,
-                            cancellation,
-                            WorkCounter::Control,
-                            u64::try_from(control.members().len()).unwrap_or(u64::MAX),
-                        )
-                        .is_err()
-                        {
-                            return Some(Err(()));
-                        }
-                        let authorized = !control.terminal()
-                            && control.members().iter().any(|member| {
-                                member.actor == semantic.actor
-                                    && member.device == claim.author
-                                    && member.roles.contains(&Role::Write)
-                            });
-                        if !authorized {
-                            ChangeClaimReason::Unauthorized
-                        } else {
-                            match batch.dispositions.get(&hash).copied() {
-                                Some(ProtocolDisposition::Pending) => {
-                                    ChangeClaimReason::UnresolvedControl
-                                }
-                                Some(ProtocolDisposition::Excluded) => {
-                                    ChangeClaimReason::AuthorizedCurrentExcluded
-                                }
-                                Some(ProtocolDisposition::Accepted) => {
-                                    ChangeClaimReason::AuthorizedCanonical
-                                }
-                                Some(
-                                    ProtocolDisposition::Invalid
-                                    | ProtocolDisposition::UnsupportedRevision,
-                                )
-                                | None => ChangeClaimReason::InvalidReferencedControl,
+        let mut outcomes = Vec::new();
+        for event_id in view.change_claim_event_ids(hash) {
+            charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)?;
+            let Some(claim) = corpus.indexes.changes.claims_by_event.get(&event_id) else {
+                continue;
+            };
+            let Some(semantic) = corpus.indexes.changes.semantic_by_hash.get(&hash) else {
+                continue;
+            };
+            let state = resolve_referenced_control(
+                corpus,
+                claim.control_id,
+                view.coordinate(),
+                &batch.control_dispositions,
+                &batch.statefully_valid_controls,
+            );
+            let reason = match state {
+                ReferencedControlState::Canonical(control) => {
+                    charge_evaluation_work(
+                        budget,
+                        cancellation,
+                        WorkCounter::Control,
+                        u64::try_from(control.members().len()).unwrap_or(u64::MAX),
+                    )?;
+                    let authorized = !control.terminal()
+                        && control.members().iter().any(|member| {
+                            member.actor == semantic.actor
+                                && member.device == claim.author
+                                && member.roles.contains(&Role::Write)
+                        });
+                    if !authorized {
+                        ChangeClaimReason::Unauthorized
+                    } else {
+                        match batch.dispositions.get(&hash).copied() {
+                            Some(ProtocolDisposition::Pending) => {
+                                ChangeClaimReason::UnresolvedControl
                             }
-                        }
-                    }
-                    ReferencedControlState::NoncanonicalValid(control) => {
-                        if charge_evaluation_work(
-                            budget,
-                            cancellation,
-                            WorkCounter::Control,
-                            u64::try_from(control.members().len()).unwrap_or(u64::MAX),
-                        )
-                        .is_err()
-                        {
-                            return Some(Err(()));
-                        }
-                        let authorized = !control.terminal()
-                            && control.members().iter().any(|member| {
-                                member.actor == semantic.actor
-                                    && member.device == claim.author
-                                    && member.roles.contains(&Role::Write)
-                            });
-                        if !authorized {
-                            ChangeClaimReason::Unauthorized
-                        } else {
-                            noncanonical_branch_claim_reason(
-                                batch.referenced_branch_change_disposition(claim.control_id, hash),
+                            Some(ProtocolDisposition::Excluded) => {
+                                ChangeClaimReason::AuthorizedCurrentExcluded
+                            }
+                            Some(ProtocolDisposition::Accepted) => {
+                                ChangeClaimReason::AuthorizedCanonical
+                            }
+                            Some(
+                                ProtocolDisposition::Invalid
+                                | ProtocolDisposition::UnsupportedRevision,
                             )
+                            | None => ChangeClaimReason::InvalidReferencedControl,
                         }
                     }
-                    ReferencedControlState::Pending(_) | ReferencedControlState::Missing => {
-                        ChangeClaimReason::UnresolvedControl
-                    }
-                    ReferencedControlState::UnsupportedRevision => {
-                        ChangeClaimReason::InvalidReferencedControl
-                    }
-                    ReferencedControlState::DynamicInvalid(_)
-                        if matches!(
-                            batch.dispositions.get(&hash),
-                            Some(ProtocolDisposition::Excluded)
-                        ) =>
-                    {
-                        ChangeClaimReason::AuthorizedCurrentExcluded
-                    }
-                    ReferencedControlState::WrongKind
-                    | ReferencedControlState::WrongCoordinate
-                    | ReferencedControlState::StaticInvalid
-                    | ReferencedControlState::DynamicInvalid(_) => {
-                        ChangeClaimReason::InvalidReferencedControl
-                    }
-                };
-                Some(Ok(ChangeCarrierOutcome::new(
-                    claim.event_id,
-                    claim.change_hash,
-                    claim.control_id,
-                    reason,
-                )))
-            })
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|()| {
-                if cancellation.is_cancelled() {
-                    Completion::Cancelled
-                } else {
-                    Completion::BudgetExhausted
                 }
-            })?;
+                ReferencedControlState::NoncanonicalValid(control) => {
+                    charge_evaluation_work(
+                        budget,
+                        cancellation,
+                        WorkCounter::Control,
+                        u64::try_from(control.members().len()).unwrap_or(u64::MAX),
+                    )?;
+                    let authorized = !control.terminal()
+                        && control.members().iter().any(|member| {
+                            member.actor == semantic.actor
+                                && member.device == claim.author
+                                && member.roles.contains(&Role::Write)
+                        });
+                    if !authorized {
+                        ChangeClaimReason::Unauthorized
+                    } else {
+                        noncanonical_branch_claim_reason(
+                            batch.referenced_branch_change_disposition(claim.control_id, hash),
+                        )
+                    }
+                }
+                ReferencedControlState::Pending(_) | ReferencedControlState::Missing => {
+                    ChangeClaimReason::UnresolvedControl
+                }
+                ReferencedControlState::UnsupportedRevision => {
+                    ChangeClaimReason::InvalidReferencedControl
+                }
+                ReferencedControlState::DynamicInvalid(_)
+                    if matches!(
+                        batch.dispositions.get(&hash),
+                        Some(ProtocolDisposition::Excluded)
+                    ) =>
+                {
+                    ChangeClaimReason::AuthorizedCurrentExcluded
+                }
+                ReferencedControlState::WrongKind
+                | ReferencedControlState::WrongCoordinate
+                | ReferencedControlState::StaticInvalid
+                | ReferencedControlState::DynamicInvalid(_) => {
+                    ChangeClaimReason::InvalidReferencedControl
+                }
+            };
+            outcomes.push(ChangeCarrierOutcome::new(
+                claim.event_id,
+                claim.change_hash,
+                claim.control_id,
+                reason,
+            ));
+        }
         let states = outcomes
             .iter()
             .map(|outcome| outcome.reason)
@@ -3207,21 +3191,22 @@ fn charge_evaluation_work(
 #[cfg(test)]
 mod tests {
     use super::{
-        ChangeCarrierOutcome, ChangeClaimReason, CheckpointDownstreamStage,
+        BatchEvaluationReport, ChangeCarrierOutcome, ChangeClaimReason, CheckpointDownstreamStage,
         CheckpointReportAttributionStage, CheckpointWorkObserver, CheckpointWorkStop,
         FinalLineageChangeState, FinalizationDimension, FinalizationPermitError,
         FinalizationReservationUnit, InterruptedReportPass, PreparedCheckpointInputs,
         ReportFinalizationPermit, ReportFinalizationPlan, assembly_status,
         change_carrier_disposition, charge_checkpoint_work, checkpoint_control_refusal,
         checkpoint_preflight_refusal, join_status, noncanonical_branch_claim_reason,
-        reduce_reasoned_change_outcome, scoped_dynamic_event_disposition_records,
-        verify_prepared_checkpoints,
+        reduce_change_dispositions, reduce_reasoned_change_outcome,
+        scoped_dynamic_event_disposition_records, verify_prepared_checkpoints,
     };
     use crate::CheckpointVerificationStatus as Status;
     use crate::authoring::{ActorState, AuthoringDocument};
     use crate::carrier::VerifiedCarrier;
     use crate::carrier::checkpoint_chunk::ValidatedCheckpointChunkCarrier;
     use crate::carrier::checkpoint_descriptor::ValidatedCheckpointDescriptorCarrier;
+    use crate::carrier::control::{DeviceGrant, ValidatedControlCarrier, ValidatedControlContent};
     use crate::checkpoint::authorize::DescriptorControlOutcome;
     use crate::checkpoint::join::JoinError;
     use crate::checkpoint::{
@@ -3230,14 +3215,192 @@ mod tests {
     use crate::evidence::corpus_builder::EvidenceCorpus;
     use crate::evidence::document_view::DocumentEvidenceView;
     use crate::evidence::event::{EventEvidence, RawChecksum};
-    use crate::evidence::indexes::{TrustedIndexes, derive_trusted_indexes};
+    use crate::evidence::indexes::{
+        ChangeCarrierClaim, SemanticChangeRecord, TrustedIndexes, derive_trusted_indexes,
+    };
     use crate::reference::epoch_engine::AcceptedAtControl;
+    use crate::types::role::Role;
     use crate::{
         ActorId, ChangeHash, CheckpointVerificationResult, ChunkHash, ControllerPublicKey,
         DevicePublicKey, DocumentCoordinate, DocumentId, EventId, ProtocolDisposition,
         ResolvedManifestAvailability, SnapshotHash, WorkBudget, WorkCounter,
     };
     use sha2::{Digest, Sha256};
+
+    #[test]
+    fn carrier_claim_traversal_preserves_the_original_typed_stop() {
+        let coordinate = DocumentCoordinate::new(
+            ControllerPublicKey::from_bytes([0x11; 32]),
+            DocumentId::from_bytes([0x12; 32]),
+        );
+        let hash = ChangeHash::from_bytes([0x13; 32]);
+        let event_id = EventId::from_bytes([0x14; 32]);
+        let control_id = EventId::from_bytes([0x15; 32]);
+        let actor = ActorId::from_bytes([0x16; 32]);
+        let mut indexes = TrustedIndexes::default();
+        indexes
+            .coordinates
+            .change_hashes
+            .insert(coordinate, std::collections::BTreeSet::from([hash]));
+        indexes
+            .changes
+            .prior_claims_by_coordinate
+            .entry(coordinate)
+            .or_default()
+            .insert(hash, std::collections::BTreeSet::from([event_id]));
+        indexes.changes.claims_by_event.insert(
+            event_id,
+            ChangeCarrierClaim {
+                event_id,
+                coordinate,
+                change_hash: hash,
+                control_id,
+                author: DevicePublicKey::from_bytes([0x17; 32]),
+            },
+        );
+        indexes.changes.semantic_by_hash.insert(
+            hash,
+            SemanticChangeRecord {
+                actor,
+                sequence: 1,
+                start_op: 1,
+                operation_count: 1,
+                dependencies: std::collections::BTreeSet::new(),
+            },
+        );
+        let author = DevicePublicKey::from_bytes([0x17; 32]);
+        let control = ValidatedControlCarrier::for_test(
+            control_id,
+            coordinate.controller(),
+            coordinate,
+            None,
+            ValidatedControlContent {
+                base_heads: Vec::new(),
+                members: vec![DeviceGrant {
+                    account: None,
+                    actor,
+                    device: author,
+                    roles: vec![Role::Write],
+                }],
+                predecessor: None,
+                sequence: 0,
+                successor: None,
+                terminal: false,
+            },
+        );
+        let corpus = EvidenceCorpus {
+            events: std::collections::BTreeMap::from([(
+                control_id,
+                EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::Control(Box::new(control)),
+                    raw_checksum: RawChecksum::test_only([0x18; 32]),
+                },
+            )]),
+            invalid: std::collections::BTreeMap::new(),
+            duplicates: Vec::new(),
+            indexes,
+        };
+        let view = DocumentEvidenceView::derive(&corpus, coordinate);
+        let batch = || BatchEvaluationReport {
+            canonical_controls: Vec::new(),
+            control_dispositions: std::collections::BTreeMap::new(),
+            accepted_at_control: std::collections::BTreeMap::new(),
+            statefully_valid_controls: std::collections::BTreeSet::new(),
+            branch_states: std::collections::BTreeMap::new(),
+            branch_change_dispositions: std::collections::BTreeMap::new(),
+            dispositions: std::collections::BTreeMap::new(),
+            accepted_changes: std::collections::BTreeSet::new(),
+            heads: std::collections::BTreeSet::new(),
+            materialized_document: None,
+            integrity_alerts: Vec::new(),
+            completion: crate::Completion::Complete,
+            failure: None,
+        };
+
+        let budget_observations = std::cell::Cell::new(0_u64);
+        let budget_cancellation = || {
+            budget_observations.set(budget_observations.get().saturating_add(1));
+            budget_observations.get() > 2
+        };
+        let mut exhausted = WorkBudget::new(0, 1);
+        let mut budget_batch = batch();
+        assert_eq!(
+            reduce_change_dispositions(
+                &view,
+                &mut budget_batch,
+                &mut exhausted,
+                &budget_cancellation,
+            ),
+            Err(crate::Completion::BudgetExhausted)
+        );
+        assert_eq!(budget_observations.get(), 2);
+        assert_eq!(exhausted.consumed().get(WorkCounter::GraphNode), 1);
+        assert_eq!(exhausted.consumed().get(WorkCounter::Carrier), 0);
+
+        let cancellation_observations = std::cell::Cell::new(0_u64);
+        let cancellation = || {
+            cancellation_observations.set(cancellation_observations.get().saturating_add(1));
+            cancellation_observations.get() >= 2
+        };
+        let mut available = WorkBudget::new(0, 2);
+        let mut cancelled_batch = batch();
+        assert_eq!(
+            reduce_change_dispositions(&view, &mut cancelled_batch, &mut available, &cancellation,),
+            Err(crate::Completion::Cancelled)
+        );
+        assert_eq!(cancellation_observations.get(), 2);
+        assert_eq!(available.consumed().get(WorkCounter::GraphNode), 1);
+        assert_eq!(available.consumed().get(WorkCounter::Carrier), 0);
+
+        let member_budget_observations = std::cell::Cell::new(0_u64);
+        let member_budget_cancellation = || {
+            member_budget_observations.set(member_budget_observations.get().saturating_add(1));
+            member_budget_observations.get() > 3
+        };
+        let mut member_exhausted = WorkBudget::new(0, 2);
+        let mut member_budget_batch = batch();
+        member_budget_batch
+            .control_dispositions
+            .insert(control_id, ProtocolDisposition::Accepted);
+        assert_eq!(
+            reduce_change_dispositions(
+                &view,
+                &mut member_budget_batch,
+                &mut member_exhausted,
+                &member_budget_cancellation,
+            ),
+            Err(crate::Completion::BudgetExhausted)
+        );
+        assert_eq!(member_budget_observations.get(), 3);
+        assert_eq!(member_exhausted.consumed().get(WorkCounter::GraphNode), 1);
+        assert_eq!(member_exhausted.consumed().get(WorkCounter::Carrier), 1);
+        assert_eq!(member_exhausted.consumed().get(WorkCounter::Control), 0);
+
+        let member_cancellation_observations = std::cell::Cell::new(0_u64);
+        let member_cancellation = || {
+            member_cancellation_observations
+                .set(member_cancellation_observations.get().saturating_add(1));
+            member_cancellation_observations.get() >= 3
+        };
+        let mut member_available = WorkBudget::new(0, 3);
+        let mut member_cancelled_batch = batch();
+        member_cancelled_batch
+            .control_dispositions
+            .insert(control_id, ProtocolDisposition::Accepted);
+        assert_eq!(
+            reduce_change_dispositions(
+                &view,
+                &mut member_cancelled_batch,
+                &mut member_available,
+                &member_cancellation,
+            ),
+            Err(crate::Completion::Cancelled)
+        );
+        assert_eq!(member_cancellation_observations.get(), 3);
+        assert_eq!(member_available.consumed().get(WorkCounter::GraphNode), 1);
+        assert_eq!(member_available.consumed().get(WorkCounter::Carrier), 1);
+        assert_eq!(member_available.consumed().get(WorkCounter::Control), 0);
+    }
 
     #[test]
     fn dynamic_event_records_reject_foreign_membership() {

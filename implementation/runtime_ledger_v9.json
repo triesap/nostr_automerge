@@ -1,15 +1,15 @@
 {
   "schema": "nostr_automerge.runtime_ledger.v9.v1",
   "status": "in_progress",
-  "rcld": 83,
+  "rcld": 84,
   "cursor": {
-    "active_step": "step_1186",
-    "next_step": "step_1187",
+    "active_step": "step_1187",
+    "next_step": "step_1188",
     "last_step": "step_1283",
-    "remaining_checkpoint_count": 98,
-    "first_rcld": 83,
+    "remaining_checkpoint_count": 97,
+    "first_rcld": 84,
     "last_rcld": 94,
-    "remaining_rcld_count": 12
+    "remaining_rcld_count": 11
   },
   "authority_projection": {
     "binding": "monotonic_stage_projection",
@@ -408,6 +408,16 @@
       "candidate": "c4ec8901958c6a3f7db940f61eac646fde8c8f6e",
       "owner_class": "public",
       "gate_ids": ["V-EVIDENCE"],
+      "requirement_ids": ["NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_085", "FINDING_086", "FINDING_087"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1186",
+      "candidate": "2addba148fecc8039ee26084ae499e0602c5f4ed",
+      "owner_class": "public",
+      "gate_ids": ["V-CONF"],
       "requirement_ids": ["NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
       "finding_ids": ["FINDING_085", "FINDING_086", "FINDING_087"],
       "deviation_ids": [],

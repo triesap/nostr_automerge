@@ -8610,7 +8610,6 @@ fn finding_074_invalid_carrier_is_independent_of_excluded_hash() {
 }
 
 #[test]
-#[ignore = "expected to fail until FINDING_083 closes"]
 #[allow(clippy::expect_used)]
 fn finding_083_budget_stop_is_not_relabelled_by_cancellation_requery() {
     let controller = TestSigner::from_byte(120);
@@ -8636,7 +8635,7 @@ fn finding_083_budget_stop_is_not_relabelled_by_cancellation_requery() {
     assert_eq!(
         (report.completion(), observations.get()),
         (Completion::BudgetExhausted, 1),
-        "FINDING_083 reproduced: a typed budget stop is relabelled by a repeated cancellation observation"
+        "FINDING_083 regression: budget exhaustion must not be relabelled by a repeated cancellation observation"
     );
 }
 

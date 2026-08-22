@@ -1,13 +1,13 @@
 # Remediation V9 Rust Baseline Reproductions
 
-Status: rolling closure — one regression fixed and eleven cases still reproduced
+Status: rolling closure — two regressions fixed and ten cases still reproduced
 
-The `FINDING_073` checkpoint-precedence reproduction is now an enabled passing
-regression. Nine ignored tests continue to encode behavior-level expected
-failures for the still-open public Rust findings. Ordinary Rust test targets
-remain green because only the still-open cases stay ignored. The tests do not
-inspect source text and do not change protocol behavior, signed fixtures, or
-authority data.
+The `FINDING_073` checkpoint-precedence and `FINDING_083` typed-stop
+reproductions are now enabled passing regressions. Eight ignored tests continue
+to encode behavior-level expected failures for the still-open public Rust
+findings. Ordinary Rust test targets remain green because only the still-open
+cases stay ignored. The tests do not inspect source text and do not change
+protocol behavior, signed fixtures, or authority data.
 
 Two isolated non-libtest probes cover defects that cannot be represented as a
 passing Rust type check. A nested, lockfile-pinned compile probe remains
@@ -24,10 +24,10 @@ Run the repository-owned expected-failure harness with:
 python3 scripts/reproduce_remediation_v9.py --verify-remediation-state
 ```
 
-The harness runs every test by its exact name. It requires the fixed regression
-to be enabled and green, rejects stale ignored or expected-failure acceptance,
-and succeeds for each open case only when that case fails with its exact
-reviewed diagnostic. Rust invocations are routed through the configured
+The harness runs every test by its exact name. It requires both fixed
+regressions to be enabled and green, rejects stale ignored or expected-failure
+acceptance, and succeeds for each open case only when that case fails with its
+exact reviewed diagnostic. Rust invocations are routed through the configured
 external-build launcher.
 
 | Finding | Reproduction | Closing RCLD |
@@ -41,7 +41,7 @@ external-build launcher.
 | `FINDING_079` | The aggregate reducer can create `unsupported_revision` semantic `ChangeHash` state from an unsupported carrier without verified canonical change bytes. | 84 |
 | `FINDING_081` | The typed report lacks a revision getter, and its parts constructor accepts an incomplete report containing canonical state and arbitrary nonempty-domain digests. | 85, 86 |
 | `FINDING_082` | Reevaluation compares canonical summaries after the current evaluation stops and adds a reorganization alert to an incomplete report. | 85, 87 |
-| `FINDING_083` | A budget failure is relabelled as cancellation after a second observation of a stateful callback. | 84, 89 |
+| `FINDING_083` | The enabled regression preserves budget exhaustion after one stateful cancellation observation; carrier-claim charging now propagates either typed stop without re-querying. | 84 (public carrier path closed), 89 |
 | `FINDING_084` | Checkpoint assembly sorts the caller's target-sized chunk slice before observing immediate cancellation. | 82, 89 |
 
 These twelve cases cover all eleven reviewed public Rust findings. They are

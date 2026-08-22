@@ -154,30 +154,22 @@ PREDECESSOR_CANDIDATES = (
     "b09085c78bfe664500f596589a93ac25ff9981c7",
     "d956d20699508ec8e54b660fa634ff68df323846",
     "c4ec8901958c6a3f7db940f61eac646fde8c8f6e",
+    "2addba148fecc8039ee26084ae499e0602c5f4ed",
 )
 CLOSURE_PATHS = frozenset(
     {
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "crates/nostr_automerge/tests/public_engine_api.rs",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
+        "docs/execution/remediation_v9/reproductions.md",
         "implementation/runtime_ledger_v9.json",
-        "reports/checkpoint_parity_v9.json",
         "reports/spec_baseline.txt",
-        "scripts/validate_checkpoint_parity_v9.py",
-        "scripts/validate_private_reproduction_boundary_v9.py",
+        "scripts/reproduce_remediation_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
-        "scripts/validate_spec.py",
-        "tools/nostr_automerge_xtask/src/validate.rs",
-        "tools/validation/checkpoint_parity_v9.schema.json",
-        "tools/validation/runtime_ledger_v9.schema.json",
     }
 )
-CLOSURE_NEW_PATHS = frozenset(
-    {
-        "reports/checkpoint_parity_v9.json",
-        "scripts/validate_checkpoint_parity_v9.py",
-        "tools/validation/checkpoint_parity_v9.schema.json",
-    }
-)
+CLOSURE_NEW_PATHS = frozenset()
 EXPECTED_GATES = (
     ("V-AUTH",),
     ("V-AUTH",),
@@ -207,6 +199,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-TS",),
     ("V-EVIDENCE",),
+    ("V-CONF",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -265,6 +258,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-DISPOSITION-005", "NCRDT-STATE-002"),
     ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -302,6 +296,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_086",),
     ("FINDING_086",),
     ("FINDING_085", "FINDING_086"),
+    ("FINDING_085", "FINDING_086", "FINDING_087"),
     ("FINDING_085", "FINDING_086", "FINDING_087"),
 )
 FORBIDDEN_KEY_WORDS = {
@@ -895,7 +890,7 @@ def validate_predecessors(
     checkpoint: dict[str, Any],
 ) -> None:
     require(isinstance(rows, list), "predecessors:type")
-    approved = [expected_predecessor(index) for index in range(28)]
+    approved = [expected_predecessor(index) for index in range(29)]
     require(rows == approved, "predecessors:approved_projection")
     require(active == 1158 + len(approved), "predecessors:approved_cursor")
     expected_keys = {

@@ -18,6 +18,10 @@ FIXED_CASES = (
         "public_engine_api",
         "finding_073_checkpoint_authorization_precedes_history",
     ),
+    (
+        "public_engine_api",
+        "finding_083_budget_stop_is_not_relabelled_by_cancellation_requery",
+    ),
 )
 OPEN_CASES = (
     (
@@ -82,15 +86,6 @@ OPEN_CASES = (
         "crates/nostr_automerge/tests/public_engine_api.rs",
         "1",
         "0",
-    ),
-    (
-        "public_engine_api",
-        "finding_083_budget_stop_is_not_relabelled_by_cancellation_requery",
-        "FINDING_083 reproduced: a typed budget stop is relabelled by a repeated cancellation observation",
-        "left == right",
-        "crates/nostr_automerge/tests/public_engine_api.rs",
-        "(Cancelled, 2)",
-        "(BudgetExhausted, 1)",
     ),
     (
         "lib",
