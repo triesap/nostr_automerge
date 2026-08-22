@@ -155,6 +155,7 @@ PREDECESSOR_CANDIDATES = (
     "d956d20699508ec8e54b660fa634ff68df323846",
     "c4ec8901958c6a3f7db940f61eac646fde8c8f6e",
     "2addba148fecc8039ee26084ae499e0602c5f4ed",
+    "3880c2066981aa5b380e974acecc23424bf5dd13",
 )
 CLOSURE_PATHS = frozenset(
     {
@@ -200,6 +201,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-EVIDENCE",),
     ("V-CONF",),
+    ("V-RESOURCE",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -259,6 +261,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-INTERRUPT-001", "NCRDT-RESOURCE-014"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -298,6 +301,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_085", "FINDING_086"),
     ("FINDING_085", "FINDING_086", "FINDING_087"),
     ("FINDING_085", "FINDING_086", "FINDING_087"),
+    ("FINDING_083",),
 )
 FORBIDDEN_KEY_WORDS = {
     "source",
@@ -890,7 +894,7 @@ def validate_predecessors(
     checkpoint: dict[str, Any],
 ) -> None:
     require(isinstance(rows, list), "predecessors:type")
-    approved = [expected_predecessor(index) for index in range(29)]
+    approved = [expected_predecessor(index) for index in range(30)]
     require(rows == approved, "predecessors:approved_projection")
     require(active == 1158 + len(approved), "predecessors:approved_cursor")
     expected_keys = {

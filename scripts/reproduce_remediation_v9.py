@@ -20,19 +20,14 @@ FIXED_CASES = (
     ),
     (
         "public_engine_api",
+        "finding_074_invalid_carrier_is_independent_of_excluded_hash",
+    ),
+    (
+        "public_engine_api",
         "finding_083_budget_stop_is_not_relabelled_by_cancellation_requery",
     ),
 )
 OPEN_CASES = (
-    (
-        "public_engine_api",
-        "finding_074_invalid_carrier_is_independent_of_excluded_hash",
-        "FINDING_074 reproduced: known-invalid carrier inherits the excluded semantic-hash outcome",
-        "left == right",
-        "crates/nostr_automerge/tests/public_engine_api.rs",
-        "Some(Excluded)",
-        "Some(Invalid)",
-    ),
     (
         "lib",
         "reference::evaluate::tests::finding_075_interrupted_batch_discards_all_canonical_progress",
@@ -1185,7 +1180,7 @@ def main() -> int:
             f"{error}:\nSTDOUT:\n{revision.stdout}\nSTDERR:\n{revision.stderr}"
         ) from error
     print("PASS: reproduced missing typed report revision API")
-    print(f"PASS: verified {len(FIXED_CASES)} fixed remediation-v9 Rust case")
+    print(f"PASS: verified {len(FIXED_CASES)} fixed remediation-v9 Rust cases")
     print(f"PASS: reproduced {len(OPEN_CASES) + 2} still-open remediation-v9 Rust cases")
     return 0
 

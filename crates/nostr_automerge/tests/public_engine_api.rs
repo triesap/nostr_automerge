@@ -8536,7 +8536,6 @@ fn finding_073_checkpoint_authorization_precedes_history() {
 }
 
 #[test]
-#[ignore = "expected to fail until FINDING_074 closes"]
 #[allow(clippy::expect_used)]
 fn finding_074_invalid_carrier_is_independent_of_excluded_hash() {
     let scenario = signed_engine_scenario();
@@ -8605,7 +8604,7 @@ fn finding_074_invalid_carrier_is_independent_of_excluded_hash() {
     assert_eq!(
         event_disposition(&report, invalid_claim_id),
         Some(ProtocolDisposition::Invalid),
-        "FINDING_074 reproduced: known-invalid carrier inherits the excluded semantic-hash outcome"
+        "FINDING_074 regression: a known-invalid carrier must remain invalid when its semantic hash is excluded"
     );
 }
 

@@ -1,13 +1,13 @@
 # Remediation V9 Rust Baseline Reproductions
 
-Status: rolling closure — two regressions fixed and ten cases still reproduced
+Status: rolling closure — three regressions fixed and nine cases still reproduced
 
-The `FINDING_073` checkpoint-precedence and `FINDING_083` typed-stop
-reproductions are now enabled passing regressions. Eight ignored tests continue
-to encode behavior-level expected failures for the still-open public Rust
-findings. Ordinary Rust test targets remain green because only the still-open
-cases stay ignored. The tests do not inspect source text and do not change
-protocol behavior, signed fixtures, or authority data.
+The `FINDING_073` checkpoint-precedence, `FINDING_074` carrier-independence,
+and `FINDING_083` typed-stop reproductions are now enabled passing regressions.
+Seven ignored tests continue to encode behavior-level expected failures for
+the still-open public Rust findings. Ordinary Rust test targets remain green
+because only the still-open cases stay ignored. The tests do not inspect source
+text and do not change protocol behavior, signed fixtures, or authority data.
 
 Two isolated non-libtest probes cover defects that cannot be represented as a
 passing Rust type check. A nested, lockfile-pinned compile probe remains
@@ -24,7 +24,7 @@ Run the repository-owned expected-failure harness with:
 python3 scripts/reproduce_remediation_v9.py --verify-remediation-state
 ```
 
-The harness runs every test by its exact name. It requires both fixed
+The harness runs every test by its exact name. It requires all fixed
 regressions to be enabled and green, rejects stale ignored or expected-failure
 acceptance, and succeeds for each open case only when that case fails with its
 exact reviewed diagnostic. Rust invocations are routed through the configured
@@ -33,7 +33,7 @@ external-build launcher.
 | Finding | Reproduction | Closing RCLD |
 | --- | --- | --- |
 | `FINDING_073` | The enabled signed regression proves that a descriptor referencing a statically invalid control is rejected before history work. | 82 (public Rust closed) |
-| `FINDING_074` | A carrier referencing a dynamically invalid control incorrectly inherits its semantic hash's final `excluded` outcome. | 84 |
+| `FINDING_074` | The enabled signed regression proves that a carrier referencing a dynamically invalid control remains invalid even when its semantic hash is excluded. | 84 (dynamic-invalid special case closed; broader separation continues in `step_1189`) |
 | `FINDING_075` | An interrupted internal batch retains a canonical control, two control dispositions, and an integrity alert instead of returning constant-size no progress. | 85, 86 |
 | `FINDING_076` | The coarse finalization ledger accepts the fixed-overhead pass before its preceding named passes. | 87, 88 |
 | `FINDING_077` | Canonical raw change bytes are copied into the target memo rather than retained through one shared immutable allocation. | 89, 90, 91 |

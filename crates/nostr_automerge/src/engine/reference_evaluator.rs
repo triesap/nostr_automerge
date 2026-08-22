@@ -831,14 +831,6 @@ fn reduce_change_dispositions(
                 ReferencedControlState::UnsupportedRevision => {
                     ChangeClaimReason::InvalidReferencedControl
                 }
-                ReferencedControlState::DynamicInvalid(_)
-                    if matches!(
-                        batch.dispositions.get(&hash),
-                        Some(ProtocolDisposition::Excluded)
-                    ) =>
-                {
-                    ChangeClaimReason::AuthorizedCurrentExcluded
-                }
                 ReferencedControlState::WrongKind
                 | ReferencedControlState::WrongCoordinate
                 | ReferencedControlState::StaticInvalid
