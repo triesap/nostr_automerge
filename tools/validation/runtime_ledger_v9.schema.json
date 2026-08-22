@@ -12,7 +12,8 @@
     "findings",
     "predecessors",
     "opaque_reproduction",
-    "opaque_checkpoint"
+    "opaque_checkpoint",
+    "checkpoint_parity"
   ],
   "properties": {
     "schema": {"const": "nostr_automerge.runtime_ledger.v9.v1"},
@@ -181,6 +182,27 @@
         "fixed_regression_count": {"const": 5},
         "open_regression_count": {"const": 18},
         "execution_result": {"const": "pass"},
+        "result": {"const": "pass"},
+        "publication_status": {"const": "held"}
+      }
+    },
+    "checkpoint_parity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpoint", "gate_id", "result_identity_sha256", "state_count",
+        "signed_scenario_count", "signed_event_count", "engine_vector_count",
+        "delivery_order_count", "result", "publication_status"
+      ],
+      "properties": {
+        "checkpoint": {"const": "step_1186"},
+        "gate_id": {"const": "GATE_V9_PRIVATE_CHECKPOINT"},
+        "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "state_count": {"const": 11},
+        "signed_scenario_count": {"const": 22},
+        "signed_event_count": {"const": 75},
+        "engine_vector_count": {"const": 11},
+        "delivery_order_count": {"const": 8},
         "result": {"const": "pass"},
         "publication_status": {"const": "held"}
       }

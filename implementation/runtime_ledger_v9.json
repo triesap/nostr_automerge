@@ -3,10 +3,10 @@
   "status": "in_progress",
   "rcld": 83,
   "cursor": {
-    "active_step": "step_1185",
-    "next_step": "step_1186",
+    "active_step": "step_1186",
+    "next_step": "step_1187",
     "last_step": "step_1283",
-    "remaining_checkpoint_count": 99,
+    "remaining_checkpoint_count": 98,
     "first_rcld": 83,
     "last_rcld": 94,
     "remaining_rcld_count": 12
@@ -402,6 +402,16 @@
       "finding_ids": ["FINDING_085", "FINDING_086"],
       "deviation_ids": [],
       "result": "pass"
+    },
+    {
+      "step": "step_1185",
+      "candidate": "c4ec8901958c6a3f7db940f61eac646fde8c8f6e",
+      "owner_class": "public",
+      "gate_ids": ["V-EVIDENCE"],
+      "requirement_ids": ["NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_085", "FINDING_086", "FINDING_087"],
+      "deviation_ids": [],
+      "result": "pass"
     }
   ],
   "opaque_reproduction": {
@@ -427,6 +437,18 @@
     "fixed_regression_count": 5,
     "open_regression_count": 18,
     "execution_result": "pass",
+    "result": "pass",
+    "publication_status": "held"
+  },
+  "checkpoint_parity": {
+    "checkpoint": "step_1186",
+    "gate_id": "GATE_V9_PRIVATE_CHECKPOINT",
+    "result_identity_sha256": "b55220e99db3bf33ff9473c820a7fc4a59fb60d3fb90e847a903d94a5939606b",
+    "state_count": 11,
+    "signed_scenario_count": 22,
+    "signed_event_count": 75,
+    "engine_vector_count": 11,
+    "delivery_order_count": 8,
     "result": "pass",
     "publication_status": "held"
   }

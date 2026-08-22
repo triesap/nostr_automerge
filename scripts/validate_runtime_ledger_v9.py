@@ -18,6 +18,7 @@ REPORT = "reports/opaque_reproduction_v9.json"
 REPORT_SCHEMA = "tools/validation/opaque_reproduction_v9.schema.json"
 CHECKPOINT_REPORT = "reports/opaque_checkpoint_v9.json"
 CHECKPOINT_REPORT_SCHEMA = "tools/validation/opaque_checkpoint_v9.schema.json"
+PARITY_REPORT = "reports/checkpoint_parity_v9.json"
 LEDGER = "implementation/runtime_ledger_v9.json"
 LEDGER_SCHEMA = "tools/validation/runtime_ledger_v9.schema.json"
 PLAN = "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md"
@@ -29,13 +30,16 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "5bc008954662f093019106a26673f9c8954ff2c06f79f819f876de059422bf39"
+    "bbab189460863af3992a7e920bc134da08ff5354040a4873bd78fd6ebdc43717"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
 )
 APPROVED_CHECKPOINT_RESULT_IDENTITY = (
     "a92222c28f7afa12831e18658de88235c8905b93b25d25bae7477e295edf2813"
+)
+APPROVED_CHECKPOINT_PARITY_RESULT_IDENTITY = (
+    "b55220e99db3bf33ff9473c820a7fc4a59fb60d3fb90e847a903d94a5939606b"
 )
 APPROVED_CHECKPOINT_IDENTITIES = (
     ("checkpoint_lock", "b52dc6948a87ea49ae8fb1fcf8a47233e726dacb699624732bc66f54b621e8f5"),
@@ -149,26 +153,29 @@ PREDECESSOR_CANDIDATES = (
     "6f9e956ba77652de29fbf85a1a94d0a4cd4a8dc1",
     "b09085c78bfe664500f596589a93ac25ff9981c7",
     "d956d20699508ec8e54b660fa634ff68df323846",
+    "c4ec8901958c6a3f7db940f61eac646fde8c8f6e",
 )
 CLOSURE_PATHS = frozenset(
     {
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
-        "reports/opaque_checkpoint_v9.json",
+        "reports/checkpoint_parity_v9.json",
         "reports/spec_baseline.txt",
-        "scripts/validate_authority_transition_v10.py",
+        "scripts/validate_checkpoint_parity_v9.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
         "scripts/validate_spec.py",
-        "tools/validation/opaque_checkpoint_v9.schema.json",
+        "tools/nostr_automerge_xtask/src/validate.rs",
+        "tools/validation/checkpoint_parity_v9.schema.json",
         "tools/validation/runtime_ledger_v9.schema.json",
     }
 )
 CLOSURE_NEW_PATHS = frozenset(
     {
-        "reports/opaque_checkpoint_v9.json",
-        "tools/validation/opaque_checkpoint_v9.schema.json",
+        "reports/checkpoint_parity_v9.json",
+        "scripts/validate_checkpoint_parity_v9.py",
+        "tools/validation/checkpoint_parity_v9.schema.json",
     }
 )
 EXPECTED_GATES = (
@@ -199,6 +206,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-TS",),
     ("V-TS",),
+    ("V-EVIDENCE",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -256,6 +264,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-RESOURCE-014"),
     ("NCRDT-DISPOSITION-005", "NCRDT-STATE-002"),
     ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -293,6 +302,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_086",),
     ("FINDING_086",),
     ("FINDING_085", "FINDING_086"),
+    ("FINDING_085", "FINDING_086", "FINDING_087"),
 )
 FORBIDDEN_KEY_WORDS = {
     "source",
@@ -859,7 +869,7 @@ def expected_predecessor(index: int) -> dict[str, Any]:
     return {
         "step": f"step_{1158 + index}",
         "candidate": PREDECESSOR_CANDIDATES[index],
-        "owner_class": "opaque_private" if index == 8 or index >= 20 else "public",
+        "owner_class": "opaque_private" if index == 8 or 20 <= index <= 26 else "public",
         "gate_ids": list(EXPECTED_GATES[index]),
         "requirement_ids": list(EXPECTED_REQUIREMENTS[index]),
         "finding_ids": list(EXPECTED_FINDINGS[index]),
@@ -885,7 +895,7 @@ def validate_predecessors(
     checkpoint: dict[str, Any],
 ) -> None:
     require(isinstance(rows, list), "predecessors:type")
-    approved = [expected_predecessor(index) for index in range(27)]
+    approved = [expected_predecessor(index) for index in range(28)]
     require(rows == approved, "predecessors:approved_projection")
     require(active == 1158 + len(approved), "predecessors:approved_cursor")
     expected_keys = {
@@ -986,6 +996,7 @@ def validate_runtime_ledger(
     ledger: dict[str, Any],
     reproduction: dict[str, Any],
     checkpoint: dict[str, Any],
+    parity: dict[str, Any],
 ) -> None:
     expected_keys = {
         "schema",
@@ -998,6 +1009,7 @@ def validate_runtime_ledger(
         "predecessors",
         "opaque_reproduction",
         "opaque_checkpoint",
+        "checkpoint_parity",
     }
     require(set(ledger) == expected_keys, "ledger:keys")
     require(ledger.get("schema") == "nostr_automerge.runtime_ledger.v9.v1", "ledger:schema")
@@ -1127,12 +1139,35 @@ def validate_runtime_ledger(
         },
         "ledger:checkpoint_binding",
     )
+    conformance = parity["conformance"]
+    require(
+        parity.get("result_identity_sha256")
+        == APPROVED_CHECKPOINT_PARITY_RESULT_IDENTITY,
+        "ledger:parity_result_identity",
+    )
+    require(
+        ledger.get("checkpoint_parity")
+        == {
+            "checkpoint": parity["checkpoint"],
+            "gate_id": parity["gate_id"],
+            "result_identity_sha256": parity["result_identity_sha256"],
+            "state_count": parity["comparison"]["state_count"],
+            "signed_scenario_count": conformance["signed_scenario_count"],
+            "signed_event_count": conformance["signed_event_count"],
+            "engine_vector_count": conformance["engine_vector_count"],
+            "delivery_order_count": conformance["delivery_order_count"],
+            "result": parity["status"],
+            "publication_status": parity["publication_status"],
+        },
+        "ledger:parity_binding",
+    )
     validate_no_leak(ledger, "ledger:boundary")
 
 
 def mutation_self_test(
     reproduction: dict[str, Any],
     checkpoint: dict[str, Any],
+    parity: dict[str, Any],
     ledger: dict[str, Any],
 ) -> int:
     report_mutations: list[tuple[str, dict[str, Any]]] = []
@@ -1230,6 +1265,16 @@ def mutation_self_test(
     checkpoint_count_drift = copy.deepcopy(ledger)
     checkpoint_count_drift["opaque_checkpoint"]["signed_event_count"] += 1
     ledger_mutations.append(("ledger_checkpoint_count", checkpoint_count_drift))
+    forged_parity = copy.deepcopy(ledger)
+    forged_parity["checkpoint_parity"]["result_identity_sha256"] = "f" * 64
+    ledger_mutations.append(("ledger_forged_parity", forged_parity))
+    parity_count_drift = copy.deepcopy(ledger)
+    parity_count_drift["checkpoint_parity"]["state_count"] += 1
+    ledger_mutations.append(("ledger_parity_count", parity_count_drift))
+    coordinated_parity = copy.deepcopy(parity)
+    coordinated_parity["result_identity_sha256"] = "f" * 64
+    coordinated_ledger = copy.deepcopy(ledger)
+    coordinated_ledger["checkpoint_parity"]["result_identity_sha256"] = "f" * 64
     stale_cursor = copy.deepcopy(ledger)
     stale_cursor["cursor"]["active_step"] = "step_1166"
     ledger_mutations.append(("ledger_stale_cursor", stale_cursor))
@@ -1290,11 +1335,22 @@ def mutation_self_test(
         raise LedgerError(f"mutation_survived:{name}")
     for name, mutation in ledger_mutations:
         try:
-            validate_runtime_ledger(mutation, reproduction, checkpoint)
+            validate_runtime_ledger(mutation, reproduction, checkpoint, parity)
         except LedgerError:
             caught += 1
             continue
         raise LedgerError(f"mutation_survived:{name}")
+    try:
+        validate_runtime_ledger(
+            coordinated_ledger,
+            reproduction,
+            checkpoint,
+            coordinated_parity,
+        )
+    except LedgerError:
+        caught += 1
+    else:
+        raise LedgerError("mutation_survived:coordinated_parity_identity")
 
     report_schema = load_object(REPORT_SCHEMA)
     checkpoint_schema = load_object(CHECKPOINT_REPORT_SCHEMA)
@@ -1349,6 +1405,7 @@ def mutation_self_test(
 def main() -> int:
     reproduction = load_object(REPORT)
     checkpoint = load_object(CHECKPOINT_REPORT)
+    parity = load_object(PARITY_REPORT)
     ledger = load_object(LEDGER)
     validate_schema_contract(
         load_object(REPORT_SCHEMA), "opaque_schema", REPORT_SCHEMA_PROJECTION
@@ -1363,14 +1420,15 @@ def main() -> int:
     )
     validate_opaque_reproduction(reproduction)
     validate_opaque_checkpoint(checkpoint)
-    validate_runtime_ledger(ledger, reproduction, checkpoint)
-    mutations = mutation_self_test(reproduction, checkpoint, ledger)
+    validate_runtime_ledger(ledger, reproduction, checkpoint, parity)
+    mutations = mutation_self_test(reproduction, checkpoint, parity, ledger)
     closure_mutations = closure_git_state_self_test()
     print("PASS: remediation-v9 runtime ledger and opaque reproduction import")
     print(f"- predecessors={len(ledger['predecessors'])}")
     print(f"- opaque_reproductions={reproduction['result_classes'][1]['count']}")
     print(f"- checkpoint_candidates={len(checkpoint['candidate_chain'])}")
     print(f"- checkpoint_identities={len(checkpoint['result_identities'])}")
+    print(f"- checkpoint_parity_states={parity['comparison']['state_count']}")
     print(f"- negative_mutations={mutations}")
     print(f"- closure_scope_negative_mutations={closure_mutations}")
     return 0

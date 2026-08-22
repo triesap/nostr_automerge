@@ -1,0 +1,69 @@
+{
+  "schema": "nostr_automerge.checkpoint_parity.v9.v1",
+  "checkpoint": "step_1186",
+  "gate_id": "GATE_V9_PRIVATE_CHECKPOINT",
+  "authority_stage": "checkpoint_expectations_corrected",
+  "status": "pass",
+  "publication_status": "held",
+  "requirement_ids": [
+    "NCRDT-CPAUTH-001",
+    "NCRDT-CPAUTH-002",
+    "NCRDT-CONF-010",
+    "NCRDT-EVIDENCE-006"
+  ],
+  "imported_checkpoint_identity_sha256": "a92222c28f7afa12831e18658de88235c8905b93b25d25bae7477e295edf2813",
+  "public_table": [
+    {"state": "canonical_authorized", "decision": "authorized", "checkpoint_status": null, "disposition": null, "diagnostic": null, "downstream_work": "permitted"},
+    {"state": "missing", "decision": "refused", "checkpoint_status": "pending_control", "disposition": "pending", "diagnostic": null, "downstream_work": "prohibited"},
+    {"state": "pending", "decision": "refused", "checkpoint_status": "pending_control", "disposition": "pending", "diagnostic": null, "downstream_work": "prohibited"},
+    {"state": "noncanonical", "decision": "refused", "checkpoint_status": "unauthorized", "disposition": "invalid", "diagnostic": "checkpoint.history", "downstream_work": "prohibited"},
+    {"state": "wrong_kind", "decision": "refused", "checkpoint_status": "unauthorized", "disposition": "invalid", "diagnostic": "checkpoint.history", "downstream_work": "prohibited"},
+    {"state": "wrong_coordinate", "decision": "refused", "checkpoint_status": "unauthorized", "disposition": "invalid", "diagnostic": "checkpoint.history", "downstream_work": "prohibited"},
+    {"state": "static_invalid", "decision": "refused", "checkpoint_status": "unauthorized", "disposition": "invalid", "diagnostic": "checkpoint.history", "downstream_work": "prohibited"},
+    {"state": "dynamic_invalid", "decision": "refused", "checkpoint_status": "unauthorized", "disposition": "invalid", "diagnostic": "checkpoint.history", "downstream_work": "prohibited"},
+    {"state": "unsupported_revision", "decision": "refused", "checkpoint_status": "unauthorized", "disposition": "invalid", "diagnostic": "checkpoint.history", "downstream_work": "prohibited"},
+    {"state": "role_denied", "decision": "refused", "checkpoint_status": "unauthorized", "disposition": "invalid", "diagnostic": "checkpoint.history", "downstream_work": "prohibited"},
+    {"state": "internal_outcome_absent", "decision": "refused", "checkpoint_status": "unauthorized", "disposition": "invalid", "diagnostic": "checkpoint.history", "downstream_work": "prohibited"}
+  ],
+  "opaque_table": [
+    {"state": "canonical_authorized", "decision": "authorized", "checkpoint_status": null, "disposition": null, "diagnostic": null, "downstream_work": "permitted"},
+    {"state": "missing", "decision": "refused", "checkpoint_status": "pending_control", "disposition": "pending", "diagnostic": null, "downstream_work": "prohibited"},
+    {"state": "pending", "decision": "refused", "checkpoint_status": "pending_control", "disposition": "pending", "diagnostic": null, "downstream_work": "prohibited"},
+    {"state": "noncanonical", "decision": "refused", "checkpoint_status": "unauthorized", "disposition": "invalid", "diagnostic": "checkpoint.history", "downstream_work": "prohibited"},
+    {"state": "wrong_kind", "decision": "refused", "checkpoint_status": "unauthorized", "disposition": "invalid", "diagnostic": "checkpoint.history", "downstream_work": "prohibited"},
+    {"state": "wrong_coordinate", "decision": "refused", "checkpoint_status": "unauthorized", "disposition": "invalid", "diagnostic": "checkpoint.history", "downstream_work": "prohibited"},
+    {"state": "static_invalid", "decision": "refused", "checkpoint_status": "unauthorized", "disposition": "invalid", "diagnostic": "checkpoint.history", "downstream_work": "prohibited"},
+    {"state": "dynamic_invalid", "decision": "refused", "checkpoint_status": "unauthorized", "disposition": "invalid", "diagnostic": "checkpoint.history", "downstream_work": "prohibited"},
+    {"state": "unsupported_revision", "decision": "refused", "checkpoint_status": "unauthorized", "disposition": "invalid", "diagnostic": "checkpoint.history", "downstream_work": "prohibited"},
+    {"state": "role_denied", "decision": "refused", "checkpoint_status": "unauthorized", "disposition": "invalid", "diagnostic": "checkpoint.history", "downstream_work": "prohibited"},
+    {"state": "internal_outcome_absent", "decision": "refused", "checkpoint_status": "unauthorized", "disposition": "invalid", "diagnostic": "checkpoint.history", "downstream_work": "prohibited"}
+  ],
+  "opaque_attribution": {
+    "candidate": "d956d20699508ec8e54b660fa634ff68df323846",
+    "checkpoint_result_identity_sha256": "a92222c28f7afa12831e18658de88235c8905b93b25d25bae7477e295edf2813",
+    "checkpoint_report_projection_sha256": "631759d0441b25f4c99d91406fca386eb4b29a23c86521071274ad293345c00d",
+    "corrected_expectation_projection_sha256": "170d72de39705b0a3aa71cb9c2a7b22a27f6597b1bc5ae8f12d965f0cf30a908",
+    "engine_vector_count": 11,
+    "table_identity_sha256": "91d2d98780f7f68948892a5f70905657e621631e24977953641bc84246d45b2c",
+    "binding_identity_sha256": "300ebc22ef62c57cdcd0c4408ee42a5ab68b90655de53177f5c7d618eebbab2c",
+    "result": "bound"
+  },
+  "comparison": {
+    "projection_class": "external_checkpoint_contract",
+    "state_count": 11,
+    "table_identity_sha256": "91d2d98780f7f68948892a5f70905657e621631e24977953641bc84246d45b2c",
+    "result": "exact"
+  },
+  "conformance": {
+    "signed_scenario_count": 22,
+    "signed_event_count": 75,
+    "public_input_identity_sha256": "17a31eafbd3db5c56fc58dd06f250817bebd092983995a324797e40dc905f194",
+    "engine_vector_count": 11,
+    "delivery_order_count": 8,
+    "fixed_regression_count": 5,
+    "open_regression_count": 18,
+    "public_result": "pass",
+    "opaque_result": "pass"
+  },
+  "result_identity_sha256": "b55220e99db3bf33ff9473c820a7fc4a59fb60d3fb90e847a903d94a5939606b"
+}

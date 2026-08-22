@@ -1,0 +1,110 @@
+{
+  "title": "nostr_automerge checkpoint parity v9",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "checkpoint", "gate_id", "authority_stage", "status",
+    "publication_status", "requirement_ids", "imported_checkpoint_identity_sha256",
+    "public_table", "opaque_table", "opaque_attribution", "comparison", "conformance",
+    "result_identity_sha256"
+  ],
+  "properties": {
+    "schema": {"const": "nostr_automerge.checkpoint_parity.v9.v1"},
+    "checkpoint": {"const": "step_1186"},
+    "gate_id": {"const": "GATE_V9_PRIVATE_CHECKPOINT"},
+    "authority_stage": {"const": "checkpoint_expectations_corrected"},
+    "status": {"const": "pass"},
+    "publication_status": {"const": "held"},
+    "requirement_ids": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^NCRDT-[A-Z0-9]+(?:-[A-Z0-9]+)*$"}
+    },
+    "imported_checkpoint_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "public_table": {"$ref": "#/$defs/state_table"},
+    "opaque_table": {"$ref": "#/$defs/state_table"},
+    "opaque_attribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate", "checkpoint_result_identity_sha256",
+        "checkpoint_report_projection_sha256",
+        "corrected_expectation_projection_sha256", "engine_vector_count",
+        "table_identity_sha256", "binding_identity_sha256", "result"
+      ],
+      "properties": {
+        "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "checkpoint_result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "checkpoint_report_projection_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "corrected_expectation_projection_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "engine_vector_count": {"const": 11},
+        "table_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "binding_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "result": {"const": "bound"}
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projection_class", "state_count", "table_identity_sha256", "result"],
+      "properties": {
+        "projection_class": {"const": "external_checkpoint_contract"},
+        "state_count": {"const": 11},
+        "table_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "result": {"const": "exact"}
+      }
+    },
+    "conformance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "signed_scenario_count", "signed_event_count", "public_input_identity_sha256", "engine_vector_count",
+        "delivery_order_count", "fixed_regression_count", "open_regression_count",
+        "public_result", "opaque_result"
+      ],
+      "properties": {
+        "signed_scenario_count": {"const": 22},
+        "signed_event_count": {"const": 75},
+        "public_input_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "engine_vector_count": {"const": 11},
+        "delivery_order_count": {"const": 8},
+        "fixed_regression_count": {"const": 5},
+        "open_regression_count": {"const": 18},
+        "public_result": {"const": "pass"},
+        "opaque_result": {"const": "pass"}
+      }
+    },
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "$defs": {
+    "state_table": {
+      "type": "array",
+      "minItems": 11,
+      "maxItems": 11,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "state", "decision", "checkpoint_status", "disposition", "diagnostic",
+          "downstream_work"
+        ],
+        "properties": {
+          "state": {
+            "enum": [
+              "canonical_authorized", "missing", "pending", "noncanonical",
+              "wrong_kind", "wrong_coordinate", "static_invalid", "dynamic_invalid",
+              "unsupported_revision", "role_denied", "internal_outcome_absent"
+            ]
+          },
+          "decision": {"enum": ["authorized", "refused"]},
+          "checkpoint_status": {"enum": [null, "pending_control", "unauthorized"]},
+          "disposition": {"enum": [null, "pending", "invalid"]},
+          "diagnostic": {"enum": [null, "checkpoint.history"]},
+          "downstream_work": {"enum": ["permitted", "prohibited"]}
+        }
+      }
+    }
+  }
+}

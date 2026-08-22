@@ -2,7 +2,7 @@
 
 Status: `in_progress`
 
-RCLD 83 has 27 committed predecessors through `step_1184`. The opaque
+RCLD 83 has 28 committed predecessors through `step_1185`. The opaque
 compatibility checkpoint is bound by one approved 40-character candidate and
 one canonical 64-character result identity. Its public projection records nine
 findings, 23 expected-failure reproductions, 276 negative mutations, one
@@ -11,8 +11,15 @@ ordinary check, and a held publication status.
 The checkpoint-parity projection binds seven ordered 40-character candidates,
 six ordered 64-character result identities, 22 signed scenarios, 75 signed
 Events, 11 engine vectors, eight delivery orders, five fixed regressions, and
-18 open regressions. Its environment-independent execution result is `pass`,
-and its publication status is `held`.
+18 open regressions. The 11-row opaque state table is attributable to the
+imported checkpoint result identity and its exact checkpoint-report and
+corrected-expectation projection identities, not to an independently asserted
+copy: the closed attribution binding includes those identities, the final
+candidate, the engine-vector count, and the state-table identity. Coordinated
+table or identity drift therefore fails validation. The public conformance
+inventory also requires exactly one input and one expected companion for each
+of the 22 scenarios, for exactly 75 signed Events. Its environment-independent
+execution result is `pass`, and its publication status is `held`.
 
 | Checkpoint range | Lane | Result |
 | --- | --- | --- |
@@ -31,8 +38,9 @@ and its publication status is `held`.
 | `step_1176` | `V-CONF` | pass |
 | `step_1177` | `V-FULL-RUST` | pass |
 | `step_1178`–`step_1184` | `V-TS` | pass |
-| `step_1185` | `V-EVIDENCE` | active |
-| `step_1186` | `V-CONF` | next |
+| `step_1185` | `V-EVIDENCE` | pass |
+| `step_1186` | `V-CONF` | active |
+| `step_1187` | `V-RESOURCE` | next |
 
 The authority projection is monotonic from `checkpoint_expectations_corrected` to
 `distribution_complete`. It records 148 requirements now and at completion,
@@ -46,7 +54,7 @@ fixtures, 20 reproduced findings, and one held finding. The enabled
 `FINDING_073` regression, exact four corrected reports, 180-scenario
 conformance corpus, transition validators, and full public gates close
 `GATE_V9_RUST_CHECKPOINT` at `step_1177`. The seven opaque checkpoint-parity
-predecessors close through `step_1184`; `step_1185` is active, and 99
+predecessors close through `step_1185`; `step_1186` is active, and 98
 checkpoints including the active checkpoint remain through `step_1283`.
 
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`

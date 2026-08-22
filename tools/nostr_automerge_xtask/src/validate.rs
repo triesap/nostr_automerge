@@ -8,6 +8,10 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "authority_transition_v10",
         "scripts/validate_authority_transition_v10.py",
     ),
+    (
+        "checkpoint_parity_v9",
+        "scripts/validate_checkpoint_parity_v9.py",
+    ),
     ("runtime_ledger_v9", "scripts/validate_runtime_ledger_v9.py"),
     (
         "private_reproduction_boundary_v9",
@@ -80,6 +84,7 @@ mod tests {
             .collect::<Vec<_>>();
         assert!(names.contains(&"fixture_schema_checksum_snake_case"));
         assert!(names.contains(&"authority_transition_v10"));
+        assert!(names.contains(&"checkpoint_parity_v9"));
         assert!(names.contains(&"runtime_ledger_v9"));
         assert!(names.contains(&"private_reproduction_boundary_v9"));
         assert!(names.contains(&"complete_specification"));
