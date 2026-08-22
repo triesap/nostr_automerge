@@ -1,0 +1,101 @@
+{
+  "schema": "nostr_automerge.rust_report_gate.v9.v1",
+  "checkpoint": "step_1206",
+  "gate_id": "GATE_V9_RUST_REPORT",
+  "authority_stage": "checkpoint_expectations_corrected",
+  "status": "pass",
+  "publication_status": "held",
+  "requirement_ids": [
+    "NCRDT-DISPOSITION-006",
+    "NCRDT-INTERRUPT-001",
+    "NCRDT-RESOURCE-014",
+    "NCRDT-VERSION-002",
+    "NCRDT-CONF-010",
+    "NCRDT-EVIDENCE-006"
+  ],
+  "candidate_chain": [
+    {"checkpoint": "step_1197", "candidate": "676581e0e84bb1fe483bb05108a2a3b723770e77", "parent": "52fafad799c5eb60a1d1a8b28bf214c0c8d21437", "scope_entry_count": 15, "scope_identity_sha256": "4be204c2a288269c0290487692529c7572e6922924d0d2e43d3980e9a163ac53", "code_entry_count": 3, "code_projection_sha256": "eff0deef2ad7ded3e6c8db373641ea7a310e41bd8d6bee38ed7f04a2f25ce869", "result": "pass"},
+    {"checkpoint": "step_1198", "candidate": "0fc39bfaedb156c3a6c3b914dd09791303c8d0b6", "parent": "676581e0e84bb1fe483bb05108a2a3b723770e77", "scope_entry_count": 15, "scope_identity_sha256": "cf6e34aec54d5d166ff52b6fa66391d9b99d223985ae134016b65d5c750d252c", "code_entry_count": 6, "code_projection_sha256": "36b45bcdf4c106f91c203be704bff67ab825a484168f0210156e11a0b30ce17f", "result": "pass"},
+    {"checkpoint": "step_1199", "candidate": "a52281455f350faee6408d6c508295598379f439", "parent": "0fc39bfaedb156c3a6c3b914dd09791303c8d0b6", "scope_entry_count": 14, "scope_identity_sha256": "cb5dabba6a1b9ce3a1779c56ef63944d8b0a532eab53988dae43486e1afae60c", "code_entry_count": 6, "code_projection_sha256": "80b9b759a96fe974a6f79081f7cddaccf1dd02cb458d058c097d9ed2c6ebc708", "result": "pass"},
+    {"checkpoint": "step_1200", "candidate": "4eeb074d160739300451561bcae267010d5353fc", "parent": "a52281455f350faee6408d6c508295598379f439", "scope_entry_count": 10, "scope_identity_sha256": "5cd24ced6c1f41224b9035fb93c60d197cea94c9cb534e76334213c49c509821", "code_entry_count": 6, "code_projection_sha256": "375f23fb40523f90635f5bdb794f0ebbf062c21c677bbb2410af3fb3bf3d20dc", "result": "pass"},
+    {"checkpoint": "step_1201", "candidate": "36458c459db30c8b6cf1f5da6fb6ef1a5df01db3", "parent": "4eeb074d160739300451561bcae267010d5353fc", "scope_entry_count": 10, "scope_identity_sha256": "d1cf4ad1cd1a13a8c7d3486854f83ce7a934ca2d3f4f38c2b282afb36bc41299", "code_entry_count": 6, "code_projection_sha256": "58e30ff10800465727bf4a8111d2e1266cebbd90f09814708c2bfea54fcf10ac", "result": "pass"},
+    {"checkpoint": "step_1202", "candidate": "7431706c1f54bfaf5ad6b7d7f69819ec3c1ab320", "parent": "36458c459db30c8b6cf1f5da6fb6ef1a5df01db3", "scope_entry_count": 14, "scope_identity_sha256": "2f44f4a728400aad161f7604281710a225f6c3faf212ea9f373f3ac4a066eee4", "code_entry_count": 7, "code_projection_sha256": "3d8732e63982b19352cbdef6fe6c4b31f7bf50928f73651e12035c42e4255170", "result": "pass"},
+    {"checkpoint": "step_1203", "candidate": "7f73902d2272c56012b65cc5700d9ccad2a85783", "parent": "7431706c1f54bfaf5ad6b7d7f69819ec3c1ab320", "scope_entry_count": 17, "scope_identity_sha256": "3c77f802f02902301ed4548f35747361796a0a878ad855b9457440c77189e25b", "code_entry_count": 9, "code_projection_sha256": "5a6294997598c6e502276d678d2bc996864d893c458db94ce1db58e3c5fdb481", "result": "pass"},
+    {"checkpoint": "step_1204", "candidate": "9daaf106ad645e5e191d1fe767378ece114c000f", "parent": "7f73902d2272c56012b65cc5700d9ccad2a85783", "scope_entry_count": 13, "scope_identity_sha256": "d40bfbcd58ead9129c2557dfbafc2b75628f17fd1eea45a73c919731324e9790", "code_entry_count": 10, "code_projection_sha256": "b15b10e405feada0206363088b5d3fcb3a1f9e7f14ee570101484a3dda76f54c", "result": "pass"},
+    {"checkpoint": "step_1205", "candidate": "321abda8f672ecf1a44aa1919e0cec98830e8df8", "parent": "9daaf106ad645e5e191d1fe767378ece114c000f", "scope_entry_count": 11, "scope_identity_sha256": "4cdb00689c3759cd93e4741ddb3c2f5e471f2665c4c3669c90b5e57172afceb0", "code_entry_count": 10, "code_projection_sha256": "41e5fe9671ec9425dfb40801281bc7ef02b42b787473f432b83086ff44ff9b47", "result": "pass"}
+  ],
+  "report_contract": {
+    "protocol_revision": "draft_2026_08",
+    "construction_families": ["complete", "no_progress"],
+    "construction_family_count": 2,
+    "constructor_consumer_inventory_count": 11,
+    "clause_count": 21,
+    "proof_unit_count": 9,
+    "inventory_mutation_count": 20,
+    "transcript_mutation_count": 10,
+    "executed_clause_count": 21,
+    "inventory_identity_sha256": "f911bcb863106be48017734dce12d398fa66794c73d3ca7d1d692d897d42b7ca",
+    "suite_identity_sha256": "eb269f0b654a7daad46adf7e8477a9338a982f915f39b51f331621ef441b37ef",
+    "result": "pass"
+  },
+  "field_mutation_families": [
+    "revision_coordinate_completion_failure",
+    "canonical_controls",
+    "semantic_partitions",
+    "heads",
+    "namespaced_disposition_records",
+    "carrier_event_coverage",
+    "history_digest",
+    "dispositions_digest",
+    "evidence",
+    "integrity_alerts",
+    "checkpoints",
+    "manifest_availability",
+    "conformance_assertions",
+    "materialized_document"
+  ],
+  "reevaluation": {
+    "stage_count": 5,
+    "stages": ["previous_summary", "current_summary", "relationship", "current_alert_prefix", "final_construction"],
+    "incomplete_early_return": "zero_observations",
+    "charge_boundary": "before_each_comparison",
+    "comparison_reuse": "no_repeat_traversal",
+    "typed_stops": ["budget_exhausted", "cancelled"],
+    "result": "pass"
+  },
+  "regressions": {
+    "fixed_count": 8,
+    "open_count": 4,
+    "result": "pass"
+  },
+  "conformance": {
+    "base_candidate": "976d6edb0349ae87d5e477e95ae6f3d7dbd89303",
+    "report_candidate": "321abda8f672ecf1a44aa1919e0cec98830e8df8",
+    "signed_scenario_count": 180,
+    "process_count": 2,
+    "delivery_order_count": 8,
+    "canonical_process_bytes": "identical",
+    "manifest_sha256": "7b4ab5d2146939d142eb92d43060ef2183c95d1fc574132894b3c01c874c7c56",
+    "canonical_output_sha256": "84f370b201945c844396406acfb022faa2bdadb32d96206511474a00218770cb",
+    "distribution_run_sha256": "74b24f58fe9c20da082dd9ae4c1b344e8468c00a70dbd710adf724ab70ed14c4",
+    "result": "pass"
+  },
+  "frozen_identities": {
+    "nip_sha256": "0dfa683aa0f4a1c7d3df010ec95901bf4ba4094ed3adaacc26e85d95aaa4ded1",
+    "requirements_sha256": "f6e6070de7a5fc707f8488ced3a031f7dfc36d11c7477d800c3d3c33d532e6ba",
+    "applicability_sha256": "c5380b7fe4e16f7a750ee0b48b64bc7e4c29fd5851f34125980e4413f7d55712",
+    "fixture_manifest_sha256": "7b4ab5d2146939d142eb92d43060ef2183c95d1fc574132894b3c01c874c7c56",
+    "wire_domain_projection_sha256": "4f07dc65ffe3803a3217436cb4810dad6fb493b756f8a603e86f1bc11f276867",
+    "history_digest_code_sha256": "b71a0d33caf2694b416019417eb058715d818de476eaa2a6078345f67cb20a4d",
+    "dispositions_digest_code_sha256": "74b7680ce9700170fbb49391a688143b8746f3b380adc670396d7fccc050e44b",
+    "digest_code_projection_sha256": "d42732a0f9e7b9082c6c31aaf37b2639c6e9ba3cc971e958cc6c3f59f403a6a1"
+  },
+  "result_classes": [
+    {"class": "report_suite", "result": "pass"},
+    {"class": "public_api", "result": "pass"},
+    {"class": "resource_boundaries", "result": "pass"},
+    {"class": "conformance_two_process", "result": "pass"},
+    {"class": "full_public", "result": "pass"}
+  ],
+  "result_identity_sha256": "a27f1e771cb8fe70545dce95325ca9a23443b6ea1485f00d27a4c0e493e83648"
+}

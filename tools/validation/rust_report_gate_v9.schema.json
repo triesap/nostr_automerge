@@ -1,0 +1,159 @@
+{
+  "title": "nostr_automerge Rust report gate v9",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "checkpoint", "gate_id", "authority_stage", "status",
+    "publication_status", "requirement_ids", "candidate_chain",
+    "report_contract", "field_mutation_families", "reevaluation",
+    "regressions", "conformance", "frozen_identities", "result_classes",
+    "result_identity_sha256"
+  ],
+  "properties": {
+    "schema": {"const": "nostr_automerge.rust_report_gate.v9.v1"},
+    "checkpoint": {"const": "step_1206"},
+    "gate_id": {"const": "GATE_V9_RUST_REPORT"},
+    "authority_stage": {"const": "checkpoint_expectations_corrected"},
+    "status": {"const": "pass"},
+    "publication_status": {"const": "held"},
+    "requirement_ids": {
+      "type": "array", "minItems": 6, "maxItems": 6, "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^NCRDT-[A-Z0-9]+(?:-[A-Z0-9]+)*$"}
+    },
+    "candidate_chain": {
+      "type": "array", "minItems": 9, "maxItems": 9,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": [
+          "checkpoint", "candidate", "parent", "scope_entry_count",
+          "scope_identity_sha256", "code_entry_count",
+          "code_projection_sha256", "result"
+        ],
+        "properties": {
+          "checkpoint": {"type": "string", "pattern": "^step_1[0-9]{3}$"},
+          "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "parent": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "scope_entry_count": {"type": "integer", "minimum": 1},
+          "scope_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "code_entry_count": {"type": "integer", "minimum": 1},
+          "code_projection_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "result": {"const": "pass"}
+        }
+      }
+    },
+    "report_contract": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "protocol_revision", "construction_families", "construction_family_count",
+        "constructor_consumer_inventory_count", "clause_count", "proof_unit_count",
+        "inventory_mutation_count", "transcript_mutation_count",
+        "executed_clause_count", "inventory_identity_sha256",
+        "suite_identity_sha256", "result"
+      ],
+      "properties": {
+        "protocol_revision": {"const": "draft_2026_08"},
+        "construction_families": {
+          "type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true,
+          "items": {"enum": ["complete", "no_progress"]}
+        },
+        "construction_family_count": {"const": 2},
+        "constructor_consumer_inventory_count": {"const": 11},
+        "clause_count": {"const": 21},
+        "proof_unit_count": {"const": 9},
+        "inventory_mutation_count": {"const": 20},
+        "transcript_mutation_count": {"const": 10},
+        "executed_clause_count": {"const": 21},
+        "inventory_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "suite_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "result": {"const": "pass"}
+      }
+    },
+    "field_mutation_families": {
+      "type": "array", "minItems": 14, "maxItems": 14, "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"}
+    },
+    "reevaluation": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "stage_count", "stages", "incomplete_early_return", "charge_boundary",
+        "comparison_reuse", "typed_stops", "result"
+      ],
+      "properties": {
+        "stage_count": {"const": 5},
+        "stages": {
+          "type": "array", "minItems": 5, "maxItems": 5, "uniqueItems": true,
+          "items": {"enum": ["previous_summary", "current_summary", "relationship", "current_alert_prefix", "final_construction"]}
+        },
+        "incomplete_early_return": {"const": "zero_observations"},
+        "charge_boundary": {"const": "before_each_comparison"},
+        "comparison_reuse": {"const": "no_repeat_traversal"},
+        "typed_stops": {
+          "type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true,
+          "items": {"enum": ["budget_exhausted", "cancelled"]}
+        },
+        "result": {"const": "pass"}
+      }
+    },
+    "regressions": {
+      "type": "object", "additionalProperties": false,
+      "required": ["fixed_count", "open_count", "result"],
+      "properties": {
+        "fixed_count": {"const": 8},
+        "open_count": {"const": 4},
+        "result": {"const": "pass"}
+      }
+    },
+    "conformance": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "base_candidate", "report_candidate", "signed_scenario_count",
+        "process_count", "delivery_order_count", "canonical_process_bytes",
+        "manifest_sha256", "canonical_output_sha256",
+        "distribution_run_sha256", "result"
+      ],
+      "properties": {
+        "base_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "report_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "signed_scenario_count": {"const": 180},
+        "process_count": {"const": 2},
+        "delivery_order_count": {"const": 8},
+        "canonical_process_bytes": {"const": "identical"},
+        "manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "canonical_output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "distribution_run_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "result": {"const": "pass"}
+      }
+    },
+    "frozen_identities": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "nip_sha256", "requirements_sha256", "applicability_sha256",
+        "fixture_manifest_sha256", "wire_domain_projection_sha256",
+        "history_digest_code_sha256", "dispositions_digest_code_sha256",
+        "digest_code_projection_sha256"
+      ],
+      "properties": {
+        "nip_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "requirements_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "applicability_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "fixture_manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "wire_domain_projection_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "history_digest_code_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "dispositions_digest_code_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "digest_code_projection_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "result_classes": {
+      "type": "array", "minItems": 5, "maxItems": 5, "uniqueItems": true,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["class", "result"],
+        "properties": {
+          "class": {"enum": ["report_suite", "public_api", "resource_boundaries", "conformance_two_process", "full_public"]},
+          "result": {"const": "pass"}
+        }
+      }
+    },
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

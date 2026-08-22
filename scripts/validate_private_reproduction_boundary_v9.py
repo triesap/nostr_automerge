@@ -38,12 +38,14 @@ JSON_RECORDS = (
     "reports/opaque_carrier_v9.json",
     "reports/carrier_gate_v9.json",
     "reports/checkpoint_parity_v9.json",
+    "reports/rust_report_gate_v9.json",
     "implementation/runtime_ledger_v9.json",
     "tools/validation/opaque_reproduction_v9.schema.json",
     "tools/validation/opaque_checkpoint_v9.schema.json",
     "tools/validation/opaque_carrier_v9.schema.json",
     "tools/validation/carrier_gate_v9.schema.json",
     "tools/validation/checkpoint_parity_v9.schema.json",
+    "tools/validation/rust_report_gate_v9.schema.json",
     "tools/validation/runtime_ledger_v9.schema.json",
 )
 TEXT_RECORDS = ("docs/execution/remediation_v9/ledger.md",)
@@ -60,6 +62,7 @@ PYTHON_SURFACES = (
     "scripts/validate_checkpoint_parity_v9.py",
     "scripts/validate_carrier_gate_v9.py",
     "scripts/validate_report_contract_v9.py",
+    "scripts/validate_rust_report_gate_v9.py",
     "scripts/validate_runtime_ledger_v9.py",
     "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_rust_conformance_v9.py",
@@ -124,6 +127,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/opaque_carrier_v9.json",
         "reports/opaque_reproduction_v9.json",
         "reports/rust_conformance_v9.json",
+        "reports/rust_report_gate_v9.json",
         "reports/spec_baseline.txt",
         "scripts/validate_architecture.py",
         "scripts/validate_authority_transition_v10.py",
@@ -134,6 +138,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_fixtures.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_report_contract_v9.py",
+        "scripts/validate_rust_report_gate_v9.py",
         "scripts/validate_protocol_revision.py",
         "scripts/validate_rust_conformance_v9.py",
         "scripts/reproduce_remediation_v9.py",
@@ -162,6 +167,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/nostr_automerge_conformance/src/runner.rs",
         "tools/nostr_automerge_conformance/src/scenario.rs",
         "tools/validation/checkpoint_parity_v9.schema.json",
+        "tools/validation/rust_report_gate_v9.schema.json",
         "tools/validation/carrier_gate_v9.schema.json",
         "tools/validation/opaque_reproduction_v9.schema.json",
         "tools/validation/opaque_checkpoint_v9.schema.json",
@@ -360,6 +366,7 @@ def validate_source_surfaces() -> None:
                         and relative
                         in {
                             "scripts/validate_carrier_gate_v9.py",
+                            "scripts/validate_rust_report_gate_v9.py",
                             "scripts/validate_runtime_ledger_v9.py",
                         }
                     )

@@ -15,7 +15,8 @@
     "opaque_checkpoint",
     "checkpoint_parity",
     "opaque_carrier",
-    "carrier_gate"
+    "carrier_gate",
+    "rust_report_gate"
   ],
   "properties": {
     "schema": {"const": "nostr_automerge.runtime_ledger.v9.v1"},
@@ -259,6 +260,36 @@
         "signed_scenario_count": {"const": 180},
         "fixed_regression_count": {"const": 4},
         "open_regression_count": {"const": 8},
+        "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "result": {"const": "pass"},
+        "publication_status": {"const": "held"}
+      }
+    },
+    "rust_report_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpoint", "gate_id", "predecessor_candidate", "candidate_count",
+        "candidate_chain_identity_sha256", "protocol_revision",
+        "construction_family_count", "constructor_consumer_inventory_count",
+        "clause_count", "executed_clause_count", "fixed_regression_count",
+        "open_regression_count", "code_projection_sha256",
+        "result_identity_sha256", "result", "publication_status"
+      ],
+      "properties": {
+        "checkpoint": {"const": "step_1206"},
+        "gate_id": {"const": "GATE_V9_RUST_REPORT"},
+        "predecessor_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "candidate_count": {"const": 9},
+        "candidate_chain_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "protocol_revision": {"const": "draft_2026_08"},
+        "construction_family_count": {"const": 2},
+        "constructor_consumer_inventory_count": {"const": 11},
+        "clause_count": {"const": 21},
+        "executed_clause_count": {"const": 21},
+        "fixed_regression_count": {"const": 8},
+        "open_regression_count": {"const": 4},
+        "code_projection_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "result": {"const": "pass"},
         "publication_status": {"const": "held"}

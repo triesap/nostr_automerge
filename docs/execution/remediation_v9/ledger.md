@@ -2,7 +2,7 @@
 
 Status: `in_progress`
 
-RCLD 85 has 47 committed predecessors through `step_1204`. The opaque
+RCLD 85 has 48 committed predecessors through `step_1205`. The opaque
 compatibility checkpoint is bound by one approved 40-character candidate and
 one canonical 64-character result identity. Its public projection records nine
 findings, 23 expected-failure reproductions, 276 negative mutations, one
@@ -36,6 +36,17 @@ matrix, the 180-scenario two-process conformance projection, four fixed and
 eight open Rust regressions, and the unchanged authority identities. Its five
 ordered result classes cover focused public behavior, opaque compatibility,
 conformance, report validation, and the full public gate.
+
+The Rust report-gate closure binds the nine ordered public candidates from
+`step_1197` through `step_1205`, including each exact commit scope and
+cumulative report-code projection. It pins protocol revision `draft_2026_08`,
+the two construction families, all 11 constructor and consumer inventory
+rows, 21 executed clauses across nine proof units, 20 inventory mutations,
+ten transcript mutations, 14 report-field mutation families, and all five
+charged reevaluation stages. The same closed record binds eight fixed and four
+open regressions, current 180-scenario by eight-delivery conformance bytes,
+and unchanged NIP, requirement, fixture, wire-domain, and digest-code
+identities.
 
 | Checkpoint range | Lane | Result |
 | --- | --- | --- |
@@ -72,8 +83,9 @@ conformance, report validation, and the full public gate.
 | `step_1202` | `V-REPORT` | pass |
 | `step_1203` | `V-RUST` | pass |
 | `step_1204` | `V-RESOURCE` | pass |
-| `step_1205` | `V-REPORT` | active |
-| `step_1206` | `V-FULL-RUST` | next |
+| `step_1205` | `V-REPORT` | pass |
+| `step_1206` | `V-FULL-RUST` | active |
+| `step_1207` | `V-TS` | next |
 
 The completed report-authority checkpoint binds a closed inventory of complete
 and no-progress construction plus nine revision consumers to exact reviewed
@@ -140,7 +152,7 @@ re-query cancellation, or mask an unexpected failure. Canonical alert
 comparisons are interleaved one-for-one with successful charges, and the
 validated alert is constructed without repeating that traversal.
 
-The active report-regression checkpoint binds 21 ordered clauses to 21 exact,
+The completed report-regression checkpoint binds 21 ordered clauses to 21 exact,
 unique, enabled behavioral tests across the report constructor, public API,
 compatibility loader and serializer, and conformance-runner surfaces. The
 closed inventory rejects missing, extra, duplicate, reordered, stale,
@@ -171,7 +183,12 @@ distribution runs (`84f370b201945c844396406acfb022faa2bdadb32d96206511474a002187
 canonical output and
 `74b24f58fe9c20da082dd9ae4c1b344e8468c00a70dbd710adf724ab70ed14c4`
 serialized output). The earlier signed-v9 conformance report remains an
-immutable historical record and is not the carrier closure authority. There are 80
+immutable historical record and is not the carrier closure authority.
+`GATE_V9_RUST_REPORT` closes at `step_1206` against the exact ordered
+`step_1197` through `step_1205` chain ending at
+`321abda8f672ecf1a44aa1919e0cec98830e8df8`; its current two-process
+conformance identity is the same canonical and serialized output pair above.
+There are 78
 checkpoints including the active checkpoint remaining through `step_1283`.
 
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`

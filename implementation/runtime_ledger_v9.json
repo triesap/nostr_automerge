@@ -3,10 +3,10 @@
   "status": "in_progress",
   "rcld": 85,
   "cursor": {
-    "active_step": "step_1205",
-    "next_step": "step_1206",
+    "active_step": "step_1206",
+    "next_step": "step_1207",
     "last_step": "step_1283",
-    "remaining_checkpoint_count": 79,
+    "remaining_checkpoint_count": 78,
     "first_rcld": 85,
     "last_rcld": 94,
     "remaining_rcld_count": 10
@@ -602,6 +602,23 @@
       "finding_ids": ["FINDING_082"],
       "deviation_ids": [],
       "result": "pass"
+    },
+    {
+      "step": "step_1205",
+      "candidate": "321abda8f672ecf1a44aa1919e0cec98830e8df8",
+      "owner_class": "public",
+      "gate_ids": ["V-REPORT"],
+      "requirement_ids": [
+        "NCRDT-DISPOSITION-006",
+        "NCRDT-INTERRUPT-001",
+        "NCRDT-RESOURCE-014",
+        "NCRDT-VERSION-002",
+        "NCRDT-CONF-010",
+        "NCRDT-EVIDENCE-006"
+      ],
+      "finding_ids": ["FINDING_075", "FINDING_081", "FINDING_082"],
+      "deviation_ids": [],
+      "result": "pass"
     }
   ],
   "opaque_reproduction": {
@@ -671,6 +688,24 @@
     "fixed_regression_count": 4,
     "open_regression_count": 8,
     "result_identity_sha256": "c1ca1069632a7145ab163fc6279fb94fd554781acf992450e9a1f8a26e93176d",
+    "result": "pass",
+    "publication_status": "held"
+  },
+  "rust_report_gate": {
+    "checkpoint": "step_1206",
+    "gate_id": "GATE_V9_RUST_REPORT",
+    "predecessor_candidate": "321abda8f672ecf1a44aa1919e0cec98830e8df8",
+    "candidate_count": 9,
+    "candidate_chain_identity_sha256": "89fc199b1dcdea353aaa1efa65ca699b29b51e3496b4358cdf186277ce822e29",
+    "protocol_revision": "draft_2026_08",
+    "construction_family_count": 2,
+    "constructor_consumer_inventory_count": 11,
+    "clause_count": 21,
+    "executed_clause_count": 21,
+    "fixed_regression_count": 8,
+    "open_regression_count": 4,
+    "code_projection_sha256": "41e5fe9671ec9425dfb40801281bc7ef02b42b787473f432b83086ff44ff9b47",
+    "result_identity_sha256": "a27f1e771cb8fe70545dce95325ca9a23443b6ea1485f00d27a4c0e493e83648",
     "result": "pass",
     "publication_status": "held"
   }

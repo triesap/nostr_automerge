@@ -39,6 +39,7 @@ STEP_1201_CANDIDATE = "36458c459db30c8b6cf1f5da6fb6ef1a5df01db3"
 STEP_1202_CANDIDATE = "7431706c1f54bfaf5ad6b7d7f69819ec3c1ab320"
 STEP_1203_CANDIDATE = "7f73902d2272c56012b65cc5700d9ccad2a85783"
 STEP_1204_CANDIDATE = "9daaf106ad645e5e191d1fe767378ece114c000f"
+STEP_1205_CANDIDATE = "321abda8f672ecf1a44aa1919e0cec98830e8df8"
 STEP_1195_SCOPE_IDENTITY = (
     "9d7a285d9e9f9fc3b6c566aa6bd776030df8f2ee078d0e254c696446a462f0fd"
 )
@@ -506,23 +507,29 @@ def conformance_source_mutation_self_test() -> int:
         STEP_1204_ADDITIVE_REPORT_PROJECTION,
     )
 
-    head_parent = git_bytes("rev-parse", "HEAD^").decode().strip()
-    require(head_parent == STEP_1204_CANDIDATE, "carrier_gate:step1205_head_parent")
+    require(
+        git_bytes("rev-parse", f"{STEP_1205_CANDIDATE}^").decode().strip()
+        == STEP_1204_CANDIDATE,
+        "carrier_gate:step1205_candidate_parent",
+    )
     parent_sources = conformance_source_values(
         STEP_1204_CANDIDATE,
         STEP_1205_ADDITIVE_REPORT_PATHS,
     )
-    head_names, head_patch = conformance_source_diff_between(
+    candidate_names, candidate_patch = conformance_source_diff_between(
         STEP_1204_CANDIDATE,
-        "HEAD",
+        STEP_1205_CANDIDATE,
     )
-    head_sources = conformance_source_values("HEAD", STEP_1205_ADDITIVE_REPORT_PATHS)
+    candidate_sources = conformance_source_values(
+        STEP_1205_CANDIDATE,
+        STEP_1205_ADDITIVE_REPORT_PATHS,
+    )
     validate_step_1205_transition(
-        head_parent,
-        head_names,
-        head_patch,
+        STEP_1204_CANDIDATE,
+        candidate_names,
+        candidate_patch,
         parent_sources,
-        head_sources,
+        candidate_sources,
     )
     current_names, current_patch = conformance_source_diff_between(
         STEP_1204_CANDIDATE,
@@ -530,7 +537,7 @@ def conformance_source_mutation_self_test() -> int:
     )
     current_sources = conformance_source_values(None, STEP_1205_ADDITIVE_REPORT_PATHS)
     validate_step_1205_transition(
-        head_parent,
+        STEP_1204_CANDIDATE,
         current_names,
         current_patch,
         parent_sources,
@@ -591,45 +598,45 @@ def conformance_source_mutation_self_test() -> int:
     )
     transition_mutations = (
         ("0" * 40, current_names, current_patch, parent_sources, current_sources),
-        (head_parent, (), current_patch, parent_sources, current_sources),
+        (STEP_1204_CANDIDATE, (), current_patch, parent_sources, current_sources),
         (
-            head_parent,
+            STEP_1204_CANDIDATE,
             (*current_names, "crates/nostr_automerge/src/checkpoint/mod.rs"),
             current_patch,
             parent_sources,
             current_sources,
         ),
         (
-            head_parent,
+            STEP_1204_CANDIDATE,
             current_names,
             current_patch + b"step1205-patch-drift\n",
             parent_sources,
             current_sources,
         ),
         (
-            head_parent,
+            STEP_1204_CANDIDATE,
             current_names,
             current_patch,
             parent_source_drift,
             current_sources,
         ),
         (
-            head_parent,
+            STEP_1204_CANDIDATE,
             current_names,
             current_patch,
             parent_sources,
             current_source_drift,
         ),
-        (head_parent, current_names, current_patch, parent_sources, ()),
+        (STEP_1204_CANDIDATE, current_names, current_patch, parent_sources, ()),
         (
-            head_parent,
+            STEP_1204_CANDIDATE,
             current_names,
             current_patch,
             parent_sources,
             extra_current_source,
         ),
         (
-            head_parent,
+            STEP_1204_CANDIDATE,
             current_names,
             current_patch + b"coordinated-step1205-drift\n",
             parent_sources,
