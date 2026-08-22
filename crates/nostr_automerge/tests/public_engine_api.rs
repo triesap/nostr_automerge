@@ -1251,6 +1251,22 @@ fn child_epoch_uses_exact_base_closure() {
     };
     let (retained_event, retained_hash) = sign_change(&retained, genesis_id, &retained_change, 2);
     let (removed_event, removed_hash) = sign_change(&removed, genesis_id, &removed_change, 3);
+    let retained_event_id = VerifiedNip01Event::verify(retained_event.clone())
+        .expect("retained carrier")
+        .event_id();
+    let removed_event_id = VerifiedNip01Event::verify(removed_event.clone())
+        .expect("removed carrier")
+        .event_id();
+    let (removed_pending_event, removed_pending_hash) = sign_change(
+        &removed,
+        EventId::from_bytes([0xee; 32]),
+        &removed_change,
+        6,
+    );
+    assert_eq!(removed_pending_hash, removed_hash);
+    let removed_pending_event_id = VerifiedNip01Event::verify(removed_pending_event.clone())
+        .expect("pending duplicate carrier")
+        .event_id();
     let child = signed_acl_control_with_base(
         &controller,
         coordinate,
@@ -1270,8 +1286,18 @@ fn child_epoch_uses_exact_base_closure() {
         }])
         .expect("retained child-epoch change");
     let (child_event, child_hash) = sign_change(&retained, child_id, &child_change, 5);
+    let child_event_id = VerifiedNip01Event::verify(child_event.clone())
+        .expect("child carrier")
+        .event_id();
     let mut builder = CorpusBuilder::new();
-    for event in [child_event, child, removed_event, genesis, retained_event] {
+    for event in [
+        child_event,
+        child,
+        removed_pending_event,
+        removed_event,
+        genesis,
+        retained_event,
+    ] {
         assert!(matches!(
             builder.ingest(event),
             IngestOutcome::Accepted { .. }
@@ -1297,6 +1323,33 @@ fn child_epoch_uses_exact_base_closure() {
         report
             .dispositions()
             .contains(&(removed_hash, ProtocolDisposition::Excluded))
+    );
+    assert_eq!(report.dispositions().len(), 3);
+    assert_eq!(
+        event_disposition(&report, retained_event_id),
+        Some(ProtocolDisposition::Accepted)
+    );
+    assert_eq!(
+        event_disposition(&report, removed_event_id),
+        Some(ProtocolDisposition::Excluded)
+    );
+    assert_eq!(
+        event_disposition(&report, removed_pending_event_id),
+        Some(ProtocolDisposition::Pending)
+    );
+    assert_eq!(
+        event_disposition(&report, child_event_id),
+        Some(ProtocolDisposition::Accepted)
+    );
+    assert_eq!(
+        report
+            .disposition_records()
+            .iter()
+            .filter(|record| {
+                record.identifier() == ProtocolItemIdentifier::ChangeHash(removed_hash)
+            })
+            .count(),
+        1
     );
     let document = report.document().expect("materialized exact closure");
     let keys = document
@@ -2425,6 +2478,11 @@ fn change_disposition_collections_are_disjoint() {
         &mut WorkBudget::new(1_000_000, 1_000),
         &NeverCancelled,
     );
+    assert_eq!(report.accepted_changes(), [scenario.change_hash]);
+    assert_eq!(
+        report.dispositions(),
+        [(scenario.change_hash, ProtocolDisposition::Accepted)]
+    );
     let accepted = report
         .accepted_changes()
         .iter()
@@ -2464,7 +2522,24 @@ fn change_disposition_collections_are_disjoint() {
 #[allow(clippy::expect_used)]
 fn mixed_change_carrier_outcomes_are_visible_and_order_stable() {
     let scenario = signed_engine_scenario();
+    let controller = TestSigner::from_byte(20);
     let device = TestSigner::from_byte(21);
+    let verified_control =
+        VerifiedNip01Event::verify(scenario.control.clone()).expect("signed supported control");
+    let unsupported_control = controller.sign(
+        &UnsignedEventDraft::new(
+            verified_control.created_at(),
+            verified_control.kind(),
+            verified_control.tags().to_vec(),
+            verified_control.content().replace("\"v\":1", "\"v\":2"),
+        )
+        .expect("unsupported control draft")
+        .prepare(controller.public_key())
+        .expect("unsupported control preimage"),
+    );
+    let unsupported_control_id = VerifiedNip01Event::verify(unsupported_control.clone())
+        .expect("unsupported control event")
+        .event_id();
     let encoded: serde_json::Value =
         serde_json::from_str(scenario.change.as_str()).expect("signed change JSON");
     let content = encoded["content"]
@@ -2493,7 +2568,7 @@ fn mixed_change_carrier_outcomes_are_visible_and_order_stable() {
         EventId::from_bytes([0xee; 32]),
         scenario.change_hash.to_hex(),
     );
-    let invalid = sign(4, scenario.control_id, "00".repeat(32));
+    let invalid = sign(4, unsupported_control_id, scenario.change_hash.to_hex());
     let accepted_id = VerifiedNip01Event::verify(scenario.change.clone())
         .expect("accepted carrier")
         .event_id();
@@ -2520,8 +2595,15 @@ fn mixed_change_carrier_outcomes_are_visible_and_order_stable() {
         scenario.change.clone(),
         pending.clone(),
         invalid.clone(),
+        unsupported_control.clone(),
     ]);
-    let reversed = evaluate(vec![invalid, pending, scenario.change, scenario.control]);
+    let reversed = evaluate(vec![
+        unsupported_control,
+        invalid,
+        pending,
+        scenario.change,
+        scenario.control,
+    ]);
     assert_eq!(
         event_disposition(&ordered, accepted_id),
         Some(ProtocolDisposition::Accepted)
@@ -2534,7 +2616,27 @@ fn mixed_change_carrier_outcomes_are_visible_and_order_stable() {
         event_disposition(&ordered, invalid_id),
         Some(ProtocolDisposition::Invalid)
     );
+    assert_eq!(
+        event_diagnostic(&ordered, invalid_id),
+        Some("control.parent")
+    );
     assert_eq!(ordered.accepted_changes(), [scenario.change_hash]);
+    assert_eq!(
+        ordered.dispositions(),
+        [(scenario.change_hash, ProtocolDisposition::Accepted)]
+    );
+    let semantic_records = ordered
+        .disposition_records()
+        .iter()
+        .filter(|record| {
+            record.identifier() == ProtocolItemIdentifier::ChangeHash(scenario.change_hash)
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(semantic_records.len(), 1);
+    assert_eq!(
+        semantic_records[0].disposition(),
+        ProtocolDisposition::Accepted
+    );
     assert_eq!(
         ordered.disposition_records(),
         reversed.disposition_records()
@@ -2964,6 +3066,9 @@ fn duplicate_delayed_and_invalid_evidence_converges() {
 #[allow(clippy::expect_used)]
 fn change_before_control_has_a_pending_hash_outcome() {
     let scenario = signed_engine_scenario();
+    let change_event_id = VerifiedNip01Event::verify(scenario.change.clone())
+        .expect("signed pending carrier")
+        .event_id();
     let mut builder = CorpusBuilder::new();
     assert!(matches!(
         builder.ingest(scenario.change),
@@ -2980,6 +3085,11 @@ fn change_before_control_has_a_pending_hash_outcome() {
         [(scenario.change_hash, ProtocolDisposition::Pending)]
     );
     assert_eq!(report.pending_changes(), [scenario.change_hash]);
+    assert_eq!(
+        event_disposition(&report, change_event_id),
+        Some(ProtocolDisposition::Pending)
+    );
+    assert_eq!(event_diagnostic(&report, change_event_id), None);
 }
 
 #[test]
@@ -3072,6 +3182,9 @@ fn unsupported_control_reference_is_invalid() {
         .prepare(device.public_key())
         .expect("dependent change preimage"),
     );
+    let change_event_id = VerifiedNip01Event::verify(change.clone())
+        .expect("signed invalid carrier")
+        .event_id();
     let mut builder = CorpusBuilder::new();
     assert!(matches!(
         builder.ingest(unsupported_control),
@@ -3090,6 +3203,14 @@ fn unsupported_control_reference_is_invalid() {
     assert_eq!(
         report.dispositions(),
         [(scenario.change_hash, ProtocolDisposition::Invalid)]
+    );
+    assert_eq!(
+        event_disposition(&report, change_event_id),
+        Some(ProtocolDisposition::Invalid)
+    );
+    assert_eq!(
+        event_diagnostic(&report, change_event_id),
+        Some("control.parent")
     );
 }
 
@@ -4775,17 +4896,32 @@ fn equivocation_quarantines_transitive_dependants() {
             .expect("change preimage"),
         )
     };
+    let first_event = sign_change(&equivocated, 2, first_hash, &first_raw);
+    let second_event = sign_change(&equivocated, 3, second_hash, &second_raw);
+    let dependant_event = sign_change(&dependant, 4, dependant_hash, &dependant_raw);
+    let independent_hash = independent_change.change_hash();
+    let independent_event =
+        sign_change(&independent, 5, independent_hash, independent_change.raw());
+    let carrier_ids = [
+        VerifiedNip01Event::verify(first_event.clone())
+            .expect("first equivocated carrier")
+            .event_id(),
+        VerifiedNip01Event::verify(second_event.clone())
+            .expect("second equivocated carrier")
+            .event_id(),
+        VerifiedNip01Event::verify(dependant_event.clone())
+            .expect("equivocation dependant carrier")
+            .event_id(),
+        VerifiedNip01Event::verify(independent_event.clone())
+            .expect("independent carrier")
+            .event_id(),
+    ];
     let mut builder = CorpusBuilder::new();
     for event in [
-        sign_change(&equivocated, 2, first_hash, &first_raw),
-        sign_change(&equivocated, 3, second_hash, &second_raw),
-        sign_change(&dependant, 4, dependant_hash, &dependant_raw),
-        sign_change(
-            &independent,
-            5,
-            independent_change.change_hash(),
-            independent_change.raw(),
-        ),
+        first_event,
+        second_event,
+        dependant_event,
+        independent_event,
         control,
     ] {
         assert!(matches!(
@@ -4800,15 +4936,33 @@ fn equivocation_quarantines_transitive_dependants() {
         &NeverCancelled,
     );
     assert_eq!(report.completion(), Completion::Complete);
-    assert_eq!(
-        report.accepted_changes(),
-        [independent_change.change_hash()]
-    );
+    assert_eq!(report.accepted_changes(), [independent_hash]);
+    assert_eq!(report.dispositions().len(), 4);
     for hash in [first_hash, second_hash, dependant_hash] {
         assert!(
             report
                 .dispositions()
                 .contains(&(hash, ProtocolDisposition::Excluded))
+        );
+    }
+    for event_id in &carrier_ids[..3] {
+        assert_eq!(
+            event_disposition(&report, *event_id),
+            Some(ProtocolDisposition::Excluded)
+        );
+    }
+    assert_eq!(
+        event_disposition(&report, carrier_ids[3]),
+        Some(ProtocolDisposition::Accepted)
+    );
+    for hash in [first_hash, second_hash, dependant_hash, independent_hash] {
+        assert_eq!(
+            report
+                .disposition_records()
+                .iter()
+                .filter(|record| record.identifier() == ProtocolItemIdentifier::ChangeHash(hash))
+                .count(),
+            1
         );
     }
     assert!(report.integrity_alerts().iter().any(|alert| matches!(
@@ -5029,6 +5183,26 @@ fn duplicate_valid_carriers_are_not_equivocation() {
         );
         assert_eq!(report.completion(), Completion::Complete);
         assert_eq!(report.accepted_changes(), [change.change_hash()]);
+        assert_eq!(
+            report.dispositions(),
+            [(change.change_hash(), ProtocolDisposition::Accepted)]
+        );
+        for event_id in [first_id, second_id] {
+            assert_eq!(
+                event_disposition(&report, event_id),
+                Some(ProtocolDisposition::Accepted)
+            );
+        }
+        assert_eq!(
+            report
+                .disposition_records()
+                .iter()
+                .filter(|record| {
+                    record.identifier() == ProtocolItemIdentifier::ChangeHash(change.change_hash())
+                })
+                .count(),
+            1
+        );
         assert!(!report.integrity_alerts().iter().any(|alert| matches!(
             alert,
             nostr_automerge::IntegrityAlert::DeviceEquivocation(_)
@@ -5036,6 +5210,17 @@ fn duplicate_valid_carriers_are_not_equivocation() {
         reports.push(report);
     }
     assert!(reports.windows(2).all(|pair| pair[0] == pair[1]));
+}
+
+#[test]
+fn signed_carrier_and_aggregate_decision_table_is_complete() {
+    change_disposition_collections_are_disjoint();
+    change_before_control_has_a_pending_hash_outcome();
+    unsupported_control_reference_is_invalid();
+    duplicate_valid_carriers_are_not_equivocation();
+    mixed_change_carrier_outcomes_are_visible_and_order_stable();
+    child_epoch_uses_exact_base_closure();
+    equivocation_quarantines_transitive_dependants();
 }
 
 #[test]

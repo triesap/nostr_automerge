@@ -3629,58 +3629,108 @@ mod tests {
     }
 
     #[test]
-    fn aggregate_change_precedence_matrix_is_complete() {
+    fn carrier_and_aggregate_decision_table_is_exhaustive() {
         use crate::ProtocolDisposition::{Accepted, Excluded, Invalid, Pending};
-        use AggregateChangeContribution::{
-            AuthorizedCanonical, AuthorizedExcluded, ConclusiveInvalid, Unresolved,
+        use AggregateChangeContribution::{AuthorizedExcluded, Unresolved};
+        use ChangeClaimReason::{
+            AuthorizedCanonical, AuthorizedCurrentExcluded, AuthorizedNoncanonical,
+            InvalidReferencedControl, Unauthorized, UnresolvedControl,
         };
-        let cases = [
-            (
-                FinalLineageChangeState::Accepted,
-                vec![Unresolved],
-                Accepted,
-            ),
-            (
-                FinalLineageChangeState::CanonicalPruned,
-                vec![Unresolved, ConclusiveInvalid],
-                Excluded,
-            ),
-            (
-                FinalLineageChangeState::Current,
-                vec![Unresolved, AuthorizedExcluded],
-                Pending,
-            ),
-            (
-                FinalLineageChangeState::Current,
-                vec![Unresolved, ConclusiveInvalid],
-                Pending,
-            ),
-            (
-                FinalLineageChangeState::Current,
-                vec![AuthorizedExcluded, ConclusiveInvalid],
-                Excluded,
-            ),
-            (
-                FinalLineageChangeState::Current,
-                vec![AuthorizedExcluded, ConclusiveInvalid],
-                Excluded,
-            ),
-            (
-                FinalLineageChangeState::Current,
-                vec![ConclusiveInvalid],
-                Invalid,
-            ),
-            (
-                FinalLineageChangeState::Current,
-                vec![AuthorizedCanonical],
-                Invalid,
-            ),
+
+        let reasons = [
+            AuthorizedCanonical,
+            UnresolvedControl,
+            AuthorizedNoncanonical,
+            AuthorizedCurrentExcluded,
+            InvalidReferencedControl,
+            Unauthorized,
         ];
-        for (lineage, contributions, expected) in cases {
-            assert_eq!(
-                reduce_aggregate_change_outcome(lineage, &contributions),
-                expected
+        let expected_carrier = |reason| match reason {
+            AuthorizedCanonical => Accepted,
+            UnresolvedControl => Pending,
+            AuthorizedNoncanonical | AuthorizedCurrentExcluded => Excluded,
+            InvalidReferencedControl | Unauthorized => Invalid,
+        };
+        let mut reason_sequences = vec![Vec::new()];
+        let mut exact_length = vec![Vec::new()];
+        for _ in 0..4 {
+            exact_length = exact_length
+                .iter()
+                .flat_map(|prefix| {
+                    reasons.iter().map(|reason| {
+                        let mut sequence = prefix.clone();
+                        sequence.push(*reason);
+                        sequence
+                    })
+                })
+                .collect();
+            reason_sequences.extend(exact_length.clone());
+        }
+        assert_eq!(reason_sequences.len(), 1_555);
+
+        for reason_sequence in reason_sequences {
+            let contributions = reason_sequence
+                .iter()
+                .copied()
+                .map(aggregate_change_contribution)
+                .collect::<Vec<_>>();
+            let carrier_outcomes = reason_sequence
+                .iter()
+                .copied()
+                .enumerate()
+                .map(|(index, reason)| {
+                    ChangeCarrierOutcome::new(
+                        crate::EventId::from_bytes(
+                            [u8::try_from(index + 1).unwrap_or(u8::MAX); 32],
+                        ),
+                        crate::ChangeHash::from_bytes([7; 32]),
+                        crate::EventId::from_bytes([8; 32]),
+                        reason,
+                    )
+                })
+                .collect::<Vec<_>>();
+            assert!(
+                carrier_outcomes
+                    .iter()
+                    .zip(&reason_sequence)
+                    .all(|(outcome, reason)| outcome.disposition == expected_carrier(*reason))
             );
+
+            for lineage in [
+                FinalLineageChangeState::Accepted,
+                FinalLineageChangeState::CanonicalPruned,
+                FinalLineageChangeState::Current,
+            ] {
+                let expected_aggregate = match lineage {
+                    FinalLineageChangeState::Accepted => Accepted,
+                    FinalLineageChangeState::CanonicalPruned => Excluded,
+                    FinalLineageChangeState::Current if contributions.contains(&Unresolved) => {
+                        Pending
+                    }
+                    FinalLineageChangeState::Current
+                        if contributions.contains(&AuthorizedExcluded) =>
+                    {
+                        Excluded
+                    }
+                    FinalLineageChangeState::Current => Invalid,
+                };
+                assert_eq!(
+                    reduce_aggregate_change_outcome(lineage, &contributions),
+                    expected_aggregate
+                );
+                let mut reversed = contributions.clone();
+                reversed.reverse();
+                assert_eq!(
+                    reduce_aggregate_change_outcome(lineage, &reversed),
+                    expected_aggregate
+                );
+                assert!(
+                    carrier_outcomes
+                        .iter()
+                        .zip(&reason_sequence)
+                        .all(|(outcome, reason)| outcome.disposition == expected_carrier(*reason))
+                );
+            }
         }
     }
 

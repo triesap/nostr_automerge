@@ -158,6 +158,7 @@ PREDECESSOR_CANDIDATES = (
     "3880c2066981aa5b380e974acecc23424bf5dd13",
     "486ca0f4442693bb0039d502b21b8f4e9d4c87f9",
     "7ad18008b90e62b2c7dc8cfaa25980520f6921d7",
+    "bdfa8695473658eb7c216004cfc56ca0656a82c5",
 )
 CLOSURE_PATHS = frozenset(
     {
@@ -165,14 +166,9 @@ CLOSURE_PATHS = frozenset(
         "crates/nostr_automerge/tests/public_engine_api.rs",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
-        "docs/execution/remediation_v9/reproductions.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
-        "scripts/reproduce_remediation_v9.py",
-        "scripts/validate_private_reproduction_boundary_v9.py",
-        "scripts/validate_remediation_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
-        "spec/remediation_findings_v9.json",
     }
 )
 CLOSURE_NEW_PATHS = frozenset()
@@ -207,6 +203,7 @@ EXPECTED_GATES = (
     ("V-EVIDENCE",),
     ("V-CONF",),
     ("V-RESOURCE",),
+    ("V-RUST",),
     ("V-RUST",),
     ("V-RUST",),
 )
@@ -271,6 +268,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-INTERRUPT-001", "NCRDT-RESOURCE-014"),
     ("NCRDT-DISPOSITION-006", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-DISPOSITION-006", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -313,6 +311,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_083",),
     ("FINDING_074",),
     ("FINDING_074",),
+    ("FINDING_079",),
 )
 FORBIDDEN_KEY_WORDS = {
     "source",
@@ -905,7 +904,7 @@ def validate_predecessors(
     checkpoint: dict[str, Any],
 ) -> None:
     require(isinstance(rows, list), "predecessors:type")
-    approved = [expected_predecessor(index) for index in range(32)]
+    approved = [expected_predecessor(index) for index in range(33)]
     require(rows == approved, "predecessors:approved_projection")
     require(active == 1158 + len(approved), "predecessors:approved_cursor")
     expected_keys = {
