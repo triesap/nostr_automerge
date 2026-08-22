@@ -834,9 +834,11 @@ mod tests {
     use super::{
         RunError, StateAssertionPolicy, compare_expected, discover_fixtures, evaluate_scenario,
         generic_report, materialized_state_assertions, run_corpus, run_fixture,
-        state_assertion_policy, validate_materialized_state_assertions,
+        signed_permutation_report, state_assertion_policy, validate_materialized_state_assertions,
     };
+    use crate::expected::load_expected;
     use crate::fixture::load_fixture;
+    use crate::report_json::write_canonical_report;
     use crate::scenario::SignedScenarioInput;
 
     #[test]
@@ -882,7 +884,48 @@ mod tests {
             .join("../../fixtures/v1_draft/scenarios/dependencies/dependencies_late_recovery.fixture.json");
         assert!(run_fixture(&fixture).is_ok());
     }
-    use crate::expected::{StateAssertion, load_expected};
+
+    #[test]
+    fn report_contract_compatibility_consumers_are_exact() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let fixture_path =
+            root.join("fixtures/v1_draft/scenarios/projection/projection_all_scalars.fixture.json");
+        let fixture = load_fixture(&fixture_path);
+        assert!(fixture.is_ok());
+        let Ok(fixture) = fixture else { return };
+        assert_eq!(fixture.revision, ProtocolRevision::draft_v1().identifier());
+        let Some(base) = fixture_path.parent() else {
+            return;
+        };
+        let expected_path = base.join(&fixture.expected.report_path);
+        let expected = load_expected(&expected_path);
+        let expected_bytes = fs::read(&expected_path);
+        let input = fs::read(base.join(&fixture.inputs[0].path));
+        assert!(expected.is_ok() && expected_bytes.is_ok() && input.is_ok());
+        let (Ok(expected), Ok(expected_bytes), Ok(input)) = (expected, expected_bytes, input)
+        else {
+            return;
+        };
+        let signed = SignedScenarioInput::parse(&input);
+        assert!(signed.is_ok());
+        let Ok(signed) = signed else { return };
+        assert_eq!(signed.revision, ProtocolRevision::draft_v1().identifier());
+        assert_eq!(signed.requirements, fixture.requirements);
+
+        let actual =
+            signed_permutation_report(signed, state_assertion_policy(&fixture.requirements));
+        assert_eq!(actual, Ok(expected.clone()));
+        assert_eq!(
+            actual.as_ref().map(|report| report.revision.as_str()),
+            Ok(ProtocolRevision::draft_v1().identifier())
+        );
+        assert_eq!(
+            actual
+                .and_then(|report| write_canonical_report(&report).map_err(|_| RunError::Expected)),
+            Ok(expected_bytes)
+        );
+    }
+    use crate::expected::StateAssertion;
     use crate::scenario::ScenarioInput;
 
     #[test]
@@ -1058,20 +1101,47 @@ mod tests {
         assert_eq!(policy, StateAssertionPolicy::CompleteMaterializedState);
         let baseline = super::signed_permutation_report(signed.clone(), policy);
         assert_eq!(baseline, Ok(expected.clone()));
+        let Ok(baseline_report) = baseline.as_ref() else {
+            return;
+        };
+        let baseline_bytes = write_canonical_report(baseline_report);
+        assert!(baseline_bytes.is_ok());
 
-        let mut poisoned = expected;
-        poisoned.revision = "draft_2026_09".to_owned();
-        poisoned.completion = "cancelled".to_owned();
-        poisoned.canonical_controls = vec!["ff".repeat(32)];
-        poisoned.history_digest = "ee".repeat(32);
-        poisoned.dispositions_digest = "dd".repeat(32);
-        poisoned.state_assertions.reverse();
-        poisoned.state_assertions.pop();
-        poisoned.state_assertions.push(StateAssertion {
+        let mut poisoned_expected = expected.clone();
+        poisoned_expected.revision = "draft_2026_09".to_owned();
+        poisoned_expected.completion = "cancelled".to_owned();
+        poisoned_expected.canonical_controls = vec!["ff".repeat(32)];
+        poisoned_expected.history_digest = "ee".repeat(32);
+        poisoned_expected.dispositions_digest = "dd".repeat(32);
+        poisoned_expected.state_assertions.reverse();
+        poisoned_expected.state_assertions.pop();
+        poisoned_expected.state_assertions.push(StateAssertion {
             path: vec![serde_json::json!("poison-selector")],
             expected: serde_json::json!({"type":"mark","name":"poison"}),
         });
-        assert_eq!(super::signed_permutation_report(signed, policy), baseline);
+        assert_ne!(poisoned_expected, expected);
+
+        let mut poisoned_signed = signed;
+        let original_declaration = poisoned_signed.expected_report.clone();
+        let poisoned_declaration = serde_json::to_value(&poisoned_expected);
+        assert!(poisoned_declaration.is_ok());
+        let Ok(poisoned_declaration) = poisoned_declaration else {
+            return;
+        };
+        assert_ne!(poisoned_declaration, original_declaration);
+        poisoned_signed.expected_report = poisoned_declaration.clone();
+        assert_eq!(poisoned_signed.expected_report, poisoned_declaration);
+
+        let poisoned_actual = super::signed_permutation_report(poisoned_signed, policy);
+        assert_eq!(poisoned_actual, baseline);
+        let Ok(poisoned_report) = poisoned_actual.as_ref() else {
+            return;
+        };
+        assert_eq!(write_canonical_report(poisoned_report), baseline_bytes);
+        assert_eq!(
+            compare_expected(baseline_report, &poisoned_expected),
+            Err(RunError::Mismatch)
+        );
     }
 
     #[test]

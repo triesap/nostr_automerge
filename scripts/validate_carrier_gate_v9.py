@@ -38,6 +38,7 @@ STEP_1200_CANDIDATE = "4eeb074d160739300451561bcae267010d5353fc"
 STEP_1201_CANDIDATE = "36458c459db30c8b6cf1f5da6fb6ef1a5df01db3"
 STEP_1202_CANDIDATE = "7431706c1f54bfaf5ad6b7d7f69819ec3c1ab320"
 STEP_1203_CANDIDATE = "7f73902d2272c56012b65cc5700d9ccad2a85783"
+STEP_1204_CANDIDATE = "9daaf106ad645e5e191d1fe767378ece114c000f"
 STEP_1195_SCOPE_IDENTITY = (
     "9d7a285d9e9f9fc3b6c566aa6bd776030df8f2ee078d0e254c696446a462f0fd"
 )
@@ -163,7 +164,23 @@ STEP_1203_ADDITIVE_REPORT_PATHS = tuple(
     if relative != "crates/nostr_automerge/src/integrity.rs"
 )
 CONFORMANCE_ADDITIVE_REPORT_PROJECTION = (
+    "41e5fe9671ec9425dfb40801281bc7ef02b42b787473f432b83086ff44ff9b47"
+)
+STEP_1204_ADDITIVE_REPORT_PROJECTION = (
     "b15b10e405feada0206363088b5d3fcb3a1f9e7f14ee570101484a3dda76f54c"
+)
+STEP_1205_ADDITIVE_REPORT_PATHS = (
+    "tools/nostr_automerge_conformance/src/runner.rs",
+)
+STEP_1205_ADDITIVE_REPORT_PROJECTION = (
+    "6b3691b13d81750a3a1ffb170227a62d81ef96863f4df6983c2882cdb94cfd0d"
+)
+STEP_1205_SOURCE_BINDINGS = (
+    (
+        "tools/nostr_automerge_conformance/src/runner.rs",
+        "64a538efd6029431542c347421539749cab5926c30322aebb39f3ea61fc66efa",
+        "acd2383d53060c747f429460207c3d555cf0c39e603fe7ff9a18085b9deb9804",
+    ),
 )
 STEP_1203_ADDITIVE_REPORT_PROJECTION = (
     "5a6294997598c6e502276d678d2bc996864d893c458db94ce1db58e3c5fdb481"
@@ -242,13 +259,16 @@ def public_matrix_identity() -> str:
     return identity
 
 
-def conformance_source_diff(target: str | None) -> tuple[tuple[str, ...], bytes]:
+def conformance_source_diff_between(
+    base: str,
+    target: str | None,
+) -> tuple[tuple[str, ...], bytes]:
     arguments = [
         "diff",
         "--no-ext-diff",
         "--unified=0",
         "--no-renames",
-        CONFORMANCE["candidate"],
+        base,
     ]
     if target is not None:
         arguments.append(target)
@@ -260,7 +280,7 @@ def conformance_source_diff(target: str | None) -> tuple[tuple[str, ...], bytes]
         "--name-only",
         "-z",
         "--no-renames",
-        CONFORMANCE["candidate"],
+        base,
     ]
     if target is not None:
         name_arguments.append(target)
@@ -269,6 +289,24 @@ def conformance_source_diff(target: str | None) -> tuple[tuple[str, ...], bytes]
     require(encoded.endswith(b"\0"), "carrier_gate:semantic_source_names")
     names = tuple(value.decode("utf-8") for value in encoded[:-1].split(b"\0"))
     return names, patch
+
+
+def conformance_source_diff(target: str | None) -> tuple[tuple[str, ...], bytes]:
+    return conformance_source_diff_between(CONFORMANCE["candidate"], target)
+
+
+def conformance_source_values(
+    target: str | None,
+    paths: tuple[str, ...],
+) -> tuple[tuple[str, bytes], ...]:
+    values = []
+    for relative in paths:
+        if target is None:
+            value = (ROOT / relative).read_bytes()
+        else:
+            value = git_bytes("show", f"{target}:{relative}")
+        values.append((relative, value))
+    return tuple(values)
 
 
 def validate_conformance_source_projection(
@@ -307,6 +345,42 @@ def validate_current_conformance_source() -> None:
     validate_conformance_source_projection(
         names, patch, CONFORMANCE_ADDITIVE_REPORT_PROJECTION
     )
+
+
+def validate_step_1205_transition(
+    parent: str,
+    names: tuple[str, ...],
+    patch: bytes,
+    parent_sources: tuple[tuple[str, bytes], ...],
+    current_sources: tuple[tuple[str, bytes], ...],
+) -> None:
+    require(parent == STEP_1204_CANDIDATE, "carrier_gate:step1205_parent")
+    require(names == STEP_1205_ADDITIVE_REPORT_PATHS, "carrier_gate:step1205_paths")
+    require(
+        hashlib.sha256(patch).hexdigest() == STEP_1205_ADDITIVE_REPORT_PROJECTION,
+        "carrier_gate:step1205_patch",
+    )
+    expected_paths = tuple(binding[0] for binding in STEP_1205_SOURCE_BINDINGS)
+    require(
+        tuple(relative for relative, _ in parent_sources) == expected_paths,
+        "carrier_gate:step1205_parent_source_paths",
+    )
+    require(
+        tuple(relative for relative, _ in current_sources) == expected_paths,
+        "carrier_gate:step1205_current_source_paths",
+    )
+    for (relative, parent_sha256, current_sha256), (_, parent_source), (
+        _,
+        current_source,
+    ) in zip(STEP_1205_SOURCE_BINDINGS, parent_sources, current_sources, strict=True):
+        require(
+            hashlib.sha256(parent_source).hexdigest() == parent_sha256,
+            f"carrier_gate:step1205_parent_source:{relative}",
+        )
+        require(
+            hashlib.sha256(current_source).hexdigest() == current_sha256,
+            f"carrier_gate:step1205_current_source:{relative}",
+        )
 
 
 def conformance_source_mutation_self_test() -> int:
@@ -416,52 +490,86 @@ def conformance_source_mutation_self_test() -> int:
         STEP_1203_ADDITIVE_REPORT_PATHS,
     )
 
-    committed_names, committed_patch = conformance_source_diff(None)
-    committed_parent = STEP_1203_CANDIDATE
+    require(
+        git_bytes("rev-parse", f"{STEP_1204_CANDIDATE}^").decode().strip()
+        == STEP_1203_CANDIDATE,
+        "carrier_gate:reevaluation_report_parent",
+    )
+    reevaluation_names, reevaluation_patch = conformance_source_diff(
+        STEP_1204_CANDIDATE
+    )
     validate_committed_additive_report_child(
-        committed_parent,
         STEP_1203_CANDIDATE,
-        committed_names,
-        committed_patch,
+        STEP_1203_CANDIDATE,
+        reevaluation_names,
+        reevaluation_patch,
+        STEP_1204_ADDITIVE_REPORT_PROJECTION,
+    )
+
+    head_parent = git_bytes("rev-parse", "HEAD^").decode().strip()
+    require(head_parent == STEP_1204_CANDIDATE, "carrier_gate:step1205_head_parent")
+    parent_sources = conformance_source_values(
+        STEP_1204_CANDIDATE,
+        STEP_1205_ADDITIVE_REPORT_PATHS,
+    )
+    head_names, head_patch = conformance_source_diff_between(
+        STEP_1204_CANDIDATE,
+        "HEAD",
+    )
+    head_sources = conformance_source_values("HEAD", STEP_1205_ADDITIVE_REPORT_PATHS)
+    validate_step_1205_transition(
+        head_parent,
+        head_names,
+        head_patch,
+        parent_sources,
+        head_sources,
+    )
+    current_names, current_patch = conformance_source_diff_between(
+        STEP_1204_CANDIDATE,
+        None,
+    )
+    current_sources = conformance_source_values(None, STEP_1205_ADDITIVE_REPORT_PATHS)
+    validate_step_1205_transition(
+        head_parent,
+        current_names,
+        current_patch,
+        parent_sources,
+        current_sources,
+    )
+
+    cumulative_names, cumulative_patch = conformance_source_diff(None)
+    validate_committed_additive_report_child(
+        STEP_1204_CANDIDATE,
+        STEP_1204_CANDIDATE,
+        cumulative_names,
+        cumulative_patch,
         CONFORMANCE_ADDITIVE_REPORT_PROJECTION,
     )
-    head = git_bytes("rev-parse", "HEAD").decode().strip()
-    if head != STEP_1203_CANDIDATE:
-        require(
-            git_bytes("rev-parse", "HEAD^").decode().strip()
-            == STEP_1203_CANDIDATE,
-            "carrier_gate:actual_postcommit_parent",
-        )
-        actual_names, actual_patch = conformance_source_diff("HEAD")
-        validate_committed_additive_report_child(
-            STEP_1203_CANDIDATE,
-            STEP_1203_CANDIDATE,
-            actual_names,
-            actual_patch,
-            CONFORMANCE_ADDITIVE_REPORT_PROJECTION,
-        )
-
-    mutations = (
-        (committed_parent, committed_names[:-1], committed_patch),
-        (committed_parent, tuple(reversed(committed_names)), committed_patch),
+    cumulative_mutations = (
+        (STEP_1204_CANDIDATE, cumulative_names[:-1], cumulative_patch),
         (
-            committed_parent,
-            committed_names + ("crates/nostr_automerge/src/checkpoint/mod.rs",),
-            committed_patch,
+            STEP_1204_CANDIDATE,
+            tuple(reversed(cumulative_names)),
+            cumulative_patch,
         ),
         (
-            committed_parent,
-            committed_names,
-            committed_patch + b"semantic-source-drift\n",
+            STEP_1204_CANDIDATE,
+            cumulative_names + ("crates/nostr_automerge/src/checkpoint/mod.rs",),
+            cumulative_patch,
         ),
-        ("0" * 40, committed_names, committed_patch),
+        (
+            STEP_1204_CANDIDATE,
+            cumulative_names,
+            cumulative_patch + b"semantic-source-drift\n",
+        ),
+        ("0" * 40, cumulative_names, cumulative_patch),
     )
     caught = 0
-    for parent, names, patch in mutations:
+    for parent, names, patch in cumulative_mutations:
         try:
             validate_committed_additive_report_child(
                 parent,
-                STEP_1203_CANDIDATE,
+                STEP_1204_CANDIDATE,
                 names,
                 patch,
                 CONFORMANCE_ADDITIVE_REPORT_PROJECTION,
@@ -470,6 +578,77 @@ def conformance_source_mutation_self_test() -> int:
             caught += 1
             continue
         raise LedgerError("carrier_gate_semantic_source_mutation_survived")
+
+    parent_source_drift = (
+        (parent_sources[0][0], parent_sources[0][1] + b"parent-source-drift\n"),
+    )
+    current_source_drift = (
+        (current_sources[0][0], current_sources[0][1] + b"current-source-drift\n"),
+    )
+    extra_current_source = (
+        *current_sources,
+        ("crates/nostr_automerge/src/checkpoint/mod.rs", b"extra-source\n"),
+    )
+    transition_mutations = (
+        ("0" * 40, current_names, current_patch, parent_sources, current_sources),
+        (head_parent, (), current_patch, parent_sources, current_sources),
+        (
+            head_parent,
+            (*current_names, "crates/nostr_automerge/src/checkpoint/mod.rs"),
+            current_patch,
+            parent_sources,
+            current_sources,
+        ),
+        (
+            head_parent,
+            current_names,
+            current_patch + b"step1205-patch-drift\n",
+            parent_sources,
+            current_sources,
+        ),
+        (
+            head_parent,
+            current_names,
+            current_patch,
+            parent_source_drift,
+            current_sources,
+        ),
+        (
+            head_parent,
+            current_names,
+            current_patch,
+            parent_sources,
+            current_source_drift,
+        ),
+        (head_parent, current_names, current_patch, parent_sources, ()),
+        (
+            head_parent,
+            current_names,
+            current_patch,
+            parent_sources,
+            extra_current_source,
+        ),
+        (
+            head_parent,
+            current_names,
+            current_patch + b"coordinated-step1205-drift\n",
+            parent_sources,
+            current_source_drift,
+        ),
+    )
+    for parent, names, patch, prior_sources, candidate_sources in transition_mutations:
+        try:
+            validate_step_1205_transition(
+                parent,
+                names,
+                patch,
+                prior_sources,
+                candidate_sources,
+            )
+        except LedgerError:
+            caught += 1
+            continue
+        raise LedgerError("carrier_gate_step1205_mutation_survived")
     return caught
 
 

@@ -2,7 +2,7 @@
 
 Status: `in_progress`
 
-RCLD 85 has 46 committed predecessors through `step_1203`. The opaque
+RCLD 85 has 47 committed predecessors through `step_1204`. The opaque
 compatibility checkpoint is bound by one approved 40-character candidate and
 one canonical 64-character result identity. Its public projection records nine
 findings, 23 expected-failure reproductions, 276 negative mutations, one
@@ -71,8 +71,9 @@ conformance, report validation, and the full public gate.
 | `step_1201` | `V-REPORT` | pass |
 | `step_1202` | `V-REPORT` | pass |
 | `step_1203` | `V-RUST` | pass |
-| `step_1204` | `V-RESOURCE` | active |
-| `step_1205` | `V-REPORT` | next |
+| `step_1204` | `V-RESOURCE` | pass |
+| `step_1205` | `V-REPORT` | active |
+| `step_1206` | `V-FULL-RUST` | next |
 
 The completed report-authority checkpoint binds a closed inventory of complete
 and no-progress construction plus nine revision consumers to exact reviewed
@@ -129,7 +130,7 @@ boundaries enter the same canonical no-progress constructor. Source and
 behavior inventories reject missing, extra, reordered, alternate, or restored
 hybrid construction paths.
 
-The active reevaluation checkpoint returns the current report immediately when
+The completed reevaluation checkpoint returns the current report immediately when
 either the previous or current report is incomplete. Complete-report
 reevaluation charges before every item used to derive the previous summary,
 current summary, control relationship, alert prefix, and final report. A stop
@@ -138,6 +139,16 @@ original budget or cancellation cause; it cannot retain a target-sized prefix,
 re-query cancellation, or mask an unexpected failure. Canonical alert
 comparisons are interleaved one-for-one with successful charges, and the
 validated alert is constructed without repeating that traversal.
+
+The active report-regression checkpoint binds 21 ordered clauses to 21 exact,
+unique, enabled behavioral tests across the report constructor, public API,
+compatibility loader and serializer, and conformance-runner surfaces. The
+closed inventory rejects missing, extra, duplicate, reordered, stale,
+ignored, or source-anchor-weakened proofs before running each test by its
+exact name. Twenty inventory and source mutations exercise brace-aware test-body
+and ignore-attribute rejection, while ten transcript mutations prove that the
+exact requested test—not a substring, ignored test, or stale target—ran and
+passed. The four later findings remain deliberately outside this suite.
 
 The authority projection is monotonic from `checkpoint_expectations_corrected` to
 `distribution_complete`. It records 148 requirements now and at completion,

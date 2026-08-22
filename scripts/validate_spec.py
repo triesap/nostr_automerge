@@ -26,6 +26,7 @@ VALIDATORS = [
     "validate_remediation_v9.py",
     "validate_checkpoint_parity_v9.py",
     "validate_carrier_gate_v9.py",
+    "validate_report_contract_v9.py",
     "validate_runtime_ledger_v9.py",
     "validate_private_reproduction_boundary_v9.py",
 ]

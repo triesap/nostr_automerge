@@ -8,6 +8,7 @@ import hashlib
 import json
 import re
 import subprocess
+import sys
 import unicodedata
 from pathlib import Path
 from typing import Any
@@ -25,6 +26,14 @@ CARRIER_GATE_REPORT = "reports/carrier_gate_v9.json"
 LEDGER = "implementation/runtime_ledger_v9.json"
 LEDGER_SCHEMA = "tools/validation/runtime_ledger_v9.schema.json"
 PLAN = "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md"
+REPORT_CONTRACT_SUITE = "scripts/validate_report_contract_v9.py"
+REPORT_CONTRACT_INVENTORY_SHA256 = (
+    "f911bcb863106be48017734dce12d398fa66794c73d3ca7d1d692d897d42b7ca"
+)
+REPORT_CONTRACT_CLAUSE_COUNT = 21
+REPORT_CONTRACT_SOURCE_COUNT = 9
+REPORT_CONTRACT_NEGATIVE_MUTATIONS = 20
+REPORT_CONTRACT_TRANSCRIPT_MUTATIONS = 10
 APPROVED_CANDIDATE = "ad7f90268233418be95f4e640f2238a1d240858f"
 APPROVED_RESULT_IDENTITY = (
     "5678ffbb08a87fc518c4518d7f348ee4743a89c3cb1c4549061fe62707eed936"
@@ -262,6 +271,7 @@ PREDECESSOR_CANDIDATES = (
     "36458c459db30c8b6cf1f5da6fb6ef1a5df01db3",
     "7431706c1f54bfaf5ad6b7d7f69819ec3c1ab320",
     "7f73902d2272c56012b65cc5700d9ccad2a85783",
+    "9daaf106ad645e5e191d1fe767378ece114c000f",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -316,7 +326,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "tools/nostr_automerge_conformance/src/runner.rs",
-        "64a538efd6029431542c347421539749cab5926c30322aebb39f3ea61fc66efa",
+        "acd2383d53060c747f429460207c3d555cf0c39e603fe7ff9a18085b9deb9804",
     ),
     (
         "tools/nostr_automerge_conformance/src/scenario.rs",
@@ -325,22 +335,20 @@ REPORT_REVISION_SOURCE_BINDINGS = (
 )
 CLOSURE_PATHS = frozenset(
     {
-        "crates/nostr_automerge/src/engine/evaluation_report.rs",
-        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "crates/nostr_automerge/src/integrity.rs",
-        "docs/api/public_engine.md",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
-        "docs/execution/remediation_v9/reproductions.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
-        "scripts/reproduce_remediation_v9.py",
         "scripts/validate_carrier_gate_v9.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
+        "scripts/validate_report_contract_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
+        "scripts/validate_spec.py",
+        "tools/nostr_automerge_conformance/src/runner.rs",
+        "tools/nostr_automerge_xtask/src/validate.rs",
     }
 )
-CLOSURE_NEW_PATHS = frozenset()
+CLOSURE_NEW_PATHS = frozenset({"scripts/validate_report_contract_v9.py"})
 EXPECTED_GATES = (
     ("V-AUTH",),
     ("V-AUTH",),
@@ -388,6 +396,7 @@ EXPECTED_GATES = (
     ("V-REPORT",),
     ("V-REPORT",),
     ("V-RUST",),
+    ("V-RESOURCE",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -485,6 +494,12 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-DISPOSITION-006", "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-DISPOSITION-006", "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-INTERRUPT-001", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    (
+        "NCRDT-INTERRUPT-001",
+        "NCRDT-RESOURCE-014",
+        "NCRDT-CONF-010",
+        "NCRDT-EVIDENCE-006",
+    ),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -541,6 +556,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_081",),
     ("FINDING_081",),
     ("FINDING_075",),
+    ("FINDING_082",),
 )
 FORBIDDEN_KEY_WORDS = {
     "source",
@@ -857,6 +873,11 @@ def validate_report_revision_inventory(
         "report_inventory:engine_projection",
     )
     require(
+        "report_contract_compatibility_consumers_are_exact" in runner
+        and "assert_eq!(actual, Ok(expected.clone()));" in runner,
+        "report_inventory:compatibility_pipeline",
+    )
+    require(
         "report.completion() != Completion::Complete" in runner
         and "incomplete_engine_report_projects_exact_empty_neutral_state" in runner,
         "report_inventory:no_progress_projection",
@@ -951,6 +972,33 @@ def report_revision_inventory_self_test() -> int:
             continue
         raise LedgerError("report_inventory_mutation_survived:source")
     return caught
+
+
+def validate_report_contract_suite() -> None:
+    result = subprocess.run(
+        (sys.executable, str(ROOT / REPORT_CONTRACT_SUITE)),
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    expected = "\n".join(
+        (
+            "PASS: remediation-v9 report contract suite",
+            f"- clauses={REPORT_CONTRACT_CLAUSE_COUNT}",
+            f"- source_files={REPORT_CONTRACT_SOURCE_COUNT}",
+            f"- negative_mutations={REPORT_CONTRACT_NEGATIVE_MUTATIONS}",
+            "- transcript_negative_mutations="
+            f"{REPORT_CONTRACT_TRANSCRIPT_MUTATIONS}",
+            f"- inventory_sha256={REPORT_CONTRACT_INVENTORY_SHA256}",
+            "- executed=0",
+            "",
+        )
+    )
+    require(
+        result.returncode == 0 and result.stderr == "" and result.stdout == expected,
+        "report_contract_suite:result",
+    )
 
 
 def normalized_key_words(value: str) -> tuple[str, ...]:
@@ -2461,6 +2509,7 @@ def main() -> int:
     validate_opaque_checkpoint(checkpoint)
     validate_opaque_carrier(carrier)
     validate_report_revision_inventory()
+    validate_report_contract_suite()
     validate_runtime_ledger(
         ledger, reproduction, checkpoint, parity, carrier, carrier_gate
     )
@@ -2479,6 +2528,15 @@ def main() -> int:
     print(f"- carrier_matrix_rows={carrier['result_counts']['aggregate_rows']}")
     print(f"- carrier_gate_identity={carrier_gate['result_identity_sha256']}")
     print(f"- report_revision_inventory={len(REPORT_REVISION_INVENTORY)}")
+    print(f"- report_contract_clauses={REPORT_CONTRACT_CLAUSE_COUNT}")
+    print(
+        "- report_contract_negative_mutations="
+        f"{REPORT_CONTRACT_NEGATIVE_MUTATIONS}"
+    )
+    print(
+        "- report_contract_transcript_mutations="
+        f"{REPORT_CONTRACT_TRANSCRIPT_MUTATIONS}"
+    )
     print(f"- report_inventory_negative_mutations={report_inventory_mutations}")
     print(f"- negative_mutations={mutations}")
     print(f"- closure_scope_negative_mutations={closure_mutations}")

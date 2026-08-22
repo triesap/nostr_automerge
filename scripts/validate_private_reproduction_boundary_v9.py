@@ -59,6 +59,7 @@ PYTHON_SURFACES = (
     "scripts/validate_companion_specs.py",
     "scripts/validate_checkpoint_parity_v9.py",
     "scripts/validate_carrier_gate_v9.py",
+    "scripts/validate_report_contract_v9.py",
     "scripts/validate_runtime_ledger_v9.py",
     "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_rust_conformance_v9.py",
@@ -86,6 +87,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "crates/nostr_automerge/src/types/actor_id.rs",
         "crates/nostr_automerge/tests/public_engine_api.rs",
         "crates/nostr_automerge/tests/remediation_v8_reproductions.rs",
+        "checkpoints/checkpoints_multichunk.fixture.json",
         "deviations/step_001.md",
         "docs/adr",
         "docs/adr/README.md",
@@ -131,6 +133,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_diagnostics.py",
         "scripts/validate_fixtures.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
+        "scripts/validate_report_contract_v9.py",
         "scripts/validate_protocol_revision.py",
         "scripts/validate_rust_conformance_v9.py",
         "scripts/reproduce_remediation_v9.py",
@@ -361,13 +364,18 @@ def validate_source_surfaces() -> None:
                         }
                     )
                     or (
-                        value in {"git", "python3"} | LEGITIMATE_PUBLIC_COMMANDS
+                        value in {"cargo", "git", "python3"}
+                        | LEGITIMATE_PUBLIC_COMMANDS
                         and relative
                         == "scripts/validate_private_reproduction_boundary_v9.py"
                     )
                     or (
                         value in LEGITIMATE_PUBLIC_COMMANDS
                         and relative == "scripts/validate_rust_conformance_v9.py"
+                    )
+                    or (
+                        value == "cargo"
+                        and relative == "scripts/validate_report_contract_v9.py"
                     )
                 ),
             )
