@@ -34,8 +34,8 @@ use crate::{
 };
 
 use super::evaluation_report::{
-    DispositionRecord, EvaluationError, EvaluationFailure, EvaluationReport, EvaluationReportParts,
-    ProtocolItemIdentifier, REPORT_INVARIANT_ITEMS,
+    CompleteReportWitness, DispositionRecord, EvaluationError, EvaluationFailure, EvaluationReport,
+    EvaluationReportParts, ProtocolItemIdentifier, REPORT_INVARIANT_ITEMS,
 };
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 
@@ -501,32 +501,45 @@ impl ReferenceEvaluator {
             .map_err(|_| {
                 settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
             })?;
-        let report = EvaluationReport::from_complete_parts(EvaluationReportParts {
-            coordinate,
-            revision: self.revision,
-            canonical_controls: batch.canonical_controls,
-            disposition_records,
-            control_dispositions,
-            dispositions,
-            change_carrier_dispositions: change_carrier_dispositions
-                .values()
-                .map(|outcome| (outcome.event_id, outcome.change_hash, outcome.disposition))
-                .collect(),
-            accepted_changes,
-            pending_changes,
-            excluded_changes,
-            invalid_changes,
-            heads,
-            evidence,
-            checkpoints,
-            history_digest,
-            dispositions_digest,
-            integrity_alerts: batch.integrity_alerts,
-            manifest,
-            completion: batch.completion,
-            failure: batch.failure,
-            document,
-        })
+        let accepted_state = batch
+            .canonical_controls
+            .last()
+            .and_then(|control| batch.accepted_at_control.get(control));
+        let witness = CompleteReportWitness::new(
+            view.parent_relationships(),
+            &batch.dispositions,
+            accepted_state.map(AcceptedAtControl::accepted_closure),
+            accepted_state.map(AcceptedAtControl::frontier_heads),
+        );
+        let report = EvaluationReport::from_complete_parts(
+            EvaluationReportParts {
+                coordinate,
+                revision: self.revision,
+                canonical_controls: batch.canonical_controls,
+                disposition_records,
+                control_dispositions,
+                dispositions,
+                change_carrier_dispositions: change_carrier_dispositions
+                    .values()
+                    .map(|outcome| (outcome.event_id, outcome.change_hash, outcome.disposition))
+                    .collect(),
+                accepted_changes,
+                pending_changes,
+                excluded_changes,
+                invalid_changes,
+                heads,
+                evidence,
+                checkpoints,
+                history_digest,
+                dispositions_digest,
+                integrity_alerts: batch.integrity_alerts,
+                manifest,
+                completion: batch.completion,
+                failure: batch.failure,
+                document,
+            },
+            witness,
+        )
         .map_err(|_| settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant))?;
         finalization.refund(budget).map_err(|_| {
             settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)

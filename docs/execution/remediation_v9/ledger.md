@@ -2,7 +2,7 @@
 
 Status: `in_progress`
 
-RCLD 85 has 41 committed predecessors through `step_1198`. The opaque
+RCLD 85 has 42 committed predecessors through `step_1199`. The opaque
 compatibility checkpoint is bound by one approved 40-character candidate and
 one canonical 64-character result identity. Its public projection records nine
 findings, 23 expected-failure reproductions, 276 negative mutations, one
@@ -66,8 +66,9 @@ conformance, report validation, and the full public gate.
 | `step_1196` | `V-FULL-RUST` | pass |
 | `step_1197` | `V-REPORT` | pass |
 | `step_1198` | `V-REPORT` | pass |
-| `step_1199` | `V-REPORT` | active |
-| `step_1200` | `V-REPORT` | next |
+| `step_1199` | `V-REPORT` | pass |
+| `step_1200` | `V-REPORT` | active |
+| `step_1201` | `V-REPORT` | next |
 
 The active report checkpoint binds a closed inventory of three construction
 families and nine revision consumers to exact reviewed source identities.
@@ -80,7 +81,7 @@ actual report output; the typed state projection policy comes from the
 repository-owned fixture requirement inventory and the materialized engine
 state.
 
-The active no-progress checkpoint rejects every nonempty incomplete report
+The completed no-progress checkpoint rejects every nonempty incomplete report
 field, mismatched typed stop, construction-path mismatch, coordinate-bound
 digest mismatch, resolved manifest, alert, checkpoint, evidence item, or
 materialized state. Budget exhaustion and cancellation construct the same
@@ -88,6 +89,15 @@ empty protocol view and canonical empty-input digests; only their typed
 completion and failure differ. Neutral state assertions are empty whenever the
 engine report is incomplete and remain derived from engine state rather than
 expected data.
+
+The active complete-report checkpoint binds the reported canonical-control
+sequence to the engine-derived parent chain and exact accepted control set. It
+also requires the ordered semantic disposition map, all four disjoint
+`ChangeHash` partitions, and namespaced semantic records to agree exactly. The
+accepted set and heads match the final canonical control's evaluated closure
+and frontier. Missing, extra, overlapping, duplicate, reordered, or unsorted
+views, a missing document, or a complete local failure fail closed without
+repair.
 
 The authority projection is monotonic from `checkpoint_expectations_corrected` to
 `distribution_complete`. It records 148 requirements now and at completion,
@@ -110,7 +120,7 @@ distribution runs (`84f370b201945c844396406acfb022faa2bdadb32d96206511474a002187
 canonical output and
 `74b24f58fe9c20da082dd9ae4c1b344e8468c00a70dbd710adf724ab70ed14c4`
 serialized output). The earlier signed-v9 conformance report remains an
-immutable historical record and is not the carrier closure authority. There are 85
+immutable historical record and is not the carrier closure authority. There are 84
 checkpoints including the active checkpoint remaining through `step_1283`.
 
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`

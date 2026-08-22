@@ -58,6 +58,15 @@ alerts, state assertions, or a document assembled from partial work. Report
 construction rejects a nonempty field or a digest not recomputed from the empty
 coordinate-and-revision-bound views.
 
+A complete report is accepted only when its canonical controls exactly match
+the accepted control outcomes and follow the engine-derived parent chain. Its
+ordered semantic disposition map must match the accepted, pending, excluded,
+and invalid `ChangeHash` partitions and the namespaced semantic records
+bijectively. The accepted set and ordered heads must also match the final
+canonical control's evaluated closure and frontier. Duplicate, missing, extra,
+overlapping, or unsorted values are rejected without repair, and a complete
+report always has a materialized document and no local failure.
+
 The API is alpha. Public type and method names may change before a stable crate
 release. Protocol dispositions, canonical ordering, and digest bytes follow the
 sealed draft-v1 profile and are not caller-selectable. Evaluation is a complete

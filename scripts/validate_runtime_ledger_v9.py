@@ -33,7 +33,7 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "b769e135c69e491711c215db9f07414e68aecc7e3a643ed94d78d7f751197332"
+    "3a9370e26c7315b57169335bd0fa530c9c94e1e1247d4ebdf1fd700eaa2dcd12"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
@@ -106,7 +106,7 @@ WIRE_DOMAIN_SOURCE_BINDINGS = (
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "8a5989ba520c7acd1f0ba0b9315d2bd6a8287e218d81f1987e53dac20274e007",
+        "3643a2947aac1495696280f76a03bfa7abca25cbee4cb53f19987c18369aa58b",
         b"nostr-crdt/automerge/change-set/v1",
     ),
     (
@@ -256,6 +256,7 @@ PREDECESSOR_CANDIDATES = (
     "52fafad799c5eb60a1d1a8b28bf214c0c8d21437",
     "676581e0e84bb1fe483bb05108a2a3b723770e77",
     "0fc39bfaedb156c3a6c3b914dd09791303c8d0b6",
+    "a52281455f350faee6408d6c508295598379f439",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -275,11 +276,11 @@ REPORT_REVISION_INVENTORY = (
 REPORT_REVISION_SOURCE_BINDINGS = (
     (
         "crates/nostr_automerge/src/engine/evaluation_report.rs",
-        "7159b63b4debd089aa0e48b4467d1faeb84834936926b90c53bfeaeee5a9d60a",
+        "eb740ff309539320165dbb0f24edb76c530dda7909e5b57521fd200dc0a6d772",
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "8a5989ba520c7acd1f0ba0b9315d2bd6a8287e218d81f1987e53dac20274e007",
+        "3643a2947aac1495696280f76a03bfa7abca25cbee4cb53f19987c18369aa58b",
     ),
     (
         "crates/nostr_automerge/tests/public_engine_api.rs",
@@ -314,17 +315,13 @@ CLOSURE_PATHS = frozenset(
     {
         "crates/nostr_automerge/src/engine/evaluation_report.rs",
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "crates/nostr_automerge/tests/public_engine_api.rs",
         "docs/api/public_engine.md",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
-        "docs/execution/remediation_v9/reproductions.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
-        "scripts/reproduce_remediation_v9.py",
         "scripts/validate_carrier_gate_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
-        "tools/nostr_automerge_conformance/src/runner.rs",
         "tools/validation/runtime_ledger_v9.schema.json",
     }
 )
@@ -369,6 +366,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-EVIDENCE",),
     ("V-FULL-RUST",),
+    ("V-REPORT",),
     ("V-REPORT",),
     ("V-REPORT",),
 )
@@ -463,6 +461,7 @@ EXPECTED_REQUIREMENTS = (
     ),
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -512,6 +511,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_074", "FINDING_079", "FINDING_083"),
     ("FINDING_074", "FINDING_079", "FINDING_083"),
     ("FINDING_074", "FINDING_079", "FINDING_083"),
+    ("FINDING_081",),
     ("FINDING_081",),
     ("FINDING_081",),
 )
@@ -683,6 +683,22 @@ def validate_report_revision_inventory(
         and "budget_and_cancel_no_progress_reports_differ_only_by_typed_stop"
         in evaluation,
         "report_inventory:no_progress_shape",
+    )
+    require(
+        evaluation.count("struct CompleteReportWitness") == 1
+        and evaluation.count("fn complete_parts_are_canonical(") == 1
+        and evaluation.count("fn canonical_control_chain_matches(") == 1
+        and evaluation.count("fn semantic_partitions_match(") == 1
+        and "complete_report_rejects_every_partition_control_and_head_mutation"
+        in evaluation,
+        "report_inventory:complete_shape",
+    )
+    require(
+        "view.parent_relationships()" in reference
+        and "&batch.dispositions" in reference
+        and "accepted_state.map(AcceptedAtControl::accepted_closure)" in reference
+        and "accepted_state.map(AcceptedAtControl::frontier_heads)" in reference,
+        "report_inventory:complete_witness",
     )
     require(
         "prepare_no_progress_interrupted_report(" in reference
