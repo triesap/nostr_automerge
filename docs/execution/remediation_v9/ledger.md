@@ -349,6 +349,13 @@ counter prefix for each boundary before writing the fixture. Each boundary
 returns the same canonical empty budget-exhausted report, and the staged
 manifest now binds 189 signed scenarios.
 
+The fourth signed append adds target-preparation isolation, shared canonical
+change-byte memoization, and canonical-control derivation boundaries. The
+generator proves the one-less-than-exact and exact maximum-delivery item
+boundary, identical target-only and unrelated-flood work counters, and
+unchanged decode and apply work
+for duplicate carriers. The staged manifest now binds 192 signed scenarios.
+
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 `FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`

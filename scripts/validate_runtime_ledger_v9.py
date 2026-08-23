@@ -381,6 +381,7 @@ PREDECESSOR_CANDIDATES = (
     "957d0bbef4045afee2b125feda842b18f8c879ef",
     "95f25100f5dc9234e97d67508439485d39d3d85c",
     "a87c9c7ca4b5fb59b6ef68217a6b410375f7305d",
+    "43f71ad17e490fd42979723e45a58164d726884b",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -427,7 +428,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "tools/nostr_automerge_conformance/src/fixture_generation.rs",
-        "106746aee79f094b266723cc8d04c1f7c87a14bcdf53f87be613d5fd5a7940a9",
+        "2ece6ca7b9bb832b508886eedce764545fd2026271a9c510b59e7038510d4220",
     ),
     (
         "tools/nostr_automerge_conformance/src/report_json.rs",
@@ -501,18 +502,17 @@ CLOSURE_PATHS = frozenset(
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "fixtures/distribution/manifest_v10.json",
-        "fixtures/v1_draft/scenarios/interrupted/interrupted_after_branch_evaluation_returns_no_progress.expected.json",
-        "fixtures/v1_draft/scenarios/interrupted/interrupted_after_branch_evaluation_returns_no_progress.fixture.json",
-        "fixtures/v1_draft/scenarios/interrupted/interrupted_after_branch_evaluation_returns_no_progress.input.json",
-        "fixtures/v1_draft/scenarios/interrupted/interrupted_after_checkpoint_resolution_returns_no_progress.expected.json",
-        "fixtures/v1_draft/scenarios/interrupted/interrupted_after_checkpoint_resolution_returns_no_progress.fixture.json",
-        "fixtures/v1_draft/scenarios/interrupted/interrupted_after_checkpoint_resolution_returns_no_progress.input.json",
-        "fixtures/v1_draft/scenarios/interrupted/interrupted_after_claim_reduction_returns_no_progress.expected.json",
-        "fixtures/v1_draft/scenarios/interrupted/interrupted_after_claim_reduction_returns_no_progress.fixture.json",
-        "fixtures/v1_draft/scenarios/interrupted/interrupted_after_claim_reduction_returns_no_progress.input.json",
+        "fixtures/v1_draft/scenarios/resource/canonical_derivation_exact_budget.expected.json",
+        "fixtures/v1_draft/scenarios/resource/canonical_derivation_exact_budget.fixture.json",
+        "fixtures/v1_draft/scenarios/resource/canonical_derivation_exact_budget.input.json",
+        "fixtures/v1_draft/scenarios/resource/target_preparation_exact_budget.expected.json",
+        "fixtures/v1_draft/scenarios/resource/target_preparation_exact_budget.fixture.json",
+        "fixtures/v1_draft/scenarios/resource/target_preparation_exact_budget.input.json",
+        "fixtures/v1_draft/scenarios/resource/target_raw_memo_exact_budget.expected.json",
+        "fixtures/v1_draft/scenarios/resource/target_raw_memo_exact_budget.fixture.json",
+        "fixtures/v1_draft/scenarios/resource/target_raw_memo_exact_budget.input.json",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
-        "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
         "spec/authority_transition_v10.json",
         "tools/nostr_automerge_conformance/src/fixture_generation.rs",
@@ -524,19 +524,20 @@ CLOSURE_AMEND_PATHS = frozenset(
         CLOSURE_AMEND_ADDITION,
         "reports/spec_baseline.txt",
         "scripts/validate_runtime_ledger_v9.py",
+        "tools/nostr_automerge_conformance/src/fixture_generation.rs",
     }
 )
 CLOSURE_NEW_PATHS = frozenset(
     {
-        "fixtures/v1_draft/scenarios/interrupted/interrupted_after_branch_evaluation_returns_no_progress.expected.json",
-        "fixtures/v1_draft/scenarios/interrupted/interrupted_after_branch_evaluation_returns_no_progress.fixture.json",
-        "fixtures/v1_draft/scenarios/interrupted/interrupted_after_branch_evaluation_returns_no_progress.input.json",
-        "fixtures/v1_draft/scenarios/interrupted/interrupted_after_checkpoint_resolution_returns_no_progress.expected.json",
-        "fixtures/v1_draft/scenarios/interrupted/interrupted_after_checkpoint_resolution_returns_no_progress.fixture.json",
-        "fixtures/v1_draft/scenarios/interrupted/interrupted_after_checkpoint_resolution_returns_no_progress.input.json",
-        "fixtures/v1_draft/scenarios/interrupted/interrupted_after_claim_reduction_returns_no_progress.expected.json",
-        "fixtures/v1_draft/scenarios/interrupted/interrupted_after_claim_reduction_returns_no_progress.fixture.json",
-        "fixtures/v1_draft/scenarios/interrupted/interrupted_after_claim_reduction_returns_no_progress.input.json",
+        "fixtures/v1_draft/scenarios/resource/canonical_derivation_exact_budget.expected.json",
+        "fixtures/v1_draft/scenarios/resource/canonical_derivation_exact_budget.fixture.json",
+        "fixtures/v1_draft/scenarios/resource/canonical_derivation_exact_budget.input.json",
+        "fixtures/v1_draft/scenarios/resource/target_preparation_exact_budget.expected.json",
+        "fixtures/v1_draft/scenarios/resource/target_preparation_exact_budget.fixture.json",
+        "fixtures/v1_draft/scenarios/resource/target_preparation_exact_budget.input.json",
+        "fixtures/v1_draft/scenarios/resource/target_raw_memo_exact_budget.expected.json",
+        "fixtures/v1_draft/scenarios/resource/target_raw_memo_exact_budget.fixture.json",
+        "fixtures/v1_draft/scenarios/resource/target_raw_memo_exact_budget.input.json",
     }
 )
 EXPECTED_GATES = (
@@ -646,6 +647,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-TS",),
     ("V-EVIDENCE",),
+    ("V-CONF",),
     ("V-CONF",),
     ("V-CONF",),
     ("V-CONF",),
@@ -830,6 +832,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010"),
     ("NCRDT-DISPOSITION-006", "NCRDT-CONF-010"),
+    ("NCRDT-INTERRUPT-001", "NCRDT-CONF-010"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -950,6 +953,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_073", "FINDING_085", "FINDING_086"),
     ("FINDING_073",),
     ("FINDING_074",),
+    ("FINDING_075",),
 )
 FORBIDDEN_KEY_WORDS = {
     "source",

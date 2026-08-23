@@ -10,7 +10,7 @@ use nostr_automerge::authoring::{
 use nostr_automerge::{
     ActorId, ChangeHash, CorpusBuilder, DevicePublicKey, DocumentCoordinate, EventId,
     NeverCancelled, ProtocolRevision, RawEventBytes, ReferenceEvaluator, VerifiedNip01Event,
-    WorkBudget, WorkCounter,
+    WorkBudget, WorkCounter, WorkCounters,
 };
 use secp256k1::{Keypair, Secp256k1, SecretKey};
 use serde_json::{Value, json};
@@ -64,8 +64,297 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "remediation_v10_checkpoint_control" => generate_remediation_v10_checkpoint_control(),
         "remediation_v10_carrier_independence" => generate_remediation_v10_carrier_independence(),
         "remediation_v10_interruptions" => generate_remediation_v10_interruptions(),
+        "remediation_v10_target_work" => generate_remediation_v10_target_work(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
+}
+
+fn generate_remediation_v10_target_work() -> Result<(), String> {
+    let preparation_controller = Signer::from_byte(206)?;
+    let preparation_writer = Signer::from_byte(207)?;
+    let preparation_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        preparation_controller.public_key.to_hex(),
+        "e3".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation-v10 preparation coordinate".to_owned())?;
+    let target = sign_control(
+        &preparation_controller,
+        1,
+        preparation_coordinate,
+        None,
+        control_content_full(
+            0,
+            vec![(&preparation_writer, None, &["write"])],
+            "automerge-change-v1",
+        ),
+    )?;
+    let foreign_controller = Signer::from_byte(208)?;
+    let foreign_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        foreign_controller.public_key.to_hex(),
+        "e4".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation-v10 foreign coordinate".to_owned())?;
+    let mut foreign = sign_control(
+        &foreign_controller,
+        2,
+        foreign_coordinate,
+        None,
+        control_content_full(
+            0,
+            vec![(&preparation_writer, None, &["write"])],
+            "automerge-change-v1",
+        ),
+    )?;
+    let mut preparation_events = vec![target.clone(), foreign.clone()];
+    for sequence in 1_u64..=24 {
+        foreign = sign_control(
+            &foreign_controller,
+            sequence + 2,
+            foreign_coordinate,
+            Some(event_id(&foreign)?),
+            control_content_with_links(
+                sequence,
+                vec![(&preparation_writer, None, &["write"])],
+                &[],
+                None,
+                None,
+            ),
+        )?;
+        preparation_events.push(foreign.clone());
+    }
+    let target_work = measure_complete_work(preparation_coordinate, &[target])?;
+    let flood_work = measure_complete_work(preparation_coordinate, &preparation_events)?;
+    if target_work != flood_work {
+        return Err("unrelated evidence changed the target-preparation budget".to_owned());
+    }
+    let preparation_budget =
+        exact_complete_item_budget(preparation_coordinate, &preparation_events)?;
+
+    let memo_controller = Signer::from_byte(209)?;
+    let memo_writer = Signer::from_byte(210)?;
+    let memo_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        memo_controller.public_key.to_hex(),
+        "e5".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation-v10 memo coordinate".to_owned())?;
+    let memo_control = sign_control(
+        &memo_controller,
+        1,
+        memo_coordinate,
+        None,
+        control_content_full(
+            0,
+            vec![(&memo_writer, None, &["write"])],
+            "automerge-change-v1",
+        ),
+    )?;
+    let memo_control_id = event_id(&memo_control)?;
+    let (memo_raw, memo_hash) = author_root_change(memo_coordinate, &memo_writer, "v10-raw-memo")?;
+    let first_carrier = sign_change(
+        &memo_writer,
+        2,
+        memo_coordinate,
+        memo_control_id,
+        memo_hash,
+        &memo_raw,
+    )?;
+    let duplicate_carrier = sign_change(
+        &memo_writer,
+        3,
+        memo_coordinate,
+        memo_control_id,
+        memo_hash,
+        &memo_raw,
+    )?;
+    let single_carrier_events = vec![memo_control.clone(), first_carrier.clone()];
+    let memo_events = vec![memo_control, first_carrier, duplicate_carrier];
+    let single_work = measure_complete_work(memo_coordinate, &single_carrier_events)?;
+    let duplicate_work = measure_complete_work(memo_coordinate, &memo_events)?;
+    if single_work.get(WorkCounter::DecodeByte) != duplicate_work.get(WorkCounter::DecodeByte)
+        || single_work.get(WorkCounter::ApplyChange) != duplicate_work.get(WorkCounter::ApplyChange)
+    {
+        return Err("duplicate carrier repeated shared raw-byte work".to_owned());
+    }
+    let memo_budget = exact_complete_item_budget(memo_coordinate, &memo_events)?;
+
+    let canonical_controller = Signer::from_byte(211)?;
+    let canonical_writer = Signer::from_byte(212)?;
+    let canonical_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        canonical_controller.public_key.to_hex(),
+        "e6".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation-v10 canonical coordinate".to_owned())?;
+    let canonical_genesis = sign_control(
+        &canonical_controller,
+        1,
+        canonical_coordinate,
+        None,
+        control_content_full(
+            0,
+            vec![(&canonical_writer, None, &["write"])],
+            "automerge-change-v1",
+        ),
+    )?;
+    let canonical_genesis_id = event_id(&canonical_genesis)?;
+    let left = sign_control(
+        &canonical_controller,
+        2,
+        canonical_coordinate,
+        Some(canonical_genesis_id),
+        control_content_with_links(1, vec![], &[], None, None),
+    )?;
+    let right = sign_control(
+        &canonical_controller,
+        3,
+        canonical_coordinate,
+        Some(canonical_genesis_id),
+        control_content_with_links(
+            1,
+            vec![(&canonical_controller, None, &["write"])],
+            &[],
+            None,
+            None,
+        ),
+    )?;
+    let canonical_events = vec![canonical_genesis, left, right];
+    let canonical_budget = exact_complete_item_budget(canonical_coordinate, &canonical_events)?;
+
+    let root = repository_root().join("fixtures/v1_draft/scenarios/resource");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    for (fixture_id, coordinate, events, max_items) in [
+        (
+            "target_preparation_exact_budget",
+            preparation_coordinate,
+            preparation_events,
+            preparation_budget,
+        ),
+        (
+            "target_raw_memo_exact_budget",
+            memo_coordinate,
+            memo_events,
+            memo_budget,
+        ),
+        (
+            "canonical_derivation_exact_budget",
+            canonical_coordinate,
+            canonical_events,
+            canonical_budget,
+        ),
+    ] {
+        write_fixture_with_execution(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            &["NCRDT-CONF-010", "NCRDT-RESOURCE-014"],
+            "remediation_v10_target_work",
+            Vec::new(),
+            ScenarioBudget {
+                max_bytes: 1_000_000,
+                max_items,
+            },
+            None,
+        )?;
+    }
+    Ok(())
+}
+
+fn measure_complete_work(
+    coordinate: DocumentCoordinate,
+    events: &[RawEventBytes],
+) -> Result<WorkCounters, String> {
+    let mut builder = CorpusBuilder::new();
+    for event in events {
+        let _ = builder.ingest_bytes(event.as_str().as_bytes());
+    }
+    let mut budget = WorkBudget::new(1_000_000, 1_000_000);
+    let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1())
+        .evaluate(&builder.finish(), coordinate, &mut budget, &NeverCancelled)
+        .map_err(|error| format!("target-work measurement: {error:?}"))?;
+    if report.completion() != nostr_automerge::Completion::Complete {
+        return Err("target-work measurement did not complete".to_owned());
+    }
+    Ok(budget.consumed())
+}
+
+fn exact_complete_item_budget(
+    coordinate: DocumentCoordinate,
+    events: &[RawEventBytes],
+) -> Result<u64, String> {
+    let kind = |event: &RawEventBytes| {
+        serde_json::from_str::<Value>(event.as_str())
+            .ok()?
+            .get("kind")?
+            .as_u64()
+    };
+    let permutations = crate::permutations::required_delivery_permutations(
+        events,
+        |event| kind(event) == Some(1_624),
+        |event| kind(event) == Some(1_625),
+        |_| false,
+    );
+    let mut exact = None;
+    for permutation in permutations {
+        let required = minimum_complete_item_budget_for_events(coordinate, &permutation.events)?;
+        if required == 0 {
+            return Err("target-work fixture completed without item work".to_owned());
+        }
+        assert_complete_item_boundary(coordinate, &permutation.events, required)?;
+        exact = Some(exact.map_or(required, |current: u64| current.max(required)));
+    }
+    exact.ok_or_else(|| "target-work fixture had no delivery permutations".to_owned())
+}
+
+fn assert_complete_item_boundary(
+    coordinate: DocumentCoordinate,
+    events: &[RawEventBytes],
+    required: u64,
+) -> Result<(), String> {
+    for (budget, completion) in [(required - 1, "budget_exhausted"), (required, "complete")] {
+        let report = generic_report(
+            "target_work_boundary",
+            ScenarioInput {
+                scenario_schema: "nostr_automerge.scenario.v1".to_owned(),
+                coordinate: coordinate.to_address(),
+                raw_events: events
+                    .iter()
+                    .map(|event| RawScenarioEvent::Utf8(event.as_str().to_owned()))
+                    .collect(),
+                budget: ScenarioBudget {
+                    max_bytes: 1_000_000,
+                    max_items: budget,
+                },
+                cancel_after: None,
+            },
+            StateAssertionPolicy::None,
+        )
+        .map_err(|error| error.message().to_owned())?;
+        if report.completion != completion
+            || (budget < required
+                && (!report.canonical_controls.is_empty()
+                    || !report.disposition_records.is_empty()
+                    || !report.accepted_changes.is_empty()
+                    || !report.pending_changes.is_empty()
+                    || !report.excluded_changes.is_empty()
+                    || !report.invalid_changes.is_empty()
+                    || !report.heads.is_empty()
+                    || !report.checkpoints.is_empty()
+                    || !report.state_assertions.is_empty()))
+        {
+            return Err(format!(
+                "target-work boundary {budget}/{required} was not exact {completion}"
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn generate_remediation_v10_interruptions() -> Result<(), String> {
