@@ -55,6 +55,16 @@ OPAQUE_SEMANTIC_PROOF_IDENTITY = "10f3954ebbe75de9f161ab029c2497b4af0bf264322a3d
 SEMANTIC_PROOF_MUTATION_VALIDATOR = "scripts/validate_semantic_proof_mutations_v10.py"
 SEMANTIC_PROOF_MUTATION_VALIDATOR_SHA256 = "5c88f7c0701d77f55625b785fe16dd9af854a551ff3f3174c597b62b75012c3a"
 SEMANTIC_PROOF_MUTATION_PROJECTION = "bb79ec8f0b489c1d9c60af09b33a6992765cf7676000e4f29d814b051b1dbeac"
+FINAL_SEMANTIC_CATALOG = "reports/semantic_proof_catalog_v10.json"
+FINAL_SEMANTIC_CATALOG_SHA256 = "48f27ffff08756b7567c83fe3025efd4aac5cc0da9c4c2055d5cc8373168574a"
+FINAL_FINDING_CATALOG = "reports/finding_closure_catalog_v10.json"
+FINAL_FINDING_CATALOG_SHA256 = "b4fabc6486c78aa745548d269cc0119a1668e90b5cd3a13dd8c266be3e2d7e29"
+FINAL_SEMANTIC_GENERATOR = "scripts/generate_semantic_proof_catalog_final_v10.py"
+FINAL_SEMANTIC_GENERATOR_SHA256 = "be8613f80ef4bf9db50a75633f4fb3004ca7fa335bfa7a939523a1877f553dac"
+FINAL_SEMANTIC_VALIDATOR = "scripts/validate_semantic_proof_catalog_final_v10.py"
+FINAL_SEMANTIC_VALIDATOR_SHA256 = "1a0513a73a4ba3bf5ee769ed20c27f5932d5429c43334a66a3abb1e4dc025a61"
+FINAL_SEMANTIC_CATALOG_IDENTITY = "0357f8f558f22096611bf08d197e0e46b30cd53618ea40ac49d2d057d1931c82"
+FINAL_FINDING_CATALOG_IDENTITY = "0eb24b686f6ac30ff308981822d490525574a95e0f4cd7f9e752c191efe1a10d"
 NEUTRAL_REPORT_SCHEMA = "fixtures/schema/report.schema.json"
 LEDGER = "implementation/runtime_ledger_v9.json"
 LEDGER_SCHEMA = "tools/validation/runtime_ledger_v9.schema.json"
@@ -75,7 +85,7 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "6bf7b6417500fa74f62978841eb60f9ce445cb4f19241d95087c7a709a16d9d2"
+    "cbcea9d10b68ad5be0cc470fc8785bfb8ea3df658da8f7cf1295d8c83cf2b19f"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
@@ -424,6 +434,7 @@ PREDECESSOR_CANDIDATES = (
     "3b3dd73a93cb4e33ab08a600ff6294538a5b91bd",
     "920c768946a2d33449905a0b0891942fa8fb9afe",
     "cba1b43bd544d6d015ece1a216977ddebe249d8c",
+    "ebf8d1ecc75cf5eee2741ec61b80f0dbe5283df5",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -545,10 +556,13 @@ CLOSURE_PATHS = frozenset(
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
+        "reports/finding_closure_catalog_v10.json",
+        "reports/semantic_proof_catalog_v10.json",
         "reports/spec_baseline.txt",
+        "scripts/generate_semantic_proof_catalog_final_v10.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
-        "scripts/validate_semantic_proof_mutations_v10.py",
         "scripts/validate_runtime_ledger_v9.py",
+        "scripts/validate_semantic_proof_catalog_final_v10.py",
         "scripts/validate_spec.py",
         "tools/nostr_automerge_xtask/src/validate.rs",
         "tools/validation/runtime_ledger_v9.schema.json",
@@ -565,7 +579,10 @@ CLOSURE_AMEND_PATHS = frozenset(
 )
 CLOSURE_NEW_PATHS = frozenset(
     {
-        "scripts/validate_semantic_proof_mutations_v10.py",
+        "reports/finding_closure_catalog_v10.json",
+        "reports/semantic_proof_catalog_v10.json",
+        "scripts/generate_semantic_proof_catalog_final_v10.py",
+        "scripts/validate_semantic_proof_catalog_final_v10.py",
     }
 )
 EXPECTED_GATES = (
@@ -686,6 +703,7 @@ EXPECTED_GATES = (
     ("V-FULL-TS",),
     ("V-CONF",),
     ("V-FULL-RUST",),
+    ("V-EVIDENCE",),
     ("V-EVIDENCE",),
     ("V-EVIDENCE",),
     ("V-EVIDENCE",),
@@ -883,6 +901,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-EVIDENCE-006",),
     ("NCRDT-EVIDENCE-006",),
     ("NCRDT-EVIDENCE-006",),
+    ("NCRDT-EVIDENCE-006",),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -1013,6 +1032,7 @@ EXPECTED_FINDINGS = (
     (),
     (),
     ("FINDING_078",),
+    REPRODUCED_IDS,
     REPRODUCED_IDS,
     REPRODUCED_IDS,
 )
@@ -2377,6 +2397,7 @@ def validate_runtime_ledger(
         "report_finding_proofs",
         "opaque_semantic_proofs",
         "semantic_proof_mutations",
+        "semantic_proof_catalog_final",
     }
     require(set(ledger) == expected_keys, "ledger:keys")
     require(ledger.get("schema") == "nostr_automerge.runtime_ledger.v9.v1", "ledger:schema")
@@ -2976,6 +2997,35 @@ def validate_runtime_ledger(
         },
         "ledger:semantic_proof_mutations_binding",
     )
+    for relative, expected in (
+        (FINAL_SEMANTIC_CATALOG, FINAL_SEMANTIC_CATALOG_SHA256),
+        (FINAL_FINDING_CATALOG, FINAL_FINDING_CATALOG_SHA256),
+        (FINAL_SEMANTIC_GENERATOR, FINAL_SEMANTIC_GENERATOR_SHA256),
+        (FINAL_SEMANTIC_VALIDATOR, FINAL_SEMANTIC_VALIDATOR_SHA256),
+    ):
+        require(file_digest(relative) == expected, f"ledger:final_semantic_file:{relative}")
+    require(
+        ledger.get("semantic_proof_catalog_final")
+        == {
+            "checkpoint": "step_1281",
+            "candidate": "ebf8d1ecc75cf5eee2741ec61b80f0dbe5283df5",
+            "row_count": 190,
+            "requirement_count": 148,
+            "report_clause_count": 21,
+            "finding_count": 21,
+            "passing_count": 165,
+            "held_count": 25,
+            "negative_mutation_count": 21,
+            "catalog_sha256": FINAL_SEMANTIC_CATALOG_SHA256,
+            "finding_catalog_sha256": FINAL_FINDING_CATALOG_SHA256,
+            "generator_sha256": FINAL_SEMANTIC_GENERATOR_SHA256,
+            "validator_sha256": FINAL_SEMANTIC_VALIDATOR_SHA256,
+            "catalog_identity_sha256": FINAL_SEMANTIC_CATALOG_IDENTITY,
+            "finding_identity_sha256": FINAL_FINDING_CATALOG_IDENTITY,
+            "result": "pass",
+        },
+        "ledger:semantic_proof_catalog_final_binding",
+    )
     validate_no_leak(ledger, "ledger:boundary")
 
 
@@ -3263,6 +3313,9 @@ def mutation_self_test(
     stale_semantic_mutation = copy.deepcopy(ledger)
     stale_semantic_mutation["semantic_proof_mutations"]["projection_sha256"] = "f" * 64
     ledger_mutations.append(("ledger_semantic_proof_mutation", stale_semantic_mutation))
+    stale_final_catalog = copy.deepcopy(ledger)
+    stale_final_catalog["semantic_proof_catalog_final"]["catalog_identity_sha256"] = "f" * 64
+    ledger_mutations.append(("ledger_semantic_proof_catalog", stale_final_catalog))
     premature_terminal = copy.deepcopy(ledger)
     premature_terminal["status"] = "code_complete_publication_held"
     premature_terminal["findings"]["status"] = "code_complete_publication_held"

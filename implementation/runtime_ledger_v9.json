@@ -3,10 +3,10 @@
   "status": "in_progress",
   "rcld": 93,
   "cursor": {
-    "active_step": "step_1280",
-    "next_step": "step_1281",
+    "active_step": "step_1281",
+    "next_step": "step_1282",
     "last_step": "step_1287",
-    "remaining_checkpoint_count": 8,
+    "remaining_checkpoint_count": 7,
     "first_rcld": 93,
     "last_rcld": 94,
     "remaining_rcld_count": 2
@@ -1383,6 +1383,22 @@
       ],
       "deviation_ids": [],
       "result": "pass"
+    },
+    {
+      "step": "step_1280",
+      "candidate": "ebf8d1ecc75cf5eee2741ec61b80f0dbe5283df5",
+      "owner_class": "public",
+      "gate_ids": ["V-EVIDENCE"],
+      "requirement_ids": ["NCRDT-EVIDENCE-006"],
+      "finding_ids": [
+        "FINDING_073", "FINDING_074", "FINDING_075", "FINDING_076",
+        "FINDING_077", "FINDING_078", "FINDING_079", "FINDING_081",
+        "FINDING_082", "FINDING_083", "FINDING_084", "FINDING_085",
+        "FINDING_086", "FINDING_087", "FINDING_088", "FINDING_089",
+        "FINDING_090", "FINDING_091", "FINDING_092", "FINDING_093"
+      ],
+      "deviation_ids": [],
+      "result": "pass"
     }
   ],
   "opaque_reproduction": {
@@ -1682,6 +1698,24 @@
     "negative_mutation_count": 20,
     "projection_sha256": "bb79ec8f0b489c1d9c60af09b33a6992765cf7676000e4f29d814b051b1dbeac",
     "validator_sha256": "5c88f7c0701d77f55625b785fe16dd9af854a551ff3f3174c597b62b75012c3a",
+    "result": "pass"
+  },
+  "semantic_proof_catalog_final": {
+    "checkpoint": "step_1281",
+    "candidate": "ebf8d1ecc75cf5eee2741ec61b80f0dbe5283df5",
+    "row_count": 190,
+    "requirement_count": 148,
+    "report_clause_count": 21,
+    "finding_count": 21,
+    "passing_count": 165,
+    "held_count": 25,
+    "negative_mutation_count": 21,
+    "catalog_sha256": "48f27ffff08756b7567c83fe3025efd4aac5cc0da9c4c2055d5cc8373168574a",
+    "finding_catalog_sha256": "b4fabc6486c78aa745548d269cc0119a1668e90b5cd3a13dd8c266be3e2d7e29",
+    "generator_sha256": "be8613f80ef4bf9db50a75633f4fb3004ca7fa335bfa7a939523a1877f553dac",
+    "validator_sha256": "1a0513a73a4ba3bf5ee769ed20c27f5932d5429c43334a66a3abb1e4dc025a61",
+    "catalog_identity_sha256": "0357f8f558f22096611bf08d197e0e46b30cd53618ea40ac49d2d057d1931c82",
+    "finding_identity_sha256": "0eb24b686f6ac30ff308981822d490525574a95e0f4cd7f9e752c191efe1a10d",
     "result": "pass"
   }
 }

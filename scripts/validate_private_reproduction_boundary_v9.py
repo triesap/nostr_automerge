@@ -97,6 +97,8 @@ PYTHON_SURFACES = (
     "scripts/import_opaque_semantic_proofs_v10.py",
     "scripts/validate_opaque_semantic_proofs_v10.py",
     "scripts/validate_semantic_proof_mutations_v10.py",
+    "scripts/generate_semantic_proof_catalog_final_v10.py",
+    "scripts/validate_semantic_proof_catalog_final_v10.py",
     "scripts/validate_opaque_boundary_gate_v9.py",
     "scripts/validate_opaque_resource_gate_v9.py",
     "scripts/validate_opaque_finalization_v9.py",
@@ -198,6 +200,8 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/opaque_boundary_gate_v9.json",
         "reports/opaque_resource_gate_v9.json",
         "reports/opaque_semantic_proofs_v10.json",
+        "reports/semantic_proof_catalog_v10.json",
+        "reports/finding_closure_catalog_v10.json",
         "reports/external_holds_v8.json",
         "reports/spec_baseline.txt",
         "scripts/validate_architecture.py",
@@ -233,6 +237,8 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/import_opaque_semantic_proofs_v10.py",
         "scripts/validate_opaque_semantic_proofs_v10.py",
         "scripts/validate_semantic_proof_mutations_v10.py",
+        "scripts/generate_semantic_proof_catalog_final_v10.py",
+        "scripts/validate_semantic_proof_catalog_final_v10.py",
         "scripts/reproduce_remediation_v9.py",
         "scripts/validate_remediation_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
@@ -324,6 +330,9 @@ def validate_source_literal(
                     )
                     or diagnostic.startswith(
                         "source:scripts/validate_semantic_proof_mutations_v10.py:"
+                    )
+                    or diagnostic.startswith(
+                        "source:scripts/generate_semantic_proof_catalog_final_v10.py:"
                     )
                 )
             ),

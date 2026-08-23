@@ -424,6 +424,11 @@ the 113-row opaque overlay and all report-clause and finding rows. Twenty exact
 missing, duplicate, order, stale, generic, category, relevance, held-status,
 skipped, namespace, leak-shaped, and coordinated mutations fail closed.
 
+The final semantic catalog contains 190 ordered rows: 148 requirements, 21
+report clauses, and 21 findings. It binds 165 passing and 25 held rows to exact
+public and opaque candidates, artifact hashes, proof kinds, results, and semantic
+categories; the separate 21-row finding catalog is an exact derived projection.
+
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 `FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`
