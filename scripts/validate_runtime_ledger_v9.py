@@ -317,6 +317,7 @@ PREDECESSOR_CANDIDATES = (
     "1a09181b0db5a0563f699a6483a97a591005578e",
     "6faf4a0922e6ca33c32b1f503ff29a6f3449f86a",
     "01c6e9e21b4e51a75fd2012d909b7ae16f77f0ef",
+    "eb7300759ffe8262b3eb848ccea0d2dd10f29bc6",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -339,7 +340,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "27b47666e93ee479550f2c1ecbacda9564ba7639a22e9414b4e70a75a11a0844",
+        "d40917502dcb859c6fea94e988ef60917b200d36c38967d63098398f5b55bd39",
     ),
     (
         "crates/nostr_automerge/src/integrity.rs",
@@ -437,8 +438,10 @@ CLOSURE_PATHS = frozenset(
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
+        "docs/execution/remediation_v9/reproductions.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
+        "scripts/reproduce_remediation_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
     }
 )
@@ -514,6 +517,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-FULL-TS",),
     ("V-EVIDENCE",),
+    ("V-RESOURCE",),
     ("V-RESOURCE",),
     ("V-RESOURCE",),
     ("V-RESOURCE",),
@@ -656,6 +660,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -726,6 +731,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_090",),
     ("FINDING_090", "FINDING_093"),
     ("FINDING_090", "FINDING_093"),
+    ("FINDING_076",),
     ("FINDING_076",),
     ("FINDING_076",),
     ("FINDING_076",),

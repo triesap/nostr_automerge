@@ -2693,11 +2693,16 @@ enum FixedFallbackPass {
     Invariants,
 }
 
+impl FixedFallbackPass {
+    const ALL: [Self; 3] = [Self::Digests, Self::FixedOverhead, Self::Invariants];
+}
+
 #[derive(Debug, PartialEq, Eq)]
 struct FixedFallbackLedger {
     digests: FinalizationSettlement,
     fixed_overhead: FinalizationSettlement,
     invariants: FinalizationSettlement,
+    next_pass: usize,
 }
 
 impl FixedFallbackLedger {
@@ -2709,6 +2714,7 @@ impl FixedFallbackLedger {
             digests: FinalizationSettlement::new(Self::DIGEST_UNITS),
             fixed_overhead: FinalizationSettlement::new(Self::FIXED_OVERHEAD_UNITS),
             invariants: FinalizationSettlement::new(REPORT_INVARIANT_ITEMS),
+            next_pass: 0,
         }
     }
 
@@ -2725,15 +2731,28 @@ impl FixedFallbackLedger {
         pass: FixedFallbackPass,
         amount: u64,
     ) -> Result<(), FinalizationPermitError> {
-        self.settlement_mut(pass).consume(amount)
+        if FixedFallbackPass::ALL.get(self.next_pass) != Some(&pass)
+            || self
+                .settlement_mut(pass)
+                .remaining()
+                .ok_or(FinalizationPermitError)?
+                != amount
+        {
+            return Err(FinalizationPermitError);
+        }
+        self.settlement_mut(pass).consume(amount)?;
+        self.next_pass = self
+            .next_pass
+            .checked_add(1)
+            .ok_or(FinalizationPermitError)?;
+        Ok(())
     }
 
     fn close_consumed(&mut self) -> Result<(), FinalizationPermitError> {
-        for pass in [
-            FixedFallbackPass::Digests,
-            FixedFallbackPass::FixedOverhead,
-            FixedFallbackPass::Invariants,
-        ] {
+        if self.next_pass != FixedFallbackPass::ALL.len() {
+            return Err(FinalizationPermitError);
+        }
+        for pass in FixedFallbackPass::ALL {
             if self
                 .settlement_mut(pass)
                 .remaining()
@@ -2748,22 +2767,19 @@ impl FixedFallbackLedger {
     }
 
     fn forfeit_all(&mut self) -> Result<(), FinalizationPermitError> {
-        for pass in [
-            FixedFallbackPass::Digests,
-            FixedFallbackPass::FixedOverhead,
-            FixedFallbackPass::Invariants,
-        ] {
+        for pass in FixedFallbackPass::ALL {
             self.settlement_mut(pass).forfeit_remaining()?;
         }
         Ok(())
     }
 
     fn is_consumed_settlement(&self) -> bool {
-        [&self.digests, &self.fixed_overhead, &self.invariants]
-            .into_iter()
-            .all(|settlement| {
-                settlement.is_settled() && settlement.refunded == 0 && settlement.forfeited == 0
-            })
+        self.next_pass == FixedFallbackPass::ALL.len()
+            && [&self.digests, &self.fixed_overhead, &self.invariants]
+                .into_iter()
+                .all(|settlement| {
+                    settlement.is_settled() && settlement.refunded == 0 && settlement.forfeited == 0
+                })
     }
 
     fn is_forfeited_settlement(&self) -> bool {
@@ -2823,6 +2839,7 @@ enum FinalizationPermitState {
 struct ReportFinalizationPermit {
     ledger: ReportFinalizationLedger,
     fallback: FixedFallbackLedger,
+    next_complete_pass: usize,
     state: FinalizationPermitState,
 }
 
@@ -2835,26 +2852,28 @@ impl ReportFinalizationPermit {
         Ok(Self {
             ledger: ReportFinalizationLedger::from_plan(plan),
             fallback: FixedFallbackLedger::new(),
+            next_complete_pass: 0,
             state: FinalizationPermitState::Active,
         })
-    }
-
-    fn consume(
-        &mut self,
-        dimension: FinalizationDimension,
-        amount: u64,
-    ) -> Result<(), FinalizationPermitError> {
-        if self.state != FinalizationPermitState::Active {
-            return Err(FinalizationPermitError);
-        }
-        self.ledger.dimension_mut(dimension).consume(amount)
     }
 
     fn consume_pass(
         &mut self,
         reservation: FinalizationReservationUnit,
     ) -> Result<(), FinalizationPermitError> {
-        self.consume(reservation.pass.dimension(), reservation.units)
+        if self.state != FinalizationPermitState::Active
+            || CompleteReportPass::ALL.get(self.next_complete_pass) != Some(&reservation.pass)
+        {
+            return Err(FinalizationPermitError);
+        }
+        self.ledger
+            .dimension_mut(reservation.pass.dimension())
+            .consume(reservation.units)?;
+        self.next_complete_pass = self
+            .next_complete_pass
+            .checked_add(1)
+            .ok_or(FinalizationPermitError)?;
+        Ok(())
     }
 
     fn consume_before<T, const N: usize>(
@@ -2947,7 +2966,9 @@ impl ReportFinalizationPermit {
     }
 
     fn refund(&mut self, budget: &mut WorkBudget) -> Result<(), FinalizationPermitError> {
-        if self.state != FinalizationPermitState::Active {
+        if self.state != FinalizationPermitState::Active
+            || self.next_complete_pass != CompleteReportPass::ALL.len()
+        {
             return Err(FinalizationPermitError);
         }
         let remaining = self
@@ -5359,7 +5380,7 @@ mod tests {
     #[test]
     fn finalization_reservation_is_atomic_and_refundable() {
         let plan = ReportFinalizationPlan {
-            report_invariants: 8,
+            control_records: 8,
             ..ReportFinalizationPlan::default()
         };
         let mut insufficient = WorkBudget::new(0, 7);
@@ -5372,6 +5393,13 @@ mod tests {
         assert!(permit.is_ok());
         let Ok(mut permit) = permit else { return };
         assert_eq!(exact.remaining(), (0, 0));
+        for reservation in plan.reservations() {
+            assert!(
+                permit
+                    .consume_pass(FinalizationReservationUnit::new(reservation.pass, 0))
+                    .is_ok()
+            );
+        }
         assert!(permit.refund(&mut exact).is_ok());
         assert_eq!(exact.remaining(), (0, 8));
         assert_eq!(exact.consumed().get(WorkCounter::Assertion), 0);
@@ -5549,7 +5577,10 @@ mod tests {
         let Ok(mut exact) = exact else { return };
         assert!(
             exact
-                .consume(FinalizationDimension::ControlRecords, 2)
+                .consume_pass(FinalizationReservationUnit::new(
+                    CompleteReportPass::ControlRecords,
+                    2,
+                ))
                 .is_ok()
         );
         assert!(exact.forfeit_all_remaining().is_ok());
@@ -5735,12 +5766,18 @@ mod tests {
         let Ok(mut permit) = permit else { return };
         assert!(
             permit
-                .consume(FinalizationDimension::ControlRecords, 2)
+                .consume_pass(FinalizationReservationUnit::new(
+                    CompleteReportPass::ControlRecords,
+                    2,
+                ))
                 .is_ok()
         );
         assert!(
             permit
-                .consume(FinalizationDimension::ControlRecords, 1)
+                .consume_pass(FinalizationReservationUnit::new(
+                    CompleteReportPass::ControlRecords,
+                    1,
+                ))
                 .is_err()
         );
         assert!(permit.finish_interrupted().is_err());
@@ -5766,7 +5803,10 @@ mod tests {
         );
         assert!(
             permit
-                .consume(FinalizationDimension::SemanticChangeRecords, 0)
+                .consume_pass(FinalizationReservationUnit::new(
+                    CompleteReportPass::SemanticChangeRecords,
+                    0,
+                ))
                 .is_err()
         );
         assert_eq!(permit.ledger.control_records.consumed, 2);
@@ -5779,7 +5819,10 @@ mod tests {
         assert!(permit.finish_interrupted().is_err());
         assert!(
             permit
-                .consume(FinalizationDimension::ReportInvariants, 1)
+                .consume_pass(FinalizationReservationUnit::new(
+                    CompleteReportPass::ReportInvariants,
+                    1,
+                ))
                 .is_err()
         );
     }
@@ -5838,7 +5881,10 @@ mod tests {
         );
         assert!(
             permit
-                .consume(FinalizationDimension::ControlRecords, 1)
+                .consume_pass(FinalizationReservationUnit::new(
+                    CompleteReportPass::ControlRecords,
+                    1,
+                ))
                 .is_ok()
         );
         assert_eq!(permit.ledger.control_records.remaining(), Some(0));
@@ -5850,7 +5896,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "expected to fail until FINDING_076 closes"]
     fn finding_076_finalization_rejects_reordered_named_passes() {
         let plan = ReportFinalizationPlan {
             control_records: 1,
@@ -5869,6 +5914,136 @@ mod tests {
             Err(FinalizationPermitError),
             "FINDING_076 reproduced: finalization accepts a named pass out of order"
         );
+    }
+
+    #[test]
+    fn finalization_order_and_single_settlement_reject_every_mutation() {
+        let plan = ReportFinalizationPlan {
+            control_records: 1,
+            semantic_change_records: 1,
+            change_carrier_events: 1,
+            other_events: 1,
+            checkpoint_records: 1,
+            change_classifications: 1,
+            history_digest: 1,
+            dispositions_digest: 1,
+            evidence_records: 1,
+            report_invariants: 1,
+            fixed_overhead: 1,
+        };
+        let mut budget = WorkBudget::new(0, 11);
+        let permit = ReportFinalizationPermit::reserve(plan, &mut budget);
+        assert!(permit.is_ok());
+        let Ok(mut permit) = permit else { return };
+
+        assert_eq!(
+            permit.consume_pass(FinalizationReservationUnit::new(
+                CompleteReportPass::SemanticChangeRecords,
+                1,
+            )),
+            Err(FinalizationPermitError),
+            "out-of-order passes must not advance the ledger"
+        );
+        assert_eq!(permit.next_complete_pass, 0);
+        assert_eq!(permit.refund(&mut budget), Err(FinalizationPermitError));
+        assert_eq!(budget.remaining(), (0, 0));
+
+        assert!(permit.consume_pass(plan.reservations()[0]).is_ok());
+        assert_eq!(
+            permit.consume_pass(plan.reservations()[0]),
+            Err(FinalizationPermitError),
+            "a named pass cannot settle twice"
+        );
+        assert_eq!(permit.next_complete_pass, 1);
+        assert_eq!(
+            permit.consume_pass(FinalizationReservationUnit::new(
+                CompleteReportPass::SemanticChangeRecords,
+                2,
+            )),
+            Err(FinalizationPermitError),
+            "a pass cannot borrow capacity from another reservation"
+        );
+        assert_eq!(permit.next_complete_pass, 1);
+        for reservation in &plan.reservations()[1..] {
+            assert!(permit.consume_pass(*reservation).is_ok());
+        }
+        assert!(permit.refund(&mut budget).is_ok());
+        assert_eq!(permit.refund(&mut budget), Err(FinalizationPermitError));
+        assert_eq!(permit.finish_failed(), Err(FinalizationPermitError));
+
+        let mut interrupted_budget = WorkBudget::new(0, 11);
+        let interrupted = ReportFinalizationPermit::reserve(plan, &mut interrupted_budget);
+        assert!(interrupted.is_ok());
+        let Ok(mut interrupted) = interrupted else {
+            return;
+        };
+        assert!(interrupted.consume_pass(plan.reservations()[0]).is_ok());
+        assert!(
+            interrupted
+                .forfeit(FinalizationDimension::SemanticChangeRecords)
+                .is_ok()
+        );
+        assert_eq!(
+            interrupted.consume_pass(plan.reservations()[1]),
+            Err(FinalizationPermitError),
+            "forfeited capacity cannot be consumed"
+        );
+
+        let mut fallback = FixedFallbackLedger::new();
+        assert_eq!(
+            fallback.consume(
+                FixedFallbackPass::FixedOverhead,
+                FixedFallbackLedger::FIXED_OVERHEAD_UNITS,
+            ),
+            Err(FinalizationPermitError)
+        );
+        assert_eq!(fallback.next_pass, 0);
+        assert_eq!(
+            fallback.consume(
+                FixedFallbackPass::Digests,
+                FixedFallbackLedger::DIGEST_UNITS - 1,
+            ),
+            Err(FinalizationPermitError)
+        );
+        assert_eq!(
+            fallback.consume(
+                FixedFallbackPass::Digests,
+                FixedFallbackLedger::DIGEST_UNITS + 1,
+            ),
+            Err(FinalizationPermitError)
+        );
+        assert!(
+            fallback
+                .consume(
+                    FixedFallbackPass::Digests,
+                    FixedFallbackLedger::DIGEST_UNITS,
+                )
+                .is_ok()
+        );
+        assert_eq!(
+            fallback.consume(
+                FixedFallbackPass::Digests,
+                FixedFallbackLedger::DIGEST_UNITS,
+            ),
+            Err(FinalizationPermitError)
+        );
+        assert_eq!(fallback.close_consumed(), Err(FinalizationPermitError));
+        assert!(
+            fallback
+                .consume(
+                    FixedFallbackPass::FixedOverhead,
+                    FixedFallbackLedger::FIXED_OVERHEAD_UNITS,
+                )
+                .is_ok()
+        );
+        assert!(
+            fallback
+                .consume(FixedFallbackPass::Invariants, REPORT_INVARIANT_ITEMS)
+                .is_ok()
+        );
+        assert!(fallback.close_consumed().is_ok());
+        assert_eq!(fallback.close_consumed(), Err(FinalizationPermitError));
+        assert_eq!(fallback.forfeit_all(), Err(FinalizationPermitError));
     }
 
     #[test]

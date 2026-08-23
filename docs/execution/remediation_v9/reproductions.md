@@ -1,13 +1,14 @@
 # Remediation V9 Rust Baseline Reproductions
 
-Status: rolling closure — eight regression cases fixed and four cases still reproduced
+Status: rolling closure — nine regression cases fixed and three cases still reproduced
 
 The `FINDING_073` checkpoint-precedence, `FINDING_074` carrier-independence,
 `FINDING_075` no-progress, `FINDING_079` unsupported-identity, and `FINDING_083`
 typed-stop reproductions are now enabled passing regressions. The `FINDING_081`
 incomplete-report regression, `FINDING_082` immediate reevaluation-stop
-regression, and typed report-revision compile probe are also fixed. Three
-ignored tests and the semantic-proof probe continue to encode
+regression, `FINDING_076` finalization-order regression, and typed
+report-revision compile probe are also fixed. Two ignored tests and the
+semantic-proof probe continue to encode
 behavior-level expected failures for the still-open public Rust findings.
 Ordinary Rust test targets remain green because only the still-open cases stay
 ignored. The tests do not inspect source text and do not change protocol
@@ -39,7 +40,7 @@ external-build launcher.
 | `FINDING_073` | The enabled signed regression proves that a descriptor referencing a statically invalid control is rejected before history work. | 82 (public Rust closed) |
 | `FINDING_074` | The enabled signed regression proves that a carrier referencing a dynamically invalid control remains invalid even when its semantic hash is excluded. | 84 (dynamic-invalid special case closed; broader separation continues in `step_1189`) |
 | `FINDING_075` | The enabled batch regression proves that budget exhaustion and cancellation return exact empty typed no-progress state without retained controls, dispositions, accepted history, heads, alerts, or document. | 85 (public Rust closed), 86 |
-| `FINDING_076` | The coarse finalization ledger accepts the fixed-overhead pass before its preceding named passes. | 87, 88 |
+| `FINDING_076` | The enabled finalization regressions prove that complete and fallback passes settle exactly once in order and reject missing, duplicate, borrowed, overrun, early-refund, and wrong-tier actions. | 87 (public Rust fixed), 88 |
 | `FINDING_077` | Canonical raw change bytes are copied into the target memo rather than retained through one shared immutable allocation. | 89, 90, 91 |
 | `FINDING_078` | Replacing a requirement's named assertion with a semantically unrelated assertion in the same artifact still passes signed-v9 requirement validation. | 93 |
 | `FINDING_079` | The enabled signed regression proves that an unsupported Event and its diagnostic remain visible without its unverified `x` tag entering the semantic `ChangeHash` indexes or report namespace. | 84 (public Rust closed) |

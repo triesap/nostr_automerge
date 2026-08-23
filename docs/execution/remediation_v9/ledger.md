@@ -112,8 +112,9 @@ counts, result classes, and held publication state.
 | `step_1221` | `V-RESOURCE` | pass |
 | `step_1222` | `V-RESOURCE` | pass |
 | `step_1223` | `V-RESOURCE` | pass |
-| `step_1224` | `V-RESOURCE` | active |
-| `step_1225` | `V-RESOURCE` | next |
+| `step_1224` | `V-RESOURCE` | pass |
+| `step_1225` | `V-RESOURCE` | active |
+| `step_1226` | `V-FULL-RUST` | next |
 
 The completed report-authority checkpoint binds a closed inventory of complete
 and no-progress construction plus nine revision consumers to exact reviewed
@@ -262,14 +263,14 @@ immutable historical record and is not the carrier closure authority.
 `step_1197` through `step_1205` chain ending at
 `321abda8f672ecf1a44aa1919e0cec98830e8df8`; its current two-process
 conformance identity is the same canonical and serialized output pair above.
-There are 64 checkpoints including the active checkpoint remaining through
+There are 63 checkpoints including the active checkpoint remaining through
 `step_1287`.
 
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
-`FINDING_075`, `FINDING_079`, `FINDING_082`, and `FINDING_083` regressions and
-the typed report-revision and incomplete-report cases are fixed; four exact
-behavior cases remain open.
+`FINDING_075`, `FINDING_076`, `FINDING_079`, `FINDING_082`, and `FINDING_083`
+regressions and the typed report-revision and incomplete-report cases are
+fixed; three exact behavior cases remain open.
 `FINDING_080` remains held. The maximum status
 remains `implementation_remediation_required` while the refactor sequence is
 in progress.

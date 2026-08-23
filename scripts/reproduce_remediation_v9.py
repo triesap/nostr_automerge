@@ -42,17 +42,12 @@ FIXED_CASES = (
         "lib",
         "engine::reference_evaluator::tests::finding_082_reevaluation_stops_before_post_incomplete_alert_work",
     ),
-)
-OPEN_CASES = (
     (
         "lib",
         "engine::reference_evaluator::tests::finding_076_finalization_rejects_reordered_named_passes",
-        "FINDING_076 reproduced: finalization accepts a named pass out of order",
-        "left == right",
-        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "Ok(())",
-        "Err(FinalizationPermitError)",
     ),
+)
+OPEN_CASES = (
     (
         "lib",
         "reference::evaluate::tests::finding_077_canonical_raw_bytes_share_one_allocation",
