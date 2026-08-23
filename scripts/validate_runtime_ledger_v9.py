@@ -382,6 +382,7 @@ PREDECESSOR_CANDIDATES = (
     "95f25100f5dc9234e97d67508439485d39d3d85c",
     "a87c9c7ca4b5fb59b6ef68217a6b410375f7305d",
     "43f71ad17e490fd42979723e45a58164d726884b",
+    "4dc5329d0d1fdcd4a7e3e2aee8e8f749c4ed72aa",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -502,20 +503,10 @@ CLOSURE_PATHS = frozenset(
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "fixtures/distribution/manifest_v10.json",
-        "fixtures/v1_draft/scenarios/resource/canonical_derivation_exact_budget.expected.json",
-        "fixtures/v1_draft/scenarios/resource/canonical_derivation_exact_budget.fixture.json",
-        "fixtures/v1_draft/scenarios/resource/canonical_derivation_exact_budget.input.json",
-        "fixtures/v1_draft/scenarios/resource/target_preparation_exact_budget.expected.json",
-        "fixtures/v1_draft/scenarios/resource/target_preparation_exact_budget.fixture.json",
-        "fixtures/v1_draft/scenarios/resource/target_preparation_exact_budget.input.json",
-        "fixtures/v1_draft/scenarios/resource/target_raw_memo_exact_budget.expected.json",
-        "fixtures/v1_draft/scenarios/resource/target_raw_memo_exact_budget.fixture.json",
-        "fixtures/v1_draft/scenarios/resource/target_raw_memo_exact_budget.input.json",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
         "scripts/validate_runtime_ledger_v9.py",
         "spec/authority_transition_v10.json",
-        "tools/nostr_automerge_conformance/src/fixture_generation.rs",
     }
 )
 CLOSURE_AMEND_ADDITION = "docs/execution/remediation_v9/ledger.md"
@@ -528,17 +519,7 @@ CLOSURE_AMEND_PATHS = frozenset(
     }
 )
 CLOSURE_NEW_PATHS = frozenset(
-    {
-        "fixtures/v1_draft/scenarios/resource/canonical_derivation_exact_budget.expected.json",
-        "fixtures/v1_draft/scenarios/resource/canonical_derivation_exact_budget.fixture.json",
-        "fixtures/v1_draft/scenarios/resource/canonical_derivation_exact_budget.input.json",
-        "fixtures/v1_draft/scenarios/resource/target_preparation_exact_budget.expected.json",
-        "fixtures/v1_draft/scenarios/resource/target_preparation_exact_budget.fixture.json",
-        "fixtures/v1_draft/scenarios/resource/target_preparation_exact_budget.input.json",
-        "fixtures/v1_draft/scenarios/resource/target_raw_memo_exact_budget.expected.json",
-        "fixtures/v1_draft/scenarios/resource/target_raw_memo_exact_budget.fixture.json",
-        "fixtures/v1_draft/scenarios/resource/target_raw_memo_exact_budget.input.json",
-    }
+    set()
 )
 EXPECTED_GATES = (
     ("V-AUTH",),
@@ -647,6 +628,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-TS",),
     ("V-EVIDENCE",),
+    ("V-CONF",),
     ("V-CONF",),
     ("V-CONF",),
     ("V-CONF",),
@@ -833,6 +815,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010"),
     ("NCRDT-DISPOSITION-006", "NCRDT-CONF-010"),
     ("NCRDT-INTERRUPT-001", "NCRDT-CONF-010"),
+    ("NCRDT-RESOURCE-014", "NCRDT-CONF-010"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -954,6 +937,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_073",),
     ("FINDING_074",),
     ("FINDING_075",),
+    ("FINDING_088",),
 )
 FORBIDDEN_KEY_WORDS = {
     "source",

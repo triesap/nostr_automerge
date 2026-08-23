@@ -2,7 +2,7 @@
   "schema": "nostr_automerge.authority_transition.v10",
   "status": "in_progress",
   "protocol_revision": "draft_2026_08",
-  "current_stage": "target_work_fixtures_added",
+  "current_stage": "distribution_complete",
   "stage_order": [
     "transition_installed",
     "companion_authority_installed",
