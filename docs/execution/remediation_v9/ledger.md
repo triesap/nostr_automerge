@@ -121,8 +121,11 @@ publication status remains `held`.
 | `step_1223` | `V-RESOURCE` | pass |
 | `step_1224` | `V-RESOURCE` | pass |
 | `step_1225` | `V-RESOURCE` | pass |
-| `step_1226` | `V-FULL-RUST` | active |
-| `step_1227` | `V-TS` | next |
+| `step_1226` | `V-FULL-RUST` | pass |
+| `step_1227`–`step_1232` | `V-TS` | pass |
+| `step_1233` | `V-FULL-TS` | pass |
+| `step_1234` | `V-EVIDENCE` | active |
+| `step_1235` | `V-RESOURCE` | next |
 
 The completed report-authority checkpoint binds a closed inventory of complete
 and no-progress construction plus nine revision consumers to exact reviewed
@@ -271,7 +274,11 @@ immutable historical record and is not the carrier closure authority.
 `step_1197` through `step_1205` chain ending at
 `321abda8f672ecf1a44aa1919e0cec98830e8df8`; its current two-process
 conformance identity is the same canonical and serialized output pair above.
-There are 62 checkpoints including the active checkpoint remaining through
+The opaque private finalization record binds the exact seven-candidate
+`step_1227` through `step_1233` chain, two-tier settlement counts, typed-stop
+coverage, mutation families, and full private result identities without
+carrying private paths or execution details. There are 54 checkpoints including
+the active checkpoint remaining through
 `step_1287`.
 
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`

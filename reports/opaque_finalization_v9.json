@@ -1,0 +1,43 @@
+{
+  "schema": "nostr_automerge.opaque_finalization.v9.v1",
+  "checkpoint": "step_1233",
+  "gate_id": "GATE_V9_PRIVATE_FINALIZATION",
+  "stage": "private_finalization_complete",
+  "status": "pass",
+  "publication_status": "held",
+  "requirement_ids": ["NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+  "candidate_chain": [
+    {"checkpoint": "step_1227", "candidate": "0994aeebb6fdb6d8d1814250b4771841a3daee9c", "result": "pass"},
+    {"checkpoint": "step_1228", "candidate": "24bcc0a46ecc9ea6297a55a8a84c41a1ba2029f3", "result": "pass"},
+    {"checkpoint": "step_1229", "candidate": "2aa4077905e9ad9af3c37ed01a3ea6b948b71aa9", "result": "pass"},
+    {"checkpoint": "step_1230", "candidate": "7ceb364ce5fbfd77f7a7d5d2bacf145f1122f8be", "result": "pass"},
+    {"checkpoint": "step_1231", "candidate": "b981a06011abbc46d1faca5aa5c3a2348918da95", "result": "pass"},
+    {"checkpoint": "step_1232", "candidate": "e83da2c052c985ce8af160c954a472d0bf2055c8", "result": "pass"},
+    {"checkpoint": "step_1233", "candidate": "3f0a571081e22d9f018f9803bb2efcb248d1e9ec", "result": "pass"}
+  ],
+  "settlement_counts": {
+    "complete_passes": 11,
+    "fallback_passes": 3,
+    "boundary_cases": 4,
+    "stop_causes": 2,
+    "interrupted_prefixes_per_cause": 12,
+    "callback_error_cases": 11,
+    "mutation_families": 10
+  },
+  "regressions": {"fixed_count": 14, "open_count": 9, "result": "pass"},
+  "identities": {
+    "implementation_identity_sha256": "cd8d956eb7e665527e41d154ce775a7d7d601bbbcec9c79d8277f636a24e5bc4",
+    "private_report_sha256": "d58f3724d4b1671a6754e2f680681177f0c2303906fbb6881a9893488c1c578e",
+    "private_schema_sha256": "3f585b05b5258c55f979a1a7cc7ab17d29aa26dfabe3579b8059ab255d3cb087",
+    "private_result_identity_sha256": "6885351cf8012236597a3115d8a832db55f4c18bb7633b59a240dd4e4b9a5a0d"
+  },
+  "result_classes": [
+    {"class": "two_tier_settlement", "result": "pass"},
+    {"class": "typed_stop_preservation", "result": "pass"},
+    {"class": "mutation_rejection", "result": "pass"},
+    {"class": "full_private", "result": "pass"}
+  ],
+  "execution_class": "environment_independent",
+  "execution_result": "pass",
+  "result_identity_sha256": "557e37981f1a196e29ff9dabab647b732ec15745b26b066a9df13aee2696c2e0"
+}

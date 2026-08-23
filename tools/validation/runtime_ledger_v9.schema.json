@@ -18,6 +18,7 @@
     "carrier_gate",
     "rust_report_gate",
     "rust_finalization_gate",
+    "opaque_finalization",
     "report_schema_authority",
     "report_parity_gate"
   ],
@@ -322,6 +323,38 @@
         "open_regression_count": {"const": 3},
         "implementation_identity_sha256": {"const": "8897ef5c9358ff895483dbf6a6c94301ac88080c0e1070cccd29716b33eea640"},
         "result_identity_sha256": {"const": "ab5f4a6900e8ad6df0dac8f7965c981e9f92782922261f88e156e5fc5ed6759d"},
+        "result": {"const": "pass"},
+        "publication_status": {"const": "held"}
+      }
+    },
+    "opaque_finalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpoint", "gate_id", "candidate", "candidate_count",
+        "complete_pass_count", "fallback_pass_count", "boundary_count",
+        "stop_cause_count", "interrupted_prefix_count", "callback_error_count",
+        "mutation_family_count", "fixed_regression_count", "open_regression_count",
+        "implementation_identity_sha256", "private_result_identity_sha256",
+        "result_identity_sha256", "result", "publication_status"
+      ],
+      "properties": {
+        "checkpoint": {"const": "step_1233"},
+        "gate_id": {"const": "GATE_V9_PRIVATE_FINALIZATION"},
+        "candidate": {"const": "3f0a571081e22d9f018f9803bb2efcb248d1e9ec"},
+        "candidate_count": {"const": 7},
+        "complete_pass_count": {"const": 11},
+        "fallback_pass_count": {"const": 3},
+        "boundary_count": {"const": 4},
+        "stop_cause_count": {"const": 2},
+        "interrupted_prefix_count": {"const": 12},
+        "callback_error_count": {"const": 11},
+        "mutation_family_count": {"const": 10},
+        "fixed_regression_count": {"const": 14},
+        "open_regression_count": {"const": 9},
+        "implementation_identity_sha256": {"const": "cd8d956eb7e665527e41d154ce775a7d7d601bbbcec9c79d8277f636a24e5bc4"},
+        "private_result_identity_sha256": {"const": "6885351cf8012236597a3115d8a832db55f4c18bb7633b59a240dd4e4b9a5a0d"},
+        "result_identity_sha256": {"const": "557e37981f1a196e29ff9dabab647b732ec15745b26b066a9df13aee2696c2e0"},
         "result": {"const": "pass"},
         "publication_status": {"const": "held"}
       }

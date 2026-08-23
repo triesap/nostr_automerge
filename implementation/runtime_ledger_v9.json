@@ -1,15 +1,15 @@
 {
   "schema": "nostr_automerge.runtime_ledger.v9.v1",
   "status": "in_progress",
-  "rcld": 87,
+  "rcld": 88,
   "cursor": {
-    "active_step": "step_1226",
-    "next_step": "step_1227",
+    "active_step": "step_1234",
+    "next_step": "step_1235",
     "last_step": "step_1287",
-    "remaining_checkpoint_count": 62,
-    "first_rcld": 87,
+    "remaining_checkpoint_count": 54,
+    "first_rcld": 88,
     "last_rcld": 94,
-    "remaining_rcld_count": 8
+    "remaining_rcld_count": 7
   },
   "authority_projection": {
     "binding": "monotonic_stage_projection",
@@ -831,6 +831,86 @@
       "finding_ids": ["FINDING_076"],
       "deviation_ids": [],
       "result": "pass"
+    },
+    {
+      "step": "step_1226",
+      "candidate": "d8c3aa7681bf10796832546b16c9cf62c0bf86da",
+      "owner_class": "public",
+      "gate_ids": ["V-FULL-RUST"],
+      "requirement_ids": ["NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_076"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1227",
+      "candidate": "0994aeebb6fdb6d8d1814250b4771841a3daee9c",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_089"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1228",
+      "candidate": "24bcc0a46ecc9ea6297a55a8a84c41a1ba2029f3",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_089"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1229",
+      "candidate": "2aa4077905e9ad9af3c37ed01a3ea6b948b71aa9",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_089"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1230",
+      "candidate": "7ceb364ce5fbfd77f7a7d5d2bacf145f1122f8be",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_089"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1231",
+      "candidate": "b981a06011abbc46d1faca5aa5c3a2348918da95",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_089"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1232",
+      "candidate": "e83da2c052c985ce8af160c954a472d0bf2055c8",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_089"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1233",
+      "candidate": "3f0a571081e22d9f018f9803bb2efcb248d1e9ec",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-FULL-TS"],
+      "requirement_ids": ["NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_089"],
+      "deviation_ids": [],
+      "result": "pass"
     }
   ],
   "opaque_reproduction": {
@@ -934,6 +1014,26 @@
     "open_regression_count": 3,
     "implementation_identity_sha256": "8897ef5c9358ff895483dbf6a6c94301ac88080c0e1070cccd29716b33eea640",
     "result_identity_sha256": "ab5f4a6900e8ad6df0dac8f7965c981e9f92782922261f88e156e5fc5ed6759d",
+    "result": "pass",
+    "publication_status": "held"
+  },
+  "opaque_finalization": {
+    "checkpoint": "step_1233",
+    "gate_id": "GATE_V9_PRIVATE_FINALIZATION",
+    "candidate": "3f0a571081e22d9f018f9803bb2efcb248d1e9ec",
+    "candidate_count": 7,
+    "complete_pass_count": 11,
+    "fallback_pass_count": 3,
+    "boundary_count": 4,
+    "stop_cause_count": 2,
+    "interrupted_prefix_count": 12,
+    "callback_error_count": 11,
+    "mutation_family_count": 10,
+    "fixed_regression_count": 14,
+    "open_regression_count": 9,
+    "implementation_identity_sha256": "cd8d956eb7e665527e41d154ce775a7d7d601bbbcec9c79d8277f636a24e5bc4",
+    "private_result_identity_sha256": "6885351cf8012236597a3115d8a832db55f4c18bb7633b59a240dd4e4b9a5a0d",
+    "result_identity_sha256": "557e37981f1a196e29ff9dabab647b732ec15745b26b066a9df13aee2696c2e0",
     "result": "pass",
     "publication_status": "held"
   },

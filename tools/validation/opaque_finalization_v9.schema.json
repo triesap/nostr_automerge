@@ -1,0 +1,23 @@
+{
+  "title": "nostr_automerge opaque private finalization v9",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "checkpoint", "gate_id", "stage", "status", "publication_status", "requirement_ids", "candidate_chain", "settlement_counts", "regressions", "identities", "result_classes", "execution_class", "execution_result", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.opaque_finalization.v9.v1"},
+    "checkpoint": {"const": "step_1233"},
+    "gate_id": {"const": "GATE_V9_PRIVATE_FINALIZATION"},
+    "stage": {"const": "private_finalization_complete"},
+    "status": {"const": "pass"},
+    "publication_status": {"const": "held"},
+    "requirement_ids": {"type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": {"type": "string", "pattern": "^NCRDT-[A-Z0-9]+(?:-[A-Z0-9]+)*$"}},
+    "candidate_chain": {"type": "array", "minItems": 7, "maxItems": 7, "items": {"type": "object", "additionalProperties": false, "required": ["checkpoint", "candidate", "result"], "properties": {"checkpoint": {"type": "string", "pattern": "^step_1[0-9]{3}$"}, "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "result": {"const": "pass"}}}},
+    "settlement_counts": {"type": "object", "additionalProperties": false, "required": ["complete_passes", "fallback_passes", "boundary_cases", "stop_causes", "interrupted_prefixes_per_cause", "callback_error_cases", "mutation_families"], "properties": {"complete_passes": {"const": 11}, "fallback_passes": {"const": 3}, "boundary_cases": {"const": 4}, "stop_causes": {"const": 2}, "interrupted_prefixes_per_cause": {"const": 12}, "callback_error_cases": {"const": 11}, "mutation_families": {"const": 10}}},
+    "regressions": {"type": "object", "additionalProperties": false, "required": ["fixed_count", "open_count", "result"], "properties": {"fixed_count": {"const": 14}, "open_count": {"const": 9}, "result": {"const": "pass"}}},
+    "identities": {"type": "object", "additionalProperties": false, "required": ["implementation_identity_sha256", "private_report_sha256", "private_schema_sha256", "private_result_identity_sha256"], "properties": {"implementation_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "private_report_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "private_schema_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "private_result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}},
+    "result_classes": {"type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true, "items": {"type": "object", "additionalProperties": false, "required": ["class", "result"], "properties": {"class": {"enum": ["two_tier_settlement", "typed_stop_preservation", "mutation_rejection", "full_private"]}, "result": {"const": "pass"}}}},
+    "execution_class": {"const": "environment_independent"},
+    "execution_result": {"const": "pass"},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}
