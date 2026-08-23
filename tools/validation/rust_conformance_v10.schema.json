@@ -1,0 +1,39 @@
+{
+  "title": "nostr_automerge Rust conformance v10 evidence",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "candidate",
+    "manifest_sha256",
+    "runner_sha256",
+    "cargo_lock_sha256",
+    "rust_toolchain_sha256",
+    "scenario_count",
+    "process_count",
+    "permutations_per_fixture",
+    "canonical_process_bytes",
+    "canonical_output_sha256",
+    "distribution_run_sha256",
+    "missing_fixture_authority",
+    "result_identity_sha256"
+  ],
+  "properties": {
+    "schema": {"const": "nostr_automerge.rust_conformance.v10.v1"},
+    "status": {"const": "pass"},
+    "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "runner_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "cargo_lock_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "rust_toolchain_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "scenario_count": {"const": 192},
+    "process_count": {"const": 2},
+    "permutations_per_fixture": {"const": 8},
+    "canonical_process_bytes": {"const": "identical"},
+    "canonical_output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "distribution_run_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "missing_fixture_authority": {"const": "rejected"},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

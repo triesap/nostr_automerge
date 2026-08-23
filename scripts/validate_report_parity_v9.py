@@ -18,11 +18,12 @@ REPORT = ROOT / "reports/report_parity_v9.json"
 SCHEMA = ROOT / "tools/validation/report_parity_v9.schema.json"
 MANIFEST = ROOT / "fixtures/distribution/manifest_v9.json"
 REPORT_SCHEMA = ROOT / "fixtures/schema/report.schema.json"
-RUNNER = ROOT / "tools/nostr_automerge_conformance/src/runner.rs"
+RUNNER_PATH = "tools/nostr_automerge_conformance/src/runner.rs"
 
 APPROVED_REPORT_SHA256 = "7c11f5c32cb8c7494cbc50a4132e0ee0a05b9b233ba52b01f2702019725ed51c"
 APPROVED_SCHEMA_SHA256 = "e8753412f0741604155a0d8ab31efe0f65ce85343f4881d0c24ff0fed43e91f0"
 APPROVED_RUNNER_SHA256 = "19ea36eeb55711004b7a1470e6adeff15980ea5952d00ff9f28e347f082fef33"
+APPROVED_RUNNER_CANDIDATE = "8e85bd29181ebf36d2cfd7d4ed330b0a0975aa44"
 APPROVED_RESULT_IDENTITY = "aaf76821bb0fa463c4b71c1f27d6c194dea1b5c9790b505e04d3c810b898059d"
 APPROVED_PUBLIC_MANIFEST = "bbb3802490ac758614fecad9ef7c37586da5af54c150a472f4ea7611e8eaa659"
 RESOURCE_BUDGET_BASE = "fec9ef4c38c4044902285d9bcfadf2f078dc3a6e"
@@ -362,7 +363,11 @@ def distribution_projection() -> dict[str, Any]:
 
 
 def validate_repository_bindings(report: dict[str, Any]) -> None:
-    require(sha256_file(RUNNER) == APPROVED_RUNNER_SHA256, "report_parity:runner_sha256")
+    require(
+        sha256_bytes(candidate_bytes(APPROVED_RUNNER_CANDIDATE, RUNNER_PATH))
+        == APPROVED_RUNNER_SHA256,
+        "report_parity:runner_sha256",
+    )
     validate_neutral_schema(report)
     projection = distribution_projection()
     require(projection == report["public_evidence"], "report_parity:public_projection")

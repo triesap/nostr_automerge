@@ -383,6 +383,7 @@ PREDECESSOR_CANDIDATES = (
     "a87c9c7ca4b5fb59b6ef68217a6b410375f7305d",
     "43f71ad17e490fd42979723e45a58164d726884b",
     "4dc5329d0d1fdcd4a7e3e2aee8e8f749c4ed72aa",
+    "20b786c5c3ff143786aaaca56ad19bd26739b67b",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -437,7 +438,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "tools/nostr_automerge_conformance/src/runner.rs",
-        "19ea36eeb55711004b7a1470e6adeff15980ea5952d00ff9f28e347f082fef33",
+        "e2b92358273603f48e1c2fc94c96281a5f77e89cc219b34a09b08da99a0a844e",
     ),
     (
         "tools/nostr_automerge_conformance/src/scenario.rs",
@@ -488,6 +489,7 @@ HISTORICAL_STEP_1217_CLOSURE_PATHS = frozenset(
         "scripts/validate_checkpoint_parity_v9.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_report_parity_v9.py",
+        "scripts/validate_report_parity_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
         "scripts/validate_rust_report_gate_v9.py",
         "scripts/validate_spec.py",
@@ -502,11 +504,17 @@ CLOSURE_PATHS = frozenset(
     {
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
-        "fixtures/distribution/manifest_v10.json",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
+        "reports/rust_conformance_v10.json",
+        "scripts/validate_private_reproduction_boundary_v9.py",
+        "scripts/validate_report_parity_v9.py",
+        "scripts/validate_rust_conformance_v10.py",
         "scripts/validate_runtime_ledger_v9.py",
-        "spec/authority_transition_v10.json",
+        "scripts/validate_spec.py",
+        "tools/nostr_automerge_conformance/src/runner.rs",
+        "tools/nostr_automerge_xtask/src/validate.rs",
+        "tools/validation/rust_conformance_v10.schema.json",
     }
 )
 CLOSURE_AMEND_ADDITION = "docs/execution/remediation_v9/ledger.md"
@@ -519,7 +527,11 @@ CLOSURE_AMEND_PATHS = frozenset(
     }
 )
 CLOSURE_NEW_PATHS = frozenset(
-    set()
+    {
+        "reports/rust_conformance_v10.json",
+        "scripts/validate_rust_conformance_v10.py",
+        "tools/validation/rust_conformance_v10.schema.json",
+    }
 )
 EXPECTED_GATES = (
     ("V-AUTH",),
@@ -628,6 +640,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-TS",),
     ("V-EVIDENCE",),
+    ("V-CONF",),
     ("V-CONF",),
     ("V-CONF",),
     ("V-CONF",),
@@ -816,6 +829,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-DISPOSITION-006", "NCRDT-CONF-010"),
     ("NCRDT-INTERRUPT-001", "NCRDT-CONF-010"),
     ("NCRDT-RESOURCE-014", "NCRDT-CONF-010"),
+    ("NCRDT-CONF-010",),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -938,6 +952,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_074",),
     ("FINDING_075",),
     ("FINDING_088",),
+    (),
 )
 FORBIDDEN_KEY_WORDS = {
     "source",

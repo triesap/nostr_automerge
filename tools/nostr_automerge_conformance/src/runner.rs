@@ -665,7 +665,14 @@ pub(crate) struct DistributionReport {
 
 #[derive(Deserialize)]
 struct DistributionManifest {
+    complete: bool,
+    distribution_schema: String,
+    fixture_count: u64,
     fixtures: Vec<DistributionFixture>,
+    status: String,
+    target_fixture_count: u64,
+    #[serde(default)]
+    transition_stage: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -674,10 +681,33 @@ struct DistributionFixture {
     metadata_path: String,
 }
 
+fn validate_distribution_authority(manifest: &DistributionManifest) -> Result<(), RunError> {
+    let expected_count = match manifest.distribution_schema.as_str() {
+        "nostr_automerge.fixture_distribution.v9" if manifest.transition_stage.is_none() => 180,
+        "nostr_automerge.fixture_distribution.v10"
+            if manifest.transition_stage.as_deref() == Some("distribution_complete") =>
+        {
+            192
+        }
+        _ => return Err(RunError::Fixture),
+    };
+    let actual_count = u64::try_from(manifest.fixtures.len()).map_err(|_| RunError::Fixture)?;
+    if !manifest.complete
+        || manifest.status != "canonical_signed_neutral_corpus"
+        || manifest.fixture_count != expected_count
+        || manifest.target_fixture_count != expected_count
+        || actual_count != expected_count
+    {
+        return Err(RunError::Fixture);
+    }
+    Ok(())
+}
+
 pub(crate) fn run_distribution(path: &Path) -> Result<DistributionRun, RunError> {
     let bytes = fs::read(path).map_err(|_| RunError::Fixture)?;
     let manifest: DistributionManifest =
         serde_json::from_slice(&bytes).map_err(|_| RunError::Fixture)?;
+    validate_distribution_authority(&manifest)?;
     let root = path
         .parent()
         .and_then(Path::parent)
@@ -1270,5 +1300,43 @@ mod tests {
             let path = root.join(relative);
             assert!(run_fixture(&path).is_ok(), "{relative}");
         }
+    }
+
+    #[test]
+    fn distribution_authority_rejects_missing_or_incomplete_fixture_inventory() {
+        let fixtures = (0..192)
+            .map(|index| super::DistributionFixture {
+                fixture_id: format!("fixture_{index:03}"),
+                metadata_path: format!("fixture_{index:03}.fixture.json"),
+            })
+            .collect::<Vec<_>>();
+        let manifest = super::DistributionManifest {
+            complete: true,
+            distribution_schema: "nostr_automerge.fixture_distribution.v10".to_owned(),
+            fixture_count: 192,
+            fixtures,
+            status: "canonical_signed_neutral_corpus".to_owned(),
+            target_fixture_count: 192,
+            transition_stage: Some("distribution_complete".to_owned()),
+        };
+        assert!(super::validate_distribution_authority(&manifest).is_ok());
+
+        let mut missing = manifest;
+        missing.fixtures.pop();
+        assert_eq!(
+            super::validate_distribution_authority(&missing),
+            Err(super::RunError::Fixture)
+        );
+        missing.fixture_count = 191;
+        missing.target_fixture_count = 191;
+        assert_eq!(
+            super::validate_distribution_authority(&missing),
+            Err(super::RunError::Fixture)
+        );
+        missing.complete = false;
+        assert_eq!(
+            super::validate_distribution_authority(&missing),
+            Err(super::RunError::Fixture)
+        );
     }
 }

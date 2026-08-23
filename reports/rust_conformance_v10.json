@@ -1,0 +1,17 @@
+{
+  "schema": "nostr_automerge.rust_conformance.v10.v1",
+  "status": "pass",
+  "candidate": "20b786c5c3ff143786aaaca56ad19bd26739b67b",
+  "manifest_sha256": "86ec32f34dd99ef0c1e5ea3531360a1f78bf07d62818375096e0bdf0f209b8e5",
+  "runner_sha256": "e2b92358273603f48e1c2fc94c96281a5f77e89cc219b34a09b08da99a0a844e",
+  "cargo_lock_sha256": "6d1b886ff74637ba6682d349ab81424b0792f2cbc61cf0f213dfcf16af4f6744",
+  "rust_toolchain_sha256": "5d959dfcc98b53886ee772ba216c4f9a1b31f093b46b5b263c0d084af54e821d",
+  "scenario_count": 192,
+  "process_count": 2,
+  "permutations_per_fixture": 8,
+  "canonical_process_bytes": "identical",
+  "canonical_output_sha256": "c9f28deb32dfedce674a6871b0eb949f38b5a5f977a67ca993f7ed639df1e112",
+  "distribution_run_sha256": "377b0fe6ae2916b829b3ada84f7adf760d874123ce8be14130999a076c8578c6",
+  "missing_fixture_authority": "rejected",
+  "result_identity_sha256": "7be69317ca8f007f8b0b74f1bc355558981ba55a75bc3eb8b2b609b3590184c7"
+}

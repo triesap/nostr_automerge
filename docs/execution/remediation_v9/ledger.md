@@ -363,6 +363,12 @@ every tracked input, expected report, metadata record, schema, and authority
 hash. The machine-readable transition keeps v9 evidence immutable and marks it
 historical and non-current under the completed v10 distribution authority.
 
+The Rust v10 execution record binds two independent complete processes over
+all 192 mandatory fixtures and all eight delivery permutations. Both processes
+produce byte-identical canonical output, the runner rejects missing or
+incomplete v10 fixture authority before evaluation, and the evidence record
+binds the exact manifest, runner, dependency lock, and toolchain identities.
+
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 `FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`
