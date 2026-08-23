@@ -379,6 +379,15 @@ public expected-report parser rejects malformed and syntactically valid
 noncanonical bytes, while a canonical structurally valid mutation reaches the
 semantic comparator and is rejected there rather than at parsing.
 
+`GATE_V9_CONFORMANCE` closes at `step_1274`. The closed gate binds the exact
+`step_1264` through `step_1273` public and opaque candidate sequence, deterministic
+schema and generator identities, all 192 signed fixtures, the preserved
+180-fixture prefix, the four corrected expectations, the twelve declared v10
+additions, two processes and eight delivery permutations per implementation,
+zero canonical-byte mismatches, both parser-rejection classes, the semantic
+comparison mismatch, the public leak boundary, and the full public gate.
+RCLD 92 is complete; RCLD 93 begins at `step_1275`.
+
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 `FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`

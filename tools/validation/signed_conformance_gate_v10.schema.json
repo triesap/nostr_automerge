@@ -1,0 +1,21 @@
+{
+  "title": "nostr_automerge signed conformance gate v10",
+  "type": "object",
+  "required": ["schema", "checkpoint", "gate_id", "status", "publication_status", "requirement_ids", "candidate_chain", "authority", "signatures", "execution", "mismatch_proofs", "validation", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.signed_conformance_gate.v10.v1"},
+    "checkpoint": {"const": "step_1274"},
+    "gate_id": {"const": "GATE_V9_CONFORMANCE"},
+    "status": {"const": "pass"},
+    "publication_status": {"const": "held"},
+    "requirement_ids": {"type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true, "items": {"enum": ["NCRDT-CONF-010", "NCRDT-EVIDENCE-006"]}},
+    "candidate_chain": {"type": "array", "minItems": 10, "maxItems": 10, "items": {"type": "object", "additionalProperties": false, "required": ["checkpoint", "candidate", "owner_class", "result"], "properties": {"checkpoint": {"type": "string", "pattern": "^step_12[0-9]{2}$"}, "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "owner_class": {"enum": ["public", "opaque_private"]}, "result": {"const": "pass"}}}},
+    "authority": {"type": "object", "additionalProperties": false, "required": ["transition_stage", "distribution_schema_sha256", "generator_sha256", "corrected_expectation_validator_sha256", "manifest_sha256", "fixture_count", "preserved_fixture_count", "new_fixture_count", "corrected_expectation_count", "v9_status", "result"], "properties": {"transition_stage": {"const": "distribution_complete"}, "distribution_schema_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "generator_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "corrected_expectation_validator_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "fixture_count": {"const": 192}, "preserved_fixture_count": {"const": 180}, "new_fixture_count": {"const": 12}, "corrected_expectation_count": {"const": 4}, "v9_status": {"const": "historical_superseded_non_current"}, "result": {"const": "pass"}}},
+    "signatures": {"type": "object", "additionalProperties": false, "required": ["signed_fixture_count", "invalid_signature_count", "missing_fixture_authority", "result"], "properties": {"signed_fixture_count": {"const": 192}, "invalid_signature_count": {"const": 0}, "missing_fixture_authority": {"const": "rejected"}, "result": {"const": "pass"}}},
+    "execution": {"type": "object", "additionalProperties": false, "required": ["rust_process_count", "private_process_count", "delivery_permutations", "rust_report_count", "private_report_count", "canonical_output_sha256", "rust_distribution_sha256", "private_execution_sha256", "byte_mismatch_count", "result"], "properties": {"rust_process_count": {"const": 2}, "private_process_count": {"const": 2}, "delivery_permutations": {"const": 8}, "rust_report_count": {"const": 192}, "private_report_count": {"const": 192}, "canonical_output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "rust_distribution_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "private_execution_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "byte_mismatch_count": {"const": 0}, "result": {"const": "pass"}}},
+    "mismatch_proofs": {"type": "object", "additionalProperties": false, "required": ["malformed_report", "noncanonical_report", "structurally_valid_semantic_mismatch", "result"], "properties": {"malformed_report": {"const": "rejected_by_parser"}, "noncanonical_report": {"const": "rejected_by_parser"}, "structurally_valid_semantic_mismatch": {"const": "rejected_by_comparison"}, "result": {"const": "pass"}}},
+    "validation": {"type": "object", "additionalProperties": false, "required": ["generator", "corrected_expectations", "rust_two_process", "opaque_private_two_process", "comparison", "leak_boundary", "full_public"], "properties": {"generator": {"const": "pass"}, "corrected_expectations": {"const": "pass"}, "rust_two_process": {"const": "pass"}, "opaque_private_two_process": {"const": "pass"}, "comparison": {"const": "pass"}, "leak_boundary": {"const": "pass"}, "full_public": {"const": "pass"}}},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

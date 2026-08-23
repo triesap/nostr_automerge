@@ -30,6 +30,7 @@ OPAQUE_BOUNDARY_GATE_REPORT = "reports/opaque_boundary_gate_v9.json"
 OPAQUE_RESOURCE_GATE_REPORT = "reports/opaque_resource_gate_v9.json"
 OPAQUE_FINALIZATION_REPORT = "reports/opaque_finalization_v9.json"
 REPORT_PARITY_GATE_REPORT = "reports/report_parity_v9.json"
+SIGNED_CONFORMANCE_GATE_REPORT = "reports/signed_conformance_gate_v10.json"
 NEUTRAL_REPORT_SCHEMA = "fixtures/schema/report.schema.json"
 LEDGER = "implementation/runtime_ledger_v9.json"
 LEDGER_SCHEMA = "tools/validation/runtime_ledger_v9.schema.json"
@@ -50,7 +51,7 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "4af2711ebdb0e6d3b50dde4a65b7329fea66af013abe0d631236ce927b6d3e05"
+    "4d1661746d23b606d46cbfbb1f573860839e13f1a0b563178ec4bb4cf85b8544"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
@@ -90,6 +91,9 @@ APPROVED_OPAQUE_FINALIZATION_RESULT_IDENTITY = (
 )
 APPROVED_REPORT_PARITY_GATE_RESULT_IDENTITY = (
     "aaf76821bb0fa463c4b71c1f27d6c194dea1b5c9790b505e04d3c810b898059d"
+)
+APPROVED_SIGNED_CONFORMANCE_GATE_RESULT_IDENTITY = (
+    "3aa7447b502c86de51d6e82a0ceb067df816a7ce956895b2aef54c3f76303b6e"
 )
 APPROVED_NEUTRAL_REPORT_SCHEMA_SHA256 = (
     "08a88d5ad7049203bb766dc763601a6c5311a70e631fa35ab62c164203cd8e1c"
@@ -386,6 +390,7 @@ PREDECESSOR_CANDIDATES = (
     "20b786c5c3ff143786aaaca56ad19bd26739b67b",
     "6e7084ae32b9d20e55e76b5496c126bd52974f0d",
     "36db673b8e5b62df69a5ee321b2e13c040fc8237",
+    "fc256396c534adb90be4da4c9d172a14d3786f1d",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -508,17 +513,14 @@ CLOSURE_PATHS = frozenset(
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
-        "reports/opaque_conformance_v10.json",
+        "reports/signed_conformance_gate_v10.json",
         "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
-        "scripts/validate_rust_conformance_v10.py",
         "scripts/validate_spec.py",
-        "scripts/validate_opaque_conformance_v10.py",
-        "tools/nostr_automerge_conformance/src/expected.rs",
-        "tools/nostr_automerge_conformance/src/report_json.rs",
-        "tools/nostr_automerge_conformance/src/runner.rs",
+        "scripts/validate_signed_conformance_gate_v10.py",
         "tools/nostr_automerge_xtask/src/validate.rs",
-        "tools/validation/opaque_conformance_v10.schema.json",
+        "tools/validation/signed_conformance_gate_v10.schema.json",
+        "tools/validation/runtime_ledger_v9.schema.json",
     }
 )
 CLOSURE_AMEND_ADDITION = "docs/execution/remediation_v9/ledger.md"
@@ -527,14 +529,14 @@ CLOSURE_AMEND_PATHS = frozenset(
         CLOSURE_AMEND_ADDITION,
         "reports/spec_baseline.txt",
         "scripts/validate_runtime_ledger_v9.py",
-        "tools/nostr_automerge_conformance/src/fixture_generation.rs",
+        "tools/validation/runtime_ledger_v9.schema.json",
     }
 )
 CLOSURE_NEW_PATHS = frozenset(
     {
-        "reports/opaque_conformance_v10.json",
-        "scripts/validate_opaque_conformance_v10.py",
-        "tools/validation/opaque_conformance_v10.schema.json",
+        "reports/signed_conformance_gate_v10.json",
+        "scripts/validate_signed_conformance_gate_v10.py",
+        "tools/validation/signed_conformance_gate_v10.schema.json",
     }
 )
 EXPECTED_GATES = (
@@ -653,6 +655,7 @@ EXPECTED_GATES = (
     ("V-CONF",),
     ("V-CONF",),
     ("V-FULL-TS",),
+    ("V-CONF",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -838,6 +841,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-CONF-010",),
     ("NCRDT-CONF-010",),
     ("NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -960,6 +964,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_074",),
     ("FINDING_075",),
     ("FINDING_088",),
+    (),
     (),
     (),
     (),
@@ -2318,6 +2323,7 @@ def validate_runtime_ledger(
         "opaque_finalization",
         "report_schema_authority",
         "report_parity_gate",
+        "signed_conformance_gate",
     }
     require(set(ledger) == expected_keys, "ledger:keys")
     require(ledger.get("schema") == "nostr_automerge.runtime_ledger.v9.v1", "ledger:schema")
@@ -2746,6 +2752,34 @@ def validate_runtime_ledger(
             "publication_status": report_parity_gate["publication_status"],
         },
         "ledger:report_parity_gate_binding",
+    )
+    signed_gate = load_object(SIGNED_CONFORMANCE_GATE_REPORT)
+    require(
+        signed_gate.get("result_identity_sha256")
+        == APPROVED_SIGNED_CONFORMANCE_GATE_RESULT_IDENTITY,
+        "ledger:signed_conformance_gate_result_identity",
+    )
+    authority = signed_gate["authority"]
+    execution = signed_gate["execution"]
+    require(
+        ledger.get("signed_conformance_gate")
+        == {
+            "checkpoint": signed_gate["checkpoint"],
+            "gate_id": signed_gate["gate_id"],
+            "candidate_count": len(signed_gate["candidate_chain"]),
+            "fixture_count": authority["fixture_count"],
+            "preserved_fixture_count": authority["preserved_fixture_count"],
+            "new_fixture_count": authority["new_fixture_count"],
+            "corrected_expectation_count": authority["corrected_expectation_count"],
+            "process_count_per_implementation": execution["rust_process_count"],
+            "delivery_permutation_count": execution["delivery_permutations"],
+            "byte_mismatch_count": execution["byte_mismatch_count"],
+            "canonical_output_sha256": execution["canonical_output_sha256"],
+            "result_identity_sha256": signed_gate["result_identity_sha256"],
+            "result": signed_gate["status"],
+            "publication_status": signed_gate["publication_status"],
+        },
+        "ledger:signed_conformance_gate_binding",
     )
     validate_no_leak(ledger, "ledger:boundary")
 
@@ -3323,6 +3357,10 @@ def main() -> int:
     print(f"- opaque_resource_gate_identity={opaque_resource_gate['result_identity_sha256']}")
     print(f"- opaque_finalization_identity={opaque_finalization['result_identity_sha256']}")
     print(f"- report_parity_gate_identity={report_parity_gate['result_identity_sha256']}")
+    print(
+        "- signed_conformance_gate_identity="
+        f"{load_object(SIGNED_CONFORMANCE_GATE_REPORT)['result_identity_sha256']}"
+    )
     print(f"- report_revision_inventory={len(REPORT_REVISION_INVENTORY)}")
     print(f"- report_contract_clauses={REPORT_CONTRACT_CLAUSE_COUNT}")
     print(

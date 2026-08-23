@@ -3,10 +3,10 @@
   "status": "in_progress",
   "rcld": 92,
   "cursor": {
-    "active_step": "step_1273",
-    "next_step": "step_1274",
+    "active_step": "step_1274",
+    "next_step": "step_1275",
     "last_step": "step_1287",
-    "remaining_checkpoint_count": 15,
+    "remaining_checkpoint_count": 14,
     "first_rcld": 92,
     "last_rcld": 94,
     "remaining_rcld_count": 3
@@ -1301,6 +1301,16 @@
       "finding_ids": [],
       "deviation_ids": [],
       "result": "pass"
+    },
+    {
+      "step": "step_1273",
+      "candidate": "fc256396c534adb90be4da4c9d172a14d3786f1d",
+      "owner_class": "public",
+      "gate_ids": ["V-CONF"],
+      "requirement_ids": ["NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": [],
+      "deviation_ids": [],
+      "result": "pass"
     }
   ],
   "opaque_reproduction": {
@@ -1499,6 +1509,22 @@
     "canonical_output_sha256": "cfb32cbf0f2248470ae07d7e42f78301df9014afc2822d622e2c260c8c60b5c6",
     "serialized_output_sha256": "edd05b0ee5f09f8b4fda87b3bf15a1988141a371cd4b13f504a49b27ad345ed4",
     "result_identity_sha256": "aaf76821bb0fa463c4b71c1f27d6c194dea1b5c9790b505e04d3c810b898059d",
+    "result": "pass",
+    "publication_status": "held"
+  },
+  "signed_conformance_gate": {
+    "checkpoint": "step_1274",
+    "gate_id": "GATE_V9_CONFORMANCE",
+    "candidate_count": 10,
+    "fixture_count": 192,
+    "preserved_fixture_count": 180,
+    "new_fixture_count": 12,
+    "corrected_expectation_count": 4,
+    "process_count_per_implementation": 2,
+    "delivery_permutation_count": 8,
+    "byte_mismatch_count": 0,
+    "canonical_output_sha256": "c9f28deb32dfedce674a6871b0eb949f38b5a5f977a67ca993f7ed639df1e112",
+    "result_identity_sha256": "3aa7447b502c86de51d6e82a0ceb067df816a7ce956895b2aef54c3f76303b6e",
     "result": "pass",
     "publication_status": "held"
   }

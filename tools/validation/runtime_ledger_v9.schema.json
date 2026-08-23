@@ -23,7 +23,8 @@
     "opaque_resource_gate",
     "opaque_finalization",
     "report_schema_authority",
-    "report_parity_gate"
+    "report_parity_gate",
+    "signed_conformance_gate"
   ],
   "properties": {
     "schema": {"const": "nostr_automerge.runtime_ledger.v9.v1"},
@@ -485,6 +486,34 @@
         "canonical_output_sha256": {"const": "cfb32cbf0f2248470ae07d7e42f78301df9014afc2822d622e2c260c8c60b5c6"},
         "serialized_output_sha256": {"const": "edd05b0ee5f09f8b4fda87b3bf15a1988141a371cd4b13f504a49b27ad345ed4"},
         "result_identity_sha256": {"const": "aaf76821bb0fa463c4b71c1f27d6c194dea1b5c9790b505e04d3c810b898059d"},
+        "result": {"const": "pass"},
+        "publication_status": {"const": "held"}
+      }
+    },
+    "signed_conformance_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpoint", "gate_id", "candidate_count", "fixture_count",
+        "preserved_fixture_count", "new_fixture_count",
+        "corrected_expectation_count", "process_count_per_implementation",
+        "delivery_permutation_count", "byte_mismatch_count",
+        "canonical_output_sha256", "result_identity_sha256", "result",
+        "publication_status"
+      ],
+      "properties": {
+        "checkpoint": {"const": "step_1274"},
+        "gate_id": {"const": "GATE_V9_CONFORMANCE"},
+        "candidate_count": {"const": 10},
+        "fixture_count": {"const": 192},
+        "preserved_fixture_count": {"const": 180},
+        "new_fixture_count": {"const": 12},
+        "corrected_expectation_count": {"const": 4},
+        "process_count_per_implementation": {"const": 2},
+        "delivery_permutation_count": {"const": 8},
+        "byte_mismatch_count": {"const": 0},
+        "canonical_output_sha256": {"const": "c9f28deb32dfedce674a6871b0eb949f38b5a5f977a67ca993f7ed639df1e112"},
+        "result_identity_sha256": {"const": "3aa7447b502c86de51d6e82a0ceb067df816a7ce956895b2aef54c3f76303b6e"},
         "result": {"const": "pass"},
         "publication_status": {"const": "held"}
       }

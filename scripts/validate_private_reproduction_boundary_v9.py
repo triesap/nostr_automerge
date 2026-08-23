@@ -43,6 +43,7 @@ JSON_RECORDS = (
     "reports/rust_resource_gate_v9.json",
     "reports/rust_conformance_v10.json",
     "reports/opaque_conformance_v10.json",
+    "reports/signed_conformance_gate_v10.json",
     "reports/opaque_boundary_gate_v9.json",
     "reports/opaque_resource_gate_v9.json",
     "reports/opaque_finalization_v9.json",
@@ -58,6 +59,7 @@ JSON_RECORDS = (
     "tools/validation/rust_resource_gate_v9.schema.json",
     "tools/validation/rust_conformance_v10.schema.json",
     "tools/validation/opaque_conformance_v10.schema.json",
+    "tools/validation/signed_conformance_gate_v10.schema.json",
     "tools/validation/opaque_boundary_gate_v9.schema.json",
     "tools/validation/opaque_resource_gate_v9.schema.json",
     "tools/validation/opaque_finalization_v9.schema.json",
@@ -85,6 +87,7 @@ PYTHON_SURFACES = (
     "scripts/validate_rust_resource_gate_v9.py",
     "scripts/validate_rust_conformance_v10.py",
     "scripts/validate_opaque_conformance_v10.py",
+    "scripts/validate_signed_conformance_gate_v10.py",
     "scripts/validate_opaque_boundary_gate_v9.py",
     "scripts/validate_opaque_resource_gate_v9.py",
     "scripts/validate_opaque_finalization_v9.py",
@@ -163,6 +166,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "fixtures/README.md",
         "fixtures/examples",
         "fixtures/schema",
+        "fixtures/schema/distribution.schema.v10.json",
         "fixtures/schema/report.schema.json",
         "implementation/runtime_ledger_v9.json",
         "reports/checkpoint_parity_v9.json",
@@ -173,6 +177,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/rust_conformance_v9.json",
         "reports/rust_conformance_v10.json",
         "reports/opaque_conformance_v10.json",
+        "reports/signed_conformance_gate_v10.json",
         "reports/rust_report_gate_v9.json",
         "reports/rust_finalization_gate_v9.json",
         "reports/rust_resource_gate_v9.json",
@@ -201,6 +206,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_rust_conformance_v9.py",
         "scripts/validate_rust_conformance_v10.py",
         "scripts/validate_opaque_conformance_v10.py",
+        "scripts/validate_signed_conformance_gate_v10.py",
         "scripts/reproduce_remediation_v9.py",
         "scripts/validate_remediation_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
@@ -236,6 +242,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/validation/rust_resource_gate_v9.schema.json",
         "tools/validation/rust_conformance_v10.schema.json",
         "tools/validation/opaque_conformance_v10.schema.json",
+        "tools/validation/signed_conformance_gate_v10.schema.json",
         "tools/validation/opaque_finalization_v9.schema.json",
         "tools/validation/report_parity_v9.schema.json",
         "tools/validation/opaque_boundary_gate_v9.schema.json",
@@ -479,6 +486,10 @@ def validate_source_surfaces() -> None:
                     or (
                         value in {"cargo", "git"}
                         and relative == "scripts/validate_opaque_conformance_v10.py"
+                    )
+                    or (
+                        value in {"git", "python3"}
+                        and relative == "scripts/validate_signed_conformance_gate_v10.py"
                     )
                 ),
             )
