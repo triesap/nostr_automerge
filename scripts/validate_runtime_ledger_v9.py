@@ -335,6 +335,7 @@ PREDECESSOR_CANDIDATES = (
     "b981a06011abbc46d1faca5aa5c3a2348918da95",
     "e83da2c052c985ce8af160c954a472d0bf2055c8",
     "3f0a571081e22d9f018f9803bb2efcb248d1e9ec",
+    "3bec1ed87f7b2298a7d132dea8c7179b0f9afb20",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -452,18 +453,13 @@ HISTORICAL_STEP_1217_CLOSURE_PATHS = frozenset(
 )
 CLOSURE_PATHS = frozenset(
     {
+        "crates/nostr_automerge/src/carrier/change.rs",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
-        "reports/opaque_finalization_v9.json",
         "scripts/validate_private_reproduction_boundary_v9.py",
-        "scripts/validate_opaque_finalization_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
-        "scripts/validate_spec.py",
-        "tools/nostr_automerge_xtask/src/validate.rs",
-        "tools/validation/opaque_finalization_v9.schema.json",
-        "tools/validation/runtime_ledger_v9.schema.json",
     }
 )
 CLOSURE_AMEND_ADDITION = "docs/execution/remediation_v9/ledger.md"
@@ -475,11 +471,7 @@ CLOSURE_AMEND_PATHS = frozenset(
     }
 )
 CLOSURE_NEW_PATHS = frozenset(
-    {
-        "reports/opaque_finalization_v9.json",
-        "scripts/validate_opaque_finalization_v9.py",
-        "tools/validation/opaque_finalization_v9.schema.json",
-    }
+    {}
 )
 EXPECTED_GATES = (
     ("V-AUTH",),
@@ -558,6 +550,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-TS",),
     ("V-FULL-TS",),
+    ("V-EVIDENCE",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -704,6 +697,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -783,6 +777,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_076",),
     ("FINDING_076",),
     ("FINDING_076",),
+    ("FINDING_089",),
     ("FINDING_089",),
     ("FINDING_089",),
     ("FINDING_089",),

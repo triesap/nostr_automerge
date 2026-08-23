@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::automerge_adapter::encode::{ReencodeError, qualify_canonical_reencoding};
 use crate::automerge_adapter::types::DecodedChange;
 use crate::wire::{base64, tags};
@@ -13,7 +15,7 @@ pub(crate) struct ChangeCarrier {
     coordinate: DocumentCoordinate,
     control_id: EventId,
     declared_change_hash: ChangeHash,
-    canonical_raw_change_bytes: Vec<u8>,
+    canonical_raw_change_bytes: Arc<[u8]>,
     decoded: DecodedChange,
 }
 
@@ -62,6 +64,10 @@ impl ChangeCarrier {
     }
 
     pub(crate) fn canonical_raw_bytes(&self) -> &[u8] {
+        &self.canonical_raw_change_bytes
+    }
+
+    pub(crate) const fn canonical_raw_arc(&self) -> &Arc<[u8]> {
         &self.canonical_raw_change_bytes
     }
 
@@ -136,7 +142,7 @@ fn validate_parts(
         coordinate,
         control_id,
         declared_change_hash,
-        canonical_raw_change_bytes: raw,
+        canonical_raw_change_bytes: raw.into(),
         decoded,
     })
 }
@@ -151,6 +157,8 @@ fn tag_value<'a>(event_tags: &'a [Vec<String>], name: &str) -> Result<&'a str, C
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use super::{ChangeCarrierError, validate_parts};
     use crate::automerge_adapter::fixture::generate_change;
     use crate::wire::base64;
@@ -193,6 +201,17 @@ mod tests {
         let content = base64::encode_padded(&raw);
         let valid = validate_parts(EventId::from_bytes([0x55; 32]), author, &tags, &content);
         assert!(valid.is_ok());
+        let retained = match &valid {
+            Ok(value) => Arc::clone(value.canonical_raw_arc()),
+            Err(_) => return,
+        };
+        let borrowed = valid.as_ref().map(|value| value.canonical_raw_bytes());
+        assert!(borrowed.is_ok_and(|value| value == raw));
+        assert!(
+            valid
+                .as_ref()
+                .is_ok_and(|value| { Arc::ptr_eq(value.canonical_raw_arc(), &retained) })
+        );
         let mut extended = tags.clone();
         extended.extend([
             vec!["d".to_owned(), "ignored".to_owned()],

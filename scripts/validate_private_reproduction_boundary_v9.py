@@ -88,6 +88,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "crates/nostr_automerge/src/checkpoint/mod.rs",
         "crates/nostr_automerge/src/checkpoint/verify_history.rs",
         "crates/nostr_automerge/src/checkpoint/verify.rs",
+        "crates/nostr_automerge/src/carrier/change.rs",
         "crates/nostr_automerge/src/conformance/dispositions_digest.rs",
         "crates/nostr_automerge/src/conformance/history_digest.rs",
         "crates/nostr_automerge/src/automerge_adapter/materialized_view.rs",

@@ -16,10 +16,10 @@ Reviewed applicability SHA-256: `7cda8e59da0d8caf1f9a9985ba27c9367018c572824f092
 Reviewed distribution-v9 manifest SHA-256: `7b4ab5d2146939d142eb92d43060ef2183c95d1fc574132894b3c01c874c7c56`
 Reviewed canonical-output SHA-256: `e193a7b0db3a43e9d33e612afea05bd447a5e968a45e283d098f45278d6ab6fc`
 Steps: `step_1158` through `step_1287` (130 contiguous checkpoints)
-Active RCLD: RCLD 88
-Active checkpoint: `step_1234`
+Active RCLD: RCLD 89
+Active checkpoint: `step_1235`
 Next RCLD: RCLD 89
-Next checkpoint: `step_1235`
+Next checkpoint: `step_1236`
 
 This planning revision changes only the unfinished checkpoint map. Completed
 candidate identities and evidence remain immutable. The public-owned
@@ -518,7 +518,7 @@ Depends on: RCLD 87
 
 ## RCLD 89 — Rust Target Work And Shared Bytes
 
-Status: planned
+Status: in progress
 Steps: `step_1235` through `step_1244`
 Gate: `GATE_V9_RUST_RESOURCE`
 Depends on: RCLD 88
