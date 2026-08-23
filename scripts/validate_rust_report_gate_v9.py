@@ -294,14 +294,29 @@ def validate_candidate_chain() -> None:
             )
 
 
-def expected_distribution_hashes(fixtures: list[dict[str, Any]]) -> tuple[str, str]:
+def candidate_bytes(candidate: str, relative: str) -> bytes:
+    return git_bytes("show", f"{candidate}:{relative}")
+
+
+def candidate_object(candidate: str, relative: str) -> dict[str, Any]:
+    try:
+        value = json.loads(candidate_bytes(candidate, relative))
+    except json.JSONDecodeError as error:
+        raise LedgerError(f"rust_report_gate:json:{relative}") from error
+    require(isinstance(value, dict), f"rust_report_gate:object:{relative}")
+    return value
+
+
+def expected_distribution_hashes(
+    fixtures: list[dict[str, Any]], candidate: str
+) -> tuple[str, str]:
     aggregate = hashlib.sha256()
     reports: list[dict[str, str]] = []
     for fixture in sorted(fixtures, key=lambda item: item["fixture_id"].encode()):
         fixture_id = fixture["fixture_id"].encode()
         expected_path = fixture.get("expected_path")
         require(isinstance(expected_path, str), "rust_report_gate:expected_path")
-        expected = (ROOT / expected_path).read_bytes()
+        expected = candidate_bytes(candidate, expected_path)
         aggregate.update(len(fixture_id).to_bytes(8, "big"))
         aggregate.update(fixture_id)
         aggregate.update(len(expected).to_bytes(8, "big"))
@@ -327,14 +342,17 @@ def expected_distribution_hashes(fixtures: list[dict[str, Any]]) -> tuple[str, s
 
 def validate_repository_bindings() -> None:
     validate_candidate_chain()
+    candidate = CANDIDATE_CHAIN[-1]["candidate"]
     for relative, digest in REPORT_CODE_BINDINGS:
-        source = git_bytes("show", f"{CANDIDATE_CHAIN[-1]['candidate']}:{relative}")
+        source = candidate_bytes(candidate, relative)
         require(
             hashlib.sha256(source).hexdigest() == digest,
             f"rust_report_gate:code_binding:{relative}",
         )
     require(
-        file_digest("scripts/validate_report_contract_v9.py")
+        hashlib.sha256(
+            candidate_bytes(candidate, "scripts/validate_report_contract_v9.py")
+        ).hexdigest()
         == REPORT_CONTRACT["suite_identity_sha256"],
         "rust_report_gate:suite_identity",
     )
@@ -346,7 +364,11 @@ def validate_repository_bindings() -> None:
         ("crates/nostr_automerge/src/conformance/history_digest.rs", "history_digest_code_sha256"),
         ("crates/nostr_automerge/src/conformance/dispositions_digest.rs", "dispositions_digest_code_sha256"),
     ):
-        require(file_digest(relative) == FROZEN_IDENTITIES[key], f"rust_report_gate:frozen:{key}")
+        require(
+            hashlib.sha256(candidate_bytes(candidate, relative)).hexdigest()
+            == FROZEN_IDENTITIES[key],
+            f"rust_report_gate:frozen:{key}",
+        )
     digest_projection = projection_digest(
         [
             {"class": "history", "sha256": FROZEN_IDENTITIES["history_digest_code_sha256"]},
@@ -362,10 +384,10 @@ def validate_repository_bindings() -> None:
         == FROZEN_IDENTITIES["wire_domain_projection_sha256"],
         "rust_report_gate:wire_projection",
     )
-    manifest = load_object("fixtures/distribution/manifest_v9.json")
+    manifest = candidate_object(candidate, "fixtures/distribution/manifest_v9.json")
     fixtures = manifest.get("fixtures")
     require(isinstance(fixtures, list) and len(fixtures) == 180, "rust_report_gate:fixtures")
-    canonical, distribution = expected_distribution_hashes(fixtures)
+    canonical, distribution = expected_distribution_hashes(fixtures, candidate)
     require(canonical == CONFORMANCE["canonical_output_sha256"], "rust_report_gate:canonical")
     require(distribution == CONFORMANCE["distribution_run_sha256"], "rust_report_gate:distribution")
 

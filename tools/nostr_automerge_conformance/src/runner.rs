@@ -945,6 +945,46 @@ mod tests {
     }
 
     #[test]
+    fn report_parity_rejects_malformed_and_structurally_valid_mismatch() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let expected_path = root
+            .join("fixtures/v1_draft/scenarios/checkpoints/checkpoints_single_chunk.expected.json");
+        let expected = load_expected(&expected_path);
+        assert!(expected.is_ok());
+        let Ok(expected) = expected else { return };
+        assert_eq!(
+            expected.checkpoints[0].historical_carriers,
+            ["9a0701b37736afc4c28c82bfdc94ddf53a3b054fecfa191f18ed94c14982ac7f"]
+        );
+        assert_eq!(
+            expected.checkpoints[0].accepted_at_control,
+            ["66be06a76d30b453372abdd246e6ea8aecf8e2dd9c134264b3cce7d57bbda43f"]
+        );
+        assert_ne!(
+            expected.checkpoints[0].historical_carriers,
+            expected.checkpoints[0].accepted_at_control
+        );
+
+        let malformed = b"{\"report_schema\":}\n";
+        let temporary = std::env::temp_dir().join(format!(
+            "nostr-automerge-report-parity-{}-{}.json",
+            std::process::id(),
+            expected.fixture_id
+        ));
+        assert!(fs::write(&temporary, malformed).is_ok());
+        assert!(load_expected(&temporary).is_err());
+        let _ = fs::remove_file(&temporary);
+
+        let mut mismatch = expected.clone();
+        mismatch.checkpoints[0].historical_carriers = vec!["aa".repeat(32)];
+        assert_eq!(
+            compare_expected(&mismatch, &expected),
+            Err(RunError::Mismatch)
+        );
+        assert!(write_canonical_report(&mismatch).is_ok());
+    }
+
+    #[test]
     fn add_corpus_cli_command() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures");
         let paths = discover_fixtures(&root);

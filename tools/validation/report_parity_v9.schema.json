@@ -1,0 +1,139 @@
+{
+  "title": "nostr_automerge report parity v9 closure",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "checkpoint",
+    "gate_id",
+    "stage",
+    "protocol_revision",
+    "public_predecessor",
+    "opaque_candidates",
+    "report_schema_authority",
+    "opaque_evidence",
+    "public_evidence",
+    "parity_results",
+    "report_negative_mutations",
+    "binding_negative_mutations",
+    "schema_negative_mutations",
+    "publication_status",
+    "result_identity_sha256"
+  ],
+  "properties": {
+    "schema": {"const": "nostr_automerge.report_parity.v9.v1"},
+    "checkpoint": {"const": "step_1217"},
+    "gate_id": {"const": "GATE_V9_REPORT_PARITY"},
+    "stage": {"const": "report_parity_closed"},
+    "protocol_revision": {"const": "draft_2026_08"},
+    "public_predecessor": {"$ref": "#/$defs/candidate"},
+    "opaque_candidates": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/candidate"}
+    },
+    "report_schema_authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "sha256", "required_fields", "checkpoint_statuses", "diagnostic_codes", "result"],
+      "properties": {
+        "schema": {"const": "nostr_automerge.report.v1"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "required_fields": {"const": 18},
+        "checkpoint_statuses": {"const": 22},
+        "diagnostic_codes": {"const": 50},
+        "result": {"const": "pass"}
+      }
+    },
+    "opaque_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "report_sha256", "schema_sha256", "result_identity_sha256", "fixture_manifest_sha256",
+        "fixture_count", "delivery_permutations", "processes", "clause_count", "proof_unit_count",
+        "inventory_negative_mutations", "transcript_negative_mutations", "ordinary_proof_executions",
+        "checkpoint_fixture_count", "checkpoint_engine_vectors", "fixed_reproductions", "open_reproductions",
+        "inventory_sha256", "proof_projection_sha256", "canonical_output_sha256", "result"
+      ],
+      "properties": {
+        "report_sha256": {"$ref": "#/$defs/sha256"},
+        "schema_sha256": {"$ref": "#/$defs/sha256"},
+        "result_identity_sha256": {"$ref": "#/$defs/sha256"},
+        "fixture_manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "fixture_count": {"const": 180},
+        "delivery_permutations": {"const": 8},
+        "processes": {"const": 2},
+        "clause_count": {"const": 18},
+        "proof_unit_count": {"const": 9},
+        "inventory_negative_mutations": {"const": 13},
+        "transcript_negative_mutations": {"const": 8},
+        "ordinary_proof_executions": {"const": 17},
+        "checkpoint_fixture_count": {"const": 22},
+        "checkpoint_engine_vectors": {"const": 11},
+        "fixed_reproductions": {"const": 9},
+        "open_reproductions": {"const": 14},
+        "inventory_sha256": {"$ref": "#/$defs/sha256"},
+        "proof_projection_sha256": {"$ref": "#/$defs/sha256"},
+        "canonical_output_sha256": {"$ref": "#/$defs/sha256"},
+        "result": {"const": "pass"}
+      }
+    },
+    "public_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fixture_manifest_sha256", "fixture_count", "delivery_permutations", "processes",
+        "corrected_checkpoint_fixture_count", "corrected_checkpoint_ids_sha256",
+        "historical_carrier_namespace", "accepted_history_namespace", "canonical_output_sha256",
+        "serialized_output_sha256", "result"
+      ],
+      "properties": {
+        "fixture_manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "fixture_count": {"const": 180},
+        "delivery_permutations": {"const": 8},
+        "processes": {"const": 2},
+        "corrected_checkpoint_fixture_count": {"const": 8},
+        "corrected_checkpoint_ids_sha256": {"$ref": "#/$defs/sha256"},
+        "historical_carrier_namespace": {"const": "event_id"},
+        "accepted_history_namespace": {"const": "change_hash"},
+        "canonical_output_sha256": {"$ref": "#/$defs/sha256"},
+        "serialized_output_sha256": {"$ref": "#/$defs/sha256"},
+        "result": {"const": "pass"}
+      }
+    },
+    "parity_results": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["class", "result"],
+        "properties": {
+          "class": {
+            "enum": [
+              "schema_identity",
+              "mandatory_execution",
+              "canonical_byte_equality",
+              "malformed_output_rejection",
+              "structurally_valid_mismatch_rejection",
+              "opaque_boundary"
+            ]
+          },
+          "result": {"const": "pass"}
+        }
+      }
+    },
+    "report_negative_mutations": {"const": 28},
+    "binding_negative_mutations": {"const": 12},
+    "schema_negative_mutations": {"const": 8},
+    "publication_status": {"const": "held"},
+    "result_identity_sha256": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

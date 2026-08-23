@@ -28,6 +28,7 @@ VALIDATORS = [
     "validate_carrier_gate_v9.py",
     "validate_report_contract_v9.py",
     "validate_rust_report_gate_v9.py",
+    "validate_report_parity_v9.py",
     "validate_runtime_ledger_v9.py",
     "validate_private_reproduction_boundary_v9.py",
 ]
@@ -81,12 +82,14 @@ def controlled_files() -> list[pathlib.Path]:
             "reports/opaque_checkpoint_v9.json",
             "reports/opaque_reproduction_v9.json",
             "reports/rust_report_gate_v9.json",
+            "reports/report_parity_v9.json",
             "tools/validation/checkpoint_parity_v9.schema.json",
             "tools/validation/carrier_gate_v9.schema.json",
             "tools/validation/opaque_carrier_v9.schema.json",
             "tools/validation/opaque_checkpoint_v9.schema.json",
             "tools/validation/opaque_reproduction_v9.schema.json",
             "tools/validation/rust_report_gate_v9.schema.json",
+            "tools/validation/report_parity_v9.schema.json",
             "tools/validation/runtime_ledger_v9.schema.json",
         )
     )

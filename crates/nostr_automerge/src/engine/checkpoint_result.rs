@@ -104,7 +104,7 @@ pub struct CheckpointVerificationResult {
     heads: Vec<ChangeHash>,
     change_count: u64,
     change_set_hash: [u8; 32],
-    historical_carriers: Vec<ChangeHash>,
+    historical_carriers: Vec<EventId>,
     accepted_at_control: Vec<ChangeHash>,
     status: CheckpointVerificationStatus,
 }
@@ -118,7 +118,7 @@ impl CheckpointVerificationResult {
         heads: Vec<ChangeHash>,
         change_count: u64,
         change_set_hash: [u8; 32],
-        historical_carriers: Vec<ChangeHash>,
+        historical_carriers: Vec<EventId>,
         accepted_at_control: Vec<ChangeHash>,
         status: CheckpointVerificationStatus,
     ) -> Self {
@@ -150,7 +150,7 @@ impl CheckpointVerificationResult {
         heads: Vec<ChangeHash>,
         change_count: u64,
         change_set_hash: [u8; 32],
-        historical_carriers: Vec<ChangeHash>,
+        historical_carriers: Vec<EventId>,
         accepted_at_control: Vec<ChangeHash>,
         status: CheckpointVerificationStatus,
     ) -> Self {
@@ -205,7 +205,7 @@ impl CheckpointVerificationResult {
 
     /// Returns qualifying historical carrier coverage through the referenced control.
     #[must_use]
-    pub fn historical_carriers(&self) -> &[ChangeHash] {
+    pub fn historical_carriers(&self) -> &[EventId] {
         &self.historical_carriers
     }
 

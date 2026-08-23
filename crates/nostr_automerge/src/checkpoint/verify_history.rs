@@ -1,5 +1,5 @@
 use super::VerifiedSnapshot;
-use crate::ChangeHash;
+use crate::{ChangeHash, EventId};
 use std::collections::BTreeSet;
 
 /// Why a snapshot was not backed by fully verified historical carriers.
@@ -20,21 +20,38 @@ pub enum HistoryVerificationError {
 }
 
 /// Derives qualifying validated carrier coverage through one canonical control.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct HistoricalCarrierCoverage {
+    pub(crate) change_hashes: BTreeSet<ChangeHash>,
+    pub(crate) carrier_event_ids: BTreeSet<EventId>,
+}
+
 pub(crate) fn historical_carrier_coverage(
     view: &crate::evidence::document_view::DocumentEvidenceView<'_>,
     canonical_controls: &[crate::EventId],
     through: crate::EventId,
     budget: &mut crate::WorkBudget,
     cancellation: &impl crate::CancellationCheck,
-) -> Result<BTreeSet<ChangeHash>, HistoryVerificationError> {
-    let mut coverage = BTreeSet::new();
+    mut qualifies: impl FnMut(EventId, ChangeHash, EventId) -> bool,
+) -> Result<HistoricalCarrierCoverage, HistoryVerificationError> {
+    let mut coverage = HistoricalCarrierCoverage::default();
     let mut found = false;
     for control in canonical_controls {
         charge_history_item(budget, cancellation)?;
         if let Some(hashes) = view.change_hashes_for_control(*control) {
             for hash in hashes {
                 charge_history_item(budget, cancellation)?;
-                coverage.insert(*hash);
+                let mut has_qualifying_carrier = false;
+                for event_id in view.change_carrier_event_ids(*hash).into_iter().flatten() {
+                    charge_history_item(budget, cancellation)?;
+                    if qualifies(*event_id, *hash, *control) {
+                        coverage.carrier_event_ids.insert(*event_id);
+                        has_qualifying_carrier = true;
+                    }
+                }
+                if has_qualifying_carrier {
+                    coverage.change_hashes.insert(*hash);
+                }
             }
         }
         if *control == through {
@@ -157,6 +174,9 @@ mod tests {
         let a = ChangeHash::from_bytes([4; 32]);
         let b = ChangeHash::from_bytes([5; 32]);
         let c = ChangeHash::from_bytes([6; 32]);
+        let a_event = EventId::from_bytes([10; 32]);
+        let b_event = EventId::from_bytes([11; 32]);
+        let c_event = EventId::from_bytes([12; 32]);
         let mut indexes = TrustedIndexes::default();
         let coordinate = crate::DocumentCoordinate::new(
             crate::ControllerPublicKey::from_bytes([7; 32]),
@@ -166,6 +186,11 @@ mod tests {
             ((coordinate, first), BTreeSet::from([a])),
             ((coordinate, second), BTreeSet::from([b])),
             ((coordinate, third), BTreeSet::from([c])),
+        ]);
+        indexes.changes.carriers_by_coordinate_hash = BTreeMap::from([
+            ((coordinate, a), BTreeSet::from([a_event])),
+            ((coordinate, b), BTreeSet::from([b_event])),
+            ((coordinate, c), BTreeSet::from([c_event])),
         ]);
         let corpus = EvidenceCorpus {
             events: BTreeMap::new(),
@@ -182,8 +207,12 @@ mod tests {
                 second,
                 &mut crate::WorkBudget::new(0, 10),
                 &crate::NeverCancelled,
+                |_, _, _| true,
             ),
-            Ok(BTreeSet::from([a, b]))
+            Ok(HistoricalCarrierCoverage {
+                change_hashes: BTreeSet::from([a, b]),
+                carrier_event_ids: BTreeSet::from([a_event, b_event]),
+            })
         );
         assert_eq!(
             historical_carrier_coverage(
@@ -192,6 +221,7 @@ mod tests {
                 EventId::from_bytes([9; 32]),
                 &mut crate::WorkBudget::new(0, 10),
                 &crate::NeverCancelled,
+                |_, _, _| true,
             ),
             Err(HistoryVerificationError::UnknownControl)
         );
@@ -202,6 +232,7 @@ mod tests {
                 second,
                 &mut crate::WorkBudget::new(0, 0),
                 &crate::NeverCancelled,
+                |_, _, _| true,
             ),
             Err(HistoryVerificationError::Budget)
         );

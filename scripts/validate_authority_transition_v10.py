@@ -7,6 +7,7 @@ import copy
 import hashlib
 import json
 import re
+import subprocess
 from pathlib import Path
 from typing import Any, Callable
 
@@ -16,6 +17,7 @@ STATE_PATH = "spec/authority_transition_v10.json"
 AUTHORITY_SCHEMA_PATH = "tools/validation/authority_transition_v10.schema.json"
 DISTRIBUTION_SCHEMA_PATH = "fixtures/schema/distribution.schema.v10.json"
 BASE_MANIFEST_PATH = "fixtures/distribution/manifest_v9.json"
+BASE_MANIFEST_CANDIDATE = "50bd3e4bef99a29e0d536b3fe8efd072835ce8fc"
 V10_MANIFEST_PATH = "fixtures/distribution/manifest_v10.json"
 
 STAGES = (
@@ -385,6 +387,50 @@ def digest(relative: str) -> str:
         return hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()
     except OSError as error:
         raise TransitionError(f"file:{relative}") from error
+
+
+def baseline_manifest_bytes() -> bytes:
+    result = subprocess.run(
+        ("git", "show", f"{BASE_MANIFEST_CANDIDATE}:{BASE_MANIFEST_PATH}"),
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+    )
+    require(result.returncode == 0 and result.stderr == b"", "baseline_manifest_git")
+    return result.stdout
+
+
+def baseline_candidate_bytes(relative: str) -> bytes:
+    result = subprocess.run(
+        ("git", "show", f"{BASE_MANIFEST_CANDIDATE}:{relative}"),
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+    )
+    require(result.returncode == 0 and result.stderr == b"", f"baseline_git:{relative}")
+    return result.stdout
+
+
+def load_baseline_candidate_object(relative: str) -> dict[str, Any]:
+    try:
+        value = json.loads(baseline_candidate_bytes(relative))
+    except json.JSONDecodeError as error:
+        raise TransitionError(f"baseline_json:{relative}") from error
+    require(isinstance(value, dict), f"baseline_object:{relative}")
+    return value
+
+
+def baseline_candidate_digest(relative: str) -> str:
+    return hashlib.sha256(baseline_candidate_bytes(relative)).hexdigest()
+
+
+def load_baseline_manifest() -> dict[str, Any]:
+    try:
+        value = json.loads(baseline_manifest_bytes())
+    except json.JSONDecodeError as error:
+        raise TransitionError("baseline_manifest_json") from error
+    require(isinstance(value, dict), "baseline_manifest_object")
+    return value
 
 
 def load_strict_lf_utf8(relative: str) -> str:
@@ -1183,7 +1229,7 @@ def validate_v10_manifest(
     require(len(identifiers) == len(set(identifiers)), "v10_manifest_fixture_unique")
     require(fixtures == expected["fixtures"], "v10_manifest_fixture_inventory")
 
-    baseline_entries = load_object(BASE_MANIFEST_PATH).get("fixtures")
+    baseline_entries = load_baseline_manifest().get("fixtures")
     require(isinstance(baseline_entries, list), "v10_manifest_baseline_entries")
     entry_by_id = {str(entry["fixture_id"]): entry for entry in fixtures}
     require(
@@ -1403,7 +1449,11 @@ def validate_distribution(state: dict[str, Any], stage: str) -> None:
     require(distribution.get("schema_sha256") == digest(DISTRIBUTION_SCHEMA_PATH), "distribution_schema_hash")
     require(distribution.get("baseline_manifest") == BASE_MANIFEST_PATH, "baseline_manifest_path")
     require(distribution.get("baseline_manifest_sha256") == BASELINE["manifest_sha256"], "baseline_manifest_binding")
-    require(digest(BASE_MANIFEST_PATH) == BASELINE["manifest_sha256"], "baseline_manifest_changed")
+    require(
+        hashlib.sha256(baseline_manifest_bytes()).hexdigest()
+        == BASELINE["manifest_sha256"],
+        "baseline_manifest_changed",
+    )
     require(
         distribution.get("baseline_fixture_count")
         == distribution.get("preserved_fixture_count")
@@ -1454,7 +1504,7 @@ def validate_distribution(state: dict[str, Any], stage: str) -> None:
     )
     require(actual_groups == NEW_FIXTURE_GROUPS, "new_fixture_inventory")
 
-    manifest = load_object(BASE_MANIFEST_PATH)
+    manifest = load_baseline_manifest()
     entries = manifest.get("fixtures")
     files = manifest.get("files")
     require(isinstance(entries, list) and len(entries) == 180, "baseline_manifest_entries")
@@ -1462,7 +1512,13 @@ def validate_distribution(state: dict[str, Any], stage: str) -> None:
     baseline_ids = [entry.get("fixture_id") for entry in entries if isinstance(entry, dict)]
     require(len(baseline_ids) == len(entries) == len(set(baseline_ids)), "baseline_fixture_ids")
     require(ordered_digest([str(identifier) for identifier in baseline_ids]) == BASELINE["ordered_fixture_ids_sha256"], "baseline_fixture_ids_digest")
-    validate_fixture_correction_projection(entries, files, stage)
+    validate_fixture_correction_projection(
+        entries,
+        files,
+        stage,
+        load_baseline_candidate_object,
+        baseline_candidate_digest,
+    )
     expected_requirement_count, expected_fixture_count, correction_count, new_count = STAGE_COUNTS[stage]
     del expected_requirement_count
 
@@ -2372,7 +2428,7 @@ def expect_transition_failure(
 def fixture_correction_mutation_self_test(stage: str) -> int:
     """Prove every authorized correction boundary rejects coordinated drift."""
 
-    manifest = load_object(BASE_MANIFEST_PATH)
+    manifest = load_baseline_manifest()
     entries = manifest.get("fixtures")
     files = manifest.get("files")
     require(isinstance(entries, list), "mutation_manifest_entries")
@@ -2399,12 +2455,12 @@ def fixture_correction_mutation_self_test(stage: str) -> int:
         def object_loader(relative: str) -> dict[str, Any]:
             if relative in replacements:
                 return copy.deepcopy(replacements[relative])
-            return load_object(relative)
+            return load_baseline_candidate_object(relative)
 
         def digest_loader(relative: str) -> str:
             if relative in encoded:
                 return hashlib.sha256(encoded[relative]).hexdigest()
-            return digest(relative)
+            return baseline_candidate_digest(relative)
 
         return expect_transition_failure(
             name,
@@ -2427,7 +2483,7 @@ def fixture_correction_mutation_self_test(stage: str) -> int:
     )
     fifth_id = str(fifth_entry["fixture_id"])
     fifth_expected_path = str(fifth_entry["expected_path"])
-    fifth_report = load_object(fifth_expected_path)
+    fifth_report = load_baseline_candidate_object(fifth_expected_path)
     fifth_report["mutation_probe"] = True
     caught += run(
         "fifth_live_fixture_delta",
@@ -2450,7 +2506,7 @@ def fixture_correction_mutation_self_test(stage: str) -> int:
         _,
     ) = CORRECTION_BINDINGS[0]
 
-    raw_event_drift = load_object(input_path)
+    raw_event_drift = load_baseline_candidate_object(input_path)
     raw_event_drift["raw_events"][0]["data"] += "A"
     caught += run(
         "raw_signed_event_drift",
@@ -2458,7 +2514,7 @@ def fixture_correction_mutation_self_test(stage: str) -> int:
         {input_path: raw_event_drift},
     )
 
-    non_report_drift = load_object(input_path)
+    non_report_drift = load_baseline_candidate_object(input_path)
     non_report_drift["fixture_id"] += "_drift"
     caught += run(
         "non_report_input_drift",

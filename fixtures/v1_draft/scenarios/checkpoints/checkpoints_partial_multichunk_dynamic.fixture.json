@@ -1,7 +1,7 @@
 {
   "expected": {
     "report_path": "checkpoints_partial_multichunk_dynamic.expected.json",
-    "sha256": "f6f9a3a0830a03854954d4b824e61b9c6650c0feb5a8109a42a9311647d34922"
+    "sha256": "07d4e6627c4c72730f48b97448a17a401e239aa4e75db46436bc33ae5c715810"
   },
   "fixture_id": "checkpoints_partial_multichunk_dynamic",
   "fixture_schema": "nostr_automerge.fixture.v1",
@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "checkpoints_partial_multichunk_dynamic.input.json",
-      "sha256": "6bcd765b8aad4662cc0ea1548ae0bdfab795c739e7eddecc884c8e80d3a22e96"
+      "sha256": "530d1aaf7d37e55133a9d29ef222391813ef5a13796ee20b72d7e65f4d755904"
     }
   ],
   "provenance": {

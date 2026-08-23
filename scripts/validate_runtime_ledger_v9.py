@@ -24,6 +24,7 @@ CARRIER_REPORT = "reports/opaque_carrier_v9.json"
 CARRIER_REPORT_SCHEMA = "tools/validation/opaque_carrier_v9.schema.json"
 CARRIER_GATE_REPORT = "reports/carrier_gate_v9.json"
 RUST_REPORT_GATE_REPORT = "reports/rust_report_gate_v9.json"
+REPORT_PARITY_GATE_REPORT = "reports/report_parity_v9.json"
 NEUTRAL_REPORT_SCHEMA = "fixtures/schema/report.schema.json"
 LEDGER = "implementation/runtime_ledger_v9.json"
 LEDGER_SCHEMA = "tools/validation/runtime_ledger_v9.schema.json"
@@ -44,7 +45,7 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "772b20a9a0e8076c2017f00cc2ca1e7c395beda948e304a22aaf48cf6410e3c4"
+    "44238837b07774e82e67bceb638f0828df4ab7274e85f10ade07f8cea6b5195a"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
@@ -66,6 +67,9 @@ APPROVED_CARRIER_GATE_RESULT_IDENTITY = (
 )
 APPROVED_RUST_REPORT_GATE_RESULT_IDENTITY = (
     "a27f1e771cb8fe70545dce95325ca9a23443b6ea1485f00d27a4c0e493e83648"
+)
+APPROVED_REPORT_PARITY_GATE_RESULT_IDENTITY = (
+    "aaf76821bb0fa463c4b71c1f27d6c194dea1b5c9790b505e04d3c810b898059d"
 )
 APPROVED_NEUTRAL_REPORT_SCHEMA_SHA256 = (
     "08a88d5ad7049203bb766dc763601a6c5311a70e631fa35ab62c164203cd8e1c"
@@ -297,6 +301,15 @@ PREDECESSOR_CANDIDATES = (
     "321abda8f672ecf1a44aa1919e0cec98830e8df8",
     "1d1adea27d2ebf75339114d3f8af25aba1e7a95a",
     "73f089166aa71a999380af907621e8e9b9fffb0d",
+    "50bd3e4bef99a29e0d536b3fe8efd072835ce8fc",
+    "f6b067bc782bbe156b6517bf54fecd041159e4c1",
+    "d3dc14cda7d52aa2f62b62454ec81f35f4caad49",
+    "47030370c53dd4445fe640955aba3844cc93a91e",
+    "2cf5e4abf0420f4113617d1c1e09bc489646f1d4",
+    "839aa0ea4c53ffeb0bdf3f67cb5bec54b692f4af",
+    "fd6050bde2ab5f14c72734491d0aa1e3ceb86b61",
+    "d74e5a9c8954de893a3059604abf25e506facd3a",
+    "74b20922ff0ac2a877acc0c1bb196b20c8cc02a8",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -315,11 +328,11 @@ REPORT_REVISION_INVENTORY = (
 REPORT_REVISION_SOURCE_BINDINGS = (
     (
         "crates/nostr_automerge/src/engine/evaluation_report.rs",
-        "60cdf47bed3c414d08f7af944ad1c675337b4f0eb889b380352231ddcc32d5c9",
+        "fa616b65e518af68cd0219d40b3d510718ba736639bb6b9a8ef0547b40fba708",
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "816060f0d66ded5664fdf63b5164d353e28d31df743583673f386566e595c1db",
+        "9f5dbda8df153f9a8a440e2d0ec806e8b319e5ef3c8c72d96921349f8ba52878",
     ),
     (
         "crates/nostr_automerge/src/integrity.rs",
@@ -331,11 +344,11 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "crates/nostr_automerge/tests/public_engine_api.rs",
-        "4c081c30c21343d18a0b094e1f22ee65be91f2db64c2d8c9a734552c75fcda51",
+        "ff749d10cc8c51e25ec8bfbcaa5efeac38331c70884dfa2fe149162097def899",
     ),
     (
         "tools/nostr_automerge_conformance/src/expected.rs",
-        "444cd71b70219c416cc3078c60dd619bddf77d05b32bceca0522f9271f56361d",
+        "702ad715272dc2c4132568216fc64a14744beb634616627cdc21423e6b8c156f",
     ),
     (
         "tools/nostr_automerge_conformance/src/fixture.rs",
@@ -351,7 +364,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "tools/nostr_automerge_conformance/src/runner.rs",
-        "acd2383d53060c747f429460207c3d555cf0c39e603fe7ff9a18085b9deb9804",
+        "19ea36eeb55711004b7a1470e6adeff15980ea5952d00ff9f28e347f082fef33",
     ),
     (
         "tools/nostr_automerge_conformance/src/scenario.rs",
@@ -360,18 +373,55 @@ REPORT_REVISION_SOURCE_BINDINGS = (
 )
 CLOSURE_PATHS = frozenset(
     {
+        "crates/nostr_automerge/src/checkpoint/mod.rs",
+        "crates/nostr_automerge/src/checkpoint/verify_history.rs",
+        "crates/nostr_automerge/src/engine/checkpoint_result.rs",
+        "crates/nostr_automerge/src/engine/evaluation_report.rs",
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "crates/nostr_automerge/tests/public_engine_api.rs",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
-        "fixtures/schema/report.schema.json",
+        "fixtures/distribution/manifest_v9.json",
+        "fixtures/v1_draft/checkpoints/negative_history.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_chunk_author_mismatch.expected.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_chunk_author_mismatch.fixture.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_chunk_author_mismatch.input.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_merkle_mismatch.expected.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_merkle_mismatch.fixture.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_merkle_mismatch.input.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_missing_chunk.expected.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_missing_chunk.fixture.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_missing_chunk.input.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_multichunk.expected.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_multichunk.fixture.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_multichunk.input.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_partial_multichunk_dynamic.expected.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_partial_multichunk_dynamic.fixture.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_partial_multichunk_dynamic.input.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_single_chunk.expected.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_single_chunk.fixture.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_single_chunk.input.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_snapshot_mismatch.expected.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_snapshot_mismatch.fixture.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_snapshot_mismatch.input.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_unauthorized.expected.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_unauthorized.fixture.json",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_unauthorized.input.json",
         "implementation/runtime_ledger_v9.json",
+        "reports/report_parity_v9.json",
         "reports/spec_baseline.txt",
         "scripts/validate_authority_transition_v10.py",
         "scripts/validate_carrier_gate_v9.py",
+        "scripts/validate_checkpoint_parity_v9.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
-        "scripts/validate_reports.py",
+        "scripts/validate_report_parity_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
         "scripts/validate_rust_report_gate_v9.py",
+        "scripts/validate_spec.py",
         "tools/nostr_automerge_conformance/src/expected.rs",
+        "tools/nostr_automerge_conformance/src/runner.rs",
+        "tools/nostr_automerge_xtask/src/validate.rs",
+        "tools/validation/report_parity_v9.schema.json",
         "tools/validation/runtime_ledger_v9.schema.json",
     }
 )
@@ -383,7 +433,13 @@ CLOSURE_AMEND_PATHS = frozenset(
         "scripts/validate_runtime_ledger_v9.py",
     }
 )
-CLOSURE_NEW_PATHS = frozenset()
+CLOSURE_NEW_PATHS = frozenset(
+    {
+        "reports/report_parity_v9.json",
+        "scripts/validate_report_parity_v9.py",
+        "tools/validation/report_parity_v9.schema.json",
+    }
+)
 EXPECTED_GATES = (
     ("V-AUTH",),
     ("V-AUTH",),
@@ -435,6 +491,15 @@ EXPECTED_GATES = (
     ("V-REPORT",),
     ("V-FULL-RUST",),
     ("V-TS",),
+    ("V-AUTH",),
+    ("V-TS",),
+    ("V-TS",),
+    ("V-TS",),
+    ("V-TS",),
+    ("V-TS",),
+    ("V-TS",),
+    ("V-TS",),
+    ("V-FULL-TS",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -555,6 +620,15 @@ EXPECTED_REQUIREMENTS = (
         "NCRDT-EVIDENCE-006",
     ),
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-DISPOSITION-006", "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-DISPOSITION-006", "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-INTERRUPT-001", "NCRDT-RESOURCE-014", "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -615,6 +689,15 @@ EXPECTED_FINDINGS = (
     ("FINDING_075", "FINDING_081", "FINDING_082"),
     ("FINDING_075", "FINDING_081", "FINDING_082"),
     ("FINDING_090",),
+    ("FINDING_090",),
+    ("FINDING_090",),
+    ("FINDING_090",),
+    ("FINDING_090",),
+    ("FINDING_090",),
+    ("FINDING_090",),
+    ("FINDING_090",),
+    ("FINDING_090",),
+    ("FINDING_090", "FINDING_093"),
 )
 FORBIDDEN_KEY_WORDS = {
     "source",
@@ -1775,7 +1858,11 @@ def expected_predecessor(index: int) -> dict[str, Any]:
         "candidate": PREDECESSOR_CANDIDATES[index],
         "owner_class": (
             "opaque_private"
-            if index == 8 or 20 <= index <= 26 or 34 <= index <= 36 or index == 49
+            if index == 8
+            or 20 <= index <= 26
+            or 34 <= index <= 36
+            or index == 49
+            or 51 <= index <= 58
             else "public"
         ),
         "gate_ids": list(EXPECTED_GATES[index]),
@@ -1856,6 +1943,14 @@ def validate_predecessors(
                     for item in carrier["candidate_chain"]
                 },
                 "step_1207": ("73f089166aa71a999380af907621e8e9b9fffb0d", True),
+                "step_1209": ("f6b067bc782bbe156b6517bf54fecd041159e4c1", True),
+                "step_1210": ("d3dc14cda7d52aa2f62b62454ec81f35f4caad49", True),
+                "step_1211": ("47030370c53dd4445fe640955aba3844cc93a91e", True),
+                "step_1212": ("2cf5e4abf0420f4113617d1c1e09bc489646f1d4", True),
+                "step_1213": ("839aa0ea4c53ffeb0bdf3f67cb5bec54b692f4af", True),
+                "step_1214": ("fd6050bde2ab5f14c72734491d0aa1e3ceb86b61", True),
+                "step_1215": ("d74e5a9c8954de893a3059604abf25e506facd3a", True),
+                "step_1216": ("74b20922ff0ac2a877acc0c1bb196b20c8cc02a8", True),
             }
             require(row["step"] in approved_opaque, f"predecessor:{index}:opaque_step")
             approved_candidate, approved_result = approved_opaque[row["step"]]
@@ -1904,6 +1999,7 @@ def validate_runtime_ledger(
     carrier: dict[str, Any],
     carrier_gate: dict[str, Any],
     rust_report_gate: dict[str, Any],
+    report_parity_gate: dict[str, Any],
 ) -> None:
     expected_keys = {
         "schema",
@@ -1921,6 +2017,7 @@ def validate_runtime_ledger(
         "carrier_gate",
         "rust_report_gate",
         "report_schema_authority",
+        "report_parity_gate",
     }
     require(set(ledger) == expected_keys, "ledger:keys")
     require(ledger.get("schema") == "nostr_automerge.runtime_ledger.v9.v1", "ledger:schema")
@@ -2191,6 +2288,36 @@ def validate_runtime_ledger(
         },
         "ledger:rust_report_gate_binding",
     )
+    require(
+        report_parity_gate.get("result_identity_sha256")
+        == APPROVED_REPORT_PARITY_GATE_RESULT_IDENTITY,
+        "ledger:report_parity_gate_result_identity",
+    )
+    public_evidence = report_parity_gate["public_evidence"]
+    opaque_evidence = report_parity_gate["opaque_evidence"]
+    require(
+        ledger.get("report_parity_gate")
+        == {
+            "checkpoint": report_parity_gate["checkpoint"],
+            "gate_id": report_parity_gate["gate_id"],
+            "public_predecessor": report_parity_gate["public_predecessor"],
+            "opaque_candidate_count": len(report_parity_gate["opaque_candidates"]),
+            "report_schema_sha256": report_parity_gate["report_schema_authority"]["sha256"],
+            "fixture_manifest_sha256": public_evidence["fixture_manifest_sha256"],
+            "fixture_count": public_evidence["fixture_count"],
+            "delivery_permutation_count": public_evidence["delivery_permutations"],
+            "corrected_checkpoint_fixture_count": public_evidence[
+                "corrected_checkpoint_fixture_count"
+            ],
+            "clause_count": opaque_evidence["clause_count"],
+            "canonical_output_sha256": public_evidence["canonical_output_sha256"],
+            "serialized_output_sha256": public_evidence["serialized_output_sha256"],
+            "result_identity_sha256": report_parity_gate["result_identity_sha256"],
+            "result": "pass",
+            "publication_status": report_parity_gate["publication_status"],
+        },
+        "ledger:report_parity_gate_binding",
+    )
     validate_no_leak(ledger, "ledger:boundary")
 
 
@@ -2201,6 +2328,7 @@ def mutation_self_test(
     carrier: dict[str, Any],
     carrier_gate: dict[str, Any],
     rust_report_gate: dict[str, Any],
+    report_parity_gate: dict[str, Any],
     ledger: dict[str, Any],
 ) -> int:
     report_mutations: list[tuple[str, dict[str, Any]]] = []
@@ -2520,6 +2648,7 @@ def mutation_self_test(
                 carrier,
                 carrier_gate,
                 rust_report_gate,
+                report_parity_gate,
             )
         except LedgerError:
             caught += 1
@@ -2534,6 +2663,7 @@ def mutation_self_test(
             carrier,
             carrier_gate,
             rust_report_gate,
+            report_parity_gate,
         )
     except LedgerError:
         caught += 1
@@ -2661,6 +2791,7 @@ def main() -> int:
     carrier = load_object(CARRIER_REPORT)
     carrier_gate = load_object(CARRIER_GATE_REPORT)
     rust_report_gate = load_object(RUST_REPORT_GATE_REPORT)
+    report_parity_gate = load_object(REPORT_PARITY_GATE_REPORT)
     ledger = load_object(LEDGER)
     validate_schema_contract(
         load_object(REPORT_SCHEMA), "opaque_schema", REPORT_SCHEMA_PROJECTION
@@ -2691,6 +2822,7 @@ def main() -> int:
         carrier,
         carrier_gate,
         rust_report_gate,
+        report_parity_gate,
     )
     mutations = mutation_self_test(
         reproduction,
@@ -2699,6 +2831,7 @@ def main() -> int:
         carrier,
         carrier_gate,
         rust_report_gate,
+        report_parity_gate,
         ledger,
     )
     closure_mutations = closure_git_state_self_test()
@@ -2713,6 +2846,7 @@ def main() -> int:
     print(f"- carrier_matrix_rows={carrier['result_counts']['aggregate_rows']}")
     print(f"- carrier_gate_identity={carrier_gate['result_identity_sha256']}")
     print(f"- rust_report_gate_identity={rust_report_gate['result_identity_sha256']}")
+    print(f"- report_parity_gate_identity={report_parity_gate['result_identity_sha256']}")
     print(f"- report_revision_inventory={len(REPORT_REVISION_INVENTORY)}")
     print(f"- report_contract_clauses={REPORT_CONTRACT_CLAUSE_COUNT}")
     print(

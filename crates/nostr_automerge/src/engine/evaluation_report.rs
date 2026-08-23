@@ -1955,7 +1955,7 @@ mod tests {
                 parts.heads.clone(),
                 u64::try_from(parts.accepted_changes.len()).ok()?,
                 [44; 32],
-                parts.accepted_changes.clone(),
+                vec![EventId::from_bytes([45; 32])],
                 parts.accepted_changes.clone(),
                 CheckpointVerificationStatus::Verified,
             ));

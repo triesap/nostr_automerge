@@ -190,7 +190,7 @@ pub(crate) fn validate_expected(report: &ExpectedReport) -> Result<(), ExpectedE
         SnapshotHash::from_str(&checkpoint.snapshot_hash).map_err(|_| ExpectedError::Identifier)?;
         canonical_ids::<EventId>(&checkpoint.chunk_events)?;
         canonical_ids::<ChangeHash>(&checkpoint.heads)?;
-        canonical_ids::<ChangeHash>(&checkpoint.historical_carriers)?;
+        canonical_ids::<EventId>(&checkpoint.historical_carriers)?;
         canonical_ids::<ChangeHash>(&checkpoint.accepted_at_control)?;
         if checkpoint.change_count > SAFE_INTEGER_MAX
             || checkpoint.change_set_hash.len() != 64

@@ -40,6 +40,7 @@ STEP_1202_CANDIDATE = "7431706c1f54bfaf5ad6b7d7f69819ec3c1ab320"
 STEP_1203_CANDIDATE = "7f73902d2272c56012b65cc5700d9ccad2a85783"
 STEP_1204_CANDIDATE = "9daaf106ad645e5e191d1fe767378ece114c000f"
 STEP_1205_CANDIDATE = "321abda8f672ecf1a44aa1919e0cec98830e8df8"
+STEP_1208_CANDIDATE = "50bd3e4bef99a29e0d536b3fe8efd072835ce8fc"
 STEP_1195_SCOPE_IDENTITY = (
     "9d7a285d9e9f9fc3b6c566aa6bd776030df8f2ee078d0e254c696446a462f0fd"
 )
@@ -355,7 +356,7 @@ def validate_committed_additive_report_child(
 
 
 def validate_current_conformance_source() -> None:
-    names, patch = conformance_source_diff(None)
+    names, patch = conformance_source_diff(STEP_1208_CANDIDATE)
     validate_conformance_source_projection(
         names, patch, CONFORMANCE_ADDITIVE_REPORT_PROJECTION
     )
@@ -582,13 +583,15 @@ def conformance_source_mutation_self_test() -> int:
     )
     current_names, current_patch = conformance_source_diff_between(
         STEP_1205_CANDIDATE,
-        None,
+        STEP_1208_CANDIDATE,
     )
     parent_sources = conformance_source_values(
         STEP_1205_CANDIDATE,
         STEP_1208_ADDITIVE_REPORT_PATHS,
     )
-    current_sources = conformance_source_values(None, STEP_1208_ADDITIVE_REPORT_PATHS)
+    current_sources = conformance_source_values(
+        STEP_1208_CANDIDATE, STEP_1208_ADDITIVE_REPORT_PATHS
+    )
     validate_step_1208_transition(
         STEP_1205_CANDIDATE,
         current_names,
@@ -597,7 +600,7 @@ def conformance_source_mutation_self_test() -> int:
         current_sources,
     )
 
-    cumulative_names, cumulative_patch = conformance_source_diff(None)
+    cumulative_names, cumulative_patch = conformance_source_diff(STEP_1208_CANDIDATE)
     validate_committed_additive_report_child(
         STEP_1204_CANDIDATE,
         STEP_1204_CANDIDATE,
@@ -721,7 +724,7 @@ def expected_distribution_hashes(
         fixture_id = fixture["fixture_id"].encode()
         expected_path = fixture.get("expected_path")
         require(isinstance(expected_path, str), "carrier_gate:fixture_expected_path")
-        expected = (ROOT / expected_path).read_bytes()
+        expected = git_bytes("show", f"{STEP_1208_CANDIDATE}:{expected_path}")
         aggregate.update(len(fixture_id).to_bytes(8, "big"))
         aggregate.update(fixture_id)
         aggregate.update(len(expected).to_bytes(8, "big"))
@@ -746,7 +749,13 @@ def expected_distribution_hashes(
 
 
 def validate_conformance_inventory() -> int:
-    manifest = load_object("fixtures/distribution/manifest_v9.json")
+    manifest = json.loads(
+        git_bytes(
+            "show",
+            f"{STEP_1208_CANDIDATE}:fixtures/distribution/manifest_v9.json",
+        )
+    )
+    require(isinstance(manifest, dict), "carrier_gate:manifest_object")
     fixtures = manifest.get("fixtures")
     require(isinstance(fixtures, list), "carrier_gate:manifest_fixtures")
     fixture_ids: list[str] = []
@@ -821,7 +830,16 @@ def validate_carrier_gate(report: dict[str, Any], opaque: dict[str, Any]) -> Non
     expected_conformance = dict(CONFORMANCE)
     scenario_count = validate_conformance_inventory()
     require(scenario_count == expected_conformance["signed_scenario_count"], "carrier_gate:scenario_count")
-    require(file_digest("fixtures/distribution/manifest_v9.json") == expected_conformance["manifest_sha256"], "carrier_gate:manifest")
+    require(
+        hashlib.sha256(
+            git_bytes(
+                "show",
+                f"{STEP_1208_CANDIDATE}:fixtures/distribution/manifest_v9.json",
+            )
+        ).hexdigest()
+        == expected_conformance["manifest_sha256"],
+        "carrier_gate:manifest",
+    )
     require(report.get("conformance") == expected_conformance, "carrier_gate:conformance")
     require(report.get("regressions") == {"fixed_count": 4, "open_count": 8, "result": "pass"}, "carrier_gate:regressions")
     require(report.get("authority_identities") == AUTHORITY_IDENTITIES, "carrier_gate:authority")

@@ -3,10 +3,10 @@
   "status": "in_progress",
   "rcld": 86,
   "cursor": {
-    "active_step": "step_1208",
-    "next_step": "step_1209",
+    "active_step": "step_1217",
+    "next_step": "step_1218",
     "last_step": "step_1287",
-    "remaining_checkpoint_count": 80,
+    "remaining_checkpoint_count": 71,
     "first_rcld": 86,
     "last_rcld": 94,
     "remaining_rcld_count": 9
@@ -651,6 +651,96 @@
       "finding_ids": ["FINDING_090"],
       "deviation_ids": [],
       "result": "pass"
+    },
+    {
+      "step": "step_1208",
+      "candidate": "50bd3e4bef99a29e0d536b3fe8efd072835ce8fc",
+      "owner_class": "public",
+      "gate_ids": ["V-AUTH"],
+      "requirement_ids": ["NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_090"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1209",
+      "candidate": "f6b067bc782bbe156b6517bf54fecd041159e4c1",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_090"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1210",
+      "candidate": "d3dc14cda7d52aa2f62b62454ec81f35f4caad49",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-DISPOSITION-006", "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_090"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1211",
+      "candidate": "47030370c53dd4445fe640955aba3844cc93a91e",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-DISPOSITION-006", "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_090"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1212",
+      "candidate": "2cf5e4abf0420f4113617d1c1e09bc489646f1d4",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-INTERRUPT-001", "NCRDT-RESOURCE-014", "NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_090"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1213",
+      "candidate": "839aa0ea4c53ffeb0bdf3f67cb5bec54b692f4af",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_090"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1214",
+      "candidate": "fd6050bde2ab5f14c72734491d0aa1e3ceb86b61",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_090"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1215",
+      "candidate": "d74e5a9c8954de893a3059604abf25e506facd3a",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_090"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1216",
+      "candidate": "74b20922ff0ac2a877acc0c1bb196b20c8cc02a8",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-FULL-TS"],
+      "requirement_ids": ["NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_090", "FINDING_093"],
+      "deviation_ids": [],
+      "result": "pass"
     }
   ],
   "opaque_reproduction": {
@@ -754,5 +844,22 @@
     "serialized_output_sha256": "74b24f58fe9c20da082dd9ae4c1b344e8468c00a70dbd710adf724ab70ed14c4",
     "report_bytes": "unchanged",
     "result": "pass"
+  },
+  "report_parity_gate": {
+    "checkpoint": "step_1217",
+    "gate_id": "GATE_V9_REPORT_PARITY",
+    "public_predecessor": "50bd3e4bef99a29e0d536b3fe8efd072835ce8fc",
+    "opaque_candidate_count": 8,
+    "report_schema_sha256": "08a88d5ad7049203bb766dc763601a6c5311a70e631fa35ab62c164203cd8e1c",
+    "fixture_manifest_sha256": "bbb3802490ac758614fecad9ef7c37586da5af54c150a472f4ea7611e8eaa659",
+    "fixture_count": 180,
+    "delivery_permutation_count": 8,
+    "corrected_checkpoint_fixture_count": 8,
+    "clause_count": 18,
+    "canonical_output_sha256": "cfb32cbf0f2248470ae07d7e42f78301df9014afc2822d622e2c260c8c60b5c6",
+    "serialized_output_sha256": "edd05b0ee5f09f8b4fda87b3bf15a1988141a371cd4b13f504a49b27ad345ed4",
+    "result_identity_sha256": "aaf76821bb0fa463c4b71c1f27d6c194dea1b5c9790b505e04d3c810b898059d",
+    "result": "pass",
+    "publication_status": "held"
   }
 }

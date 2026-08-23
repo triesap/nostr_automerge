@@ -5620,6 +5620,9 @@ fn signed_single_chunk_checkpoint_verifies_real_automerge_history() {
     let chunk_id = VerifiedNip01Event::verify(chunk.clone())
         .expect("signed chunk")
         .event_id();
+    let change_event_id = VerifiedNip01Event::verify(scenario.change.clone())
+        .expect("signed change")
+        .event_id();
     let mut builder = CorpusBuilder::new();
     for event in [chunk, scenario.change, descriptor, scenario.control] {
         assert!(matches!(
@@ -5640,7 +5643,7 @@ fn signed_single_chunk_checkpoint_verifies_real_automerge_history() {
     assert_eq!(checkpoint.status(), CheckpointVerificationStatus::Verified);
     assert_checkpoint_event_dispositions(&report, ProtocolDisposition::Accepted);
     assert_eq!(checkpoint.completion(), Completion::Complete);
-    assert_eq!(checkpoint.historical_carriers(), [scenario.change_hash]);
+    assert_eq!(checkpoint.historical_carriers(), [change_event_id]);
     assert_eq!(checkpoint.accepted_at_control(), [scenario.change_hash]);
     assert!(budget.consumed().get(WorkCounter::CheckpointByte) > 0);
     assert!(budget.consumed().get(WorkCounter::CheckpointItem) > 0);
@@ -6090,6 +6093,7 @@ struct SignedCheckpointRoleEvaluation {
     descriptor_id: EventId,
     chunk_id: EventId,
     control_id: EventId,
+    change_event_id: EventId,
     change_hash: ChangeHash,
 }
 
@@ -6101,6 +6105,9 @@ fn evaluate_signed_checkpoint_role_case(
     evaluation_control: CheckpointEvaluationControl,
 ) -> SignedCheckpointRoleEvaluation {
     let scenario = signed_engine_scenario_with_roles(Vec::new(), roles_json);
+    let change_event_id = VerifiedNip01Event::verify(scenario.change.clone())
+        .expect("signed change")
+        .event_id();
     let (descriptor, descriptor_id, chunk, chunk_id) =
         signed_single_chunk_checkpoint_for_scenario(&scenario, descriptor_signer);
     let events = [scenario.control, scenario.change, descriptor, chunk];
@@ -6140,6 +6147,7 @@ fn evaluate_signed_checkpoint_role_case(
         descriptor_id,
         chunk_id,
         control_id: scenario.control_id,
+        change_event_id,
         change_hash: scenario.change_hash,
     }
 }
@@ -6157,7 +6165,7 @@ struct CheckpointCommitmentVariant {
 enum CheckpointHistoryVariant {
     Accepted,
     MissingCarrier,
-    NotAccepted,
+    UnauthorizedCarrier,
 }
 
 #[derive(Clone, Copy)]
@@ -6215,7 +6223,7 @@ fn evaluate_single_chunk_variant_controlled(
         CheckpointHistoryVariant::Accepted | CheckpointHistoryVariant::MissingCarrier => {
             signed_engine_scenario()
         }
-        CheckpointHistoryVariant::NotAccepted => {
+        CheckpointHistoryVariant::UnauthorizedCarrier => {
             signed_engine_scenario_with_roles(Vec::new(), r#"["checkpoint"]"#)
         }
     };
@@ -6410,7 +6418,7 @@ fn signed_checkpoint_role_gate_is_exact_and_delivery_order_independent() {
         );
         assert_eq!(
             checkpoint.historical_carriers(),
-            [baseline.change_hash],
+            [baseline.change_event_id],
             "{case_name}"
         );
         assert_eq!(
@@ -6849,7 +6857,7 @@ fn checkpoint_history_refusals() {
         missing.checkpoints()[0].status(),
         CheckpointVerificationStatus::MissingHistoricalCarrier
     );
-    let not_accepted = evaluate_single_chunk_variant(
+    let unauthorized = evaluate_single_chunk_variant(
         &TestSigner::from_byte(21),
         None,
         None,
@@ -6858,11 +6866,11 @@ fn checkpoint_history_refusals() {
         None,
         None,
         None,
-        CheckpointHistoryVariant::NotAccepted,
+        CheckpointHistoryVariant::UnauthorizedCarrier,
     );
     assert_eq!(
-        not_accepted.checkpoints()[0].status(),
-        CheckpointVerificationStatus::NotAcceptedAtControl
+        unauthorized.checkpoints()[0].status(),
+        CheckpointVerificationStatus::MissingHistoricalCarrier
     );
 }
 

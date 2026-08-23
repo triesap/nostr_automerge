@@ -2,7 +2,9 @@ use crate::carrier::VerifiedCarrier;
 use crate::checkpoint::authorize::{DescriptorControlOutcome, authorize_descriptor};
 use crate::checkpoint::join::{JoinError, join_chunks};
 use crate::checkpoint::reference_state::resolve_referenced_descriptor;
-use crate::checkpoint::{HistoryVerificationError, historical_carrier_coverage};
+use crate::checkpoint::{
+    HistoricalCarrierCoverage, HistoryVerificationError, historical_carrier_coverage,
+};
 use crate::conformance::dispositions_digest::{disposition_items, dispositions_digest};
 use crate::conformance::history_digest::history_digest;
 use crate::control::candidate::{
@@ -253,8 +255,11 @@ impl ReferenceEvaluator {
             &batch.canonical_controls,
             &batch.control_dispositions,
             &batch.statefully_valid_controls,
-            &batch.accepted_at_control,
-            &batch.branch_change_dispositions,
+            CheckpointHistoryInputs {
+                accepted_at_control: &batch.accepted_at_control,
+                branch_change_dispositions: &batch.branch_change_dispositions,
+                change_carrier_dispositions: &change_carrier_dispositions,
+            },
             budget,
             cancellation,
         );
@@ -1377,18 +1382,25 @@ impl CheckpointWorkObserver for NoopCheckpointWorkObserver {}
 struct PreparedCheckpointInputs<'view, 'corpus> {
     view: &'view DocumentEvidenceView<'corpus>,
     canonical_controls: &'view [crate::EventId],
+    history: CheckpointHistoryInputs<'view>,
+    authorizations: &'view std::collections::BTreeMap<crate::EventId, DescriptorControlOutcome>,
+}
+
+#[derive(Clone, Copy)]
+struct CheckpointHistoryInputs<'view> {
     accepted_at_control: &'view std::collections::BTreeMap<crate::EventId, AcceptedAtControl>,
     branch_change_dispositions: &'view std::collections::BTreeMap<
         crate::EventId,
         std::collections::BTreeMap<ChangeHash, ProtocolDisposition>,
     >,
-    authorizations: &'view std::collections::BTreeMap<crate::EventId, DescriptorControlOutcome>,
+    change_carrier_dispositions:
+        &'view std::collections::BTreeMap<crate::EventId, ChangeCarrierOutcome>,
 }
 
 struct CheckpointReportAttribution {
     chunk_events: Vec<crate::EventId>,
     heads: Vec<ChangeHash>,
-    historical_carriers: Vec<ChangeHash>,
+    historical_carriers: Vec<crate::EventId>,
     accepted_at_control: Vec<ChangeHash>,
 }
 
@@ -1397,11 +1409,7 @@ fn verify_checkpoints(
     canonical_controls: &[crate::EventId],
     control_dispositions: &std::collections::BTreeMap<crate::EventId, ProtocolDisposition>,
     statefully_valid_controls: &std::collections::BTreeSet<crate::EventId>,
-    accepted_at_control: &std::collections::BTreeMap<crate::EventId, AcceptedAtControl>,
-    branch_change_dispositions: &std::collections::BTreeMap<
-        crate::EventId,
-        std::collections::BTreeMap<ChangeHash, ProtocolDisposition>,
-    >,
+    history: CheckpointHistoryInputs<'_>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> CheckpointEvaluation {
@@ -1425,8 +1433,7 @@ fn verify_checkpoints(
         PreparedCheckpointInputs {
             view,
             canonical_controls,
-            accepted_at_control,
-            branch_change_dispositions,
+            history,
             authorizations: &authorizations,
         },
         budget,
@@ -1489,13 +1496,14 @@ fn verify_prepared_checkpoints(
                 inputs.view,
                 inputs.canonical_controls,
                 descriptor,
+                inputs.history.change_carrier_dispositions,
                 budget,
                 cancellation,
                 observer,
             )?;
             let accepted_result = checkpoint_accepted_history(
                 descriptor,
-                inputs.accepted_at_control,
+                inputs.history.accepted_at_control,
                 budget,
                 cancellation,
                 observer,
@@ -1503,7 +1511,7 @@ fn verify_prepared_checkpoints(
             let coverage_ref = coverage_result.as_ref().ok();
             let accepted_ref = accepted_result.as_ref().ok();
             let result_work = coverage_ref
-                .map_or(0, std::collections::BTreeSet::len)
+                .map_or(0, |coverage| coverage.carrier_event_ids.len())
                 .saturating_add(accepted_ref.map_or(0, std::collections::BTreeSet::len))
                 .saturating_add(commitments.heads.len());
             charge_checkpoint_work(
@@ -1523,7 +1531,7 @@ fn verify_prepared_checkpoints(
                     verify_one_checkpoint(
                         descriptor,
                         Some(&chunk_set),
-                        &coverage,
+                        &coverage.change_hashes,
                         &accepted,
                         budget,
                         cancellation,
@@ -1535,7 +1543,7 @@ fn verify_prepared_checkpoints(
             Ok::<_, CheckpointWorkStop>((
                 chunk_events,
                 commitments.heads.iter().copied().collect::<Vec<_>>(),
-                coverage.into_iter().collect::<Vec<_>>(),
+                coverage.carrier_event_ids.into_iter().collect::<Vec<_>>(),
                 accepted.into_iter().collect::<Vec<_>>(),
                 status,
             ))
@@ -1546,8 +1554,7 @@ fn verify_prepared_checkpoints(
                     inputs.view,
                     descriptor,
                     control_outcome,
-                    inputs.accepted_at_control,
-                    inputs.branch_change_dispositions,
+                    inputs.history,
                     budget,
                     cancellation,
                     observer,
@@ -1610,11 +1617,7 @@ fn checkpoint_refusal_report_attribution(
     view: &DocumentEvidenceView<'_>,
     descriptor: &crate::carrier::checkpoint_descriptor::ValidatedCheckpointDescriptorCarrier,
     outcome: Option<DescriptorControlOutcome>,
-    accepted_at_control: &std::collections::BTreeMap<crate::EventId, AcceptedAtControl>,
-    branch_change_dispositions: &std::collections::BTreeMap<
-        crate::EventId,
-        std::collections::BTreeMap<ChangeHash, ProtocolDisposition>,
-    >,
+    history: CheckpointHistoryInputs<'_>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
     observer: &mut impl CheckpointWorkObserver,
@@ -1659,7 +1662,7 @@ fn checkpoint_refusal_report_attribution(
             descriptor_id,
             CheckpointReportAttributionStage::AcceptedAtControlHash,
         );
-        if let Some(state) = accepted_at_control.get(&descriptor.control_id()) {
+        if let Some(state) = history.accepted_at_control.get(&descriptor.control_id()) {
             for hash in state.accepted_closure() {
                 charge_checkpoint_work(budget, cancellation, 1)?;
                 observer.report_attribution_item(
@@ -1676,14 +1679,30 @@ fn checkpoint_refusal_report_attribution(
             descriptor_id,
             CheckpointReportAttributionStage::BranchDispositionHash,
         );
-        if let Some(dispositions) = branch_change_dispositions.get(&descriptor.control_id()) {
-            for hash in dispositions.keys() {
+        if let Some(dispositions) = history
+            .branch_change_dispositions
+            .get(&descriptor.control_id())
+        {
+            for (event_id, carrier) in history.change_carrier_dispositions {
                 charge_checkpoint_work(budget, cancellation, 1)?;
                 observer.report_attribution_item(
                     descriptor_id,
                     CheckpointReportAttributionStage::BranchDispositionHash,
                 );
-                coverage.push(*hash);
+                if dispositions.contains_key(&carrier.change_hash)
+                    && carrier_control_is_historical(
+                        view,
+                        descriptor.control_id(),
+                        carrier.control_id,
+                    )
+                    && matches!(
+                        carrier.reason,
+                        ChangeClaimReason::AuthorizedCanonical
+                            | ChangeClaimReason::AuthorizedCurrentExcluded
+                    )
+                {
+                    coverage.push(*event_id);
+                }
             }
         }
     }
@@ -1693,6 +1712,28 @@ fn checkpoint_refusal_report_attribution(
         historical_carriers: coverage,
         accepted_at_control: accepted,
     })
+}
+
+fn carrier_control_is_historical(
+    view: &DocumentEvidenceView<'_>,
+    through: crate::EventId,
+    candidate: crate::EventId,
+) -> bool {
+    if candidate == through {
+        return true;
+    }
+    let control_sequence = |event_id| match view.corpus().events.get(&event_id) {
+        Some(EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::Control(control),
+            ..
+        }) => Some(control.sequence()),
+        _ => None,
+    };
+    matches!(
+        (control_sequence(candidate), control_sequence(through)),
+        (Some(candidate_sequence), Some(through_sequence))
+            if candidate_sequence < through_sequence
+    )
 }
 
 fn checkpoint_after_authorization<T>(
@@ -1928,13 +1969,11 @@ fn checkpoint_carrier_coverage(
     view: &DocumentEvidenceView<'_>,
     canonical_controls: &[crate::EventId],
     descriptor: &crate::carrier::checkpoint_descriptor::ValidatedCheckpointDescriptorCarrier,
+    change_carrier_dispositions: &std::collections::BTreeMap<crate::EventId, ChangeCarrierOutcome>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
     observer: &mut impl CheckpointWorkObserver,
-) -> Result<
-    Result<std::collections::BTreeSet<ChangeHash>, HistoryVerificationError>,
-    CheckpointWorkStop,
-> {
+) -> Result<Result<HistoricalCarrierCoverage, HistoryVerificationError>, CheckpointWorkStop> {
     observer.enter_downstream(
         descriptor.event_id(),
         CheckpointDownstreamStage::CarrierHistoryCoverage,
@@ -1946,6 +1985,19 @@ fn checkpoint_carrier_coverage(
         descriptor.control_id(),
         budget,
         cancellation,
+        |event_id, change_hash, control_id| {
+            change_carrier_dispositions
+                .get(&event_id)
+                .is_some_and(|carrier| {
+                    carrier.change_hash == change_hash
+                        && carrier.control_id == control_id
+                        && matches!(
+                            carrier.reason,
+                            ChangeClaimReason::AuthorizedCanonical
+                                | ChangeClaimReason::AuthorizedCurrentExcluded
+                        )
+                })
+        },
     ) {
         Err(HistoryVerificationError::Budget) => Err(CheckpointWorkStop::Budget),
         Err(HistoryVerificationError::Cancelled) => Err(CheckpointWorkStop::Cancelled),
@@ -3107,12 +3159,13 @@ fn charge_evaluation_work(
 mod tests {
     use super::{
         AggregateChangeContribution, BatchEvaluationReport, ChangeCarrierOutcome,
-        ChangeClaimReason, CheckpointDownstreamStage, CheckpointReportAttributionStage,
-        CheckpointWorkObserver, CheckpointWorkStop, FinalLineageChangeState, FinalizationDimension,
-        FinalizationPermitError, FinalizationReservationUnit, InterruptedReportPass,
-        PreparedCheckpointInputs, REEVALUATION_STAGE_OBSERVATIONS, ReferenceEvaluator,
-        ReportFinalizationPermit, ReportFinalizationPlan, aggregate_change_contribution,
-        assembly_status, change_carrier_disposition, charge_checkpoint_work,
+        ChangeClaimReason, CheckpointDownstreamStage, CheckpointHistoryInputs,
+        CheckpointReportAttributionStage, CheckpointWorkObserver, CheckpointWorkStop,
+        FinalLineageChangeState, FinalizationDimension, FinalizationPermitError,
+        FinalizationReservationUnit, InterruptedReportPass, PreparedCheckpointInputs,
+        REEVALUATION_STAGE_OBSERVATIONS, ReferenceEvaluator, ReportFinalizationPermit,
+        ReportFinalizationPlan, aggregate_change_contribution, assembly_status,
+        carrier_control_is_historical, change_carrier_disposition, charge_checkpoint_work,
         checkpoint_control_refusal, checkpoint_preflight_refusal, join_status,
         noncanonical_branch_claim_reason, reduce_aggregate_change_outcome,
         reduce_change_dispositions, scoped_dynamic_event_disposition_records,
@@ -3995,6 +4048,7 @@ mod tests {
         coordinate: DocumentCoordinate,
         control_id: EventId,
         attribution_hash: ChangeHash,
+        attribution_event_id: EventId,
         descriptor_ids: Vec<EventId>,
     }
 
@@ -4019,6 +4073,7 @@ mod tests {
         let author = DevicePublicKey::from_bytes([0x72; 32]);
         let control_id = EventId::from_bytes([0x73; 32]);
         let attribution_hash = ChangeHash::from_bytes([0x75; 32]);
+        let attribution_event_id = EventId::from_bytes([0x76; 32]);
         let actor = ActorId::from_bytes([0x74; 32]);
         let document = AuthoringDocument::empty(ActorState::initial(
             actor,
@@ -4110,6 +4165,7 @@ mod tests {
             coordinate,
             control_id,
             attribution_hash,
+            attribution_event_id,
             descriptor_ids,
         }
     }
@@ -4135,18 +4191,46 @@ mod tests {
                 ProtocolDisposition::Accepted,
             )]),
         )]);
+        let change_carrier_dispositions = std::collections::BTreeMap::from([(
+            harness.attribution_event_id,
+            ChangeCarrierOutcome::new(
+                harness.attribution_event_id,
+                harness.attribution_hash,
+                harness.control_id,
+                ChangeClaimReason::AuthorizedCanonical,
+            ),
+        )]);
         verify_prepared_checkpoints(
             PreparedCheckpointInputs {
                 view: &view,
                 canonical_controls: &[harness.control_id],
-                accepted_at_control: &accepted_at_control,
-                branch_change_dispositions: &branch_change_dispositions,
+                history: CheckpointHistoryInputs {
+                    accepted_at_control: &accepted_at_control,
+                    branch_change_dispositions: &branch_change_dispositions,
+                    change_carrier_dispositions: &change_carrier_dispositions,
+                },
                 authorizations,
             },
             budget,
             cancellation,
             observer,
         )
+    }
+
+    #[test]
+    fn refused_checkpoint_attribution_rejects_unknown_future_carrier_control() {
+        let harness = prepared_checkpoint_harness(&[0x10]);
+        let view = DocumentEvidenceView::derive(&harness.corpus, harness.coordinate);
+        assert!(carrier_control_is_historical(
+            &view,
+            harness.control_id,
+            harness.control_id,
+        ));
+        assert!(!carrier_control_is_historical(
+            &view,
+            harness.control_id,
+            EventId::from_bytes([0x77; 32]),
+        ));
     }
 
     fn assert_all_downstream_stages_once(
@@ -4508,7 +4592,7 @@ mod tests {
         );
         assert_eq!(
             attribution_exact.results[0].historical_carriers(),
-            &[harness.attribution_hash]
+            &[harness.attribution_event_id]
         );
         assert_eq!(
             attribution_exact_budget

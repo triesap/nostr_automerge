@@ -39,6 +39,7 @@ JSON_RECORDS = (
     "reports/carrier_gate_v9.json",
     "reports/checkpoint_parity_v9.json",
     "reports/rust_report_gate_v9.json",
+    "reports/report_parity_v9.json",
     "implementation/runtime_ledger_v9.json",
     "tools/validation/opaque_reproduction_v9.schema.json",
     "tools/validation/opaque_checkpoint_v9.schema.json",
@@ -46,6 +47,7 @@ JSON_RECORDS = (
     "tools/validation/carrier_gate_v9.schema.json",
     "tools/validation/checkpoint_parity_v9.schema.json",
     "tools/validation/rust_report_gate_v9.schema.json",
+    "tools/validation/report_parity_v9.schema.json",
     "tools/validation/runtime_ledger_v9.schema.json",
 )
 TEXT_RECORDS = ("docs/execution/remediation_v9/ledger.md",)
@@ -63,6 +65,7 @@ PYTHON_SURFACES = (
     "scripts/validate_carrier_gate_v9.py",
     "scripts/validate_report_contract_v9.py",
     "scripts/validate_rust_report_gate_v9.py",
+    "scripts/validate_report_parity_v9.py",
     "scripts/validate_runtime_ledger_v9.py",
     "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_rust_conformance_v9.py",
@@ -77,6 +80,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "../..",
         "crates/nostr_automerge/src/checkpoint/authorize.rs",
         "crates/nostr_automerge/src/checkpoint/mod.rs",
+        "crates/nostr_automerge/src/checkpoint/verify_history.rs",
         "crates/nostr_automerge/src/checkpoint/verify.rs",
         "crates/nostr_automerge/src/conformance/dispositions_digest.rs",
         "crates/nostr_automerge/src/conformance/history_digest.rs",
@@ -103,6 +107,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "docs/provenance",
         "fixtures/v1_draft/scenarios/checkpoint",
         "fixtures/v1_draft/scenarios/checkpoints",
+        "fixtures/v1_draft/scenarios/checkpoints/checkpoints_single_chunk.expected.json",
         "fixtures/distribution/manifest_v9.json",
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_invalid_control.expected.json",
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_invalid_control.fixture.json",
@@ -129,6 +134,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/opaque_reproduction_v9.json",
         "reports/rust_conformance_v9.json",
         "reports/rust_report_gate_v9.json",
+        "reports/report_parity_v9.json",
         "reports/spec_baseline.txt",
         "scripts/validate_architecture.py",
         "scripts/validate_authority_transition_v10.py",
@@ -140,6 +146,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_report_contract_v9.py",
         "scripts/validate_rust_report_gate_v9.py",
+        "scripts/validate_report_parity_v9.py",
         "scripts/validate_protocol_revision.py",
         "scripts/validate_rust_conformance_v9.py",
         "scripts/reproduce_remediation_v9.py",
@@ -170,6 +177,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/nostr_automerge_conformance/src/scenario.rs",
         "tools/validation/checkpoint_parity_v9.schema.json",
         "tools/validation/rust_report_gate_v9.schema.json",
+        "tools/validation/report_parity_v9.schema.json",
         "tools/validation/carrier_gate_v9.schema.json",
         "tools/validation/opaque_reproduction_v9.schema.json",
         "tools/validation/opaque_checkpoint_v9.schema.json",
@@ -216,9 +224,13 @@ def validate_source_literal(
 
 
 def is_public_route(value: str) -> bool:
-    return value in LEGITIMATE_PUBLIC_ROUTES or value in LEGITIMATE_PUBLIC_COMMANDS or value in {
-        row["value"] for row in APPROVED_WIRE_DOMAINS
-    }
+    return (
+        value in LEGITIMATE_PUBLIC_ROUTES
+        or value in LEGITIMATE_PUBLIC_COMMANDS
+        or value.startswith("fixtures/v1_draft/scenarios/checkpoints/")
+        or value.startswith("fixtures/v1_draft/checkpoints/")
+        or value in {row["value"] for row in APPROVED_WIRE_DOMAINS}
+    )
 
 
 def python_comments(source: str, relative: str) -> list[str]:
@@ -367,7 +379,9 @@ def validate_source_surfaces() -> None:
                         value == "git"
                         and relative
                         in {
+                            "scripts/validate_authority_transition_v10.py",
                             "scripts/validate_carrier_gate_v9.py",
+                            "scripts/validate_checkpoint_parity_v9.py",
                             "scripts/validate_rust_report_gate_v9.py",
                             "scripts/validate_runtime_ledger_v9.py",
                         }
@@ -376,7 +390,10 @@ def validate_source_surfaces() -> None:
                         value in {"cargo", "git", "python3"}
                         | LEGITIMATE_PUBLIC_COMMANDS
                         and relative
-                        == "scripts/validate_private_reproduction_boundary_v9.py"
+                        in {
+                            "scripts/validate_private_reproduction_boundary_v9.py",
+                            "scripts/validate_report_parity_v9.py",
+                        }
                     )
                     or (
                         value in LEGITIMATE_PUBLIC_COMMANDS

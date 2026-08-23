@@ -2,7 +2,7 @@
 
 Status: `in_progress`
 
-RCLD 86 has 50 committed predecessors through `step_1207`. The opaque
+RCLD 86 has 59 committed predecessors through `step_1216`. The opaque
 compatibility checkpoint is bound by one approved 40-character candidate and
 one canonical 64-character result identity. Its public projection records nine
 findings, 23 expected-failure reproductions, 276 negative mutations, one
@@ -55,6 +55,15 @@ The report-schema authority binds the predecessor and reconciled
 serialized output identities. The schema change does not rewrite signed
 inputs, expected reports, protocol bytes, or any completed evidence record.
 
+The report-parity closure binds eight ordered opaque candidates, the private
+18-clause mandatory report gate, and the reconciled public schema identity.
+The public corpus preserves historical carrier Event IDs separately from
+accepted-at-control ChangeHashes in eight checkpoint fixtures. Two complete
+180-scenario by eight-delivery executions produce the exact opaque canonical
+output identity, while malformed output and a structurally valid deliberate
+mismatch are rejected. The public record contains only opaque identities,
+counts, result classes, and held publication state.
+
 | Checkpoint range | Lane | Result |
 | --- | --- | --- |
 | `step_1158`–`step_1163` | `V-AUTH` | pass |
@@ -93,8 +102,11 @@ inputs, expected reports, protocol bytes, or any completed evidence record.
 | `step_1205` | `V-REPORT` | pass |
 | `step_1206` | `V-FULL-RUST` | pass |
 | `step_1207` | `V-TS` | pass |
-| `step_1208` | `V-AUTH` | active |
-| `step_1209` | `V-TS` | next |
+| `step_1208` | `V-AUTH` | pass |
+| `step_1209`–`step_1215` | `V-TS` | pass |
+| `step_1216` | `V-FULL-TS` | pass |
+| `step_1217` | `V-EVIDENCE` | active |
+| `step_1218` | `V-RESOURCE` | next |
 
 The completed report-authority checkpoint binds a closed inventory of complete
 and no-progress construction plus nine revision consumers to exact reviewed

@@ -6,6 +6,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -36,6 +37,7 @@ APPROVED_TABLE_IDENTITY = (
     "91d2d98780f7f68948892a5f70905657e621631e24977953641bc84246d45b2c"
 )
 APPROVED_CHECKPOINT_CANDIDATE = "d956d20699508ec8e54b660fa634ff68df323846"
+PUBLIC_PARITY_CANDIDATE = "2addba148fecc8039ee26084ae499e0602c5f4ed"
 APPROVED_CHECKPOINT_REPORT_PROJECTION = (
     "631759d0441b25f4c99d91406fca386eb4b29a23c86521071274ad293345c00d"
 )
@@ -162,33 +164,52 @@ def file_sha256(path: Path) -> str:
         raise LedgerError("parity_inventory:read") from error
 
 
+def git_bytes(*arguments: str) -> bytes:
+    result = subprocess.run(
+        ("git", *arguments), cwd=ROOT, check=False, capture_output=True
+    )
+    require(result.returncode == 0 and result.stderr == b"", "parity_inventory:git")
+    return result.stdout
+
+
+def candidate_bytes(relative: str) -> bytes:
+    return git_bytes("show", f"{PUBLIC_PARITY_CANDIDATE}:{relative}")
+
+
+def candidate_json(relative: str, diagnostic: str) -> Any:
+    try:
+        return json.loads(candidate_bytes(relative))
+    except json.JSONDecodeError as error:
+        raise LedgerError(diagnostic) from error
+
+
 def validate_companion_inventory(observed: set[str], expected: set[str]) -> None:
     require(observed == expected, "parity_inventory:companions_exact")
 
 
 def checkpoint_inventory() -> tuple[int, int, str]:
-    metadata_paths = sorted(
-        (
-            path
-            for relative in FIXTURE_ROOTS
-            for path in (ROOT / relative).glob("*.fixture.json")
-        ),
-        key=lambda path: path.relative_to(ROOT).as_posix().encode("utf-8"),
+    tree_paths = tuple(
+        value.decode("utf-8")
+        for value in git_bytes(
+            "ls-tree", "-r", "--name-only", "-z", PUBLIC_PARITY_CANDIDATE,
+            "--", *FIXTURE_ROOTS,
+        )[:-1].split(b"\0")
+    )
+    metadata_paths = tuple(
+        relative for relative in tree_paths if relative.endswith(".fixture.json")
     )
     require(len(metadata_paths) == 22, "parity_inventory:scenario_count")
     expected_companions = {
-        path.relative_to(ROOT).as_posix()
+        path
         for metadata_path in metadata_paths
         for path in (
             metadata_path,
-            metadata_path.with_name(metadata_path.name.replace(".fixture.json", ".input.json")),
-            metadata_path.with_name(metadata_path.name.replace(".fixture.json", ".expected.json")),
+            metadata_path.replace(".fixture.json", ".input.json"),
+            metadata_path.replace(".fixture.json", ".expected.json"),
         )
     }
     observed_companions = {
-        path.relative_to(ROOT).as_posix()
-        for relative in FIXTURE_ROOTS
-        for path in (ROOT / relative).glob("*.json")
+        relative for relative in tree_paths if relative.endswith(".json")
     }
     validate_companion_inventory(observed_companions, expected_companions)
     require(len(observed_companions) == 66, "parity_inventory:companion_count")
@@ -196,12 +217,12 @@ def checkpoint_inventory() -> tuple[int, int, str]:
     signed_event_count = 0
     observed_names: set[str] = set()
     for index, metadata_path in enumerate(metadata_paths):
-        metadata = load_json(metadata_path, f"parity_inventory:{index}:metadata")
+        metadata = candidate_json(metadata_path, f"parity_inventory:{index}:metadata")
         require(isinstance(metadata, dict), f"parity_inventory:{index}:metadata_shape")
         fixture_id = metadata.get("fixture_id")
         require(
             isinstance(fixture_id, str)
-            and metadata_path.name == f"{fixture_id}.fixture.json",
+            and Path(metadata_path).name == f"{fixture_id}.fixture.json",
             f"parity_inventory:{index}:fixture_id",
         )
         require(fixture_id not in observed_names, f"parity_inventory:{index}:unique")
@@ -223,21 +244,22 @@ def checkpoint_inventory() -> tuple[int, int, str]:
             and expected_name == f"{fixture_id}.expected.json",
             f"parity_inventory:{index}:companions",
         )
-        input_path = metadata_path.parent / input_name
-        expected_path = metadata_path.parent / expected_name
+        parent = Path(metadata_path).parent.as_posix()
+        input_path = f"{parent}/{input_name}"
+        expected_path = f"{parent}/{expected_name}"
         input_sha256 = input_row.get("sha256")
         expected_sha256 = expected.get("sha256")
         require(
             isinstance(input_sha256, str)
-            and file_sha256(input_path) == input_sha256,
+            and hashlib.sha256(candidate_bytes(input_path)).hexdigest() == input_sha256,
             f"parity_inventory:{index}:input_identity",
         )
         require(
             isinstance(expected_sha256, str)
-            and file_sha256(expected_path) == expected_sha256,
+            and hashlib.sha256(candidate_bytes(expected_path)).hexdigest() == expected_sha256,
             f"parity_inventory:{index}:expected_identity",
         )
-        input_record = load_json(input_path, f"parity_inventory:{index}:input")
+        input_record = candidate_json(input_path, f"parity_inventory:{index}:input")
         require(isinstance(input_record, dict), f"parity_inventory:{index}:input_shape")
         raw_events = input_record.get("raw_events")
         require(isinstance(raw_events, list), f"parity_inventory:{index}:events")
