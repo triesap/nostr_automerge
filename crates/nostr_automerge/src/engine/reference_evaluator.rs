@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::carrier::VerifiedCarrier;
 use crate::checkpoint::authorize::{DescriptorControlOutcome, authorize_descriptor};
 use crate::checkpoint::join::{JoinError, join_chunks};
@@ -3494,7 +3496,7 @@ fn change_for_hash(
     let Ok(candidate) = ChangeCandidate::from_carriers(carriers) else {
         return Ok(None);
     };
-    let raw = view.raw_change(hash);
+    let raw = view.raw_change_arc(hash);
     charge_evaluation_work(
         budget,
         cancellation,
@@ -3517,7 +3519,7 @@ fn change_for_hash(
     Ok(Some(BatchChange {
         candidate,
         legacy_eligible: authorized && !control.terminal(),
-        raw_change: raw.map(<[u8]>::to_vec),
+        raw_change: raw.map(Arc::clone),
     }))
 }
 

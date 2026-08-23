@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use crate::ChangeHash;
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
@@ -71,7 +72,7 @@ pub(crate) struct EpochEvaluationInput<'a> {
     selected_control: ControlEnvelope,
     accepted_base: AcceptedEpochState,
     candidate_changes: BTreeMap<ChangeHash, ChangeCandidate>,
-    raw_changes: Cow<'a, BTreeMap<ChangeHash, Vec<u8>>>,
+    raw_changes: Cow<'a, BTreeMap<ChangeHash, Arc<[u8]>>>,
     canonical_ancestry: Vec<ControlEnvelope>,
     prior_change_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
 }
@@ -97,8 +98,8 @@ impl EpochEvaluationInput<'static> {
     pub(crate) fn new_with_raw(
         selected_control: ControlEnvelope,
         accepted_base: AcceptedEpochState,
-        candidate_changes: impl IntoIterator<Item = (ChangeCandidate, Option<Vec<u8>>)>,
-        raw_changes: BTreeMap<ChangeHash, Vec<u8>>,
+        candidate_changes: impl IntoIterator<Item = (ChangeCandidate, Option<Arc<[u8]>>)>,
+        raw_changes: BTreeMap<ChangeHash, Arc<[u8]>>,
         canonical_ancestry: Vec<ControlEnvelope>,
     ) -> Result<Self, EpochEvaluationInputError> {
         Self::new_with_raw_and_prior(
@@ -114,8 +115,8 @@ impl EpochEvaluationInput<'static> {
     pub(crate) fn new_with_raw_and_prior(
         selected_control: ControlEnvelope,
         accepted_base: AcceptedEpochState,
-        candidate_changes: impl IntoIterator<Item = (ChangeCandidate, Option<Vec<u8>>)>,
-        mut raw_changes: BTreeMap<ChangeHash, Vec<u8>>,
+        candidate_changes: impl IntoIterator<Item = (ChangeCandidate, Option<Arc<[u8]>>)>,
+        mut raw_changes: BTreeMap<ChangeHash, Arc<[u8]>>,
         canonical_ancestry: Vec<ControlEnvelope>,
         prior_change_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
     ) -> Result<Self, EpochEvaluationInputError> {
@@ -165,7 +166,7 @@ impl<'a> EpochEvaluationInput<'a> {
         selected_control: ControlEnvelope,
         accepted_base: AcceptedEpochState,
         candidate_changes: impl IntoIterator<Item = ChangeCandidate>,
-        raw_changes: &'a BTreeMap<ChangeHash, Vec<u8>>,
+        raw_changes: &'a BTreeMap<ChangeHash, Arc<[u8]>>,
         canonical_ancestry: Vec<ControlEnvelope>,
         prior_change_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
     ) -> Result<Self, EpochEvaluationInputError> {
@@ -195,7 +196,7 @@ impl<'a> EpochEvaluationInput<'a> {
         &self.candidate_changes
     }
 
-    pub(crate) fn raw_changes(&self) -> &BTreeMap<ChangeHash, Vec<u8>> {
+    pub(crate) fn raw_changes(&self) -> &BTreeMap<ChangeHash, Arc<[u8]>> {
         &self.raw_changes
     }
 

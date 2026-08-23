@@ -46,17 +46,12 @@ FIXED_CASES = (
         "lib",
         "engine::reference_evaluator::tests::finding_076_finalization_rejects_reordered_named_passes",
     ),
-)
-OPEN_CASES = (
     (
         "lib",
         "reference::evaluate::tests::finding_077_canonical_raw_bytes_share_one_allocation",
-        "FINDING_077 reproduced: canonical raw bytes are copied without byte accounting",
-        "left == right",
-        "crates/nostr_automerge/src/reference/evaluate.rs",
-        "(false, 0)",
-        "(true, 0)",
     ),
+)
+OPEN_CASES = (
     (
         "lib",
         "checkpoint::assemble::tests::finding_084_checkpoint_sort_stops_before_cancelled_work",

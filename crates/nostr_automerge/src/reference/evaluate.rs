@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use crate::automerge_adapter::document::{AppliedDocument, materialize_history};
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
@@ -30,7 +31,7 @@ pub(crate) struct BatchChange {
     /// Eligibility hint used only by the envelope-free unit-test adapter.
     /// Stateful public evaluation derives every semantic outcome independently.
     pub(crate) legacy_eligible: bool,
-    pub(crate) raw_change: Option<Vec<u8>>,
+    pub(crate) raw_change: Option<Arc<[u8]>>,
 }
 
 #[derive(Clone, Debug)]
@@ -286,7 +287,7 @@ struct CanonicalBranchEvaluation {
 #[derive(Default)]
 struct BatchChangeMemo {
     candidates: BTreeMap<ChangeHash, ChangeCandidate>,
-    raw_changes: BTreeMap<ChangeHash, Vec<u8>>,
+    raw_changes: BTreeMap<ChangeHash, Arc<[u8]>>,
     hashes_by_control: BTreeMap<EventId, BTreeSet<ChangeHash>>,
     controls_by_hash: BTreeMap<ChangeHash, BTreeSet<EventId>>,
 }
@@ -789,7 +790,7 @@ fn resolve_authoritative_epoch(
     accepted_base: AcceptedEpochState,
     prior_change_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
     ancestry: &[ControlEnvelope],
-    raw_changes: &BTreeMap<ChangeHash, Vec<u8>>,
+    raw_changes: &BTreeMap<ChangeHash, Arc<[u8]>>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<EpochEvaluationResult, EpochResolutionError> {
@@ -1515,7 +1516,7 @@ mod tests {
         basic.candidate.sequence = decoded.sequence;
         basic.candidate.start_op = decoded.start_op;
         basic.candidate.operation_count = u64::try_from(decoded.operations.len()).unwrap_or(0);
-        basic.raw_change = Some(raw);
+        basic.raw_change = Some(raw.into());
         let mut basic_budget = WorkBudget::new(0, 200);
         let basic_report = evaluate_batch(
             [control(1, None, vec![basic.clone()])],
@@ -1552,7 +1553,7 @@ mod tests {
         assert_no_progress_batch(&final_schedule_exhausted, Completion::BudgetExhausted);
 
         let mut malformed = basic.clone();
-        malformed.raw_change = Some(vec![0xff]);
+        malformed.raw_change = Some(vec![0xff].into());
         let materialization_failed = evaluate_batch(
             [control(1, None, vec![malformed])],
             &mut WorkBudget::new(0, 200),
@@ -1650,10 +1651,9 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "expected to fail until FINDING_077 closes"]
     fn finding_077_canonical_raw_bytes_share_one_allocation() {
         let mut value = change(7, 7, 1);
-        value.raw_change = Some(vec![0x5a; 64]);
+        value.raw_change = Some(vec![0x5a; 64].into());
         let controls =
             BTreeMap::from([(EventId::from_bytes([1; 32]), control(1, None, vec![value]))]);
         let original = controls

@@ -1,10 +1,11 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use crate::ChangeHash;
 use crate::automerge_adapter::document::{AppliedDocument, ExactApplyError};
 
 pub(crate) fn apply_exact_closure(
-    closure: &BTreeMap<ChangeHash, Vec<u8>>,
+    closure: &BTreeMap<ChangeHash, Arc<[u8]>>,
     ordered: &[ChangeHash],
     candidate_hash: ChangeHash,
     candidate_raw: &[u8],
@@ -58,7 +59,7 @@ mod tests {
         );
         assert_eq!(
             apply_exact_closure(
-                &BTreeMap::from([(hash, raw.clone())]),
+                &BTreeMap::from([(hash, raw.clone().into())]),
                 &[],
                 hash,
                 &raw,

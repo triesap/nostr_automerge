@@ -3,6 +3,7 @@ use automerge::{
     VerificationMode,
 };
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use crate::ChangeHash;
 
@@ -73,7 +74,7 @@ pub(crate) enum AdapterAuthoringError {
 }
 
 pub(crate) fn apply_exact_closure(
-    closure: &BTreeMap<ChangeHash, Vec<u8>>,
+    closure: &BTreeMap<ChangeHash, Arc<[u8]>>,
     ordered: &[ChangeHash],
     candidate_hash: ChangeHash,
     candidate_raw: &[u8],
@@ -85,7 +86,7 @@ pub(crate) fn apply_exact_closure(
     let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
     for hash in ordered {
         let raw = closure.get(hash).ok_or(ExactApplyError::ClosureMismatch)?;
-        let change = Change::try_from(raw.as_slice()).map_err(|_| ExactApplyError::Decode)?;
+        let change = Change::try_from(raw.as_ref()).map_err(|_| ExactApplyError::Decode)?;
         if change.hash().as_ref() != hash.as_bytes() {
             return Err(ExactApplyError::HashMismatch);
         }
@@ -117,7 +118,7 @@ pub(crate) fn apply_exact_closure(
 }
 
 pub(crate) fn materialize_history(
-    raw_changes: &BTreeMap<ChangeHash, Vec<u8>>,
+    raw_changes: &BTreeMap<ChangeHash, Arc<[u8]>>,
     ordered: &[ChangeHash],
 ) -> Result<AppliedDocument, ExactApplyError> {
     if ordered.iter().copied().collect::<BTreeSet<_>>() != raw_changes.keys().copied().collect() {
@@ -128,7 +129,7 @@ pub(crate) fn materialize_history(
         let raw = raw_changes
             .get(hash)
             .ok_or(ExactApplyError::ClosureMismatch)?;
-        let change = Change::try_from(raw.as_slice()).map_err(|_| ExactApplyError::Decode)?;
+        let change = Change::try_from(raw.as_ref()).map_err(|_| ExactApplyError::Decode)?;
         if change.hash().as_ref() != hash.as_bytes() {
             return Err(ExactApplyError::HashMismatch);
         }

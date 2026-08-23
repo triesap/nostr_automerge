@@ -125,8 +125,9 @@ publication status remains `held`.
 | `step_1227`–`step_1232` | `V-TS` | pass |
 | `step_1233` | `V-FULL-TS` | pass |
 | `step_1234` | `V-EVIDENCE` | pass |
-| `step_1235` | `V-RESOURCE` | active |
-| `step_1236` | `V-RESOURCE` | next |
+| `step_1235` | `V-RESOURCE` | pass |
+| `step_1236` | `V-RESOURCE` | active |
+| `step_1237` | `V-RESOURCE` | next |
 
 The completed report-authority checkpoint binds a closed inventory of complete
 and no-progress construction plus nine revision consumers to exact reviewed
@@ -278,15 +279,15 @@ conformance identity is the same canonical and serialized output pair above.
 The opaque private finalization record binds the exact seven-candidate
 `step_1227` through `step_1233` chain, two-tier settlement counts, typed-stop
 coverage, mutation families, and full private result identities without
-carrying private paths or execution details. There are 53 checkpoints including
+carrying private paths or execution details. There are 52 checkpoints including
 the active checkpoint remaining through
 `step_1287`.
 
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
-`FINDING_075`, `FINDING_076`, `FINDING_079`, `FINDING_082`, and `FINDING_083`
+`FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`
 regressions and the typed report-revision and incomplete-report cases are
-fixed; three exact behavior cases remain open.
+fixed; two exact behavior cases remain open.
 `FINDING_080` remains held. The maximum status
 remains `implementation_remediation_required` while the refactor sequence is
 in progress.

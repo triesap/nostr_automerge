@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use crate::evidence::corpus_builder::{EvidenceCorpus, EvidenceRecord, ManifestSelection};
 use crate::evidence::indexes::CoordinateWorkMetadata;
@@ -109,7 +110,15 @@ impl<'a> DocumentEvidenceView<'a> {
             .changes
             .raw_changes_by_coordinate_hash
             .get(&(self.coordinate, hash))
-            .map(Vec::as_slice)
+            .map(Arc::as_ref)
+    }
+
+    pub(crate) fn raw_change_arc(&self, hash: ChangeHash) -> Option<&'a Arc<[u8]>> {
+        self.corpus
+            .indexes
+            .changes
+            .raw_changes_by_coordinate_hash
+            .get(&(self.coordinate, hash))
     }
 
     pub(crate) fn change_hashes_for_control(
@@ -295,7 +304,7 @@ mod tests {
         indexes
             .changes
             .raw_changes_by_coordinate_hash
-            .insert((coordinate, hash), b"canonical".to_vec());
+            .insert((coordinate, hash), b"canonical".to_vec().into());
         indexes
             .checkpoints
             .descriptors_by_coordinate

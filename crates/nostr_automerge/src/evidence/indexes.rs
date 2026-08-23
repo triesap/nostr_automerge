@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use crate::carrier::VerifiedCarrier;
 use crate::evidence::event::EventEvidence;
@@ -70,7 +71,8 @@ pub(crate) struct ChangeIndexes {
         BTreeMap<(DocumentCoordinate, EventId), BTreeSet<ChangeHash>>,
     pub(crate) hashes_by_actor: BTreeMap<ActorId, BTreeSet<ChangeHash>>,
     pub(crate) dependencies_by_hash: BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
-    pub(crate) raw_changes_by_coordinate_hash: BTreeMap<(DocumentCoordinate, ChangeHash), Vec<u8>>,
+    pub(crate) raw_changes_by_coordinate_hash:
+        BTreeMap<(DocumentCoordinate, ChangeHash), Arc<[u8]>>,
     pub(crate) inconsistent_raw_changes: BTreeSet<(DocumentCoordinate, ChangeHash)>,
     pub(crate) prior_claims_by_coordinate:
         BTreeMap<DocumentCoordinate, BTreeMap<ChangeHash, BTreeSet<EventId>>>,
@@ -638,7 +640,7 @@ fn index_change(indexes: &mut ChangeIndexes, change: &crate::carrier::change::Ch
         indexes,
         change.coordinate(),
         change_hash,
-        change.canonical_raw_bytes(),
+        change.canonical_raw_arc(),
     );
     indexes
         .semantic_by_hash
@@ -713,7 +715,7 @@ fn index_canonical_raw_change(
     indexes: &mut ChangeIndexes,
     coordinate: DocumentCoordinate,
     change_hash: ChangeHash,
-    raw: &[u8],
+    raw: &Arc<[u8]>,
 ) {
     let key = (coordinate, change_hash);
     if indexes.inconsistent_raw_changes.contains(&key) {
@@ -721,7 +723,7 @@ fn index_canonical_raw_change(
     }
     match indexes.raw_changes_by_coordinate_hash.entry(key) {
         std::collections::btree_map::Entry::Vacant(entry) => {
-            entry.insert(raw.to_vec());
+            entry.insert(Arc::clone(raw));
         }
         std::collections::btree_map::Entry::Occupied(entry) if entry.get() != raw => {
             entry.remove();
@@ -734,6 +736,7 @@ fn index_canonical_raw_change(
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+    use std::sync::Arc;
 
     use super::{
         ChangeIndexes, CheckpointIndexes, CoordinateWorkMetadata, IndexedParentEvidence,
@@ -951,16 +954,18 @@ mod tests {
         );
         let hash = ChangeHash::from_bytes([14; 32]);
         let mut indexes = ChangeIndexes::default();
-        index_canonical_raw_change(&mut indexes, coordinate, hash, b"canonical");
-        index_canonical_raw_change(&mut indexes, coordinate, hash, b"canonical");
+        let canonical: Arc<[u8]> = Arc::from(&b"canonical"[..]);
+        index_canonical_raw_change(&mut indexes, coordinate, hash, &canonical);
+        index_canonical_raw_change(&mut indexes, coordinate, hash, &canonical);
         assert_eq!(
             indexes
                 .raw_changes_by_coordinate_hash
                 .get(&(coordinate, hash))
-                .map(Vec::as_slice),
+                .map(Arc::as_ref),
             Some(b"canonical".as_slice())
         );
-        index_canonical_raw_change(&mut indexes, coordinate, hash, b"inconsistent");
+        let inconsistent: Arc<[u8]> = Arc::from(&b"inconsistent"[..]);
+        index_canonical_raw_change(&mut indexes, coordinate, hash, &inconsistent);
         assert!(
             !indexes
                 .raw_changes_by_coordinate_hash
@@ -971,7 +976,7 @@ mod tests {
                 .inconsistent_raw_changes
                 .contains(&(coordinate, hash))
         );
-        index_canonical_raw_change(&mut indexes, coordinate, hash, b"canonical");
+        index_canonical_raw_change(&mut indexes, coordinate, hash, &canonical);
         assert!(
             !indexes
                 .raw_changes_by_coordinate_hash
