@@ -2883,6 +2883,22 @@ impl ReportFinalizationPermit {
         Ok(())
     }
 
+    fn build_interrupted_report(
+        &mut self,
+        revision: ProtocolRevision,
+        coordinate: DocumentCoordinate,
+        completion: Completion,
+    ) -> Result<EvaluationReport, EvaluationError> {
+        self.forfeit_all_remaining()
+            .map_err(|_| EvaluationError::ReportInvariant)?;
+        let report = self
+            .fallback
+            .build_report(revision, coordinate, completion)?;
+        self.finish_interrupted()
+            .map_err(|_| EvaluationError::ReportInvariant)?;
+        Ok(report)
+    }
+
     fn forfeit(&mut self, dimension: FinalizationDimension) -> Result<(), FinalizationPermitError> {
         if self.state != FinalizationPermitState::Active {
             return Err(FinalizationPermitError);
@@ -2951,16 +2967,7 @@ fn reserved_interrupted_report(
     completion: Completion,
     permit: &mut ReportFinalizationPermit,
 ) -> Result<EvaluationReport, EvaluationError> {
-    permit
-        .forfeit_all_remaining()
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    let report = permit
-        .fallback
-        .build_report(revision, coordinate, completion)?;
-    permit
-        .finish_interrupted()
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    Ok(report)
+    permit.build_interrupted_report(revision, coordinate, completion)
 }
 
 fn fixed_fallback_report(
@@ -3516,14 +3523,15 @@ mod tests {
         CheckpointReportAttributionStage, CheckpointWorkObserver, CheckpointWorkStop,
         CompleteReportPass, FINALIZATION_PASS_OBSERVATIONS, FinalLineageChangeState,
         FinalizationDimension, FinalizationPassObservation, FinalizationPermitError,
-        FinalizationReservationUnit, FixedFallbackLedger, FixedFallbackPass,
-        PreparedCheckpointInputs, REEVALUATION_STAGE_OBSERVATIONS, REPORT_INVARIANT_ITEMS,
-        ReferenceEvaluator, ReportFinalizationPermit, ReportFinalizationPlan,
-        aggregate_change_contribution, assembly_status, carrier_control_is_historical,
-        change_carrier_disposition, charge_checkpoint_work, checkpoint_control_refusal,
-        checkpoint_preflight_refusal, join_status, noncanonical_branch_claim_reason,
-        reduce_aggregate_change_outcome, reduce_change_dispositions,
-        scoped_dynamic_event_disposition_records, verify_prepared_checkpoints,
+        FinalizationPermitState, FinalizationReservationUnit, FixedFallbackLedger,
+        FixedFallbackPass, PreparedCheckpointInputs, REEVALUATION_STAGE_OBSERVATIONS,
+        REPORT_INVARIANT_ITEMS, ReferenceEvaluator, ReportFinalizationPermit,
+        ReportFinalizationPlan, aggregate_change_contribution, assembly_status,
+        carrier_control_is_historical, change_carrier_disposition, charge_checkpoint_work,
+        checkpoint_control_refusal, checkpoint_preflight_refusal, join_status,
+        noncanonical_branch_claim_reason, reduce_aggregate_change_outcome,
+        reduce_change_dispositions, scoped_dynamic_event_disposition_records,
+        verify_prepared_checkpoints,
     };
     use crate::CheckpointVerificationStatus as Status;
     use crate::authoring::{ActorState, AuthoringDocument};
@@ -3546,9 +3554,9 @@ mod tests {
     use crate::reference::epoch_engine::AcceptedAtControl;
     use crate::types::role::Role;
     use crate::{
-        ActorId, ChangeHash, CheckpointVerificationResult, ChunkHash, ControllerPublicKey,
-        DevicePublicKey, DocumentCoordinate, DocumentId, EventId, ProtocolDisposition,
-        ResolvedManifestAvailability, SnapshotHash, WorkBudget, WorkCounter,
+        ActorId, ChangeHash, CheckpointVerificationResult, ChunkHash, Completion,
+        ControllerPublicKey, DevicePublicKey, DocumentCoordinate, DocumentId, EventId,
+        ProtocolDisposition, ResolvedManifestAvailability, SnapshotHash, WorkBudget, WorkCounter,
     };
     use sha2::{Digest, Sha256};
 
@@ -5523,6 +5531,75 @@ mod tests {
     }
 
     #[test]
+    fn every_interrupted_prefix_uses_only_fallback_and_never_refunds() {
+        let plan = ReportFinalizationPlan {
+            control_records: 1,
+            semantic_change_records: 1,
+            change_carrier_events: 1,
+            other_events: 1,
+            checkpoint_records: 1,
+            change_classifications: 1,
+            history_digest: 1,
+            dispositions_digest: 1,
+            evidence_records: 1,
+            report_invariants: 1,
+            fixed_overhead: 1,
+        };
+        let reservations = plan.reservations();
+        let coordinate = DocumentCoordinate::new(
+            ControllerPublicKey::from_bytes([0x81; 32]),
+            DocumentId::from_bytes([0x82; 32]),
+        );
+        for completion in [Completion::BudgetExhausted, Completion::Cancelled] {
+            for consumed_prefix in 0..=reservations.len() {
+                let mut budget = WorkBudget::new(0, 11);
+                let permit = ReportFinalizationPermit::reserve(plan, &mut budget);
+                assert!(permit.is_ok());
+                let Ok(mut permit) = permit else { return };
+                for reservation in &reservations[..consumed_prefix] {
+                    assert!(permit.consume_pass(*reservation).is_ok());
+                }
+                FINALIZATION_PASS_OBSERVATIONS
+                    .with(|observations| observations.borrow_mut().clear());
+
+                let report = permit.build_interrupted_report(
+                    crate::ProtocolRevision::draft_v1(),
+                    coordinate,
+                    completion,
+                );
+                assert!(report.is_ok());
+                let Ok(report) = report else { return };
+                assert_eq!(report.completion(), completion);
+                assert!(report.canonical_controls().is_empty());
+                assert!(report.disposition_records().is_empty());
+                assert!(report.evidence().is_empty());
+                assert!(report.checkpoints().is_empty());
+                assert!(report.integrity_alerts().is_empty());
+                assert!(report.document().is_none());
+                assert_eq!(budget.remaining(), (0, 0));
+                assert_eq!(budget.consumed().get(WorkCounter::Assertion), 11);
+                assert!(
+                    permit
+                        .ledger
+                        .settlements()
+                        .into_iter()
+                        .all(|settlement| settlement.refunded == 0)
+                );
+                for (index, settlement) in permit.ledger.settlements().into_iter().enumerate() {
+                    assert_eq!(settlement.consumed, u64::from(index < consumed_prefix));
+                    assert_eq!(settlement.forfeited, u64::from(index >= consumed_prefix));
+                }
+                assert!(permit.fallback.is_consumed_settlement());
+                assert_eq!(permit.state, FinalizationPermitState::Interrupted);
+                assert!(
+                    FINALIZATION_PASS_OBSERVATIONS
+                        .with(|observations| observations.borrow().is_empty())
+                );
+            }
+        }
+    }
+
+    #[test]
     fn finalization_dimensions_reject_underflow_and_double_finish() {
         let plan = ReportFinalizationPlan {
             control_records: 2,
@@ -5679,8 +5756,17 @@ mod tests {
             .and_then(|(_, rest)| rest.split_once("fn fixed_fallback_report("))
             .map(|(body, _)| body)
             .unwrap_or_default();
-        assert!(wrapper.contains(".fallback") && wrapper.contains(".build_report("));
+        assert!(wrapper.contains("permit.build_interrupted_report("));
         assert!(!wrapper.contains("view."));
+        let permit_method = source
+            .split_once("fn build_interrupted_report(")
+            .and_then(|(_, rest)| rest.split_once("fn forfeit("))
+            .map(|(body, _)| body)
+            .unwrap_or_default();
+        assert!(permit_method.contains("self.forfeit_all_remaining()"));
+        assert!(permit_method.contains(".fallback") && permit_method.contains(".build_report("));
+        assert!(permit_method.contains("self.finish_interrupted()"));
+        assert!(!permit_method.contains("view."));
         let obsolete_reserved = ["reserved_", "batch_report"].concat();
         let obsolete_preparation = ["prepare_", "interrupted_batch_report"].concat();
         let obsolete_construction = ["NoProgress", "ConstructionPath"].concat();

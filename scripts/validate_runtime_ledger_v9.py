@@ -314,6 +314,7 @@ PREDECESSOR_CANDIDATES = (
     "b34fc7ce1c46b5100ed8f1514e82066db45a0334",
     "06c48a96ab0e78e06c5cf8c0f1a99298edf6ece8",
     "74c99e241aa32521846c2f0fcc791803e61c778b",
+    "1a09181b0db5a0563f699a6483a97a591005578e",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -336,7 +337,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "d236afbc0d168430adf1b59a1f962fa2a049e8c9a3b41b68cdbcbbbb5829d31a",
+        "c6f3e8c67bd808ce57bb1094db216cbf95e95a7b9de85ae00539da6ab3c35cc9",
     ),
     (
         "crates/nostr_automerge/src/integrity.rs",
@@ -514,6 +515,7 @@ EXPECTED_GATES = (
     ("V-RESOURCE",),
     ("V-RESOURCE",),
     ("V-RESOURCE",),
+    ("V-RESOURCE",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -647,6 +649,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -717,6 +720,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_090",),
     ("FINDING_090", "FINDING_093"),
     ("FINDING_090", "FINDING_093"),
+    ("FINDING_076",),
     ("FINDING_076",),
     ("FINDING_076",),
     ("FINDING_076",),
@@ -932,7 +936,10 @@ def validate_report_revision_inventory(
     require(
         "fn fixed_fallback_report(" in reference
         and "struct FixedFallbackLedger" in reference
-        and ".fallback\n        .build_report(" in reference
+        and "fn build_interrupted_report(" in reference
+        and "self.forfeit_all_remaining()" in reference
+        and ".fallback\n            .build_report(" in reference
+        and "self.finish_interrupted()" in reference
         and "reserved_batch_report" not in reference
         and "prepare_interrupted_batch_report" not in reference
         and "NoProgressConstructionPath" not in reference
