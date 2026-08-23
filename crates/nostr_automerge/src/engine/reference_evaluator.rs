@@ -57,6 +57,8 @@ std::thread_local! {
     static REEVALUATION_STAGE_OBSERVATIONS: std::cell::Cell<[u64; 5]> = const {
         std::cell::Cell::new([0; 5])
     };
+    static FINALIZATION_PASS_OBSERVATIONS: std::cell::RefCell<Vec<FinalizationPassObservation>> =
+        const { std::cell::RefCell::new(Vec::new()) };
 }
 
 fn observe_reevaluation_stage(stage: ReevaluationComparisonStage) {
@@ -100,12 +102,19 @@ impl ReferenceEvaluator {
             return fixed_fallback_report(self.revision, coordinate, Completion::Cancelled);
         }
         let view = DocumentEvidenceView::derive(corpus, coordinate);
-        let plan = ReportFinalizationPlan::from_view(&view);
-        let mut finalization = match plan
-            .and_then(|plan| ReportFinalizationPermit::reserve(plan, budget).map_err(|_| ()))
-        {
+        let plan = match ReportFinalizationPlan::from_view(&view) {
+            Ok(plan) => plan,
+            Err(_) => {
+                return fixed_fallback_report(
+                    self.revision,
+                    coordinate,
+                    Completion::BudgetExhausted,
+                );
+            }
+        };
+        let mut finalization = match ReportFinalizationPermit::reserve(plan, budget) {
             Ok(permit) => permit,
-            Err(()) => {
+            Err(_) => {
                 return fixed_fallback_report(
                     self.revision,
                     coordinate,
@@ -235,11 +244,29 @@ impl ReferenceEvaluator {
                 &mut finalization,
             );
         }
-        let control_dispositions = batch
-            .control_dispositions
-            .iter()
-            .map(|(id, disposition)| (*id, *disposition))
-            .collect::<Vec<_>>();
+        let control_dispositions = finalization
+            .consume_before(
+                [FinalizationReservationUnit::new(
+                    CompleteReportPass::ControlRecords,
+                    plan.control_records,
+                )],
+                || {
+                    batch
+                        .control_dispositions
+                        .iter()
+                        .map(|(id, disposition)| (*id, *disposition))
+                        .collect::<Vec<_>>()
+                },
+            )
+            .map_err(|_| {
+                settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
+            })?;
+        if u64::try_from(control_dispositions.len()).ok() != Some(plan.control_records) {
+            return Err(settle_reserved_error(
+                &mut finalization,
+                EvaluationError::ReportInvariant,
+            ));
+        }
         let mut disposition_records = control_dispositions
             .iter()
             .map(|(event_id, disposition)| {
@@ -286,11 +313,29 @@ impl ReferenceEvaluator {
                 &mut finalization,
             );
         }
-        let dispositions = batch
-            .dispositions
-            .iter()
-            .map(|(hash, disposition)| (*hash, *disposition))
-            .collect::<Vec<_>>();
+        let dispositions = finalization
+            .consume_before(
+                [FinalizationReservationUnit::new(
+                    CompleteReportPass::SemanticChangeRecords,
+                    plan.semantic_change_records,
+                )],
+                || {
+                    batch
+                        .dispositions
+                        .iter()
+                        .map(|(hash, disposition)| (*hash, *disposition))
+                        .collect::<Vec<_>>()
+                },
+            )
+            .map_err(|_| {
+                settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
+            })?;
+        if u64::try_from(dispositions.len()).ok() != Some(plan.semantic_change_records) {
+            return Err(settle_reserved_error(
+                &mut finalization,
+                EvaluationError::ReportInvariant,
+            ));
+        }
         disposition_records.extend(dispositions.iter().map(|(hash, disposition)| {
             DispositionRecord::new(ProtocolItemIdentifier::from(*hash), *disposition, None)
         }));
@@ -324,15 +369,52 @@ impl ReferenceEvaluator {
                 &mut finalization,
             );
         }
-        let event_records = match event_disposition_records(
-            &view,
-            &change_carrier_dispositions,
-            &manifest,
-            &checkpoints,
+        let event_records = match finalization.consume_before(
+            [
+                FinalizationReservationUnit::new(
+                    CompleteReportPass::ChangeCarrierEvents,
+                    plan.change_carrier_events,
+                ),
+                FinalizationReservationUnit::new(
+                    CompleteReportPass::OtherEvents,
+                    plan.other_events,
+                ),
+            ],
+            || {
+                event_disposition_records(
+                    &view,
+                    &change_carrier_dispositions,
+                    &manifest,
+                    &checkpoints,
+                )
+            },
         ) {
-            Ok(records) => records,
-            Err(error) => return Err(settle_reserved_error(&mut finalization, error)),
+            Ok(Ok(records)) => records,
+            Ok(Err(error)) => return Err(settle_reserved_error(&mut finalization, error)),
+            Err(_) => {
+                return Err(settle_reserved_error(
+                    &mut finalization,
+                    EvaluationError::ReportInvariant,
+                ));
+            }
         };
+        let finalized_change_carriers = event_records.carrier_outcomes.len();
+        let finalized_events = event_records.records.len();
+        let Some(finalized_other_events) = finalized_events.checked_sub(finalized_change_carriers)
+        else {
+            return Err(settle_reserved_error(
+                &mut finalization,
+                EvaluationError::ReportInvariant,
+            ));
+        };
+        if u64::try_from(finalized_change_carriers).ok() != Some(plan.change_carrier_events)
+            || u64::try_from(finalized_other_events).ok() != Some(plan.other_events)
+        {
+            return Err(settle_reserved_error(
+                &mut finalization,
+                EvaluationError::ReportInvariant,
+            ));
+        }
         disposition_records.extend(event_records.records);
         let accepted_changes = disposition_hashes(&dispositions, ProtocolDisposition::Accepted);
         let heads = batch.heads.iter().copied().collect::<Vec<_>>();
@@ -415,48 +497,6 @@ impl ReferenceEvaluator {
             );
         }
         let evidence = view.records().collect::<Vec<_>>();
-        finalization
-            .consume(
-                FinalizationDimension::ControlRecords,
-                u64::try_from(control_dispositions.len()).unwrap_or(u64::MAX),
-            )
-            .map_err(|_| {
-                settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
-            })?;
-        finalization
-            .consume(
-                FinalizationDimension::SemanticChangeRecords,
-                u64::try_from(dispositions.len()).unwrap_or(u64::MAX),
-            )
-            .map_err(|_| {
-                settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
-            })?;
-        let finalized_events = disposition_records
-            .iter()
-            .filter(|record| matches!(record.identifier(), ProtocolItemIdentifier::Event(_)))
-            .count();
-        let finalized_change_carriers = event_records.carrier_outcomes.len();
-        let Some(finalized_other_events) = finalized_events.checked_sub(finalized_change_carriers)
-        else {
-            return Err(settle_reserved_error(
-                &mut finalization,
-                EvaluationError::ReportInvariant,
-            ));
-        };
-        finalization
-            .consume(
-                FinalizationDimension::ChangeCarrierEvents,
-                u64::try_from(finalized_change_carriers).unwrap_or(u64::MAX),
-            )
-            .and_then(|()| {
-                finalization.consume(
-                    FinalizationDimension::OtherEvents,
-                    u64::try_from(finalized_other_events).unwrap_or(u64::MAX),
-                )
-            })
-            .map_err(|_| {
-                settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
-            })?;
         let finalized_checkpoints = checkpoints
             .iter()
             .map(|checkpoint| 1_usize.saturating_add(checkpoint.chunk_events().len()))
@@ -2302,6 +2342,20 @@ enum CompleteReportPass {
     FixedOverhead,
 }
 
+#[cfg(test)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum FinalizationPassObservation {
+    Consumed(CompleteReportPass),
+    WorkStarted(CompleteReportPass),
+}
+
+#[cfg(test)]
+fn observe_finalization_pass(observation: FinalizationPassObservation) {
+    FINALIZATION_PASS_OBSERVATIONS.with(|observations| {
+        observations.borrow_mut().push(observation);
+    });
+}
+
 impl CompleteReportPass {
     const ALL: [Self; 11] = [
         Self::ControlRecords,
@@ -2694,12 +2748,28 @@ impl ReportFinalizationPermit {
         self.ledger.dimension_mut(dimension).consume(amount)
     }
 
-    #[cfg(test)]
     fn consume_pass(
         &mut self,
         reservation: FinalizationReservationUnit,
     ) -> Result<(), FinalizationPermitError> {
         self.consume(reservation.pass.dimension(), reservation.units)
+    }
+
+    fn consume_before<T, const N: usize>(
+        &mut self,
+        reservations: [FinalizationReservationUnit; N],
+        work: impl FnOnce() -> T,
+    ) -> Result<T, FinalizationPermitError> {
+        for reservation in &reservations {
+            self.consume_pass(*reservation)?;
+            #[cfg(test)]
+            observe_finalization_pass(FinalizationPassObservation::Consumed(reservation.pass));
+        }
+        #[cfg(test)]
+        for reservation in &reservations {
+            observe_finalization_pass(FinalizationPassObservation::WorkStarted(reservation.pass));
+        }
+        Ok(work())
     }
 
     fn finish_interrupted(&mut self) -> Result<(), FinalizationPermitError> {
@@ -3344,16 +3414,16 @@ mod tests {
         AggregateChangeContribution, BatchEvaluationReport, ChangeCarrierOutcome,
         ChangeClaimReason, CheckpointDownstreamStage, CheckpointHistoryInputs,
         CheckpointReportAttributionStage, CheckpointWorkObserver, CheckpointWorkStop,
-        CompleteReportPass, FinalLineageChangeState, FinalizationDimension,
-        FinalizationPermitError, FinalizationReservationUnit, FixedFallbackLedger,
-        FixedFallbackPass, PreparedCheckpointInputs, REEVALUATION_STAGE_OBSERVATIONS,
-        REPORT_INVARIANT_ITEMS, ReferenceEvaluator, ReportFinalizationPermit,
-        ReportFinalizationPlan, aggregate_change_contribution, assembly_status,
-        carrier_control_is_historical, change_carrier_disposition, charge_checkpoint_work,
-        checkpoint_control_refusal, checkpoint_preflight_refusal, join_status,
-        noncanonical_branch_claim_reason, reduce_aggregate_change_outcome,
-        reduce_change_dispositions, scoped_dynamic_event_disposition_records,
-        verify_prepared_checkpoints,
+        CompleteReportPass, FINALIZATION_PASS_OBSERVATIONS, FinalLineageChangeState,
+        FinalizationDimension, FinalizationPassObservation, FinalizationPermitError,
+        FinalizationReservationUnit, FixedFallbackLedger, FixedFallbackPass,
+        PreparedCheckpointInputs, REEVALUATION_STAGE_OBSERVATIONS, REPORT_INVARIANT_ITEMS,
+        ReferenceEvaluator, ReportFinalizationPermit, ReportFinalizationPlan,
+        aggregate_change_contribution, assembly_status, carrier_control_is_historical,
+        change_carrier_disposition, charge_checkpoint_work, checkpoint_control_refusal,
+        checkpoint_preflight_refusal, join_status, noncanonical_branch_claim_reason,
+        reduce_aggregate_change_outcome, reduce_change_dispositions,
+        scoped_dynamic_event_disposition_records, verify_prepared_checkpoints,
     };
     use crate::CheckpointVerificationStatus as Status;
     use crate::authoring::{ActorState, AuthoringDocument};
@@ -5244,6 +5314,63 @@ mod tests {
                 coordinate,
             ))
             .is_err()
+        );
+    }
+
+    #[test]
+    fn initial_finalization_passes_start_only_after_exact_consumption() {
+        FINALIZATION_PASS_OBSERVATIONS.with(|observations| observations.borrow_mut().clear());
+        let coordinate = DocumentCoordinate::new(
+            ControllerPublicKey::from_bytes([0xd3; 32]),
+            DocumentId::from_bytes([0xd4; 32]),
+        );
+        let report = ReferenceEvaluator::new(crate::ProtocolRevision::draft_v1()).evaluate(
+            &crate::CorpusBuilder::new().finish(),
+            coordinate,
+            &mut WorkBudget::new(1_000, 1_000),
+            &crate::NeverCancelled,
+        );
+        assert!(report.is_ok());
+        assert_eq!(
+            FINALIZATION_PASS_OBSERVATIONS.with(|observations| observations.borrow().clone()),
+            [
+                FinalizationPassObservation::Consumed(CompleteReportPass::ControlRecords),
+                FinalizationPassObservation::WorkStarted(CompleteReportPass::ControlRecords),
+                FinalizationPassObservation::Consumed(CompleteReportPass::SemanticChangeRecords,),
+                FinalizationPassObservation::WorkStarted(CompleteReportPass::SemanticChangeRecords,),
+                FinalizationPassObservation::Consumed(CompleteReportPass::ChangeCarrierEvents),
+                FinalizationPassObservation::Consumed(CompleteReportPass::OtherEvents),
+                FinalizationPassObservation::WorkStarted(CompleteReportPass::ChangeCarrierEvents,),
+                FinalizationPassObservation::WorkStarted(CompleteReportPass::OtherEvents),
+            ]
+        );
+
+        FINALIZATION_PASS_OBSERVATIONS.with(|observations| observations.borrow_mut().clear());
+        let mut budget = WorkBudget::new(0, 1);
+        let permit = ReportFinalizationPermit::reserve(
+            ReportFinalizationPlan {
+                control_records: 1,
+                ..ReportFinalizationPlan::default()
+            },
+            &mut budget,
+        );
+        assert!(permit.is_ok());
+        let Ok(mut permit) = permit else { return };
+        let work_ran = std::cell::Cell::new(false);
+        assert!(
+            permit
+                .consume_before(
+                    [FinalizationReservationUnit::new(
+                        CompleteReportPass::ControlRecords,
+                        2,
+                    )],
+                    || work_ran.set(true),
+                )
+                .is_err()
+        );
+        assert!(!work_ran.get());
+        assert!(
+            FINALIZATION_PASS_OBSERVATIONS.with(|observations| observations.borrow().is_empty())
         );
     }
 

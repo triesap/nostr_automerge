@@ -312,6 +312,7 @@ PREDECESSOR_CANDIDATES = (
     "74b20922ff0ac2a877acc0c1bb196b20c8cc02a8",
     "8e85bd29181ebf36d2cfd7d4ed330b0a0975aa44",
     "b34fc7ce1c46b5100ed8f1514e82066db45a0334",
+    "06c48a96ab0e78e06c5cf8c0f1a99298edf6ece8",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -334,7 +335,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "a8187ffcdb8dbdc9475be845c9f01400559c470a73e46ffe8b6e19dce4ef6eaa",
+        "31adf7ac23e64a580b25fec29cec472bf80fc82717dcb2a0ffa6d9d5ed98c44f",
     ),
     (
         "crates/nostr_automerge/src/integrity.rs",
@@ -430,15 +431,10 @@ HISTORICAL_STEP_1217_CLOSURE_PATHS = frozenset(
 CLOSURE_PATHS = frozenset(
     {
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "crates/nostr_automerge/src/evidence/document_view.rs",
-        "crates/nostr_automerge/src/evidence/indexes.rs",
-        "crates/nostr_automerge/tests/public_engine_api.rs",
-        "crates/nostr_automerge/tests/remediation_v8_reproductions.rs",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
-        "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
     }
 )
@@ -514,6 +510,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-FULL-TS",),
     ("V-EVIDENCE",),
+    ("V-RESOURCE",),
     ("V-RESOURCE",),
 )
 EXPECTED_REQUIREMENTS = (
@@ -646,6 +643,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -716,6 +714,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_090",),
     ("FINDING_090", "FINDING_093"),
     ("FINDING_090", "FINDING_093"),
+    ("FINDING_076",),
     ("FINDING_076",),
 )
 FORBIDDEN_KEY_WORDS = {
