@@ -108,8 +108,9 @@ counts, result classes, and held publication state.
 | `step_1217` | `V-EVIDENCE` | pass |
 | `step_1218` | `V-RESOURCE` | pass |
 | `step_1219` | `V-RESOURCE` | pass |
-| `step_1220` | `V-RESOURCE` | active |
-| `step_1221` | `V-RESOURCE` | next |
+| `step_1220` | `V-RESOURCE` | pass |
+| `step_1221` | `V-RESOURCE` | active |
+| `step_1222` | `V-RESOURCE` | next |
 
 The completed report-authority checkpoint binds a closed inventory of complete
 and no-progress construction plus nine revision consumers to exact reviewed
@@ -201,12 +202,19 @@ fixed complete-report overhead. Count conversion, multiplication, addition,
 and the aggregate reservation are checked before the atomic reservation; no
 target-sized discovery scan is introduced by planning.
 
-The active pass-consumption checkpoint routes control records, semantic
+The completed initial pass-consumption checkpoint routes control records, semantic
 `ChangeHash` records, change-carrier Events, and other reportable Events
 through one consume-before-work boundary. Exact retained counts must match the
 constructed vectors, a failed pass consumption cannot invoke its closure, and
 instrumented observations prove each owned pass is consumed before work
 starts.
+
+The active remaining-pass checkpoint routes checkpoint-record validation,
+four semantic classifications, both normative digest traversals, evidence,
+report invariants, and fixed complete-report overhead through the same
+consume-before-work boundary. Checked target counts replace saturating
+arithmetic, and the complete eleven-pass observation proves that every owned
+pass begins only after its matching capacity is consumed.
 
 The authority projection is monotonic from `checkpoint_expectations_corrected` to
 `distribution_complete`. It records 148 requirements now and at completion,
@@ -234,7 +242,7 @@ immutable historical record and is not the carrier closure authority.
 `step_1197` through `step_1205` chain ending at
 `321abda8f672ecf1a44aa1919e0cec98830e8df8`; its current two-process
 conformance identity is the same canonical and serialized output pair above.
-There are 68 checkpoints including the active checkpoint remaining through
+There are 67 checkpoints including the active checkpoint remaining through
 `step_1287`.
 
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
