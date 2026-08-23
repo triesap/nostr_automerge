@@ -3,22 +3,22 @@
   "status": "in_progress",
   "rcld": 92,
   "cursor": {
-    "active_step": "step_1266",
-    "next_step": "step_1267",
+    "active_step": "step_1267",
+    "next_step": "step_1268",
     "last_step": "step_1287",
-    "remaining_checkpoint_count": 22,
+    "remaining_checkpoint_count": 21,
     "first_rcld": 92,
     "last_rcld": 94,
     "remaining_rcld_count": 3
   },
   "authority_projection": {
     "binding": "monotonic_stage_projection",
-    "current_stage": "checkpoint_control_fixtures_added",
+    "current_stage": "carrier_independence_fixtures_added",
     "minimum_stage": "requirements_appended",
     "target_stage": "distribution_complete",
     "requirement_count": 148,
     "target_requirement_count": 148,
-    "signed_fixture_count": 183,
+    "signed_fixture_count": 186,
     "target_signed_fixture_count": 192,
     "report_schema_sha256": "08a88d5ad7049203bb766dc763601a6c5311a70e631fa35ab62c164203cd8e1c"
   },
@@ -1229,6 +1229,16 @@
       "gate_ids": ["V-CONF"],
       "requirement_ids": ["NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
       "finding_ids": ["FINDING_073", "FINDING_085", "FINDING_086"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1266",
+      "candidate": "95f25100f5dc9234e97d67508439485d39d3d85c",
+      "owner_class": "public",
+      "gate_ids": ["V-CONF"],
+      "requirement_ids": ["NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010"],
+      "finding_ids": ["FINDING_073"],
       "deviation_ids": [],
       "result": "pass"
     }

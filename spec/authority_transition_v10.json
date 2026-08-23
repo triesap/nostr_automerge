@@ -2,7 +2,7 @@
   "schema": "nostr_automerge.authority_transition.v10",
   "status": "in_progress",
   "protocol_revision": "draft_2026_08",
-  "current_stage": "checkpoint_control_fixtures_added",
+  "current_stage": "carrier_independence_fixtures_added",
   "stage_order": [
     "transition_installed",
     "companion_authority_installed",

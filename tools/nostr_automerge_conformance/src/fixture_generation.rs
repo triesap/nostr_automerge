@@ -61,8 +61,174 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "remediation_v7_resource" => generate_remediation_v7_resource(),
         "remediation_v8" => generate_remediation_v8(),
         "remediation_v10_checkpoint_control" => generate_remediation_v10_checkpoint_control(),
+        "remediation_v10_carrier_independence" => generate_remediation_v10_carrier_independence(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
+}
+
+fn generate_remediation_v10_carrier_independence() -> Result<(), String> {
+    let controller = Signer::from_byte(202)?;
+    let writer = Signer::from_byte(203)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "e1".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation-v10 carrier coordinate".to_owned())?;
+    let members = || vec![(&writer, None, &["write"][..])];
+    let genesis = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let genesis_id = event_id(&genesis)?;
+
+    let (excluded_raw, excluded_hash) =
+        author_root_change(coordinate, &writer, "v10-dynamic-invalid-duplicate")?;
+    let excluded_claim = sign_change(
+        &writer,
+        2,
+        coordinate,
+        genesis_id,
+        excluded_hash,
+        &excluded_raw,
+    )?;
+    let canonical_child = sign_control(
+        &controller,
+        3,
+        coordinate,
+        Some(genesis_id),
+        control_content_with_links(1, vec![], &[], None, None),
+    )?;
+    let dynamic_invalid_child = sign_control(
+        &controller,
+        4,
+        coordinate,
+        Some(genesis_id),
+        control_content_with_links(2, members(), &[], None, None),
+    )?;
+    let dynamic_invalid_duplicate = sign_change(
+        &writer,
+        5,
+        coordinate,
+        event_id(&dynamic_invalid_child)?,
+        excluded_hash,
+        &excluded_raw,
+    )?;
+
+    let (pruned_raw, pruned_hash) = author_root_change(coordinate, &writer, "v10-pruned-invalid")?;
+    let pruned_claim = sign_change(&writer, 6, coordinate, genesis_id, pruned_hash, &pruned_raw)?;
+    let pruning_child = sign_control(
+        &controller,
+        7,
+        coordinate,
+        Some(genesis_id),
+        control_content_with_links(1, vec![], &[], None, None),
+    )?;
+    let invalid_control = sign_control(
+        &controller,
+        8,
+        coordinate,
+        None,
+        control_content_full(1, members(), "automerge-change-v1"),
+    )?;
+    let invalid_pruned_duplicate = sign_change(
+        &writer,
+        9,
+        coordinate,
+        event_id(&invalid_control)?,
+        pruned_hash,
+        &pruned_raw,
+    )?;
+
+    let (equivocated_raw, equivocated_hash) =
+        author_root_change(coordinate, &writer, "v10-equivocated-target")?;
+    let (conflict_raw, conflict_hash) =
+        author_root_change(coordinate, &writer, "v10-equivocated-conflict")?;
+    let equivocated_claim = sign_change(
+        &writer,
+        10,
+        coordinate,
+        genesis_id,
+        equivocated_hash,
+        &equivocated_raw,
+    )?;
+    let conflict_claim = sign_change(
+        &writer,
+        11,
+        coordinate,
+        genesis_id,
+        conflict_hash,
+        &conflict_raw,
+    )?;
+    let invalid_equivocation_control = sign_control(
+        &controller,
+        12,
+        coordinate,
+        None,
+        control_content_full(1, members(), "automerge-change-v1"),
+    )?;
+    let invalid_equivocated_duplicate = sign_change(
+        &writer,
+        13,
+        coordinate,
+        event_id(&invalid_equivocation_control)?,
+        equivocated_hash,
+        &equivocated_raw,
+    )?;
+
+    let root = repository_root().join("fixtures/v1_draft/scenarios/change_claims");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    let requirements = [
+        "NCRDT-CONF-010",
+        "NCRDT-DISPOSITION-002",
+        "NCRDT-DISPOSITION-006",
+    ];
+    for (fixture_id, events) in [
+        (
+            "excluded_hash_with_dynamic_invalid_duplicate_carrier",
+            vec![
+                genesis.clone(),
+                excluded_claim,
+                canonical_child,
+                dynamic_invalid_child,
+                dynamic_invalid_duplicate,
+            ],
+        ),
+        (
+            "pruned_hash_with_invalid_control_carrier",
+            vec![
+                genesis.clone(),
+                pruned_claim,
+                pruning_child,
+                invalid_control,
+                invalid_pruned_duplicate,
+            ],
+        ),
+        (
+            "equivocation_excluded_hash_with_invalid_control_carrier",
+            vec![
+                genesis,
+                equivocated_claim,
+                conflict_claim,
+                invalid_equivocation_control,
+                invalid_equivocated_duplicate,
+            ],
+        ),
+    ] {
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            &requirements,
+            "remediation_v10_carrier_independence",
+        )?;
+    }
+    Ok(())
 }
 
 fn generate_remediation_v10_checkpoint_control() -> Result<(), String> {

@@ -379,6 +379,7 @@ PREDECESSOR_CANDIDATES = (
     "dfcef801f23b0b4c9dcd14ddcc433e465169c756",
     "1bbb9b90fe0302c972dc0b9350d762667ac840df",
     "957d0bbef4045afee2b125feda842b18f8c879ef",
+    "95f25100f5dc9234e97d67508439485d39d3d85c",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -425,7 +426,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "tools/nostr_automerge_conformance/src/fixture_generation.rs",
-        "19f9cdd05eb1d2bcb16274bfb4f6f8b5c998ed496eb9f8c4c83da9fdc66727d0",
+        "071bb35fb16ab896d98f342bebd251f3eb1bfd5859c3d45df89a0946d7770a28",
     ),
     (
         "tools/nostr_automerge_conformance/src/report_json.rs",
@@ -499,15 +500,15 @@ CLOSURE_PATHS = frozenset(
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "fixtures/distribution/manifest_v10.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_canonical_without_checkpoint_role.expected.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_canonical_without_checkpoint_role.fixture.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_canonical_without_checkpoint_role.input.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_dynamic_invalid_control.expected.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_dynamic_invalid_control.fixture.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_dynamic_invalid_control.input.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_noncanonical_control.expected.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_noncanonical_control.fixture.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_noncanonical_control.input.json",
+        "fixtures/v1_draft/scenarios/change_claims/equivocation_excluded_hash_with_invalid_control_carrier.expected.json",
+        "fixtures/v1_draft/scenarios/change_claims/equivocation_excluded_hash_with_invalid_control_carrier.fixture.json",
+        "fixtures/v1_draft/scenarios/change_claims/equivocation_excluded_hash_with_invalid_control_carrier.input.json",
+        "fixtures/v1_draft/scenarios/change_claims/excluded_hash_with_dynamic_invalid_duplicate_carrier.expected.json",
+        "fixtures/v1_draft/scenarios/change_claims/excluded_hash_with_dynamic_invalid_duplicate_carrier.fixture.json",
+        "fixtures/v1_draft/scenarios/change_claims/excluded_hash_with_dynamic_invalid_duplicate_carrier.input.json",
+        "fixtures/v1_draft/scenarios/change_claims/pruned_hash_with_invalid_control_carrier.expected.json",
+        "fixtures/v1_draft/scenarios/change_claims/pruned_hash_with_invalid_control_carrier.fixture.json",
+        "fixtures/v1_draft/scenarios/change_claims/pruned_hash_with_invalid_control_carrier.input.json",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
         "scripts/validate_private_reproduction_boundary_v9.py",
@@ -526,15 +527,15 @@ CLOSURE_AMEND_PATHS = frozenset(
 )
 CLOSURE_NEW_PATHS = frozenset(
     {
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_canonical_without_checkpoint_role.expected.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_canonical_without_checkpoint_role.fixture.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_canonical_without_checkpoint_role.input.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_dynamic_invalid_control.expected.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_dynamic_invalid_control.fixture.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_dynamic_invalid_control.input.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_noncanonical_control.expected.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_noncanonical_control.fixture.json",
-        "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_noncanonical_control.input.json",
+        "fixtures/v1_draft/scenarios/change_claims/equivocation_excluded_hash_with_invalid_control_carrier.expected.json",
+        "fixtures/v1_draft/scenarios/change_claims/equivocation_excluded_hash_with_invalid_control_carrier.fixture.json",
+        "fixtures/v1_draft/scenarios/change_claims/equivocation_excluded_hash_with_invalid_control_carrier.input.json",
+        "fixtures/v1_draft/scenarios/change_claims/excluded_hash_with_dynamic_invalid_duplicate_carrier.expected.json",
+        "fixtures/v1_draft/scenarios/change_claims/excluded_hash_with_dynamic_invalid_duplicate_carrier.fixture.json",
+        "fixtures/v1_draft/scenarios/change_claims/excluded_hash_with_dynamic_invalid_duplicate_carrier.input.json",
+        "fixtures/v1_draft/scenarios/change_claims/pruned_hash_with_invalid_control_carrier.expected.json",
+        "fixtures/v1_draft/scenarios/change_claims/pruned_hash_with_invalid_control_carrier.fixture.json",
+        "fixtures/v1_draft/scenarios/change_claims/pruned_hash_with_invalid_control_carrier.input.json",
     }
 )
 EXPECTED_GATES = (
@@ -644,6 +645,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-TS",),
     ("V-EVIDENCE",),
+    ("V-CONF",),
     ("V-CONF",),
     ("V-CONF",),
 )
@@ -824,6 +826,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002", "NCRDT-CONF-010"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -942,6 +945,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_088",),
     (),
     ("FINDING_073", "FINDING_085", "FINDING_086"),
+    ("FINDING_073",),
 )
 FORBIDDEN_KEY_WORDS = {
     "source",
