@@ -3,10 +3,10 @@
   "status": "in_progress",
   "rcld": 87,
   "cursor": {
-    "active_step": "step_1222",
-    "next_step": "step_1223",
+    "active_step": "step_1223",
+    "next_step": "step_1224",
     "last_step": "step_1287",
-    "remaining_checkpoint_count": 66,
+    "remaining_checkpoint_count": 65,
     "first_rcld": 87,
     "last_rcld": 94,
     "remaining_rcld_count": 8
@@ -785,6 +785,16 @@
     {
       "step": "step_1221",
       "candidate": "1a09181b0db5a0563f699a6483a97a591005578e",
+      "owner_class": "public",
+      "gate_ids": ["V-RESOURCE"],
+      "requirement_ids": ["NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_076"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1222",
+      "candidate": "6faf4a0922e6ca33c32b1f503ff29a6f3449f86a",
       "owner_class": "public",
       "gate_ids": ["V-RESOURCE"],
       "requirement_ids": ["NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],

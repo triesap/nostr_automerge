@@ -692,14 +692,12 @@ impl ReferenceEvaluator {
             )
             .map_err(|_| {
                 settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
-            })?
-            .map_err(|_| {
-                settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
             })?;
-        finalization.refund(budget).map_err(|_| {
-            settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
-        })?;
-        Ok(report)
+        let report = match report {
+            Ok(report) => Ok(report),
+            Err(_) => Err(EvaluationError::ReportInvariant),
+        };
+        finalization.finish_complete_report(budget, report)
     }
 
     /// Replays the complete retained corpus and reports a canonical branch
@@ -2919,6 +2917,26 @@ impl ReportFinalizationPermit {
         Ok(())
     }
 
+    fn finish_complete_report(
+        &mut self,
+        budget: &mut WorkBudget,
+        report: Result<EvaluationReport, EvaluationError>,
+    ) -> Result<EvaluationReport, EvaluationError> {
+        let report = match report {
+            Ok(report) if report.completion() == Completion::Complete => report,
+            Ok(_) => {
+                return Err(settle_reserved_error(
+                    self,
+                    EvaluationError::ReportInvariant,
+                ));
+            }
+            Err(error) => return Err(settle_reserved_error(self, error)),
+        };
+        self.refund(budget)
+            .map_err(|_| settle_reserved_error(self, EvaluationError::ReportInvariant))?;
+        Ok(report)
+    }
+
     fn refund(&mut self, budget: &mut WorkBudget) -> Result<(), FinalizationPermitError> {
         if self.state != FinalizationPermitState::Active {
             return Err(FinalizationPermitError);
@@ -3521,15 +3539,15 @@ mod tests {
         AggregateChangeContribution, BatchEvaluationReport, ChangeCarrierOutcome,
         ChangeClaimReason, CheckpointDownstreamStage, CheckpointHistoryInputs,
         CheckpointReportAttributionStage, CheckpointWorkObserver, CheckpointWorkStop,
-        CompleteReportPass, FINALIZATION_PASS_OBSERVATIONS, FinalLineageChangeState,
-        FinalizationDimension, FinalizationPassObservation, FinalizationPermitError,
-        FinalizationPermitState, FinalizationReservationUnit, FixedFallbackLedger,
-        FixedFallbackPass, PreparedCheckpointInputs, REEVALUATION_STAGE_OBSERVATIONS,
-        REPORT_INVARIANT_ITEMS, ReferenceEvaluator, ReportFinalizationPermit,
-        ReportFinalizationPlan, aggregate_change_contribution, assembly_status,
-        carrier_control_is_historical, change_carrier_disposition, charge_checkpoint_work,
-        checkpoint_control_refusal, checkpoint_preflight_refusal, join_status,
-        noncanonical_branch_claim_reason, reduce_aggregate_change_outcome,
+        CompleteReportPass, EvaluationError, FINALIZATION_PASS_OBSERVATIONS,
+        FinalLineageChangeState, FinalizationDimension, FinalizationPassObservation,
+        FinalizationPermitError, FinalizationPermitState, FinalizationReservationUnit,
+        FixedFallbackLedger, FixedFallbackPass, PreparedCheckpointInputs,
+        REEVALUATION_STAGE_OBSERVATIONS, REPORT_INVARIANT_ITEMS, ReferenceEvaluator,
+        ReportFinalizationPermit, ReportFinalizationPlan, aggregate_change_contribution,
+        assembly_status, carrier_control_is_historical, change_carrier_disposition,
+        charge_checkpoint_work, checkpoint_control_refusal, checkpoint_preflight_refusal,
+        join_status, noncanonical_branch_claim_reason, reduce_aggregate_change_outcome,
         reduce_change_dispositions, scoped_dynamic_event_disposition_records,
         verify_prepared_checkpoints,
     };
@@ -5777,14 +5795,41 @@ mod tests {
 
     #[test]
     fn report_validation_precedes_finalization_refund() {
-        let source = include_str!("reference_evaluator.rs");
-        let complete_path = source
-            .split_once("let report = EvaluationReport::from_complete_parts")
-            .map(|(_, path)| path)
-            .unwrap_or_default();
-        let validation = complete_path.find("settle_reserved_error(&mut finalization");
-        let refund = complete_path.find(".refund(budget)");
-        assert!(matches!((validation, refund), (Some(left), Some(right)) if left < right));
+        let coordinate = DocumentCoordinate::new(
+            ControllerPublicKey::from_bytes([0x91; 32]),
+            DocumentId::from_bytes([0x92; 32]),
+        );
+        let incomplete = super::fixed_fallback_report(
+            crate::ProtocolRevision::draft_v1(),
+            coordinate,
+            Completion::BudgetExhausted,
+        );
+        assert!(incomplete.is_ok());
+        let Ok(incomplete) = incomplete else { return };
+        for candidate in [Err(EvaluationError::Projection), Ok(incomplete)] {
+            let plan = ReportFinalizationPlan {
+                control_records: 1,
+                ..ReportFinalizationPlan::default()
+            };
+            let mut budget = WorkBudget::new(0, 1);
+            let permit = ReportFinalizationPermit::reserve(plan, &mut budget);
+            assert!(permit.is_ok());
+            let Ok(mut permit) = permit else { return };
+
+            let result = permit.finish_complete_report(&mut budget, candidate);
+            assert!(result.is_err());
+            assert_eq!(budget.remaining(), (0, 0));
+            assert_eq!(budget.consumed().get(WorkCounter::Assertion), 1);
+            assert_eq!(permit.state, FinalizationPermitState::Failed);
+            assert!(
+                permit
+                    .ledger
+                    .settlements()
+                    .into_iter()
+                    .all(|settlement| settlement.refunded == 0)
+            );
+            assert!(permit.fallback.is_forfeited_settlement());
+        }
     }
 
     #[test]
