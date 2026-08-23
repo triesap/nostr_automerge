@@ -343,6 +343,12 @@ an invalid Event while canonical pruning, a dynamic-invalid duplicate, or
 equivocation independently leaves the verified semantic hash excluded. The
 transition manifest now binds 186 scenarios without changing the v9 prefix.
 
+The third signed append adds exact post-branch, post-claim, and post-checkpoint
+interruption boundaries. The generator independently checks the charged work
+counter prefix for each boundary before writing the fixture. Each boundary
+returns the same canonical empty budget-exhausted report, and the staged
+manifest now binds 189 signed scenarios.
+
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 `FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`

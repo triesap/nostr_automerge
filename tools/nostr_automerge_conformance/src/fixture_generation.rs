@@ -8,8 +8,9 @@ use nostr_automerge::authoring::{
     ActorState, AuthoringDocument, Operation, PreparedEvent, UnsignedEventDraft,
 };
 use nostr_automerge::{
-    ActorId, ChangeHash, DevicePublicKey, DocumentCoordinate, EventId, ProtocolRevision,
-    RawEventBytes, VerifiedNip01Event,
+    ActorId, ChangeHash, CorpusBuilder, DevicePublicKey, DocumentCoordinate, EventId,
+    NeverCancelled, ProtocolRevision, RawEventBytes, ReferenceEvaluator, VerifiedNip01Event,
+    WorkBudget, WorkCounter,
 };
 use secp256k1::{Keypair, Secp256k1, SecretKey};
 use serde_json::{Value, json};
@@ -62,8 +63,134 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "remediation_v8" => generate_remediation_v8(),
         "remediation_v10_checkpoint_control" => generate_remediation_v10_checkpoint_control(),
         "remediation_v10_carrier_independence" => generate_remediation_v10_carrier_independence(),
+        "remediation_v10_interruptions" => generate_remediation_v10_interruptions(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
+}
+
+fn generate_remediation_v10_interruptions() -> Result<(), String> {
+    let controller = Signer::from_byte(204)?;
+    let writer = Signer::from_byte(205)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "e2".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation-v10 interruption coordinate".to_owned())?;
+    let control = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(
+            0,
+            vec![(&writer, None, &["checkpoint", "write"])],
+            "automerge-change-v1",
+        ),
+    )?;
+    let control_id = event_id(&control)?;
+    let (raw, hash) = author_root_change(coordinate, &writer, "v10-interruption")?;
+    let change = sign_change(&writer, 2, coordinate, control_id, hash, &raw)?;
+    let document = AuthoringDocument::empty(ActorState::initial(
+        ActorId::derive(coordinate, writer.public_key),
+        Default::default(),
+    ))
+    .map_err(|error| format!("remediation-v10 interruption document: {error:?}"))?;
+    let snapshot = document.accepted_state_bytes();
+    let commitment: [u8; 32] = Sha256::digest(
+        [
+            b"nostr-crdt/automerge/change-set/v1".as_slice(),
+            &[0],
+            &0_u64.to_be_bytes(),
+        ]
+        .concat(),
+    )
+    .into();
+    let descriptor = sign_checkpoint_descriptor_revision(
+        &writer,
+        3,
+        coordinate,
+        control_id,
+        &snapshot,
+        &[],
+        commitment,
+        None,
+        1,
+    )?;
+    let chunk = sign_checkpoint_chunk(&writer, 4, coordinate, event_id(&descriptor)?, &snapshot)?;
+    let events = vec![control, change, descriptor, chunk];
+    let mut builder = CorpusBuilder::new();
+    for event in &events {
+        let _ = builder.ingest_bytes(event.as_str().as_bytes());
+    }
+    let corpus = builder.finish();
+    let boundaries = [
+        (
+            "interrupted_after_branch_evaluation_returns_no_progress",
+            338,
+            (17, 26, 7, 0, 4),
+        ),
+        (
+            "interrupted_after_claim_reduction_returns_no_progress",
+            341,
+            (18, 26, 9, 0, 4),
+        ),
+        (
+            "interrupted_after_checkpoint_resolution_returns_no_progress",
+            367,
+            (18, 26, 9, 25, 5),
+        ),
+    ];
+    let root = repository_root().join("fixtures/v1_draft/scenarios/interrupted");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    for (fixture_id, items, expected) in boundaries {
+        let mut budget = WorkBudget::new(1_000_000, items);
+        let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1())
+            .evaluate(&corpus, coordinate, &mut budget, &NeverCancelled)
+            .map_err(|error| format!("interruption boundary evaluation: {error:?}"))?;
+        let work = budget.consumed();
+        let observed = (
+            work.get(WorkCounter::Control),
+            work.get(WorkCounter::GraphNode) + work.get(WorkCounter::GraphEdge),
+            work.get(WorkCounter::Carrier),
+            work.get(WorkCounter::CheckpointItem),
+            work.get(WorkCounter::ApplyChange),
+        );
+        if report.completion() != nostr_automerge::Completion::BudgetExhausted
+            || observed != expected
+            || work.get(WorkCounter::Event) != 4
+            || work.get(WorkCounter::Assertion) != 280
+            || !report.canonical_controls().is_empty()
+            || !report.disposition_records().is_empty()
+            || !report.accepted_changes().is_empty()
+            || !report.pending_changes().is_empty()
+            || !report.excluded_changes().is_empty()
+            || !report.invalid_changes().is_empty()
+            || !report.heads().is_empty()
+            || !report.checkpoints().is_empty()
+            || report.document().is_some()
+        {
+            return Err(format!(
+                "{fixture_id} did not stop at its exact no-progress boundary: {observed:?}"
+            ));
+        }
+        write_fixture_with_execution(
+            &root,
+            fixture_id,
+            coordinate,
+            events.clone(),
+            &["NCRDT-CONF-010", "NCRDT-INTERRUPT-001"],
+            "remediation_v10_interruptions",
+            Vec::new(),
+            ScenarioBudget {
+                max_bytes: 1_000_000,
+                max_items: items,
+            },
+            None,
+        )?;
+    }
+    Ok(())
 }
 
 fn generate_remediation_v10_carrier_independence() -> Result<(), String> {
