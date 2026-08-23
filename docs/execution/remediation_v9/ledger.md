@@ -126,8 +126,9 @@ publication status remains `held`.
 | `step_1233` | `V-FULL-TS` | pass |
 | `step_1234` | `V-EVIDENCE` | pass |
 | `step_1235` | `V-RESOURCE` | pass |
-| `step_1236` | `V-RESOURCE` | active |
-| `step_1237` | `V-RESOURCE` | next |
+| `step_1236` | `V-RESOURCE` | pass |
+| `step_1237` | `V-RESOURCE` | active |
+| `step_1238` | `V-RESOURCE` | next |
 
 The completed report-authority checkpoint binds a closed inventory of complete
 and no-progress construction plus nine revision consumers to exact reviewed
@@ -279,7 +280,7 @@ conformance identity is the same canonical and serialized output pair above.
 The opaque private finalization record binds the exact seven-candidate
 `step_1227` through `step_1233` chain, two-tier settlement counts, typed-stop
 coverage, mutation families, and full private result identities without
-carrying private paths or execution details. There are 52 checkpoints including
+carrying private paths or execution details. There are 51 checkpoints including
 the active checkpoint remaining through
 `step_1287`.
 

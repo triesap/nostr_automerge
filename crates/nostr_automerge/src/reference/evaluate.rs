@@ -544,9 +544,12 @@ fn evaluate_branch_table(
                 preliminary_change_dispositions,
                 event_id,
                 &change_memo,
-            );
+                budget,
+                cancellation,
+            )?;
             if let Some(additional) = additional_prior.get(&event_id) {
                 for (hash, item) in additional {
+                    charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;
                     knowledge.entry(*hash).or_insert(*item);
                 }
             }
@@ -927,36 +930,48 @@ fn prior_change_knowledge(
     dispositions: &BTreeMap<ChangeHash, ProtocolDisposition>,
     selected_control: EventId,
     memo: &BatchChangeMemo,
-) -> BTreeMap<ChangeHash, PriorChangeKnowledge> {
-    let mut knowledge = selected_base
-        .iter()
-        .map(|hash| (*hash, PriorChangeKnowledge::AcceptedInBase))
-        .collect::<BTreeMap<_, _>>();
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<BTreeMap<ChangeHash, PriorChangeKnowledge>, Completion> {
+    let mut knowledge = BTreeMap::new();
+    for hash in selected_base {
+        charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;
+        knowledge.insert(*hash, PriorChangeKnowledge::AcceptedInBase);
+    }
     if let Some(hashes) = memo.hashes_by_control.get(&selected_control) {
         for hash in hashes {
+            charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;
             knowledge
                 .entry(*hash)
                 .or_insert(PriorChangeKnowledge::SameEpochCandidate);
         }
     }
-    knowledge.extend(
-        parent
-            .into_iter()
-            .flat_map(|result| result.accepted_state().accepted_closure())
-            .filter(|hash| !selected_base.contains(hash))
-            .map(|hash| (*hash, PriorChangeKnowledge::PrunedCanonicalAncestor)),
-    );
+    if let Some(parent) = parent {
+        for hash in parent.accepted_state().accepted_closure() {
+            charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;
+            if !selected_base.contains(hash) {
+                knowledge.insert(*hash, PriorChangeKnowledge::PrunedCanonicalAncestor);
+            }
+        }
+    }
     for (hash, control_ids) in &memo.controls_by_hash {
-        if control_ids
-            .iter()
-            .any(|control_id| *control_id != selected_control)
-        {
+        charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;
+        let mut other_control = false;
+        for control_id in control_ids {
+            charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)?;
+            if *control_id != selected_control {
+                other_control = true;
+                break;
+            }
+        }
+        if other_control {
             knowledge
                 .entry(*hash)
                 .or_insert(PriorChangeKnowledge::KnownOtherControl);
         }
     }
     for (hash, disposition) in dispositions {
+        charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;
         if *disposition == ProtocolDisposition::Invalid && !selected_base.contains(hash) {
             knowledge
                 .entry(*hash)
@@ -968,7 +983,20 @@ fn prior_change_knowledge(
             knowledge.insert(*hash, PriorChangeKnowledge::PriorEquivocationExcluded);
         }
     }
-    knowledge
+    Ok(knowledge)
+}
+
+fn charge_prior_knowledge_item(
+    counter: WorkCounter,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<(), Completion> {
+    if cancellation.is_cancelled() {
+        return Err(Completion::Cancelled);
+    }
+    budget
+        .charge(counter, 1)
+        .map_err(|_| Completion::BudgetExhausted)
 }
 
 fn accepted_state_for_closure(
@@ -1107,8 +1135,8 @@ mod tests {
 
     use super::{
         AcceptedAtControl, BatchChange, BatchChangeMemo, BatchControl, BatchEvaluationReport,
-        BranchEvaluationState, charge_control_closures, evaluate_batch,
-        propagate_control_parent_dispositions,
+        BranchEvaluationState, PriorChangeKnowledge, charge_control_closures, evaluate_batch,
+        prior_change_knowledge, propagate_control_parent_dispositions,
     };
     use crate::automerge_adapter::decode::decode_change;
     use crate::graph::actor_state::tests::candidate;
@@ -1135,6 +1163,94 @@ mod tests {
             BranchEvaluationState::Invalid.final_disposition(false),
             ProtocolDisposition::Invalid
         );
+    }
+
+    #[test]
+    fn prior_knowledge_is_charged_per_item_before_access() {
+        let selected_control = EventId::from_bytes([7; 32]);
+        let other_control = EventId::from_bytes([8; 32]);
+        let accepted = ChangeHash::from_bytes([1; 32]);
+        let same_epoch = ChangeHash::from_bytes([2; 32]);
+        let other = ChangeHash::from_bytes([3; 32]);
+        let invalid = ChangeHash::from_bytes([4; 32]);
+        let excluded = ChangeHash::from_bytes([5; 32]);
+        let memo = BatchChangeMemo {
+            hashes_by_control: BTreeMap::from([(selected_control, BTreeSet::from([same_epoch]))]),
+            controls_by_hash: BTreeMap::from([(other, BTreeSet::from([other_control]))]),
+            ..BatchChangeMemo::default()
+        };
+        let dispositions = BTreeMap::from([
+            (invalid, ProtocolDisposition::Invalid),
+            (excluded, ProtocolDisposition::Excluded),
+        ]);
+        let selected_base = BTreeSet::from([accepted]);
+
+        let mut exact = WorkBudget::new(0, 6);
+        let knowledge = prior_change_knowledge(
+            None,
+            &selected_base,
+            &dispositions,
+            selected_control,
+            &memo,
+            &mut exact,
+            &NeverCancelled,
+        );
+        assert!(knowledge.is_ok());
+        let knowledge = knowledge.unwrap_or_default();
+        assert_eq!(exact.consumed().get(WorkCounter::GraphNode), 5);
+        assert_eq!(exact.consumed().get(WorkCounter::Control), 1);
+        assert_eq!(
+            knowledge.get(&accepted),
+            Some(&PriorChangeKnowledge::AcceptedInBase)
+        );
+        assert_eq!(
+            knowledge.get(&same_epoch),
+            Some(&PriorChangeKnowledge::SameEpochCandidate)
+        );
+        assert_eq!(
+            knowledge.get(&other),
+            Some(&PriorChangeKnowledge::KnownOtherControl)
+        );
+        assert_eq!(
+            knowledge.get(&invalid),
+            Some(&PriorChangeKnowledge::KnownInvalid)
+        );
+        assert_eq!(
+            knowledge.get(&excluded),
+            Some(&PriorChangeKnowledge::PriorEquivocationExcluded)
+        );
+
+        let mut insufficient = WorkBudget::new(0, 5);
+        assert_eq!(
+            prior_change_knowledge(
+                None,
+                &selected_base,
+                &dispositions,
+                selected_control,
+                &memo,
+                &mut insufficient,
+                &NeverCancelled,
+            ),
+            Err(Completion::BudgetExhausted)
+        );
+        assert_eq!(insufficient.consumed().get(WorkCounter::GraphNode), 4);
+        assert_eq!(insufficient.consumed().get(WorkCounter::Control), 1);
+
+        let mut cancelled = WorkBudget::new(0, 6);
+        assert_eq!(
+            prior_change_knowledge(
+                None,
+                &selected_base,
+                &dispositions,
+                selected_control,
+                &memo,
+                &mut cancelled,
+                &|| true,
+            ),
+            Err(Completion::Cancelled)
+        );
+        assert_eq!(cancelled.consumed().get(WorkCounter::GraphNode), 0);
+        assert_eq!(cancelled.consumed().get(WorkCounter::Control), 0);
     }
 
     fn control(id: u8, parent: Option<u8>, changes: Vec<BatchChange>) -> BatchControl {

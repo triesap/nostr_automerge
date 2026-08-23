@@ -778,12 +778,6 @@ fn additional_prior_knowledge(
                     carrier: VerifiedCarrier::Control(control),
                     ..
                 }) if control.coordinate() == view.coordinate() => {
-                    charge_evaluation_work(
-                        budget,
-                        cancellation,
-                        WorkCounter::Control,
-                        u64::try_from(control.members().len()).unwrap_or(u64::MAX),
-                    )?;
                     all_unsupported = false;
                     all_invalid = false;
                 }
@@ -3070,23 +3064,21 @@ fn prepare_controls(
     let corpus = view.corpus();
     let coordinate = view.coordinate();
     let ancestry_index = build_control_ancestry_index(view, budget, cancellation)?;
-    let assumed_statefully_valid = view
-        .input_event_ids()
-        .filter(|event_id| {
-            matches!(
-                corpus.events.get(event_id),
-                Some(EventEvidence::VerifiedCarrier {
-                    carrier: VerifiedCarrier::Control(_),
-                    ..
-                })
-            )
-        })
-        .collect::<std::collections::BTreeSet<_>>();
-    let assumed_control_dispositions = assumed_statefully_valid
-        .iter()
-        .copied()
-        .map(|event_id| (event_id, ProtocolDisposition::Accepted))
-        .collect::<std::collections::BTreeMap<_, _>>();
+    let mut assumed_statefully_valid = std::collections::BTreeSet::new();
+    let mut assumed_control_dispositions = std::collections::BTreeMap::new();
+    for event_id in view.control_event_ids() {
+        charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
+        if matches!(
+            corpus.events.get(&event_id),
+            Some(EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::Control(_),
+                ..
+            })
+        ) {
+            assumed_statefully_valid.insert(event_id);
+            assumed_control_dispositions.insert(event_id, ProtocolDisposition::Accepted);
+        }
+    }
     let mut dispositions = std::collections::BTreeMap::new();
     let mut controls = Vec::new();
     for control_id in view.control_event_ids() {
