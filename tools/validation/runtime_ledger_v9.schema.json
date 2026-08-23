@@ -29,7 +29,8 @@
     "base64_proof",
     "rust_requirement_proofs",
     "report_finding_proofs",
-    "opaque_semantic_proofs"
+    "opaque_semantic_proofs",
+    "semantic_proof_mutations"
   ],
   "properties": {
     "schema": {"const": "nostr_automerge.runtime_ledger.v9.v1"},
@@ -615,8 +616,25 @@
         "report_sha256": {"const": "594b2510b9302ac040efa5a1225e9a07a90fc60045c9db941272f269c83796e2"},
         "schema_sha256": {"const": "0a7611451b17ce0888490cfb38da60801c4729088f4ef93ffe7bcac343baacbb"},
         "importer_sha256": {"const": "b16b534739d849269bb5a6433a0d05f66ed98b50fe33f73a5de73608dea6f024"},
-        "validator_sha256": {"const": "1327bf40b4927962f8f36633197d033c2028b0e8dcc2944aba47f24775f954b9"},
+        "validator_sha256": {"const": "6051c5f57f1813662e0c678adc811ee31c85f1815ad13f08558fdda19d19cbed"},
         "result_identity_sha256": {"const": "10f3954ebbe75de9f161ab029c2497b4af0bf264322a3d0ec7a78d51346f676c"},
+        "result": {"const": "pass"}
+      }
+    },
+    "semantic_proof_mutations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checkpoint", "candidate", "requirement_count", "opaque_requirement_count", "report_clause_count", "finding_count", "negative_mutation_count", "projection_sha256", "validator_sha256", "result"],
+      "properties": {
+        "checkpoint": {"const": "step_1280"},
+        "candidate": {"const": "cba1b43bd544d6d015ece1a216977ddebe249d8c"},
+        "requirement_count": {"const": 148},
+        "opaque_requirement_count": {"const": 113},
+        "report_clause_count": {"const": 21},
+        "finding_count": {"const": 21},
+        "negative_mutation_count": {"const": 20},
+        "projection_sha256": {"const": "bb79ec8f0b489c1d9c60af09b33a6992765cf7676000e4f29d814b051b1dbeac"},
+        "validator_sha256": {"const": "5c88f7c0701d77f55625b785fe16dd9af854a551ff3f3174c597b62b75012c3a"},
         "result": {"const": "pass"}
       }
     }

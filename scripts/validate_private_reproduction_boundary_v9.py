@@ -96,6 +96,7 @@ PYTHON_SURFACES = (
     "scripts/validate_report_finding_proofs_v10.py",
     "scripts/import_opaque_semantic_proofs_v10.py",
     "scripts/validate_opaque_semantic_proofs_v10.py",
+    "scripts/validate_semantic_proof_mutations_v10.py",
     "scripts/validate_opaque_boundary_gate_v9.py",
     "scripts/validate_opaque_resource_gate_v9.py",
     "scripts/validate_opaque_finalization_v9.py",
@@ -231,6 +232,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_report_finding_proofs_v10.py",
         "scripts/import_opaque_semantic_proofs_v10.py",
         "scripts/validate_opaque_semantic_proofs_v10.py",
+        "scripts/validate_semantic_proof_mutations_v10.py",
         "scripts/reproduce_remediation_v9.py",
         "scripts/validate_remediation_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
@@ -316,8 +318,13 @@ def validate_source_literal(
             or (pattern is COMMAND_TEXT and allow_command_token)
             or (
                 pattern is PACKAGE_SUFFIX_TEXT
-                and diagnostic.startswith(
-                    "source:scripts/validate_opaque_semantic_proofs_v10.py:"
+                and (
+                    diagnostic.startswith(
+                        "source:scripts/validate_opaque_semantic_proofs_v10.py:"
+                    )
+                    or diagnostic.startswith(
+                        "source:scripts/validate_semantic_proof_mutations_v10.py:"
+                    )
                 )
             ),
             f"{diagnostic}:pattern:{index}",

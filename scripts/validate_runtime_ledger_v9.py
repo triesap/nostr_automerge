@@ -52,6 +52,9 @@ OPAQUE_SEMANTIC_PROOF_IMPORTER_SHA256 = "b16b534739d849269bb5a6433a0d05f66ed98b5
 OPAQUE_SEMANTIC_PROOF_VALIDATOR = "scripts/validate_opaque_semantic_proofs_v10.py"
 OPAQUE_SEMANTIC_PROOF_VALIDATOR_SHA256 = "6051c5f57f1813662e0c678adc811ee31c85f1815ad13f08558fdda19d19cbed"
 OPAQUE_SEMANTIC_PROOF_IDENTITY = "10f3954ebbe75de9f161ab029c2497b4af0bf264322a3d0ec7a78d51346f676c"
+SEMANTIC_PROOF_MUTATION_VALIDATOR = "scripts/validate_semantic_proof_mutations_v10.py"
+SEMANTIC_PROOF_MUTATION_VALIDATOR_SHA256 = "5c88f7c0701d77f55625b785fe16dd9af854a551ff3f3174c597b62b75012c3a"
+SEMANTIC_PROOF_MUTATION_PROJECTION = "bb79ec8f0b489c1d9c60af09b33a6992765cf7676000e4f29d814b051b1dbeac"
 NEUTRAL_REPORT_SCHEMA = "fixtures/schema/report.schema.json"
 LEDGER = "implementation/runtime_ledger_v9.json"
 LEDGER_SCHEMA = "tools/validation/runtime_ledger_v9.schema.json"
@@ -72,7 +75,7 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "c49cef2ee1557c010609220e0a0f3e61b7395095042c047946a6d14f8909883a"
+    "6bf7b6417500fa74f62978841eb60f9ce445cb4f19241d95087c7a709a16d9d2"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
@@ -420,6 +423,7 @@ PREDECESSOR_CANDIDATES = (
     "6fbef81f8f12caef49ddee6fd5135d900bf22093",
     "3b3dd73a93cb4e33ab08a600ff6294538a5b91bd",
     "920c768946a2d33449905a0b0891942fa8fb9afe",
+    "cba1b43bd544d6d015ece1a216977ddebe249d8c",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -542,14 +546,11 @@ CLOSURE_PATHS = frozenset(
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
-        "reports/opaque_semantic_proofs_v10.json",
-        "scripts/import_opaque_semantic_proofs_v10.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
-        "scripts/validate_opaque_semantic_proofs_v10.py",
+        "scripts/validate_semantic_proof_mutations_v10.py",
         "scripts/validate_runtime_ledger_v9.py",
         "scripts/validate_spec.py",
         "tools/nostr_automerge_xtask/src/validate.rs",
-        "tools/validation/opaque_semantic_proofs_v10.schema.json",
         "tools/validation/runtime_ledger_v9.schema.json",
     }
 )
@@ -564,10 +565,7 @@ CLOSURE_AMEND_PATHS = frozenset(
 )
 CLOSURE_NEW_PATHS = frozenset(
     {
-        "reports/opaque_semantic_proofs_v10.json",
-        "scripts/import_opaque_semantic_proofs_v10.py",
-        "scripts/validate_opaque_semantic_proofs_v10.py",
-        "tools/validation/opaque_semantic_proofs_v10.schema.json",
+        "scripts/validate_semantic_proof_mutations_v10.py",
     }
 )
 EXPECTED_GATES = (
@@ -688,6 +686,7 @@ EXPECTED_GATES = (
     ("V-FULL-TS",),
     ("V-CONF",),
     ("V-FULL-RUST",),
+    ("V-EVIDENCE",),
     ("V-EVIDENCE",),
     ("V-EVIDENCE",),
     ("V-EVIDENCE",),
@@ -883,6 +882,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-B64-001", "NCRDT-EVIDENCE-006"),
     ("NCRDT-EVIDENCE-006",),
     ("NCRDT-EVIDENCE-006",),
+    ("NCRDT-EVIDENCE-006",),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -1013,6 +1013,7 @@ EXPECTED_FINDINGS = (
     (),
     (),
     ("FINDING_078",),
+    REPRODUCED_IDS,
     REPRODUCED_IDS,
 )
 FORBIDDEN_KEY_WORDS = {
@@ -2375,6 +2376,7 @@ def validate_runtime_ledger(
         "rust_requirement_proofs",
         "report_finding_proofs",
         "opaque_semantic_proofs",
+        "semantic_proof_mutations",
     }
     require(set(ledger) == expected_keys, "ledger:keys")
     require(ledger.get("schema") == "nostr_automerge.runtime_ledger.v9.v1", "ledger:schema")
@@ -2953,6 +2955,27 @@ def validate_runtime_ledger(
         },
         "ledger:opaque_semantic_proofs_binding",
     )
+    require(
+        file_digest(SEMANTIC_PROOF_MUTATION_VALIDATOR)
+        == SEMANTIC_PROOF_MUTATION_VALIDATOR_SHA256,
+        "ledger:semantic_proof_mutation_validator",
+    )
+    require(
+        ledger.get("semantic_proof_mutations")
+        == {
+            "checkpoint": "step_1280",
+            "candidate": "cba1b43bd544d6d015ece1a216977ddebe249d8c",
+            "requirement_count": 148,
+            "opaque_requirement_count": 113,
+            "report_clause_count": 21,
+            "finding_count": 21,
+            "negative_mutation_count": 20,
+            "projection_sha256": SEMANTIC_PROOF_MUTATION_PROJECTION,
+            "validator_sha256": SEMANTIC_PROOF_MUTATION_VALIDATOR_SHA256,
+            "result": "pass",
+        },
+        "ledger:semantic_proof_mutations_binding",
+    )
     validate_no_leak(ledger, "ledger:boundary")
 
 
@@ -3237,6 +3260,9 @@ def mutation_self_test(
     false_hold = copy.deepcopy(ledger)
     false_hold["findings"]["held_ids"] = []
     ledger_mutations.append(("ledger_false_hold", false_hold))
+    stale_semantic_mutation = copy.deepcopy(ledger)
+    stale_semantic_mutation["semantic_proof_mutations"]["projection_sha256"] = "f" * 64
+    ledger_mutations.append(("ledger_semantic_proof_mutation", stale_semantic_mutation))
     premature_terminal = copy.deepcopy(ledger)
     premature_terminal["status"] = "code_complete_publication_held"
     premature_terminal["findings"]["status"] = "code_complete_publication_held"

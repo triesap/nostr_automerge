@@ -419,6 +419,11 @@ clauses, and all 21 findings to 99 exact opaque fixture, test, or hold IDs. The
 public record contains no private path, command, title, or log; its import binds
 the opaque evidence and implementation candidates and record identity exactly.
 
+The combined mutation gate cross-checks all 148 public requirement rows against
+the 113-row opaque overlay and all report-clause and finding rows. Twenty exact
+missing, duplicate, order, stale, generic, category, relevance, held-status,
+skipped, namespace, leak-shaped, and coordinated mutations fail closed.
+
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 `FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`
