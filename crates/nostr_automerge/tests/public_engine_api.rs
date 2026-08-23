@@ -3602,6 +3602,75 @@ fn automerge_application_and_materialization_are_charged() {
 }
 
 #[test]
+fn complete_report_resource_boundaries_are_exact_and_deterministic() {
+    let scenario = signed_engine_scenario();
+    let mut builder = CorpusBuilder::new();
+    for event in [scenario.change, scenario.control] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    let corpus = builder.finish();
+    let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
+
+    let run = |max_bytes, max_items, cancel_after: Option<u64>| {
+        let mut budget = WorkBudget::new(max_bytes, max_items);
+        let observations = Cell::new(0_u64);
+        let report = if let Some(cancel_after) = cancel_after {
+            evaluator.evaluate_report(&corpus, scenario.coordinate, &mut budget, &|| {
+                let current = observations.get();
+                observations.set(current + 1);
+                current >= cancel_after
+            })
+        } else {
+            evaluator.evaluate_report(&corpus, scenario.coordinate, &mut budget, &NeverCancelled)
+        };
+        (report, budget, observations.get())
+    };
+    let (ample, ample_budget, _) = run(1_000_000, 1_000_000, None);
+    assert_eq!(ample.completion(), Completion::Complete);
+    let consumed_bytes = 1_000_000 - ample_budget.remaining().0;
+    let consumed_items = 1_000_000 - ample_budget.remaining().1;
+    assert!(consumed_bytes > 0 && consumed_items > 0);
+
+    let (exact, exact_budget, _) = run(consumed_bytes, consumed_items, None);
+    assert_eq!(exact, ample);
+    assert_eq!(exact_budget.remaining(), (0, 0));
+    assert_eq!(exact_budget.consumed(), ample_budget.consumed());
+
+    let (item_short, item_short_budget, _) = run(consumed_bytes, consumed_items - 1, None);
+    assert_eq!(item_short.completion(), Completion::BudgetExhausted);
+    assert_exact_no_progress_report(&item_short);
+    assert_eq!(item_short_budget.remaining().1, 0);
+
+    let (byte_short, byte_short_budget, _) = run(consumed_bytes - 1, consumed_items, None);
+    assert_eq!(byte_short.completion(), Completion::BudgetExhausted);
+    assert_exact_no_progress_report(&byte_short);
+    assert!(byte_short_budget.remaining().0 < consumed_bytes - 1);
+    assert!(
+        byte_short_budget.consumed().get(WorkCounter::DecodeByte)
+            < ample_budget.consumed().get(WorkCounter::DecodeByte)
+    );
+
+    let (observed, observed_budget, observations) =
+        run(consumed_bytes, consumed_items, Some(u64::MAX));
+    assert_eq!(observed, ample);
+    assert_eq!(observed_budget.consumed(), ample_budget.consumed());
+    let final_observation = observations.saturating_sub(1);
+    let (cancelled, _, _) = run(consumed_bytes, consumed_items, Some(final_observation));
+    assert_eq!(cancelled.completion(), Completion::Cancelled);
+    assert_exact_no_progress_report(&cancelled);
+
+    let document_bytes = ample.document().map_or(0, |document| document.byte_len());
+    assert!(document_bytes > 0);
+    assert!(
+        ample_budget.consumed().get(WorkCounter::DecodeByte)
+            >= u64::try_from(document_bytes).unwrap_or(u64::MAX) * 2
+    );
+}
+
+#[test]
 fn accepted_empty_history_has_a_real_document_view() {
     let scenario = signed_engine_scenario();
     let mut builder = CorpusBuilder::new();

@@ -343,6 +343,7 @@ PREDECESSOR_CANDIDATES = (
     "ef93f361f16ace0fe0a7bc5c61b020485bb6f287",
     "f74a7dae5bcb6a10b67e9596bf368db2b2148936",
     "627e01f189149592150b47f21ce556b606b70ed9",
+    "fec9ef4c38c4044902285d9bcfadf2f078dc3a6e",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -377,7 +378,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "crates/nostr_automerge/tests/public_engine_api.rs",
-        "c2c977eaad01ee38ac8dc0f69bf11448b6eacfb33fa9febb277bbe372a9ac63d",
+        "405bd0bd2521ba7ac05d38761d65572a5610662ebdcb8419dd7ccf4158954343",
     ),
     (
         "tools/nostr_automerge_conformance/src/expected.rs",
@@ -389,7 +390,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "tools/nostr_automerge_conformance/src/fixture_generation.rs",
-        "fd6ccb9cad5c3067f31c9447c50ec73f6b30cb62a4a9d8fc8f9278fc9eadfb4b",
+        "5137474b54847e00aa488d97dee5fefba10019d8e5607a15343d36b807d20613",
     ),
     (
         "tools/nostr_automerge_conformance/src/report_json.rs",
@@ -460,18 +461,25 @@ HISTORICAL_STEP_1217_CLOSURE_PATHS = frozenset(
 )
 CLOSURE_PATHS = frozenset(
     {
-        "crates/nostr_automerge/src/automerge_adapter/materialized_view.rs",
-        "crates/nostr_automerge/src/engine/evaluation_report.rs",
-        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "crates/nostr_automerge/src/graph/scaling.rs",
         "crates/nostr_automerge/tests/public_engine_api.rs",
-        "docs/api/public_engine.md",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
-        "docs/resource_accounting_v6.md",
+        "fixtures/distribution/manifest_v9.json",
+        "fixtures/v1_draft/scenarios/resource/parent_propagation_exact_budget.fixture.json",
+        "fixtures/v1_draft/scenarios/resource/parent_propagation_exact_budget.input.json",
+        "fixtures/v1_draft/scenarios/resource/unrelated_control_flood_exact_budget.fixture.json",
+        "fixtures/v1_draft/scenarios/resource/unrelated_control_flood_exact_budget.input.json",
+        "fixtures/v1_draft/scenarios/scope/foreign_claim_flood_exact_budget.fixture.json",
+        "fixtures/v1_draft/scenarios/scope/foreign_claim_flood_exact_budget.input.json",
+        "fixtures/v1_draft/scenarios/scope/unrelated_valid_checkpoints_exact_budget.fixture.json",
+        "fixtures/v1_draft/scenarios/scope/unrelated_valid_checkpoints_exact_budget.input.json",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
         "scripts/validate_private_reproduction_boundary_v9.py",
+        "scripts/validate_report_parity_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
+        "tools/nostr_automerge_conformance/src/fixture_generation.rs",
     }
 )
 CLOSURE_AMEND_ADDITION = "docs/execution/remediation_v9/ledger.md"
@@ -563,6 +571,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-FULL-TS",),
     ("V-EVIDENCE",),
+    ("V-RESOURCE",),
     ("V-RESOURCE",),
     ("V-RESOURCE",),
     ("V-RESOURCE",),
@@ -724,6 +733,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -816,6 +826,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_077",),
     ("FINDING_077",),
     ("FINDING_077",),
+    ("FINDING_084",),
     ("FINDING_084",),
     ("FINDING_084",),
 )

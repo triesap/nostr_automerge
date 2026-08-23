@@ -104,6 +104,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
         "crates/nostr_automerge/src/evidence/document_view.rs",
         "crates/nostr_automerge/src/evidence/indexes.rs",
+        "crates/nostr_automerge/src/graph/scaling.rs",
         "crates/nostr_automerge/src/integrity.rs",
         "crates/nostr_automerge/src/reference/apply.rs",
         "crates/nostr_automerge/src/reference/epoch_engine.rs",
@@ -253,6 +254,8 @@ def is_public_route(value: str) -> bool:
         value in LEGITIMATE_PUBLIC_ROUTES
         or value in LEGITIMATE_PUBLIC_COMMANDS
         or value.startswith("fixtures/v1_draft/scenarios/checkpoints/")
+        or value.startswith("fixtures/v1_draft/scenarios/resource/")
+        or value.startswith("fixtures/v1_draft/scenarios/scope/")
         or value.startswith("fixtures/v1_draft/checkpoints/")
         or value in {row["value"] for row in APPROVED_WIRE_DOMAINS}
     )

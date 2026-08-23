@@ -5453,3 +5453,120 @@ fn sha256(bytes: &[u8]) -> String {
         .map(|byte| format!("{byte:02x}"))
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{minimum_complete_item_budget, repository_root};
+    use crate::expected::ExpectedReport;
+    use crate::report_json::write_canonical_report;
+    use crate::runner::{StateAssertionPolicy, generic_report};
+    use crate::scenario::{ScenarioBudget, SignedScenarioInput};
+    use nostr_automerge::{DocumentCoordinate, ProtocolRevision, RawEventBytes};
+
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn exact_resource_fixtures_bind_budget_isolation_and_output_bytes() {
+        let cases = [
+            ("resource", "parent_propagation_exact_budget", false),
+            ("resource", "unrelated_control_flood_exact_budget", true),
+            ("scope", "foreign_claim_flood_exact_budget", true),
+            ("scope", "unrelated_valid_checkpoints_exact_budget", true),
+        ];
+
+        for (family, fixture_id, has_unrelated_flood) in cases {
+            let path = repository_root()
+                .join("fixtures/v1_draft/scenarios")
+                .join(family)
+                .join(format!("{fixture_id}.input.json"));
+            let signed = SignedScenarioInput::parse(
+                &std::fs::read(&path).expect("checked-in signed resource input"),
+            )
+            .expect("closed signed resource input");
+            let coordinate = signed
+                .coordinate
+                .parse::<DocumentCoordinate>()
+                .expect("signed resource coordinate");
+            let events = signed
+                .raw_events
+                .iter()
+                .map(|event| {
+                    RawEventBytes::new(
+                        &event.decoded().expect("signed resource Event bytes"),
+                        ProtocolRevision::draft_v1(),
+                    )
+                    .expect("bounded signed resource Event")
+                })
+                .collect::<Vec<_>>();
+            let exact = minimum_complete_item_budget(coordinate, &events)
+                .expect("measured exact resource budget");
+            assert_eq!(signed.budget.max_items, exact, "{fixture_id}");
+
+            let expected = serde_json::from_value::<ExpectedReport>(signed.expected_report.clone())
+                .expect("closed expected resource report");
+            let expected_bytes =
+                write_canonical_report(&expected).expect("canonical expected resource report");
+            let exact_report = generic_report(
+                fixture_id,
+                signed.clone().into_scenario(),
+                StateAssertionPolicy::None,
+            )
+            .expect("exact resource report");
+            assert_eq!(
+                write_canonical_report(&exact_report).expect("canonical exact resource report"),
+                expected_bytes,
+                "{fixture_id}",
+            );
+            let mut ample = signed.clone().into_scenario();
+            ample.budget = ScenarioBudget {
+                max_bytes: 1_000_000,
+                max_items: 1_000_000,
+            };
+            let ample_report = generic_report(fixture_id, ample, StateAssertionPolicy::None)
+                .expect("ample resource report");
+            assert_eq!(
+                write_canonical_report(&ample_report).expect("canonical ample resource report"),
+                expected_bytes,
+                "{fixture_id}",
+            );
+
+            let mut cancelled = signed.clone().into_scenario();
+            cancelled.cancel_after = Some(0);
+            let cancelled = generic_report(fixture_id, cancelled, StateAssertionPolicy::None)
+                .expect("cancelled resource report");
+            assert_eq!(cancelled.completion, "cancelled", "{fixture_id}");
+            assert!(cancelled.canonical_controls.is_empty(), "{fixture_id}");
+            assert!(cancelled.disposition_records.is_empty(), "{fixture_id}");
+
+            if has_unrelated_flood {
+                let coordinate_text = signed.coordinate.as_str();
+                let target_events = events
+                    .iter()
+                    .filter(|event| {
+                        serde_json::from_slice::<serde_json::Value>(event.as_bytes())
+                            .ok()
+                            .and_then(|value| value.get("tags").cloned())
+                            .and_then(|tags| tags.as_array().cloned())
+                            .is_some_and(|tags| {
+                                tags.iter().any(|tag| {
+                                    tag.as_array().is_some_and(|items| {
+                                        items.first().and_then(serde_json::Value::as_str)
+                                            == Some("a")
+                                            && items.get(1).and_then(serde_json::Value::as_str)
+                                                == Some(coordinate_text)
+                                    })
+                                })
+                            })
+                    })
+                    .cloned()
+                    .collect::<Vec<_>>();
+                assert!(target_events.len() < events.len(), "{fixture_id}");
+                assert_eq!(
+                    minimum_complete_item_budget(coordinate, &target_events)
+                        .expect("target-only exact resource budget"),
+                    exact,
+                    "{fixture_id}",
+                );
+            }
+        }
+    }
+}

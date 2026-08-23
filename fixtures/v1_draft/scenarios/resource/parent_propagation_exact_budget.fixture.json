@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "parent_propagation_exact_budget.input.json",
-      "sha256": "5e3fddc80d96ae01c023553689190a1f95f204952d0fdecd26c6047e42e529c9"
+      "sha256": "1fe7d83ce7c5c0abbacf477733ceaaad90f86e34ac7e44b65afbf9e47eb8ed56"
     }
   ],
   "provenance": {

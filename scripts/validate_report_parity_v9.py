@@ -25,6 +25,30 @@ APPROVED_SCHEMA_SHA256 = "e8753412f0741604155a0d8ab31efe0f65ce85343f4881d0c24ff0
 APPROVED_RUNNER_SHA256 = "19ea36eeb55711004b7a1470e6adeff15980ea5952d00ff9f28e347f082fef33"
 APPROVED_RESULT_IDENTITY = "aaf76821bb0fa463c4b71c1f27d6c194dea1b5c9790b505e04d3c810b898059d"
 APPROVED_PUBLIC_MANIFEST = "bbb3802490ac758614fecad9ef7c37586da5af54c150a472f4ea7611e8eaa659"
+RESOURCE_BUDGET_BASE = "fec9ef4c38c4044902285d9bcfadf2f078dc3a6e"
+APPROVED_RESOURCE_MANIFEST = "4c6866b91bffbeba9610c4602b99abfc7e5a16c9d262d6e4d624a4e3a9537f9a"
+RESOURCE_BUDGET_TRANSITIONS = (
+    (
+        "fixtures/v1_draft/scenarios/resource/parent_propagation_exact_budget.input.json",
+        2_288,
+        6_912,
+    ),
+    (
+        "fixtures/v1_draft/scenarios/resource/unrelated_control_flood_exact_budget.input.json",
+        68,
+        110,
+    ),
+    (
+        "fixtures/v1_draft/scenarios/scope/foreign_claim_flood_exact_budget.input.json",
+        68,
+        110,
+    ),
+    (
+        "fixtures/v1_draft/scenarios/scope/unrelated_valid_checkpoints_exact_budget.input.json",
+        140,
+        264,
+    ),
+)
 APPROVED_REPORT_SCHEMA = "08a88d5ad7049203bb766dc763601a6c5311a70e631fa35ab62c164203cd8e1c"
 APPROVED_CANONICAL_OUTPUT = "cfb32cbf0f2248470ae07d7e42f78301df9014afc2822d622e2c260c8c60b5c6"
 APPROVED_SERIALIZED_OUTPUT = "edd05b0ee5f09f8b4fda87b3bf15a1988141a371cd4b13f504a49b27ad345ed4"
@@ -94,6 +118,17 @@ def load_object(path: Path) -> tuple[bytes, dict[str, Any]]:
     value = json.loads(raw)
     require(isinstance(value, dict), f"report_parity:not_object:{path.name}")
     return raw, value
+
+
+def candidate_bytes(candidate: str, relative: str) -> bytes:
+    result = subprocess.run(
+        ["git", "show", f"{candidate}:{relative}"],
+        cwd=ROOT,
+        capture_output=True,
+        check=False,
+    )
+    require(result.returncode == 0, f"report_parity:candidate_path:{relative}")
+    return result.stdout
 
 
 def canonical_bytes(value: object) -> bytes:
@@ -172,9 +207,87 @@ def validate_neutral_schema(report: dict[str, Any]) -> None:
     require(authority["schema"] == "nostr_automerge.report.v1" and authority["result"] == "pass", "report_parity:neutral_authority")
 
 
+def validate_resource_budget_transition(
+    manifest_raw: bytes, manifest: dict[str, Any]
+) -> None:
+    require(
+        sha256_bytes(manifest_raw) == APPROVED_RESOURCE_MANIFEST,
+        "report_parity:resource_manifest_sha256",
+    )
+    historical_raw = candidate_bytes(
+        RESOURCE_BUDGET_BASE, "fixtures/distribution/manifest_v9.json"
+    )
+    require(
+        sha256_bytes(historical_raw) == APPROVED_PUBLIC_MANIFEST,
+        "report_parity:historical_manifest_sha256",
+    )
+    historical = json.loads(historical_raw)
+    require(isinstance(historical, dict), "report_parity:historical_manifest_shape")
+    historical_files = {
+        str(row["path"]): str(row["sha256"]) for row in historical["files"]
+    }
+    projected = copy.deepcopy(manifest)
+    projected_files = {str(row["path"]): row for row in projected["files"]}
+    changed_paths: set[str] = set()
+
+    for input_path, old_budget, new_budget in RESOURCE_BUDGET_TRANSITIONS:
+        metadata_path = input_path.replace(".input.json", ".fixture.json")
+        old_input_raw = candidate_bytes(RESOURCE_BUDGET_BASE, input_path)
+        new_input_raw = (ROOT / input_path).read_bytes()
+        old_input = json.loads(old_input_raw)
+        new_input = json.loads(new_input_raw)
+        require(
+            old_input["budget"]["max_items"] == old_budget
+            and new_input["budget"]["max_items"] == new_budget,
+            f"report_parity:resource_budget:{input_path}",
+        )
+        normalized_input = copy.deepcopy(new_input)
+        normalized_input["budget"]["max_items"] = old_budget
+        require(
+            normalized_input == old_input,
+            f"report_parity:resource_input_delta:{input_path}",
+        )
+
+        old_metadata = json.loads(candidate_bytes(RESOURCE_BUDGET_BASE, metadata_path))
+        new_metadata_raw = (ROOT / metadata_path).read_bytes()
+        new_metadata = json.loads(new_metadata_raw)
+        require(
+            new_metadata["inputs"][0]["sha256"] == sha256_bytes(new_input_raw),
+            f"report_parity:resource_input_binding:{input_path}",
+        )
+        normalized_metadata = copy.deepcopy(new_metadata)
+        normalized_metadata["inputs"][0]["sha256"] = old_metadata["inputs"][0][
+            "sha256"
+        ]
+        require(
+            normalized_metadata == old_metadata,
+            f"report_parity:resource_metadata_delta:{metadata_path}",
+        )
+        for path in (input_path, metadata_path):
+            require(path in projected_files, f"report_parity:resource_manifest_path:{path}")
+            projected_files[path]["sha256"] = historical_files[path]
+            changed_paths.add(path)
+
+    require(
+        projected == historical,
+        "report_parity:resource_manifest_delta",
+    )
+    actual_changed = {
+        path
+        for path, digest in {
+            str(row["path"]): str(row["sha256"]) for row in manifest["files"]
+        }.items()
+        if historical_files.get(path) != digest
+    }
+    require(
+        actual_changed == changed_paths,
+        "report_parity:resource_manifest_inventory",
+    )
+
+
 def distribution_projection() -> dict[str, Any]:
     manifest_raw, manifest = load_object(MANIFEST)
-    require(sha256_bytes(manifest_raw) == APPROVED_PUBLIC_MANIFEST, "report_parity:manifest_sha256")
+    validate_resource_budget_transition(manifest_raw, manifest)
     fixtures = manifest.get("fixtures")
     require(isinstance(fixtures, list) and len(fixtures) == 180, "report_parity:fixture_count")
     fixture_ids = tuple(str(row.get("fixture_id")) for row in fixtures)
@@ -234,7 +347,7 @@ def distribution_projection() -> dict[str, Any]:
     }
     serialized = json.dumps(distribution, separators=(",", ":")).encode() + b"\n"
     return {
-        "fixture_manifest_sha256": sha256_bytes(manifest_raw),
+        "fixture_manifest_sha256": APPROVED_PUBLIC_MANIFEST,
         "fixture_count": len(report_rows),
         "delivery_permutations": 8,
         "processes": 2,

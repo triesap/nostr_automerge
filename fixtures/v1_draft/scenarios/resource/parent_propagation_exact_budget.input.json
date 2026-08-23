@@ -1,7 +1,7 @@
 {
   "budget": {
     "max_bytes": 1000000,
-    "max_items": 2288
+    "max_items": 6912
   },
   "cancel_after": null,
   "coordinate": "31624:9611ba340bce00a594f1ffb1294974af80e1301e49597378732fd77bbdedf454:dbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdbdb",

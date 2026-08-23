@@ -139,8 +139,9 @@ fn expanded_control_actor_conflict_and_projection_models_are_bounded() {
 
     let projection_work = |depth: usize| {
         let Some(bytes) = nested_map_bytes(depth) else {
-            return 0;
+            return (0, 0);
         };
+        let byte_len = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
         let mut budget = WorkBudget::new(u64::MAX, u64::MAX);
         let view = MaterializedDocumentView::from_canonical_bytes_metered(
             bytes,
@@ -148,10 +149,16 @@ fn expanded_control_actor_conflict_and_projection_models_are_bounded() {
             &NeverCancelled,
         );
         assert!(view.is_ok());
-        budget.consumed().get(WorkCounter::Assertion)
+        assert_eq!(budget.consumed().get(WorkCounter::DecodeByte), byte_len * 2);
+        (
+            budget.consumed().get(WorkCounter::Assertion),
+            budget.consumed().get(WorkCounter::DecodeByte),
+        )
     };
     let shallow = projection_work(32);
     let deep = projection_work(64);
-    assert!(shallow > 0 && deep > shallow);
-    assert!(deep <= shallow * 5, "{shallow} {deep}");
+    assert!(shallow.0 > 0 && deep.0 > shallow.0);
+    assert!(deep.0 <= shallow.0 * 5, "{shallow:?} {deep:?}");
+    assert!(deep.1 > shallow.1);
+    assert!(deep.1 <= shallow.1 * 3, "{shallow:?} {deep:?}");
 }

@@ -10,7 +10,7 @@
       "media_type": "application/json",
       "name": "signed_scenario",
       "path": "foreign_claim_flood_exact_budget.input.json",
-      "sha256": "c9bfa1c84fcee8f1060368b4ff1e1c951a7b2b8d9a59cc76cf70d9b1fc54e869"
+      "sha256": "d9a7e9671f3726b476c34a7f0caa627de57551978117260002abf52247b10d7c"
     }
   ],
   "provenance": {

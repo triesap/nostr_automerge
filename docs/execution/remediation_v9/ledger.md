@@ -246,12 +246,13 @@ successfully validated complete report. Constructor failure or an incomplete
 candidate fails the permit, forfeits both ledgers, returns a typed error, and
 cannot refund reserved target capacity or fabricate a completion result.
 
-The completed checkpoint-graph checkpoint charges embedded change, operation,
-dependency, closure, head, history, Automerge decode, and apply traversals with
-checked counters and cooperative stops. The active report-resource checkpoint
-moves report copies and digest work under their named reservations, reserves a
-checked target-derived invariant bound, reuses the materialized-document
-authority digest, and eliminates nested carrier-to-hash scans.
+The completed report-resource checkpoint moves report copies and digest work
+under their named reservations, reserves a checked target-derived invariant
+bound, reuses the materialized-document authority digest, and eliminates nested
+carrier-to-hash scans. The active resource-regression checkpoint binds exact
+byte and item budgets, exact predecessor and completion boundaries, cancellation, unrelated-evidence
+isolation, output byte identity, and deterministic scaling. Four signed exact-
+budget fixtures are recalibrated without changing their expected reports.
 
 The authority projection is monotonic from `checkpoint_expectations_corrected` to
 `distribution_complete`. It records 148 requirements now and at completion,
@@ -282,7 +283,7 @@ conformance identity is the same canonical and serialized output pair above.
 The opaque private finalization record binds the exact seven-candidate
 `step_1227` through `step_1233` chain, two-tier settlement counts, typed-stop
 coverage, mutation families, and full private result identities without
-carrying private paths or execution details. There are 46 checkpoints including
+carrying private paths or execution details. There are 45 checkpoints including
 the active checkpoint remaining through
 `step_1287`.
 
