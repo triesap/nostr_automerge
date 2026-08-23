@@ -81,6 +81,58 @@ pub(crate) fn validate_retained_writer_frontier(
     Ok(())
 }
 
+pub(crate) fn validate_retained_writer_frontier_metered(
+    parent: &ValidatedControlContent,
+    child: &ValidatedControlContent,
+    view: &ParentEpochView,
+    visit: &mut impl FnMut() -> Result<(), crate::Completion>,
+) -> Result<Result<(), TransitionError>, crate::Completion> {
+    let mut closure = BTreeSet::new();
+    let mut stack = child.base_heads.clone();
+    while let Some(hash) = stack.pop() {
+        visit()?;
+        if !view.contains(&hash) {
+            return Ok(Err(TransitionError::MissingBaseEvidence));
+        }
+        if closure.insert(hash)
+            && let Some(dependencies) = view.dependencies(&hash)
+        {
+            for dependency in dependencies {
+                visit()?;
+                stack.push(*dependency);
+            }
+        }
+    }
+    for grant in &parent.members {
+        visit()?;
+        let mut retained_writer = false;
+        for role in &grant.roles {
+            visit()?;
+            if *role == Role::Write {
+                retained_writer = true;
+                break;
+            }
+        }
+        if retained_writer {
+            retained_writer = false;
+            for child_grant in &child.members {
+                visit()?;
+                if child_grant.device == grant.device {
+                    retained_writer = true;
+                    break;
+                }
+            }
+        }
+        if retained_writer && let Some(highest) = view.writer_contribution(&grant.actor) {
+            visit()?;
+            if !closure.contains(&highest) {
+                return Ok(Err(TransitionError::RetainedWriterFrontier));
+            }
+        }
+    }
+    Ok(Ok(()))
+}
+
 pub(crate) fn validate_terminal_child(
     parent: &ValidatedControlContent,
     child: &ValidatedControlContent,
@@ -140,6 +192,43 @@ pub(crate) fn validate_no_reintroduction(
     Ok(())
 }
 
+pub(crate) fn validate_no_reintroduction_metered(
+    ancestry: &[&ValidatedControlContent],
+    child: &ValidatedControlContent,
+    visit: &mut impl FnMut() -> Result<(), crate::Completion>,
+) -> Result<Result<(), TransitionError>, crate::Completion> {
+    let mut active = BTreeSet::<DevicePublicKey>::new();
+    let mut removed = BTreeSet::<DevicePublicKey>::new();
+    for control in ancestry {
+        visit()?;
+        let mut next = BTreeSet::new();
+        for grant in &control.members {
+            visit()?;
+            next.insert(grant.device);
+        }
+        for device in &active {
+            visit()?;
+            if !next.contains(device) {
+                removed.insert(*device);
+            }
+        }
+        for device in &next {
+            visit()?;
+            if removed.contains(device) {
+                return Ok(Err(TransitionError::DeviceReintroduced));
+            }
+        }
+        active = next;
+    }
+    for grant in &child.members {
+        visit()?;
+        if removed.contains(&grant.device) {
+            return Ok(Err(TransitionError::DeviceReintroduced));
+        }
+    }
+    Ok(Ok(()))
+}
+
 pub(crate) fn validate_account_mapping(
     parent: &ValidatedControlContent,
     child: &ValidatedControlContent,
@@ -155,6 +244,27 @@ pub(crate) fn validate_account_mapping(
         }
     }
     Ok(())
+}
+
+pub(crate) fn validate_account_mapping_metered(
+    parent: &ValidatedControlContent,
+    child: &ValidatedControlContent,
+    visit: &mut impl FnMut() -> Result<(), crate::Completion>,
+) -> Result<Result<(), TransitionError>, crate::Completion> {
+    for child_grant in &child.members {
+        visit()?;
+        for parent_grant in &parent.members {
+            visit()?;
+            if parent_grant.device == child_grant.device {
+                visit()?;
+                if parent_grant.account != child_grant.account {
+                    return Ok(Err(TransitionError::AccountChanged));
+                }
+                break;
+            }
+        }
+    }
+    Ok(Ok(()))
 }
 
 pub(crate) fn validate_monotonic_roles(
@@ -175,6 +285,38 @@ pub(crate) fn validate_monotonic_roles(
         }
     }
     Ok(())
+}
+
+pub(crate) fn validate_monotonic_roles_metered(
+    parent: &ValidatedControlContent,
+    child: &ValidatedControlContent,
+    visit: &mut impl FnMut() -> Result<(), crate::Completion>,
+) -> Result<Result<(), TransitionError>, crate::Completion> {
+    for child_grant in &child.members {
+        visit()?;
+        for parent_grant in &parent.members {
+            visit()?;
+            if parent_grant.device != child_grant.device {
+                continue;
+            }
+            for child_role in &child_grant.roles {
+                visit()?;
+                let mut found = false;
+                for parent_role in &parent_grant.roles {
+                    visit()?;
+                    if parent_role == child_role {
+                        found = true;
+                        break;
+                    }
+                }
+                if !found {
+                    return Ok(Err(TransitionError::RoleEscalation));
+                }
+            }
+            break;
+        }
+    }
+    Ok(Ok(()))
 }
 
 #[cfg(test)]

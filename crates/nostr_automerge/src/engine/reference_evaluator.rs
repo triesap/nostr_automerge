@@ -10,8 +10,8 @@ use crate::checkpoint::{
 use crate::conformance::dispositions_digest::{disposition_items, dispositions_digest};
 use crate::conformance::history_digest::history_digest;
 use crate::control::candidate::{
-    CandidateResult, evaluate_account_continuity, evaluate_device_ancestry,
-    evaluate_parent_continuity, evaluate_role_continuity, evaluate_terminal_continuity,
+    CandidateResult, evaluate_account_continuity_metered, evaluate_device_ancestry_metered,
+    evaluate_parent_continuity, evaluate_role_continuity_metered, evaluate_terminal_continuity,
 };
 use crate::control::genesis::classify_genesis;
 use crate::control::reference_state::{
@@ -3066,7 +3066,7 @@ fn prepare_controls(
     let ancestry_index = build_control_ancestry_index(view, budget, cancellation)?;
     let mut assumed_statefully_valid = std::collections::BTreeSet::new();
     let mut assumed_control_dispositions = std::collections::BTreeMap::new();
-    for event_id in view.control_event_ids() {
+    for event_id in view.input_event_ids() {
         charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
         if matches!(
             corpus.events.get(&event_id),
@@ -3149,7 +3149,7 @@ fn prepare_controls(
         } else if !parent_continuity_is_valid(corpus, control, budget, cancellation)?
             || !account_continuity_is_valid(corpus, control, budget, cancellation)?
             || !role_continuity_is_valid(corpus, control, budget, cancellation)?
-            || !device_ancestry_is_valid(&ancestry_index, control)
+            || !device_ancestry_is_valid(&ancestry_index, control, budget, cancellation)?
             || !terminal_continuity_is_valid(corpus, control, budget, cancellation)?
         {
             ProtocolDisposition::Invalid
@@ -3230,15 +3230,18 @@ impl PreparedControls {
 fn device_ancestry_is_valid(
     ancestry_index: &std::collections::BTreeMap<crate::EventId, Option<Vec<ControlEnvelope>>>,
     child: &crate::carrier::control::ValidatedControlCarrier,
-) -> bool {
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<bool, Completion> {
     let Some(ancestry) = ancestry_index
         .get(&child.event_id())
         .and_then(Option::as_ref)
     else {
-        return false;
+        return Ok(false);
     };
     let child = ControlEnvelope::from_validated(child.clone());
-    evaluate_device_ancestry(ancestry, &child) == CandidateResult::Valid
+    let mut visit = || charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1);
+    Ok(evaluate_device_ancestry_metered(ancestry, &child, &mut visit)? == CandidateResult::Valid)
 }
 
 fn build_control_ancestry_index(
@@ -3262,6 +3265,7 @@ fn build_control_ancestry_index(
     let mut index =
         std::collections::BTreeMap::<crate::EventId, Option<Vec<ControlEnvelope>>>::new();
     for root in view.control_event_ids() {
+        charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
         if index.contains_key(&root) {
             continue;
         }
@@ -3278,7 +3282,11 @@ fn build_control_ancestry_index(
             if let Some(cached) = index.get(&event_id) {
                 match cached {
                     Some(ancestry) => {
-                        base = ancestry.clone();
+                        base = Vec::with_capacity(ancestry.len().saturating_add(1));
+                        for control in ancestry {
+                            charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
+                            base.push(control.clone());
+                        }
                         let Some(EventEvidence::VerifiedCarrier {
                             carrier: VerifiedCarrier::Control(control),
                             ..
@@ -3311,18 +3319,18 @@ fn build_control_ancestry_index(
         }
         if !valid {
             for event_id in path {
+                charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
                 index.insert(event_id, None);
             }
             continue;
         }
         for event_id in path.into_iter().rev() {
-            charge_evaluation_work(
-                budget,
-                cancellation,
-                WorkCounter::Control,
-                u64::try_from(base.len()).unwrap_or(u64::MAX),
-            )?;
-            index.insert(event_id, Some(base.clone()));
+            let mut ancestry = Vec::with_capacity(base.len());
+            for control in &base {
+                charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
+                ancestry.push(control.clone());
+            }
+            index.insert(event_id, Some(ancestry));
             let Some(EventEvidence::VerifiedCarrier {
                 carrier: VerifiedCarrier::Control(control),
                 ..
@@ -3354,10 +3362,10 @@ fn role_continuity_is_valid(
     else {
         return Ok(false);
     };
-    charge_member_comparisons(parent, child, budget, cancellation)?;
     let parent = ControlEnvelope::from_validated(parent.as_ref().clone());
     let child = ControlEnvelope::from_validated(child.clone());
-    Ok(evaluate_role_continuity(&parent, &child) == CandidateResult::Valid)
+    let mut visit = || charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1);
+    Ok(evaluate_role_continuity_metered(&parent, &child, &mut visit)? == CandidateResult::Valid)
 }
 
 fn account_continuity_is_valid(
@@ -3377,10 +3385,10 @@ fn account_continuity_is_valid(
     else {
         return Ok(false);
     };
-    charge_member_comparisons(parent, child, budget, cancellation)?;
     let parent = ControlEnvelope::from_validated(parent.as_ref().clone());
     let child = ControlEnvelope::from_validated(child.clone());
-    Ok(evaluate_account_continuity(&parent, &child) == CandidateResult::Valid)
+    let mut visit = || charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1);
+    Ok(evaluate_account_continuity_metered(&parent, &child, &mut visit)? == CandidateResult::Valid)
 }
 
 fn parent_continuity_is_valid(
@@ -3513,34 +3521,6 @@ fn change_for_hash(
         legacy_eligible: authorized && !control.terminal(),
         raw_change: raw.map(Arc::clone),
     }))
-}
-
-fn charge_member_comparisons(
-    parent: &crate::carrier::control::ValidatedControlCarrier,
-    child: &crate::carrier::control::ValidatedControlCarrier,
-    budget: &mut WorkBudget,
-    cancellation: &impl CancellationCheck,
-) -> Result<(), Completion> {
-    let parent_members = u64::try_from(parent.members().len()).unwrap_or(u64::MAX);
-    let child_members = u64::try_from(child.members().len()).unwrap_or(u64::MAX);
-    let member_pairs = parent_members.saturating_mul(child_members);
-    let role_pairs = child
-        .members()
-        .iter()
-        .try_fold(0_u64, |total, grant| {
-            total.checked_add(
-                u64::try_from(grant.roles.len())
-                    .unwrap_or(u64::MAX)
-                    .saturating_mul(2),
-            )
-        })
-        .unwrap_or(u64::MAX);
-    charge_evaluation_work(
-        budget,
-        cancellation,
-        WorkCounter::Control,
-        member_pairs.saturating_add(role_pairs),
-    )
 }
 
 fn charge_evaluation_work(

@@ -338,6 +338,7 @@ PREDECESSOR_CANDIDATES = (
     "3bec1ed87f7b2298a7d132dea8c7179b0f9afb20",
     "5b08a2b8d271e2df0ccd1711ba564e7b58d4bbc7",
     "57f789e294f2139899ad273cd576d15a12173b91",
+    "6e9beea4ae0e4ead8af2f1791d21f9952010bee9",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -360,7 +361,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "91ef6dc7216167ccb78071e33e18f88ba7a56ec383b3a6977cebbcba5d44a086",
+        "fdba2afa49a3d3cc12c21e66449e9f87646ed351e8fc5b309de3cc4f04ab93b6",
     ),
     (
         "crates/nostr_automerge/src/integrity.rs",
@@ -368,7 +369,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "crates/nostr_automerge/src/reference/evaluate.rs",
-        "4829273974b0e40baa6f82e97d7f2770da5895a0dd7f06135cb7020c6f3c9989",
+        "1a9e5dca43e4753d29c0e9f0f3f89760965c298dff77fd7c8b0eb026ce63674a",
     ),
     (
         "crates/nostr_automerge/tests/public_engine_api.rs",
@@ -455,12 +456,15 @@ HISTORICAL_STEP_1217_CLOSURE_PATHS = frozenset(
 )
 CLOSURE_PATHS = frozenset(
     {
+        "crates/nostr_automerge/src/control/candidate.rs",
+        "crates/nostr_automerge/src/control/transition.rs",
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
         "crates/nostr_automerge/src/reference/evaluate.rs",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
+        "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
     }
 )
@@ -553,6 +557,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-FULL-TS",),
     ("V-EVIDENCE",),
+    ("V-RESOURCE",),
     ("V-RESOURCE",),
     ("V-RESOURCE",),
 )
@@ -704,6 +709,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -791,6 +797,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_089",),
     ("FINDING_089",),
     ("FINDING_089",),
+    ("FINDING_077",),
     ("FINDING_077",),
     ("FINDING_077",),
 )

@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use crate::automerge_adapter::document::{AppliedDocument, materialize_history};
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
-use crate::control::candidate::{CandidateResult, evaluate_child};
+use crate::control::candidate::{CandidateResult, evaluate_child_metered};
 use crate::control::candidate_outcome::ControlCandidateOutcome;
 use crate::control::epoch_state::AcceptedEpochState;
 use crate::control::frontier::accepted_frontier_closure;
@@ -474,20 +474,15 @@ fn evaluate_branch_table(
                 view.extend_prior_knowledge(knowledge);
             }
             let singleton = BTreeSet::from([event_id]);
-            charge_control_closures(
-                &singleton,
-                controls,
-                &branch.ancestry,
-                &view,
-                budget,
-                cancellation,
-            )?;
+            charge_control_closures(&singleton, controls, &view, budget, cancellation)?;
             let ancestry = branch
                 .ancestry
                 .iter()
                 .map(ControlEnvelope::content)
                 .collect::<Vec<_>>();
-            match evaluate_child(parent, child, &ancestry, &view) {
+            let mut visit =
+                || charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation);
+            match evaluate_child_metered(parent, child, &ancestry, &view, &mut visit)? {
                 CandidateResult::Valid => Some(
                     accepted_frontier_closure(
                         child.base_heads(),
@@ -707,48 +702,10 @@ fn charge_control_transitions(
 fn charge_control_closures(
     children: &BTreeSet<EventId>,
     controls: &BTreeMap<EventId, BatchControl>,
-    ancestry: &[ControlEnvelope],
     view: &ParentEpochView,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<(), Completion> {
-    if cancellation.is_cancelled() {
-        return Err(Completion::Cancelled);
-    }
-    let comparison_work = children
-        .iter()
-        .filter_map(|event_id| controls.get(event_id)?.envelope.as_ref())
-        .try_fold(0_u64, |total, child| {
-            let child_members = u64::try_from(child.content().members.len()).unwrap_or(u64::MAX);
-            let parent_members = child
-                .parent()
-                .and_then(|parent| controls.get(&parent))
-                .and_then(|parent| parent.envelope.as_ref())
-                .map_or(0, |parent| {
-                    u64::try_from(parent.content().members.len()).unwrap_or(u64::MAX)
-                });
-            let ancestry_members = ancestry
-                .iter()
-                .try_fold(0_u64, |subtotal, control| {
-                    subtotal.checked_add(
-                        u64::try_from(control.content().members.len()).unwrap_or(u64::MAX),
-                    )
-                })
-                .unwrap_or(u64::MAX);
-            total.checked_add(
-                child_members
-                    .saturating_mul(parent_members.saturating_mul(2))
-                    .saturating_add(ancestry_members)
-                    .saturating_add(u64::try_from(ancestry.len()).unwrap_or(u64::MAX)),
-            )
-        })
-        .unwrap_or(u64::MAX);
-    budget
-        .charge(WorkCounter::Control, comparison_work)
-        .map_err(|_| Completion::BudgetExhausted)?;
-    if cancellation.is_cancelled() {
-        return Err(Completion::Cancelled);
-    }
     let passes = children
         .iter()
         .filter_map(|event_id| controls.get(event_id)?.envelope.as_ref())
@@ -1601,7 +1558,6 @@ mod tests {
             charge_control_closures(
                 &BTreeSet::from([event_id]),
                 &controls,
-                &[],
                 &view,
                 &mut budget,
                 &NeverCancelled
