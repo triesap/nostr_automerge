@@ -1,0 +1,19 @@
+{
+  "title": "nostr_automerge semantic evidence gate v10",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["artifact_hashes", "candidate_chain", "checkpoint", "counts", "gate", "mutation_counts", "result", "result_identity_sha256", "rcld", "schema", "status"],
+  "properties": {
+    "artifact_hashes": {"type": "object", "additionalProperties": false, "required": ["authority", "base64_proof", "finding_catalog", "opaque_proofs", "report_finding_proofs", "rust_requirement_proofs", "semantic_catalog", "semantic_mutations"], "properties": {"authority": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "base64_proof": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "finding_catalog": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "opaque_proofs": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "report_finding_proofs": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "rust_requirement_proofs": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "semantic_catalog": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "semantic_mutations": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}},
+    "candidate_chain": {"type": "array", "minItems": 7, "maxItems": 7, "items": {"type": "object", "additionalProperties": false, "required": ["step", "candidate"], "properties": {"step": {"type": "string", "pattern": "^step_[0-9]{4}$"}, "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"}}}},
+    "checkpoint": {"const": "step_1282"},
+    "counts": {"type": "object", "additionalProperties": false, "required": ["catalog_rows", "closed_findings", "findings", "held_findings", "held_requirements", "opaque_requirements", "passing_requirements", "report_clauses", "requirements"], "properties": {"catalog_rows": {"const": 190}, "closed_findings": {"const": 20}, "findings": {"const": 21}, "held_findings": {"const": 1}, "held_requirements": {"const": 24}, "opaque_requirements": {"const": 113}, "passing_requirements": {"const": 124}, "report_clauses": {"const": 21}, "requirements": {"const": 148}}},
+    "gate": {"const": "GATE_V9_EVIDENCE"},
+    "mutation_counts": {"type": "object", "additionalProperties": false, "required": ["base64", "final_catalog", "opaque", "report_and_finding", "rust_requirements", "semantic_cross_model"], "properties": {"base64": {"const": 11}, "final_catalog": {"const": 21}, "opaque": {"const": 18}, "report_and_finding": {"const": 12}, "rust_requirements": {"const": 8}, "semantic_cross_model": {"const": 20}}},
+    "result": {"const": "pass"},
+    "result_identity_sha256": {"const": "7ef5c508bc4f1302245df521fa73f223b62d62f8add6c57e65d869b3bfdf7a49"},
+    "rcld": {"const": 93},
+    "schema": {"const": "nostr_automerge.semantic_evidence_gate.v10.v1"},
+    "status": {"const": "closed"}
+  }
+}

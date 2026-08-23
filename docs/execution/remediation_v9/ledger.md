@@ -429,6 +429,11 @@ report clauses, and 21 findings. It binds 165 passing and 25 held rows to exact
 public and opaque candidates, artifact hashes, proof kinds, results, and semantic
 categories; the separate 21-row finding catalog is an exact derived projection.
 
+RCLD 93 and `GATE_V9_EVIDENCE` are complete. The seven-checkpoint evidence
+chain, eight exact artifact hashes, six mutation lanes, 190-row catalog, and
+21-row finding closure all validate; no passing proof is generic, skipped,
+source-only, stale, unrelated, or privately identifying.
+
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 `FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`

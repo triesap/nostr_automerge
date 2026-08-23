@@ -65,6 +65,13 @@ FINAL_SEMANTIC_VALIDATOR = "scripts/validate_semantic_proof_catalog_final_v10.py
 FINAL_SEMANTIC_VALIDATOR_SHA256 = "1a0513a73a4ba3bf5ee769ed20c27f5932d5429c43334a66a3abb1e4dc025a61"
 FINAL_SEMANTIC_CATALOG_IDENTITY = "0357f8f558f22096611bf08d197e0e46b30cd53618ea40ac49d2d057d1931c82"
 FINAL_FINDING_CATALOG_IDENTITY = "0eb24b686f6ac30ff308981822d490525574a95e0f4cd7f9e752c191efe1a10d"
+SEMANTIC_EVIDENCE_GATE_REPORT = "reports/semantic_evidence_gate_v10.json"
+SEMANTIC_EVIDENCE_GATE_REPORT_SHA256 = "ac0fe7e42abf41d282a5addd90ca7be3b05426d6858cdcabb9ea52aa5fb03864"
+SEMANTIC_EVIDENCE_GATE_SCHEMA = "tools/validation/semantic_evidence_gate_v10.schema.json"
+SEMANTIC_EVIDENCE_GATE_SCHEMA_SHA256 = "78ea43d843d1baf5bd7a35b24b15bf5541317f56fc8845519fc153dee6c2dfd5"
+SEMANTIC_EVIDENCE_GATE_VALIDATOR = "scripts/validate_semantic_evidence_gate_v10.py"
+SEMANTIC_EVIDENCE_GATE_VALIDATOR_SHA256 = "ac32780128b7b5fa89592fe90090490acac3c2f81a09458376ac01fe3de686bd"
+SEMANTIC_EVIDENCE_GATE_IDENTITY = "7ef5c508bc4f1302245df521fa73f223b62d62f8add6c57e65d869b3bfdf7a49"
 NEUTRAL_REPORT_SCHEMA = "fixtures/schema/report.schema.json"
 LEDGER = "implementation/runtime_ledger_v9.json"
 LEDGER_SCHEMA = "tools/validation/runtime_ledger_v9.schema.json"
@@ -85,7 +92,7 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "cbcea9d10b68ad5be0cc470fc8785bfb8ea3df658da8f7cf1295d8c83cf2b19f"
+    "82a801b6a14b42a54806dfa90f34ce9d095790a596919b54caf87a4118be13eb"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
@@ -435,6 +442,7 @@ PREDECESSOR_CANDIDATES = (
     "920c768946a2d33449905a0b0891942fa8fb9afe",
     "cba1b43bd544d6d015ece1a216977ddebe249d8c",
     "ebf8d1ecc75cf5eee2741ec61b80f0dbe5283df5",
+    "87adb867ef46a0221a9e0addc567cec608820152",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -556,15 +564,14 @@ CLOSURE_PATHS = frozenset(
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
-        "reports/finding_closure_catalog_v10.json",
-        "reports/semantic_proof_catalog_v10.json",
+        "reports/semantic_evidence_gate_v10.json",
         "reports/spec_baseline.txt",
-        "scripts/generate_semantic_proof_catalog_final_v10.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
-        "scripts/validate_semantic_proof_catalog_final_v10.py",
+        "scripts/validate_semantic_evidence_gate_v10.py",
         "scripts/validate_spec.py",
         "tools/nostr_automerge_xtask/src/validate.rs",
+        "tools/validation/semantic_evidence_gate_v10.schema.json",
         "tools/validation/runtime_ledger_v9.schema.json",
     }
 )
@@ -579,10 +586,9 @@ CLOSURE_AMEND_PATHS = frozenset(
 )
 CLOSURE_NEW_PATHS = frozenset(
     {
-        "reports/finding_closure_catalog_v10.json",
-        "reports/semantic_proof_catalog_v10.json",
-        "scripts/generate_semantic_proof_catalog_final_v10.py",
-        "scripts/validate_semantic_proof_catalog_final_v10.py",
+        "reports/semantic_evidence_gate_v10.json",
+        "scripts/validate_semantic_evidence_gate_v10.py",
+        "tools/validation/semantic_evidence_gate_v10.schema.json",
     }
 )
 EXPECTED_GATES = (
@@ -703,6 +709,7 @@ EXPECTED_GATES = (
     ("V-FULL-TS",),
     ("V-CONF",),
     ("V-FULL-RUST",),
+    ("V-EVIDENCE",),
     ("V-EVIDENCE",),
     ("V-EVIDENCE",),
     ("V-EVIDENCE",),
@@ -902,6 +909,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-EVIDENCE-006",),
     ("NCRDT-EVIDENCE-006",),
     ("NCRDT-EVIDENCE-006",),
+    ("NCRDT-EVIDENCE-006",),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -1032,6 +1040,7 @@ EXPECTED_FINDINGS = (
     (),
     (),
     ("FINDING_078",),
+    REPRODUCED_IDS,
     REPRODUCED_IDS,
     REPRODUCED_IDS,
     REPRODUCED_IDS,
@@ -2398,6 +2407,7 @@ def validate_runtime_ledger(
         "opaque_semantic_proofs",
         "semantic_proof_mutations",
         "semantic_proof_catalog_final",
+        "semantic_evidence_gate",
     }
     require(set(ledger) == expected_keys, "ledger:keys")
     require(ledger.get("schema") == "nostr_automerge.runtime_ledger.v9.v1", "ledger:schema")
@@ -3026,6 +3036,34 @@ def validate_runtime_ledger(
         },
         "ledger:semantic_proof_catalog_final_binding",
     )
+    for relative, expected in (
+        (SEMANTIC_EVIDENCE_GATE_REPORT, SEMANTIC_EVIDENCE_GATE_REPORT_SHA256),
+        (SEMANTIC_EVIDENCE_GATE_SCHEMA, SEMANTIC_EVIDENCE_GATE_SCHEMA_SHA256),
+        (SEMANTIC_EVIDENCE_GATE_VALIDATOR, SEMANTIC_EVIDENCE_GATE_VALIDATOR_SHA256),
+    ):
+        require(file_digest(relative) == expected, f"ledger:semantic_evidence_gate_file:{relative}")
+    require(
+        ledger.get("semantic_evidence_gate")
+        == {
+            "checkpoint": "step_1282",
+            "candidate": "87adb867ef46a0221a9e0addc567cec608820152",
+            "rcld": 93,
+            "gate": "GATE_V9_EVIDENCE",
+            "candidate_count": 7,
+            "evidence_identity_count": 8,
+            "catalog_row_count": 190,
+            "requirement_count": 148,
+            "report_clause_count": 21,
+            "finding_count": 21,
+            "negative_mutation_count": 25,
+            "report_sha256": SEMANTIC_EVIDENCE_GATE_REPORT_SHA256,
+            "schema_sha256": SEMANTIC_EVIDENCE_GATE_SCHEMA_SHA256,
+            "validator_sha256": SEMANTIC_EVIDENCE_GATE_VALIDATOR_SHA256,
+            "result_identity_sha256": SEMANTIC_EVIDENCE_GATE_IDENTITY,
+            "result": "pass",
+        },
+        "ledger:semantic_evidence_gate_binding",
+    )
     validate_no_leak(ledger, "ledger:boundary")
 
 
@@ -3316,6 +3354,9 @@ def mutation_self_test(
     stale_final_catalog = copy.deepcopy(ledger)
     stale_final_catalog["semantic_proof_catalog_final"]["catalog_identity_sha256"] = "f" * 64
     ledger_mutations.append(("ledger_semantic_proof_catalog", stale_final_catalog))
+    stale_evidence_gate = copy.deepcopy(ledger)
+    stale_evidence_gate["semantic_evidence_gate"]["result_identity_sha256"] = "f" * 64
+    ledger_mutations.append(("ledger_semantic_evidence_gate", stale_evidence_gate))
     premature_terminal = copy.deepcopy(ledger)
     premature_terminal["status"] = "code_complete_publication_held"
     premature_terminal["findings"]["status"] = "code_complete_publication_held"

@@ -1,0 +1,47 @@
+{
+  "artifact_hashes": {
+    "authority": "92c0346c808047c27532da8422d737c72e6414ba3a4067d4af5515cd135ee913",
+    "base64_proof": "f8652527bd6bb81f9a9422d290034d8d45c4c92717ce9027d7360b01afe6d78c",
+    "finding_catalog": "b4fabc6486c78aa745548d269cc0119a1668e90b5cd3a13dd8c266be3e2d7e29",
+    "opaque_proofs": "594b2510b9302ac040efa5a1225e9a07a90fc60045c9db941272f269c83796e2",
+    "report_finding_proofs": "a29cf269b3a8a2b0c77c1f937cd9d5bbad931db61655c36fdd7fda4d5835957e",
+    "rust_requirement_proofs": "75e66350c10bbcfc382e5eb0f21acff998cfa026b99c5937565ca4dda9d4c462",
+    "semantic_catalog": "48f27ffff08756b7567c83fe3025efd4aac5cc0da9c4c2055d5cc8373168574a",
+    "semantic_mutations": "5c88f7c0701d77f55625b785fe16dd9af854a551ff3f3174c597b62b75012c3a"
+  },
+  "candidate_chain": [
+    {"step": "step_1275", "candidate": "1ff391cd4837f3e17ffa5b06753289eedbb56b80"},
+    {"step": "step_1276", "candidate": "6fbef81f8f12caef49ddee6fd5135d900bf22093"},
+    {"step": "step_1277", "candidate": "3b3dd73a93cb4e33ab08a600ff6294538a5b91bd"},
+    {"step": "step_1278", "candidate": "920c768946a2d33449905a0b0891942fa8fb9afe"},
+    {"step": "step_1279", "candidate": "cba1b43bd544d6d015ece1a216977ddebe249d8c"},
+    {"step": "step_1280", "candidate": "ebf8d1ecc75cf5eee2741ec61b80f0dbe5283df5"},
+    {"step": "step_1281", "candidate": "87adb867ef46a0221a9e0addc567cec608820152"}
+  ],
+  "checkpoint": "step_1282",
+  "counts": {
+    "catalog_rows": 190,
+    "closed_findings": 20,
+    "findings": 21,
+    "held_findings": 1,
+    "held_requirements": 24,
+    "opaque_requirements": 113,
+    "passing_requirements": 124,
+    "report_clauses": 21,
+    "requirements": 148
+  },
+  "gate": "GATE_V9_EVIDENCE",
+  "mutation_counts": {
+    "base64": 11,
+    "final_catalog": 21,
+    "opaque": 18,
+    "report_and_finding": 12,
+    "rust_requirements": 8,
+    "semantic_cross_model": 20
+  },
+  "result": "pass",
+  "result_identity_sha256": "7ef5c508bc4f1302245df521fa73f223b62d62f8add6c57e65d869b3bfdf7a49",
+  "rcld": 93,
+  "schema": "nostr_automerge.semantic_evidence_gate.v10.v1",
+  "status": "closed"
+}

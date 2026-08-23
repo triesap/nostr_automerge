@@ -3,10 +3,10 @@
   "status": "in_progress",
   "rcld": 93,
   "cursor": {
-    "active_step": "step_1281",
-    "next_step": "step_1282",
+    "active_step": "step_1282",
+    "next_step": "step_1283",
     "last_step": "step_1287",
-    "remaining_checkpoint_count": 7,
+    "remaining_checkpoint_count": 6,
     "first_rcld": 93,
     "last_rcld": 94,
     "remaining_rcld_count": 2
@@ -1399,6 +1399,22 @@
       ],
       "deviation_ids": [],
       "result": "pass"
+    },
+    {
+      "step": "step_1281",
+      "candidate": "87adb867ef46a0221a9e0addc567cec608820152",
+      "owner_class": "public",
+      "gate_ids": ["V-EVIDENCE"],
+      "requirement_ids": ["NCRDT-EVIDENCE-006"],
+      "finding_ids": [
+        "FINDING_073", "FINDING_074", "FINDING_075", "FINDING_076",
+        "FINDING_077", "FINDING_078", "FINDING_079", "FINDING_081",
+        "FINDING_082", "FINDING_083", "FINDING_084", "FINDING_085",
+        "FINDING_086", "FINDING_087", "FINDING_088", "FINDING_089",
+        "FINDING_090", "FINDING_091", "FINDING_092", "FINDING_093"
+      ],
+      "deviation_ids": [],
+      "result": "pass"
     }
   ],
   "opaque_reproduction": {
@@ -1716,6 +1732,24 @@
     "validator_sha256": "1a0513a73a4ba3bf5ee769ed20c27f5932d5429c43334a66a3abb1e4dc025a61",
     "catalog_identity_sha256": "0357f8f558f22096611bf08d197e0e46b30cd53618ea40ac49d2d057d1931c82",
     "finding_identity_sha256": "0eb24b686f6ac30ff308981822d490525574a95e0f4cd7f9e752c191efe1a10d",
+    "result": "pass"
+  },
+  "semantic_evidence_gate": {
+    "checkpoint": "step_1282",
+    "candidate": "87adb867ef46a0221a9e0addc567cec608820152",
+    "rcld": 93,
+    "gate": "GATE_V9_EVIDENCE",
+    "candidate_count": 7,
+    "evidence_identity_count": 8,
+    "catalog_row_count": 190,
+    "requirement_count": 148,
+    "report_clause_count": 21,
+    "finding_count": 21,
+    "negative_mutation_count": 25,
+    "report_sha256": "ac0fe7e42abf41d282a5addd90ca7be3b05426d6858cdcabb9ea52aa5fb03864",
+    "schema_sha256": "78ea43d843d1baf5bd7a35b24b15bf5541317f56fc8845519fc153dee6c2dfd5",
+    "validator_sha256": "ac32780128b7b5fa89592fe90090490acac3c2f81a09458376ac01fe3de686bd",
+    "result_identity_sha256": "7ef5c508bc4f1302245df521fa73f223b62d62f8add6c57e65d869b3bfdf7a49",
     "result": "pass"
   }
 }

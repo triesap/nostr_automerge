@@ -31,7 +31,8 @@
     "report_finding_proofs",
     "opaque_semantic_proofs",
     "semantic_proof_mutations",
-    "semantic_proof_catalog_final"
+    "semantic_proof_catalog_final",
+    "semantic_evidence_gate"
   ],
   "properties": {
     "schema": {"const": "nostr_automerge.runtime_ledger.v9.v1"},
@@ -659,6 +660,29 @@
         "validator_sha256": {"const": "1a0513a73a4ba3bf5ee769ed20c27f5932d5429c43334a66a3abb1e4dc025a61"},
         "catalog_identity_sha256": {"const": "0357f8f558f22096611bf08d197e0e46b30cd53618ea40ac49d2d057d1931c82"},
         "finding_identity_sha256": {"const": "0eb24b686f6ac30ff308981822d490525574a95e0f4cd7f9e752c191efe1a10d"},
+        "result": {"const": "pass"}
+      }
+    },
+    "semantic_evidence_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checkpoint", "candidate", "rcld", "gate", "candidate_count", "evidence_identity_count", "catalog_row_count", "requirement_count", "report_clause_count", "finding_count", "negative_mutation_count", "report_sha256", "schema_sha256", "validator_sha256", "result_identity_sha256", "result"],
+      "properties": {
+        "checkpoint": {"const": "step_1282"},
+        "candidate": {"const": "87adb867ef46a0221a9e0addc567cec608820152"},
+        "rcld": {"const": 93},
+        "gate": {"const": "GATE_V9_EVIDENCE"},
+        "candidate_count": {"const": 7},
+        "evidence_identity_count": {"const": 8},
+        "catalog_row_count": {"const": 190},
+        "requirement_count": {"const": 148},
+        "report_clause_count": {"const": 21},
+        "finding_count": {"const": 21},
+        "negative_mutation_count": {"const": 25},
+        "report_sha256": {"const": "ac0fe7e42abf41d282a5addd90ca7be3b05426d6858cdcabb9ea52aa5fb03864"},
+        "schema_sha256": {"const": "78ea43d843d1baf5bd7a35b24b15bf5541317f56fc8845519fc153dee6c2dfd5"},
+        "validator_sha256": {"const": "ac32780128b7b5fa89592fe90090490acac3c2f81a09458376ac01fe3de686bd"},
+        "result_identity_sha256": {"const": "7ef5c508bc4f1302245df521fa73f223b62d62f8add6c57e65d869b3bfdf7a49"},
         "result": {"const": "pass"}
       }
     }
