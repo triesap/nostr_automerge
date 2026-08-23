@@ -369,6 +369,16 @@ produce byte-identical canonical output, the runner rejects missing or
 incomplete v10 fixture authority before evaluation, and the evidence record
 binds the exact manifest, runner, dependency lock, and toolchain identities.
 
+The opaque TypeScript v10 record binds private checkpoint `step_1272`, its
+reviewed predecessor, exact evidence and execution identities, and the same
+complete 192-scenario manifest. The public parity validator independently
+executes every Rust scenario twice across all eight delivery permutations,
+compares every ordered canonical report byte sequence to the neutral expected
+resource and the imported private aggregate, and records zero mismatches. The
+public expected-report parser rejects malformed and syntactically valid
+noncanonical bytes, while a canonical structurally valid mutation reaches the
+semantic comparator and is rejected there rather than at parsing.
+
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 `FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`

@@ -127,6 +127,7 @@ pub(crate) struct StateAssertion {
 pub(crate) enum ExpectedError {
     Io,
     Json,
+    Canonical,
     Schema,
     Identifier,
     Ordering,
@@ -136,8 +137,18 @@ pub(crate) enum ExpectedError {
 pub(crate) fn load_expected(path: &Path) -> Result<ExpectedReport, ExpectedError> {
     let bytes = fs::read(path).map_err(|_| ExpectedError::Io)?;
     let report: ExpectedReport = serde_json::from_slice(&bytes).map_err(|_| ExpectedError::Json)?;
-    validate_expected(&report)?;
+    if canonical_report_bytes(&report)? != bytes {
+        return Err(ExpectedError::Canonical);
+    }
     Ok(report)
+}
+
+pub(crate) fn canonical_report_bytes(report: &ExpectedReport) -> Result<Vec<u8>, ExpectedError> {
+    validate_expected(report)?;
+    let value = serde_json::to_value(report).map_err(|_| ExpectedError::Json)?;
+    let mut bytes = serde_json::to_vec(&value).map_err(|_| ExpectedError::Json)?;
+    bytes.push(b'\n');
+    Ok(bytes)
 }
 
 pub(crate) fn validate_expected(report: &ExpectedReport) -> Result<(), ExpectedError> {

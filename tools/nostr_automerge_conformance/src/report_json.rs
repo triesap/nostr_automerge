@@ -1,11 +1,7 @@
-use crate::expected::{ExpectedError, ExpectedReport, validate_expected};
+use crate::expected::{ExpectedError, ExpectedReport, canonical_report_bytes};
 
 pub(crate) fn write_canonical_report(report: &ExpectedReport) -> Result<Vec<u8>, ExpectedError> {
-    validate_expected(report)?;
-    let value = serde_json::to_value(report).map_err(|_| ExpectedError::Json)?;
-    let mut bytes = serde_json::to_vec(&value).map_err(|_| ExpectedError::Json)?;
-    bytes.push(b'\n');
-    Ok(bytes)
+    canonical_report_bytes(report)
 }
 
 #[cfg(test)]

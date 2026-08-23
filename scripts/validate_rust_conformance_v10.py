@@ -17,6 +17,7 @@ REPORT_PATH = "reports/rust_conformance_v10.json"
 SCHEMA_PATH = "tools/validation/rust_conformance_v10.schema.json"
 MANIFEST_PATH = "fixtures/distribution/manifest_v10.json"
 RUNNER_PATH = "tools/nostr_automerge_conformance/src/runner.rs"
+EVIDENCE_CANDIDATE = "6e7084ae32b9d20e55e76b5496c126bd52974f0d"
 FIELDS = (
     "schema",
     "status",
@@ -61,6 +62,18 @@ def digest(relative: str) -> str:
     return hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()
 
 
+def committed_bytes(candidate: str, relative: str) -> bytes:
+    result = subprocess.run(
+        ("git", "show", f"{candidate}:{relative}"),
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        raise EvidenceError(f"commit:{relative}")
+    return result.stdout
+
+
 def identity(value: dict[str, Any]) -> str:
     projection = {key: value[key] for key in FIELDS[:-1]}
     payload = json.dumps(
@@ -78,12 +91,14 @@ def validate(value: dict[str, Any]) -> None:
         raise EvidenceError("identity")
     for relative, field in (
         (MANIFEST_PATH, "manifest_sha256"),
-        (RUNNER_PATH, "runner_sha256"),
         ("Cargo.lock", "cargo_lock_sha256"),
         ("rust-toolchain.toml", "rust_toolchain_sha256"),
     ):
         if digest(relative) != value[field]:
             raise EvidenceError(f"hash:{field}")
+    runner = committed_bytes(EVIDENCE_CANDIDATE, RUNNER_PATH)
+    if hashlib.sha256(runner).hexdigest() != value["runner_sha256"]:
+        raise EvidenceError("hash:runner_sha256")
     manifest = json.loads((ROOT / MANIFEST_PATH).read_text(encoding="utf-8"))
     if (
         manifest.get("distribution_schema")
@@ -96,7 +111,10 @@ def validate(value: dict[str, Any]) -> None:
         or len(manifest.get("fixtures", [])) != 192
     ):
         raise EvidenceError("manifest_authority")
-    source = (ROOT / RUNNER_PATH).read_text(encoding="utf-8")
+    try:
+        source = runner.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise EvidenceError("runner_encoding") from error
     for anchor, count in (
         ("fn validate_distribution_authority(", 1),
         ("distribution_authority_rejects_missing_or_incomplete_fixture_inventory", 1),
@@ -201,6 +219,13 @@ def main() -> int:
     )
     if ancestor.returncode != 0:
         raise EvidenceError("candidate")
+    evidence_ancestor = subprocess.run(
+        ("git", "merge-base", "--is-ancestor", EVIDENCE_CANDIDATE, "HEAD"),
+        cwd=ROOT,
+        check=False,
+    )
+    if evidence_ancestor.returncode != 0:
+        raise EvidenceError("evidence_candidate")
     mutations = mutation_self_test(value)
     if args.run:
         run_distribution_twice(value)

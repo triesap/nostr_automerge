@@ -1,0 +1,40 @@
+{
+  "schema": "nostr_automerge.opaque_conformance.v10.v1",
+  "status": "pass",
+  "checkpoint": "step_1273",
+  "public_predecessor": "6e7084ae32b9d20e55e76b5496c126bd52974f0d",
+  "private_candidate": "36db673b8e5b62df69a5ee321b2e13c040fc8237",
+  "private_predecessor": "fb585804db1f869014f4d10f57847c081c3635a4",
+  "manifest_sha256": "86ec32f34dd99ef0c1e5ea3531360a1f78bf07d62818375096e0bdf0f209b8e5",
+  "private_evidence": {
+    "report_sha256": "0db4d1e7f7b93134057ebe4ed8e370b60fe3dffd14de37c99197ff5971e90a4f",
+    "schema_sha256": "f02cb24a8f6bebfa44dcd9f4c345d1393cae5db32550cbd881cdabc869495581",
+    "runner_sha256": "902d3f072fcabd5bea55407e7a736def3c43417c57530b3f015065acc04b480f",
+    "implementation_projection_sha256": "c54a845f0e53b6217bc5f32b8d240be402938442099e3afe3e1f1fc24213e4cc",
+    "dependency_lock_sha256": "d881757529b805b8ae4da935127730fe901b8b13a71382023be161016cd35a7d",
+    "execution_sha256": "4a663141aa5d122fd388e8c08e115d8ceb58efe8e36408abc0339f9aeba4a958",
+    "result_identity_sha256": "3226b1ae0c6534c928e0bcf61e4b82f68d1447060f9e42aa85275d1178ff43c4",
+    "result": "pass"
+  },
+  "rust_evidence": {
+    "candidate": "20b786c5c3ff143786aaaca56ad19bd26739b67b",
+    "report_identity_sha256": "7be69317ca8f007f8b0b74f1bc355558981ba55a75bc3eb8b2b609b3590184c7",
+    "distribution_run_sha256": "377b0fe6ae2916b829b3ada84f7adf760d874123ce8be14130999a076c8578c6",
+    "result": "pass"
+  },
+  "comparison": {
+    "scenario_count": 192,
+    "compared_report_count": 192,
+    "delivery_permutations": 8,
+    "process_count_per_implementation": 2,
+    "canonical_output_sha256": "c9f28deb32dfedce674a6871b0eb949f38b5a5f977a67ca993f7ed639df1e112",
+    "byte_mismatch_count": 0,
+    "aggregation": "ordered_fixture_id_and_canonical_report_bytes_length_prefixed_sha256",
+    "malformed_report": "rejected_by_parser",
+    "noncanonical_report": "rejected_by_parser",
+    "structurally_valid_semantic_mismatch": "rejected_by_comparison",
+    "result": "pass"
+  },
+  "publication_status": "held",
+  "result_identity_sha256": "4430b84445e0d30b78922d9ef2df2528d74447eb8a064c8c097fc431e92a3acd"
+}

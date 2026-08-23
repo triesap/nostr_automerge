@@ -384,6 +384,8 @@ PREDECESSOR_CANDIDATES = (
     "43f71ad17e490fd42979723e45a58164d726884b",
     "4dc5329d0d1fdcd4a7e3e2aee8e8f749c4ed72aa",
     "20b786c5c3ff143786aaaca56ad19bd26739b67b",
+    "6e7084ae32b9d20e55e76b5496c126bd52974f0d",
+    "36db673b8e5b62df69a5ee321b2e13c040fc8237",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -422,7 +424,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "tools/nostr_automerge_conformance/src/expected.rs",
-        "702ad715272dc2c4132568216fc64a14744beb634616627cdc21423e6b8c156f",
+        "c6d36c048972c8301c33672a80872badd909572abdbe5aac081f9f771344bc12",
     ),
     (
         "tools/nostr_automerge_conformance/src/fixture.rs",
@@ -434,11 +436,11 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "tools/nostr_automerge_conformance/src/report_json.rs",
-        "dd25ccceb009b97ee3b168448845db3101ae412644db2dad6bd90098a4e3a1d9",
+        "ff0245b2ecd83b3dcf36889002cca2d789305bfb24a07729a0a8636af1ee70ea",
     ),
     (
         "tools/nostr_automerge_conformance/src/runner.rs",
-        "e2b92358273603f48e1c2fc94c96281a5f77e89cc219b34a09b08da99a0a844e",
+        "222c195338ea139e5c9887c19e2ba16f5a63d6939dd4354d28a9c3e44431f733",
     ),
     (
         "tools/nostr_automerge_conformance/src/scenario.rs",
@@ -506,15 +508,17 @@ CLOSURE_PATHS = frozenset(
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
-        "reports/rust_conformance_v10.json",
+        "reports/opaque_conformance_v10.json",
         "scripts/validate_private_reproduction_boundary_v9.py",
-        "scripts/validate_report_parity_v9.py",
-        "scripts/validate_rust_conformance_v10.py",
         "scripts/validate_runtime_ledger_v9.py",
+        "scripts/validate_rust_conformance_v10.py",
         "scripts/validate_spec.py",
+        "scripts/validate_opaque_conformance_v10.py",
+        "tools/nostr_automerge_conformance/src/expected.rs",
+        "tools/nostr_automerge_conformance/src/report_json.rs",
         "tools/nostr_automerge_conformance/src/runner.rs",
         "tools/nostr_automerge_xtask/src/validate.rs",
-        "tools/validation/rust_conformance_v10.schema.json",
+        "tools/validation/opaque_conformance_v10.schema.json",
     }
 )
 CLOSURE_AMEND_ADDITION = "docs/execution/remediation_v9/ledger.md"
@@ -528,9 +532,9 @@ CLOSURE_AMEND_PATHS = frozenset(
 )
 CLOSURE_NEW_PATHS = frozenset(
     {
-        "reports/rust_conformance_v10.json",
-        "scripts/validate_rust_conformance_v10.py",
-        "tools/validation/rust_conformance_v10.schema.json",
+        "reports/opaque_conformance_v10.json",
+        "scripts/validate_opaque_conformance_v10.py",
+        "tools/validation/opaque_conformance_v10.schema.json",
     }
 )
 EXPECTED_GATES = (
@@ -647,6 +651,8 @@ EXPECTED_GATES = (
     ("V-CONF",),
     ("V-CONF",),
     ("V-CONF",),
+    ("V-CONF",),
+    ("V-FULL-TS",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -830,6 +836,8 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-INTERRUPT-001", "NCRDT-CONF-010"),
     ("NCRDT-RESOURCE-014", "NCRDT-CONF-010"),
     ("NCRDT-CONF-010",),
+    ("NCRDT-CONF-010",),
+    ("NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -952,6 +960,8 @@ EXPECTED_FINDINGS = (
     ("FINDING_074",),
     ("FINDING_075",),
     ("FINDING_088",),
+    (),
+    (),
     (),
 )
 FORBIDDEN_KEY_WORDS = {
@@ -1259,7 +1269,7 @@ def validate_report_revision_inventory(
         "report_inventory:scenario_loader",
     )
     require(
-        "validate_expected(report)?" in report_json,
+        "canonical_report_bytes(report)" in report_json,
         "report_inventory:serializer",
     )
     require(
@@ -2126,6 +2136,7 @@ def expected_predecessor(index: int) -> dict[str, Any]:
             or 69 <= index <= 75
             or 87 <= index <= 95
             or 97 <= index <= 104
+            or index == 114
             else "public"
         ),
         "gate_ids": list(EXPECTED_GATES[index]),
@@ -2229,6 +2240,7 @@ def validate_predecessors(
                 "step_1214": ("fd6050bde2ab5f14c72734491d0aa1e3ceb86b61", True),
                 "step_1215": ("d74e5a9c8954de893a3059604abf25e506facd3a", True),
                 "step_1216": ("74b20922ff0ac2a877acc0c1bb196b20c8cc02a8", True),
+                "step_1272": ("36db673b8e5b62df69a5ee321b2e13c040fc8237", True),
             }
             require(row["step"] in approved_opaque, f"predecessor:{index}:opaque_step")
             approved_candidate, approved_result = approved_opaque[row["step"]]

@@ -1003,15 +1003,37 @@ mod tests {
         ));
         assert!(fs::write(&temporary, malformed).is_ok());
         assert!(load_expected(&temporary).is_err());
+
+        let canonical = write_canonical_report(&expected);
+        assert!(canonical.is_ok());
+        let Ok(canonical) = canonical else { return };
+        let mut noncanonical = b" \n".to_vec();
+        noncanonical.extend_from_slice(&canonical);
+        assert!(fs::write(&temporary, noncanonical).is_ok());
+        assert_eq!(
+            load_expected(&temporary),
+            Err(crate::expected::ExpectedError::Canonical)
+        );
         let _ = fs::remove_file(&temporary);
 
         let mut mismatch = expected.clone();
         mismatch.checkpoints[0].historical_carriers = vec!["aa".repeat(32)];
+        let mismatch_bytes = write_canonical_report(&mismatch);
+        assert!(mismatch_bytes.is_ok());
+        let Ok(mismatch_bytes) = mismatch_bytes else {
+            return;
+        };
+        assert!(fs::write(&temporary, mismatch_bytes).is_ok());
+        let parsed_mismatch = load_expected(&temporary);
+        let _ = fs::remove_file(&temporary);
+        assert!(parsed_mismatch.is_ok());
+        let Ok(parsed_mismatch) = parsed_mismatch else {
+            return;
+        };
         assert_eq!(
-            compare_expected(&mismatch, &expected),
+            compare_expected(&parsed_mismatch, &expected),
             Err(RunError::Mismatch)
         );
-        assert!(write_canonical_report(&mismatch).is_ok());
     }
 
     #[test]

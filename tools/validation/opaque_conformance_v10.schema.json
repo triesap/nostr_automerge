@@ -1,0 +1,95 @@
+{
+  "title": "Opaque TypeScript signed conformance v10 evidence",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "checkpoint",
+    "public_predecessor",
+    "private_candidate",
+    "private_predecessor",
+    "manifest_sha256",
+    "private_evidence",
+    "rust_evidence",
+    "comparison",
+    "publication_status",
+    "result_identity_sha256"
+  ],
+  "properties": {
+    "schema": {"const": "nostr_automerge.opaque_conformance.v10.v1"},
+    "status": {"const": "pass"},
+    "checkpoint": {"const": "step_1273"},
+    "public_predecessor": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "private_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "private_predecessor": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "private_evidence": {
+      "type": "object",
+      "required": [
+        "report_sha256",
+        "schema_sha256",
+        "runner_sha256",
+        "implementation_projection_sha256",
+        "dependency_lock_sha256",
+        "execution_sha256",
+        "result_identity_sha256",
+        "result"
+      ],
+      "properties": {
+        "report_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "schema_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "runner_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "implementation_projection_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "dependency_lock_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "execution_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "result": {"const": "pass"}
+      },
+      "additionalProperties": false
+    },
+    "rust_evidence": {
+      "type": "object",
+      "required": ["candidate", "report_identity_sha256", "distribution_run_sha256", "result"],
+      "properties": {
+        "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "report_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "distribution_run_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "result": {"const": "pass"}
+      },
+      "additionalProperties": false
+    },
+    "comparison": {
+      "type": "object",
+      "required": [
+        "scenario_count",
+        "compared_report_count",
+        "delivery_permutations",
+        "process_count_per_implementation",
+        "canonical_output_sha256",
+        "byte_mismatch_count",
+        "aggregation",
+        "malformed_report",
+        "noncanonical_report",
+        "structurally_valid_semantic_mismatch",
+        "result"
+      ],
+      "properties": {
+        "scenario_count": {"const": 192},
+        "compared_report_count": {"const": 192},
+        "delivery_permutations": {"const": 8},
+        "process_count_per_implementation": {"const": 2},
+        "canonical_output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "byte_mismatch_count": {"const": 0},
+        "aggregation": {"const": "ordered_fixture_id_and_canonical_report_bytes_length_prefixed_sha256"},
+        "malformed_report": {"const": "rejected_by_parser"},
+        "noncanonical_report": {"const": "rejected_by_parser"},
+        "structurally_valid_semantic_mismatch": {"const": "rejected_by_comparison"},
+        "result": {"const": "pass"}
+      },
+      "additionalProperties": false
+    },
+    "publication_status": {"const": "held"},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

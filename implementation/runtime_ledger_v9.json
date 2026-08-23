@@ -3,10 +3,10 @@
   "status": "in_progress",
   "rcld": 92,
   "cursor": {
-    "active_step": "step_1271",
-    "next_step": "step_1272",
+    "active_step": "step_1273",
+    "next_step": "step_1274",
     "last_step": "step_1287",
-    "remaining_checkpoint_count": 17,
+    "remaining_checkpoint_count": 15,
     "first_rcld": 92,
     "last_rcld": 94,
     "remaining_rcld_count": 3
@@ -1278,6 +1278,26 @@
       "owner_class": "public",
       "gate_ids": ["V-CONF"],
       "requirement_ids": ["NCRDT-CONF-010"],
+      "finding_ids": [],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1271",
+      "candidate": "6e7084ae32b9d20e55e76b5496c126bd52974f0d",
+      "owner_class": "public",
+      "gate_ids": ["V-CONF"],
+      "requirement_ids": ["NCRDT-CONF-010"],
+      "finding_ids": [],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1272",
+      "candidate": "36db673b8e5b62df69a5ee321b2e13c040fc8237",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-FULL-TS"],
+      "requirement_ids": ["NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
       "finding_ids": [],
       "deviation_ids": [],
       "result": "pass"
