@@ -27,7 +27,8 @@
     "signed_conformance_gate",
     "semantic_proof_authority",
     "base64_proof",
-    "rust_requirement_proofs"
+    "rust_requirement_proofs",
+    "report_finding_proofs"
   ],
   "properties": {
     "schema": {"const": "nostr_automerge.runtime_ledger.v9.v1"},
@@ -570,6 +571,27 @@
         "negative_mutation_count": {"const": 8},
         "projection_sha256": {"const": "9ac4c332bec5726c93573e637109a764afe9fedaf0940a9e9b7b7d3ed12b15c1"},
         "validator_sha256": {"const": "75e66350c10bbcfc382e5eb0f21acff998cfa026b99c5937565ca4dda9d4c462"},
+        "result": {"const": "pass"}
+      }
+    },
+    "report_finding_proofs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checkpoint", "candidate", "requirement_count", "report_clause_count", "finding_count", "closed_finding_count", "held_finding_count", "report_execution_count", "finding_proof_count", "finding_execution_count", "negative_mutation_count", "projection_sha256", "validator_sha256", "result"],
+      "properties": {
+        "checkpoint": {"const": "step_1278"},
+        "candidate": {"const": "3b3dd73a93cb4e33ab08a600ff6294538a5b91bd"},
+        "requirement_count": {"const": 148},
+        "report_clause_count": {"const": 21},
+        "finding_count": {"const": 21},
+        "closed_finding_count": {"const": 20},
+        "held_finding_count": {"const": 1},
+        "report_execution_count": {"const": 21},
+        "finding_proof_count": {"const": 17},
+        "finding_execution_count": {"const": 17},
+        "negative_mutation_count": {"const": 12},
+        "projection_sha256": {"const": "234564768204c60ba37ec7861d833bf7ed8d0c5f15326063d72c9cb37d8b51c1"},
+        "validator_sha256": {"const": "a29cf269b3a8a2b0c77c1f937cd9d5bbad931db61655c36fdd7fda4d5835957e"},
         "result": {"const": "pass"}
       }
     }

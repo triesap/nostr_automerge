@@ -408,6 +408,12 @@ validators, while the 24 out-of-core or explicitly deferred rows remain held
 without fabricated proof. The 87 unique proof identities executed successfully
 and the ordered projection is checksum-bound.
 
+The report and finding audit remains separate from that 148-row authority. All
+21 report-contract clauses execute their exact named tests, while findings 073
+through 093 bind to 17 unique exact tests or closed validators. Twenty findings
+have passing local closure proof; finding 080 alone remains truthfully held for
+external assurance and publication authority.
+
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 `FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`

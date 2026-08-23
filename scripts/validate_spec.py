@@ -31,6 +31,7 @@ VALIDATORS = [
     "validate_semantic_proof_catalog_v10.py",
     "validate_base64_proof_v10.py",
     "validate_rust_requirement_proofs_v10.py",
+    "validate_report_finding_proofs_v10.py",
     "validate_remediation_v9.py",
     "validate_checkpoint_parity_v9.py",
     "validate_carrier_gate_v9.py",

@@ -40,6 +40,9 @@ BASE64_SIGNED_TEST_SHA256 = "61af0ccb9497093f62ac9c92c0f0c685ab4cf0fb0ce690bcd25
 RUST_REQUIREMENT_PROOF_VALIDATOR = "scripts/validate_rust_requirement_proofs_v10.py"
 RUST_REQUIREMENT_PROOF_VALIDATOR_SHA256 = "75e66350c10bbcfc382e5eb0f21acff998cfa026b99c5937565ca4dda9d4c462"
 RUST_REQUIREMENT_PROOF_PROJECTION_SHA256 = "9ac4c332bec5726c93573e637109a764afe9fedaf0940a9e9b7b7d3ed12b15c1"
+REPORT_FINDING_PROOF_VALIDATOR = "scripts/validate_report_finding_proofs_v10.py"
+REPORT_FINDING_PROOF_VALIDATOR_SHA256 = "a29cf269b3a8a2b0c77c1f937cd9d5bbad931db61655c36fdd7fda4d5835957e"
+REPORT_FINDING_PROOF_PROJECTION_SHA256 = "234564768204c60ba37ec7861d833bf7ed8d0c5f15326063d72c9cb37d8b51c1"
 NEUTRAL_REPORT_SCHEMA = "fixtures/schema/report.schema.json"
 LEDGER = "implementation/runtime_ledger_v9.json"
 LEDGER_SCHEMA = "tools/validation/runtime_ledger_v9.schema.json"
@@ -60,7 +63,7 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "8ab8c6a075eb70e053d8d9dc53797682587dc7bf94bbcf2fb9be160830090319"
+    "169a171277370ae7d7d0718210d596ca938c36b29d68af7d2a47ecd85f94117f"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
@@ -406,6 +409,7 @@ PREDECESSOR_CANDIDATES = (
     "73083b7bacf997f9723a05aca67c9ab20456b184",
     "1ff391cd4837f3e17ffa5b06753289eedbb56b80",
     "6fbef81f8f12caef49ddee6fd5135d900bf22093",
+    "3b3dd73a93cb4e33ab08a600ff6294538a5b91bd",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -529,7 +533,7 @@ CLOSURE_PATHS = frozenset(
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
         "scripts/validate_private_reproduction_boundary_v9.py",
-        "scripts/validate_rust_requirement_proofs_v10.py",
+        "scripts/validate_report_finding_proofs_v10.py",
         "scripts/validate_runtime_ledger_v9.py",
         "scripts/validate_spec.py",
         "tools/nostr_automerge_xtask/src/validate.rs",
@@ -547,7 +551,7 @@ CLOSURE_AMEND_PATHS = frozenset(
 )
 CLOSURE_NEW_PATHS = frozenset(
     {
-        "scripts/validate_rust_requirement_proofs_v10.py",
+        "scripts/validate_report_finding_proofs_v10.py",
     }
 )
 EXPECTED_GATES = (
@@ -668,6 +672,7 @@ EXPECTED_GATES = (
     ("V-FULL-TS",),
     ("V-CONF",),
     ("V-FULL-RUST",),
+    ("V-EVIDENCE",),
     ("V-EVIDENCE",),
     ("V-EVIDENCE",),
 )
@@ -859,6 +864,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-EVIDENCE-006",),
     ("NCRDT-B64-001", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-EVIDENCE-006",),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -988,6 +994,7 @@ EXPECTED_FINDINGS = (
     (),
     (),
     (),
+    ("FINDING_078",),
 )
 FORBIDDEN_KEY_WORDS = {
     "source",
@@ -2347,6 +2354,7 @@ def validate_runtime_ledger(
         "semantic_proof_authority",
         "base64_proof",
         "rust_requirement_proofs",
+        "report_finding_proofs",
     }
     require(set(ledger) == expected_keys, "ledger:keys")
     require(ledger.get("schema") == "nostr_automerge.runtime_ledger.v9.v1", "ledger:schema")
@@ -2869,6 +2877,31 @@ def validate_runtime_ledger(
             "result": "pass",
         },
         "ledger:rust_requirement_proofs_binding",
+    )
+    require(
+        file_digest(REPORT_FINDING_PROOF_VALIDATOR)
+        == REPORT_FINDING_PROOF_VALIDATOR_SHA256,
+        "ledger:report_finding_proof_validator",
+    )
+    require(
+        ledger.get("report_finding_proofs")
+        == {
+            "checkpoint": "step_1278",
+            "candidate": "3b3dd73a93cb4e33ab08a600ff6294538a5b91bd",
+            "requirement_count": 148,
+            "report_clause_count": 21,
+            "finding_count": 21,
+            "closed_finding_count": 20,
+            "held_finding_count": 1,
+            "report_execution_count": 21,
+            "finding_proof_count": 17,
+            "finding_execution_count": 17,
+            "negative_mutation_count": 12,
+            "projection_sha256": REPORT_FINDING_PROOF_PROJECTION_SHA256,
+            "validator_sha256": REPORT_FINDING_PROOF_VALIDATOR_SHA256,
+            "result": "pass",
+        },
+        "ledger:report_finding_proofs_binding",
     )
     validate_no_leak(ledger, "ledger:boundary")
 

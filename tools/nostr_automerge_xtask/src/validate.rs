@@ -51,6 +51,10 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "scripts/validate_rust_requirement_proofs_v10.py",
     ),
     (
+        "report_finding_proofs_v10",
+        "scripts/validate_report_finding_proofs_v10.py",
+    ),
+    (
         "opaque_boundary_gate_v9",
         "scripts/validate_opaque_boundary_gate_v9.py",
     ),

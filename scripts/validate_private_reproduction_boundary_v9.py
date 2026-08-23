@@ -91,6 +91,7 @@ PYTHON_SURFACES = (
     "scripts/validate_semantic_proof_catalog_v10.py",
     "scripts/validate_base64_proof_v10.py",
     "scripts/validate_rust_requirement_proofs_v10.py",
+    "scripts/validate_report_finding_proofs_v10.py",
     "scripts/validate_opaque_boundary_gate_v9.py",
     "scripts/validate_opaque_resource_gate_v9.py",
     "scripts/validate_opaque_finalization_v9.py",
@@ -191,6 +192,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/report_parity_v9.json",
         "reports/opaque_boundary_gate_v9.json",
         "reports/opaque_resource_gate_v9.json",
+        "reports/external_holds_v8.json",
         "reports/spec_baseline.txt",
         "scripts/validate_architecture.py",
         "scripts/validate_assurance_v9.py",
@@ -221,6 +223,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_semantic_proof_catalog_v10.py",
         "scripts/validate_base64_proof_v10.py",
         "scripts/validate_rust_requirement_proofs_v10.py",
+        "scripts/validate_report_finding_proofs_v10.py",
         "scripts/reproduce_remediation_v9.py",
         "scripts/validate_remediation_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
@@ -502,6 +505,10 @@ def validate_source_surfaces() -> None:
                     or (
                         value in {"cargo", "python3"}
                         and relative == "scripts/validate_rust_requirement_proofs_v10.py"
+                    )
+                    or (
+                        value in {"cargo", "python3"}
+                        and relative == "scripts/validate_report_finding_proofs_v10.py"
                     )
                     or (
                         value in {"cargo", "git"}
