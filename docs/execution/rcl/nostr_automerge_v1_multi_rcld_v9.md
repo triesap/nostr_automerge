@@ -17,9 +17,9 @@ Reviewed distribution-v9 manifest SHA-256: `7b4ab5d2146939d142eb92d43060ef2183c9
 Reviewed canonical-output SHA-256: `e193a7b0db3a43e9d33e612afea05bd447a5e968a45e283d098f45278d6ab6fc`
 Steps: `step_1158` through `step_1287` (130 contiguous checkpoints)
 Active RCLD: RCLD 87
-Active checkpoint: `step_1225`
-Next RCLD: RCLD 87
-Next checkpoint: `step_1226`
+Active checkpoint: `step_1226`
+Next RCLD: RCLD 88
+Next checkpoint: `step_1227`
 
 This planning revision changes only the unfinished checkpoint map. Completed
 candidate identities and evidence remain immutable. The public-owned
@@ -481,7 +481,7 @@ Depends on: RCLD 85
 
 ## RCLD 87 — Rust Two-Tier Finalization
 
-Status: in progress
+Status: complete
 Steps: `step_1218` through `step_1226`
 Gate: `GATE_V9_RUST_FINALIZATION`
 Depends on: RCLD 86
@@ -696,10 +696,10 @@ completion.
 - RCLD 84 — Carrier Independence, Typed Stops, And Unsupported Identity
 - RCLD 85 — Rust Report Contract And No-Progress Evaluation
 - RCLD 86 — Private Canonical Report Contract
+- RCLD 87 — Rust Two-Tier Finalization
 
 ## Unfinished RCLDs
 
-- RCLD 87 — Rust Two-Tier Finalization
 - RCLD 88 — Private Two-Tier Finalization
 - RCLD 89 — Rust Target Work And Shared Bytes
 - RCLD 90 — Private Ingress, Limits, Immutability, And Ordering

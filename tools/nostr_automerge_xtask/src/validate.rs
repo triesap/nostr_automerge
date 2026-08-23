@@ -21,6 +21,10 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "rust_report_gate_v9",
         "scripts/validate_rust_report_gate_v9.py",
     ),
+    (
+        "rust_finalization_gate_v9",
+        "scripts/validate_rust_finalization_gate_v9.py",
+    ),
     ("report_parity_v9", "scripts/validate_report_parity_v9.py"),
     ("runtime_ledger_v9", "scripts/validate_runtime_ledger_v9.py"),
     (
@@ -98,6 +102,7 @@ mod tests {
         assert!(names.contains(&"carrier_gate_v9"));
         assert!(names.contains(&"report_contract_v9"));
         assert!(names.contains(&"rust_report_gate_v9"));
+        assert!(names.contains(&"rust_finalization_gate_v9"));
         assert!(names.contains(&"report_parity_v9"));
         assert!(names.contains(&"runtime_ledger_v9"));
         assert!(names.contains(&"private_reproduction_boundary_v9"));

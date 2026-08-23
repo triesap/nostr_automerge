@@ -1,0 +1,53 @@
+{
+  "schema": "nostr_automerge.rust_finalization_gate.v9.v1",
+  "checkpoint": "step_1226",
+  "gate_id": "GATE_V9_RUST_FINALIZATION",
+  "authority_stage": "checkpoint_expectations_corrected",
+  "status": "pass",
+  "publication_status": "held",
+  "requirement_ids": ["NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+  "candidate_chain": [
+    {"checkpoint": "step_1218", "candidate": "b34fc7ce1c46b5100ed8f1514e82066db45a0334", "parent": "8e85bd29181ebf36d2cfd7d4ed330b0a0975aa44", "scope_entry_count": 8, "scope_identity_sha256": "f311271da8592aae3be9a723c15993b3ea00106d4701a614588c926c2bcb3868", "result": "pass"},
+    {"checkpoint": "step_1219", "candidate": "06c48a96ab0e78e06c5cf8c0f1a99298edf6ece8", "parent": "b34fc7ce1c46b5100ed8f1514e82066db45a0334", "scope_entry_count": 11, "scope_identity_sha256": "8a6ce313f74aca81d4f31c28550a7c5c4d2dbaac34a522868e992a248f0320da", "result": "pass"},
+    {"checkpoint": "step_1220", "candidate": "74c99e241aa32521846c2f0fcc791803e61c778b", "parent": "06c48a96ab0e78e06c5cf8c0f1a99298edf6ece8", "scope_entry_count": 6, "scope_identity_sha256": "57f1a75a57453c0160db315504a369aa2950790b35338321196d4de6794ccb39", "result": "pass"},
+    {"checkpoint": "step_1221", "candidate": "1a09181b0db5a0563f699a6483a97a591005578e", "parent": "74c99e241aa32521846c2f0fcc791803e61c778b", "scope_entry_count": 6, "scope_identity_sha256": "1fc0bde370e7690bf8332a72018c391e297db179452a7175c1fc734c61d2d7a2", "result": "pass"},
+    {"checkpoint": "step_1222", "candidate": "6faf4a0922e6ca33c32b1f503ff29a6f3449f86a", "parent": "1a09181b0db5a0563f699a6483a97a591005578e", "scope_entry_count": 6, "scope_identity_sha256": "8e0fd832957ca92eef2f0115c7db9c233d4ebe133930c5abd8009d82153ca804", "result": "pass"},
+    {"checkpoint": "step_1223", "candidate": "01c6e9e21b4e51a75fd2012d909b7ae16f77f0ef", "parent": "6faf4a0922e6ca33c32b1f503ff29a6f3449f86a", "scope_entry_count": 6, "scope_identity_sha256": "06e44c79d44b2fdc267048b04b1c7000e8094586f609ac9e2697836911670171", "result": "pass"},
+    {"checkpoint": "step_1224", "candidate": "eb7300759ffe8262b3eb848ccea0d2dd10f29bc6", "parent": "01c6e9e21b4e51a75fd2012d909b7ae16f77f0ef", "scope_entry_count": 6, "scope_identity_sha256": "e51be648b2669e93b766ddf84cd7219c5bfb6716fd5e60da9a45c8464879d21e", "result": "pass"},
+    {"checkpoint": "step_1225", "candidate": "66ab2ff05f89638b0dbee66a3962f5ebac768984", "parent": "eb7300759ffe8262b3eb848ccea0d2dd10f29bc6", "scope_entry_count": 8, "scope_identity_sha256": "f94400c26c2f5f8d1fcb6e5a285b790aa267733919f96c916a16d4d5ef4726bb", "result": "pass"}
+  ],
+  "settlement_contract": {
+    "complete_passes": ["control_records", "semantic_change_records", "change_carrier_events", "other_events", "checkpoint_records", "change_classifications", "history_digest", "dispositions_digest", "evidence_records", "report_invariants", "fixed_overhead"],
+    "fallback_passes": ["digests", "fixed_overhead", "invariants"],
+    "complete_pass_count": 11,
+    "fallback_pass_count": 3,
+    "terminal_states": ["complete", "interrupted", "failed"],
+    "reservation": "atomic_checked",
+    "consumption": "immediately_before_work",
+    "refund": "after_valid_complete_report",
+    "interruption": "forfeit_complete_consume_fallback",
+    "result": "pass"
+  },
+  "boundary_cases": ["zero", "n_minus_one", "n", "n_plus_one", "every_pass", "every_cancellation"],
+  "mutation_families": ["missing", "duplicate", "reordered", "overrun", "underflow", "early_refund", "wrong_tier", "double_settlement"],
+  "regressions": {"fixed_count": 9, "open_count": 3, "finding_076": "fixed", "result": "pass"},
+  "validation": {
+    "focused_resource": "pass",
+    "public_api": "pass",
+    "remediation_harness": "pass",
+    "full_public": "pass",
+    "conformance_scenario_count": 180,
+    "delivery_order_count": 8,
+    "canonical_output_sha256": "84f370b201945c844396406acfb022faa2bdadb32d96206511474a00218770cb",
+    "distribution_run_sha256": "74b24f58fe9c20da082dd9ae4c1b344e8468c00a70dbd710adf724ab70ed14c4",
+    "result": "pass"
+  },
+  "implementation_identity_sha256": "8897ef5c9358ff895483dbf6a6c94301ac88080c0e1070cccd29716b33eea640",
+  "result_classes": [
+    {"class": "two_tier_settlement", "result": "pass"},
+    {"class": "typed_stop_preservation", "result": "pass"},
+    {"class": "mutation_rejection", "result": "pass"},
+    {"class": "full_public", "result": "pass"}
+  ],
+  "result_identity_sha256": "ab5f4a6900e8ad6df0dac8f7965c981e9f92782922261f88e156e5fc5ed6759d"
+}

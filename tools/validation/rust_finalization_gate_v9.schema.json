@@ -1,0 +1,24 @@
+{
+  "title": "nostr_automerge Rust finalization gate v9",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "checkpoint", "gate_id", "authority_stage", "status", "publication_status", "requirement_ids", "candidate_chain", "settlement_contract", "boundary_cases", "mutation_families", "regressions", "validation", "implementation_identity_sha256", "result_classes", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.rust_finalization_gate.v9.v1"},
+    "checkpoint": {"const": "step_1226"},
+    "gate_id": {"const": "GATE_V9_RUST_FINALIZATION"},
+    "authority_stage": {"const": "checkpoint_expectations_corrected"},
+    "status": {"const": "pass"},
+    "publication_status": {"const": "held"},
+    "requirement_ids": {"type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": {"type": "string", "pattern": "^NCRDT-[A-Z0-9]+(?:-[A-Z0-9]+)*$"}},
+    "candidate_chain": {"type": "array", "minItems": 8, "maxItems": 8, "items": {"type": "object", "additionalProperties": false, "required": ["checkpoint", "candidate", "parent", "scope_entry_count", "scope_identity_sha256", "result"], "properties": {"checkpoint": {"type": "string", "pattern": "^step_1[0-9]{3}$"}, "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "parent": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "scope_entry_count": {"type": "integer", "minimum": 1}, "scope_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "result": {"const": "pass"}}}},
+    "settlement_contract": {"type": "object", "additionalProperties": false, "required": ["complete_passes", "fallback_passes", "complete_pass_count", "fallback_pass_count", "terminal_states", "reservation", "consumption", "refund", "interruption", "result"], "properties": {"complete_passes": {"type": "array", "minItems": 11, "maxItems": 11, "uniqueItems": true, "items": {"type": "string"}}, "fallback_passes": {"type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": {"type": "string"}}, "complete_pass_count": {"const": 11}, "fallback_pass_count": {"const": 3}, "terminal_states": {"type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": {"enum": ["complete", "interrupted", "failed"]}}, "reservation": {"const": "atomic_checked"}, "consumption": {"const": "immediately_before_work"}, "refund": {"const": "after_valid_complete_report"}, "interruption": {"const": "forfeit_complete_consume_fallback"}, "result": {"const": "pass"}}},
+    "boundary_cases": {"type": "array", "minItems": 6, "maxItems": 6, "uniqueItems": true, "items": {"enum": ["zero", "n_minus_one", "n", "n_plus_one", "every_pass", "every_cancellation"]}},
+    "mutation_families": {"type": "array", "minItems": 8, "maxItems": 8, "uniqueItems": true, "items": {"enum": ["missing", "duplicate", "reordered", "overrun", "underflow", "early_refund", "wrong_tier", "double_settlement"]}},
+    "regressions": {"type": "object", "additionalProperties": false, "required": ["fixed_count", "open_count", "finding_076", "result"], "properties": {"fixed_count": {"const": 9}, "open_count": {"const": 3}, "finding_076": {"const": "fixed"}, "result": {"const": "pass"}}},
+    "validation": {"type": "object", "additionalProperties": false, "required": ["focused_resource", "public_api", "remediation_harness", "full_public", "conformance_scenario_count", "delivery_order_count", "canonical_output_sha256", "distribution_run_sha256", "result"], "properties": {"focused_resource": {"const": "pass"}, "public_api": {"const": "pass"}, "remediation_harness": {"const": "pass"}, "full_public": {"const": "pass"}, "conformance_scenario_count": {"const": 180}, "delivery_order_count": {"const": 8}, "canonical_output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "distribution_run_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "result": {"const": "pass"}}},
+    "implementation_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "result_classes": {"type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true, "items": {"type": "object", "additionalProperties": false, "required": ["class", "result"], "properties": {"class": {"enum": ["two_tier_settlement", "typed_stop_preservation", "mutation_rejection", "full_public"]}, "result": {"const": "pass"}}}},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

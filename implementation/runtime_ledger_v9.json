@@ -3,10 +3,10 @@
   "status": "in_progress",
   "rcld": 87,
   "cursor": {
-    "active_step": "step_1225",
-    "next_step": "step_1226",
+    "active_step": "step_1226",
+    "next_step": "step_1227",
     "last_step": "step_1287",
-    "remaining_checkpoint_count": 63,
+    "remaining_checkpoint_count": 62,
     "first_rcld": 87,
     "last_rcld": 94,
     "remaining_rcld_count": 8
@@ -821,6 +821,16 @@
       "finding_ids": ["FINDING_076"],
       "deviation_ids": [],
       "result": "pass"
+    },
+    {
+      "step": "step_1225",
+      "candidate": "66ab2ff05f89638b0dbee66a3962f5ebac768984",
+      "owner_class": "public",
+      "gate_ids": ["V-RESOURCE"],
+      "requirement_ids": ["NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_076"],
+      "deviation_ids": [],
+      "result": "pass"
     }
   ],
   "opaque_reproduction": {
@@ -908,6 +918,22 @@
     "open_regression_count": 4,
     "code_projection_sha256": "41e5fe9671ec9425dfb40801281bc7ef02b42b787473f432b83086ff44ff9b47",
     "result_identity_sha256": "a27f1e771cb8fe70545dce95325ca9a23443b6ea1485f00d27a4c0e493e83648",
+    "result": "pass",
+    "publication_status": "held"
+  },
+  "rust_finalization_gate": {
+    "checkpoint": "step_1226",
+    "gate_id": "GATE_V9_RUST_FINALIZATION",
+    "predecessor_candidate": "66ab2ff05f89638b0dbee66a3962f5ebac768984",
+    "candidate_count": 8,
+    "complete_pass_count": 11,
+    "fallback_pass_count": 3,
+    "boundary_count": 6,
+    "mutation_family_count": 8,
+    "fixed_regression_count": 9,
+    "open_regression_count": 3,
+    "implementation_identity_sha256": "8897ef5c9358ff895483dbf6a6c94301ac88080c0e1070cccd29716b33eea640",
+    "result_identity_sha256": "ab5f4a6900e8ad6df0dac8f7965c981e9f92782922261f88e156e5fc5ed6759d",
     "result": "pass",
     "publication_status": "held"
   },

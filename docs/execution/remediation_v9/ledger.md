@@ -64,6 +64,13 @@ output identity, while malformed output and a structurally valid deliberate
 mismatch are rejected. The public record contains only opaque identities,
 counts, result classes, and held publication state.
 
+The Rust finalization closure binds the eight ordered public candidates from
+`step_1218` through `step_1225`, all 11 complete-report passes, the three
+fixed-fallback passes, six exact boundary families, and eight invalid ledger
+mutation families. It records nine fixed and three open regressions while
+preserving the existing 180-scenario conformance output identities. Its
+publication status remains `held`.
+
 | Checkpoint range | Lane | Result |
 | --- | --- | --- |
 | `step_1158`–`step_1163` | `V-AUTH` | pass |
@@ -113,8 +120,9 @@ counts, result classes, and held publication state.
 | `step_1222` | `V-RESOURCE` | pass |
 | `step_1223` | `V-RESOURCE` | pass |
 | `step_1224` | `V-RESOURCE` | pass |
-| `step_1225` | `V-RESOURCE` | active |
-| `step_1226` | `V-FULL-RUST` | next |
+| `step_1225` | `V-RESOURCE` | pass |
+| `step_1226` | `V-FULL-RUST` | active |
+| `step_1227` | `V-TS` | next |
 
 The completed report-authority checkpoint binds a closed inventory of complete
 and no-progress construction plus nine revision consumers to exact reviewed
@@ -263,7 +271,7 @@ immutable historical record and is not the carrier closure authority.
 `step_1197` through `step_1205` chain ending at
 `321abda8f672ecf1a44aa1919e0cec98830e8df8`; its current two-process
 conformance identity is the same canonical and serialized output pair above.
-There are 63 checkpoints including the active checkpoint remaining through
+There are 62 checkpoints including the active checkpoint remaining through
 `step_1287`.
 
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`

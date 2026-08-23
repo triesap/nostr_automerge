@@ -24,6 +24,7 @@ CARRIER_REPORT = "reports/opaque_carrier_v9.json"
 CARRIER_REPORT_SCHEMA = "tools/validation/opaque_carrier_v9.schema.json"
 CARRIER_GATE_REPORT = "reports/carrier_gate_v9.json"
 RUST_REPORT_GATE_REPORT = "reports/rust_report_gate_v9.json"
+RUST_FINALIZATION_GATE_REPORT = "reports/rust_finalization_gate_v9.json"
 REPORT_PARITY_GATE_REPORT = "reports/report_parity_v9.json"
 NEUTRAL_REPORT_SCHEMA = "fixtures/schema/report.schema.json"
 LEDGER = "implementation/runtime_ledger_v9.json"
@@ -45,7 +46,7 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "44238837b07774e82e67bceb638f0828df4ab7274e85f10ade07f8cea6b5195a"
+    "f89cdd261cc39d6bf809bdf66c6f0e11e3e4ae6f8672a669e9a89338a7656509"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
@@ -67,6 +68,9 @@ APPROVED_CARRIER_GATE_RESULT_IDENTITY = (
 )
 APPROVED_RUST_REPORT_GATE_RESULT_IDENTITY = (
     "a27f1e771cb8fe70545dce95325ca9a23443b6ea1485f00d27a4c0e493e83648"
+)
+APPROVED_RUST_FINALIZATION_GATE_RESULT_IDENTITY = (
+    "ab5f4a6900e8ad6df0dac8f7965c981e9f92782922261f88e156e5fc5ed6759d"
 )
 APPROVED_REPORT_PARITY_GATE_RESULT_IDENTITY = (
     "aaf76821bb0fa463c4b71c1f27d6c194dea1b5c9790b505e04d3c810b898059d"
@@ -318,6 +322,7 @@ PREDECESSOR_CANDIDATES = (
     "6faf4a0922e6ca33c32b1f503ff29a6f3449f86a",
     "01c6e9e21b4e51a75fd2012d909b7ae16f77f0ef",
     "eb7300759ffe8262b3eb848ccea0d2dd10f29bc6",
+    "66ab2ff05f89638b0dbee66a3962f5ebac768984",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -435,14 +440,18 @@ HISTORICAL_STEP_1217_CLOSURE_PATHS = frozenset(
 )
 CLOSURE_PATHS = frozenset(
     {
-        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
-        "docs/execution/remediation_v9/reproductions.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
-        "scripts/reproduce_remediation_v9.py",
+        "reports/rust_finalization_gate_v9.json",
+        "scripts/validate_private_reproduction_boundary_v9.py",
+        "scripts/validate_rust_finalization_gate_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
+        "scripts/validate_spec.py",
+        "tools/nostr_automerge_xtask/src/validate.rs",
+        "tools/validation/rust_finalization_gate_v9.schema.json",
+        "tools/validation/runtime_ledger_v9.schema.json",
     }
 )
 CLOSURE_AMEND_ADDITION = "docs/execution/remediation_v9/ledger.md"
@@ -454,7 +463,11 @@ CLOSURE_AMEND_PATHS = frozenset(
     }
 )
 CLOSURE_NEW_PATHS = frozenset(
-    {}
+    {
+        "reports/rust_finalization_gate_v9.json",
+        "scripts/validate_rust_finalization_gate_v9.py",
+        "tools/validation/rust_finalization_gate_v9.schema.json",
+    }
 )
 EXPECTED_GATES = (
     ("V-AUTH",),
@@ -517,6 +530,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-FULL-TS",),
     ("V-EVIDENCE",),
+    ("V-RESOURCE",),
     ("V-RESOURCE",),
     ("V-RESOURCE",),
     ("V-RESOURCE",),
@@ -661,6 +675,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -731,6 +746,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_090",),
     ("FINDING_090", "FINDING_093"),
     ("FINDING_090", "FINDING_093"),
+    ("FINDING_076",),
     ("FINDING_076",),
     ("FINDING_076",),
     ("FINDING_076",),
@@ -2044,6 +2060,7 @@ def validate_runtime_ledger(
     carrier: dict[str, Any],
     carrier_gate: dict[str, Any],
     rust_report_gate: dict[str, Any],
+    rust_finalization_gate: dict[str, Any],
     report_parity_gate: dict[str, Any],
 ) -> None:
     expected_keys = {
@@ -2061,6 +2078,7 @@ def validate_runtime_ledger(
         "opaque_carrier",
         "carrier_gate",
         "rust_report_gate",
+        "rust_finalization_gate",
         "report_schema_authority",
         "report_parity_gate",
     }
@@ -2334,6 +2352,32 @@ def validate_runtime_ledger(
         "ledger:rust_report_gate_binding",
     )
     require(
+        rust_finalization_gate.get("result_identity_sha256")
+        == APPROVED_RUST_FINALIZATION_GATE_RESULT_IDENTITY,
+        "ledger:rust_finalization_gate_result_identity",
+    )
+    settlement = rust_finalization_gate["settlement_contract"]
+    require(
+        ledger.get("rust_finalization_gate")
+        == {
+            "checkpoint": rust_finalization_gate["checkpoint"],
+            "gate_id": rust_finalization_gate["gate_id"],
+            "predecessor_candidate": rust_finalization_gate["candidate_chain"][-1]["candidate"],
+            "candidate_count": len(rust_finalization_gate["candidate_chain"]),
+            "complete_pass_count": settlement["complete_pass_count"],
+            "fallback_pass_count": settlement["fallback_pass_count"],
+            "boundary_count": len(rust_finalization_gate["boundary_cases"]),
+            "mutation_family_count": len(rust_finalization_gate["mutation_families"]),
+            "fixed_regression_count": rust_finalization_gate["regressions"]["fixed_count"],
+            "open_regression_count": rust_finalization_gate["regressions"]["open_count"],
+            "implementation_identity_sha256": rust_finalization_gate["implementation_identity_sha256"],
+            "result_identity_sha256": rust_finalization_gate["result_identity_sha256"],
+            "result": rust_finalization_gate["status"],
+            "publication_status": rust_finalization_gate["publication_status"],
+        },
+        "ledger:rust_finalization_gate_binding",
+    )
+    require(
         report_parity_gate.get("result_identity_sha256")
         == APPROVED_REPORT_PARITY_GATE_RESULT_IDENTITY,
         "ledger:report_parity_gate_result_identity",
@@ -2373,6 +2417,7 @@ def mutation_self_test(
     carrier: dict[str, Any],
     carrier_gate: dict[str, Any],
     rust_report_gate: dict[str, Any],
+    rust_finalization_gate: dict[str, Any],
     report_parity_gate: dict[str, Any],
     ledger: dict[str, Any],
 ) -> int:
@@ -2602,6 +2647,12 @@ def mutation_self_test(
     stale_report_projection = copy.deepcopy(ledger)
     stale_report_projection["rust_report_gate"]["code_projection_sha256"] = "f" * 64
     ledger_mutations.append(("ledger_report_projection", stale_report_projection))
+    forged_finalization_gate = copy.deepcopy(ledger)
+    forged_finalization_gate["rust_finalization_gate"]["result_identity_sha256"] = "f" * 64
+    ledger_mutations.append(("ledger_forged_finalization_gate", forged_finalization_gate))
+    stale_finalization_implementation = copy.deepcopy(ledger)
+    stale_finalization_implementation["rust_finalization_gate"]["implementation_identity_sha256"] = "f" * 64
+    ledger_mutations.append(("ledger_finalization_implementation", stale_finalization_implementation))
     report_schema_projection = copy.deepcopy(ledger)
     report_schema_projection["authority_projection"]["report_schema_sha256"] = "f" * 64
     ledger_mutations.append(("ledger_report_schema_projection", report_schema_projection))
@@ -2693,6 +2744,7 @@ def mutation_self_test(
                 carrier,
                 carrier_gate,
                 rust_report_gate,
+                rust_finalization_gate,
                 report_parity_gate,
             )
         except LedgerError:
@@ -2708,6 +2760,7 @@ def mutation_self_test(
             carrier,
             carrier_gate,
             rust_report_gate,
+            rust_finalization_gate,
             report_parity_gate,
         )
     except LedgerError:
@@ -2836,6 +2889,7 @@ def main() -> int:
     carrier = load_object(CARRIER_REPORT)
     carrier_gate = load_object(CARRIER_GATE_REPORT)
     rust_report_gate = load_object(RUST_REPORT_GATE_REPORT)
+    rust_finalization_gate = load_object(RUST_FINALIZATION_GATE_REPORT)
     report_parity_gate = load_object(REPORT_PARITY_GATE_REPORT)
     ledger = load_object(LEDGER)
     validate_schema_contract(
@@ -2867,6 +2921,7 @@ def main() -> int:
         carrier,
         carrier_gate,
         rust_report_gate,
+        rust_finalization_gate,
         report_parity_gate,
     )
     mutations = mutation_self_test(
@@ -2876,6 +2931,7 @@ def main() -> int:
         carrier,
         carrier_gate,
         rust_report_gate,
+        rust_finalization_gate,
         report_parity_gate,
         ledger,
     )
@@ -2891,6 +2947,7 @@ def main() -> int:
     print(f"- carrier_matrix_rows={carrier['result_counts']['aggregate_rows']}")
     print(f"- carrier_gate_identity={carrier_gate['result_identity_sha256']}")
     print(f"- rust_report_gate_identity={rust_report_gate['result_identity_sha256']}")
+    print(f"- rust_finalization_gate_identity={rust_finalization_gate['result_identity_sha256']}")
     print(f"- report_parity_gate_identity={report_parity_gate['result_identity_sha256']}")
     print(f"- report_revision_inventory={len(REPORT_REVISION_INVENTORY)}")
     print(f"- report_contract_clauses={REPORT_CONTRACT_CLAUSE_COUNT}")
