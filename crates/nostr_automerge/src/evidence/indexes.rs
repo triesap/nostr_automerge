@@ -131,6 +131,10 @@ pub(crate) struct CoordinateWorkMetadata {
     pub(crate) change_hash_count: usize,
     pub(crate) evaluation_event_count: usize,
     pub(crate) carrier_evidence_count: usize,
+    pub(crate) reportable_event_count: usize,
+    pub(crate) change_carrier_event_count: usize,
+    pub(crate) other_event_count: usize,
+    pub(crate) evidence_record_count: usize,
     pub(crate) checkpoint_descriptor_count: usize,
     pub(crate) checkpoint_chunk_count: usize,
     pub(crate) decode_work_bytes: Option<u64>,
@@ -287,6 +291,20 @@ fn derive_coordinate_work_metadata(
                 )
             })
             .count();
+        let control_count = indexes
+            .coordinates
+            .controls
+            .get(coordinate)
+            .map_or(0, BTreeSet::len);
+        let change_carrier_event_count = reportable
+            .iter()
+            .filter(|event_id| is_attributable_change_carrier(events.get(event_id)))
+            .count();
+        let other_event_count = reportable
+            .len()
+            .checked_sub(control_count)
+            .and_then(|count| count.checked_sub(change_carrier_event_count))
+            .unwrap_or(usize::MAX);
         let mut seen = BTreeSet::<ChangeHash>::new();
         let decode_work_bytes = reportable.iter().try_fold(0_u64, |total, event_id| {
             let Some(EventEvidence::VerifiedCarrier {
@@ -304,11 +322,7 @@ fn derive_coordinate_work_metadata(
         indexes.coordinates.work.insert(
             *coordinate,
             CoordinateWorkMetadata {
-                control_count: indexes
-                    .coordinates
-                    .controls
-                    .get(coordinate)
-                    .map_or(0, BTreeSet::len),
+                control_count,
                 control_relationship_count: indexes
                     .coordinates
                     .control_children_by_coordinate_parent
@@ -324,6 +338,10 @@ fn derive_coordinate_work_metadata(
                     .map_or(0, BTreeSet::len),
                 evaluation_event_count,
                 carrier_evidence_count,
+                reportable_event_count: reportable.len(),
+                change_carrier_event_count,
+                other_event_count,
+                evidence_record_count: reportable.len().saturating_add(duplicates),
                 checkpoint_descriptor_count: indexes
                     .checkpoints
                     .descriptors_by_coordinate
@@ -343,6 +361,32 @@ fn derive_coordinate_work_metadata(
                 decode_work_bytes,
             },
         );
+    }
+}
+
+fn is_attributable_change_carrier(evidence: Option<&EventEvidence>) -> bool {
+    match evidence {
+        Some(EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::Change(_),
+            ..
+        }) => true,
+        Some(EventEvidence::InvalidCarrier { event, .. })
+        | Some(EventEvidence::UnsupportedRevision {
+            carrier: VerifiedCarrier::UnsupportedRevision { event, .. },
+            ..
+        })
+        | Some(EventEvidence::VerifiedCarrier {
+            carrier: VerifiedCarrier::UnsupportedRevision { event, .. },
+            ..
+        }) => event.kind() == 1_624,
+        Some(
+            EventEvidence::VerifiedCarrier { .. }
+            | EventEvidence::UnsupportedRevision { .. }
+            | EventEvidence::InvalidEvent { .. }
+            | EventEvidence::IrrelevantEvent { .. }
+            | EventEvidence::DuplicateEvent { .. },
+        )
+        | None => false,
     }
 }
 
@@ -789,6 +833,10 @@ mod tests {
                 change_hash_count: 0,
                 evaluation_event_count: 1,
                 carrier_evidence_count: 1,
+                reportable_event_count: 1,
+                change_carrier_event_count: 0,
+                other_event_count: 0,
+                evidence_record_count: 1,
                 checkpoint_descriptor_count: 0,
                 checkpoint_chunk_count: 0,
                 decode_work_bytes: Some(0),

@@ -89,6 +89,8 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "crates/nostr_automerge/src/engine/evaluation_report.rs",
         "crates/nostr_automerge/src/control/reference_state.rs",
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "crates/nostr_automerge/src/evidence/document_view.rs",
+        "crates/nostr_automerge/src/evidence/indexes.rs",
         "crates/nostr_automerge/src/integrity.rs",
         "crates/nostr_automerge/src/reference/evaluate.rs",
         "crates/nostr_automerge/src/types/actor_id.rs",

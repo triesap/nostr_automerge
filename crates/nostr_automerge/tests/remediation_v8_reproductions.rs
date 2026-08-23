@@ -30,8 +30,8 @@ fn finding_067_control_work_is_coordinate_scoped() {
 fn finding_068_interrupted_report_work_is_settled_by_pass() {
     let source = include_str!("../src/engine/reference_evaluator.rs");
     assert!(
-        source.contains("InterruptedReportPass")
-            && source.contains("prepare_no_progress_interrupted_report")
+        source.contains("CompleteReportPass")
+            && source.contains("reserved_interrupted_report")
             && !source.contains("prepare_interrupted_batch_report"),
         "FINDING_068 reproduced: interrupted report work occurs after coarse settlement"
     );

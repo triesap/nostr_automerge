@@ -188,6 +188,22 @@ impl<'a> DocumentEvidenceView<'a> {
         self.work.map_or(0, |work| work.carrier_evidence_count)
     }
 
+    pub(crate) fn reportable_event_count(&self) -> usize {
+        self.work.map_or(0, |work| work.reportable_event_count)
+    }
+
+    pub(crate) fn change_carrier_event_count(&self) -> usize {
+        self.work.map_or(0, |work| work.change_carrier_event_count)
+    }
+
+    pub(crate) fn other_event_count(&self) -> usize {
+        self.work.map_or(0, |work| work.other_event_count)
+    }
+
+    pub(crate) fn evidence_record_count(&self) -> usize {
+        self.work.map_or(0, |work| work.evidence_record_count)
+    }
+
     pub(crate) fn checkpoint_descriptor_count(&self) -> usize {
         self.work.map_or(0, |work| work.checkpoint_descriptor_count)
     }

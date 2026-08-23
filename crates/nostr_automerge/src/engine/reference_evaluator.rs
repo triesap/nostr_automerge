@@ -417,7 +417,7 @@ impl ReferenceEvaluator {
         let evidence = view.records().collect::<Vec<_>>();
         finalization
             .consume(
-                FinalizationDimension::Controls,
+                FinalizationDimension::ControlRecords,
                 u64::try_from(control_dispositions.len()).unwrap_or(u64::MAX),
             )
             .map_err(|_| {
@@ -425,7 +425,7 @@ impl ReferenceEvaluator {
             })?;
         finalization
             .consume(
-                FinalizationDimension::Changes,
+                FinalizationDimension::SemanticChangeRecords,
                 u64::try_from(dispositions.len()).unwrap_or(u64::MAX),
             )
             .map_err(|_| {
@@ -435,11 +435,25 @@ impl ReferenceEvaluator {
             .iter()
             .filter(|record| matches!(record.identifier(), ProtocolItemIdentifier::Event(_)))
             .count();
+        let finalized_change_carriers = event_records.carrier_outcomes.len();
+        let Some(finalized_other_events) = finalized_events.checked_sub(finalized_change_carriers)
+        else {
+            return Err(settle_reserved_error(
+                &mut finalization,
+                EvaluationError::ReportInvariant,
+            ));
+        };
         finalization
             .consume(
-                FinalizationDimension::Events,
-                u64::try_from(finalized_events).unwrap_or(u64::MAX),
+                FinalizationDimension::ChangeCarrierEvents,
+                u64::try_from(finalized_change_carriers).unwrap_or(u64::MAX),
             )
+            .and_then(|()| {
+                finalization.consume(
+                    FinalizationDimension::OtherEvents,
+                    u64::try_from(finalized_other_events).unwrap_or(u64::MAX),
+                )
+            })
             .map_err(|_| {
                 settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
             })?;
@@ -449,42 +463,65 @@ impl ReferenceEvaluator {
             .sum::<usize>();
         finalization
             .consume(
-                FinalizationDimension::Checkpoints,
+                FinalizationDimension::CheckpointRecords,
                 u64::try_from(finalized_checkpoints).unwrap_or(u64::MAX),
             )
             .map_err(|_| {
                 settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
             })?;
-        let finalized_digests = batch
+        let finalized_change_classifications = dispositions.len().saturating_mul(4);
+        finalization
+            .consume(
+                FinalizationDimension::ChangeClassifications,
+                u64::try_from(finalized_change_classifications).unwrap_or(u64::MAX),
+            )
+            .map_err(|_| {
+                settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
+            })?;
+        let finalized_history_digest = batch
             .canonical_controls
             .len()
             .saturating_add(accepted_changes.len())
             .saturating_add(heads.len())
-            .saturating_add(disposition_records.len())
-            .saturating_add(8);
+            .saturating_add(ReportFinalizationPlan::HISTORY_DIGEST_FIXED_UNITS as usize);
+        let finalized_dispositions_digest = disposition_records
+            .len()
+            .saturating_add(ReportFinalizationPlan::DISPOSITIONS_DIGEST_FIXED_UNITS as usize);
         finalization
             .consume(
-                FinalizationDimension::Digests,
-                u64::try_from(finalized_digests).unwrap_or(u64::MAX),
+                FinalizationDimension::HistoryDigest,
+                u64::try_from(finalized_history_digest).unwrap_or(u64::MAX),
             )
+            .and_then(|()| {
+                finalization.consume(
+                    FinalizationDimension::DispositionsDigest,
+                    u64::try_from(finalized_dispositions_digest).unwrap_or(u64::MAX),
+                )
+            })
             .map_err(|_| {
                 settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
             })?;
         finalization
             .consume(
-                FinalizationDimension::Evidence,
+                FinalizationDimension::EvidenceRecords,
                 u64::try_from(evidence.len()).unwrap_or(u64::MAX),
             )
             .map_err(|_| {
                 settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
             })?;
         finalization
-            .consume(FinalizationDimension::Invariants, REPORT_INVARIANT_ITEMS)
+            .consume(
+                FinalizationDimension::ReportInvariants,
+                REPORT_INVARIANT_ITEMS,
+            )
             .map_err(|_| {
                 settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
             })?;
         finalization
-            .consume(FinalizationDimension::FixedOverhead, 8)
+            .consume(
+                FinalizationDimension::FixedOverhead,
+                ReportFinalizationPlan::FIXED_OVERHEAD_UNITS,
+            )
             .map_err(|_| {
                 settle_reserved_error(&mut finalization, EvaluationError::ReportInvariant)
             })?;
@@ -2132,35 +2169,64 @@ fn disposition_hashes(
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct ReportFinalizationPlan {
-    controls: u64,
-    changes: u64,
-    events: u64,
-    checkpoints: u64,
-    digests: u64,
-    evidence: u64,
-    invariants: u64,
+    control_records: u64,
+    semantic_change_records: u64,
+    change_carrier_events: u64,
+    other_events: u64,
+    checkpoint_records: u64,
+    change_classifications: u64,
+    history_digest: u64,
+    dispositions_digest: u64,
+    evidence_records: u64,
+    report_invariants: u64,
     fixed_overhead: u64,
 }
 
 impl ReportFinalizationPlan {
+    const HISTORY_DIGEST_FIXED_UNITS: u64 = 4;
+    const DISPOSITIONS_DIGEST_FIXED_UNITS: u64 = 4;
+    const FIXED_OVERHEAD_UNITS: u64 = 8;
+
     fn from_view(view: &DocumentEvidenceView<'_>) -> Result<Self, ()> {
-        let events = u64::try_from(view.evaluation_event_count()).map_err(|_| ())?;
         let controls = u64::try_from(view.control_count()).map_err(|_| ())?;
         let hashes = u64::try_from(view.change_hash_count()).map_err(|_| ())?;
-        let digests = events
-            .checked_add(controls)
-            .and_then(|value| value.checked_add(hashes.checked_mul(3)?))
-            .and_then(|value| value.checked_add(8))
+        let change_carrier_events =
+            u64::try_from(view.change_carrier_event_count()).map_err(|_| ())?;
+        let other_events = u64::try_from(view.other_event_count()).map_err(|_| ())?;
+        let reportable_events = change_carrier_events.checked_add(other_events).ok_or(())?;
+        let non_control_events = u64::try_from(view.reportable_event_count())
+            .map_err(|_| ())?
+            .checked_sub(controls)
+            .ok_or(())?;
+        if reportable_events != non_control_events {
+            return Err(());
+        }
+        let checkpoint_records = u64::try_from(view.checkpoint_descriptor_count())
+            .map_err(|_| ())?
+            .checked_add(u64::try_from(view.checkpoint_chunk_count()).map_err(|_| ())?)
+            .ok_or(())?;
+        let change_classifications = hashes.checked_mul(4).ok_or(())?;
+        let history_digest = controls
+            .checked_add(hashes.checked_mul(2).ok_or(())?)
+            .and_then(|value| value.checked_add(Self::HISTORY_DIGEST_FIXED_UNITS))
+            .ok_or(())?;
+        let dispositions_digest = controls
+            .checked_add(hashes)
+            .and_then(|value| value.checked_add(reportable_events))
+            .and_then(|value| value.checked_add(Self::DISPOSITIONS_DIGEST_FIXED_UNITS))
             .ok_or(())?;
         let plan = Self {
-            controls,
-            changes: hashes,
-            events,
-            checkpoints: events,
-            digests,
-            evidence: events,
-            invariants: REPORT_INVARIANT_ITEMS,
-            fixed_overhead: 8,
+            control_records: controls,
+            semantic_change_records: hashes,
+            change_carrier_events,
+            other_events,
+            checkpoint_records,
+            change_classifications,
+            history_digest,
+            dispositions_digest,
+            evidence_records: u64::try_from(view.evidence_record_count()).map_err(|_| ())?,
+            report_invariants: REPORT_INVARIANT_ITEMS,
+            fixed_overhead: Self::FIXED_OVERHEAD_UNITS,
         };
         plan.total().ok_or(())?;
         Ok(plan)
@@ -2174,17 +2240,47 @@ impl ReportFinalizationPlan {
             })
     }
 
-    const fn reservations(self) -> [FinalizationReservationUnit; 8] {
+    const fn reservations(self) -> [FinalizationReservationUnit; 11] {
         [
-            FinalizationReservationUnit::new(InterruptedReportPass::Controls, self.controls),
-            FinalizationReservationUnit::new(InterruptedReportPass::Changes, self.changes),
-            FinalizationReservationUnit::new(InterruptedReportPass::Events, self.events),
-            FinalizationReservationUnit::new(InterruptedReportPass::Checkpoints, self.checkpoints),
-            FinalizationReservationUnit::new(InterruptedReportPass::Digests, self.digests),
-            FinalizationReservationUnit::new(InterruptedReportPass::Evidence, self.evidence),
-            FinalizationReservationUnit::new(InterruptedReportPass::Invariants, self.invariants),
             FinalizationReservationUnit::new(
-                InterruptedReportPass::FixedOverhead,
+                CompleteReportPass::ControlRecords,
+                self.control_records,
+            ),
+            FinalizationReservationUnit::new(
+                CompleteReportPass::SemanticChangeRecords,
+                self.semantic_change_records,
+            ),
+            FinalizationReservationUnit::new(
+                CompleteReportPass::ChangeCarrierEvents,
+                self.change_carrier_events,
+            ),
+            FinalizationReservationUnit::new(CompleteReportPass::OtherEvents, self.other_events),
+            FinalizationReservationUnit::new(
+                CompleteReportPass::CheckpointRecords,
+                self.checkpoint_records,
+            ),
+            FinalizationReservationUnit::new(
+                CompleteReportPass::ChangeClassifications,
+                self.change_classifications,
+            ),
+            FinalizationReservationUnit::new(
+                CompleteReportPass::HistoryDigest,
+                self.history_digest,
+            ),
+            FinalizationReservationUnit::new(
+                CompleteReportPass::DispositionsDigest,
+                self.dispositions_digest,
+            ),
+            FinalizationReservationUnit::new(
+                CompleteReportPass::EvidenceRecords,
+                self.evidence_records,
+            ),
+            FinalizationReservationUnit::new(
+                CompleteReportPass::ReportInvariants,
+                self.report_invariants,
+            ),
+            FinalizationReservationUnit::new(
+                CompleteReportPass::FixedOverhead,
                 self.fixed_overhead,
             ),
         ]
@@ -2192,38 +2288,47 @@ impl ReportFinalizationPlan {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum InterruptedReportPass {
-    Controls,
-    Changes,
-    Events,
-    Checkpoints,
-    Digests,
-    Evidence,
-    Invariants,
+enum CompleteReportPass {
+    ControlRecords,
+    SemanticChangeRecords,
+    ChangeCarrierEvents,
+    OtherEvents,
+    CheckpointRecords,
+    ChangeClassifications,
+    HistoryDigest,
+    DispositionsDigest,
+    EvidenceRecords,
+    ReportInvariants,
     FixedOverhead,
 }
 
-impl InterruptedReportPass {
-    const ALL: [Self; 8] = [
-        Self::Controls,
-        Self::Changes,
-        Self::Events,
-        Self::Checkpoints,
-        Self::Digests,
-        Self::Evidence,
-        Self::Invariants,
+impl CompleteReportPass {
+    const ALL: [Self; 11] = [
+        Self::ControlRecords,
+        Self::SemanticChangeRecords,
+        Self::ChangeCarrierEvents,
+        Self::OtherEvents,
+        Self::CheckpointRecords,
+        Self::ChangeClassifications,
+        Self::HistoryDigest,
+        Self::DispositionsDigest,
+        Self::EvidenceRecords,
+        Self::ReportInvariants,
         Self::FixedOverhead,
     ];
 
     const fn dimension(self) -> FinalizationDimension {
         match self {
-            Self::Controls => FinalizationDimension::Controls,
-            Self::Changes => FinalizationDimension::Changes,
-            Self::Events => FinalizationDimension::Events,
-            Self::Checkpoints => FinalizationDimension::Checkpoints,
-            Self::Digests => FinalizationDimension::Digests,
-            Self::Evidence => FinalizationDimension::Evidence,
-            Self::Invariants => FinalizationDimension::Invariants,
+            Self::ControlRecords => FinalizationDimension::ControlRecords,
+            Self::SemanticChangeRecords => FinalizationDimension::SemanticChangeRecords,
+            Self::ChangeCarrierEvents => FinalizationDimension::ChangeCarrierEvents,
+            Self::OtherEvents => FinalizationDimension::OtherEvents,
+            Self::CheckpointRecords => FinalizationDimension::CheckpointRecords,
+            Self::ChangeClassifications => FinalizationDimension::ChangeClassifications,
+            Self::HistoryDigest => FinalizationDimension::HistoryDigest,
+            Self::DispositionsDigest => FinalizationDimension::DispositionsDigest,
+            Self::EvidenceRecords => FinalizationDimension::EvidenceRecords,
+            Self::ReportInvariants => FinalizationDimension::ReportInvariants,
             Self::FixedOverhead => FinalizationDimension::FixedOverhead,
         }
     }
@@ -2231,25 +2336,28 @@ impl InterruptedReportPass {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct FinalizationReservationUnit {
-    pass: InterruptedReportPass,
+    pass: CompleteReportPass,
     units: u64,
 }
 
 impl FinalizationReservationUnit {
-    const fn new(pass: InterruptedReportPass, units: u64) -> Self {
+    const fn new(pass: CompleteReportPass, units: u64) -> Self {
         Self { pass, units }
     }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum FinalizationDimension {
-    Controls,
-    Changes,
-    Events,
-    Checkpoints,
-    Digests,
-    Evidence,
-    Invariants,
+    ControlRecords,
+    SemanticChangeRecords,
+    ChangeCarrierEvents,
+    OtherEvents,
+    CheckpointRecords,
+    ChangeClassifications,
+    HistoryDigest,
+    DispositionsDigest,
+    EvidenceRecords,
+    ReportInvariants,
     FixedOverhead,
 }
 
@@ -2330,52 +2438,64 @@ impl FinalizationSettlement {
 
 #[derive(Debug, PartialEq, Eq)]
 struct ReportFinalizationLedger {
-    controls: FinalizationSettlement,
-    changes: FinalizationSettlement,
-    events: FinalizationSettlement,
-    checkpoints: FinalizationSettlement,
-    digests: FinalizationSettlement,
-    evidence: FinalizationSettlement,
-    invariants: FinalizationSettlement,
+    control_records: FinalizationSettlement,
+    semantic_change_records: FinalizationSettlement,
+    change_carrier_events: FinalizationSettlement,
+    other_events: FinalizationSettlement,
+    checkpoint_records: FinalizationSettlement,
+    change_classifications: FinalizationSettlement,
+    history_digest: FinalizationSettlement,
+    dispositions_digest: FinalizationSettlement,
+    evidence_records: FinalizationSettlement,
+    report_invariants: FinalizationSettlement,
     fixed_overhead: FinalizationSettlement,
 }
 
 impl ReportFinalizationLedger {
     const fn from_plan(plan: ReportFinalizationPlan) -> Self {
         Self {
-            controls: FinalizationSettlement::new(plan.controls),
-            changes: FinalizationSettlement::new(plan.changes),
-            events: FinalizationSettlement::new(plan.events),
-            checkpoints: FinalizationSettlement::new(plan.checkpoints),
-            digests: FinalizationSettlement::new(plan.digests),
-            evidence: FinalizationSettlement::new(plan.evidence),
-            invariants: FinalizationSettlement::new(plan.invariants),
+            control_records: FinalizationSettlement::new(plan.control_records),
+            semantic_change_records: FinalizationSettlement::new(plan.semantic_change_records),
+            change_carrier_events: FinalizationSettlement::new(plan.change_carrier_events),
+            other_events: FinalizationSettlement::new(plan.other_events),
+            checkpoint_records: FinalizationSettlement::new(plan.checkpoint_records),
+            change_classifications: FinalizationSettlement::new(plan.change_classifications),
+            history_digest: FinalizationSettlement::new(plan.history_digest),
+            dispositions_digest: FinalizationSettlement::new(plan.dispositions_digest),
+            evidence_records: FinalizationSettlement::new(plan.evidence_records),
+            report_invariants: FinalizationSettlement::new(plan.report_invariants),
             fixed_overhead: FinalizationSettlement::new(plan.fixed_overhead),
         }
     }
 
     fn dimension_mut(&mut self, dimension: FinalizationDimension) -> &mut FinalizationSettlement {
         match dimension {
-            FinalizationDimension::Controls => &mut self.controls,
-            FinalizationDimension::Changes => &mut self.changes,
-            FinalizationDimension::Events => &mut self.events,
-            FinalizationDimension::Checkpoints => &mut self.checkpoints,
-            FinalizationDimension::Digests => &mut self.digests,
-            FinalizationDimension::Evidence => &mut self.evidence,
-            FinalizationDimension::Invariants => &mut self.invariants,
+            FinalizationDimension::ControlRecords => &mut self.control_records,
+            FinalizationDimension::SemanticChangeRecords => &mut self.semantic_change_records,
+            FinalizationDimension::ChangeCarrierEvents => &mut self.change_carrier_events,
+            FinalizationDimension::OtherEvents => &mut self.other_events,
+            FinalizationDimension::CheckpointRecords => &mut self.checkpoint_records,
+            FinalizationDimension::ChangeClassifications => &mut self.change_classifications,
+            FinalizationDimension::HistoryDigest => &mut self.history_digest,
+            FinalizationDimension::DispositionsDigest => &mut self.dispositions_digest,
+            FinalizationDimension::EvidenceRecords => &mut self.evidence_records,
+            FinalizationDimension::ReportInvariants => &mut self.report_invariants,
             FinalizationDimension::FixedOverhead => &mut self.fixed_overhead,
         }
     }
 
-    fn settlements(&self) -> [&FinalizationSettlement; 8] {
+    fn settlements(&self) -> [&FinalizationSettlement; 11] {
         [
-            &self.controls,
-            &self.changes,
-            &self.events,
-            &self.checkpoints,
-            &self.digests,
-            &self.evidence,
-            &self.invariants,
+            &self.control_records,
+            &self.semantic_change_records,
+            &self.change_carrier_events,
+            &self.other_events,
+            &self.checkpoint_records,
+            &self.change_classifications,
+            &self.history_digest,
+            &self.dispositions_digest,
+            &self.evidence_records,
+            &self.report_invariants,
             &self.fixed_overhead,
         ]
     }
@@ -2403,17 +2523,8 @@ impl ReportFinalizationLedger {
     }
 
     fn refund_all_remaining(&mut self) -> Result<(), FinalizationPermitError> {
-        for dimension in [
-            FinalizationDimension::Controls,
-            FinalizationDimension::Changes,
-            FinalizationDimension::Events,
-            FinalizationDimension::Checkpoints,
-            FinalizationDimension::Digests,
-            FinalizationDimension::Evidence,
-            FinalizationDimension::Invariants,
-            FinalizationDimension::FixedOverhead,
-        ] {
-            self.dimension_mut(dimension).refund_remaining()?;
+        for pass in CompleteReportPass::ALL {
+            self.dimension_mut(pass.dimension()).refund_remaining()?;
         }
         Ok(())
     }
@@ -2646,7 +2757,7 @@ impl ReportFinalizationPermit {
         if self.state != FinalizationPermitState::Active {
             return Err(FinalizationPermitError);
         }
-        for pass in InterruptedReportPass::ALL {
+        for pass in CompleteReportPass::ALL {
             self.forfeit(pass.dimension())?;
         }
         Ok(())
@@ -3233,15 +3344,16 @@ mod tests {
         AggregateChangeContribution, BatchEvaluationReport, ChangeCarrierOutcome,
         ChangeClaimReason, CheckpointDownstreamStage, CheckpointHistoryInputs,
         CheckpointReportAttributionStage, CheckpointWorkObserver, CheckpointWorkStop,
-        FinalLineageChangeState, FinalizationDimension, FinalizationPermitError,
-        FinalizationReservationUnit, FixedFallbackLedger, FixedFallbackPass, InterruptedReportPass,
-        PreparedCheckpointInputs, REEVALUATION_STAGE_OBSERVATIONS, REPORT_INVARIANT_ITEMS,
-        ReferenceEvaluator, ReportFinalizationPermit, ReportFinalizationPlan,
-        aggregate_change_contribution, assembly_status, carrier_control_is_historical,
-        change_carrier_disposition, charge_checkpoint_work, checkpoint_control_refusal,
-        checkpoint_preflight_refusal, join_status, noncanonical_branch_claim_reason,
-        reduce_aggregate_change_outcome, reduce_change_dispositions,
-        scoped_dynamic_event_disposition_records, verify_prepared_checkpoints,
+        CompleteReportPass, FinalLineageChangeState, FinalizationDimension,
+        FinalizationPermitError, FinalizationReservationUnit, FixedFallbackLedger,
+        FixedFallbackPass, PreparedCheckpointInputs, REEVALUATION_STAGE_OBSERVATIONS,
+        REPORT_INVARIANT_ITEMS, ReferenceEvaluator, ReportFinalizationPermit,
+        ReportFinalizationPlan, aggregate_change_contribution, assembly_status,
+        carrier_control_is_historical, change_carrier_disposition, charge_checkpoint_work,
+        checkpoint_control_refusal, checkpoint_preflight_refusal, join_status,
+        noncanonical_branch_claim_reason, reduce_aggregate_change_outcome,
+        reduce_change_dispositions, scoped_dynamic_event_disposition_records,
+        verify_prepared_checkpoints,
     };
     use crate::CheckpointVerificationStatus as Status;
     use crate::authoring::{ActorState, AuthoringDocument};
@@ -3258,7 +3370,8 @@ mod tests {
     use crate::evidence::document_view::DocumentEvidenceView;
     use crate::evidence::event::{EventEvidence, RawChecksum};
     use crate::evidence::indexes::{
-        ChangeCarrierClaim, SemanticChangeRecord, TrustedIndexes, derive_trusted_indexes,
+        ChangeCarrierClaim, CoordinateWorkMetadata, SemanticChangeRecord, TrustedIndexes,
+        derive_trusted_indexes,
     };
     use crate::reference::epoch_engine::AcceptedAtControl;
     use crate::types::role::Role;
@@ -5041,7 +5154,7 @@ mod tests {
     #[test]
     fn finalization_reservation_is_atomic_and_refundable() {
         let plan = ReportFinalizationPlan {
-            invariants: 8,
+            report_invariants: 8,
             ..ReportFinalizationPlan::default()
         };
         let mut insufficient = WorkBudget::new(0, 7);
@@ -5060,6 +5173,81 @@ mod tests {
     }
 
     #[test]
+    fn complete_report_plan_is_exact_named_and_overflow_checked() {
+        let coordinate = DocumentCoordinate::new(
+            ControllerPublicKey::from_bytes([0xd1; 32]),
+            DocumentId::from_bytes([0xd2; 32]),
+        );
+        let mut indexes = TrustedIndexes::default();
+        indexes.coordinates.work.insert(
+            coordinate,
+            CoordinateWorkMetadata {
+                control_count: 2,
+                change_hash_count: 3,
+                reportable_event_count: 8,
+                change_carrier_event_count: 4,
+                other_event_count: 2,
+                evidence_record_count: 10,
+                checkpoint_descriptor_count: 2,
+                checkpoint_chunk_count: 3,
+                ..CoordinateWorkMetadata::default()
+            },
+        );
+        let corpus = EvidenceCorpus {
+            events: std::collections::BTreeMap::new(),
+            invalid: std::collections::BTreeMap::new(),
+            duplicates: Vec::new(),
+            indexes,
+        };
+        let view = DocumentEvidenceView::derive(&corpus, coordinate);
+        let plan = ReportFinalizationPlan::from_view(&view);
+        assert!(plan.is_ok());
+        let Ok(plan) = plan else { return };
+        assert_eq!(
+            plan.reservations(),
+            [
+                FinalizationReservationUnit::new(CompleteReportPass::ControlRecords, 2),
+                FinalizationReservationUnit::new(CompleteReportPass::SemanticChangeRecords, 3),
+                FinalizationReservationUnit::new(CompleteReportPass::ChangeCarrierEvents, 4),
+                FinalizationReservationUnit::new(CompleteReportPass::OtherEvents, 2),
+                FinalizationReservationUnit::new(CompleteReportPass::CheckpointRecords, 5),
+                FinalizationReservationUnit::new(CompleteReportPass::ChangeClassifications, 12),
+                FinalizationReservationUnit::new(CompleteReportPass::HistoryDigest, 12),
+                FinalizationReservationUnit::new(CompleteReportPass::DispositionsDigest, 15),
+                FinalizationReservationUnit::new(CompleteReportPass::EvidenceRecords, 10),
+                FinalizationReservationUnit::new(
+                    CompleteReportPass::ReportInvariants,
+                    REPORT_INVARIANT_ITEMS,
+                ),
+                FinalizationReservationUnit::new(CompleteReportPass::FixedOverhead, 8),
+            ]
+        );
+        assert_eq!(plan.total(), Some(81));
+
+        let mut overflow_indexes = TrustedIndexes::default();
+        overflow_indexes.coordinates.work.insert(
+            coordinate,
+            CoordinateWorkMetadata {
+                change_hash_count: usize::MAX,
+                ..CoordinateWorkMetadata::default()
+            },
+        );
+        let overflow_corpus = EvidenceCorpus {
+            events: std::collections::BTreeMap::new(),
+            invalid: std::collections::BTreeMap::new(),
+            duplicates: Vec::new(),
+            indexes: overflow_indexes,
+        };
+        assert!(
+            ReportFinalizationPlan::from_view(&DocumentEvidenceView::derive(
+                &overflow_corpus,
+                coordinate,
+            ))
+            .is_err()
+        );
+    }
+
+    #[test]
     fn interrupted_finalization_has_exact_zero_n_minus_one_and_n_boundaries() {
         let mut zero_budget = WorkBudget::new(0, 0);
         let zero =
@@ -5071,8 +5259,8 @@ mod tests {
         assert!(zero.finish_interrupted().is_ok());
 
         let plan = ReportFinalizationPlan {
-            controls: 2,
-            invariants: 1,
+            control_records: 2,
+            report_invariants: 1,
             ..ReportFinalizationPlan::default()
         };
         let mut n_minus_one = WorkBudget::new(0, 2);
@@ -5081,53 +5269,76 @@ mod tests {
         let exact = ReportFinalizationPermit::reserve(plan, &mut exact_n);
         assert!(exact.is_ok());
         let Ok(mut exact) = exact else { return };
-        assert!(exact.consume(FinalizationDimension::Controls, 2).is_ok());
+        assert!(
+            exact
+                .consume(FinalizationDimension::ControlRecords, 2)
+                .is_ok()
+        );
         assert!(exact.forfeit_all_remaining().is_ok());
         consume_fixed_fallback(&mut exact.fallback);
         assert!(exact.finish_interrupted().is_ok());
-        assert_eq!(exact.ledger.controls.consumed, 2);
-        assert_eq!(exact.ledger.invariants.forfeited, 1);
+        assert_eq!(exact.ledger.control_records.consumed, 2);
+        assert_eq!(exact.ledger.report_invariants.forfeited, 1);
     }
 
     #[test]
     fn finalization_dimensions_reject_underflow_and_double_finish() {
         let plan = ReportFinalizationPlan {
-            controls: 2,
-            invariants: 1,
+            control_records: 2,
+            report_invariants: 1,
             ..ReportFinalizationPlan::default()
         };
         let mut budget = WorkBudget::new(0, 3);
         let permit = ReportFinalizationPermit::reserve(plan, &mut budget);
         assert!(permit.is_ok());
         let Ok(mut permit) = permit else { return };
-        assert!(permit.consume(FinalizationDimension::Controls, 2).is_ok());
-        assert!(permit.consume(FinalizationDimension::Controls, 1).is_err());
+        assert!(
+            permit
+                .consume(FinalizationDimension::ControlRecords, 2)
+                .is_ok()
+        );
+        assert!(
+            permit
+                .consume(FinalizationDimension::ControlRecords, 1)
+                .is_err()
+        );
         assert!(permit.finish_interrupted().is_err());
         for dimension in [
-            FinalizationDimension::Controls,
-            FinalizationDimension::Changes,
-            FinalizationDimension::Events,
-            FinalizationDimension::Checkpoints,
-            FinalizationDimension::Digests,
-            FinalizationDimension::Evidence,
-            FinalizationDimension::Invariants,
+            FinalizationDimension::ControlRecords,
+            FinalizationDimension::SemanticChangeRecords,
+            FinalizationDimension::ChangeCarrierEvents,
+            FinalizationDimension::OtherEvents,
+            FinalizationDimension::CheckpointRecords,
+            FinalizationDimension::ChangeClassifications,
+            FinalizationDimension::HistoryDigest,
+            FinalizationDimension::DispositionsDigest,
+            FinalizationDimension::EvidenceRecords,
+            FinalizationDimension::ReportInvariants,
             FinalizationDimension::FixedOverhead,
         ] {
             assert!(permit.forfeit(dimension).is_ok());
         }
-        assert!(permit.forfeit(FinalizationDimension::Controls).is_err());
-        assert!(permit.consume(FinalizationDimension::Changes, 0).is_err());
-        assert_eq!(permit.ledger.controls.consumed, 2);
-        assert_eq!(permit.ledger.controls.forfeited, 0);
-        assert_eq!(permit.ledger.invariants.consumed, 0);
-        assert_eq!(permit.ledger.invariants.forfeited, 1);
+        assert!(
+            permit
+                .forfeit(FinalizationDimension::ControlRecords)
+                .is_err()
+        );
+        assert!(
+            permit
+                .consume(FinalizationDimension::SemanticChangeRecords, 0)
+                .is_err()
+        );
+        assert_eq!(permit.ledger.control_records.consumed, 2);
+        assert_eq!(permit.ledger.control_records.forfeited, 0);
+        assert_eq!(permit.ledger.report_invariants.consumed, 0);
+        assert_eq!(permit.ledger.report_invariants.forfeited, 1);
         assert!(permit.ledger.is_interrupted_settlement());
         consume_fixed_fallback(&mut permit.fallback);
         assert!(permit.finish_interrupted().is_ok());
         assert!(permit.finish_interrupted().is_err());
         assert!(
             permit
-                .consume(FinalizationDimension::Invariants, 1)
+                .consume(FinalizationDimension::ReportInvariants, 1)
                 .is_err()
         );
     }
@@ -5135,7 +5346,7 @@ mod tests {
     #[test]
     fn fixed_fallback_is_independent_of_caller_target_capacity() {
         let plan = ReportFinalizationPlan {
-            controls: 1,
+            control_records: 1,
             ..ReportFinalizationPlan::default()
         };
         let mut zero_budget = WorkBudget::new(0, 0);
@@ -5179,13 +5390,17 @@ mod tests {
         let permit = ReportFinalizationPermit::reserve(plan, &mut complete_budget);
         assert!(permit.is_ok());
         let Ok(mut permit) = permit else { return };
-        assert_eq!(permit.ledger.controls.remaining(), Some(1));
+        assert_eq!(permit.ledger.control_records.remaining(), Some(1));
         assert_eq!(
             permit.fallback.digests.remaining(),
             Some(FixedFallbackLedger::DIGEST_UNITS)
         );
-        assert!(permit.consume(FinalizationDimension::Controls, 1).is_ok());
-        assert_eq!(permit.ledger.controls.remaining(), Some(0));
+        assert!(
+            permit
+                .consume(FinalizationDimension::ControlRecords, 1)
+                .is_ok()
+        );
+        assert_eq!(permit.ledger.control_records.remaining(), Some(0));
         assert_eq!(
             permit.fallback.digests.remaining(),
             Some(FixedFallbackLedger::DIGEST_UNITS),
@@ -5197,7 +5412,7 @@ mod tests {
     #[ignore = "expected to fail until FINDING_076 closes"]
     fn finding_076_finalization_rejects_reordered_named_passes() {
         let plan = ReportFinalizationPlan {
-            controls: 1,
+            control_records: 1,
             fixed_overhead: 1,
             ..ReportFinalizationPlan::default()
         };
@@ -5207,7 +5422,7 @@ mod tests {
         let Ok(mut permit) = permit else { return };
         assert_eq!(
             permit.consume_pass(FinalizationReservationUnit::new(
-                InterruptedReportPass::FixedOverhead,
+                CompleteReportPass::FixedOverhead,
                 1,
             )),
             Err(FinalizationPermitError),

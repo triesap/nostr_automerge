@@ -3593,7 +3593,11 @@ fn automerge_application_and_materialization_are_charged() {
         measured_report.dispositions_digest()
     );
     assert_eq!(exhausted.consumed().get(WorkCounter::ApplyChange), 3);
-    assert_eq!(exhausted.remaining().1, 0);
+    assert_eq!(
+        exhausted.remaining().1,
+        1,
+        "the failed materialization charge must leave its unconsumed unit intact",
+    );
 }
 
 #[test]
@@ -3726,7 +3730,7 @@ fn every_v3_work_counter_boundary() {
     assert_eq!(covered.len(), 10);
     let evaluator_source = include_str!("../src/engine/reference_evaluator.rs");
     assert!(evaluator_source.contains("build_control_ancestry_index"));
-    assert!(evaluator_source.contains("prepare_no_progress_interrupted_report"));
+    assert!(evaluator_source.contains("reserved_interrupted_report"));
     assert!(!evaluator_source.contains("prepare_interrupted_batch_report"));
     assert!(!evaluator_source.contains("fn checkpoint_refusals"));
 

@@ -311,6 +311,7 @@ PREDECESSOR_CANDIDATES = (
     "d74e5a9c8954de893a3059604abf25e506facd3a",
     "74b20922ff0ac2a877acc0c1bb196b20c8cc02a8",
     "8e85bd29181ebf36d2cfd7d4ed330b0a0975aa44",
+    "b34fc7ce1c46b5100ed8f1514e82066db45a0334",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -333,7 +334,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "5641ba216b35ebb27dfffd93e6373a53284529d3a3dad45b4e34f2363db7959d",
+        "a8187ffcdb8dbdc9475be845c9f01400559c470a73e46ffe8b6e19dce4ef6eaa",
     ),
     (
         "crates/nostr_automerge/src/integrity.rs",
@@ -345,7 +346,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "crates/nostr_automerge/tests/public_engine_api.rs",
-        "ff749d10cc8c51e25ec8bfbcaa5efeac38331c70884dfa2fe149162097def899",
+        "edf602cc6dea9816089fc40456db0e2270b1f02351643eb85ea60288858c9fd3",
     ),
     (
         "tools/nostr_automerge_conformance/src/expected.rs",
@@ -429,13 +430,16 @@ HISTORICAL_STEP_1217_CLOSURE_PATHS = frozenset(
 CLOSURE_PATHS = frozenset(
     {
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "crates/nostr_automerge/src/evidence/document_view.rs",
+        "crates/nostr_automerge/src/evidence/indexes.rs",
+        "crates/nostr_automerge/tests/public_engine_api.rs",
+        "crates/nostr_automerge/tests/remediation_v8_reproductions.rs",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
-        "scripts/validate_remediation_v9.py",
+        "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
-        "spec/remediation_findings_v9.json",
     }
 )
 CLOSURE_AMEND_ADDITION = "docs/execution/remediation_v9/ledger.md"
@@ -510,6 +514,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-FULL-TS",),
     ("V-EVIDENCE",),
+    ("V-RESOURCE",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -640,6 +645,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -710,6 +716,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_090",),
     ("FINDING_090", "FINDING_093"),
     ("FINDING_090", "FINDING_093"),
+    ("FINDING_076",),
 )
 FORBIDDEN_KEY_WORDS = {
     "source",
