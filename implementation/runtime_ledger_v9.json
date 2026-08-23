@@ -3,10 +3,10 @@
   "status": "in_progress",
   "rcld": 93,
   "cursor": {
-    "active_step": "step_1276",
-    "next_step": "step_1277",
+    "active_step": "step_1277",
+    "next_step": "step_1278",
     "last_step": "step_1287",
-    "remaining_checkpoint_count": 12,
+    "remaining_checkpoint_count": 11,
     "first_rcld": 93,
     "last_rcld": 94,
     "remaining_rcld_count": 2
@@ -1331,6 +1331,16 @@
       "finding_ids": [],
       "deviation_ids": [],
       "result": "pass"
+    },
+    {
+      "step": "step_1276",
+      "candidate": "6fbef81f8f12caef49ddee6fd5135d900bf22093",
+      "owner_class": "public",
+      "gate_ids": ["V-EVIDENCE"],
+      "requirement_ids": ["NCRDT-B64-001", "NCRDT-EVIDENCE-006"],
+      "finding_ids": [],
+      "deviation_ids": [],
+      "result": "pass"
     }
   ],
   "opaque_reproduction": {
@@ -1570,6 +1580,19 @@
     "inventory_sha256": "99fbf64a034f31b7ce2f85998a1d24f8334d796c34cf6504460652d6fb6bdf87",
     "validator_sha256": "f8652527bd6bb81f9a9422d290034d8d45c4c92717ce9027d7360b01afe6d78c",
     "vector_sha256": "61af0ccb9497093f62ac9c92c0f0c685ab4cf0fb0ce690bcd2504bed8b8ed6d2",
+    "result": "pass"
+  },
+  "rust_requirement_proofs": {
+    "checkpoint": "step_1277",
+    "candidate": "6fbef81f8f12caef49ddee6fd5135d900bf22093",
+    "requirement_count": 148,
+    "passing_count": 124,
+    "held_count": 24,
+    "proof_count": 87,
+    "executed_count": 87,
+    "negative_mutation_count": 8,
+    "projection_sha256": "9ac4c332bec5726c93573e637109a764afe9fedaf0940a9e9b7b7d3ed12b15c1",
+    "validator_sha256": "75e66350c10bbcfc382e5eb0f21acff998cfa026b99c5937565ca4dda9d4c462",
     "result": "pass"
   }
 }

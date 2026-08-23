@@ -402,6 +402,12 @@ for unpadded, whitespace-bearing, URL-safe, malformed, non-ASCII, and
 noncanonical-pad-bit input. The immutable v9 matrix remains hash-checked as a
 historical artifact but no longer treats source tokens as behavioral proof.
 
+The Rust requirement audit covers all 148 ordered requirements: 124 passing
+rows bind to exact signed fixtures, exact Rust tests, or exact public
+validators, while the 24 out-of-core or explicitly deferred rows remain held
+without fabricated proof. The 87 unique proof identities executed successfully
+and the ordered projection is checksum-bound.
+
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 `FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`

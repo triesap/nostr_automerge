@@ -26,7 +26,8 @@
     "report_parity_gate",
     "signed_conformance_gate",
     "semantic_proof_authority",
-    "base64_proof"
+    "base64_proof",
+    "rust_requirement_proofs"
   ],
   "properties": {
     "schema": {"const": "nostr_automerge.runtime_ledger.v9.v1"},
@@ -551,6 +552,24 @@
         "inventory_sha256": {"const": "99fbf64a034f31b7ce2f85998a1d24f8334d796c34cf6504460652d6fb6bdf87"},
         "validator_sha256": {"const": "f8652527bd6bb81f9a9422d290034d8d45c4c92717ce9027d7360b01afe6d78c"},
         "vector_sha256": {"const": "61af0ccb9497093f62ac9c92c0f0c685ab4cf0fb0ce690bcd2504bed8b8ed6d2"},
+        "result": {"const": "pass"}
+      }
+    },
+    "rust_requirement_proofs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checkpoint", "candidate", "requirement_count", "passing_count", "held_count", "proof_count", "executed_count", "negative_mutation_count", "projection_sha256", "validator_sha256", "result"],
+      "properties": {
+        "checkpoint": {"const": "step_1277"},
+        "candidate": {"const": "6fbef81f8f12caef49ddee6fd5135d900bf22093"},
+        "requirement_count": {"const": 148},
+        "passing_count": {"const": 124},
+        "held_count": {"const": 24},
+        "proof_count": {"const": 87},
+        "executed_count": {"const": 87},
+        "negative_mutation_count": {"const": 8},
+        "projection_sha256": {"const": "9ac4c332bec5726c93573e637109a764afe9fedaf0940a9e9b7b7d3ed12b15c1"},
+        "validator_sha256": {"const": "75e66350c10bbcfc382e5eb0f21acff998cfa026b99c5937565ca4dda9d4c462"},
         "result": {"const": "pass"}
       }
     }

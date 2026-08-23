@@ -37,6 +37,9 @@ BASE64_SIGNED_TEST = "crates/nostr_automerge/tests/base64_contract.rs"
 BASE64_PROOF_INVENTORY_SHA256 = "99fbf64a034f31b7ce2f85998a1d24f8334d796c34cf6504460652d6fb6bdf87"
 BASE64_PROOF_VALIDATOR_SHA256 = "f8652527bd6bb81f9a9422d290034d8d45c4c92717ce9027d7360b01afe6d78c"
 BASE64_SIGNED_TEST_SHA256 = "61af0ccb9497093f62ac9c92c0f0c685ab4cf0fb0ce690bcd2504bed8b8ed6d2"
+RUST_REQUIREMENT_PROOF_VALIDATOR = "scripts/validate_rust_requirement_proofs_v10.py"
+RUST_REQUIREMENT_PROOF_VALIDATOR_SHA256 = "75e66350c10bbcfc382e5eb0f21acff998cfa026b99c5937565ca4dda9d4c462"
+RUST_REQUIREMENT_PROOF_PROJECTION_SHA256 = "9ac4c332bec5726c93573e637109a764afe9fedaf0940a9e9b7b7d3ed12b15c1"
 NEUTRAL_REPORT_SCHEMA = "fixtures/schema/report.schema.json"
 LEDGER = "implementation/runtime_ledger_v9.json"
 LEDGER_SCHEMA = "tools/validation/runtime_ledger_v9.schema.json"
@@ -57,7 +60,7 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "a62f0e0d74cd41ac6b713230ad121041423e6195dbb4ce7a3b0382210807d336"
+    "8ab8c6a075eb70e053d8d9dc53797682587dc7bf94bbcf2fb9be160830090319"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
@@ -402,6 +405,7 @@ PREDECESSOR_CANDIDATES = (
     "fc256396c534adb90be4da4c9d172a14d3786f1d",
     "73083b7bacf997f9723a05aca67c9ab20456b184",
     "1ff391cd4837f3e17ffa5b06753289eedbb56b80",
+    "6fbef81f8f12caef49ddee6fd5135d900bf22093",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -520,16 +524,12 @@ HISTORICAL_STEP_1217_CLOSURE_PATHS = frozenset(
 )
 CLOSURE_PATHS = frozenset(
     {
-        "crates/nostr_automerge/tests/base64_contract.rs",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
-        "spec/remediation_findings_v9.json",
-        "scripts/validate_base64_proof_v10.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
-        "scripts/validate_requirement_matrix_v9.py",
-        "scripts/validate_remediation_v9.py",
+        "scripts/validate_rust_requirement_proofs_v10.py",
         "scripts/validate_runtime_ledger_v9.py",
         "scripts/validate_spec.py",
         "tools/nostr_automerge_xtask/src/validate.rs",
@@ -547,8 +547,7 @@ CLOSURE_AMEND_PATHS = frozenset(
 )
 CLOSURE_NEW_PATHS = frozenset(
     {
-        "crates/nostr_automerge/tests/base64_contract.rs",
-        "scripts/validate_base64_proof_v10.py",
+        "scripts/validate_rust_requirement_proofs_v10.py",
     }
 )
 EXPECTED_GATES = (
@@ -669,6 +668,7 @@ EXPECTED_GATES = (
     ("V-FULL-TS",),
     ("V-CONF",),
     ("V-FULL-RUST",),
+    ("V-EVIDENCE",),
     ("V-EVIDENCE",),
 )
 EXPECTED_REQUIREMENTS = (
@@ -858,6 +858,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-EVIDENCE-006",),
+    ("NCRDT-B64-001", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -980,6 +981,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_074",),
     ("FINDING_075",),
     ("FINDING_088",),
+    (),
     (),
     (),
     (),
@@ -2344,6 +2346,7 @@ def validate_runtime_ledger(
         "signed_conformance_gate",
         "semantic_proof_authority",
         "base64_proof",
+        "rust_requirement_proofs",
     }
     require(set(ledger) == expected_keys, "ledger:keys")
     require(ledger.get("schema") == "nostr_automerge.runtime_ledger.v9.v1", "ledger:schema")
@@ -2844,6 +2847,28 @@ def validate_runtime_ledger(
             "result": "pass",
         },
         "ledger:base64_proof_binding",
+    )
+    require(
+        file_digest(RUST_REQUIREMENT_PROOF_VALIDATOR)
+        == RUST_REQUIREMENT_PROOF_VALIDATOR_SHA256,
+        "ledger:rust_requirement_proof_validator",
+    )
+    require(
+        ledger.get("rust_requirement_proofs")
+        == {
+            "checkpoint": "step_1277",
+            "candidate": "6fbef81f8f12caef49ddee6fd5135d900bf22093",
+            "requirement_count": 148,
+            "passing_count": 124,
+            "held_count": 24,
+            "proof_count": 87,
+            "executed_count": 87,
+            "negative_mutation_count": 8,
+            "projection_sha256": RUST_REQUIREMENT_PROOF_PROJECTION_SHA256,
+            "validator_sha256": RUST_REQUIREMENT_PROOF_VALIDATOR_SHA256,
+            "result": "pass",
+        },
+        "ledger:rust_requirement_proofs_binding",
     )
     validate_no_leak(ledger, "ledger:boundary")
 
