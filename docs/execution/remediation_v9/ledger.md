@@ -445,6 +445,12 @@ approved opaque candidate, eight ordered opaque identities, eight passing
 local-run classes, and exact counts for 192 scenarios, eight deliveries, and
 two processes. The public record contains no private path, command, or log.
 
+At `step_1285`, ten final identities bind public and private assurance,
+semantic evidence, signed conformance, report schema, distribution,
+requirements, applicability, external holds, and the authority transition.
+The v9 evidence remains historical and superseded; six external holds remain
+unexecuted, and no remote action is claimed.
+
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 `FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`

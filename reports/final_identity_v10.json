@@ -1,0 +1,26 @@
+{
+  "schema": "nostr_automerge.final_identity.v10.v1",
+  "checkpoint": "step_1285",
+  "candidate": "c9f56626dba5356d373a17af70b921695b6262de",
+  "status": "pass",
+  "publication_status": "held",
+  "protocol_revision": "draft_2026_08",
+  "requirement_count": 148,
+  "scenario_count": 192,
+  "identities": [
+    {"class": "public_assurance", "sha256": "673e00929f9bf917dc4257f3083a959763b34f4fbdc895cc107050342e342897"},
+    {"class": "private_assurance", "sha256": "ee7253d40dc24b0aabf80fa59ee73acf664936e146e8fc4a440849c02e7322b5"},
+    {"class": "semantic_evidence", "sha256": "ac0fe7e42abf41d282a5addd90ca7be3b05426d6858cdcabb9ea52aa5fb03864"},
+    {"class": "signed_conformance", "sha256": "16577552f984f88f0e07cfe001ebae6591b02f8c3dff6d7949380c353bc4ec85"},
+    {"class": "report_contract", "sha256": "08a88d5ad7049203bb766dc763601a6c5311a70e631fa35ab62c164203cd8e1c"},
+    {"class": "distribution", "sha256": "86ec32f34dd99ef0c1e5ea3531360a1f78bf07d62818375096e0bdf0f209b8e5"},
+    {"class": "requirements", "sha256": "f6e6070de7a5fc707f8488ced3a031f7dfc36d11c7477d800c3d3c33d532e6ba"},
+    {"class": "applicability", "sha256": "c5380b7fe4e16f7a750ee0b48b64bc7e4c29fd5851f34125980e4413f7d55712"},
+    {"class": "external_holds", "sha256": "69c04d7183042c9b3935e4f2df3d6335ae76fbdaebb2dc249a021d227f172942"},
+    {"class": "authority_transition", "sha256": "6a36fa26b21d9d122d3c75a446295d73e54af9a3ff5a0b35eeb465e85e4ff5ec"}
+  ],
+  "v9_evidence": "historical_superseded_non_current",
+  "held_count": 6,
+  "remote_actions_performed": false,
+  "result_identity_sha256": "b77f0d208ed0f1366211ed349c9e28f05df56b6e5b78d003a9f2998bacb8701c"
+}

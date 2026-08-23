@@ -445,6 +445,7 @@ PREDECESSOR_CANDIDATES = (
     "87adb867ef46a0221a9e0addc567cec608820152",
     "6bf938aa005c0b215fb3c509cd04aae0caddf1ec",
     "ddb9db4c38d5543cbec8655378f79c842f7a4d53",
+    "c9f56626dba5356d373a17af70b921695b6262de",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -566,14 +567,14 @@ CLOSURE_PATHS = frozenset(
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
-        "reports/opaque_private_assurance_v10.json",
+        "reports/final_identity_v10.json",
         "reports/spec_baseline.txt",
         "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
-        "scripts/validate_opaque_private_assurance_v10.py",
+        "scripts/validate_final_identity_v10.py",
         "scripts/validate_spec.py",
         "tools/nostr_automerge_xtask/src/validate.rs",
-        "tools/validation/opaque_private_assurance_v10.schema.json",
+        "tools/validation/final_identity_v10.schema.json",
     }
 )
 CLOSURE_AMEND_ADDITION = "docs/execution/remediation_v9/ledger.md"
@@ -587,9 +588,9 @@ CLOSURE_AMEND_PATHS = frozenset(
 )
 CLOSURE_NEW_PATHS = frozenset(
     {
-        "reports/opaque_private_assurance_v10.json",
-        "scripts/validate_opaque_private_assurance_v10.py",
-        "tools/validation/opaque_private_assurance_v10.schema.json",
+        "reports/final_identity_v10.json",
+        "scripts/validate_final_identity_v10.py",
+        "tools/validation/final_identity_v10.schema.json",
     }
 )
 EXPECTED_GATES = (
@@ -719,6 +720,7 @@ EXPECTED_GATES = (
     ("V-EVIDENCE",),
     ("V-FULL-RUST",),
     ("V-FULL-RUST",),
+    ("V-EVIDENCE",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -915,6 +917,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-EVIDENCE-006",),
     ("NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -1045,6 +1048,7 @@ EXPECTED_FINDINGS = (
     (),
     (),
     ("FINDING_078",),
+    REPRODUCED_IDS,
     REPRODUCED_IDS,
     REPRODUCED_IDS,
     REPRODUCED_IDS,
