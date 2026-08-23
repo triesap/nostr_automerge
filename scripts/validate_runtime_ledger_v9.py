@@ -443,6 +443,7 @@ PREDECESSOR_CANDIDATES = (
     "cba1b43bd544d6d015ece1a216977ddebe249d8c",
     "ebf8d1ecc75cf5eee2741ec61b80f0dbe5283df5",
     "87adb867ef46a0221a9e0addc567cec608820152",
+    "6bf938aa005c0b215fb3c509cd04aae0caddf1ec",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -564,15 +565,14 @@ CLOSURE_PATHS = frozenset(
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
-        "reports/semantic_evidence_gate_v10.json",
+        "reports/public_assurance_v10.json",
         "reports/spec_baseline.txt",
         "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
-        "scripts/validate_semantic_evidence_gate_v10.py",
+        "scripts/validate_public_assurance_v10.py",
         "scripts/validate_spec.py",
         "tools/nostr_automerge_xtask/src/validate.rs",
-        "tools/validation/semantic_evidence_gate_v10.schema.json",
-        "tools/validation/runtime_ledger_v9.schema.json",
+        "tools/validation/public_assurance_v10.schema.json",
     }
 )
 CLOSURE_AMEND_ADDITION = "docs/execution/remediation_v9/ledger.md"
@@ -586,9 +586,9 @@ CLOSURE_AMEND_PATHS = frozenset(
 )
 CLOSURE_NEW_PATHS = frozenset(
     {
-        "reports/semantic_evidence_gate_v10.json",
-        "scripts/validate_semantic_evidence_gate_v10.py",
-        "tools/validation/semantic_evidence_gate_v10.schema.json",
+        "reports/public_assurance_v10.json",
+        "scripts/validate_public_assurance_v10.py",
+        "tools/validation/public_assurance_v10.schema.json",
     }
 )
 EXPECTED_GATES = (
@@ -716,6 +716,7 @@ EXPECTED_GATES = (
     ("V-EVIDENCE",),
     ("V-EVIDENCE",),
     ("V-EVIDENCE",),
+    ("V-FULL-RUST",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -910,6 +911,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-EVIDENCE-006",),
     ("NCRDT-EVIDENCE-006",),
     ("NCRDT-EVIDENCE-006",),
+    ("NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -1040,6 +1042,7 @@ EXPECTED_FINDINGS = (
     (),
     (),
     ("FINDING_078",),
+    REPRODUCED_IDS,
     REPRODUCED_IDS,
     REPRODUCED_IDS,
     REPRODUCED_IDS,

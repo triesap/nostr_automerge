@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/nostr_automerge/public_assurance_v10.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "checkpoint", "candidate", "status", "publication_status", "lanes", "conformance", "coverage", "package", "supply_chain", "sbom", "held_campaigns", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.public_assurance.v10.v1"},
+    "checkpoint": {"const": "step_1283"},
+    "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "status": {"const": "pass"},
+    "publication_status": {"const": "held"},
+    "lanes": {"type": "array", "minItems": 12, "maxItems": 12, "items": {"type": "object", "additionalProperties": false, "required": ["id", "result"], "properties": {"id": {"type": "string"}, "result": {"const": "pass"}}}},
+    "conformance": {"type": "object", "additionalProperties": false, "required": ["scenario_count", "delivery_order_count", "process_count", "canonical_bytes", "artifact_sha256"]},
+    "coverage": {"type": "object", "additionalProperties": false, "required": ["regions_percent", "functions_percent", "lines_percent", "branches_percent", "artifact_sha256"]},
+    "package": {"type": "object", "additionalProperties": false, "required": ["packaged_file_count", "verification", "source_only"]},
+    "supply_chain": {"type": "object", "additionalProperties": false, "required": ["advisories", "bans", "licenses", "sources"]},
+    "sbom": {"type": "object", "additionalProperties": false, "required": ["format", "spec_version", "component_count", "artifact_sha256"]},
+    "held_campaigns": {"type": "array", "minItems": 7, "maxItems": 7, "items": {"type": "string"}},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

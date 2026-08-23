@@ -434,6 +434,12 @@ chain, eight exact artifact hashes, six mutation lanes, 190-row catalog, and
 21-row finding closure all validate; no passing proof is generic, skipped,
 source-only, stale, unrelated, or privately identifying.
 
+RCLD 94 is active at `step_1283`. The final public assurance run is bound to
+candidate `6bf938aa005c0b215fb3c509cd04aae0caddf1ec`: standard, conformance,
+resource, coverage, package, dependency, advisory, license, SBOM, source-only,
+documentation, and policy lanes pass. Seven sustained, external, publication,
+or release campaigns remain explicitly held and are not represented as pass.
+
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 `FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`

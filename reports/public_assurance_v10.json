@@ -1,0 +1,28 @@
+{
+  "schema": "nostr_automerge.public_assurance.v10.v1",
+  "checkpoint": "step_1283",
+  "candidate": "6bf938aa005c0b215fb3c509cd04aae0caddf1ec",
+  "status": "pass",
+  "publication_status": "held",
+  "lanes": [
+    {"id": "standard", "result": "pass"},
+    {"id": "conformance", "result": "pass"},
+    {"id": "resource", "result": "pass"},
+    {"id": "coverage", "result": "pass"},
+    {"id": "package", "result": "pass"},
+    {"id": "dependency", "result": "pass"},
+    {"id": "advisory", "result": "pass"},
+    {"id": "license", "result": "pass"},
+    {"id": "sbom", "result": "pass"},
+    {"id": "source_only", "result": "pass"},
+    {"id": "documentation", "result": "pass"},
+    {"id": "policy", "result": "pass"}
+  ],
+  "conformance": {"scenario_count": 180, "delivery_order_count": 8, "process_count": 2, "canonical_bytes": "identical", "artifact_sha256": "70f3a3317009889f5c4cbfbfd84ee36f249e2c65895e679ce892b4a27cfbc440"},
+  "coverage": {"regions_percent": "75.74", "functions_percent": "81.00", "lines_percent": "77.35", "branches_percent": "66.59", "artifact_sha256": "e47f0d4262d4c79891c40d808efd1b7476e441f44896501f6d303d6ff7da90f4"},
+  "package": {"packaged_file_count": 132, "verification": "pass", "source_only": "pass"},
+  "supply_chain": {"advisories": "pass", "bans": "pass", "licenses": "pass", "sources": "pass"},
+  "sbom": {"format": "CycloneDX", "spec_version": "1.5", "component_count": 110, "artifact_sha256": "dc9dd554bff8950d8f527ac3931b39241d69e8467d69146ba08aa97b17e6edfe"},
+  "held_campaigns": ["robustness", "sustained_fuzzing", "source_mutation", "independent_external_review", "production_qualification", "publication", "release"],
+  "result_identity_sha256": "deca935f62b881b4f8a05d345ec38c72a1a54115b50c8798b3c7a9cc2867d3e4"
+}
