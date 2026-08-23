@@ -2,7 +2,7 @@
 
 Status: `in_progress`
 
-RCLD 86 has 59 committed predecessors through `step_1216`. The opaque
+RCLD 87 has 60 committed predecessors through `step_1217`. The opaque
 compatibility checkpoint is bound by one approved 40-character candidate and
 one canonical 64-character result identity. Its public projection records nine
 findings, 23 expected-failure reproductions, 276 negative mutations, one
@@ -105,8 +105,9 @@ counts, result classes, and held publication state.
 | `step_1208` | `V-AUTH` | pass |
 | `step_1209`–`step_1215` | `V-TS` | pass |
 | `step_1216` | `V-FULL-TS` | pass |
-| `step_1217` | `V-EVIDENCE` | active |
-| `step_1218` | `V-RESOURCE` | next |
+| `step_1217` | `V-EVIDENCE` | pass |
+| `step_1218` | `V-RESOURCE` | active |
+| `step_1219` | `V-RESOURCE` | next |
 
 The completed report-authority checkpoint binds a closed inventory of complete
 and no-progress construction plus nine revision consumers to exact reviewed
@@ -183,6 +184,13 @@ and ignore-attribute rejection, while ten transcript mutations prove that the
 exact requested test—not a substring, ignored test, or stale target—ran and
 passed. The four later findings remain deliberately outside this suite.
 
+The active two-tier finalization checkpoint separates fixed no-progress
+fallback accounting from caller-funded complete-report capacity. A zero-item
+caller budget cannot reserve a nonempty complete plan, but it still settles a
+canonical no-progress report through the fixed ledger without changing caller
+counters. Complete-tier consumption cannot consume, refund, forfeit, or
+otherwise borrow a fixed-fallback unit.
+
 The authority projection is monotonic from `checkpoint_expectations_corrected` to
 `distribution_complete`. It records 148 requirements now and at completion,
 and records the signed-fixture progression from 180 to 192. The four corrected
@@ -209,7 +217,7 @@ immutable historical record and is not the carrier closure authority.
 `step_1197` through `step_1205` chain ending at
 `321abda8f672ecf1a44aa1919e0cec98830e8df8`; its current two-process
 conformance identity is the same canonical and serialized output pair above.
-There are 80 checkpoints including the active checkpoint remaining through
+There are 70 checkpoints including the active checkpoint remaining through
 `step_1287`.
 
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`

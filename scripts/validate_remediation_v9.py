@@ -14,7 +14,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY_PATH = "spec/remediation_findings_v9.json"
 PLAN_PATH = "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md"
-REGISTRY_PROJECTION_SHA256 = "f422fdf9e9d0c139f2fe9d5c29e4e8cf64bb3f708367de865b1a96fa8044b11a"
+REGISTRY_PROJECTION_SHA256 = "0fab38280a981dea0b459842ae52d302c9ea55d00a410372591a493bb6e984f6"
 FINDING_IDS = tuple(f"FINDING_{number:03d}" for number in range(73, 94))
 SEVERITIES = {
     "high",

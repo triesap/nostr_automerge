@@ -97,7 +97,7 @@ impl ReferenceEvaluator {
         cancellation: &impl CancellationCheck,
     ) -> Result<EvaluationReport, EvaluationError> {
         if cancellation.is_cancelled() {
-            return compact_interrupted_report(self.revision, coordinate, Completion::Cancelled);
+            return fixed_fallback_report(self.revision, coordinate, Completion::Cancelled);
         }
         let view = DocumentEvidenceView::derive(corpus, coordinate);
         let plan = ReportFinalizationPlan::from_view(&view);
@@ -106,7 +106,7 @@ impl ReferenceEvaluator {
         {
             Ok(permit) => permit,
             Err(()) => {
-                return compact_interrupted_report(
+                return fixed_fallback_report(
                     self.revision,
                     coordinate,
                     Completion::BudgetExhausted,
@@ -574,7 +574,7 @@ impl ReferenceEvaluator {
         }) {
             Ok(report) => Ok(report),
             Err(ReevaluationConstructionError::Stopped(completion)) => {
-                compact_interrupted_report(self.revision, coordinate, completion)
+                fixed_fallback_report(self.revision, coordinate, completion)
             }
             Err(ReevaluationConstructionError::Invariant) => Err(EvaluationError::ReportInvariant),
         }
@@ -2420,6 +2420,131 @@ impl ReportFinalizationLedger {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum FixedFallbackPass {
+    Digests,
+    FixedOverhead,
+    Invariants,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct FixedFallbackLedger {
+    digests: FinalizationSettlement,
+    fixed_overhead: FinalizationSettlement,
+    invariants: FinalizationSettlement,
+}
+
+impl FixedFallbackLedger {
+    const DIGEST_UNITS: u64 = 8;
+    const FIXED_OVERHEAD_UNITS: u64 = 8;
+
+    const fn new() -> Self {
+        Self {
+            digests: FinalizationSettlement::new(Self::DIGEST_UNITS),
+            fixed_overhead: FinalizationSettlement::new(Self::FIXED_OVERHEAD_UNITS),
+            invariants: FinalizationSettlement::new(REPORT_INVARIANT_ITEMS),
+        }
+    }
+
+    fn settlement_mut(&mut self, pass: FixedFallbackPass) -> &mut FinalizationSettlement {
+        match pass {
+            FixedFallbackPass::Digests => &mut self.digests,
+            FixedFallbackPass::FixedOverhead => &mut self.fixed_overhead,
+            FixedFallbackPass::Invariants => &mut self.invariants,
+        }
+    }
+
+    fn consume(
+        &mut self,
+        pass: FixedFallbackPass,
+        amount: u64,
+    ) -> Result<(), FinalizationPermitError> {
+        self.settlement_mut(pass).consume(amount)
+    }
+
+    fn close_consumed(&mut self) -> Result<(), FinalizationPermitError> {
+        for pass in [
+            FixedFallbackPass::Digests,
+            FixedFallbackPass::FixedOverhead,
+            FixedFallbackPass::Invariants,
+        ] {
+            if self
+                .settlement_mut(pass)
+                .remaining()
+                .ok_or(FinalizationPermitError)?
+                != 0
+            {
+                return Err(FinalizationPermitError);
+            }
+            self.settlement_mut(pass).forfeit_remaining()?;
+        }
+        Ok(())
+    }
+
+    fn forfeit_all(&mut self) -> Result<(), FinalizationPermitError> {
+        for pass in [
+            FixedFallbackPass::Digests,
+            FixedFallbackPass::FixedOverhead,
+            FixedFallbackPass::Invariants,
+        ] {
+            self.settlement_mut(pass).forfeit_remaining()?;
+        }
+        Ok(())
+    }
+
+    fn is_consumed_settlement(&self) -> bool {
+        [&self.digests, &self.fixed_overhead, &self.invariants]
+            .into_iter()
+            .all(|settlement| {
+                settlement.is_settled() && settlement.refunded == 0 && settlement.forfeited == 0
+            })
+    }
+
+    fn is_forfeited_settlement(&self) -> bool {
+        [&self.digests, &self.fixed_overhead, &self.invariants]
+            .into_iter()
+            .all(|settlement| {
+                settlement.is_settled() && settlement.consumed == 0 && settlement.refunded == 0
+            })
+    }
+
+    fn build_report(
+        &mut self,
+        revision: ProtocolRevision,
+        coordinate: DocumentCoordinate,
+        completion: Completion,
+    ) -> Result<EvaluationReport, EvaluationError> {
+        self.consume(FixedFallbackPass::Digests, Self::DIGEST_UNITS)
+            .map_err(|_| EvaluationError::ReportInvariant)?;
+        let history_digest = history_digest(revision, coordinate, &[], &[], &[])
+            .map_err(|_| EvaluationError::ReportInvariant)?;
+        let disposition_items =
+            disposition_items(&[]).map_err(|_| EvaluationError::ReportInvariant)?;
+        let dispositions_digest = dispositions_digest(revision, coordinate, &disposition_items)
+            .map_err(|_| EvaluationError::ReportInvariant)?;
+        let failure = match completion {
+            Completion::BudgetExhausted => EvaluationFailure::BudgetExhausted,
+            Completion::Cancelled => EvaluationFailure::Cancelled,
+            Completion::Complete => return Err(EvaluationError::ReportInvariant),
+        };
+        self.consume(FixedFallbackPass::FixedOverhead, Self::FIXED_OVERHEAD_UNITS)
+            .and_then(|()| self.consume(FixedFallbackPass::Invariants, REPORT_INVARIANT_ITEMS))
+            .map_err(|_| EvaluationError::ReportInvariant)?;
+        let report = build_no_progress_interrupted_report(
+            revision,
+            coordinate,
+            completion,
+            failure,
+            history_digest,
+            dispositions_digest,
+        )?;
+        self.close_consumed()
+            .map_err(|_| EvaluationError::ReportInvariant)?;
+        debug_assert!(self.is_consumed_settlement());
+        Ok(report)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum FinalizationPermitState {
     Active,
     Complete,
@@ -2430,6 +2555,7 @@ enum FinalizationPermitState {
 #[derive(Debug)]
 struct ReportFinalizationPermit {
     ledger: ReportFinalizationLedger,
+    fallback: FixedFallbackLedger,
     state: FinalizationPermitState,
 }
 
@@ -2441,6 +2567,7 @@ impl ReportFinalizationPermit {
         budget.charge(WorkCounter::Assertion, plan.total().unwrap_or(u64::MAX))?;
         Ok(Self {
             ledger: ReportFinalizationLedger::from_plan(plan),
+            fallback: FixedFallbackLedger::new(),
             state: FinalizationPermitState::Active,
         })
     }
@@ -2456,6 +2583,7 @@ impl ReportFinalizationPermit {
         self.ledger.dimension_mut(dimension).consume(amount)
     }
 
+    #[cfg(test)]
     fn consume_pass(
         &mut self,
         reservation: FinalizationReservationUnit,
@@ -2464,7 +2592,9 @@ impl ReportFinalizationPermit {
     }
 
     fn finish_interrupted(&mut self) -> Result<(), FinalizationPermitError> {
-        if self.state != FinalizationPermitState::Active || !self.ledger.is_interrupted_settlement()
+        if self.state != FinalizationPermitState::Active
+            || !self.ledger.is_interrupted_settlement()
+            || !self.fallback.is_consumed_settlement()
         {
             return Err(FinalizationPermitError);
         }
@@ -2484,7 +2614,8 @@ impl ReportFinalizationPermit {
             return Err(FinalizationPermitError);
         }
         self.forfeit_all_remaining()?;
-        if !self.ledger.is_settled() {
+        self.fallback.forfeit_all()?;
+        if !self.ledger.is_settled() || !self.fallback.is_forfeited_settlement() {
             return Err(FinalizationPermitError);
         }
         self.state = FinalizationPermitState::Failed;
@@ -2503,7 +2634,8 @@ impl ReportFinalizationPermit {
             .refund(WorkCounter::Assertion, remaining)
             .map_err(|_| FinalizationPermitError)?;
         self.ledger.refund_all_remaining()?;
-        if !self.ledger.is_settled() {
+        self.fallback.forfeit_all()?;
+        if !self.ledger.is_settled() || !self.fallback.is_forfeited_settlement() {
             return Err(FinalizationPermitError);
         }
         self.state = FinalizationPermitState::Complete;
@@ -2538,84 +2670,24 @@ fn reserved_interrupted_report(
     completion: Completion,
     permit: &mut ReportFinalizationPermit,
 ) -> Result<EvaluationReport, EvaluationError> {
-    let report = prepare_no_progress_interrupted_report(revision, coordinate, completion, permit)
-        .map_err(|error| settle_reserved_error(permit, error))?;
     permit
         .forfeit_all_remaining()
         .map_err(|_| EvaluationError::ReportInvariant)?;
+    let report = permit
+        .fallback
+        .build_report(revision, coordinate, completion)?;
     permit
         .finish_interrupted()
         .map_err(|_| EvaluationError::ReportInvariant)?;
     Ok(report)
 }
 
-fn prepare_no_progress_interrupted_report(
-    revision: ProtocolRevision,
-    coordinate: DocumentCoordinate,
-    completion: Completion,
-    permit: &mut ReportFinalizationPermit,
-) -> Result<EvaluationReport, EvaluationError> {
-    permit
-        .consume_pass(FinalizationReservationUnit::new(
-            InterruptedReportPass::Digests,
-            8,
-        ))
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    let history_digest = history_digest(revision, coordinate, &[], &[], &[])
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    let disposition_items = disposition_items(&[]).map_err(|_| EvaluationError::ReportInvariant)?;
-    let dispositions_digest = dispositions_digest(revision, coordinate, &disposition_items)
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    let failure = match completion {
-        Completion::BudgetExhausted => EvaluationFailure::BudgetExhausted,
-        Completion::Cancelled => EvaluationFailure::Cancelled,
-        Completion::Complete => return Err(EvaluationError::ReportInvariant),
-    };
-    permit
-        .consume_pass(FinalizationReservationUnit::new(
-            InterruptedReportPass::FixedOverhead,
-            8,
-        ))
-        .and_then(|()| {
-            permit.consume_pass(FinalizationReservationUnit::new(
-                InterruptedReportPass::Invariants,
-                REPORT_INVARIANT_ITEMS,
-            ))
-        })
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    build_no_progress_interrupted_report(
-        revision,
-        coordinate,
-        completion,
-        failure,
-        history_digest,
-        dispositions_digest,
-    )
-}
-
-fn compact_interrupted_report(
+fn fixed_fallback_report(
     revision: ProtocolRevision,
     coordinate: DocumentCoordinate,
     completion: Completion,
 ) -> Result<EvaluationReport, EvaluationError> {
-    let history_digest = history_digest(revision, coordinate, &[], &[], &[])
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    let disposition_items = disposition_items(&[]).map_err(|_| EvaluationError::ReportInvariant)?;
-    let dispositions_digest = dispositions_digest(revision, coordinate, &disposition_items)
-        .map_err(|_| EvaluationError::ReportInvariant)?;
-    let failure = match completion {
-        Completion::BudgetExhausted => EvaluationFailure::BudgetExhausted,
-        Completion::Cancelled => EvaluationFailure::Cancelled,
-        Completion::Complete => return Err(EvaluationError::ReportInvariant),
-    };
-    build_no_progress_interrupted_report(
-        revision,
-        coordinate,
-        completion,
-        failure,
-        history_digest,
-        dispositions_digest,
-    )
+    FixedFallbackLedger::new().build_report(revision, coordinate, completion)
 }
 
 fn build_no_progress_interrupted_report(
@@ -3162,14 +3234,14 @@ mod tests {
         ChangeClaimReason, CheckpointDownstreamStage, CheckpointHistoryInputs,
         CheckpointReportAttributionStage, CheckpointWorkObserver, CheckpointWorkStop,
         FinalLineageChangeState, FinalizationDimension, FinalizationPermitError,
-        FinalizationReservationUnit, InterruptedReportPass, PreparedCheckpointInputs,
-        REEVALUATION_STAGE_OBSERVATIONS, ReferenceEvaluator, ReportFinalizationPermit,
-        ReportFinalizationPlan, aggregate_change_contribution, assembly_status,
-        carrier_control_is_historical, change_carrier_disposition, charge_checkpoint_work,
-        checkpoint_control_refusal, checkpoint_preflight_refusal, join_status,
-        noncanonical_branch_claim_reason, reduce_aggregate_change_outcome,
-        reduce_change_dispositions, scoped_dynamic_event_disposition_records,
-        verify_prepared_checkpoints,
+        FinalizationReservationUnit, FixedFallbackLedger, FixedFallbackPass, InterruptedReportPass,
+        PreparedCheckpointInputs, REEVALUATION_STAGE_OBSERVATIONS, REPORT_INVARIANT_ITEMS,
+        ReferenceEvaluator, ReportFinalizationPermit, ReportFinalizationPlan,
+        aggregate_change_contribution, assembly_status, carrier_control_is_historical,
+        change_carrier_disposition, charge_checkpoint_work, checkpoint_control_refusal,
+        checkpoint_preflight_refusal, join_status, noncanonical_branch_claim_reason,
+        reduce_aggregate_change_outcome, reduce_change_dispositions,
+        scoped_dynamic_event_disposition_records, verify_prepared_checkpoints,
     };
     use crate::CheckpointVerificationStatus as Status;
     use crate::authoring::{ActorState, AuthoringDocument};
@@ -3196,6 +3268,32 @@ mod tests {
         ResolvedManifestAvailability, SnapshotHash, WorkBudget, WorkCounter,
     };
     use sha2::{Digest, Sha256};
+
+    fn consume_fixed_fallback(ledger: &mut FixedFallbackLedger) {
+        assert!(
+            ledger
+                .consume(
+                    FixedFallbackPass::Digests,
+                    FixedFallbackLedger::DIGEST_UNITS,
+                )
+                .is_ok()
+        );
+        assert!(
+            ledger
+                .consume(
+                    FixedFallbackPass::FixedOverhead,
+                    FixedFallbackLedger::FIXED_OVERHEAD_UNITS,
+                )
+                .is_ok()
+        );
+        assert!(
+            ledger
+                .consume(FixedFallbackPass::Invariants, REPORT_INVARIANT_ITEMS)
+                .is_ok()
+        );
+        assert!(ledger.close_consumed().is_ok());
+        assert!(ledger.is_consumed_settlement());
+    }
 
     #[test]
     fn finding_082_reevaluation_stops_before_post_incomplete_alert_work() {
@@ -4969,6 +5067,7 @@ mod tests {
         assert!(zero.is_ok());
         let Ok(mut zero) = zero else { return };
         assert!(zero.forfeit_all_remaining().is_ok());
+        consume_fixed_fallback(&mut zero.fallback);
         assert!(zero.finish_interrupted().is_ok());
 
         let plan = ReportFinalizationPlan {
@@ -4984,6 +5083,7 @@ mod tests {
         let Ok(mut exact) = exact else { return };
         assert!(exact.consume(FinalizationDimension::Controls, 2).is_ok());
         assert!(exact.forfeit_all_remaining().is_ok());
+        consume_fixed_fallback(&mut exact.fallback);
         assert!(exact.finish_interrupted().is_ok());
         assert_eq!(exact.ledger.controls.consumed, 2);
         assert_eq!(exact.ledger.invariants.forfeited, 1);
@@ -5022,12 +5122,74 @@ mod tests {
         assert_eq!(permit.ledger.invariants.consumed, 0);
         assert_eq!(permit.ledger.invariants.forfeited, 1);
         assert!(permit.ledger.is_interrupted_settlement());
+        consume_fixed_fallback(&mut permit.fallback);
         assert!(permit.finish_interrupted().is_ok());
         assert!(permit.finish_interrupted().is_err());
         assert!(
             permit
                 .consume(FinalizationDimension::Invariants, 1)
                 .is_err()
+        );
+    }
+
+    #[test]
+    fn fixed_fallback_is_independent_of_caller_target_capacity() {
+        let plan = ReportFinalizationPlan {
+            controls: 1,
+            ..ReportFinalizationPlan::default()
+        };
+        let mut zero_budget = WorkBudget::new(0, 0);
+        assert!(ReportFinalizationPermit::reserve(plan, &mut zero_budget).is_err());
+        assert_eq!(zero_budget.remaining(), (0, 0));
+        assert_eq!(zero_budget.consumed().get(WorkCounter::Assertion), 0);
+
+        let report = super::fixed_fallback_report(
+            crate::ProtocolRevision::draft_v1(),
+            DocumentCoordinate::new(
+                ControllerPublicKey::from_bytes([0x71; 32]),
+                DocumentId::from_bytes([0x72; 32]),
+            ),
+            crate::Completion::BudgetExhausted,
+        );
+        assert!(report.is_ok());
+        let Ok(report) = report else { return };
+        assert_eq!(report.completion(), crate::Completion::BudgetExhausted);
+        assert_eq!(zero_budget.remaining(), (0, 0));
+
+        let corpus = crate::CorpusBuilder::new().finish();
+        let mut entry_budget = WorkBudget::new(0, 0);
+        let entry_report = ReferenceEvaluator::new(crate::ProtocolRevision::draft_v1()).evaluate(
+            &corpus,
+            report.coordinate(),
+            &mut entry_budget,
+            &crate::NeverCancelled,
+        );
+        assert!(entry_report.is_ok());
+        let Ok(entry_report) = entry_report else {
+            return;
+        };
+        assert_eq!(
+            entry_report.completion(),
+            crate::Completion::BudgetExhausted
+        );
+        assert_eq!(entry_budget.remaining(), (0, 0));
+        assert_eq!(entry_budget.consumed().get(WorkCounter::Assertion), 0);
+
+        let mut complete_budget = WorkBudget::new(0, 1);
+        let permit = ReportFinalizationPermit::reserve(plan, &mut complete_budget);
+        assert!(permit.is_ok());
+        let Ok(mut permit) = permit else { return };
+        assert_eq!(permit.ledger.controls.remaining(), Some(1));
+        assert_eq!(
+            permit.fallback.digests.remaining(),
+            Some(FixedFallbackLedger::DIGEST_UNITS)
+        );
+        assert!(permit.consume(FinalizationDimension::Controls, 1).is_ok());
+        assert_eq!(permit.ledger.controls.remaining(), Some(0));
+        assert_eq!(
+            permit.fallback.digests.remaining(),
+            Some(FixedFallbackLedger::DIGEST_UNITS),
+            "complete-tier consumption must not borrow fixed fallback capacity"
         );
     }
 
@@ -5058,10 +5220,10 @@ mod tests {
         let source = include_str!("reference_evaluator.rs");
         let wrapper = source
             .split_once("fn reserved_interrupted_report(")
-            .and_then(|(_, rest)| rest.split_once("fn compact_interrupted_report("))
+            .and_then(|(_, rest)| rest.split_once("fn fixed_fallback_report("))
             .map(|(body, _)| body)
             .unwrap_or_default();
-        assert!(wrapper.contains(".consume_pass(") || wrapper.contains("prepare_"));
+        assert!(wrapper.contains(".fallback") && wrapper.contains(".build_report("));
         assert!(!wrapper.contains("view."));
         let obsolete_reserved = ["reserved_", "batch_report"].concat();
         let obsolete_preparation = ["prepare_", "interrupted_batch_report"].concat();

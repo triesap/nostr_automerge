@@ -16,10 +16,10 @@ Reviewed applicability SHA-256: `7cda8e59da0d8caf1f9a9985ba27c9367018c572824f092
 Reviewed distribution-v9 manifest SHA-256: `7b4ab5d2146939d142eb92d43060ef2183c95d1fc574132894b3c01c874c7c56`
 Reviewed canonical-output SHA-256: `e193a7b0db3a43e9d33e612afea05bd447a5e968a45e283d098f45278d6ab6fc`
 Steps: `step_1158` through `step_1287` (130 contiguous checkpoints)
-Active RCLD: RCLD 86
-Active checkpoint: `step_1217`
+Active RCLD: RCLD 87
+Active checkpoint: `step_1218`
 Next RCLD: RCLD 87
-Next checkpoint: `step_1218`
+Next checkpoint: `step_1219`
 
 This planning revision changes only the unfinished checkpoint map. Completed
 candidate identities and evidence remain immutable. The public-owned
@@ -481,7 +481,7 @@ Depends on: RCLD 85
 
 ## RCLD 87 — Rust Two-Tier Finalization
 
-Status: planned
+Status: in progress
 Steps: `step_1218` through `step_1226`
 Gate: `GATE_V9_RUST_FINALIZATION`
 Depends on: RCLD 86

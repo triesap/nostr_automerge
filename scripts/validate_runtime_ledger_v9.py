@@ -310,6 +310,7 @@ PREDECESSOR_CANDIDATES = (
     "fd6050bde2ab5f14c72734491d0aa1e3ceb86b61",
     "d74e5a9c8954de893a3059604abf25e506facd3a",
     "74b20922ff0ac2a877acc0c1bb196b20c8cc02a8",
+    "8e85bd29181ebf36d2cfd7d4ed330b0a0975aa44",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -332,7 +333,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "9f5dbda8df153f9a8a440e2d0ec806e8b319e5ef3c8c72d96921349f8ba52878",
+        "5641ba216b35ebb27dfffd93e6373a53284529d3a3dad45b4e34f2363db7959d",
     ),
     (
         "crates/nostr_automerge/src/integrity.rs",
@@ -371,7 +372,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
         "34101987dbadebabca69bcff0e926fff07c6494f32fb8da671799cf4fb6279d4",
     ),
 )
-CLOSURE_PATHS = frozenset(
+HISTORICAL_STEP_1217_CLOSURE_PATHS = frozenset(
     {
         "crates/nostr_automerge/src/checkpoint/mod.rs",
         "crates/nostr_automerge/src/checkpoint/verify_history.rs",
@@ -425,7 +426,19 @@ CLOSURE_PATHS = frozenset(
         "tools/validation/runtime_ledger_v9.schema.json",
     }
 )
-CLOSURE_AMEND_ADDITION = "scripts/validate_authority_transition_v10.py"
+CLOSURE_PATHS = frozenset(
+    {
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+        "docs/execution/remediation_v9/ledger.md",
+        "implementation/runtime_ledger_v9.json",
+        "reports/spec_baseline.txt",
+        "scripts/validate_remediation_v9.py",
+        "scripts/validate_runtime_ledger_v9.py",
+        "spec/remediation_findings_v9.json",
+    }
+)
+CLOSURE_AMEND_ADDITION = "docs/execution/remediation_v9/ledger.md"
 CLOSURE_AMEND_PATHS = frozenset(
     {
         CLOSURE_AMEND_ADDITION,
@@ -434,11 +447,7 @@ CLOSURE_AMEND_PATHS = frozenset(
     }
 )
 CLOSURE_NEW_PATHS = frozenset(
-    {
-        "reports/report_parity_v9.json",
-        "scripts/validate_report_parity_v9.py",
-        "tools/validation/report_parity_v9.schema.json",
-    }
+    {}
 )
 EXPECTED_GATES = (
     ("V-AUTH",),
@@ -500,6 +509,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-TS",),
     ("V-FULL-TS",),
+    ("V-EVIDENCE",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -629,6 +639,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -697,6 +708,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_090",),
     ("FINDING_090",),
     ("FINDING_090",),
+    ("FINDING_090", "FINDING_093"),
     ("FINDING_090", "FINDING_093"),
 )
 FORBIDDEN_KEY_WORDS = {
@@ -908,7 +920,9 @@ def validate_report_revision_inventory(
         "report_inventory:carrier_witness",
     )
     require(
-        "prepare_no_progress_interrupted_report(" in reference
+        "fn fixed_fallback_report(" in reference
+        and "struct FixedFallbackLedger" in reference
+        and ".fallback\n        .build_report(" in reference
         and "reserved_batch_report" not in reference
         and "prepare_interrupted_batch_report" not in reference
         and "NoProgressConstructionPath" not in reference
