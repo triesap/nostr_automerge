@@ -388,6 +388,14 @@ zero canonical-byte mismatches, both parser-rejection classes, the semantic
 comparison mismatch, the public leak boundary, and the full public gate.
 RCLD 92 is complete; RCLD 93 begins at `step_1275`.
 
+The semantic proof-catalog authority defines ten closed semantic categories,
+three subject classes, four applicability classes, six executable or opaque
+proof kinds, all 21 named report-contract clauses, and findings 073 through
+093. Source-substring, generic-command-only, and skipped or filtered evidence
+are explicitly outside the accepted proof vocabulary. The final proof catalog
+contains 148 requirement rows, 21 report-clause rows, and 21 finding rows; it
+and the separate finding-closure catalog must conform to closed schemas.
+
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 `FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`

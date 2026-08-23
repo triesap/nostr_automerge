@@ -1,0 +1,49 @@
+{
+  "title": "nostr_automerge semantic proof catalog v10",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "protocol_revision", "authority_candidate", "requirement_count", "report_clause_count", "finding_count", "rows", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.semantic_proof_catalog.v10.v1"},
+    "status": {"enum": ["in_progress", "pass"]},
+    "protocol_revision": {"const": "draft_2026_08"},
+    "authority_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "requirement_count": {"const": 148},
+    "report_clause_count": {"const": 21},
+    "finding_count": {"const": 21},
+    "rows": {
+      "type": "array",
+      "minItems": 190,
+      "maxItems": 190,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["subject_kind", "id", "semantic_category", "applicability", "status", "public_proofs", "opaque_proofs"],
+        "properties": {
+          "subject_kind": {"enum": ["requirement", "report_clause", "finding"]},
+          "id": {"type": "string", "minLength": 1},
+          "semantic_category": {"enum": ["authority", "wire_ingress", "control_history", "change_application", "checkpoint_verification", "report_contract", "resource_accounting", "signed_conformance", "evidence_integrity", "external_hold"]},
+          "applicability": {"enum": ["rust_only", "rust_and_opaque", "opaque_only", "external_hold"]},
+          "status": {"enum": ["pass", "held"]},
+          "public_proofs": {"type": "array", "items": {"$ref": "#/$defs/proof"}},
+          "opaque_proofs": {"type": "array", "items": {"$ref": "#/$defs/proof"}}
+        }
+      }
+    },
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "$defs": {
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "candidate", "artifact_sha256", "result"],
+      "properties": {
+        "kind": {"enum": ["rust_test", "signed_fixture", "validator", "opaque_fixture", "opaque_test", "hold_record"]},
+        "id": {"type": "string", "minLength": 1},
+        "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "result": {"enum": ["pass", "held"]}
+      }
+    }
+  }
+}

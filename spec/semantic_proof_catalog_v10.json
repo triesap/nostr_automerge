@@ -1,0 +1,15 @@
+{
+  "schema": "nostr_automerge.semantic_proof_catalog.authority.v10.v1",
+  "status": "schema_defined",
+  "protocol_revision": "draft_2026_08",
+  "subject_kinds": ["requirement", "report_clause", "finding"],
+  "semantic_categories": ["authority", "wire_ingress", "control_history", "change_application", "checkpoint_verification", "report_contract", "resource_accounting", "signed_conformance", "evidence_integrity", "external_hold"],
+  "applicability_classes": ["rust_only", "rust_and_opaque", "opaque_only", "external_hold"],
+  "proof_kinds": ["rust_test", "signed_fixture", "validator", "opaque_fixture", "opaque_test", "hold_record"],
+  "report_clauses": ["revision_public_getter", "constructor_families_closed", "incomplete_empty_shape_and_digests", "incomplete_typed_stop_compatibility", "complete_partitions_controls_heads_document", "carrier_event_change_hash_coverage_and_dominance", "digests_evidence_checkpoints_alerts_manifest_document", "materialized_assertion_authority", "reevaluation_prior_only_alert_authority", "hybrid_incomplete_path_deleted", "incomplete_reevaluation_early_return", "charged_complete_reevaluation", "charged_canonical_alert_comparisons", "expected_loader_revision_and_ordering", "canonical_serializer_compatibility", "fixture_loader_revision_compatibility", "signed_scenario_loader_is_input_only", "consumer_compatibility_pipeline", "expected_independent_conformance_output", "signed_complete_field_families", "public_no_progress_getter_surface"],
+  "finding_ids": ["FINDING_073", "FINDING_074", "FINDING_075", "FINDING_076", "FINDING_077", "FINDING_078", "FINDING_079", "FINDING_080", "FINDING_081", "FINDING_082", "FINDING_083", "FINDING_084", "FINDING_085", "FINDING_086", "FINDING_087", "FINDING_088", "FINDING_089", "FINDING_090", "FINDING_091", "FINDING_092", "FINDING_093"],
+  "source_substring_proof": "forbidden",
+  "generic_command_only_proof": "forbidden",
+  "skipped_or_filtered_proof": "forbidden",
+  "result": "pass"
+}

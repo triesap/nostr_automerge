@@ -42,6 +42,10 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "scripts/validate_signed_conformance_gate_v10.py",
     ),
     (
+        "semantic_proof_catalog_v10",
+        "scripts/validate_semantic_proof_catalog_v10.py",
+    ),
+    (
         "opaque_boundary_gate_v9",
         "scripts/validate_opaque_boundary_gate_v9.py",
     ),
@@ -135,6 +139,7 @@ mod tests {
         assert!(names.contains(&"rust_conformance_v10"));
         assert!(names.contains(&"opaque_conformance_v10"));
         assert!(names.contains(&"signed_conformance_gate_v10"));
+        assert!(names.contains(&"semantic_proof_catalog_v10"));
         assert!(names.contains(&"opaque_boundary_gate_v9"));
         assert!(names.contains(&"opaque_resource_gate_v9"));
         assert!(names.contains(&"opaque_finalization_v9"));

@@ -16,10 +16,10 @@ Reviewed applicability SHA-256: `7cda8e59da0d8caf1f9a9985ba27c9367018c572824f092
 Reviewed distribution-v9 manifest SHA-256: `7b4ab5d2146939d142eb92d43060ef2183c95d1fc574132894b3c01c874c7c56`
 Reviewed canonical-output SHA-256: `e193a7b0db3a43e9d33e612afea05bd447a5e968a45e283d098f45278d6ab6fc`
 Steps: `step_1158` through `step_1287` (130 contiguous checkpoints)
-Active RCLD: RCLD 92
-Active checkpoint: `step_1274`
+Active RCLD: RCLD 93
+Active checkpoint: `step_1275`
 Next RCLD: RCLD 93
-Next checkpoint: `step_1275`
+Next checkpoint: `step_1276`
 
 This planning revision changes only the unfinished checkpoint map. Completed
 candidate identities and evidence remain immutable. The public-owned
@@ -598,7 +598,7 @@ Depends on: RCLD 91
 
 ## RCLD 93 — Semantic Proof Catalog V10
 
-Status: planned
+Status: in progress
 Steps: `step_1275` through `step_1282`
 Gate: `GATE_V9_EVIDENCE`
 Depends on: RCLD 92

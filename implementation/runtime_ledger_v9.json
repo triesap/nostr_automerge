@@ -1,15 +1,15 @@
 {
   "schema": "nostr_automerge.runtime_ledger.v9.v1",
   "status": "in_progress",
-  "rcld": 92,
+  "rcld": 93,
   "cursor": {
-    "active_step": "step_1274",
-    "next_step": "step_1275",
+    "active_step": "step_1275",
+    "next_step": "step_1276",
     "last_step": "step_1287",
-    "remaining_checkpoint_count": 14,
-    "first_rcld": 92,
+    "remaining_checkpoint_count": 13,
+    "first_rcld": 93,
     "last_rcld": 94,
-    "remaining_rcld_count": 3
+    "remaining_rcld_count": 2
   },
   "authority_projection": {
     "binding": "monotonic_stage_projection",
@@ -1311,6 +1311,16 @@
       "finding_ids": [],
       "deviation_ids": [],
       "result": "pass"
+    },
+    {
+      "step": "step_1274",
+      "candidate": "73083b7bacf997f9723a05aca67c9ab20456b184",
+      "owner_class": "public",
+      "gate_ids": ["V-FULL-RUST"],
+      "requirement_ids": ["NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": [],
+      "deviation_ids": [],
+      "result": "pass"
     }
   ],
   "opaque_reproduction": {
@@ -1527,5 +1537,18 @@
     "result_identity_sha256": "3aa7447b502c86de51d6e82a0ceb067df816a7ce956895b2aef54c3f76303b6e",
     "result": "pass",
     "publication_status": "held"
+  },
+  "semantic_proof_authority": {
+    "checkpoint": "step_1275",
+    "semantic_category_count": 10,
+    "subject_kind_count": 3,
+    "applicability_class_count": 4,
+    "proof_kind_count": 6,
+    "report_clause_count": 21,
+    "finding_count": 21,
+    "authority_sha256": "92c0346c808047c27532da8422d737c72e6414ba3a4067d4af5515cd135ee913",
+    "catalog_schema_sha256": "6acb7d9331188c3231832a177911c399fb5877c6ea68ede63e63386d00a72bfa",
+    "finding_schema_sha256": "d7ca5fead5ad82cca201a97edcc8fed9d989a83c60392637ddd8c574f4f1e5ff",
+    "result": "pass"
   }
 }

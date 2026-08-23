@@ -24,7 +24,8 @@
     "opaque_finalization",
     "report_schema_authority",
     "report_parity_gate",
-    "signed_conformance_gate"
+    "signed_conformance_gate",
+    "semantic_proof_authority"
   ],
   "properties": {
     "schema": {"const": "nostr_automerge.runtime_ledger.v9.v1"},
@@ -516,6 +517,24 @@
         "result_identity_sha256": {"const": "3aa7447b502c86de51d6e82a0ceb067df816a7ce956895b2aef54c3f76303b6e"},
         "result": {"const": "pass"},
         "publication_status": {"const": "held"}
+      }
+    },
+    "semantic_proof_authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checkpoint", "semantic_category_count", "subject_kind_count", "applicability_class_count", "proof_kind_count", "report_clause_count", "finding_count", "authority_sha256", "catalog_schema_sha256", "finding_schema_sha256", "result"],
+      "properties": {
+        "checkpoint": {"const": "step_1275"},
+        "semantic_category_count": {"const": 10},
+        "subject_kind_count": {"const": 3},
+        "applicability_class_count": {"const": 4},
+        "proof_kind_count": {"const": 6},
+        "report_clause_count": {"const": 21},
+        "finding_count": {"const": 21},
+        "authority_sha256": {"const": "92c0346c808047c27532da8422d737c72e6414ba3a4067d4af5515cd135ee913"},
+        "catalog_schema_sha256": {"const": "6acb7d9331188c3231832a177911c399fb5877c6ea68ede63e63386d00a72bfa"},
+        "finding_schema_sha256": {"const": "d7ca5fead5ad82cca201a97edcc8fed9d989a83c60392637ddd8c574f4f1e5ff"},
+        "result": {"const": "pass"}
       }
     }
   }

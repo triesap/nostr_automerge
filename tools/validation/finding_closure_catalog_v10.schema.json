@@ -1,0 +1,25 @@
+{
+  "title": "nostr_automerge finding closure catalog v10",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "candidate", "finding_count", "rows", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.finding_closure_catalog.v10.v1"},
+    "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "finding_count": {"const": 21},
+    "rows": {
+      "type": "array", "minItems": 21, "maxItems": 21,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "semantic_category", "status", "closure_proofs"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^FINDING_[0-9]{3}$"},
+          "semantic_category": {"enum": ["authority", "wire_ingress", "control_history", "change_application", "checkpoint_verification", "report_contract", "resource_accounting", "signed_conformance", "evidence_integrity", "external_hold"]},
+          "status": {"enum": ["closed", "held"]},
+          "closure_proofs": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+        }
+      }
+    },
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}
