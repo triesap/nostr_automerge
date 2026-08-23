@@ -29,14 +29,15 @@
       "const": "nostr_automerge.report.v1"
     },
     "fixture_id": {
-      "type": "string"
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_]{2,127}(?![\\s\\S])"
     },
     "revision": {
       "const": "draft_2026_08"
     },
     "coordinate": {
       "type": "string",
-      "pattern": "^31624:[0-9a-f]{64}:[0-9a-f]{64}$"
+      "pattern": "^31624:[0-9a-f]{64}:[0-9a-f]{64}(?![\\s\\S])"
     },
     "canonical_controls": {
       "$ref": "#/$defs/id_list"
@@ -102,7 +103,7 @@
   "$defs": {
     "hex32": {
       "type": "string",
-      "pattern": "^[0-9a-f]{64}$"
+      "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
     },
     "id_list": {
       "type": "array",
@@ -119,7 +120,7 @@
         "namespace": {"enum": ["control_event", "change_hash", "event"]},
         "identifier": {"$ref": "#/$defs/hex32"},
         "disposition": {"enum": ["accepted", "pending", "excluded", "invalid", "unsupported_revision"]},
-        "diagnostic": {"type": "string", "pattern": "^[a-z][a-z0-9_.]+$"}
+        "diagnostic": {"$ref": "#/$defs/diagnostic_code"}
       }
     },
     "assertion": {
@@ -135,7 +136,7 @@
           "items": {
             "oneOf": [
               {"type": "string"},
-              {"type": "integer", "minimum": 0},
+              {"$ref": "#/$defs/safe_u64"},
               {
                 "type": "object",
                 "additionalProperties": false,
@@ -155,27 +156,185 @@
         }
       }
     },
+    "safe_u64": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "canonical_i64": {
+      "oneOf": [
+        {"type": "string", "pattern": "^(?:0|[1-9][0-9]{0,17}|[1-8][0-9]{18}|9[0-1][0-9]{17}|92[0-1][0-9]{16}|922[0-2][0-9]{15}|9223[0-2][0-9]{14}|92233[0-6][0-9]{13}|922337[0-1][0-9]{12}|92233720[0-2][0-9]{10}|922337203[0-5][0-9]{9}|9223372036[0-7][0-9]{8}|92233720368[0-4][0-9]{7}|922337203685[0-3][0-9]{6}|9223372036854[0-6][0-9]{5}|92233720368547[0-6][0-9]{4}|922337203685477[0-4][0-9]{3}|9223372036854775[0-7][0-9]{2}|922337203685477580[0-6]|9223372036854775807)(?![\\s\\S])"},
+        {"type": "string", "pattern": "^-(?:[1-9][0-9]{0,17}|[1-8][0-9]{18}|9[0-1][0-9]{17}|92[0-1][0-9]{16}|922[0-2][0-9]{15}|9223[0-2][0-9]{14}|92233[0-6][0-9]{13}|922337[0-1][0-9]{12}|92233720[0-2][0-9]{10}|922337203[0-5][0-9]{9}|9223372036[0-7][0-9]{8}|92233720368[0-4][0-9]{7}|922337203685[0-3][0-9]{6}|9223372036854[0-6][0-9]{5}|92233720368547[0-6][0-9]{4}|922337203685477[0-4][0-9]{3}|9223372036854775[0-7][0-9]{2}|922337203685477580[0-7]|9223372036854775808)(?![\\s\\S])"}
+      ]
+    },
+    "canonical_u64": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9][0-9]{0,18}|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]|1844674407370955161[0-4]|18446744073709551615)(?![\\s\\S])"
+    },
+    "canonical_base64": {
+      "type": "string",
+      "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/][AQgw]==|[A-Za-z0-9+/]{2}[AEIMQUYcgkosw048]=)?(?![\\s\\S])"
+    },
+    "diagnostic_code": {
+      "enum": [
+        "automerge.canonical", "automerge.checksum", "automerge.chunk_type",
+        "automerge.leb128", "automerge.length", "automerge.magic",
+        "automerge.semantics", "base64.noncanonical", "budget.exhausted",
+        "cancellation.requested", "carrier.coordinate", "carrier.kind",
+        "carrier.revision", "change.actor", "change.hash", "checkpoint.arithmetic",
+        "checkpoint.chunk", "checkpoint.descriptor", "checkpoint.heads",
+        "checkpoint.history", "checkpoint.merkle", "checkpoint.snapshot",
+        "control.account_changed", "control.device_reintroduced", "control.frontier",
+        "control.order", "control.parent", "control.retained_writer",
+        "control.role_escalation", "control.structure", "control.terminal_child",
+        "graph.actor_sequence", "graph.application", "graph.cycle",
+        "graph.epoch_ancestry", "graph.missing_dependency", "graph.operation_counter",
+        "jcs.noncanonical", "json.duplicate_member", "json.syntax",
+        "manifest.semantics", "manifest.structure", "nip01.event_id",
+        "nip01.identifier", "nip01.shape", "nip01.signature", "raw.invalid_utf8",
+        "raw.too_large", "tag.forbidden", "tag.required"
+      ]
+    },
+    "scalar_null": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {"type": {"const": "null"}}
+    },
+    "scalar_bool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "value"],
+      "properties": {"type": {"const": "bool"}, "value": {"type": "boolean"}}
+    },
+    "scalar_i64": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "value"],
+      "properties": {
+        "type": {"enum": ["i64", "counter", "timestamp"]},
+        "value": {"$ref": "#/$defs/canonical_i64"}
+      }
+    },
+    "scalar_u64": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "value"],
+      "properties": {"type": {"const": "u64"}, "value": {"$ref": "#/$defs/canonical_u64"}}
+    },
+    "scalar_f64_bits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "value"],
+      "properties": {"type": {"const": "f64_bits"}, "value": {"type": "string", "pattern": "^[0-9a-f]{16}(?![\\s\\S])"}}
+    },
+    "scalar_string": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "value"],
+      "properties": {"type": {"const": "string"}, "value": {"type": "string"}}
+    },
+    "scalar_bytes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "value"],
+      "properties": {"type": {"const": "bytes_base64"}, "value": {"$ref": "#/$defs/canonical_base64"}}
+    },
+    "materialized_scalar": {
+      "oneOf": [
+        {"$ref": "#/$defs/scalar_null"},
+        {"$ref": "#/$defs/scalar_bool"},
+        {"$ref": "#/$defs/scalar_i64"},
+        {"$ref": "#/$defs/scalar_u64"},
+        {"$ref": "#/$defs/scalar_f64_bits"},
+        {"$ref": "#/$defs/scalar_string"},
+        {"$ref": "#/$defs/scalar_bytes"}
+      ]
+    },
+    "object_value": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "object_id"],
+      "properties": {
+        "type": {"enum": ["map", "list", "table", "text"]},
+        "object_id": {"type": "string", "minLength": 1}
+      }
+    },
+    "text_value": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "object_id", "value"],
+      "properties": {
+        "type": {"const": "text"},
+        "object_id": {"type": "string", "minLength": 1},
+        "value": {"type": "string"}
+      }
+    },
+    "materialized_value": {
+      "oneOf": [
+        {"$ref": "#/$defs/materialized_scalar"},
+        {"$ref": "#/$defs/object_value"},
+        {"$ref": "#/$defs/text_value"}
+      ]
+    },
+    "conflict_value": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation_id", "value"],
+      "properties": {
+        "operation_id": {"type": "string", "minLength": 1},
+        "value": {"$ref": "#/$defs/materialized_value"}
+      }
+    },
     "expected_value": {
       "oneOf": [
-        {"type": "object", "additionalProperties": false, "required": ["type"], "properties": {"type": {"const": "null"}}},
-        {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"const": "bool"}, "value": {"type": "boolean"}}},
-        {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"enum": ["i64", "u64", "counter", "timestamp"]}, "value": {"type": "string", "pattern": "^-?[0-9]+$"}}},
-        {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"const": "f64_bits"}, "value": {"type": "string", "pattern": "^[0-9a-f]{16}$"}}},
-        {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"enum": ["bytes32", "change_hash", "event_id"]}, "value": {"$ref": "#/$defs/hex32"}}},
-        {"type": "object", "additionalProperties": false, "required": ["type", "value"], "properties": {"type": {"enum": ["string", "bytes_base64"]}, "value": {"type": "string"}}},
-        {"type": "object", "additionalProperties": false, "required": ["type", "object_id", "value"], "properties": {"type": {"const": "text"}, "object_id": {"type": "string", "minLength": 1}, "value": {"type": "string"}}},
-        {"type": "object", "additionalProperties": false, "required": ["type", "object_id"], "properties": {"type": {"enum": ["map", "list", "table"]}, "object_id": {"type": "string", "minLength": 1}}},
-        {"type": "object", "additionalProperties": false, "required": ["type", "name", "value", "start", "end", "expansion"], "properties": {"type": {"const": "mark"}, "name": {"type": "string"}, "value": {"type": "object"}, "start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 0}, "expansion": {"enum": ["none", "before", "after", "both"]}}},
-        {"type": "object", "additionalProperties": false, "required": ["type", "values"], "properties": {"type": {"const": "conflicts"}, "values": {"type": "array", "minItems": 2, "items": {"type": "object"}}}}
+        {"$ref": "#/$defs/materialized_scalar"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "value"],
+          "properties": {
+            "type": {"enum": ["bytes32", "change_hash", "event_id"]},
+            "value": {"$ref": "#/$defs/hex32"}
+          }
+        },
+        {"$ref": "#/$defs/object_value"},
+        {"$ref": "#/$defs/text_value"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "name", "value", "start", "end", "expansion"],
+          "properties": {
+            "type": {"const": "mark"},
+            "name": {"type": "string"},
+            "value": {"$ref": "#/$defs/materialized_scalar"},
+            "start": {"$ref": "#/$defs/safe_u64"},
+            "end": {"$ref": "#/$defs/safe_u64"},
+            "expansion": {"enum": ["none", "before", "after", "both"]}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "values"],
+          "properties": {
+            "type": {"const": "conflicts"},
+            "values": {
+              "type": "array",
+              "minItems": 2,
+              "items": {"$ref": "#/$defs/conflict_value"}
+            }
+          }
+        }
       ]
     },
     "integrity_alert": {
       "oneOf": [
         {"type": "object", "additionalProperties": false, "required": ["type", "parent_control", "candidate_controls", "selected_control"], "properties": {"type": {"const": "controller_equivocation"}, "parent_control": {"oneOf": [{"$ref": "#/$defs/hex32"}, {"type": "null"}]}, "candidate_controls": {"$ref": "#/$defs/id_list"}, "selected_control": {"$ref": "#/$defs/hex32"}}},
         {"type": "object", "additionalProperties": false, "required": ["type", "previous_tip", "new_tip", "affected_changes"], "properties": {"type": {"const": "canonical_control_reorganization"}, "previous_tip": {"$ref": "#/$defs/hex32"}, "new_tip": {"$ref": "#/$defs/hex32"}, "affected_changes": {"$ref": "#/$defs/id_list"}}},
-        {"type": "object", "additionalProperties": false, "required": ["type", "actor_id", "first_sequence", "conflicting_changes", "affected_descendants"], "properties": {"type": {"const": "device_equivocation"}, "actor_id": {"$ref": "#/$defs/hex32"}, "first_sequence": {"type": "integer", "minimum": 1}, "conflicting_changes": {"$ref": "#/$defs/id_list"}, "affected_descendants": {"$ref": "#/$defs/id_list"}}},
-        {"type": "object", "additionalProperties": false, "required": ["type", "actor_id", "first_sequence", "carrier_event_ids"], "properties": {"type": {"const": "potential_cloned_device_key"}, "actor_id": {"$ref": "#/$defs/hex32"}, "first_sequence": {"type": "integer", "minimum": 1}, "carrier_event_ids": {"$ref": "#/$defs/id_list"}}},
-        {"type": "object", "additionalProperties": false, "required": ["type", "descriptor_event_id", "code"], "properties": {"type": {"const": "checkpoint_mismatch"}, "descriptor_event_id": {"$ref": "#/$defs/hex32"}, "code": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"}}}
+        {"type": "object", "additionalProperties": false, "required": ["type", "actor_id", "first_sequence", "conflicting_changes", "affected_descendants"], "properties": {"type": {"const": "device_equivocation"}, "actor_id": {"$ref": "#/$defs/hex32"}, "first_sequence": {"type": "integer", "minimum": 1, "maximum": 9007199254740991}, "conflicting_changes": {"$ref": "#/$defs/id_list"}, "affected_descendants": {"$ref": "#/$defs/id_list"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "actor_id", "first_sequence", "carrier_event_ids"], "properties": {"type": {"const": "potential_cloned_device_key"}, "actor_id": {"$ref": "#/$defs/hex32"}, "first_sequence": {"type": "integer", "minimum": 1, "maximum": 9007199254740991}, "carrier_event_ids": {"$ref": "#/$defs/id_list"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "descriptor_event_id", "code"], "properties": {"type": {"const": "checkpoint_mismatch"}, "descriptor_event_id": {"$ref": "#/$defs/hex32"}, "code": {"$ref": "#/$defs/diagnostic_code"}}}
       ]
     },
     "checkpoint_result": {
@@ -187,11 +346,23 @@
         "chunk_events": {"$ref": "#/$defs/id_list"},
         "snapshot_hash": {"$ref": "#/$defs/hex32"},
         "heads": {"$ref": "#/$defs/id_list"},
-        "change_count": {"type": "integer", "minimum": 0},
+        "change_count": {"$ref": "#/$defs/safe_u64"},
         "change_set_hash": {"$ref": "#/$defs/hex32"},
         "historical_carriers": {"$ref": "#/$defs/id_list"},
         "accepted_at_control": {"$ref": "#/$defs/id_list"},
-        "status": {"type": "string"}
+        "status": {
+          "enum": [
+            "verified", "pending_control", "unauthorized",
+            "chunk_author_mismatch", "chunk_coordinate_mismatch",
+            "chunk_descriptor_mismatch", "chunk_count_mismatch",
+            "duplicate_chunk", "missing_chunk", "chunk_size_mismatch",
+            "chunk_assembly_mismatch", "merkle_mismatch",
+            "snapshot_size_mismatch", "snapshot_hash_mismatch", "snapshot_load",
+            "head_mismatch", "commitment_mismatch", "closure_mismatch",
+            "missing_historical_carrier", "not_accepted_at_control",
+            "budget_exhausted", "cancelled"
+          ]
+        }
       }
     }
   }

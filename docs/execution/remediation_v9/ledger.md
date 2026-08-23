@@ -2,7 +2,7 @@
 
 Status: `in_progress`
 
-RCLD 85 has 48 committed predecessors through `step_1205`. The opaque
+RCLD 86 has 50 committed predecessors through `step_1207`. The opaque
 compatibility checkpoint is bound by one approved 40-character candidate and
 one canonical 64-character result identity. Its public projection records nine
 findings, 23 expected-failure reproductions, 276 negative mutations, one
@@ -48,6 +48,13 @@ open regressions, current 180-scenario by eight-delivery conformance bytes,
 and unchanged NIP, requirement, fixture, wire-domain, and digest-code
 identities.
 
+The report-schema authority binds the predecessor and reconciled
+`nostr_automerge.report.v1` schema identities, the unchanged
+`draft_2026_08` revision, all 18 required fields, 22 checkpoint statuses, and
+50 diagnostics. It also binds the unchanged 180-scenario canonical and
+serialized output identities. The schema change does not rewrite signed
+inputs, expected reports, protocol bytes, or any completed evidence record.
+
 | Checkpoint range | Lane | Result |
 | --- | --- | --- |
 | `step_1158`–`step_1163` | `V-AUTH` | pass |
@@ -84,8 +91,10 @@ identities.
 | `step_1203` | `V-RUST` | pass |
 | `step_1204` | `V-RESOURCE` | pass |
 | `step_1205` | `V-REPORT` | pass |
-| `step_1206` | `V-FULL-RUST` | active |
-| `step_1207` | `V-TS` | next |
+| `step_1206` | `V-FULL-RUST` | pass |
+| `step_1207` | `V-TS` | pass |
+| `step_1208` | `V-AUTH` | active |
+| `step_1209` | `V-TS` | next |
 
 The completed report-authority checkpoint binds a closed inventory of complete
 and no-progress construction plus nine revision consumers to exact reviewed
@@ -188,8 +197,8 @@ immutable historical record and is not the carrier closure authority.
 `step_1197` through `step_1205` chain ending at
 `321abda8f672ecf1a44aa1919e0cec98830e8df8`; its current two-process
 conformance identity is the same canonical and serialized output pair above.
-There are 78
-checkpoints including the active checkpoint remaining through `step_1283`.
+There are 80 checkpoints including the active checkpoint remaining through
+`step_1287`.
 
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,

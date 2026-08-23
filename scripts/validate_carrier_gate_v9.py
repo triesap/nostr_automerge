@@ -165,7 +165,7 @@ STEP_1203_ADDITIVE_REPORT_PATHS = tuple(
     if relative != "crates/nostr_automerge/src/integrity.rs"
 )
 CONFORMANCE_ADDITIVE_REPORT_PROJECTION = (
-    "41e5fe9671ec9425dfb40801281bc7ef02b42b787473f432b83086ff44ff9b47"
+    "a9b433b094a65ee0507d32f4ab87f9f37a45e742453c96329542a058d6fe516a"
 )
 STEP_1204_ADDITIVE_REPORT_PROJECTION = (
     "b15b10e405feada0206363088b5d3fcb3a1f9e7f14ee570101484a3dda76f54c"
@@ -181,6 +181,19 @@ STEP_1205_SOURCE_BINDINGS = (
         "tools/nostr_automerge_conformance/src/runner.rs",
         "64a538efd6029431542c347421539749cab5926c30322aebb39f3ea61fc66efa",
         "acd2383d53060c747f429460207c3d555cf0c39e603fe7ff9a18085b9deb9804",
+    ),
+)
+STEP_1208_ADDITIVE_REPORT_PATHS = (
+    "tools/nostr_automerge_conformance/src/expected.rs",
+)
+STEP_1208_ADDITIVE_REPORT_PROJECTION = (
+    "05faa9d783243194271dfad056d5d8685a297cdc9e365f25ff34693be20054eb"
+)
+STEP_1208_SOURCE_BINDINGS = (
+    (
+        "tools/nostr_automerge_conformance/src/expected.rs",
+        "d73cae7ab1eff53a02d876bbfbb2dca748a6ef9a4206a6b1343a26649a9537da",
+        "444cd71b70219c416cc3078c60dd619bddf77d05b32bceca0522f9271f56361d",
     ),
 )
 STEP_1203_ADDITIVE_REPORT_PROJECTION = (
@@ -384,6 +397,42 @@ def validate_step_1205_transition(
         )
 
 
+def validate_step_1208_transition(
+    parent: str,
+    names: tuple[str, ...],
+    patch: bytes,
+    parent_sources: tuple[tuple[str, bytes], ...],
+    current_sources: tuple[tuple[str, bytes], ...],
+) -> None:
+    require(parent == STEP_1205_CANDIDATE, "carrier_gate:step1208_parent")
+    require(names == STEP_1208_ADDITIVE_REPORT_PATHS, "carrier_gate:step1208_paths")
+    require(
+        hashlib.sha256(patch).hexdigest() == STEP_1208_ADDITIVE_REPORT_PROJECTION,
+        "carrier_gate:step1208_patch",
+    )
+    expected_paths = tuple(binding[0] for binding in STEP_1208_SOURCE_BINDINGS)
+    require(
+        tuple(relative for relative, _ in parent_sources) == expected_paths,
+        "carrier_gate:step1208_parent_source_paths",
+    )
+    require(
+        tuple(relative for relative, _ in current_sources) == expected_paths,
+        "carrier_gate:step1208_current_source_paths",
+    )
+    for (relative, parent_sha256, current_sha256), (_, parent_source), (
+        _,
+        current_source,
+    ) in zip(STEP_1208_SOURCE_BINDINGS, parent_sources, current_sources, strict=True):
+        require(
+            hashlib.sha256(parent_source).hexdigest() == parent_sha256,
+            f"carrier_gate:step1208_parent_source:{relative}",
+        )
+        require(
+            hashlib.sha256(current_source).hexdigest() == current_sha256,
+            f"carrier_gate:step1208_current_source:{relative}",
+        )
+
+
 def conformance_source_mutation_self_test() -> int:
     require(
         git_bytes(
@@ -532,12 +581,16 @@ def conformance_source_mutation_self_test() -> int:
         candidate_sources,
     )
     current_names, current_patch = conformance_source_diff_between(
-        STEP_1204_CANDIDATE,
+        STEP_1205_CANDIDATE,
         None,
     )
-    current_sources = conformance_source_values(None, STEP_1205_ADDITIVE_REPORT_PATHS)
-    validate_step_1205_transition(
-        STEP_1204_CANDIDATE,
+    parent_sources = conformance_source_values(
+        STEP_1205_CANDIDATE,
+        STEP_1208_ADDITIVE_REPORT_PATHS,
+    )
+    current_sources = conformance_source_values(None, STEP_1208_ADDITIVE_REPORT_PATHS)
+    validate_step_1208_transition(
+        STEP_1205_CANDIDATE,
         current_names,
         current_patch,
         parent_sources,
@@ -598,54 +651,54 @@ def conformance_source_mutation_self_test() -> int:
     )
     transition_mutations = (
         ("0" * 40, current_names, current_patch, parent_sources, current_sources),
-        (STEP_1204_CANDIDATE, (), current_patch, parent_sources, current_sources),
+        (STEP_1205_CANDIDATE, (), current_patch, parent_sources, current_sources),
         (
-            STEP_1204_CANDIDATE,
+            STEP_1205_CANDIDATE,
             (*current_names, "crates/nostr_automerge/src/checkpoint/mod.rs"),
             current_patch,
             parent_sources,
             current_sources,
         ),
         (
-            STEP_1204_CANDIDATE,
+            STEP_1205_CANDIDATE,
             current_names,
-            current_patch + b"step1205-patch-drift\n",
+            current_patch + b"step1208-patch-drift\n",
             parent_sources,
             current_sources,
         ),
         (
-            STEP_1204_CANDIDATE,
+            STEP_1205_CANDIDATE,
             current_names,
             current_patch,
             parent_source_drift,
             current_sources,
         ),
         (
-            STEP_1204_CANDIDATE,
+            STEP_1205_CANDIDATE,
             current_names,
             current_patch,
             parent_sources,
             current_source_drift,
         ),
-        (STEP_1204_CANDIDATE, current_names, current_patch, parent_sources, ()),
+        (STEP_1205_CANDIDATE, current_names, current_patch, parent_sources, ()),
         (
-            STEP_1204_CANDIDATE,
+            STEP_1205_CANDIDATE,
             current_names,
             current_patch,
             parent_sources,
             extra_current_source,
         ),
         (
-            STEP_1204_CANDIDATE,
+            STEP_1205_CANDIDATE,
             current_names,
-            current_patch + b"coordinated-step1205-drift\n",
+            current_patch + b"coordinated-step1208-drift\n",
             parent_sources,
             current_source_drift,
         ),
     )
     for parent, names, patch, prior_sources, candidate_sources in transition_mutations:
         try:
-            validate_step_1205_transition(
+            validate_step_1208_transition(
                 parent,
                 names,
                 patch,
@@ -655,7 +708,7 @@ def conformance_source_mutation_self_test() -> int:
         except LedgerError:
             caught += 1
             continue
-        raise LedgerError("carrier_gate_step1205_mutation_survived")
+        raise LedgerError("carrier_gate_step1208_mutation_survived")
     return caught
 
 

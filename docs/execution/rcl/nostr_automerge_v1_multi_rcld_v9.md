@@ -15,11 +15,17 @@ Reviewed requirement registry SHA-256: `a97103be86946c15d81b3fc585efa36f4884da09
 Reviewed applicability SHA-256: `7cda8e59da0d8caf1f9a9985ba27c9367018c572824f092106fe5e5a8d823793`
 Reviewed distribution-v9 manifest SHA-256: `7b4ab5d2146939d142eb92d43060ef2183c95d1fc574132894b3c01c874c7c56`
 Reviewed canonical-output SHA-256: `e193a7b0db3a43e9d33e612afea05bd447a5e968a45e283d098f45278d6ab6fc`
-Steps: `step_1158` through `step_1283` (126 contiguous checkpoints)
-Active RCLD: RCLD 85
-Active checkpoint: `step_1206`
+Steps: `step_1158` through `step_1287` (130 contiguous checkpoints)
+Active RCLD: RCLD 86
+Active checkpoint: `step_1208`
 Next RCLD: RCLD 86
-Next checkpoint: `step_1207`
+Next checkpoint: `step_1209`
+
+This planning revision changes only the unfinished checkpoint map. Completed
+candidate identities and evidence remain immutable. The public-owned
+`step_1208` authority update must reconcile the live runtime ledger, schemas,
+validators, and controlled baseline with the 130-checkpoint map before this
+planning revision is committed; it must not rewrite completed predecessors.
 
 ## Outcome
 
@@ -95,7 +101,7 @@ why the prescribed step is obsolete or unsafe:
   registry or expectation edits before a v10 transition validator would make
   intermediate commits red; the NIP-edit checkpoint is outside approved scope
 replacement action:
-  execute the 126 checkpoints in RCLD 81 through RCLD 94 below; install the
+  execute the 130 checkpoints in RCLD 81 through RCLD 94 below; install the
   staged v10 authority transition before mutating live authority; replace NIP
   edits with companion contracts and ADRs; preserve all required final counts
 spec and finding impact:
@@ -232,6 +238,34 @@ counts, lengths, work, chunk equations, and proof bounds.
 Protocol-significant strings are ordered by explicit byte or code-unit rules.
 Locale-sensitive comparison is prohibited for identifiers, hashes, actors,
 controls, fixture IDs, disposition records, heads, and traversal queues.
+
+## Report Contract Implementation Clauses
+
+The following named clauses refine implementation and proof without adding
+requirement rows or changing the fixed 148-row registry. They bind the public
+typed report, neutral JSON report, independent private implementation, and
+signed comparison lanes to one closed contract.
+
+| Clause | Required behavior |
+| --- | --- |
+| `RPT-SHAPE-001` | A neutral report has exactly the eighteen required top-level fields plus optional `checkpoints`, the sealed schema and revision, one valid coordinate and fixture identifier, and one declared completion. |
+| `RPT-VALUE-001` | Dispositions, all five alert variants, checkpoints, assertion paths, materialized values, marks, conflicts, numeric strings, identifiers, diagnostics, and base64 values have closed recursive shapes and domains. |
+| `RPT-SNAPSHOT-001` | Serialization captures one dense immutable JSON snapshot and validates and emits that same snapshot without rereading caller accessors; proxy, getter, descriptor, and parser failures retain exact provenance. |
+| `RPT-TYPE-001` | Report components use closed discriminated types, immutable vocabularies, and exhaustive mappings; unchecked report casts and catch-all diagnostic/status translations are prohibited. |
+| `RPT-ORDER-001` | Every byte-ordered collection is strictly ordered and unique, while canonical controls preserve their graph-derived lineage order rather than lexical repair order. |
+| `RPT-PARTITION-001` | Accepted, pending, excluded, and invalid semantic ChangeHash partitions are exact, exhaustive, mutually disjoint, and equal to their ChangeHash disposition records. |
+| `RPT-NAMESPACE-001` | ControlEvent, ChangeHash, and Event disposition namespaces remain independent and have exact record coverage, including independent carrier Event outcomes and valid-carrier aggregate dominance. |
+| `RPT-WITNESS-001` | Complete construction consumes immutable engine-derived authority for control lineage, carrier-to-hash linkage, evidence, manifest selection, checkpoints, alerts, assertions, accepted state, and materialized document state. |
+| `RPT-DIGEST-001` | History and dispositions digests are recomputed from the exact validated coordinate, revision, controls, partitions, heads, and namespaced records that the report exposes. |
+| `RPT-CHECKPOINT-001` | The private internal checkpoint state table maps exhaustively into the exact twenty-two public statuses, and every checkpoint field and relationship is validated without unchecked projection. |
+| `RPT-ASSERTION-001` | One exhaustive assertion authority derives actual assertions from signed input requirements and materialized state; expected reports never select assertion work or values. |
+| `RPT-NOPROGRESS-001` | Budget exhaustion and cancellation use a distinct constant-size no-progress constructor with canonical empty digests and no protocol-derived state; hybrid incomplete reports are unrepresentable. |
+| `RPT-REJECT-001` | Report constructors and parsers reject duplicates, wrong order, overlap, omission, extras, and inconsistency without sorting, deduplicating, normalizing, inferring, filling, or repairing input. |
+| `RPT-EXPECTED-001` | Expected reports are parsed independent comparison artifacts and never select delivery order, initiate document work, provide assertions, or supply any actual report field. |
+| `RPT-CONSUMER-001` | Scenario and fixture loaders, evaluator output, reevaluation, CLI serialization, conformance, comparison, checkpoint evidence, and package exports use the same closed contract with no bypass. |
+| `RPT-SIGNED-001` | Mandatory signed report lanes fail when fixture authority is missing; skipped, filtered, or unrelated execution cannot support report closure. |
+| `RPT-SCHEMA-001` | The checked-in public JSON schema, public executable serializer, private parser, and canonical fixture bytes describe the same closed neutral report contract. |
+| `RPT-BOUNDARY-001` | Untrusted report parsing and object capture are explicitly bounded by local byte, depth, token, item, and allocation controls that do not alter protocol validity or canonical bytes. |
 
 ## Requirement Registry V10
 
@@ -426,170 +460,174 @@ Depends on: RCLD 84
 
 ## RCLD 86 — Private Canonical Report Contract
 
-Status: planned
-Steps: `step_1207` through `step_1214`
+Status: in progress
+Steps: `step_1207` through `step_1217`
 Gate: `GATE_V9_PRIVATE_REPORT`
 Depends on: RCLD 85
 
 | Step | Git identity | Scope | Definition of green | Lane |
 | --- | --- | --- | --- | --- |
-| `step_1207` | private TypeScript | Enforce exact report keys, schema `nostr_automerge.report.v1`, revision, coordinate, completion, and closed value shapes. | Unknown, missing, mistyped, or noncanonical fields fail. | `V-TS` |
-| `step_1208` | private TypeScript | Enforce exact semantic partitions, control/head ordering, disposition namespaces, and carrier/hash relations. | Every missing, extra, duplicate, overlap, and cross-view mismatch fails. | `V-TS` |
-| `step_1209` | private TypeScript | Recompute and validate digests, checkpoint records, alerts, assertions, manifest fields, and evidence relationships. | Focused mutations for every family fail for the intended invariant. | `V-TS` |
-| `step_1210` | private TypeScript | Implement the exact canonical no-progress report for all incomplete public evaluation paths. | Budget and cancellation boundaries emit byte-identical empty protocol state. | `V-TS` |
-| `step_1211` | private TypeScript | Remove Set-based deduplication, normalization, repair, and expected-report-driven production behavior. | Duplicate or unsorted inputs fail instead of being silently corrected. | `V-TS` |
-| `step_1212` | private TypeScript | Integrate exact report behavior through evaluator, CLI, conformance, comparison, and package exports. | Every report consumer uses the same parser/builder contract. | `V-TS` |
-| `step_1213` | private TypeScript | Enable report mutation, no-progress, compatibility, and mandatory signed tests. | The private ordinary and signed report gates pass without skips. | `V-TS` |
-| `step_1214` | public Rust | Import opaque private report evidence, compare behavior, and close the report parity gate. | Exact schema and canonical bytes agree; private material remains opaque. | `V-CONF` |
+| `step_1207` | private TypeScript | Enforce exact report keys, schema `nostr_automerge.report.v1`, revision, coordinate, fixture ID, completion, closed recursive value shapes, canonical numeric/base64 domains, dense one-snapshot serialization, and strict-JSON provenance; preserve the reviewed private checkpoint expectation bytes while projecting internal `invalid_control` to canonical `unauthorized`. | Unknown, missing, mistyped, noncanonical, sparse, accessor-changing, or proxy-changing values fail or serialize from exactly one validated snapshot; the focused report/checkpoint lane, pinned full private check, reproduction harness, fixture/lock audit, and scoped diff are green. | `V-TS` |
+| `step_1208` | public Rust | Reconcile the neutral report JSON schema with the approved executable report contract without changing report bytes, the NIP, the protocol revision, fixtures, or digest domains. Close the twenty-two checkpoint statuses, fifty diagnostics, dotted checkpoint codes, signed/unsigned integer domains, canonical base64, recursive mark values, and conflict records, and bind the new schema identity in public authority. | Every existing expected report validates, each deliberate open-shape/domain mutation fails, public serialization remains byte-identical, and the authority transition binds the exact schema delta. | `V-AUTH` |
+| `step_1209` | private TypeScript | Introduce one closed typed report-authority module for reports, dispositions, alerts, checkpoints, assertions, materialized values, status and diagnostic vocabularies, and internal-to-canonical checkpoint projection. Remove unchecked report casts and catch-all report mappings. | Exhaustive compile/runtime tests reject unknown variants and unmapped internal states; private types and serializers match the reconciled neutral schema independently. | `V-TS` |
+| `step_1210` | private TypeScript | Introduce an immutable engine-derived complete-report witness and enforce exact semantic partitions, canonical control lineage, heads/frontier, disposition ordering and namespaces, carrier/hash coverage, valid-carrier dominance, and unsupported Event-only identity. | Independent missing, extra, duplicate, overlap, reorder, namespace-swap, carrier/hash, dominance, and coordinated cross-view mutations fail without sorting, inference, or repair. | `V-TS` |
+| `step_1211` | private TypeScript | Extend complete-report authority to recompute both digests and validate checkpoint records, alerts, evidence, manifest selection, accepted state, materialized document state, and one exhaustive assertion implementation derived from signed requirements rather than expected output. | One independent mutation per field family and coordinated rehash/rewrite family fails; every checkpoint status and assertion variant has exact positive and negative proof. | `V-TS` |
+| `step_1212` | private TypeScript | Implement distinct sealed complete and constant-size no-progress constructors for every public evaluation path. | Budget exhaustion and cancellation emit byte-identical empty protocol state with canonical empty digests, and no generic or hybrid incomplete builder remains reachable. | `V-TS` |
+| `step_1213` | private TypeScript | Replace report-path sorting, `Set` deduplication, normalization, inference, and repair with reject-only canonical construction. | Duplicate, unsorted, overlapping, missing, extra, or malformed input fails before report bytes are emitted, and no canonical result depends on repaired upstream state. | `V-TS` |
+| `step_1214` | private TypeScript | Remove expected-report-driven evaluator work, assertion selection, delivery-permutation selection, core/checkpoint/malformed/property/actor output construction, and checkpoint projection. | Poisoning every expected field, selector, order, and cardinality cannot change actual engine work or bytes, while independent expected comparison rejects the poison. | `V-TS` |
+| `step_1215` | private TypeScript | Integrate the closed contract through signed-scenario and fixture loading, evaluator and reevaluator output, CLI serialization, conformance, canonical comparison, checkpoint evidence, and package exports; remove alternate builders and serializers. | A closed constructor/consumer inventory proves every entry uses the same parser/builder contract, and identical malformed reports cannot pass comparison. | `V-TS` |
+| `step_1216` | private TypeScript | Install an exact private report-clause proof inventory and enable report mutation, no-progress, compatibility, checkpoint, package, and mandatory signed report gates; require missing signed fixture authority to fail rather than skip and produce approved opaque result identities. | Every clause binds one exact enabled behavioral test, all required v9 scenarios execute twice/eight without skips, deliberate mismatch rejection passes, the private tree is clean, and no proof is generic, stale, commented, filtered, or unrelated. | `V-FULL-TS` |
+| `step_1217` | public Rust | Import only opaque private report evidence, validate the reconciled schema identity, compare exact public/private canonical bytes, reject both malformed output and a structurally valid deliberate mismatch, and close the report parity gate. | Schema, clause inventory, mandatory execution, canonical-byte equality, mismatch, leak, authority, and full public gates pass without private detail exposure. | `V-EVIDENCE` |
 
 ## RCLD 87 — Rust Two-Tier Finalization
 
 Status: planned
-Steps: `step_1215` through `step_1223`
+Steps: `step_1218` through `step_1226`
 Gate: `GATE_V9_RUST_FINALIZATION`
 Depends on: RCLD 86
 
 | Step | Git identity | Scope | Definition of green | Lane |
 | --- | --- | --- | --- | --- |
-| `step_1215` | public Rust | Introduce independent fixed-fallback and complete-report ledgers, with fallback outside caller target budget. | Zero target budget can still settle and return no progress; ledgers cannot borrow. | `V-RESOURCE` |
-| `step_1216` | public Rust | Derive an exact named complete-report plan from retained target metadata and sealed fixed overhead. | Reserved units equal the concrete planned passes with checked arithmetic. | `V-RESOURCE` |
-| `step_1217` | public Rust | Consume control, change, and carrier Event passes immediately before their actual work. | Instrumented tests reject work-before-consume and unused-pass consumption. | `V-RESOURCE` |
-| `step_1218` | public Rust | Consume checkpoint, digest, evidence, alert, invariant, and fixed-overhead passes immediately before work. | Every remaining pass has exact before-work accounting. | `V-RESOURCE` |
-| `step_1219` | public Rust | Settle every interruption through fallback only and forfeit unperformed complete capacity. | No target-sized finalization occurs after stop and no interrupted refund occurs. | `V-RESOURCE` |
-| `step_1220` | public Rust | Validate complete reports before refund and settle typed invariant/adapter errors exactly once. | Invalid complete reports never escape; terminal state and equation remain exact. | `V-RESOURCE` |
-| `step_1221` | public Rust | Add exact `0`, `N-1`, `N`, `N+1`, every-pass, and cancellation boundaries. | Tier selection, completion, failure, and settlements match the contract at every boundary. | `V-RESOURCE` |
-| `step_1222` | public Rust | Add in-memory ledger mutations for missing, duplicate, reordered, overrun, underflow, early-refund, and wrong-tier actions. | Every mutation is rejected without executing a source-mutating campaign. | `V-RESOURCE` |
-| `step_1223` | public Rust | Close the Rust finalization gate. | Focused resource, report, cancellation, and full public gates pass. | `V-FULL-RUST` |
+| `step_1218` | public Rust | Introduce independent fixed-fallback and complete-report ledgers, with fallback outside caller target budget. | Zero target budget can still settle and return no progress; ledgers cannot borrow. | `V-RESOURCE` |
+| `step_1219` | public Rust | Derive an exact named complete-report plan from retained target metadata and sealed fixed overhead. | Reserved units equal the concrete planned passes with checked arithmetic. | `V-RESOURCE` |
+| `step_1220` | public Rust | Consume control, change, and carrier Event passes immediately before their actual work. | Instrumented tests reject work-before-consume and unused-pass consumption. | `V-RESOURCE` |
+| `step_1221` | public Rust | Consume checkpoint, digest, evidence, alert, invariant, and fixed-overhead passes immediately before work. | Every remaining pass has exact before-work accounting. | `V-RESOURCE` |
+| `step_1222` | public Rust | Settle every interruption through fallback only and forfeit unperformed complete capacity. | No target-sized finalization occurs after stop and no interrupted refund occurs. | `V-RESOURCE` |
+| `step_1223` | public Rust | Validate complete reports before refund and settle typed invariant/adapter errors exactly once. | Invalid complete reports never escape; terminal state and equation remain exact. | `V-RESOURCE` |
+| `step_1224` | public Rust | Add exact `0`, `N-1`, `N`, `N+1`, every-pass, and cancellation boundaries. | Tier selection, completion, failure, and settlements match the contract at every boundary. | `V-RESOURCE` |
+| `step_1225` | public Rust | Add in-memory ledger mutations for missing, duplicate, reordered, overrun, underflow, early-refund, and wrong-tier actions. | Every mutation is rejected without executing a source-mutating campaign. | `V-RESOURCE` |
+| `step_1226` | public Rust | Close the Rust finalization gate. | Focused resource, report, cancellation, and full public gates pass. | `V-FULL-RUST` |
 
 ## RCLD 88 — Private Two-Tier Finalization
 
 Status: planned
-Steps: `step_1224` through `step_1231`
+Steps: `step_1227` through `step_1234`
 Gate: `GATE_V9_PRIVATE_FINALIZATION`
 Depends on: RCLD 87
 
 | Step | Git identity | Scope | Definition of green | Lane |
 | --- | --- | --- | --- | --- |
-| `step_1224` | private TypeScript | Validate work limits, callback inputs, safe integers, arithmetic, and typed local failures. | Negative, fractional, unsafe, overflowing, or throwing inputs fail deterministically. | `V-TS` |
-| `step_1225` | private TypeScript | Implement independent fallback and complete-report ledgers. | Zero target budget returns accounted no progress; ledgers are isolated. | `V-TS` |
-| `step_1226` | private TypeScript | Derive exact complete passes from actual report dimensions and sealed overhead. | Reservation equals concrete work rather than an estimate or expected report. | `V-TS` |
-| `step_1227` | private TypeScript | Consume every named complete pass immediately before work. | Work-before-consume and consume-without-work tests fail closed. | `V-TS` |
-| `step_1228` | private TypeScript | Implement exact complete, interrupted, and error settlement. | Every dimension satisfies the ledger equation with the permitted terminal classifications. | `V-TS` |
-| `step_1229` | private TypeScript | Add `0`, `N-1`, `N`, `N+1`, cancellation, callback, and mutation tests. | Boundary behavior matches the abstract public contract independently. | `V-TS` |
-| `step_1230` | private TypeScript | Run the private finalization, report, resource, and ordinary gates and produce opaque result identities. | All mandatory private checks pass and the private tree is clean. | `V-FULL-TS` |
-| `step_1231` | public Rust | Import opaque finalization evidence and close the cross-language ledger gate. | Candidate/results bind exactly with no private leakage. | `V-EVIDENCE` |
+| `step_1227` | private TypeScript | Validate work limits, callback inputs, safe integers, arithmetic, typed local failures, and cancellation crossing before counters or work advance. | Negative, fractional, unsafe, overflowing, or throwing inputs fail deterministically, and a multi-item charge crossing `cancel_after` returns cancelled with unchanged counters and no work. | `V-TS` |
+| `step_1228` | private TypeScript | Implement independent fallback and complete-report ledgers. | Zero target budget returns accounted no progress; ledgers are isolated. | `V-TS` |
+| `step_1229` | private TypeScript | Derive exact complete passes from actual report dimensions and sealed overhead. | Reservation equals concrete work rather than an estimate or expected report. | `V-TS` |
+| `step_1230` | private TypeScript | Consume every named complete pass immediately before its owned work and enforce the declared pass order. | Work-before-consume, consume-without-work, reordered consumption, and first-stop relabeling fail closed. | `V-TS` |
+| `step_1231` | private TypeScript | Implement exact complete, interrupted, and error settlement. | Every dimension satisfies the ledger equation with the permitted terminal classifications. | `V-TS` |
+| `step_1232` | private TypeScript | Add `0`, `N-1`, `N`, `N+1`, cancellation crossing, callback, ordering, and in-memory ledger mutation tests. | Boundary behavior matches the abstract public contract independently and the first typed stop is preserved. | `V-TS` |
+| `step_1233` | private TypeScript | Run the private finalization, report, resource, and ordinary gates and produce opaque result identities. | All mandatory private checks pass and the private tree is clean. | `V-FULL-TS` |
+| `step_1234` | public Rust | Import opaque finalization evidence and close the cross-language ledger gate. | Candidate/results bind exactly with no private leakage. | `V-EVIDENCE` |
 
 ## RCLD 89 — Rust Target Work And Shared Bytes
 
 Status: planned
-Steps: `step_1232` through `step_1241`
+Steps: `step_1235` through `step_1244`
 Gate: `GATE_V9_RUST_RESOURCE`
 Depends on: RCLD 88
 
 | Step | Git identity | Scope | Definition of green | Lane |
 | --- | --- | --- | --- | --- |
-| `step_1232` | public Rust | Store validated canonical change bytes once as internal `Arc<[u8]>` through carrier qualification. | Borrowed slice behavior is unchanged and one canonical allocation is retained. | `V-RESOURCE` |
-| `step_1233` | public Rust | Propagate shared bytes through evidence indexes, document views, batch changes, memo state, and change lookup. | No target path clones an evidence-sized raw `Vec<u8>`. | `V-RESOURCE` |
-| `step_1234` | public Rust | Meter or eliminate control preparation, assumed-state collections, index access, and prior-knowledge construction. | Exact counters and cancellation cover every target item. | `V-RESOURCE` |
-| `step_1235` | public Rust | Meter ancestry construction, parent/member comparisons, continuity checks, and propagation. | Every relevant edge/member visit is charged once and cancellable. | `V-RESOURCE` |
-| `step_1236` | public Rust | Meter branch memo traversal, canonical derivation, ordered membership, accepted-state reuse, and alert suppression. | Repeated work is memoized or exactly charged; no hidden quadratic scan remains. | `V-RESOURCE` |
-| `step_1237` | public Rust | Meter checkpoint candidate joins, chunk-set construction, ordering, copies, assembly, proof visits, and snapshot work. | Cancellation occurs before each target-sized checkpoint pass. | `V-RESOURCE` |
-| `step_1238` | public Rust | Meter change operation/dependency edges, hash/closure work, Automerge load/apply, and commitment verification. | Exact counters cover every decoded operation and graph edge with checked arithmetic. | `V-RESOURCE` |
-| `step_1239` | public Rust | Meter canonical report lists, disposition copies, evidence, alerts, digests, and invariant traversals not owned by finalization. | No evidence-proportional work begins without a charge, reservation, or sealed bound. | `V-RESOURCE` |
-| `step_1240` | public Rust | Add exact-budget, cancellation, unrelated-flood, allocation, byte-identity, and deterministic scaling regressions. | Output/work isolation and declared memory/copy bounds pass. | `V-RESOURCE` |
-| `step_1241` | public Rust | Close the Rust target-work gate. | Focused resource, checkpoint, report, conformance, and full public gates pass. | `V-FULL-RUST` |
+| `step_1235` | public Rust | Store validated canonical change bytes once as internal `Arc<[u8]>` through carrier qualification. | Borrowed slice behavior is unchanged and one canonical allocation is retained. | `V-RESOURCE` |
+| `step_1236` | public Rust | Propagate shared bytes through evidence indexes, document views, batch changes, memo state, and change lookup. | No target path clones an evidence-sized raw `Vec<u8>`. | `V-RESOURCE` |
+| `step_1237` | public Rust | Meter or eliminate control preparation, assumed-state collections, index access, and prior-knowledge construction. | Exact counters and cancellation cover every target item. | `V-RESOURCE` |
+| `step_1238` | public Rust | Meter ancestry construction, parent/member comparisons, continuity checks, and propagation. | Every relevant edge/member visit is charged once and cancellable. | `V-RESOURCE` |
+| `step_1239` | public Rust | Meter branch memo traversal, canonical derivation, ordered membership, accepted-state reuse, and alert suppression. | Repeated work is memoized or exactly charged; no hidden quadratic scan remains. | `V-RESOURCE` |
+| `step_1240` | public Rust | Meter checkpoint candidate joins, chunk-set construction, ordering, copies, assembly, proof visits, and snapshot work. | Cancellation occurs before each target-sized checkpoint pass. | `V-RESOURCE` |
+| `step_1241` | public Rust | Meter change operation/dependency edges, hash/closure work, Automerge load/apply, and commitment verification. | Exact counters cover every decoded operation and graph edge with checked arithmetic. | `V-RESOURCE` |
+| `step_1242` | public Rust | Meter canonical report lists, disposition copies, evidence, alerts, digests, and invariant traversals not owned by finalization. | No evidence-proportional work begins without a charge, reservation, or sealed bound. | `V-RESOURCE` |
+| `step_1243` | public Rust | Add exact-budget, cancellation, unrelated-flood, allocation, byte-identity, and deterministic scaling regressions. | Output/work isolation and declared memory/copy bounds pass. | `V-RESOURCE` |
+| `step_1244` | public Rust | Close the Rust target-work gate. | Focused resource, checkpoint, report, conformance, and full public gates pass. | `V-FULL-RUST` |
 
 ## RCLD 90 — Private Ingress, Limits, Immutability, And Ordering
 
 Status: planned
-Steps: `step_1242` through `step_1250`
+Steps: `step_1245` through `step_1254`
 Gate: `GATE_V9_PRIVATE_BOUNDARY`
 Depends on: RCLD 89
 
 | Step | Git identity | Scope | Definition of green | Lane |
 | --- | --- | --- | --- | --- |
-| `step_1242` | private TypeScript | Enforce raw encoded event and content byte ceilings before duplicate scanning, base64 decoding, JSON expansion, or allocation. | Oversized inputs fail before target-sized decode/copy work. | `V-TS` |
-| `step_1243` | private TypeScript | Enforce exact change bytes, operation count, dependency count, graph, and Automerge qualification limits. | `limit-1`, exact-limit, and `limit+1` tests match the sealed registry. | `V-TS` |
-| `step_1244` | private TypeScript | Enforce exact manifest, control, membership, role, tag, relay, text, and coordinate limits. | Every public sealed non-checkpoint limit has exact boundaries. | `V-TS` |
-| `step_1245` | private TypeScript | Enforce exact checkpoint descriptor, chunk, total snapshot, proof-depth, count, size-equation, and allocation limits. | All checkpoint boundaries fail or pass before unsafe allocation as required. | `V-TS` |
-| `step_1246` | private TypeScript | Deeply encapsulate retained corpus events, tags, maps, arrays, carrier records, and nested protocol objects. | Caller mutation after ingestion cannot change indexes or evaluation bytes. | `V-TS` |
-| `step_1247` | private TypeScript | Retain one owned raw-change/chunk byte copy and prevent mutable internal views from escaping. | Mutating any returned bytes cannot alter stored evidence or later output. | `V-TS` |
-| `step_1248` | private TypeScript | Replace every protocol-significant `localeCompare` with an explicit byte/code-unit comparator. | Locale changes do not alter ordering, traversal, digest, or report bytes. | `V-TS` |
-| `step_1249` | private TypeScript | Harden constructors and callbacks against unsafe integers, NaN, infinities, overflow, aliasing, and unexpected exceptions; enable boundary tests. | All boundary and mutation tests fail closed with typed behavior. | `V-TS` |
-| `step_1250` | public Rust | Import opaque boundary/limit evidence, compare neutral limit identities, and close the private-boundary gate. | Exact limits and result hashes match; no private detail leaks. | `V-EVIDENCE` |
+| `step_1245` | private TypeScript | Enforce raw encoded event and content byte ceilings before duplicate scanning, base64 decoding, JSON expansion, or allocation. | Oversized inputs fail before target-sized decode/copy work. | `V-TS` |
+| `step_1246` | private TypeScript | Enforce exact change bytes, operation count, dependency count, graph, and Automerge qualification limits. | `limit-1`, exact-limit, and `limit+1` tests match the sealed registry. | `V-TS` |
+| `step_1247` | private TypeScript | Enforce exact manifest, control, membership, role, tag, relay, text, and coordinate limits. | Every public sealed non-checkpoint limit has exact boundaries. | `V-TS` |
+| `step_1248` | private TypeScript | Enforce exact checkpoint descriptor, chunk, total snapshot, proof-depth, count, size-equation, and allocation limits. | All checkpoint boundaries fail or pass before unsafe allocation as required. | `V-TS` |
+| `step_1249` | private TypeScript | Add explicit local `ReportBoundaryLimits` for untrusted report raw bytes, lexical JSON depth/tokens, collection items, captured bytes, and allocations; reject unknown fields before traversing their values and keep these controls separate from protocol validity. | Oversized, overdeep, over-token, or unknown-subtree reports fail before `JSON.parse` or target-sized capture, exact boundaries pass, canonical bytes are unchanged, and no local bound is presented as a sealed protocol limit. | `V-TS` |
+| `step_1250` | private TypeScript | Deeply encapsulate retained corpus events, tags, maps, arrays, carrier records, parsed reports, and nested protocol objects. | Caller mutation after ingestion or report parsing cannot change indexes, evaluation state, or canonical bytes. | `V-TS` |
+| `step_1251` | private TypeScript | Retain one owned raw-change/chunk byte copy and prevent mutable internal views from escaping. | Mutating any returned bytes cannot alter stored evidence or later output. | `V-TS` |
+| `step_1252` | private TypeScript | Replace every protocol-significant `localeCompare` with an explicit byte/code-unit comparator. | Locale changes do not alter ordering, traversal, digest, or report bytes. | `V-TS` |
+| `step_1253` | private TypeScript | Harden constructors and callbacks against unsafe integers, NaN, infinities, overflow, aliasing, and unexpected exceptions; enable boundary tests. | All boundary and mutation tests fail closed with typed behavior. | `V-TS` |
+| `step_1254` | public Rust | Import opaque boundary/limit evidence, compare neutral protocol-limit identities and separately classified local report-boundary results, and close the private-boundary gate. | Exact limits, boundary categories, and result hashes match their authorities; local controls are not mislabeled normative and no private detail leaks. | `V-EVIDENCE` |
 
 ## RCLD 91 — Private Target Work, Cancellation, And Scaling
 
 Status: planned
-Steps: `step_1251` through `step_1259`
+Steps: `step_1255` through `step_1263`
 Gate: `GATE_V9_PRIVATE_RESOURCE`
 Depends on: RCLD 90
 
 | Step | Git identity | Scope | Definition of green | Lane |
 | --- | --- | --- | --- | --- |
-| `step_1251` | private TypeScript | Define typed work counters and named deterministic algorithm passes. | Every target-sized operation has one declared counter/pass owner. | `V-TS` |
-| `step_1252` | private TypeScript | Replace repeated branch queue sorting and linear membership with indexed deterministic structures. | Ordering remains canonical and scaling no longer follows the prior quadratic path. | `V-TS` |
-| `step_1253` | private TypeScript | Meter control, branch, ancestry, change dependency, carrier, and prior-knowledge traversal. | Exact item counters and cancellation cover every visit. | `V-TS` |
-| `step_1254` | private TypeScript | Meter raw-byte access, memo construction, Automerge load/apply, closure, and accepted-state reuse. | No target raw copy or repeated application escapes accounting. | `V-TS` |
-| `step_1255` | private TypeScript | Meter checkpoint lookup, sort, proof, assembly, history, snapshot, and cancellation work. | Checkpoint exact budgets and cancellation boundaries pass. | `V-TS` |
-| `step_1256` | private TypeScript | Meter materialization, alerts, disposition records, report vectors, digests, and invariants. | No post-stop report or alert work occurs. | `V-TS` |
-| `step_1257` | private TypeScript | Add exact `N-1`/`N` boundaries, every-boundary cancellation, unrelated floods, and permutation-order work tests. | Counts and outputs are deterministic and unrelated evidence is work-inert. | `V-TS` |
-| `step_1258` | private TypeScript | Add bounded deterministic scaling regressions without fuzzing or source mutation. | Declared time/work ceilings distinguish linear/log-linear behavior from quadratic regression. | `V-TS` |
-| `step_1259` | public Rust | Import opaque resource evidence and close the private target-work gate. | Candidate, counter families, boundary results, and scaling classification bind without leakage. | `V-EVIDENCE` |
+| `step_1255` | private TypeScript | Define typed work counters and named deterministic algorithm passes, including report capture, validation, assertion projection, comparison, digest encoding, evidence copying, and canonical ordering. | Every target-sized operation has one declared counter/pass owner. | `V-TS` |
+| `step_1256` | private TypeScript | Replace repeated branch queue sorting, `shift` traversal, and linear membership with indexed deterministic structures. | Ordering remains canonical and scaling no longer follows the prior quadratic path. | `V-TS` |
+| `step_1257` | private TypeScript | Meter control, branch, ancestry, change dependency, carrier, and prior-knowledge traversal. | Exact item counters and cancellation cover every visit. | `V-TS` |
+| `step_1258` | private TypeScript | Meter raw-byte access, memo construction, Automerge load/apply, closure, and accepted-state reuse. | No target raw copy or repeated application escapes accounting. | `V-TS` |
+| `step_1259` | private TypeScript | Meter checkpoint lookup, ordering, proof, assembly, history, snapshot, and cancellation work. | Checkpoint exact budgets and cancellation boundaries pass without bulk precharge or post-work charging. | `V-TS` |
+| `step_1260` | private TypeScript | Meter materialization, assertions, alerts, disposition records, report capture/vectors, digests, evidence, comparison, and invariants. | No target-sized report, assertion, comparison, or alert work occurs without an immediately preceding successful charge or after stop. | `V-TS` |
+| `step_1261` | private TypeScript | Add exact `N-1`/`N` boundaries, every-boundary cancellation, unrelated floods, and permutation-order work tests. | Counts and outputs are deterministic and unrelated evidence is work-inert. | `V-TS` |
+| `step_1262` | private TypeScript | Add bounded deterministic scaling regressions without fuzzing or source mutation. | Declared time/work ceilings distinguish linear/log-linear behavior from quadratic regression. | `V-TS` |
+| `step_1263` | public Rust | Import opaque resource evidence and close the private target-work gate. | Candidate, counter families, boundary results, and scaling classification bind without leakage. | `V-EVIDENCE` |
 
 ## RCLD 92 — Signed Conformance V10
 
 Status: planned
-Steps: `step_1260` through `step_1270`
+Steps: `step_1264` through `step_1274`
 Gate: `GATE_V9_CONFORMANCE`
 Depends on: RCLD 91
 
 | Step | Git identity | Scope | Definition of green | Lane |
 | --- | --- | --- | --- | --- |
-| `step_1260` | public Rust | Finalize v10 fixture schemas, generator, lock format, transition stages, and validator while preserving prior scenario identities and signed inputs. | Regeneration is deterministic and only declared v10 deltas are permitted. | `V-CONF` |
-| `step_1261` | public Rust | Bind and validate the exact four corrected checkpoint expectations. | The validator rejects any fifth delta or change to signed inputs/IDs. | `V-CONF` |
-| `step_1262` | public Rust | Generate and sign three checkpoint-control scenarios. | Signatures, metadata, expected reports, and IDs validate deterministically. | `V-CONF` |
-| `step_1263` | public Rust | Generate and sign three carrier-independence scenarios. | Each exact invalid-carrier/aggregate construction validates. | `V-CONF` |
-| `step_1264` | public Rust | Generate and sign three no-progress interruption scenarios. | Each boundary emits the exact canonical no-progress report. | `V-CONF` |
-| `step_1265` | public Rust | Generate and sign three target-work boundary scenarios. | Exact `N-1`/`N`, unrelated-flood, and shared-work behavior validate. | `V-CONF` |
-| `step_1266` | public Rust | Finalize the ordered 192-fixture manifest, hash locks, profile counts, and machine-readable v9 supersession. | Count is exactly 192, all hashes bind, and v9 is historical rather than current. | `V-CONF` |
-| `step_1267` | public Rust | Run every Rust fixture twice under all eight exact delivery permutations. | All canonical outputs are byte-identical across runs and permutations. | `V-CONF` |
-| `step_1268` | private TypeScript | Run every private fixture twice under all eight exact delivery permutations and produce opaque result identities. | All 192 cases are mandatory, stable, and unskipped. | `V-FULL-TS` |
-| `step_1269` | public Rust | Import opaque private results, compare every complete canonical byte sequence, and execute a deliberate mismatch. | Real mismatch count is zero and the deliberate one-byte mutation is rejected. | `V-CONF` |
-| `step_1270` | public Rust | Close the signed conformance-v10 gate. | Schema, generator, signatures, counts, hashes, twice/eight, comparison, mismatch, leak, and full public gates pass. | `V-FULL-RUST` |
+| `step_1264` | public Rust | Finalize v10 fixture schemas, generator, lock format, transition stages, and validator while preserving prior scenario identities and signed inputs and binding the reconciled neutral report schema. | Regeneration is deterministic and only declared v10 deltas are permitted. | `V-CONF` |
+| `step_1265` | public Rust | Bind and validate the exact four corrected checkpoint expectations. | The validator rejects any fifth delta or change to signed inputs/IDs. | `V-CONF` |
+| `step_1266` | public Rust | Generate and sign three checkpoint-control scenarios. | Signatures, metadata, expected reports, and IDs validate deterministically. | `V-CONF` |
+| `step_1267` | public Rust | Generate and sign three carrier-independence scenarios. | Each exact invalid-carrier/aggregate construction validates. | `V-CONF` |
+| `step_1268` | public Rust | Generate and sign three no-progress interruption scenarios. | Each boundary emits the exact canonical no-progress report. | `V-CONF` |
+| `step_1269` | public Rust | Generate and sign three target-work boundary scenarios. | Exact `N-1`/`N`, unrelated-flood, and shared-work behavior validate. | `V-CONF` |
+| `step_1270` | public Rust | Finalize the ordered 192-fixture manifest, hash locks, profile counts, and machine-readable v9 supersession. | Count is exactly 192, all hashes bind, and v9 is historical rather than current. | `V-CONF` |
+| `step_1271` | public Rust | Run every Rust fixture twice under all eight exact delivery permutations with missing fixture authority treated as failure. | All canonical outputs are byte-identical across runs and permutations, with no skipped or filtered mandatory scenario. | `V-CONF` |
+| `step_1272` | private TypeScript | Run every private fixture twice under all eight exact delivery permutations and produce opaque result identities. | All 192 cases are mandatory, stable, and unskipped; missing fixture authority fails. | `V-FULL-TS` |
+| `step_1273` | public Rust | Import opaque private results, compare every complete canonical byte sequence, reject a malformed/noncanonical report, and execute a structurally valid canonical mismatch. | Real mismatch count is zero, parser rejection is independently proven, and the valid semantic mismatch is rejected by comparison rather than by syntax. | `V-CONF` |
+| `step_1274` | public Rust | Close the signed conformance-v10 gate. | Schema, generator, signatures, counts, hashes, twice/eight, comparison, both mismatch classes, leak, and full public gates pass. | `V-FULL-RUST` |
 
 ## RCLD 93 — Semantic Proof Catalog V10
 
 Status: planned
-Steps: `step_1271` through `step_1278`
+Steps: `step_1275` through `step_1282`
 Gate: `GATE_V9_EVIDENCE`
 Depends on: RCLD 92
 
 | Step | Git identity | Scope | Definition of green | Lane |
 | --- | --- | --- | --- | --- |
-| `step_1271` | public Rust | Define the exact proof-catalog schema, closed semantic category vocabulary, and finding-closure catalog schema. | Only declared categories and exact named fixture/assertion evidence are accepted. | `V-EVIDENCE` |
-| `step_1272` | public Rust | Remove source-substring proof and replace the strict-base64 misbinding with direct behavioral assertions and signed vectors. | Renaming source cannot create proof and malformed/noncanonical base64 is directly exercised. | `V-EVIDENCE` |
-| `step_1273` | public Rust | Audit and bind exact Rust proof for all 148 ordered requirements. | Every passing row cites a semantically matching executed assertion or signed fixture. | `V-EVIDENCE` |
-| `step_1274` | public Rust | Bind new report-contract clauses and findings 073 through 093 to exact closure tests without altering the 148-row requirement target. | Requirement proof and finding closure are complete, distinct, and noncontradictory. | `V-EVIDENCE` |
-| `step_1275` | public Rust | Bind exact opaque private fixture/test IDs for every applicable requirement and finding. | Generic command-only overlays and missing opaque IDs fail. | `V-EVIDENCE` |
-| `step_1276` | public Rust | Add in-memory negative mutations for missing, duplicate, reordered, stale, generic, category-mismatched, false-held, and private-leaking proof. | Every mutation is rejected without source mutation. | `V-EVIDENCE` |
-| `step_1277` | public Rust | Generate exact 148-row authority, applicability, proof, coverage, and finding-closure artifacts bound to final candidates. | Counts, order, hashes, candidates, artifacts, commands, and results are exact. | `V-EVIDENCE` |
-| `step_1278` | public Rust | Close the semantic evidence gate. | All evidence validators and the full public gate pass; no proof depends on a skipped test. | `V-FULL-RUST` |
+| `step_1275` | public Rust | Define the exact proof-catalog schema, closed semantic category vocabulary, report-clause vocabulary, and finding-closure catalog schema. | Only declared categories and exact named fixture/assertion evidence are accepted. | `V-EVIDENCE` |
+| `step_1276` | public Rust | Remove source-substring proof and replace the strict-base64 misbinding with direct behavioral assertions and signed vectors. | Renaming or commenting source cannot create proof and malformed/noncanonical base64 is directly exercised. | `V-EVIDENCE` |
+| `step_1277` | public Rust | Audit and bind exact Rust proof for all 148 ordered requirements. | Every passing row cites a semantically matching executed assertion or signed fixture. | `V-EVIDENCE` |
+| `step_1278` | public Rust | Bind all named report-contract clauses and findings 073 through 093 to exact closure tests without altering the 148-row requirement target. | Requirement proof, report-clause proof, and finding closure are complete, distinct, and noncontradictory. | `V-EVIDENCE` |
+| `step_1279` | public Rust | Bind exact opaque private fixture/test IDs for every applicable requirement, report clause, and finding. | Generic command-only overlays, missing opaque IDs, skipped tests, and unrelated proof fail. | `V-EVIDENCE` |
+| `step_1280` | public Rust | Add in-memory negative mutations for missing, duplicate, reordered, stale, generic, category-mismatched, semantically unrelated, false-held, skipped, and private-leaking proof. | Every mutation is rejected without source mutation. | `V-EVIDENCE` |
+| `step_1281` | public Rust | Generate exact 148-row authority, applicability, proof, coverage, report-clause, and finding-closure artifacts bound to final candidates. | Counts, order, hashes, candidates, artifacts, commands, results, and semantic categories are exact. | `V-EVIDENCE` |
+| `step_1282` | public Rust | Close the semantic evidence gate. | All evidence validators and the full public gate pass; no proof depends on skipped, filtered, source-only, generic, or unrelated evidence. | `V-FULL-RUST` |
 
 ## RCLD 94 — Complete Local Assurance And Truthful Closure
 
 Status: planned
-Steps: `step_1279` through `step_1283`
+Steps: `step_1283` through `step_1287`
 Gate: `GATE_V9_FINAL`
 Depends on: RCLD 93
 
 | Step | Git identity | Scope | Definition of green | Lane |
 | --- | --- | --- | --- | --- |
-| `step_1279` | public Rust | Run and record final public standard, conformance, resource, coverage, package, dependency, advisory, license, SBOM, source-only, documentation, and policy evidence. | Every locally mandatory public lane passes at one exact candidate; held campaigns are not executed or marked pass. | `V-FULL-RUST` |
-| `step_1280` | public Rust | After the private full gate and private ignored local workflow lanes pass, import only approved opaque private assurance and local-run identities. | Final private candidate is clean and all 192 cases, package/policy lanes, and private runner results bind without leakage or tracked workflow content. | `V-FULL-TS`, `V-LOCAL`, `V-EVIDENCE` |
-| `step_1281` | public Rust | Bind final public source/evidence, distribution-v10, requirement/proof, report contract, opaque private candidates, v9 supersession, and all external holds. | Every final identity and hash is exact; finding 080 and all deferred campaigns remain held. | `V-EVIDENCE` |
-| `step_1282` | public Rust | Publish the final finding-by-finding closure ledger and status `code_complete_publication_held`. | Findings 073–079 and 081–093 are closed from exact proof; finding 080 is held; no release or production claim is made. | `V-EVIDENCE` |
-| `step_1283` | public Rust | Validate all 126 checkpoints, run the complete final decision gate, close RCLD 81 through 94, and leave the public worktree clean. | No hidden red local gate, stale current evidence, private leak, tracked workflow, or remote action remains. | `V-FULL-RUST` |
+| `step_1283` | public Rust | Run and record final public standard, conformance, resource, coverage, package, dependency, advisory, license, SBOM, source-only, documentation, and policy evidence. | Every locally mandatory public lane passes at one exact candidate; held campaigns are not executed or marked pass. | `V-FULL-RUST` |
+| `step_1284` | public Rust | After the private full gate and private ignored local workflow lanes pass, import only approved opaque private assurance and local-run identities. | Final private candidate is clean and all 192 cases, package/policy lanes, and private runner results bind without leakage or tracked workflow content. | `V-EVIDENCE` |
+| `step_1285` | public Rust | Bind final public source/evidence, distribution-v10, requirement/proof, report contract, opaque private candidates, v9 supersession, and all external holds. | Every final identity and hash is exact; finding 080 and all deferred campaigns remain held. | `V-EVIDENCE` |
+| `step_1286` | public Rust | Publish the final finding-by-finding closure ledger and status `code_complete_publication_held`. | Findings 073–079 and 081–093 are closed from exact proof; finding 080 is held; no release or production claim is made. | `V-EVIDENCE` |
+| `step_1287` | public Rust | Validate all 130 checkpoints, run the complete final decision gate, close RCLD 81 through 94, and leave the public worktree clean. | No hidden red local gate, stale current evidence, private leak, tracked workflow, or remote action remains. | `V-FULL-RUST` |
 
 ## Full Boundary Gates
 
@@ -670,4 +708,4 @@ completion.
 - RCLD 93 — Semantic Proof Catalog V10
 - RCLD 94 — Complete Local Assurance And Truthful Closure
 
-All 126 checkpoints from `step_1158` through `step_1283` are in progress.
+All 130 checkpoints from `step_1158` through `step_1287` are in progress.

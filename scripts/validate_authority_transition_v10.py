@@ -245,7 +245,7 @@ NEW_FIXTURES = tuple(
 )
 PROFILE_NAMES = ("checkpoint", "core", "malformed", "property", "resource")
 PLAN_IMMUTABLE_PROJECTION_SHA256 = (
-    "9164aaedc374703ea7bb31307a3ff8c959ef8ee390605a57eef8f2887b86b5e7"
+    "33e87bfd1da887eda2e110e9cb7decf54b4f60bb67ea3927255b88df6a288b4e"
 )
 RCLD_STEP_RANGES = (
     (81, 1158, 1168),
@@ -253,15 +253,15 @@ RCLD_STEP_RANGES = (
     (83, 1178, 1186),
     (84, 1187, 1196),
     (85, 1197, 1206),
-    (86, 1207, 1214),
-    (87, 1215, 1223),
-    (88, 1224, 1231),
-    (89, 1232, 1241),
-    (90, 1242, 1250),
-    (91, 1251, 1259),
-    (92, 1260, 1270),
-    (93, 1271, 1278),
-    (94, 1279, 1283),
+    (86, 1207, 1217),
+    (87, 1218, 1226),
+    (88, 1227, 1234),
+    (89, 1235, 1244),
+    (90, 1245, 1254),
+    (91, 1255, 1263),
+    (92, 1264, 1274),
+    (93, 1275, 1282),
+    (94, 1283, 1287),
 )
 PLAN_PROGRESS_FIELDS = (
     "Status: ",
@@ -1550,7 +1550,7 @@ def normalized_plan_projection(plan: str) -> str:
             continue
         require(
             re.fullmatch(
-                r"All 126 checkpoints from `step_1158` through `step_1283` "
+                r"All 130 checkpoints from `step_1158` through `step_1287` "
                 r"(?:remain unfinished|are in progress|are complete)\.",
                 line,
             )
@@ -1568,7 +1568,7 @@ def normalized_plan_projection(plan: str) -> str:
     normalized.extend(
         (
             "",
-            "All 126 checkpoints from `step_1158` through `step_1283` <progress>.",
+            "All 130 checkpoints from `step_1158` through `step_1287` <progress>.",
         )
     )
     return "\n".join(normalized) + "\n"
@@ -1582,7 +1582,7 @@ def validate_plan_semantics(plan: str) -> None:
     status = re.search(r"^Status: ([^\n]+)$", plan, flags=re.MULTILINE)
     require(status is not None and bool(status.group(1).strip()), "transition_plan_status")
     require(
-        "Steps: `step_1158` through `step_1283` (126 contiguous checkpoints)"
+        "Steps: `step_1158` through `step_1287` (130 contiguous checkpoints)"
         in plan,
         "transition_plan_range",
     )
@@ -1622,13 +1622,13 @@ def validate_plan_semantics(plan: str) -> None:
             f"transition_plan_gate:RCLD_{rcld}",
         )
         all_steps.extend(steps)
-    require(all_steps == list(range(1158, 1284)), "transition_plan_contiguous_steps")
+    require(all_steps == list(range(1158, 1288)), "transition_plan_contiguous_steps")
 
     for required_text in (
         "## Approved Planning Deviation",
         "The execution replacement is approved as",
         "replacement action:",
-        "execute the 126 checkpoints in RCLD 81 through RCLD 94",
+        "execute the 130 checkpoints in RCLD 81 through RCLD 94",
         "retain FINDING_080 as held",
         "preserve exactly 148 requirements and 192 signed",
         "with no wire revision",
@@ -1724,7 +1724,7 @@ def plan_execution_rows(plan: str) -> dict[str, tuple[str, str]]:
 def validate_progress_predecessors(plan: str, runtime: dict[str, Any]) -> int:
     predecessors = runtime.get("predecessors")
     require(isinstance(predecessors, list), "transition_plan_runtime_predecessors")
-    require(10 <= len(predecessors) <= 125, "transition_plan_runtime_predecessor_count")
+    require(10 <= len(predecessors) <= 129, "transition_plan_runtime_predecessor_count")
     expected_keys = {
         "step",
         "candidate",
@@ -1816,19 +1816,19 @@ def validate_current_plan_progress(
         active_number == 1158 + predecessor_count,
         "transition_plan_runtime_predecessor_binding",
     )
-    require(1168 <= active_number <= 1283, "transition_plan_runtime_active_range")
+    require(1168 <= active_number <= 1287, "transition_plan_runtime_active_range")
     require(following_number == active_number + 1, "transition_plan_runtime_contiguous")
-    require(cursor.get("last_step") == "step_1283", "transition_plan_runtime_last_step")
+    require(cursor.get("last_step") == "step_1287", "transition_plan_runtime_last_step")
     active_rcld = step_rcld(active_number)
     following_rcld = (
-        step_rcld(following_number) if following_number <= 1283 else active_rcld
+        step_rcld(following_number) if following_number <= 1287 else active_rcld
     )
     require(runtime.get("rcld") == active_rcld, "transition_plan_runtime_rcld")
     require(cursor.get("first_rcld") == active_rcld, "transition_plan_runtime_first_rcld")
     require(cursor.get("last_rcld") == 94, "transition_plan_runtime_last_rcld")
     require(
         cursor.get("remaining_checkpoint_count")
-        == (0 if terminal else 1283 - active_number + 1),
+        == (0 if terminal else 1287 - active_number + 1),
         "transition_plan_runtime_remaining_checkpoints",
     )
     require(
@@ -1836,7 +1836,7 @@ def validate_current_plan_progress(
         == (0 if terminal else 94 - active_rcld + 1),
         "transition_plan_runtime_remaining_rclds",
     )
-    require(not terminal or active_number == 1283, "transition_plan_runtime_terminal_step")
+    require(not terminal or active_number == 1287, "transition_plan_runtime_terminal_step")
     require(
         not terminal or stage == "distribution_complete",
         "transition_plan_runtime_terminal_stage",
@@ -1890,8 +1890,14 @@ def validate_current_plan_progress(
     )
     statuses = plan_rcld_statuses(plan)
     expected_statuses = {
-        rcld: ("complete" if rcld in completed else "planned")
-        for rcld, _, _ in RCLD_STEP_RANGES
+        rcld: (
+            "complete"
+            if rcld in completed
+            else "in progress"
+            if first <= active_number <= last
+            else "planned"
+        )
+        for rcld, first, last in RCLD_STEP_RANGES
     }
     require(statuses == expected_statuses, "transition_plan_progress_statuses")
     require(
@@ -1904,7 +1910,7 @@ def validate_current_plan_progress(
     )
     require(
         plan.count(
-            "All 126 checkpoints from `step_1158` through `step_1283` "
+            "All 130 checkpoints from `step_1158` through `step_1287` "
             + ("are complete." if terminal else "are in progress.")
         )
         == 1,
@@ -1954,7 +1960,7 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
     current_rcld_complete = next(
         last <= active_number for rcld, _, last in RCLD_STEP_RANGES if rcld == active_rcld
     )
-    rcld_status_before = "complete" if current_rcld_complete else "planned"
+    rcld_status_before = "complete" if current_rcld_complete else "in progress"
     rcld_status_after = "planned" if current_rcld_complete else "complete"
     mutations: list[tuple[str, str, dict[str, Any]]] = [
         (
@@ -2024,7 +2030,7 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
         ),
     ]
 
-    if active_number < 1283:
+    if active_number < 1287:
         future_active_number = active_number + 1
         future_following_number = active_number + 2
         future_active = f"step_{future_active_number}"
@@ -2032,7 +2038,7 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
         future_rcld = step_rcld(future_active_number)
         future_following_rcld = (
             step_rcld(future_following_number)
-            if future_following_number <= 1283
+            if future_following_number <= 1287
             else future_rcld
         )
         owner, gate = plan_execution_rows(plan)[active]
@@ -2063,7 +2069,7 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
             {
                 "active_step": future_active,
                 "next_step": future_following,
-                "remaining_checkpoint_count": 1283 - future_active_number + 1,
+                "remaining_checkpoint_count": 1287 - future_active_number + 1,
                 "first_rcld": future_rcld,
                 "remaining_rcld_count": 94 - future_rcld + 1,
             }
@@ -2091,8 +2097,12 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
             if active_number < last <= future_active_number
         )
         for rcld in newly_completed:
-            future_plan = set_rcld_status(future_plan, rcld, "planned", "complete")
+            future_plan = set_rcld_status(future_plan, rcld, "in progress", "complete")
             future_plan = move_to_completed(future_plan, rcld)
+        if future_rcld != active_rcld and future_rcld not in newly_completed:
+            future_plan = set_rcld_status(
+                future_plan, future_rcld, "planned", "in progress"
+            )
         validate_plan_semantics(future_plan)
         validate_current_plan_progress(future_plan, future_runtime, stage)
 
@@ -2115,8 +2125,8 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
         )
         stale_groups = move_to_unfinished(future_plan, completed_rclds[-1])
         stale_summary = future_plan.replace(
-            "All 126 checkpoints from `step_1158` through `step_1283` are in progress.",
-            "All 126 checkpoints from `step_1158` through `step_1283` remain unfinished.",
+            "All 130 checkpoints from `step_1158` through `step_1287` are in progress.",
+            "All 130 checkpoints from `step_1158` through `step_1287` remain unfinished.",
             1,
         )
         mutations.extend(
@@ -2700,21 +2710,12 @@ def mutation_self_test(state: dict[str, Any]) -> int:
         raise TransitionError(f"mutation_survived:{name}")
 
     plan = load_strict_lf_utf8(TRANSITION_BASELINE[0][0])
+    active_match = re.search(r"^Active checkpoint: `step_(\d{4})`$", plan, re.MULTILINE)
+    require(active_match is not None, "plan_advance_active_checkpoint")
+    active_number = int(active_match.group(1))
     advanced_plan = plan.replace(
-        "Status: planned — approved for execution",
-        "Status: in progress — approved for execution",
-        1,
-    ).replace("Active checkpoint: `step_1158`", "Active checkpoint: `step_1159`", 1)
-    advanced_plan = advanced_plan.replace("Active RCLD: RCLD 81", "Active RCLD: RCLD 82", 1)
-    advanced_plan = advanced_plan.replace("Next RCLD: RCLD 81", "Next RCLD: RCLD 82", 1)
-    advanced_plan = advanced_plan.replace(
-        "Next checkpoint: `step_1158`", "Next checkpoint: `step_1160`", 1
-    ).replace("\nStatus: planned\n", "\nStatus: complete\n")
-    advanced_plan = advanced_plan.replace(
-        "## Unfinished RCLDs", "## Completed RCLDs", 1
-    ).replace(
-        "All 126 checkpoints from `step_1158` through `step_1283` remain unfinished.",
-        "All 126 checkpoints from `step_1158` through `step_1283` are complete.",
+        active_match.group(0),
+        f"Active checkpoint: `step_{active_number + 1}`",
         1,
     )
     require(

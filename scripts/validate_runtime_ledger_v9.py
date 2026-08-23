@@ -24,6 +24,7 @@ CARRIER_REPORT = "reports/opaque_carrier_v9.json"
 CARRIER_REPORT_SCHEMA = "tools/validation/opaque_carrier_v9.schema.json"
 CARRIER_GATE_REPORT = "reports/carrier_gate_v9.json"
 RUST_REPORT_GATE_REPORT = "reports/rust_report_gate_v9.json"
+NEUTRAL_REPORT_SCHEMA = "fixtures/schema/report.schema.json"
 LEDGER = "implementation/runtime_ledger_v9.json"
 LEDGER_SCHEMA = "tools/validation/runtime_ledger_v9.schema.json"
 PLAN = "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md"
@@ -43,7 +44,7 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "8349ca0d33e49f5930dab05347258b563ea79112c1154adc6990a41aa38df3c2"
+    "772b20a9a0e8076c2017f00cc2ca1e7c395beda948e304a22aaf48cf6410e3c4"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
@@ -66,6 +67,23 @@ APPROVED_CARRIER_GATE_RESULT_IDENTITY = (
 APPROVED_RUST_REPORT_GATE_RESULT_IDENTITY = (
     "a27f1e771cb8fe70545dce95325ca9a23443b6ea1485f00d27a4c0e493e83648"
 )
+APPROVED_NEUTRAL_REPORT_SCHEMA_SHA256 = (
+    "08a88d5ad7049203bb766dc763601a6c5311a70e631fa35ab62c164203cd8e1c"
+)
+APPROVED_REPORT_SCHEMA_AUTHORITY = {
+    "checkpoint": "step_1208",
+    "schema": "nostr_automerge.report.v1",
+    "protocol_revision": "draft_2026_08",
+    "predecessor_sha256": "75b7f8f1c089ed39d94207dc91a1dca021bb54668df155aece5ffcc42eace378",
+    "live_sha256": APPROVED_NEUTRAL_REPORT_SCHEMA_SHA256,
+    "required_field_count": 18,
+    "checkpoint_status_count": 22,
+    "diagnostic_code_count": 50,
+    "canonical_output_sha256": "84f370b201945c844396406acfb022faa2bdadb32d96206511474a00218770cb",
+    "serialized_output_sha256": "74b24f58fe9c20da082dd9ae4c1b344e8468c00a70dbd710adf724ab70ed14c4",
+    "report_bytes": "unchanged",
+    "result": "pass",
+}
 CARRIER_GATE_CLOSURE_CANDIDATE = "52fafad799c5eb60a1d1a8b28bf214c0c8d21437"
 APPROVED_CARRIER_CHAIN = (
     {
@@ -218,15 +236,15 @@ RCLD_RANGES = (
     (83, 1178, 1186),
     (84, 1187, 1196),
     (85, 1197, 1206),
-    (86, 1207, 1214),
-    (87, 1215, 1223),
-    (88, 1224, 1231),
-    (89, 1232, 1241),
-    (90, 1242, 1250),
-    (91, 1251, 1259),
-    (92, 1260, 1270),
-    (93, 1271, 1278),
-    (94, 1279, 1283),
+    (86, 1207, 1217),
+    (87, 1218, 1226),
+    (88, 1227, 1234),
+    (89, 1235, 1244),
+    (90, 1245, 1254),
+    (91, 1255, 1263),
+    (92, 1264, 1274),
+    (93, 1275, 1282),
+    (94, 1283, 1287),
 )
 PREDECESSOR_CANDIDATES = (
     "17f2b0bb57b12558f678b80e88da36962798762f",
@@ -277,6 +295,8 @@ PREDECESSOR_CANDIDATES = (
     "7f73902d2272c56012b65cc5700d9ccad2a85783",
     "9daaf106ad645e5e191d1fe767378ece114c000f",
     "321abda8f672ecf1a44aa1919e0cec98830e8df8",
+    "1d1adea27d2ebf75339114d3f8af25aba1e7a95a",
+    "73f089166aa71a999380af907621e8e9b9fffb0d",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -315,7 +335,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "tools/nostr_automerge_conformance/src/expected.rs",
-        "d73cae7ab1eff53a02d876bbfbb2dca748a6ef9a4206a6b1343a26649a9537da",
+        "444cd71b70219c416cc3078c60dd619bddf77d05b32bceca0522f9271f56361d",
     ),
     (
         "tools/nostr_automerge_conformance/src/fixture.rs",
@@ -342,20 +362,20 @@ CLOSURE_PATHS = frozenset(
     {
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
+        "fixtures/schema/report.schema.json",
         "implementation/runtime_ledger_v9.json",
-        "reports/rust_report_gate_v9.json",
         "reports/spec_baseline.txt",
+        "scripts/validate_authority_transition_v10.py",
         "scripts/validate_carrier_gate_v9.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
+        "scripts/validate_reports.py",
         "scripts/validate_runtime_ledger_v9.py",
         "scripts/validate_rust_report_gate_v9.py",
-        "scripts/validate_spec.py",
-        "tools/nostr_automerge_xtask/src/validate.rs",
+        "tools/nostr_automerge_conformance/src/expected.rs",
         "tools/validation/runtime_ledger_v9.schema.json",
-        "tools/validation/rust_report_gate_v9.schema.json",
     }
 )
-CLOSURE_AMEND_ADDITION = "scripts/validate_carrier_gate_v9.py"
+CLOSURE_AMEND_ADDITION = "scripts/validate_authority_transition_v10.py"
 CLOSURE_AMEND_PATHS = frozenset(
     {
         CLOSURE_AMEND_ADDITION,
@@ -363,13 +383,7 @@ CLOSURE_AMEND_PATHS = frozenset(
         "scripts/validate_runtime_ledger_v9.py",
     }
 )
-CLOSURE_NEW_PATHS = frozenset(
-    {
-        "reports/rust_report_gate_v9.json",
-        "scripts/validate_rust_report_gate_v9.py",
-        "tools/validation/rust_report_gate_v9.schema.json",
-    }
-)
+CLOSURE_NEW_PATHS = frozenset()
 EXPECTED_GATES = (
     ("V-AUTH",),
     ("V-AUTH",),
@@ -419,6 +433,8 @@ EXPECTED_GATES = (
     ("V-RUST",),
     ("V-RESOURCE",),
     ("V-REPORT",),
+    ("V-FULL-RUST",),
+    ("V-TS",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -530,6 +546,15 @@ EXPECTED_REQUIREMENTS = (
         "NCRDT-CONF-010",
         "NCRDT-EVIDENCE-006",
     ),
+    (
+        "NCRDT-DISPOSITION-006",
+        "NCRDT-INTERRUPT-001",
+        "NCRDT-RESOURCE-014",
+        "NCRDT-VERSION-002",
+        "NCRDT-CONF-010",
+        "NCRDT-EVIDENCE-006",
+    ),
+    ("NCRDT-VERSION-002", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -588,6 +613,8 @@ EXPECTED_FINDINGS = (
     ("FINDING_075",),
     ("FINDING_082",),
     ("FINDING_075", "FINDING_081", "FINDING_082"),
+    ("FINDING_075", "FINDING_081", "FINDING_082"),
+    ("FINDING_090",),
 )
 FORBIDDEN_KEY_WORDS = {
     "source",
@@ -1748,7 +1775,7 @@ def expected_predecessor(index: int) -> dict[str, Any]:
         "candidate": PREDECESSOR_CANDIDATES[index],
         "owner_class": (
             "opaque_private"
-            if index == 8 or 20 <= index <= 26 or 34 <= index <= 36
+            if index == 8 or 20 <= index <= 26 or 34 <= index <= 36 or index == 49
             else "public"
         ),
         "gate_ids": list(EXPECTED_GATES[index]),
@@ -1814,47 +1841,26 @@ def validate_predecessors(
         if owner == "public":
             require(is_public_ancestor(candidate), f"predecessor:{index}:ancestry")
             public_rows.append((row["step"], candidate))
-        elif index == 8:
-            require(
-                row["step"] == reproduction["checkpoint"],
-                f"predecessor:{index}:opaque_step",
-            )
-            require(
-                candidate == reproduction["candidate"],
-                f"predecessor:{index}:opaque_candidate",
-            )
-            require(
-                reproduction["result_identity_sha256"] == APPROVED_RESULT_IDENTITY,
-                f"predecessor:{index}:opaque_result",
-            )
-        elif 20 <= index <= 26:
-            checkpoint_row = checkpoint["candidate_chain"][index - 20]
-            require(
-                row["step"] == checkpoint_row["checkpoint"],
-                f"predecessor:{index}:checkpoint_step",
-            )
-            require(
-                candidate == checkpoint_row["candidate"],
-                f"predecessor:{index}:checkpoint_candidate",
-            )
-            require(
-                checkpoint_row["result"] == row["result"],
-                f"predecessor:{index}:checkpoint_result",
-            )
         else:
-            carrier_row = carrier["candidate_chain"][index - 34]
-            require(
-                row["step"] == carrier_row["checkpoint"],
-                f"predecessor:{index}:carrier_step",
-            )
-            require(
-                candidate == carrier_row["candidate"],
-                f"predecessor:{index}:carrier_candidate",
-            )
-            require(
-                carrier_row["result"] == row["result"],
-                f"predecessor:{index}:carrier_result",
-            )
+            approved_opaque = {
+                reproduction["checkpoint"]: (
+                    reproduction["candidate"],
+                    reproduction["result_identity_sha256"] == APPROVED_RESULT_IDENTITY,
+                ),
+                **{
+                    item["checkpoint"]: (item["candidate"], item["result"] == "pass")
+                    for item in checkpoint["candidate_chain"]
+                },
+                **{
+                    item["checkpoint"]: (item["candidate"], item["result"] == "pass")
+                    for item in carrier["candidate_chain"]
+                },
+                "step_1207": ("73f089166aa71a999380af907621e8e9b9fffb0d", True),
+            }
+            require(row["step"] in approved_opaque, f"predecessor:{index}:opaque_step")
+            approved_candidate, approved_result = approved_opaque[row["step"]]
+            require(candidate == approved_candidate, f"predecessor:{index}:opaque_candidate")
+            require(approved_result, f"predecessor:{index}:opaque_result")
         for field, authorized in (
             ("gate_ids", None),
             ("requirement_ids", requirements),
@@ -1914,6 +1920,7 @@ def validate_runtime_ledger(
         "opaque_carrier",
         "carrier_gate",
         "rust_report_gate",
+        "report_schema_authority",
     }
     require(set(ledger) == expected_keys, "ledger:keys")
     require(ledger.get("schema") == "nostr_automerge.runtime_ledger.v9.v1", "ledger:schema")
@@ -1938,10 +1945,10 @@ def validate_runtime_ledger(
     )
     active = step_number(cursor.get("active_step"), "cursor:active")
     following = step_number(cursor.get("next_step"), "cursor:next")
-    require(1167 <= active <= 1283, "cursor:active_range")
+    require(1167 <= active <= 1287, "cursor:active_range")
     require(following == active + 1, "cursor:next_value")
-    require(cursor.get("last_step") == "step_1283", "cursor:last")
-    expected_remaining = 0 if terminal else 1283 - active + 1
+    require(cursor.get("last_step") == "step_1287", "cursor:last")
+    expected_remaining = 0 if terminal else 1287 - active + 1
     require(cursor.get("remaining_checkpoint_count") == expected_remaining, "cursor:remaining")
     expected_rcld = rcld_for_step(active)
     require(ledger.get("rcld") == expected_rcld, "ledger:rcld")
@@ -1949,7 +1956,7 @@ def validate_runtime_ledger(
     require(cursor.get("last_rcld") == 94, "cursor:last_rcld")
     expected_remaining_rclds = 0 if terminal else 94 - expected_rcld + 1
     require(cursor.get("remaining_rcld_count") == expected_remaining_rclds, "cursor:rcld_count")
-    require(not terminal or active == 1283, "cursor:terminal")
+    require(not terminal or active == 1287, "cursor:terminal")
 
     authority = load_object("spec/authority_transition_v10.json")
     live_stage = authority.get("current_stage")
@@ -1967,6 +1974,7 @@ def validate_runtime_ledger(
             "target_requirement_count",
             "signed_fixture_count",
             "target_signed_fixture_count",
+            "report_schema_sha256",
         },
         "projection:keys",
     )
@@ -1980,6 +1988,23 @@ def validate_runtime_ledger(
     require(projection.get("target_requirement_count") == 148, "projection:requirement_target")
     require(projection.get("signed_fixture_count") == STAGE_FIXTURE_COUNTS[live_stage], "projection:fixtures")
     require(projection.get("target_signed_fixture_count") == 192, "projection:fixture_target")
+    require(
+        projection.get("report_schema_sha256")
+        == APPROVED_NEUTRAL_REPORT_SCHEMA_SHA256,
+        "projection:report_schema",
+    )
+
+    report_schema_authority = ledger.get("report_schema_authority")
+    require(
+        isinstance(report_schema_authority, dict)
+        and list(report_schema_authority.items())
+        == list(APPROVED_REPORT_SCHEMA_AUTHORITY.items()),
+        "report_schema_authority:projection",
+    )
+    require(
+        file_digest(NEUTRAL_REPORT_SCHEMA) == APPROVED_NEUTRAL_REPORT_SCHEMA_SHA256,
+        "report_schema_authority:file",
+    )
 
     require(
         ledger.get("requirements")
@@ -2404,6 +2429,18 @@ def mutation_self_test(
     stale_report_projection = copy.deepcopy(ledger)
     stale_report_projection["rust_report_gate"]["code_projection_sha256"] = "f" * 64
     ledger_mutations.append(("ledger_report_projection", stale_report_projection))
+    report_schema_projection = copy.deepcopy(ledger)
+    report_schema_projection["authority_projection"]["report_schema_sha256"] = "f" * 64
+    ledger_mutations.append(("ledger_report_schema_projection", report_schema_projection))
+    report_schema_live = copy.deepcopy(ledger)
+    report_schema_live["report_schema_authority"]["live_sha256"] = "f" * 64
+    ledger_mutations.append(("ledger_report_schema_live", report_schema_live))
+    report_schema_count = copy.deepcopy(ledger)
+    report_schema_count["report_schema_authority"]["diagnostic_code_count"] += 1
+    ledger_mutations.append(("ledger_report_schema_count", report_schema_count))
+    report_schema_extra = copy.deepcopy(ledger)
+    report_schema_extra["report_schema_authority"]["note"] = "reviewed"
+    ledger_mutations.append(("ledger_report_schema_extra", report_schema_extra))
     coordinated_parity = copy.deepcopy(parity)
     coordinated_parity["result_identity_sha256"] = "f" * 64
     coordinated_ledger = copy.deepcopy(ledger)

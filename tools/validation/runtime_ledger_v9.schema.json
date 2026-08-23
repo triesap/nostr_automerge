@@ -16,7 +16,8 @@
     "checkpoint_parity",
     "opaque_carrier",
     "carrier_gate",
-    "rust_report_gate"
+    "rust_report_gate",
+    "report_schema_authority"
   ],
   "properties": {
     "schema": {"const": "nostr_automerge.runtime_ledger.v9.v1"},
@@ -32,8 +33,8 @@
       "properties": {
         "active_step": {"type": "string", "pattern": "^step_1[0-9]{3}$"},
         "next_step": {"type": "string", "pattern": "^step_1[0-9]{3}$"},
-        "last_step": {"const": "step_1283"},
-        "remaining_checkpoint_count": {"type": "integer", "minimum": 0, "maximum": 82},
+        "last_step": {"const": "step_1287"},
+        "remaining_checkpoint_count": {"type": "integer", "minimum": 0, "maximum": 91},
         "first_rcld": {"type": "integer", "minimum": 85, "maximum": 94},
         "last_rcld": {"const": 94},
         "remaining_rcld_count": {"type": "integer", "minimum": 0, "maximum": 10}
@@ -45,7 +46,7 @@
       "required": [
         "binding", "current_stage", "minimum_stage", "target_stage",
         "requirement_count", "target_requirement_count", "signed_fixture_count",
-        "target_signed_fixture_count"
+        "target_signed_fixture_count", "report_schema_sha256"
       ],
       "properties": {
         "binding": {"const": "monotonic_stage_projection"},
@@ -62,7 +63,8 @@
         "requirement_count": {"const": 148},
         "target_requirement_count": {"const": 148},
         "signed_fixture_count": {"enum": [180, 183, 186, 189, 192]},
-        "target_signed_fixture_count": {"const": 192}
+        "target_signed_fixture_count": {"const": 192},
+        "report_schema_sha256": {"const": "08a88d5ad7049203bb766dc763601a6c5311a70e631fa35ab62c164203cd8e1c"}
       }
     },
     "requirements": {
@@ -108,7 +110,7 @@
     "predecessors": {
       "type": "array",
       "minItems": 9,
-      "maxItems": 126,
+      "maxItems": 129,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -293,6 +295,30 @@
         "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "result": {"const": "pass"},
         "publication_status": {"const": "held"}
+      }
+    },
+    "report_schema_authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpoint", "schema", "protocol_revision", "predecessor_sha256",
+        "live_sha256", "required_field_count", "checkpoint_status_count",
+        "diagnostic_code_count", "canonical_output_sha256",
+        "serialized_output_sha256", "report_bytes", "result"
+      ],
+      "properties": {
+        "checkpoint": {"const": "step_1208"},
+        "schema": {"const": "nostr_automerge.report.v1"},
+        "protocol_revision": {"const": "draft_2026_08"},
+        "predecessor_sha256": {"const": "75b7f8f1c089ed39d94207dc91a1dca021bb54668df155aece5ffcc42eace378"},
+        "live_sha256": {"const": "08a88d5ad7049203bb766dc763601a6c5311a70e631fa35ab62c164203cd8e1c"},
+        "required_field_count": {"const": 18},
+        "checkpoint_status_count": {"const": 22},
+        "diagnostic_code_count": {"const": 50},
+        "canonical_output_sha256": {"const": "84f370b201945c844396406acfb022faa2bdadb32d96206511474a00218770cb"},
+        "serialized_output_sha256": {"const": "74b24f58fe9c20da082dd9ae4c1b344e8468c00a70dbd710adf724ab70ed14c4"},
+        "report_bytes": {"const": "unchanged"},
+        "result": {"const": "pass"}
       }
     }
   }

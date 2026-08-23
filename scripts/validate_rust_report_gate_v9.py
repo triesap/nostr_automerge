@@ -328,7 +328,11 @@ def expected_distribution_hashes(fixtures: list[dict[str, Any]]) -> tuple[str, s
 def validate_repository_bindings() -> None:
     validate_candidate_chain()
     for relative, digest in REPORT_CODE_BINDINGS:
-        require(file_digest(relative) == digest, f"rust_report_gate:code_binding:{relative}")
+        source = git_bytes("show", f"{CANDIDATE_CHAIN[-1]['candidate']}:{relative}")
+        require(
+            hashlib.sha256(source).hexdigest() == digest,
+            f"rust_report_gate:code_binding:{relative}",
+        )
     require(
         file_digest("scripts/validate_report_contract_v9.py")
         == REPORT_CONTRACT["suite_identity_sha256"],

@@ -1,15 +1,15 @@
 {
   "schema": "nostr_automerge.runtime_ledger.v9.v1",
   "status": "in_progress",
-  "rcld": 85,
+  "rcld": 86,
   "cursor": {
-    "active_step": "step_1206",
-    "next_step": "step_1207",
-    "last_step": "step_1283",
-    "remaining_checkpoint_count": 78,
-    "first_rcld": 85,
+    "active_step": "step_1208",
+    "next_step": "step_1209",
+    "last_step": "step_1287",
+    "remaining_checkpoint_count": 80,
+    "first_rcld": 86,
     "last_rcld": 94,
-    "remaining_rcld_count": 10
+    "remaining_rcld_count": 9
   },
   "authority_projection": {
     "binding": "monotonic_stage_projection",
@@ -19,7 +19,8 @@
     "requirement_count": 148,
     "target_requirement_count": 148,
     "signed_fixture_count": 180,
-    "target_signed_fixture_count": 192
+    "target_signed_fixture_count": 192,
+    "report_schema_sha256": "08a88d5ad7049203bb766dc763601a6c5311a70e631fa35ab62c164203cd8e1c"
   },
   "requirements": {
     "preserved_prefix_count": 139,
@@ -619,6 +620,37 @@
       "finding_ids": ["FINDING_075", "FINDING_081", "FINDING_082"],
       "deviation_ids": [],
       "result": "pass"
+    },
+    {
+      "step": "step_1206",
+      "candidate": "1d1adea27d2ebf75339114d3f8af25aba1e7a95a",
+      "owner_class": "public",
+      "gate_ids": ["V-FULL-RUST"],
+      "requirement_ids": [
+        "NCRDT-DISPOSITION-006",
+        "NCRDT-INTERRUPT-001",
+        "NCRDT-RESOURCE-014",
+        "NCRDT-VERSION-002",
+        "NCRDT-CONF-010",
+        "NCRDT-EVIDENCE-006"
+      ],
+      "finding_ids": ["FINDING_075", "FINDING_081", "FINDING_082"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1207",
+      "candidate": "73f089166aa71a999380af907621e8e9b9fffb0d",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": [
+        "NCRDT-VERSION-002",
+        "NCRDT-CONF-010",
+        "NCRDT-EVIDENCE-006"
+      ],
+      "finding_ids": ["FINDING_090"],
+      "deviation_ids": [],
+      "result": "pass"
     }
   ],
   "opaque_reproduction": {
@@ -708,5 +740,19 @@
     "result_identity_sha256": "a27f1e771cb8fe70545dce95325ca9a23443b6ea1485f00d27a4c0e493e83648",
     "result": "pass",
     "publication_status": "held"
+  },
+  "report_schema_authority": {
+    "checkpoint": "step_1208",
+    "schema": "nostr_automerge.report.v1",
+    "protocol_revision": "draft_2026_08",
+    "predecessor_sha256": "75b7f8f1c089ed39d94207dc91a1dca021bb54668df155aece5ffcc42eace378",
+    "live_sha256": "08a88d5ad7049203bb766dc763601a6c5311a70e631fa35ab62c164203cd8e1c",
+    "required_field_count": 18,
+    "checkpoint_status_count": 22,
+    "diagnostic_code_count": 50,
+    "canonical_output_sha256": "84f370b201945c844396406acfb022faa2bdadb32d96206511474a00218770cb",
+    "serialized_output_sha256": "74b24f58fe9c20da082dd9ae4c1b344e8468c00a70dbd710adf724ab70ed14c4",
+    "report_bytes": "unchanged",
+    "result": "pass"
   }
 }
