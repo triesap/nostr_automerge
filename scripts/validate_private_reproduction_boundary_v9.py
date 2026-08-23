@@ -71,6 +71,7 @@ LEGITIMATE_PUBLIC_COMMANDS = frozenset(
 )
 PYTHON_SURFACES = (
     "scripts/generate_distribution_v10.py",
+    "scripts/validate_corrected_checkpoint_expectations_v10.py",
     "scripts/validate_companion_specs.py",
     "scripts/validate_checkpoint_parity_v9.py",
     "scripts/validate_carrier_gate_v9.py",
@@ -174,6 +175,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/spec_baseline.txt",
         "scripts/validate_architecture.py",
         "scripts/generate_distribution_v10.py",
+        "scripts/validate_corrected_checkpoint_expectations_v10.py",
         "scripts/validate_authority_transition_v10.py",
         "scripts/validate_checkpoint_parity_v9.py",
         "scripts/validate_carrier_gate_v9.py",

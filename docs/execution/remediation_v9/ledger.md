@@ -325,6 +325,12 @@ records only the four already-authorized expectation corrections, and leaves
 the twelve declared v10 scenario identifiers explicitly missing until their
 four staged fixture checkpoints.
 
+The exact correction checkpoint independently validates the four authorized
+checkpoint expectation rows against their immutable v9 inputs and IDs. It
+rejects a fifth changed fixture, any signed Event drift, non-report input drift,
+metadata provenance drift, mirror mismatch, and coordinated report, input, and hash
+replacement.
+
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 `FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`

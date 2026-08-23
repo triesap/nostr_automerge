@@ -24,6 +24,7 @@ VALIDATORS = [
     "validate_local_gate_summary_v8.py", "validate_remediation_v8_final.py",
     "validate_authority_transition_v10.py",
     "generate_distribution_v10.py",
+    "validate_corrected_checkpoint_expectations_v10.py",
     "validate_remediation_v9.py",
     "validate_checkpoint_parity_v9.py",
     "validate_carrier_gate_v9.py",
