@@ -278,6 +278,7 @@ def is_public_route(value: str) -> bool:
         value in LEGITIMATE_PUBLIC_ROUTES
         or value in LEGITIMATE_PUBLIC_COMMANDS
         or value.startswith("fixtures/v1_draft/scenarios/checkpoints/")
+        or value.startswith("fixtures/v1_draft/scenarios/checkpoint/")
         or value.startswith("fixtures/v1_draft/scenarios/resource/")
         or value.startswith("fixtures/v1_draft/scenarios/scope/")
         or value.startswith("fixtures/v1_draft/checkpoints/")

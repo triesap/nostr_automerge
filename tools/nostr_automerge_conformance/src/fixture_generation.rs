@@ -60,8 +60,132 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "remediation_v7_scope" => generate_remediation_v7_scope(),
         "remediation_v7_resource" => generate_remediation_v7_resource(),
         "remediation_v8" => generate_remediation_v8(),
+        "remediation_v10_checkpoint_control" => generate_remediation_v10_checkpoint_control(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
+}
+
+fn generate_remediation_v10_checkpoint_control() -> Result<(), String> {
+    let controller = Signer::from_byte(200)?;
+    let writer = Signer::from_byte(201)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "e0".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid remediation-v10 checkpoint coordinate".to_owned())?;
+    let checkpoint_members = || vec![(&writer, None, &["checkpoint", "write"][..])];
+    let checkpoint_content =
+        || control_content_full(0, checkpoint_members(), "automerge-change-v1");
+    let left = sign_control(&controller, 1, coordinate, None, checkpoint_content())?;
+    let right = sign_control(&controller, 2, coordinate, None, checkpoint_content())?;
+    let noncanonical = event_id(&left)?.max(event_id(&right)?);
+    let canonical = event_id(&left)?.min(event_id(&right)?);
+
+    let actor = ActorId::derive(coordinate, writer.public_key);
+    let snapshot = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+        .map_err(|error| format!("remediation-v10 checkpoint document: {error:?}"))?
+        .accepted_state_bytes();
+    let commitment: [u8; 32] = Sha256::digest(
+        [
+            b"nostr-crdt/automerge/change-set/v1".as_slice(),
+            &[0],
+            &0_u64.to_be_bytes(),
+        ]
+        .concat(),
+    )
+    .into();
+    let descriptor = |created_at, control| {
+        sign_checkpoint_descriptor_revision(
+            &writer,
+            created_at,
+            coordinate,
+            control,
+            &snapshot,
+            &[],
+            commitment,
+            None,
+            1,
+        )
+    };
+
+    let noncanonical_descriptor = descriptor(3, noncanonical)?;
+    let noncanonical_chunk = sign_checkpoint_chunk(
+        &writer,
+        4,
+        coordinate,
+        event_id(&noncanonical_descriptor)?,
+        &snapshot,
+    )?;
+
+    let dynamic_invalid = sign_control(
+        &controller,
+        5,
+        coordinate,
+        Some(canonical),
+        control_content_with_links(2, checkpoint_members(), &[], None, None),
+    )?;
+    let dynamic_descriptor = descriptor(6, event_id(&dynamic_invalid)?)?;
+    let dynamic_chunk = sign_checkpoint_chunk(
+        &writer,
+        7,
+        coordinate,
+        event_id(&dynamic_descriptor)?,
+        &snapshot,
+    )?;
+
+    let no_role_control = sign_control(
+        &controller,
+        8,
+        coordinate,
+        None,
+        control_content_full(
+            0,
+            vec![(&writer, None, &["write"][..])],
+            "automerge-change-v1",
+        ),
+    )?;
+    let no_role_descriptor = descriptor(9, event_id(&no_role_control)?)?;
+    let no_role_chunk = sign_checkpoint_chunk(
+        &writer,
+        10,
+        coordinate,
+        event_id(&no_role_descriptor)?,
+        &snapshot,
+    )?;
+
+    let root = repository_root().join("fixtures/v1_draft/scenarios/checkpoint");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    for (fixture_id, events) in [
+        (
+            "checkpoint_descriptor_references_noncanonical_control",
+            vec![
+                left.clone(),
+                right,
+                noncanonical_descriptor,
+                noncanonical_chunk,
+            ],
+        ),
+        (
+            "checkpoint_descriptor_references_dynamic_invalid_control",
+            vec![left, dynamic_invalid, dynamic_descriptor, dynamic_chunk],
+        ),
+        (
+            "checkpoint_descriptor_references_canonical_without_checkpoint_role",
+            vec![no_role_control, no_role_descriptor, no_role_chunk],
+        ),
+    ] {
+        write_fixture_with_requirements(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            &["NCRDT-CONF-010", "NCRDT-CPAUTH-001", "NCRDT-CPAUTH-002"],
+            "remediation_v10_checkpoint_control",
+        )?;
+    }
+    Ok(())
 }
 
 fn generate_remediation_v8() -> Result<(), String> {

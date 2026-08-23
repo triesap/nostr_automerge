@@ -3,8 +3,8 @@ revision: draft_2026_08
 status: approved_implementation_baseline
 controlled_files: 232
 requirements: 148
-transition_stage: distribution_locked
+transition_stage: checkpoint_control_fixtures_added
 historical_v9_validation: immutable_wrapper
 validators: 34
-aggregate_sha256: 7fdcb2efb291f77a5b3ad9e8bcbaaaf4e3c89b7b4358aba7efe4110e2517cc26
+aggregate_sha256: 017207decb0a2d5944ae90671dbf4aaac3884e519a207c75cc7c6b414ecb29b3
 result: pass
