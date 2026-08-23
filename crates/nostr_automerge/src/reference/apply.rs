@@ -20,11 +20,31 @@ pub(crate) fn apply_exact_closure(
     )
 }
 
+pub(crate) fn apply_exact_closure_metered(
+    closure: &BTreeMap<ChangeHash, Arc<[u8]>>,
+    ordered: &[ChangeHash],
+    candidate_hash: ChangeHash,
+    candidate_raw: &[u8],
+    candidate_dependencies: &BTreeSet<ChangeHash>,
+    budget: &mut crate::WorkBudget,
+    cancellation: &impl crate::CancellationCheck,
+) -> Result<AppliedDocument, ExactApplyError> {
+    crate::automerge_adapter::document::apply_exact_closure_metered(
+        closure,
+        ordered,
+        candidate_hash,
+        candidate_raw,
+        candidate_dependencies,
+        budget,
+        cancellation,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
-    use super::apply_exact_closure;
+    use super::{apply_exact_closure, apply_exact_closure_metered};
     use crate::automerge_adapter::document::ExactApplyError;
     use crate::automerge_adapter::encode::qualify_canonical_reencoding;
     use crate::{ChangeHash, ProtocolRevision};
@@ -73,5 +93,39 @@ mod tests {
             apply_exact_closure(&BTreeMap::new(), &[], hash, &malformed, &BTreeSet::new(),),
             Err(ExactApplyError::Decode)
         );
+
+        let mut exact = crate::WorkBudget::new(raw.len() as u64, 5);
+        assert!(
+            apply_exact_closure_metered(
+                &BTreeMap::new(),
+                &[],
+                hash,
+                &raw,
+                &BTreeSet::new(),
+                &mut exact,
+                &crate::NeverCancelled,
+            )
+            .is_ok()
+        );
+        assert_eq!(exact.consumed().get(crate::WorkCounter::ApplyChange), 2);
+        assert_eq!(exact.consumed().get(crate::WorkCounter::GraphNode), 3);
+        assert_eq!(
+            exact.consumed().get(crate::WorkCounter::DecodeByte),
+            raw.len() as u64
+        );
+        let mut cancelled = crate::WorkBudget::new(raw.len() as u64, 5);
+        assert_eq!(
+            apply_exact_closure_metered(
+                &BTreeMap::new(),
+                &[],
+                hash,
+                &raw,
+                &BTreeSet::new(),
+                &mut cancelled,
+                &|| true,
+            ),
+            Err(ExactApplyError::Cancelled)
+        );
+        assert_eq!(cancelled.consumed().get(crate::WorkCounter::ApplyChange), 0);
     }
 }

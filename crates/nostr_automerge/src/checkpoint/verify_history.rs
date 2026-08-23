@@ -91,6 +91,7 @@ pub(crate) fn verify_full_history_metered(
     budget: &mut crate::WorkBudget,
     cancellation: &impl crate::CancellationCheck,
 ) -> Result<(), HistoryVerificationError> {
+    charge_history_item(budget, cancellation)?;
     let changes = snapshot
         .loaded
         .document

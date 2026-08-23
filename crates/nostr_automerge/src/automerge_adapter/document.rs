@@ -29,6 +29,8 @@ pub(crate) struct EmbeddedChange {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum ExactApplyError {
+    Budget,
+    Cancelled,
     ClosureMismatch,
     Decode,
     HashMismatch,
@@ -80,12 +82,46 @@ pub(crate) fn apply_exact_closure(
     candidate_raw: &[u8],
     candidate_dependencies: &BTreeSet<ChangeHash>,
 ) -> Result<AppliedDocument, ExactApplyError> {
-    if ordered.iter().copied().collect::<BTreeSet<_>>() != closure.keys().copied().collect() {
+    apply_exact_closure_metered(
+        closure,
+        ordered,
+        candidate_hash,
+        candidate_raw,
+        candidate_dependencies,
+        &mut crate::WorkBudget::new(u64::MAX, u64::MAX),
+        &crate::NeverCancelled,
+    )
+}
+
+pub(crate) fn apply_exact_closure_metered(
+    closure: &BTreeMap<ChangeHash, Arc<[u8]>>,
+    ordered: &[ChangeHash],
+    candidate_hash: ChangeHash,
+    candidate_raw: &[u8],
+    candidate_dependencies: &BTreeSet<ChangeHash>,
+    budget: &mut crate::WorkBudget,
+    cancellation: &impl crate::CancellationCheck,
+) -> Result<AppliedDocument, ExactApplyError> {
+    if ordered.len() != closure.len() {
         return Err(ExactApplyError::ClosureMismatch);
+    }
+    let mut seen = BTreeSet::new();
+    for hash in ordered {
+        charge_apply_work(crate::WorkCounter::GraphNode, 1, budget, cancellation)?;
+        if !closure.contains_key(hash) || !seen.insert(*hash) {
+            return Err(ExactApplyError::ClosureMismatch);
+        }
     }
     let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
     for hash in ordered {
+        charge_apply_work(crate::WorkCounter::ApplyChange, 1, budget, cancellation)?;
         let raw = closure.get(hash).ok_or(ExactApplyError::ClosureMismatch)?;
+        charge_apply_work(
+            crate::WorkCounter::DecodeByte,
+            u64::try_from(raw.len()).map_err(|_| ExactApplyError::Budget)?,
+            budget,
+            cancellation,
+        )?;
         let change = Change::try_from(raw.as_ref()).map_err(|_| ExactApplyError::Decode)?;
         if change.hash().as_ref() != hash.as_bytes() {
             return Err(ExactApplyError::HashMismatch);
@@ -94,7 +130,14 @@ pub(crate) fn apply_exact_closure(
             .apply_changes([change])
             .map_err(|_| ExactApplyError::Application)?;
     }
-    let before = heads(&document)?;
+    let before = heads_metered(&document, budget, cancellation)?;
+    charge_apply_work(crate::WorkCounter::ApplyChange, 1, budget, cancellation)?;
+    charge_apply_work(
+        crate::WorkCounter::DecodeByte,
+        u64::try_from(candidate_raw.len()).map_err(|_| ExactApplyError::Budget)?,
+        budget,
+        cancellation,
+    )?;
     let candidate = Change::try_from(candidate_raw).map_err(|_| ExactApplyError::Decode)?;
     if candidate.hash().as_ref() != candidate_hash.as_bytes() {
         return Err(ExactApplyError::HashMismatch);
@@ -102,19 +145,54 @@ pub(crate) fn apply_exact_closure(
     document
         .apply_changes([candidate])
         .map_err(|_| ExactApplyError::Application)?;
-    let actual = heads(&document)?;
+    let actual = heads_metered(&document, budget, cancellation)?;
     let mut expected = before;
     for dependency in candidate_dependencies {
+        charge_apply_work(crate::WorkCounter::GraphEdge, 1, budget, cancellation)?;
         expected.remove(dependency);
     }
     expected.insert(candidate_hash);
     if actual != expected {
         return Err(ExactApplyError::Heads);
     }
+    charge_apply_work(crate::WorkCounter::ApplyChange, 1, budget, cancellation)?;
     Ok(AppliedDocument {
         heads: actual,
         canonical_bytes: document.save_nocompress(),
     })
+}
+
+fn heads_metered(
+    document: &Automerge,
+    budget: &mut crate::WorkBudget,
+    cancellation: &impl crate::CancellationCheck,
+) -> Result<BTreeSet<ChangeHash>, ExactApplyError> {
+    charge_apply_work(crate::WorkCounter::GraphNode, 1, budget, cancellation)?;
+    let heads = document.get_heads();
+    let mut output = BTreeSet::new();
+    for hash in heads {
+        charge_apply_work(crate::WorkCounter::GraphNode, 1, budget, cancellation)?;
+        let bytes: [u8; 32] = hash
+            .as_ref()
+            .try_into()
+            .map_err(|_| ExactApplyError::HashMismatch)?;
+        output.insert(ChangeHash::from_bytes(bytes));
+    }
+    Ok(output)
+}
+
+fn charge_apply_work(
+    counter: crate::WorkCounter,
+    amount: u64,
+    budget: &mut crate::WorkBudget,
+    cancellation: &impl crate::CancellationCheck,
+) -> Result<(), ExactApplyError> {
+    if cancellation.is_cancelled() {
+        return Err(ExactApplyError::Cancelled);
+    }
+    budget
+        .charge(counter, amount)
+        .map_err(|_| ExactApplyError::Budget)
 }
 
 pub(crate) fn materialize_history(

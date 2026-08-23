@@ -16,7 +16,7 @@ use crate::graph::dependency_graph::{GraphBuildError, build_graph};
 use crate::graph::epoch::{EpochAncestry, validate_epoch_ancestry};
 use crate::graph::equivocation::{QuarantineError, quarantine_equivocation_descendants};
 use crate::graph::schedule::ScheduleError;
-use crate::reference::apply::apply_exact_closure;
+use crate::reference::apply::apply_exact_closure_metered;
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
 use crate::types::role::Role;
 use crate::{ActorId, IntegrityAlert, ProtocolDisposition};
@@ -402,32 +402,48 @@ pub(crate) fn evaluate_epoch(
             true
         } else if !closure.cyclic.is_empty() {
             false
+        } else if let Some(raw) = input.raw_changes().get(&candidate.change_hash) {
+            let mut closure_raw = BTreeMap::new();
+            for hash in &closure.known {
+                charge_epoch_item(WorkCounter::GraphNode, budget, cancellation)
+                    .map_err(EpochEvaluationError::Schedule)?;
+                let Some(value) = input.raw_changes().get(hash) else {
+                    continue;
+                };
+                closure_raw.insert(*hash, Arc::clone(value));
+            }
+            if closure_raw.len() != closure.known.len() {
+                false
+            } else {
+                let mut dependencies = BTreeSet::new();
+                for dependency in &candidate.dependencies {
+                    charge_epoch_item(WorkCounter::GraphEdge, budget, cancellation)
+                        .map_err(EpochEvaluationError::Schedule)?;
+                    dependencies.insert(*dependency);
+                }
+                match apply_exact_closure_metered(
+                    &closure_raw,
+                    &closure.ordered,
+                    candidate.change_hash,
+                    raw,
+                    &dependencies,
+                    budget,
+                    cancellation,
+                ) {
+                    Ok(_) => true,
+                    Err(crate::automerge_adapter::document::ExactApplyError::Budget) => {
+                        return Err(EpochEvaluationError::Schedule(
+                            ScheduleError::BudgetExhausted,
+                        ));
+                    }
+                    Err(crate::automerge_adapter::document::ExactApplyError::Cancelled) => {
+                        return Err(EpochEvaluationError::Schedule(ScheduleError::Cancelled));
+                    }
+                    Err(_) => false,
+                }
+            }
         } else {
-            input
-                .raw_changes()
-                .get(&candidate.change_hash)
-                .is_some_and(|raw| {
-                    let closure_raw = closure
-                        .known
-                        .iter()
-                        .filter_map(|hash| {
-                            input
-                                .raw_changes()
-                                .get(hash)
-                                .cloned()
-                                .map(|raw| (*hash, raw))
-                        })
-                        .collect::<BTreeMap<_, _>>();
-                    closure_raw.len() == closure.known.len()
-                        && apply_exact_closure(
-                            &closure_raw,
-                            &closure.ordered,
-                            candidate.change_hash,
-                            raw,
-                            &candidate.dependencies.iter().copied().collect(),
-                        )
-                        .is_ok()
-                })
+            false
         };
         let semantically_valid = prior_semantics_valid && application_valid;
         epoch_candidates.push(EpochCandidate {
@@ -532,6 +548,19 @@ fn charge_actor_reconstruction(
     }
     budget
         .charge(WorkCounter::GraphEdge, edges)
+        .map_err(|_| ScheduleError::BudgetExhausted)
+}
+
+fn charge_epoch_item(
+    counter: WorkCounter,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<(), ScheduleError> {
+    if cancellation.is_cancelled() {
+        return Err(ScheduleError::Cancelled);
+    }
+    budget
+        .charge(counter, 1)
         .map_err(|_| ScheduleError::BudgetExhausted)
 }
 

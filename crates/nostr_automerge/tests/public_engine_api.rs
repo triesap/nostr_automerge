@@ -3576,7 +3576,7 @@ fn automerge_application_and_materialization_are_charged() {
     let measured_report =
         evaluator.evaluate_report(&corpus, scenario.coordinate, &mut measured, &NeverCancelled);
     assert_eq!(measured_report.completion(), Completion::Complete);
-    assert_eq!(measured.consumed().get(WorkCounter::ApplyChange), 3);
+    assert_eq!(measured.consumed().get(WorkCounter::ApplyChange), 5);
     let consumed_items = 1_000 - measured.remaining().1;
 
     let mut exhausted = WorkBudget::new(1_000_000, consumed_items - 1);
@@ -3593,7 +3593,7 @@ fn automerge_application_and_materialization_are_charged() {
         report.dispositions_digest(),
         measured_report.dispositions_digest()
     );
-    assert_eq!(exhausted.consumed().get(WorkCounter::ApplyChange), 3);
+    assert_eq!(exhausted.consumed().get(WorkCounter::ApplyChange), 5);
     assert_eq!(
         exhausted.remaining().1,
         1,

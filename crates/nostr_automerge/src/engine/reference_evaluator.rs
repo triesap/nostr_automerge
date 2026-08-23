@@ -2028,7 +2028,9 @@ fn verify_one_checkpoint(
         Err(VerifyError::Commitments) => return CheckpointVerificationStatus::CommitmentMismatch,
         Err(VerifyError::Closure) => return CheckpointVerificationStatus::ClosureMismatch,
     };
-    if let Err(error) = snapshot.verify_commitments(descriptor.descriptor(), budget) {
+    if let Err(error) =
+        snapshot.verify_commitments_metered(descriptor.descriptor(), budget, cancellation)
+    {
         return match error {
             VerifyError::Budget => CheckpointVerificationStatus::BudgetExhausted,
             VerifyError::Cancelled => CheckpointVerificationStatus::Cancelled,
@@ -2038,7 +2040,7 @@ fn verify_one_checkpoint(
             VerifyError::Closure => CheckpointVerificationStatus::ClosureMismatch,
         };
     }
-    if let Err(error) = snapshot.verify_exact_closure_metered(budget) {
+    if let Err(error) = snapshot.verify_exact_closure_metered(budget, cancellation) {
         return match error {
             VerifyError::Budget => CheckpointVerificationStatus::BudgetExhausted,
             VerifyError::Cancelled => CheckpointVerificationStatus::Cancelled,

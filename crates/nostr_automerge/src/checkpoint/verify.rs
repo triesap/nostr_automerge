@@ -19,31 +19,51 @@ impl VerifiedSnapshot {
         descriptor: &CheckpointDescriptor,
         budget: &mut WorkBudget,
     ) -> Result<(), VerifyError> {
+        self.verify_commitments_metered(descriptor, budget, &crate::NeverCancelled)
+    }
+
+    pub(crate) fn verify_commitments_metered(
+        &self,
+        descriptor: &CheckpointDescriptor,
+        budget: &mut WorkBudget,
+        cancellation: &impl CancellationCheck,
+    ) -> Result<(), VerifyError> {
+        charge_checkpoint_item(budget, cancellation)?;
         let changes = self
             .loaded
             .document
             .embedded_changes()
             .map_err(|_| VerifyError::Commitments)?;
-        budget
-            .charge_checkpoint_items(changes.len() as u64)
-            .map_err(|_| VerifyError::Budget)?;
-        let change_count = changes.len() as u64;
-        let total_ops = changes
-            .iter()
-            .try_fold(0_u64, |sum, c| sum.checked_add(c.operations))
-            .ok_or(VerifyError::Commitments)?;
-        let dependency_edges = changes
-            .iter()
-            .try_fold(0_u64, |sum, c| sum.checked_add(c.dependencies.len() as u64))
-            .ok_or(VerifyError::Commitments)?;
+        let mut change_count = 0_u64;
+        let mut total_ops = 0_u64;
+        let mut dependency_edges = 0_u64;
+        let mut hashes = BTreeSet::new();
+        for change in &changes {
+            charge_checkpoint_item(budget, cancellation)?;
+            change_count = change_count
+                .checked_add(1)
+                .ok_or(VerifyError::Commitments)?;
+            for _ in 0..change.operations {
+                charge_checkpoint_item(budget, cancellation)?;
+                total_ops = total_ops.checked_add(1).ok_or(VerifyError::Commitments)?;
+            }
+            for _ in &change.dependencies {
+                charge_checkpoint_item(budget, cancellation)?;
+                dependency_edges = dependency_edges
+                    .checked_add(1)
+                    .ok_or(VerifyError::Commitments)?;
+            }
+            if !hashes.insert(change.hash) {
+                return Err(VerifyError::Commitments);
+            }
+        }
         if !within_checkpoint_limits(change_count, total_ops, dependency_edges) {
             return Err(VerifyError::Commitments);
         }
-        let hashes = changes.iter().map(|c| c.hash).collect::<Vec<_>>();
         if change_count != descriptor.change_count
             || total_ops != descriptor.total_ops
             || dependency_edges != descriptor.dependency_edges
-            || change_set_hash(hashes)? != descriptor.change_set_hash
+            || change_set_hash_metered(&hashes, budget, cancellation)? != descriptor.change_set_hash
         {
             return Err(VerifyError::Commitments);
         }
@@ -66,31 +86,20 @@ impl VerifiedSnapshot {
     pub(crate) fn verify_exact_closure_metered(
         &self,
         budget: &mut WorkBudget,
+        cancellation: &impl CancellationCheck,
     ) -> Result<(), VerifyError> {
+        charge_checkpoint_item(budget, cancellation)?;
         let changes = self
             .loaded
             .document
             .embedded_changes()
             .map_err(|_| VerifyError::Closure)?;
-        let work = changes
-            .iter()
-            .try_fold(0_u64, |total, change| {
-                total
-                    .checked_add(1)?
-                    .checked_add(u64::try_from(change.dependencies.len()).unwrap_or(u64::MAX))
-            })
-            .ok_or(VerifyError::Budget)?;
-        budget
-            .charge_checkpoint_items(work)
-            .map_err(|_| VerifyError::Budget)?;
-        let map = changes
-            .iter()
-            .map(|change| (change.hash, change.dependencies.clone()))
-            .collect::<std::collections::BTreeMap<_, _>>();
-        exact_closure(&map, &self.heads)
+        let map = metered_dependency_map(&changes, budget, cancellation)?;
+        exact_closure_metered(&map, &self.heads, budget, cancellation)
     }
 }
 
+#[cfg(test)]
 fn change_set_hash(mut hashes: Vec<ChangeHash>) -> Result<[u8; 32], VerifyError> {
     use sha2::{Digest, Sha256};
 
@@ -101,6 +110,25 @@ fn change_set_hash(mut hashes: Vec<ChangeHash>) -> Result<[u8; 32], VerifyError>
     digest.update([0]);
     digest.update(count.to_be_bytes());
     for hash in hashes {
+        digest.update(hash.as_bytes());
+    }
+    Ok(digest.finalize().into())
+}
+
+fn change_set_hash_metered(
+    hashes: &BTreeSet<ChangeHash>,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<[u8; 32], VerifyError> {
+    use sha2::{Digest, Sha256};
+
+    let count = u64::try_from(hashes.len()).map_err(|_| VerifyError::Commitments)?;
+    let mut digest = Sha256::new();
+    digest.update(b"nostr-crdt/automerge/change-set/v1");
+    digest.update([0]);
+    digest.update(count.to_be_bytes());
+    for hash in hashes {
+        charge_checkpoint_item(budget, cancellation)?;
         digest.update(hash.as_bytes());
     }
     Ok(digest.finalize().into())
@@ -137,6 +165,76 @@ fn exact_closure(
         Err(VerifyError::Closure)
     }
 }
+
+fn metered_dependency_map(
+    changes: &[crate::automerge_adapter::document::EmbeddedChange],
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<std::collections::BTreeMap<ChangeHash, Vec<ChangeHash>>, VerifyError> {
+    let mut map = std::collections::BTreeMap::new();
+    for change in changes {
+        charge_checkpoint_item(budget, cancellation)?;
+        let mut dependencies = Vec::new();
+        for dependency in &change.dependencies {
+            charge_checkpoint_item(budget, cancellation)?;
+            dependencies.push(*dependency);
+        }
+        if map.insert(change.hash, dependencies).is_some() {
+            return Err(VerifyError::Closure);
+        }
+    }
+    Ok(map)
+}
+
+fn exact_closure_metered(
+    map: &std::collections::BTreeMap<ChangeHash, Vec<ChangeHash>>,
+    heads: &BTreeSet<ChangeHash>,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<(), VerifyError> {
+    let mut reachable = BTreeSet::new();
+    let mut stack = Vec::new();
+    for head in heads {
+        charge_checkpoint_item(budget, cancellation)?;
+        stack.push(*head);
+    }
+    while let Some(hash) = stack.pop() {
+        charge_checkpoint_item(budget, cancellation)?;
+        if !reachable.insert(hash) {
+            continue;
+        }
+        let deps = map.get(&hash).ok_or(VerifyError::Closure)?;
+        for dep in deps {
+            charge_checkpoint_item(budget, cancellation)?;
+            if *dep == hash {
+                return Err(VerifyError::Closure);
+            }
+            stack.push(*dep);
+        }
+    }
+    if reachable.len() != map.len() {
+        return Err(VerifyError::Closure);
+    }
+    for hash in map.keys() {
+        charge_checkpoint_item(budget, cancellation)?;
+        if !reachable.contains(hash) {
+            return Err(VerifyError::Closure);
+        }
+    }
+    Ok(())
+}
+
+fn charge_checkpoint_item(
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<(), VerifyError> {
+    if cancellation.is_cancelled() {
+        return Err(VerifyError::Cancelled);
+    }
+    budget
+        .charge_checkpoint_items(1)
+        .map_err(|_| VerifyError::Budget)
+}
 /// Why snapshot semantic commitments differed.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum VerifyError {
@@ -172,37 +270,40 @@ pub fn verify_snapshot_heads<C: CancellationCheck>(
             crate::automerge_adapter::checkpoint::CheckpointLoadError::Invalid => VerifyError::Load,
         },
     )?;
+    charge_checkpoint_item(budget, cancellation)?;
     let heads = loaded
         .document
         .semantic_heads()
         .map_err(|_| VerifyError::Load)?;
-    if heads != descriptor.heads {
+    let heads_match = if heads.len() != descriptor.heads.len() {
+        false
+    } else {
+        let mut matches = true;
+        for (actual, expected) in heads.iter().zip(&descriptor.heads) {
+            charge_checkpoint_item(budget, cancellation)?;
+            matches &= actual == expected;
+        }
+        matches
+    };
+    if !heads_match {
+        charge_checkpoint_item(budget, cancellation)?;
         let changes = loaded
             .document
             .embedded_changes()
             .map_err(|_| VerifyError::Load)?;
-        let work = changes
-            .iter()
-            .try_fold(0_u64, |total, change| {
-                total
-                    .checked_add(1)?
-                    .checked_add(u64::try_from(change.dependencies.len()).unwrap_or(u64::MAX))
-            })
-            .ok_or(VerifyError::Budget)?;
-        budget
-            .charge_checkpoint_items(work)
-            .map_err(|_| VerifyError::Budget)?;
-        if cancellation.is_cancelled() {
-            return Err(VerifyError::Cancelled);
+        let map = metered_dependency_map(&changes, budget, cancellation)?;
+        let mut declared_heads_present = true;
+        for head in &descriptor.heads {
+            charge_checkpoint_item(budget, cancellation)?;
+            declared_heads_present &= map.contains_key(head);
         }
-        let map = changes
-            .iter()
-            .map(|change| (change.hash, change.dependencies.clone()))
-            .collect::<std::collections::BTreeMap<_, _>>();
-        if descriptor.heads.iter().all(|head| map.contains_key(head))
-            && exact_closure(&map, &descriptor.heads).is_err()
-        {
-            return Err(VerifyError::Closure);
+        if declared_heads_present {
+            match exact_closure_metered(&map, &descriptor.heads, budget, cancellation) {
+                Ok(()) => {}
+                Err(VerifyError::Budget) => return Err(VerifyError::Budget),
+                Err(VerifyError::Cancelled) => return Err(VerifyError::Cancelled),
+                Err(_) => return Err(VerifyError::Closure),
+            }
         }
         return Err(VerifyError::Heads);
     }

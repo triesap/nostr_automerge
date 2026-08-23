@@ -341,6 +341,7 @@ PREDECESSOR_CANDIDATES = (
     "6e9beea4ae0e4ead8af2f1791d21f9952010bee9",
     "a863d24247c395e6d1988170ac0eca924a9fd570",
     "ef93f361f16ace0fe0a7bc5c61b020485bb6f287",
+    "f74a7dae5bcb6a10b67e9596bf368db2b2148936",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -363,7 +364,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "c0646ec6774f08d71929cb4ef3867c90ea93aa13036eed1d2f43bde6016a1277",
+        "2bdace48d5e61699442c6adcf9da5ad7ee801bb8d478cf9034c40d76ffa74bb6",
     ),
     (
         "crates/nostr_automerge/src/integrity.rs",
@@ -375,7 +376,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "crates/nostr_automerge/tests/public_engine_api.rs",
-        "f5e71d927daea4d0567b2def5a1062d53b41453cb9634f16c4608b3cbf977010",
+        "894e48bc74c0132f8f89888cc8506166e093b46d98ec74745420357c0201e410",
     ),
     (
         "tools/nostr_automerge_conformance/src/expected.rs",
@@ -458,22 +459,18 @@ HISTORICAL_STEP_1217_CLOSURE_PATHS = frozenset(
 )
 CLOSURE_PATHS = frozenset(
     {
-        "crates/nostr_automerge/src/checkpoint/assemble.rs",
-        "crates/nostr_automerge/src/checkpoint/authorize.rs",
-        "crates/nostr_automerge/src/checkpoint/join.rs",
-        "crates/nostr_automerge/src/checkpoint/merkle.rs",
-        "crates/nostr_automerge/src/checkpoint/mod.rs",
+        "crates/nostr_automerge/src/automerge_adapter/document.rs",
+        "crates/nostr_automerge/src/checkpoint/verify.rs",
+        "crates/nostr_automerge/src/checkpoint/verify_history.rs",
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "crates/nostr_automerge/src/reference/apply.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs",
+        "crates/nostr_automerge/tests/public_engine_api.rs",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
-        "docs/execution/remediation_v9/reproductions.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
-        "scripts/reproduce_remediation_v9.py",
-        "scripts/validate_private_reproduction_boundary_v9.py",
-        "scripts/validate_remediation_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
-        "spec/remediation_findings_v9.json",
     }
 )
 CLOSURE_AMEND_ADDITION = "docs/execution/remediation_v9/ledger.md"
@@ -565,6 +562,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-FULL-TS",),
     ("V-EVIDENCE",),
+    ("V-RESOURCE",),
     ("V-RESOURCE",),
     ("V-RESOURCE",),
     ("V-RESOURCE",),
@@ -722,6 +720,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -814,6 +813,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_077",),
     ("FINDING_077",),
     ("FINDING_077",),
+    ("FINDING_084",),
 )
 FORBIDDEN_KEY_WORDS = {
     "source",
