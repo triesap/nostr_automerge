@@ -2,7 +2,7 @@
   "schema": "nostr_automerge.authority_transition.v10",
   "status": "in_progress",
   "protocol_revision": "draft_2026_08",
-  "current_stage": "checkpoint_expectations_corrected",
+  "current_stage": "distribution_locked",
   "stage_order": [
     "transition_installed",
     "companion_authority_installed",

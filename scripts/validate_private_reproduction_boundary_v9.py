@@ -70,6 +70,7 @@ LEGITIMATE_PUBLIC_COMMANDS = frozenset(
     }
 )
 PYTHON_SURFACES = (
+    "scripts/generate_distribution_v10.py",
     "scripts/validate_companion_specs.py",
     "scripts/validate_checkpoint_parity_v9.py",
     "scripts/validate_carrier_gate_v9.py",
@@ -151,6 +152,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_kind_control.fixture.json",
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_kind_control.input.json",
         "fixtures/v1_draft",
+        "fixtures/distribution/manifest_v10.json",
         "fixtures/README.md",
         "fixtures/examples",
         "fixtures/schema",
@@ -171,6 +173,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/opaque_resource_gate_v9.json",
         "reports/spec_baseline.txt",
         "scripts/validate_architecture.py",
+        "scripts/generate_distribution_v10.py",
         "scripts/validate_authority_transition_v10.py",
         "scripts/validate_checkpoint_parity_v9.py",
         "scripts/validate_carrier_gate_v9.py",

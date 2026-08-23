@@ -318,6 +318,13 @@ indexed linear-or-log-linear scaling without carrying private paths or execution
 details. `GATE_V9_PRIVATE_RESOURCE` closes at `step_1263`; 25 checkpoints,
 including the active checkpoint, remain through `step_1287`.
 
+The signed-distribution v10 authority is now locked at `step_1264`. Its
+repository-owned deterministic generator preserves the ordered 180-scenario
+v9 prefix and signed Event set, binds the reconciled neutral report schema,
+records only the four already-authorized expectation corrections, and leaves
+the twelve declared v10 scenario identifiers explicitly missing until their
+four staged fixture checkpoints.
+
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 `FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`
