@@ -4,11 +4,9 @@ use std::sync::Arc;
 use crate::automerge_adapter::document::{AppliedDocument, materialize_history};
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 use crate::control::candidate::{CandidateResult, evaluate_child_metered};
-use crate::control::candidate_outcome::ControlCandidateOutcome;
 use crate::control::epoch_state::AcceptedEpochState;
 use crate::control::frontier::accepted_frontier_closure;
 use crate::control::parent_view::ParentEpochView;
-use crate::control::select::select_valid_outcomes_with_alert;
 use crate::control::validate::ControlEnvelope;
 use crate::graph::change_candidate::ChangeCandidate;
 use crate::graph::dependency_graph::build_graph;
@@ -21,8 +19,8 @@ use crate::reference::epoch_engine::{
     PriorChangeKnowledge, evaluate_epoch,
 };
 use crate::{
-    CancellationCheck, ChangeHash, Completion, EvaluationFailure, EventId, IntegrityAlert,
-    ProtocolDisposition, WorkBudget, WorkCounter,
+    CancellationCheck, ChangeHash, Completion, ControllerEquivocationAlert, EvaluationFailure,
+    EventId, IntegrityAlert, ProtocolDisposition, WorkBudget, WorkCounter,
 };
 
 #[derive(Clone, Debug)]
@@ -163,7 +161,14 @@ pub(crate) fn evaluate_batch_with_prior(
             for (event_id, state) in &branch_states {
                 control_dispositions.insert(*event_id, state.final_disposition(false));
             }
-            match derive_canonical_branch(&controls, &by_parent, &table, &dispositions) {
+            match derive_canonical_branch(
+                &controls,
+                &by_parent,
+                &table,
+                &dispositions,
+                budget,
+                cancellation,
+            ) {
                 Ok(canonical) => {
                     canonical_controls = canonical.controls;
                     dispositions = canonical.change_dispositions;
@@ -173,7 +178,10 @@ pub(crate) fn evaluate_batch_with_prior(
                         control_dispositions.insert(*selected, ProtocolDisposition::Accepted);
                     }
                 }
-                Err(()) => failure = Some(EvaluationFailure::InvariantViolation),
+                Err(CanonicalBranchError::Stop(stop)) => completion = stop,
+                Err(CanonicalBranchError::Invariant) => {
+                    failure = Some(EvaluationFailure::InvariantViolation);
+                }
             }
         }
         Err(stop) => {
@@ -339,76 +347,93 @@ fn derive_canonical_branch(
     children_by_parent: &BTreeMap<Option<EventId>, BTreeSet<EventId>>,
     table: &BranchTableEvaluation,
     preliminary_change_dispositions: &BTreeMap<ChangeHash, ProtocolDisposition>,
-) -> Result<CanonicalBranchEvaluation, ()> {
-    let mut change_dispositions = preliminary_change_dispositions.clone();
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<CanonicalBranchEvaluation, CanonicalBranchError> {
+    let mut change_dispositions = BTreeMap::new();
+    for (hash, disposition) in preliminary_change_dispositions {
+        charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)
+            .map_err(CanonicalBranchError::Stop)?;
+        change_dispositions.insert(*hash, *disposition);
+    }
     let mut canonical_controls = Vec::new();
+    let mut canonical_control_ids = BTreeSet::new();
     let mut accepted_changes = BTreeSet::new();
     let mut integrity_alerts = Vec::new();
+    let mut seen_alerts = BTreeSet::new();
     let mut parent_id = None;
     while let Some(children) = children_by_parent.get(&parent_id) {
-        let outcomes = children.iter().filter_map(|event_id| {
-            let control = controls.get(event_id)?;
-            let state = table.states.get(event_id)?;
-            let sequence = control
-                .envelope
-                .as_ref()
-                .map_or(0, ControlEnvelope::sequence);
-            Some(match state {
-                BranchEvaluationState::Valid => ControlCandidateOutcome::valid(
-                    *event_id,
-                    control.parent,
-                    sequence,
-                    table
-                        .valid
-                        .get(event_id)
-                        .map(|branch| branch.validated_base.clone())
-                        .unwrap_or_default(),
-                ),
-                BranchEvaluationState::Pending => ControlCandidateOutcome::pending(
-                    *event_id,
-                    control.parent,
-                    sequence,
-                    crate::DiagnosticCode::registered("control.state"),
-                    None,
-                ),
-                BranchEvaluationState::Invalid => ControlCandidateOutcome::invalid(
-                    *event_id,
-                    control.parent,
-                    sequence,
-                    crate::DiagnosticCode::registered("control.state"),
-                    None,
-                ),
-            })
-        });
-        let (selection, alert) = select_valid_outcomes_with_alert(parent_id, outcomes);
-        let Some(selected) = selection.selected else {
+        let mut valid_children = Vec::new();
+        for event_id in children {
+            charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)
+                .map_err(CanonicalBranchError::Stop)?;
+            if table.states.get(event_id) == Some(&BranchEvaluationState::Valid) {
+                valid_children.push(*event_id);
+            }
+        }
+        let Some(selected) = valid_children.first().copied() else {
             break;
         };
-        let branch = table.valid.get(&selected).ok_or(())?;
-        let control = controls.get(&selected).ok_or(())?;
+        let branch = table
+            .valid
+            .get(&selected)
+            .ok_or(CanonicalBranchError::Invariant)?;
+        let control = controls
+            .get(&selected)
+            .ok_or(CanonicalBranchError::Invariant)?;
         canonical_controls.push(selected);
-        if let Some(alert) = alert {
+        canonical_control_ids.insert(selected);
+        if valid_children.len() > 1 {
+            let alert = IntegrityAlert::ControllerEquivocation(
+                ControllerEquivocationAlert::from_validated_parts(
+                    parent_id,
+                    valid_children,
+                    selected,
+                ),
+            );
+            seen_alerts.insert(alert.clone());
             integrity_alerts.push(alert);
         }
-        change_dispositions.extend(branch.epoch.dispositions().clone());
-        accepted_changes = branch.epoch.accepted_state().accepted_closure().clone();
-        integrity_alerts.extend_from_slice(branch.epoch.integrity_alerts());
+        for (hash, disposition) in branch.epoch.dispositions() {
+            charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)
+                .map_err(CanonicalBranchError::Stop)?;
+            change_dispositions.insert(*hash, *disposition);
+        }
+        accepted_changes.clear();
+        for hash in branch.epoch.accepted_state().accepted_closure() {
+            charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)
+                .map_err(CanonicalBranchError::Stop)?;
+            accepted_changes.insert(*hash);
+        }
+        for alert in branch.epoch.integrity_alerts() {
+            charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)
+                .map_err(CanonicalBranchError::Stop)?;
+            if seen_alerts.insert(alert.clone()) {
+                integrity_alerts.push(alert.clone());
+            }
+        }
         if control.frozen {
             break;
         }
         parent_id = Some(selected);
     }
     for (control_id, branch) in &table.valid {
-        if canonical_controls.contains(control_id) {
+        charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)
+            .map_err(CanonicalBranchError::Stop)?;
+        if canonical_control_ids.contains(control_id) {
             continue;
         }
         for alert in branch.epoch.integrity_alerts() {
-            if !integrity_alerts.contains(alert) {
+            charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)
+                .map_err(CanonicalBranchError::Stop)?;
+            if seen_alerts.insert(alert.clone()) {
                 integrity_alerts.push(alert.clone());
             }
         }
     }
     for (hash, disposition) in &mut change_dispositions {
+        charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)
+            .map_err(CanonicalBranchError::Stop)?;
         if accepted_changes.contains(hash) {
             *disposition = ProtocolDisposition::Accepted;
         } else if *disposition == ProtocolDisposition::Accepted {
@@ -423,6 +448,11 @@ fn derive_canonical_branch(
     })
 }
 
+enum CanonicalBranchError {
+    Stop(Completion),
+    Invariant,
+}
+
 fn evaluate_branch_table(
     controls: &BTreeMap<EventId, BatchControl>,
     children_by_parent: &BTreeMap<Option<EventId>, BTreeSet<EventId>>,
@@ -434,7 +464,13 @@ fn evaluate_branch_table(
     let mut table = BranchTableEvaluation::default();
     let change_memo = BatchChangeMemo::derive(controls, budget, cancellation)?;
     let mut accepted_state_cache = BTreeMap::new();
-    let mut ready = children_by_parent.get(&None).cloned().unwrap_or_default();
+    let mut ready = BTreeSet::new();
+    if let Some(children) = children_by_parent.get(&None) {
+        for child in children {
+            charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)?;
+            ready.insert(*child);
+        }
+    }
     while let Some(event_id) = ready.pop_first() {
         if cancellation.is_cancelled() {
             return Err(Completion::Cancelled);
@@ -526,11 +562,20 @@ fn evaluate_branch_table(
                 &change_memo.candidates,
                 parent_epoch,
                 &mut accepted_state_cache,
-            ) else {
+                budget,
+                cancellation,
+            )?
+            else {
                 table
                     .states
                     .insert(event_id, BranchEvaluationState::Invalid);
-                enqueue_children(event_id, children_by_parent, &mut ready);
+                enqueue_children(
+                    event_id,
+                    children_by_parent,
+                    &mut ready,
+                    budget,
+                    cancellation,
+                )?;
                 continue;
             };
             let mut knowledge = prior_change_knowledge(
@@ -610,7 +655,13 @@ fn evaluate_branch_table(
                 }
             }
         }
-        enqueue_children(event_id, children_by_parent, &mut ready);
+        enqueue_children(
+            event_id,
+            children_by_parent,
+            &mut ready,
+            budget,
+            cancellation,
+        )?;
     }
     Ok(table)
 }
@@ -619,10 +670,16 @@ fn enqueue_children(
     parent: EventId,
     children_by_parent: &BTreeMap<Option<EventId>, BTreeSet<EventId>>,
     ready: &mut BTreeSet<EventId>,
-) {
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<(), Completion> {
     if let Some(children) = children_by_parent.get(&Some(parent)) {
-        ready.extend(children);
+        for child in children {
+            charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)?;
+            ready.insert(*child);
+        }
     }
+    Ok(())
 }
 
 pub(crate) fn propagate_control_parent_dispositions(
@@ -747,7 +804,7 @@ enum EpochResolutionError {
 
 fn resolve_authoritative_epoch(
     control: &BatchControl,
-    accepted_base: AcceptedEpochState,
+    accepted_base: Arc<AcceptedEpochState>,
     prior_change_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
     ancestry: &[ControlEnvelope],
     raw_changes: &BTreeMap<ChangeHash, Arc<[u8]>>,
@@ -960,29 +1017,42 @@ fn accepted_state_for_closure(
     accepted: &BTreeSet<ChangeHash>,
     candidates_by_hash: &BTreeMap<ChangeHash, ChangeCandidate>,
     parent: Option<&EpochEvaluationResult>,
-    cache: &mut BTreeMap<BTreeSet<ChangeHash>, AcceptedEpochState>,
-) -> Option<AcceptedEpochState> {
-    if let Some(cached) = cache.get(accepted) {
-        return Some(cached.clone());
+    cache: &mut BTreeMap<BTreeSet<ChangeHash>, Arc<AcceptedEpochState>>,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<Option<Arc<AcceptedEpochState>>, Completion> {
+    let mut cache_key = BTreeSet::new();
+    for hash in accepted {
+        charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;
+        cache_key.insert(*hash);
     }
-    let candidates = accepted
-        .iter()
-        .filter_map(|hash| {
-            candidates_by_hash
-                .get(hash)
-                .cloned()
-                .map(|value| (*hash, value))
-        })
-        .collect::<BTreeMap<_, _>>();
-    if candidates.len() != accepted.len() {
-        return None;
+    if let Some(cached) = cache.get(&cache_key) {
+        return Ok(Some(Arc::clone(cached)));
     }
-    let depended_on = candidates
-        .values()
-        .flat_map(|candidate| candidate.dependencies.iter().copied())
-        .filter(|hash| accepted.contains(hash))
-        .collect::<BTreeSet<_>>();
-    let heads = accepted.difference(&depended_on).copied().collect();
+    let mut candidates = BTreeMap::new();
+    for hash in accepted {
+        charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;
+        let Some(candidate) = candidates_by_hash.get(hash) else {
+            return Ok(None);
+        };
+        candidates.insert(*hash, candidate.clone());
+    }
+    let mut depended_on = BTreeSet::new();
+    for candidate in candidates.values() {
+        for dependency in &candidate.dependencies {
+            charge_prior_knowledge_item(WorkCounter::GraphEdge, budget, cancellation)?;
+            if accepted.contains(dependency) {
+                depended_on.insert(*dependency);
+            }
+        }
+    }
+    let mut heads = BTreeSet::new();
+    for hash in accepted {
+        charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;
+        if !depended_on.contains(hash) {
+            heads.insert(*hash);
+        }
+    }
     let materialized = parent.and_then(|result| {
         (result.accepted_state().accepted_closure() == accepted)
             .then(|| result.accepted_state().materialized().cloned())
@@ -993,9 +1063,12 @@ fn accepted_state_for_closure(
     } else {
         materialized
     };
-    let state = AcceptedEpochState::new(accepted.clone(), heads, candidates, materialized).ok()?;
-    cache.insert(accepted.clone(), state.clone());
-    Some(state)
+    let state = match AcceptedEpochState::new(cache_key.clone(), heads, candidates, materialized) {
+        Ok(state) => Arc::new(state),
+        Err(_) => return Ok(None),
+    };
+    cache.insert(cache_key, Arc::clone(&state));
+    Ok(Some(state))
 }
 
 fn applied_heads_agree(
@@ -1089,11 +1162,13 @@ fn derive_heads(
 #[cfg(test)]
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
+    use std::sync::Arc;
 
     use super::{
         AcceptedAtControl, BatchChange, BatchChangeMemo, BatchControl, BatchEvaluationReport,
-        BranchEvaluationState, PriorChangeKnowledge, charge_control_closures, evaluate_batch,
-        prior_change_knowledge, propagate_control_parent_dispositions,
+        BranchEvaluationState, PriorChangeKnowledge, accepted_state_for_closure,
+        charge_control_closures, evaluate_batch, prior_change_knowledge,
+        propagate_control_parent_dispositions,
     };
     use crate::automerge_adapter::decode::decode_change;
     use crate::graph::actor_state::tests::candidate;
@@ -1120,6 +1195,69 @@ mod tests {
             BranchEvaluationState::Invalid.final_disposition(false),
             ProtocolDisposition::Invalid
         );
+    }
+
+    #[test]
+    fn accepted_state_cache_is_shared_and_charged_per_key() {
+        let mut retained = candidate(1, 1, 1, 1);
+        retained.change_hash = ChangeHash::from_bytes([7; 32]);
+        let accepted = BTreeSet::from([retained.change_hash]);
+        let candidates = BTreeMap::from([(retained.change_hash, retained)]);
+        let mut cache = BTreeMap::new();
+        let mut exact = WorkBudget::new(0, 4);
+
+        let first = accepted_state_for_closure(
+            &accepted,
+            &candidates,
+            None,
+            &mut cache,
+            &mut exact,
+            &NeverCancelled,
+        )
+        .ok()
+        .flatten();
+        let second = accepted_state_for_closure(
+            &accepted,
+            &candidates,
+            None,
+            &mut cache,
+            &mut exact,
+            &NeverCancelled,
+        )
+        .ok()
+        .flatten();
+        assert!(matches!((&first, &second), (Some(left), Some(right)) if Arc::ptr_eq(left, right)));
+        assert_eq!(exact.consumed().get(WorkCounter::GraphNode), 4);
+
+        let mut insufficient_cache = BTreeMap::new();
+        let mut insufficient = WorkBudget::new(0, 2);
+        assert!(matches!(
+            accepted_state_for_closure(
+                &accepted,
+                &candidates,
+                None,
+                &mut insufficient_cache,
+                &mut insufficient,
+                &NeverCancelled,
+            ),
+            Err(Completion::BudgetExhausted)
+        ));
+        assert_eq!(insufficient.consumed().get(WorkCounter::GraphNode), 2);
+
+        let mut cancelled_cache = BTreeMap::new();
+        let mut cancelled = WorkBudget::new(0, 3);
+        assert!(matches!(
+            accepted_state_for_closure(
+                &accepted,
+                &candidates,
+                None,
+                &mut cancelled_cache,
+                &mut cancelled,
+                &|| true,
+            ),
+            Err(Completion::Cancelled)
+        ));
+        assert_eq!(cancelled.consumed().get(WorkCounter::GraphNode), 0);
     }
 
     #[test]

@@ -3,7 +3,7 @@ use core::fmt;
 use crate::{ActorId, ChangeHash, DiagnosticCode, EventId};
 
 /// A closed integrity alert emitted without changing canonical selection rules.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum IntegrityAlert {
     /// More than one otherwise-valid controller child exists.
     ControllerEquivocation(ControllerEquivocationAlert),
@@ -18,7 +18,7 @@ pub enum IntegrityAlert {
 }
 
 /// Validated controller-sibling equivocation details.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ControllerEquivocationAlert {
     parent_control: Option<EventId>,
     candidate_controls: Vec<EventId>,
@@ -43,6 +43,19 @@ impl ControllerEquivocationAlert {
         })
     }
 
+    /// Constructs an alert from an engine-owned ordered candidate traversal.
+    pub(crate) fn from_validated_parts(
+        parent_control: Option<EventId>,
+        candidate_controls: Vec<EventId>,
+        selected_control: EventId,
+    ) -> Self {
+        Self {
+            parent_control,
+            candidate_controls,
+            selected_control,
+        }
+    }
+
     /// Returns the canonical candidate controls.
     #[must_use]
     pub fn candidate_controls(&self) -> &[EventId] {
@@ -63,7 +76,7 @@ impl ControllerEquivocationAlert {
 }
 
 /// Validated canonical-control reorganization details.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CanonicalControlReorganizationAlert {
     previous_tip: EventId,
     new_tip: EventId,
@@ -125,7 +138,7 @@ impl CanonicalControlReorganizationAlert {
 }
 
 /// Validated device-equivocation and descendant-quarantine details.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DeviceEquivocationAlert {
     actor_id: ActorId,
     first_sequence: u64,
@@ -180,7 +193,7 @@ impl DeviceEquivocationAlert {
 }
 
 /// Validated carrier evidence for a potentially cloned device key.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PotentialClonedDeviceKeyAlert {
     actor_id: ActorId,
     first_sequence: u64,
@@ -225,7 +238,7 @@ impl PotentialClonedDeviceKeyAlert {
 }
 
 /// Validated checkpoint mismatch details.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CheckpointMismatchAlert {
     descriptor_event_id: EventId,
     code: DiagnosticCode,

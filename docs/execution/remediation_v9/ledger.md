@@ -246,11 +246,12 @@ successfully validated complete report. Constructor failure or an incomplete
 candidate fails the permit, forfeits both ledgers, returns a typed error, and
 cannot refund reserved target capacity or fabricate a completion result.
 
-The active boundary checkpoint checks cancellation at each named complete
-pass immediately before capacity consumption. Exact reservation `N-1`, `N`,
-and `N+1` tests, every cancellation position, both fallback stop causes, and
-checked planning overflow prove that no unreserved pass work begins and the
-original typed stop is preserved.
+The completed control-continuity checkpoint charges ancestry construction,
+parent and member comparisons, continuity validation, and propagation before
+every visit. The active branch-resource checkpoint replaces linear canonical
+membership and alert suppression with ordered sets, shares cached accepted
+state, and charges branch, cache-key, candidate, dependency, and ready-queue
+traversal before access.
 
 The authority projection is monotonic from `checkpoint_expectations_corrected` to
 `distribution_complete`. It records 148 requirements now and at completion,
@@ -281,7 +282,7 @@ conformance identity is the same canonical and serialized output pair above.
 The opaque private finalization record binds the exact seven-candidate
 `step_1227` through `step_1233` chain, two-tier settlement counts, typed-stop
 coverage, mutation families, and full private result identities without
-carrying private paths or execution details. There are 50 checkpoints including
+carrying private paths or execution details. There are 49 checkpoints including
 the active checkpoint remaining through
 `step_1287`.
 

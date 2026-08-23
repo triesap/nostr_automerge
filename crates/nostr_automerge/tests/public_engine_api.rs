@@ -3521,7 +3521,8 @@ fn control_selection_and_transition_have_distinct_charges() {
     assert!(first_work.get(WorkCounter::Control) >= 2);
     let source = include_str!("../src/reference/evaluate.rs");
     assert!(source.contains("evaluate_branch_table("));
-    assert!(source.contains("select_valid_outcomes_with_alert(parent_id, outcomes)"));
+    assert!(source.contains("let mut valid_children = Vec::new();"));
+    assert!(source.contains("ControllerEquivocationAlert::from_validated_parts("));
 }
 
 #[test]

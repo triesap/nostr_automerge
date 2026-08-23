@@ -70,7 +70,7 @@ impl PriorChangeKnowledge {
 #[derive(Clone)]
 pub(crate) struct EpochEvaluationInput<'a> {
     selected_control: ControlEnvelope,
-    accepted_base: AcceptedEpochState,
+    accepted_base: Arc<AcceptedEpochState>,
     candidate_changes: BTreeMap<ChangeHash, ChangeCandidate>,
     raw_changes: Cow<'a, BTreeMap<ChangeHash, Arc<[u8]>>>,
     canonical_ancestry: Vec<ControlEnvelope>,
@@ -152,7 +152,7 @@ impl EpochEvaluationInput<'static> {
         }
         Ok(Self {
             selected_control,
-            accepted_base,
+            accepted_base: Arc::new(accepted_base),
             candidate_changes: candidates,
             raw_changes: Cow::Owned(raw_changes),
             canonical_ancestry,
@@ -164,31 +164,54 @@ impl EpochEvaluationInput<'static> {
 impl<'a> EpochEvaluationInput<'a> {
     pub(crate) fn new_with_borrowed_raw_and_prior(
         selected_control: ControlEnvelope,
-        accepted_base: AcceptedEpochState,
+        accepted_base: Arc<AcceptedEpochState>,
         candidate_changes: impl IntoIterator<Item = ChangeCandidate>,
         raw_changes: &'a BTreeMap<ChangeHash, Arc<[u8]>>,
         canonical_ancestry: Vec<ControlEnvelope>,
         prior_change_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
     ) -> Result<Self, EpochEvaluationInputError> {
-        let mut input = EpochEvaluationInput::new_with_raw_and_prior(
+        let declared_heads = selected_control.base_heads().collect::<BTreeSet<_>>();
+        if declared_heads != *accepted_base.frontier_heads() {
+            return Err(EpochEvaluationInputError::BaseFrontierMismatch);
+        }
+        let expected_parent = canonical_ancestry.last().map(ControlEnvelope::event_id);
+        if selected_control.parent() != expected_parent
+            || canonical_ancestry.windows(2).any(|pair| {
+                pair[1].parent() != Some(pair[0].event_id())
+                    || pair[0]
+                        .sequence()
+                        .checked_add(1)
+                        .is_none_or(|sequence| pair[1].sequence() != sequence)
+            })
+        {
+            return Err(EpochEvaluationInputError::AncestryMismatch);
+        }
+        let selected_id = selected_control.event_id();
+        let mut candidates = BTreeMap::new();
+        for candidate in candidate_changes {
+            if candidate.control_id != selected_id {
+                return Err(EpochEvaluationInputError::CandidateControlMismatch);
+            }
+            let hash = candidate.change_hash;
+            if candidates.insert(hash, candidate).is_some() {
+                return Err(EpochEvaluationInputError::DuplicateCandidate);
+            }
+        }
+        Ok(Self {
             selected_control,
             accepted_base,
-            candidate_changes
-                .into_iter()
-                .map(|candidate| (candidate, None)),
-            BTreeMap::new(),
+            candidate_changes: candidates,
+            raw_changes: Cow::Borrowed(raw_changes),
             canonical_ancestry,
             prior_change_knowledge,
-        )?;
-        input.raw_changes = Cow::Borrowed(raw_changes);
-        Ok(input)
+        })
     }
 
     pub(crate) const fn selected_control(&self) -> &ControlEnvelope {
         &self.selected_control
     }
 
-    pub(crate) const fn accepted_base(&self) -> &AcceptedEpochState {
+    pub(crate) fn accepted_base(&self) -> &AcceptedEpochState {
         &self.accepted_base
     }
 
