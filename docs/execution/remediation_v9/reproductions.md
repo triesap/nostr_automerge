@@ -47,7 +47,7 @@ external-build launcher.
 | `FINDING_081` | The enabled constructor regression independently mutates every incomplete report field family and rejects nonempty protocol state, mismatched stop evidence, and noncanonical empty digests. | 85 (public Rust closed), 86 |
 | `FINDING_082` | The enabled regression proves that incomplete current or previous reports return before every summary, relationship, alert-prefix, and final-construction observation; complete comparison is charged per item and preserves its typed stop. | 85 (public reevaluation path closed), 87 |
 | `FINDING_083` | The enabled regression preserves budget exhaustion after one stateful cancellation observation; carrier-claim charging now propagates either typed stop without re-querying. | 84 (public carrier path closed), 89 |
-| `FINDING_084` | Checkpoint assembly sorts the caller's target-sized chunk slice before observing immediate cancellation. | 82, 89 |
+| `FINDING_084` | The enabled checkpoint regression proves immediate cancellation occurs before the caller's chunk slice is inspected or reordered; the remaining checkpoint graph and operation accounting closes in `step_1241`. | 82, 89 |
 
 These twelve cases cover all eleven reviewed public Rust findings. They are
 rolling remediation evidence, not conformance fixtures. Each closing

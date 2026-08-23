@@ -84,7 +84,10 @@ OTHER_SURFACES = (
 LEGITIMATE_PUBLIC_ROUTES = frozenset(
     {
         "../..",
+        "crates/nostr_automerge/src/checkpoint/assemble.rs",
         "crates/nostr_automerge/src/checkpoint/authorize.rs",
+        "crates/nostr_automerge/src/checkpoint/join.rs",
+        "crates/nostr_automerge/src/checkpoint/merkle.rs",
         "crates/nostr_automerge/src/checkpoint/mod.rs",
         "crates/nostr_automerge/src/checkpoint/verify_history.rs",
         "crates/nostr_automerge/src/checkpoint/verify.rs",

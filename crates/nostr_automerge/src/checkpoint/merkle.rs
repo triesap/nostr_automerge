@@ -87,48 +87,95 @@ pub fn verify_proof(
     proof: &[ProofStep],
     root: [u8; 32],
 ) -> Result<(), MerkleError> {
-    fn sides(index: usize, count: usize, output: &mut Vec<Side>) {
-        if count == 1 {
-            return;
+    match verify_proof_with(index, count, leaf, proof, root, &mut || {
+        Ok::<(), core::convert::Infallible>(())
+    }) {
+        Ok(result) => result,
+        Err(error) => match error {},
+    }
+}
+
+pub(crate) fn verify_proof_metered(
+    index: u32,
+    count: u32,
+    leaf: [u8; 32],
+    proof: &[ProofStep],
+    root: [u8; 32],
+    budget: &mut crate::WorkBudget,
+    cancellation: &impl crate::CancellationCheck,
+) -> Result<Result<(), MerkleError>, crate::Completion> {
+    verify_proof_with(index, count, leaf, proof, root, &mut || {
+        if cancellation.is_cancelled() {
+            return Err(crate::Completion::Cancelled);
         }
+        budget
+            .charge_checkpoint_items(1)
+            .map_err(|_| crate::Completion::BudgetExhausted)
+    })
+}
+
+fn verify_proof_with<E>(
+    index: u32,
+    count: u32,
+    leaf: [u8; 32],
+    proof: &[ProofStep],
+    root: [u8; 32],
+    visit: &mut impl FnMut() -> Result<(), E>,
+) -> Result<Result<(), MerkleError>, E> {
+    fn sides<E>(
+        index: usize,
+        count: usize,
+        output: &mut Vec<Side>,
+        visit: &mut impl FnMut() -> Result<(), E>,
+    ) -> Result<(), E> {
+        if count == 1 {
+            return Ok(());
+        }
+        visit()?;
         let split = count.next_power_of_two() / 2;
         if index < split {
-            sides(index, split, output);
+            sides(index, split, output, visit)?;
+            visit()?;
             output.push(Side::Right);
         } else {
-            sides(index - split, count - split, output);
+            sides(index - split, count - split, output, visit)?;
+            visit()?;
             output.push(Side::Left);
         }
+        Ok(())
     }
     if count == 0 {
-        return Err(MerkleError::Proof);
+        return Ok(Err(MerkleError::Proof));
     }
     if count > super::MAX_CHUNK_COUNT {
-        return Err(MerkleError::Proof);
+        return Ok(Err(MerkleError::Proof));
     }
     if index >= count {
-        return Err(MerkleError::Proof);
+        return Ok(Err(MerkleError::Proof));
     }
     let mut expected = Vec::new();
-    sides(index as usize, count as usize, &mut expected);
+    sides(index as usize, count as usize, &mut expected, visit)?;
     if expected.len() != proof.len() {
-        return Err(MerkleError::Proof);
+        return Ok(Err(MerkleError::Proof));
     }
-    if expected
-        .iter()
-        .zip(proof)
-        .any(|(side, step)| *side != step.side)
-    {
-        return Err(MerkleError::Proof);
+    for (side, step) in expected.iter().zip(proof) {
+        visit()?;
+        if *side != step.side {
+            return Ok(Err(MerkleError::Proof));
+        }
     }
-    let actual = proof.iter().fold(leaf, |value, step| match step.side {
-        Side::Left => node(step.hash, value),
-        Side::Right => node(value, step.hash),
-    });
+    let mut actual = leaf;
+    for step in proof {
+        visit()?;
+        actual = match step.side {
+            Side::Left => node(step.hash, actual),
+            Side::Right => node(actual, step.hash),
+        };
+    }
     if actual == root {
-        Ok(())
+        Ok(Ok(()))
     } else {
-        Err(MerkleError::Proof)
+        Ok(Err(MerkleError::Proof))
     }
 }
 
@@ -281,6 +328,58 @@ mod tests {
                 maximum_root,
             ),
             Ok(())
+        );
+    }
+
+    #[test]
+    fn metered_proof_visits_stop_at_the_exact_boundary() {
+        let leaves = [[1; 32], [2; 32], [3; 32]];
+        let root = super::merkle_root(&leaves).unwrap_or([0; 32]);
+        let proof = [
+            super::ProofStep::right(leaves[1]),
+            super::ProofStep::right(leaves[2]),
+        ];
+        let mut exact = crate::WorkBudget::new(0, 8);
+        assert_eq!(
+            super::verify_proof_metered(
+                0,
+                3,
+                leaves[0],
+                &proof,
+                root,
+                &mut exact,
+                &crate::NeverCancelled,
+            ),
+            Ok(Ok(()))
+        );
+        assert_eq!(exact.consumed().get(crate::WorkCounter::CheckpointItem), 8);
+
+        let mut one_short = crate::WorkBudget::new(0, 7);
+        assert_eq!(
+            super::verify_proof_metered(
+                0,
+                3,
+                leaves[0],
+                &proof,
+                root,
+                &mut one_short,
+                &crate::NeverCancelled,
+            ),
+            Err(crate::Completion::BudgetExhausted)
+        );
+        assert_eq!(
+            one_short.consumed().get(crate::WorkCounter::CheckpointItem),
+            7
+        );
+
+        let mut cancelled = crate::WorkBudget::new(0, 8);
+        assert_eq!(
+            super::verify_proof_metered(0, 3, leaves[0], &proof, root, &mut cancelled, &|| true,),
+            Err(crate::Completion::Cancelled)
+        );
+        assert_eq!(
+            cancelled.consumed().get(crate::WorkCounter::CheckpointItem),
+            0
         );
     }
 }

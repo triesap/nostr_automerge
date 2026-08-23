@@ -1,4 +1,4 @@
-use super::{CheckpointChunk, CheckpointDescriptor, leaf_hash, verify_proof};
+use super::{CheckpointChunk, CheckpointDescriptor, leaf_hash};
 use crate::{CancellationCheck, WorkBudget};
 use sha2::{Digest, Sha256};
 
@@ -26,13 +26,27 @@ pub fn assemble_chunks<C: CancellationCheck>(
     budget: &mut WorkBudget,
     cancellation: &C,
 ) -> Result<Vec<u8>, AssemblyError> {
+    assemble_ordered_chunks(descriptor, chunks, budget, cancellation)
+}
+
+pub(crate) fn assemble_ordered_chunks<C: CancellationCheck>(
+    descriptor: &CheckpointDescriptor,
+    chunks: &[CheckpointChunk],
+    budget: &mut WorkBudget,
+    cancellation: &C,
+) -> Result<Vec<u8>, AssemblyError> {
     descriptor
         .validate_arithmetic()
         .map_err(|_| AssemblyError::Chunks)?;
     if chunks.len() != descriptor.chunk_count as usize {
         return Err(AssemblyError::Chunks);
     }
-    chunks.sort_by_key(|chunk| chunk.index);
+    if cancellation.is_cancelled() {
+        return Err(AssemblyError::Cancelled);
+    }
+    budget
+        .charge_checkpoint_bytes(descriptor.raw_size)
+        .map_err(|_| AssemblyError::Budget)?;
     let mut output = Vec::with_capacity(
         usize::try_from(descriptor.raw_size).map_err(|_| AssemblyError::Chunks)?,
     );
@@ -51,28 +65,45 @@ pub fn assemble_chunks<C: CancellationCheck>(
             return Err(AssemblyError::Chunks);
         }
         budget
-            .charge_checkpoint_items(
-                1_u64.saturating_add(u64::try_from(chunk.proof.len()).unwrap_or(u64::MAX)),
-            )
+            .charge_checkpoint_items(1)
             .map_err(|_| AssemblyError::Budget)?;
         budget
-            .charge_checkpoint_bytes(chunk.data.len() as u64)
+            .charge_checkpoint_bytes(u64::try_from(chunk.data.len()).unwrap_or(u64::MAX))
             .map_err(|_| AssemblyError::Budget)?;
         let raw_hash: [u8; 32] = Sha256::digest(&chunk.data).into();
         let leaf = leaf_hash(chunk.index, chunk.count, raw_hash);
-        verify_proof(
+        super::merkle::verify_proof_metered(
             chunk.index,
             chunk.count,
             leaf,
             &chunk.proof,
             descriptor.chunk_root,
+            budget,
+            cancellation,
         )
+        .map_err(|stop| match stop {
+            crate::Completion::BudgetExhausted => AssemblyError::Budget,
+            crate::Completion::Cancelled => AssemblyError::Cancelled,
+            crate::Completion::Complete => AssemblyError::Proof,
+        })?
         .map_err(|_| AssemblyError::Proof)?;
+        if cancellation.is_cancelled() {
+            return Err(AssemblyError::Cancelled);
+        }
+        budget
+            .charge_checkpoint_bytes(u64::try_from(chunk.data.len()).unwrap_or(u64::MAX))
+            .map_err(|_| AssemblyError::Budget)?;
         output.extend_from_slice(&chunk.data);
     }
     if output.len() as u64 != descriptor.raw_size {
         return Err(AssemblyError::SnapshotSize);
     }
+    if cancellation.is_cancelled() {
+        return Err(AssemblyError::Cancelled);
+    }
+    budget
+        .charge_checkpoint_bytes(u64::try_from(output.len()).unwrap_or(u64::MAX))
+        .map_err(|_| AssemblyError::Budget)?;
     if <[u8; 32]>::from(Sha256::digest(&output)) != *descriptor.snapshot_hash.as_bytes() {
         return Err(AssemblyError::SnapshotHash);
     }
@@ -105,25 +136,28 @@ mod tests {
         let root = super::super::merkle_root(&[l0, l1]).unwrap_or([0; 32]);
         let mut chunks = vec![
             CheckpointChunk {
-                index: 1,
-                count: 2,
-                data: b"b".to_vec(),
-                proof: vec![super::super::ProofStep::left(l0)],
-            },
-            CheckpointChunk {
                 index: 0,
                 count: 2,
                 data: b"a".to_vec(),
                 proof: vec![super::super::ProofStep::right(l1)],
             },
+            CheckpointChunk {
+                index: 1,
+                count: 2,
+                data: b"b".to_vec(),
+                proof: vec![super::super::ProofStep::left(l0)],
+            },
         ];
-        let mut budget = WorkBudget::new(2, 4);
+        let mut budget = WorkBudget::new(8, 10);
         assert_eq!(
             assemble_chunks(&descriptor(root), &mut chunks, &mut budget, &NeverCancelled),
             Ok(b"ab".to_vec())
         );
-        assert_eq!(budget.consumed().get(crate::WorkCounter::CheckpointByte), 2);
-        assert_eq!(budget.consumed().get(crate::WorkCounter::CheckpointItem), 4);
+        assert_eq!(budget.consumed().get(crate::WorkCounter::CheckpointByte), 8);
+        assert_eq!(
+            budget.consumed().get(crate::WorkCounter::CheckpointItem),
+            10
+        );
         assert_eq!(budget.consumed().get(crate::WorkCounter::DecodeByte), 0);
         assert_eq!(budget.consumed().get(crate::WorkCounter::GraphNode), 0);
         let mut budget = WorkBudget::new(1, 2);
@@ -145,7 +179,7 @@ mod tests {
         value.raw_size = 1;
         value.chunk_count = 1;
         value.snapshot_hash = SnapshotHash::from_bytes([0; 32]);
-        let mut budget = WorkBudget::new(1, 1);
+        let mut budget = WorkBudget::new(4, 1);
         assert_eq!(
             assemble_chunks(&value, &mut chunk, &mut budget, &NeverCancelled),
             Err(AssemblyError::SnapshotHash)
@@ -193,7 +227,7 @@ mod tests {
             assemble_chunks(
                 &value,
                 &mut oversized_final,
-                &mut WorkBudget::new(8, 8),
+                &mut WorkBudget::new(11, 10),
                 &NeverCancelled
             ),
             Err(AssemblyError::SnapshotSize)
@@ -201,7 +235,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "expected to fail until FINDING_084 closes"]
     fn finding_084_checkpoint_sort_stops_before_cancelled_work() {
         let l0 = leaf_hash(0, 2, Sha256::digest(b"a").into());
         let l1 = leaf_hash(1, 2, Sha256::digest(b"b").into());

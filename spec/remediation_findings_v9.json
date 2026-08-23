@@ -384,7 +384,7 @@
         {
           "kind": "public_source",
           "path": "crates/nostr_automerge/src/checkpoint/assemble.rs",
-          "locator": "chunks.sort_by_key(|chunk| chunk.index)"
+          "locator": "pub(crate) fn assemble_ordered_chunks"
         },
         {
           "kind": "public_source",

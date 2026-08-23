@@ -10,6 +10,7 @@ pub(crate) mod reference_state;
 mod verify;
 mod verify_history;
 
+pub(crate) use assemble::assemble_ordered_chunks;
 pub use assemble::{AssemblyError, assemble_chunks};
 pub use chunk::{CheckpointChunk, ChunkError};
 pub use descriptor::{CheckpointDescriptor, DescriptorError};

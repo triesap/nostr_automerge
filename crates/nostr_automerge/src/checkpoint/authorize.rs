@@ -16,29 +16,43 @@ pub(crate) enum DescriptorControlOutcome {
     RoleDenied,
 }
 
+#[cfg(test)]
 pub(crate) fn authorize_descriptor(
     descriptor: &ValidatedCheckpointDescriptorCarrier,
     state: ReferencedControlState<'_>,
 ) -> DescriptorControlOutcome {
+    match authorize_descriptor_with(descriptor, state, &mut || {
+        Ok::<(), core::convert::Infallible>(())
+    }) {
+        Ok(outcome) => outcome,
+        Err(error) => match error {},
+    }
+}
+
+pub(crate) fn authorize_descriptor_with<E>(
+    descriptor: &ValidatedCheckpointDescriptorCarrier,
+    state: ReferencedControlState<'_>,
+    visit_member: &mut impl FnMut() -> Result<(), E>,
+) -> Result<DescriptorControlOutcome, E> {
     match state {
         ReferencedControlState::Canonical(control) => {
-            if control.members().iter().any(|grant| {
-                grant.device == descriptor.author() && grant.roles.contains(&Role::Checkpoint)
-            }) {
-                DescriptorControlOutcome::CanonicalAuthorized
-            } else {
-                DescriptorControlOutcome::RoleDenied
+            for grant in control.members() {
+                visit_member()?;
+                if grant.device == descriptor.author() && grant.roles.contains(&Role::Checkpoint) {
+                    return Ok(DescriptorControlOutcome::CanonicalAuthorized);
+                }
             }
+            Ok(DescriptorControlOutcome::RoleDenied)
         }
-        ReferencedControlState::Missing => DescriptorControlOutcome::Missing,
-        ReferencedControlState::Pending(_) => DescriptorControlOutcome::Pending,
-        ReferencedControlState::NoncanonicalValid(_) => DescriptorControlOutcome::Noncanonical,
-        ReferencedControlState::WrongKind => DescriptorControlOutcome::WrongKind,
-        ReferencedControlState::WrongCoordinate => DescriptorControlOutcome::WrongCoordinate,
-        ReferencedControlState::StaticInvalid => DescriptorControlOutcome::StaticInvalid,
-        ReferencedControlState::DynamicInvalid(_) => DescriptorControlOutcome::DynamicInvalid,
+        ReferencedControlState::Missing => Ok(DescriptorControlOutcome::Missing),
+        ReferencedControlState::Pending(_) => Ok(DescriptorControlOutcome::Pending),
+        ReferencedControlState::NoncanonicalValid(_) => Ok(DescriptorControlOutcome::Noncanonical),
+        ReferencedControlState::WrongKind => Ok(DescriptorControlOutcome::WrongKind),
+        ReferencedControlState::WrongCoordinate => Ok(DescriptorControlOutcome::WrongCoordinate),
+        ReferencedControlState::StaticInvalid => Ok(DescriptorControlOutcome::StaticInvalid),
+        ReferencedControlState::DynamicInvalid(_) => Ok(DescriptorControlOutcome::DynamicInvalid),
         ReferencedControlState::UnsupportedRevision => {
-            DescriptorControlOutcome::UnsupportedRevision
+            Ok(DescriptorControlOutcome::UnsupportedRevision)
         }
     }
 }

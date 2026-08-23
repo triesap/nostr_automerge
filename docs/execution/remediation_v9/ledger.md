@@ -246,12 +246,13 @@ successfully validated complete report. Constructor failure or an incomplete
 candidate fails the permit, forfeits both ledgers, returns a typed error, and
 cannot refund reserved target capacity or fabricate a completion result.
 
-The completed control-continuity checkpoint charges ancestry construction,
-parent and member comparisons, continuity validation, and propagation before
-every visit. The active branch-resource checkpoint replaces linear canonical
-membership and alert suppression with ordered sets, shares cached accepted
-state, and charges branch, cache-key, candidate, dependency, and ready-queue
-traversal before access.
+The completed branch-resource checkpoint replaces linear canonical membership
+and alert suppression with ordered sets, shares cached accepted state, and
+charges branch, cache-key, candidate, dependency, and ready-queue traversal
+before access. The active checkpoint-resource checkpoint preserves caller
+chunk order, joins through charged indexed slots, visits every proof operation,
+and charges snapshot allocation, hashing, copying, accepted-history copies, and
+report copies before their work.
 
 The authority projection is monotonic from `checkpoint_expectations_corrected` to
 `distribution_complete`. It records 148 requirements now and at completion,
@@ -282,15 +283,15 @@ conformance identity is the same canonical and serialized output pair above.
 The opaque private finalization record binds the exact seven-candidate
 `step_1227` through `step_1233` chain, two-tier settlement counts, typed-stop
 coverage, mutation families, and full private result identities without
-carrying private paths or execution details. There are 49 checkpoints including
+carrying private paths or execution details. There are 48 checkpoints including
 the active checkpoint remaining through
 `step_1287`.
 
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 `FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`
-regressions and the typed report-revision and incomplete-report cases are
-fixed; two exact behavior cases remain open.
+regressions and the typed report-revision, incomplete-report, and checkpoint
+cancellation cases are fixed; one exact behavior case remains open.
 `FINDING_080` remains held. The maximum status
 remains `implementation_remediation_required` while the refactor sequence is
 in progress.

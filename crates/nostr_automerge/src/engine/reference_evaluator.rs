@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::carrier::VerifiedCarrier;
-use crate::checkpoint::authorize::{DescriptorControlOutcome, authorize_descriptor};
+use crate::checkpoint::authorize::{DescriptorControlOutcome, authorize_descriptor_with};
 use crate::checkpoint::join::{JoinError, join_chunks};
 use crate::checkpoint::reference_state::resolve_referenced_descriptor;
 use crate::checkpoint::{
@@ -1629,11 +1629,7 @@ fn verify_prepared_checkpoints(
         let control_outcome = inputs.authorizations.get(&descriptor_id).copied();
         let downstream = checkpoint_after_authorization(control_outcome, || {
             if !coverage_controls_accounted {
-                charge_checkpoint_work(
-                    budget,
-                    cancellation,
-                    u64::try_from(inputs.canonical_controls.len()).unwrap_or(u64::MAX),
-                )?;
+                charge_checkpoint_work(budget, cancellation, 1)?;
                 coverage_controls_accounted = true;
                 observer.authorized_precharge();
             }
@@ -1662,43 +1658,40 @@ fn verify_prepared_checkpoints(
                 cancellation,
                 observer,
             )?;
-            let coverage_ref = coverage_result.as_ref().ok();
-            let accepted_ref = accepted_result.as_ref().ok();
-            let result_work = coverage_ref
-                .map_or(0, |coverage| coverage.carrier_event_ids.len())
-                .saturating_add(accepted_ref.map_or(0, std::collections::BTreeSet::len))
-                .saturating_add(commitments.heads.len());
-            charge_checkpoint_work(
-                budget,
-                cancellation,
-                u64::try_from(result_work).unwrap_or(u64::MAX),
-            )?;
-            let coverage = coverage_ref.cloned().unwrap_or_default();
-            let accepted = accepted_ref.cloned().unwrap_or_default();
-            let history_refusal = coverage_result
-                .as_ref()
-                .err()
-                .or_else(|| accepted_result.as_ref().err())
-                .copied();
-            let status = history_refusal.map_or_else(
-                || {
-                    verify_one_checkpoint(
-                        descriptor,
-                        Some(&chunk_set),
-                        &coverage.change_hashes,
-                        &accepted,
-                        budget,
-                        cancellation,
-                        observer,
-                    )
-                },
-                |error| history_refusal_status(&error),
-            );
+            let status = match (coverage_result.as_ref(), accepted_result.as_ref()) {
+                (Ok(coverage), Ok(accepted)) => verify_one_checkpoint(
+                    descriptor,
+                    Some(&chunk_set),
+                    &coverage.change_hashes,
+                    accepted,
+                    budget,
+                    cancellation,
+                    observer,
+                ),
+                (Err(error), _) | (_, Err(error)) => history_refusal_status(error),
+            };
+            let coverage = coverage_result.ok().unwrap_or_default();
+            let accepted = accepted_result.ok().unwrap_or_default();
+            let mut heads = Vec::new();
+            for head in &commitments.heads {
+                charge_checkpoint_work(budget, cancellation, 1)?;
+                heads.push(*head);
+            }
+            let mut historical_carriers = Vec::new();
+            for event_id in coverage.carrier_event_ids {
+                charge_checkpoint_work(budget, cancellation, 1)?;
+                historical_carriers.push(event_id);
+            }
+            let mut accepted_at_control = Vec::new();
+            for change_hash in accepted {
+                charge_checkpoint_work(budget, cancellation, 1)?;
+                accepted_at_control.push(change_hash);
+            }
             Ok::<_, CheckpointWorkStop>((
                 chunk_events,
-                commitments.heads.iter().copied().collect::<Vec<_>>(),
-                coverage.carrier_event_ids.into_iter().collect::<Vec<_>>(),
-                accepted.into_iter().collect::<Vec<_>>(),
+                heads,
+                historical_carriers,
+                accepted_at_control,
                 status,
             ))
         });
@@ -2003,14 +1996,14 @@ fn verify_one_checkpoint(
     if budget.charge_checkpoint_items(1).is_err() {
         return CheckpointVerificationStatus::BudgetExhausted;
     }
-    let mut chunks = match chunks {
-        Some(Ok(chunks)) => chunks.clone(),
+    let chunks = match chunks {
+        Some(Ok(chunks)) => chunks,
         Some(Err(error)) => return join_status(*error),
         None => return CheckpointVerificationStatus::MissingChunk,
     };
-    let bytes = match crate::checkpoint::assemble_chunks(
+    let bytes = match crate::checkpoint::assemble_ordered_chunks(
         descriptor.descriptor(),
-        &mut chunks,
+        chunks,
         budget,
         cancellation,
     ) {
@@ -2088,6 +2081,8 @@ const fn join_status(error: JoinError) -> CheckpointVerificationStatus {
         JoinError::DuplicateIndex => CheckpointVerificationStatus::DuplicateChunk,
         JoinError::MissingIndex => CheckpointVerificationStatus::MissingChunk,
         JoinError::Size => CheckpointVerificationStatus::ChunkSizeMismatch,
+        JoinError::Budget => CheckpointVerificationStatus::BudgetExhausted,
+        JoinError::Cancelled => CheckpointVerificationStatus::Cancelled,
     }
 }
 
@@ -2126,12 +2121,12 @@ fn checkpoint_accepted_history(
     let Some(state) = accepted_at_control.get(&descriptor.control_id()) else {
         return Ok(Err(HistoryVerificationError::UnknownControl));
     };
-    charge_checkpoint_work(
-        budget,
-        cancellation,
-        u64::try_from(state.accepted_closure().len()).unwrap_or(u64::MAX),
-    )?;
-    Ok(Ok(state.accepted_closure().clone()))
+    let mut accepted = std::collections::BTreeSet::new();
+    for change_hash in state.accepted_closure() {
+        charge_checkpoint_work(budget, cancellation, 1)?;
+        accepted.insert(*change_hash);
+    }
+    Ok(Ok(accepted))
 }
 
 fn checkpoint_carrier_coverage(
@@ -2202,7 +2197,11 @@ fn checkpoint_chunk_set(
             chunks.push(chunk.as_ref());
         }
     }
-    Ok(join_chunks(descriptor, chunks))
+    match join_chunks(descriptor, chunks, budget, cancellation) {
+        Err(JoinError::Budget) => Err(CheckpointWorkStop::Budget),
+        Err(JoinError::Cancelled) => Err(CheckpointWorkStop::Cancelled),
+        result => Ok(result),
+    }
 }
 
 fn checkpoint_authorizations(
@@ -2230,14 +2229,10 @@ fn checkpoint_authorizations(
                 control_dispositions,
                 statefully_valid_controls,
             );
-            let member_work = match state {
-                ReferencedControlState::Canonical(control) => {
-                    u64::try_from(control.members().len()).unwrap_or(u64::MAX)
-                }
-                _ => 0,
-            };
-            charge_checkpoint_work(budget, cancellation, member_work)?;
-            authorizations.insert(*descriptor_id, authorize_descriptor(descriptor, state));
+            let outcome = authorize_descriptor_with(descriptor, state, &mut || {
+                charge_checkpoint_work(budget, cancellation, 1)
+            })?;
+            authorizations.insert(*descriptor_id, outcome);
         }
     }
     Ok(authorizations)

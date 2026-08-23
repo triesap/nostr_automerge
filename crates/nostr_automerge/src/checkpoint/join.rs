@@ -1,9 +1,8 @@
-use std::collections::BTreeMap;
-
 use crate::carrier::checkpoint_chunk::ValidatedCheckpointChunkCarrier;
 use crate::carrier::checkpoint_descriptor::ValidatedCheckpointDescriptorCarrier;
 
 use super::CheckpointChunk;
+use crate::{CancellationCheck, WorkBudget};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum JoinError {
@@ -14,15 +13,25 @@ pub(crate) enum JoinError {
     DuplicateIndex,
     MissingIndex,
     Size,
+    Budget,
+    Cancelled,
 }
 
 pub(crate) fn join_chunks<'a>(
     descriptor: &ValidatedCheckpointDescriptorCarrier,
     chunks: impl IntoIterator<Item = &'a ValidatedCheckpointChunkCarrier>,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
 ) -> Result<Vec<CheckpointChunk>, JoinError> {
     let commitments = descriptor.descriptor();
-    let mut by_index = BTreeMap::new();
+    let count = usize::try_from(commitments.chunk_count).map_err(|_| JoinError::Count)?;
+    let mut by_index = Vec::new();
+    for _ in 0..count {
+        charge_join_item(budget, cancellation)?;
+        by_index.push(None);
+    }
     for carrier in chunks {
+        charge_join_item(budget, cancellation)?;
         if carrier.author() != descriptor.author() {
             return Err(JoinError::Author);
         }
@@ -51,16 +60,51 @@ pub(crate) fn join_chunks<'a>(
         if u64::try_from(chunk.data.len()).map_err(|_| JoinError::Size)? != expected_size {
             return Err(JoinError::Size);
         }
-        if by_index.insert(chunk.index, chunk.clone()).is_some() {
+        let mut proof = Vec::new();
+        for step in &chunk.proof {
+            charge_join_item(budget, cancellation)?;
+            proof.push(*step);
+        }
+        if cancellation.is_cancelled() {
+            return Err(JoinError::Cancelled);
+        }
+        budget
+            .charge_checkpoint_bytes(u64::try_from(chunk.data.len()).map_err(|_| JoinError::Size)?)
+            .map_err(|_| JoinError::Budget)?;
+        let slot = by_index
+            .get_mut(usize::try_from(chunk.index).map_err(|_| JoinError::Count)?)
+            .ok_or(JoinError::MissingIndex)?;
+        if slot.is_some() {
             return Err(JoinError::DuplicateIndex);
         }
+        *slot = Some(CheckpointChunk {
+            index: chunk.index,
+            count: chunk.count,
+            data: chunk.data.clone(),
+            proof,
+        });
     }
-    if by_index.len() != usize::try_from(commitments.chunk_count).map_err(|_| JoinError::Count)?
-        || by_index.keys().copied().ne(0..commitments.chunk_count)
-    {
-        return Err(JoinError::MissingIndex);
+    let mut ordered = Vec::new();
+    for chunk in by_index {
+        charge_join_item(budget, cancellation)?;
+        let Some(chunk) = chunk else {
+            return Err(JoinError::MissingIndex);
+        };
+        ordered.push(chunk);
     }
-    Ok(by_index.into_values().collect())
+    Ok(ordered)
+}
+
+fn charge_join_item(
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<(), JoinError> {
+    if cancellation.is_cancelled() {
+        return Err(JoinError::Cancelled);
+    }
+    budget
+        .charge_checkpoint_items(1)
+        .map_err(|_| JoinError::Budget)
 }
 
 #[cfg(test)]
@@ -75,6 +119,18 @@ mod tests {
         ChangeHash, ChunkHash, ControllerPublicKey, DevicePublicKey, DocumentCoordinate,
         DocumentId, EventId, SnapshotHash,
     };
+
+    fn join<'a>(
+        descriptor: &ValidatedCheckpointDescriptorCarrier,
+        chunks: impl IntoIterator<Item = &'a ValidatedCheckpointChunkCarrier>,
+    ) -> Result<Vec<CheckpointChunk>, JoinError> {
+        join_chunks(
+            descriptor,
+            chunks,
+            &mut crate::WorkBudget::new(u64::MAX, u64::MAX),
+            &crate::NeverCancelled,
+        )
+    }
 
     #[test]
     fn checkpoint_join_requires_one_coherent_signed_set() {
@@ -120,23 +176,47 @@ mod tests {
         let first = make(10, 0, vec![1, 2]);
         let second = make(11, 1, vec![3]);
         assert_eq!(
-            join_chunks(&descriptor, [&second, &first]).map(|chunks| chunks
+            join(&descriptor, [&second, &first]).map(|chunks| chunks
                 .into_iter()
                 .map(|chunk| chunk.index)
                 .collect::<Vec<_>>()),
             Ok(vec![0, 1])
         );
+        let mut exact = crate::WorkBudget::new(3, 6);
         assert_eq!(
-            join_chunks(&descriptor, [&first]),
-            Err(JoinError::MissingIndex)
+            join_chunks(
+                &descriptor,
+                [&second, &first],
+                &mut exact,
+                &crate::NeverCancelled,
+            )
+            .map(|chunks| chunks.len()),
+            Ok(2)
+        );
+        assert_eq!(exact.consumed().get(crate::WorkCounter::CheckpointByte), 3);
+        assert_eq!(exact.consumed().get(crate::WorkCounter::CheckpointItem), 6);
+        let mut one_short = crate::WorkBudget::new(3, 5);
+        assert_eq!(
+            join_chunks(
+                &descriptor,
+                [&second, &first],
+                &mut one_short,
+                &crate::NeverCancelled,
+            ),
+            Err(JoinError::Budget)
         );
         assert_eq!(
-            join_chunks(&descriptor, [&first, &first]),
+            one_short.consumed().get(crate::WorkCounter::CheckpointItem),
+            5
+        );
+        assert_eq!(join(&descriptor, [&first]), Err(JoinError::MissingIndex));
+        assert_eq!(
+            join(&descriptor, [&first, &first]),
             Err(JoinError::DuplicateIndex)
         );
         let wrong_size = make(12, 1, vec![3, 4]);
         assert_eq!(
-            join_chunks(&descriptor, [&first, &wrong_size]),
+            join(&descriptor, [&first, &wrong_size]),
             Err(JoinError::Size)
         );
         let wrong_author = ValidatedCheckpointChunkCarrier::for_test(
@@ -153,7 +233,7 @@ mod tests {
             },
         );
         assert_eq!(
-            join_chunks(&descriptor, [&first, &wrong_author]),
+            join(&descriptor, [&first, &wrong_author]),
             Err(JoinError::Author)
         );
         let wrong_coordinate = ValidatedCheckpointChunkCarrier::for_test(
@@ -173,7 +253,7 @@ mod tests {
             },
         );
         assert_eq!(
-            join_chunks(&descriptor, [&first, &wrong_coordinate]),
+            join(&descriptor, [&first, &wrong_coordinate]),
             Err(JoinError::Coordinate)
         );
         let wrong_descriptor = ValidatedCheckpointChunkCarrier::for_test(
@@ -190,7 +270,7 @@ mod tests {
             },
         );
         assert_eq!(
-            join_chunks(&descriptor, [&first, &wrong_descriptor]),
+            join(&descriptor, [&first, &wrong_descriptor]),
             Err(JoinError::Descriptor)
         );
         let wrong_count = ValidatedCheckpointChunkCarrier::for_test(
@@ -207,12 +287,12 @@ mod tests {
             },
         );
         assert_eq!(
-            join_chunks(&descriptor, [&first, &wrong_count]),
+            join(&descriptor, [&first, &wrong_count]),
             Err(JoinError::Count)
         );
         let out_of_range = make(20, 2, vec![3, 4]);
         assert_eq!(
-            join_chunks(&descriptor, [&first, &out_of_range]),
+            join(&descriptor, [&first, &out_of_range]),
             Err(JoinError::MissingIndex)
         );
     }

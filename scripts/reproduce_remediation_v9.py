@@ -50,18 +50,12 @@ FIXED_CASES = (
         "lib",
         "reference::evaluate::tests::finding_077_canonical_raw_bytes_share_one_allocation",
     ),
-)
-OPEN_CASES = (
     (
         "lib",
         "checkpoint::assemble::tests::finding_084_checkpoint_sort_stops_before_cancelled_work",
-        "FINDING_084 reproduced: checkpoint chunks are sorted before cancellation is observed",
-        "left == right",
-        "crates/nostr_automerge/src/checkpoint/assemble.rs",
-        "[0, 1]",
-        "[1, 0]",
     ),
 )
+OPEN_CASES = ()
 SEMANTIC_DIAGNOSTIC = (
     "FINDING_078 reproduced: a semantically unrelated named assertion "
     "passes requirement validation"
