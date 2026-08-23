@@ -396,6 +396,12 @@ are explicitly outside the accepted proof vocabulary. The final proof catalog
 contains 148 requirement rows, 21 report-clause rows, and 21 finding rows; it
 and the separate finding-closure catalog must conform to closed schemas.
 
+The strict-base64 proof is executable rather than source-substring based. It
+runs exact canonical and boundary unit vectors plus real signed Event vectors
+for unpadded, whitespace-bearing, URL-safe, malformed, non-ASCII, and
+noncanonical-pad-bit input. The immutable v9 matrix remains hash-checked as a
+historical artifact but no longer treats source tokens as behavioral proof.
+
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 `FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`

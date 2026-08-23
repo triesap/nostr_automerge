@@ -32,6 +32,11 @@ OPAQUE_FINALIZATION_REPORT = "reports/opaque_finalization_v9.json"
 REPORT_PARITY_GATE_REPORT = "reports/report_parity_v9.json"
 SIGNED_CONFORMANCE_GATE_REPORT = "reports/signed_conformance_gate_v10.json"
 SEMANTIC_PROOF_AUTHORITY = "spec/semantic_proof_catalog_v10.json"
+BASE64_PROOF_VALIDATOR = "scripts/validate_base64_proof_v10.py"
+BASE64_SIGNED_TEST = "crates/nostr_automerge/tests/base64_contract.rs"
+BASE64_PROOF_INVENTORY_SHA256 = "99fbf64a034f31b7ce2f85998a1d24f8334d796c34cf6504460652d6fb6bdf87"
+BASE64_PROOF_VALIDATOR_SHA256 = "f8652527bd6bb81f9a9422d290034d8d45c4c92717ce9027d7360b01afe6d78c"
+BASE64_SIGNED_TEST_SHA256 = "61af0ccb9497093f62ac9c92c0f0c685ab4cf0fb0ce690bcd2504bed8b8ed6d2"
 NEUTRAL_REPORT_SCHEMA = "fixtures/schema/report.schema.json"
 LEDGER = "implementation/runtime_ledger_v9.json"
 LEDGER_SCHEMA = "tools/validation/runtime_ledger_v9.schema.json"
@@ -52,7 +57,7 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "879bbb5a588803506224d7bdf831b321f291c96c0b75b51b9c5b472b9a76f541"
+    "a62f0e0d74cd41ac6b713230ad121041423e6195dbb4ce7a3b0382210807d336"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
@@ -396,6 +401,7 @@ PREDECESSOR_CANDIDATES = (
     "36db673b8e5b62df69a5ee321b2e13c040fc8237",
     "fc256396c534adb90be4da4c9d172a14d3786f1d",
     "73083b7bacf997f9723a05aca67c9ab20456b184",
+    "1ff391cd4837f3e17ffa5b06753289eedbb56b80",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -514,18 +520,19 @@ HISTORICAL_STEP_1217_CLOSURE_PATHS = frozenset(
 )
 CLOSURE_PATHS = frozenset(
     {
+        "crates/nostr_automerge/tests/base64_contract.rs",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
-        "spec/semantic_proof_catalog_v10.json",
+        "spec/remediation_findings_v9.json",
+        "scripts/validate_base64_proof_v10.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
+        "scripts/validate_requirement_matrix_v9.py",
+        "scripts/validate_remediation_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
         "scripts/validate_spec.py",
-        "scripts/validate_semantic_proof_catalog_v10.py",
         "tools/nostr_automerge_xtask/src/validate.rs",
-        "tools/validation/semantic_proof_catalog_v10.schema.json",
-        "tools/validation/finding_closure_catalog_v10.schema.json",
         "tools/validation/runtime_ledger_v9.schema.json",
     }
 )
@@ -540,10 +547,8 @@ CLOSURE_AMEND_PATHS = frozenset(
 )
 CLOSURE_NEW_PATHS = frozenset(
     {
-        "spec/semantic_proof_catalog_v10.json",
-        "scripts/validate_semantic_proof_catalog_v10.py",
-        "tools/validation/semantic_proof_catalog_v10.schema.json",
-        "tools/validation/finding_closure_catalog_v10.schema.json",
+        "crates/nostr_automerge/tests/base64_contract.rs",
+        "scripts/validate_base64_proof_v10.py",
     }
 )
 EXPECTED_GATES = (
@@ -664,6 +669,7 @@ EXPECTED_GATES = (
     ("V-FULL-TS",),
     ("V-CONF",),
     ("V-FULL-RUST",),
+    ("V-EVIDENCE",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -851,6 +857,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-EVIDENCE-006",),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -973,6 +980,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_074",),
     ("FINDING_075",),
     ("FINDING_088",),
+    (),
     (),
     (),
     (),
@@ -2335,6 +2343,7 @@ def validate_runtime_ledger(
         "report_parity_gate",
         "signed_conformance_gate",
         "semantic_proof_authority",
+        "base64_proof",
     }
     require(set(ledger) == expected_keys, "ledger:keys")
     require(ledger.get("schema") == "nostr_automerge.runtime_ledger.v9.v1", "ledger:schema")
@@ -2818,6 +2827,23 @@ def validate_runtime_ledger(
             "result": proof_authority["result"],
         },
         "ledger:semantic_proof_authority_binding",
+    )
+    require(file_digest(BASE64_PROOF_VALIDATOR) == BASE64_PROOF_VALIDATOR_SHA256, "ledger:base64_validator_file")
+    require(file_digest(BASE64_SIGNED_TEST) == BASE64_SIGNED_TEST_SHA256, "ledger:base64_signed_test_file")
+    require(
+        ledger.get("base64_proof")
+        == {
+            "checkpoint": "step_1276",
+            "requirement_id": "NCRDT-B64-001",
+            "proof_count": 3,
+            "negative_mutation_count": 11,
+            "proof_basis": "executable_only",
+            "inventory_sha256": BASE64_PROOF_INVENTORY_SHA256,
+            "validator_sha256": BASE64_PROOF_VALIDATOR_SHA256,
+            "vector_sha256": BASE64_SIGNED_TEST_SHA256,
+            "result": "pass",
+        },
+        "ledger:base64_proof_binding",
     )
     validate_no_leak(ledger, "ledger:boundary")
 

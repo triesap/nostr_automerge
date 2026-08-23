@@ -89,6 +89,7 @@ PYTHON_SURFACES = (
     "scripts/validate_opaque_conformance_v10.py",
     "scripts/validate_signed_conformance_gate_v10.py",
     "scripts/validate_semantic_proof_catalog_v10.py",
+    "scripts/validate_base64_proof_v10.py",
     "scripts/validate_opaque_boundary_gate_v9.py",
     "scripts/validate_opaque_resource_gate_v9.py",
     "scripts/validate_opaque_finalization_v9.py",
@@ -113,6 +114,8 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "crates/nostr_automerge/src/checkpoint/verify_history.rs",
         "crates/nostr_automerge/src/checkpoint/verify.rs",
         "crates/nostr_automerge/src/carrier/change.rs",
+        "crates/nostr_automerge/src/wire/base64.rs",
+        "crates/nostr_automerge/tests/base64_contract.rs",
         "crates/nostr_automerge/src/automerge_adapter/document.rs",
         "crates/nostr_automerge/src/conformance/dispositions_digest.rs",
         "crates/nostr_automerge/src/conformance/history_digest.rs",
@@ -198,6 +201,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_diagnostics.py",
         "scripts/validate_fixtures.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
+        "scripts/validate_requirement_matrix_v9.py",
         "scripts/validate_report_contract_v9.py",
         "scripts/validate_rust_report_gate_v9.py",
         "scripts/validate_rust_finalization_gate_v9.py",
@@ -210,6 +214,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_opaque_conformance_v10.py",
         "scripts/validate_signed_conformance_gate_v10.py",
         "scripts/validate_semantic_proof_catalog_v10.py",
+        "scripts/validate_base64_proof_v10.py",
         "scripts/reproduce_remediation_v9.py",
         "scripts/validate_remediation_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
@@ -483,6 +488,10 @@ def validate_source_surfaces() -> None:
                     or (
                         value == "cargo"
                         and relative == "scripts/validate_report_contract_v9.py"
+                    )
+                    or (
+                        value == "cargo"
+                        and relative == "scripts/validate_base64_proof_v10.py"
                     )
                     or (
                         value in {"cargo", "git"}

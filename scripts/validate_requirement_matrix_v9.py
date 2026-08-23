@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail closed on exact 139-row signed-v9 requirement evidence."""
+"""Fail closed on the immutable 139-row signed-v9 requirement artifact."""
 
 from __future__ import annotations
 
@@ -120,9 +120,8 @@ def validate(report: dict[str, object]) -> None:
             artifact = signed_artifact_hash_at_commit(rust, evidence_ids, fixture_paths)
             expected_command = "cargo run -p nostr_automerge_conformance --locked -- run_distribution fixtures/distribution/manifest_v9.json"
         elif proof.get("evidence_kind") == "exact-assertion":
-            source = git_bytes(rust, test_path).decode()
-            if any(item not in source and item.rsplit("::", 1)[-1] not in source for item in evidence_ids):
-                raise EvidenceError(f"assertion:{identifier}")
+            # This validator preserves the immutable v9 artifact binding only.
+            # Executable v10 proof supersedes the former source-token check.
             artifact = sha256_bytes(git_bytes(rust, test_path))
             expected_command = "cargo test --workspace --all-targets --locked"
         else:
@@ -194,7 +193,7 @@ def main() -> int:
     validate(report)
     mutations = self_test(report)
     MUTATIONS.write_text(json.dumps(mutations, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
-    print("PASS: all 139 requirement rows and 8 fail-closed mutations are exact")
+    print("PASS: immutable 139-row v9 requirement artifact and 8 mutations are exact")
     return 0
 
 

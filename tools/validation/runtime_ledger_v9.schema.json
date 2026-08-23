@@ -25,7 +25,8 @@
     "report_schema_authority",
     "report_parity_gate",
     "signed_conformance_gate",
-    "semantic_proof_authority"
+    "semantic_proof_authority",
+    "base64_proof"
   ],
   "properties": {
     "schema": {"const": "nostr_automerge.runtime_ledger.v9.v1"},
@@ -534,6 +535,22 @@
         "authority_sha256": {"const": "92c0346c808047c27532da8422d737c72e6414ba3a4067d4af5515cd135ee913"},
         "catalog_schema_sha256": {"const": "6acb7d9331188c3231832a177911c399fb5877c6ea68ede63e63386d00a72bfa"},
         "finding_schema_sha256": {"const": "d7ca5fead5ad82cca201a97edcc8fed9d989a83c60392637ddd8c574f4f1e5ff"},
+        "result": {"const": "pass"}
+      }
+    },
+    "base64_proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checkpoint", "requirement_id", "proof_count", "negative_mutation_count", "proof_basis", "inventory_sha256", "validator_sha256", "vector_sha256", "result"],
+      "properties": {
+        "checkpoint": {"const": "step_1276"},
+        "requirement_id": {"const": "NCRDT-B64-001"},
+        "proof_count": {"const": 3},
+        "negative_mutation_count": {"const": 11},
+        "proof_basis": {"const": "executable_only"},
+        "inventory_sha256": {"const": "99fbf64a034f31b7ce2f85998a1d24f8334d796c34cf6504460652d6fb6bdf87"},
+        "validator_sha256": {"const": "f8652527bd6bb81f9a9422d290034d8d45c4c92717ce9027d7360b01afe6d78c"},
+        "vector_sha256": {"const": "61af0ccb9497093f62ac9c92c0f0c685ab4cf0fb0ce690bcd2504bed8b8ed6d2"},
         "result": {"const": "pass"}
       }
     }

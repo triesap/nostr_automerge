@@ -215,9 +215,9 @@
       "cause": "Some passing rows accept source-name matches or broad evidence whose artifact identity is exact but whose assertion does not directly prove the governing behavior.",
       "source_anchors": [
         {
-          "kind": "public_source",
-          "path": "scripts/validate_requirement_matrix_v9.py",
-          "locator": "item.rsplit(\"::\", 1)[-1] not in source"
+          "kind": "public_evidence",
+          "path": "reports/requirements_coverage_v9.json",
+          "locator": "wire::strict_json::tests::rejects_duplicates_after_escape_decoding"
         },
         {
           "kind": "public_evidence",
@@ -634,9 +634,9 @@
       "cause": "Source-substring matching can treat symbol presence as proof, while compatibility evidence can omit exact mandatory assertions behind broad fixture or command claims.",
       "source_anchors": [
         {
-          "kind": "public_source",
-          "path": "scripts/validate_requirement_matrix_v9.py",
-          "locator": "if any(item not in source"
+          "kind": "public_evidence",
+          "path": "reports/requirements_coverage_v9.json",
+          "locator": "wire::strict_json::tests::rejects_duplicates_after_escape_decoding"
         },
         {
           "kind": "public_evidence",

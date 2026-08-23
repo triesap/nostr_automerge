@@ -29,6 +29,7 @@ VALIDATORS = [
     "validate_opaque_conformance_v10.py",
     "validate_signed_conformance_gate_v10.py",
     "validate_semantic_proof_catalog_v10.py",
+    "validate_base64_proof_v10.py",
     "validate_remediation_v9.py",
     "validate_checkpoint_parity_v9.py",
     "validate_carrier_gate_v9.py",

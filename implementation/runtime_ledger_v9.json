@@ -3,10 +3,10 @@
   "status": "in_progress",
   "rcld": 93,
   "cursor": {
-    "active_step": "step_1275",
-    "next_step": "step_1276",
+    "active_step": "step_1276",
+    "next_step": "step_1277",
     "last_step": "step_1287",
-    "remaining_checkpoint_count": 13,
+    "remaining_checkpoint_count": 12,
     "first_rcld": 93,
     "last_rcld": 94,
     "remaining_rcld_count": 2
@@ -1321,6 +1321,16 @@
       "finding_ids": [],
       "deviation_ids": [],
       "result": "pass"
+    },
+    {
+      "step": "step_1275",
+      "candidate": "1ff391cd4837f3e17ffa5b06753289eedbb56b80",
+      "owner_class": "public",
+      "gate_ids": ["V-EVIDENCE"],
+      "requirement_ids": ["NCRDT-EVIDENCE-006"],
+      "finding_ids": [],
+      "deviation_ids": [],
+      "result": "pass"
     }
   ],
   "opaque_reproduction": {
@@ -1549,6 +1559,17 @@
     "authority_sha256": "92c0346c808047c27532da8422d737c72e6414ba3a4067d4af5515cd135ee913",
     "catalog_schema_sha256": "6acb7d9331188c3231832a177911c399fb5877c6ea68ede63e63386d00a72bfa",
     "finding_schema_sha256": "d7ca5fead5ad82cca201a97edcc8fed9d989a83c60392637ddd8c574f4f1e5ff",
+    "result": "pass"
+  },
+  "base64_proof": {
+    "checkpoint": "step_1276",
+    "requirement_id": "NCRDT-B64-001",
+    "proof_count": 3,
+    "negative_mutation_count": 11,
+    "proof_basis": "executable_only",
+    "inventory_sha256": "99fbf64a034f31b7ce2f85998a1d24f8334d796c34cf6504460652d6fb6bdf87",
+    "validator_sha256": "f8652527bd6bb81f9a9422d290034d8d45c4c92717ce9027d7360b01afe6d78c",
+    "vector_sha256": "61af0ccb9497093f62ac9c92c0f0c685ab4cf0fb0ce690bcd2504bed8b8ed6d2",
     "result": "pass"
   }
 }
