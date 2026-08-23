@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "checkpoint", "gate_id", "authority_stage", "status", "publication_status", "requirement_ids", "candidate_chain", "protocol_limits", "local_report_boundary", "boundary_families", "validation", "result_classes", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.opaque_boundary_gate.v9.v1"},
+    "checkpoint": {"const": "step_1254"},
+    "gate_id": {"const": "GATE_V9_PRIVATE_BOUNDARY"},
+    "authority_stage": {"const": "checkpoint_expectations_corrected"},
+    "status": {"const": "pass"},
+    "publication_status": {"const": "held"},
+    "requirement_ids": {"type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true, "items": {"type": "string"}},
+    "candidate_chain": {"type": "array", "minItems": 9, "maxItems": 9, "items": {"$ref": "#/$defs/candidate"}},
+    "protocol_limits": {"$ref": "#/$defs/protocol_limits"},
+    "local_report_boundary": {"$ref": "#/$defs/local_boundary"},
+    "boundary_families": {"type": "array", "minItems": 9, "maxItems": 9, "items": {"$ref": "#/$defs/result_row"}},
+    "validation": {"$ref": "#/$defs/validation"},
+    "result_classes": {"type": "array", "minItems": 6, "maxItems": 6, "items": {"$ref": "#/$defs/class_row"}},
+    "result_identity_sha256": {"$ref": "#/$defs/hash"}
+  },
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "candidate": {"type": "object", "additionalProperties": false, "required": ["checkpoint", "candidate", "parent", "scope_entry_count", "scope_identity_sha256", "result"], "properties": {"checkpoint": {"type": "string", "pattern": "^step_12(4[5-9]|5[0-3])$"}, "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "parent": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "scope_entry_count": {"type": "integer", "minimum": 1}, "scope_identity_sha256": {"$ref": "#/$defs/hash"}, "result": {"const": "pass"}}},
+    "protocol_limits": {"type": "object", "additionalProperties": false, "required": ["registry_entry_count", "projection_sha256", "classification", "result"], "properties": {"registry_entry_count": {"const": 20}, "projection_sha256": {"$ref": "#/$defs/hash"}, "classification": {"const": "normative_for_draft_provisional_for_production"}, "result": {"const": "pass"}}},
+    "local_boundary": {"type": "object", "additionalProperties": false, "required": ["control_count", "projection_sha256", "classification", "result"], "properties": {"control_count": {"const": 6}, "projection_sha256": {"$ref": "#/$defs/hash"}, "classification": {"const": "implementation_local_non_normative"}, "result": {"const": "pass"}}},
+    "result_row": {"type": "object", "additionalProperties": false, "required": ["family", "result"], "properties": {"family": {"type": "string"}, "result": {"const": "pass"}}},
+    "class_row": {"type": "object", "additionalProperties": false, "required": ["class", "result"], "properties": {"class": {"type": "string"}, "result": {"const": "pass"}}},
+    "validation": {"type": "object", "additionalProperties": false, "required": ["projection_entry_count", "projection_sha256", "mutation_count", "pass_count", "intentional_skip_count", "fixed_regression_count", "open_regression_count", "full_check", "result"], "properties": {"projection_entry_count": {"const": 104}, "projection_sha256": {"$ref": "#/$defs/hash"}, "mutation_count": {"const": 15}, "pass_count": {"const": 340}, "intentional_skip_count": {"const": 16}, "fixed_regression_count": {"const": 20}, "open_regression_count": {"const": 3}, "full_check": {"const": "pass"}, "result": {"const": "pass"}}}
+  }
+}

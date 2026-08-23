@@ -19,6 +19,7 @@
     "rust_report_gate",
     "rust_finalization_gate",
     "rust_resource_gate",
+    "opaque_boundary_gate",
     "opaque_finalization",
     "report_schema_authority",
     "report_parity_gate"
@@ -350,6 +351,32 @@
         "open_regression_count": {"const": 1},
         "fixture_manifest_sha256": {"const": "4c6866b91bffbeba9610c4602b99abfc7e5a16c9d262d6e4d624a4e3a9537f9a"},
         "result_identity_sha256": {"const": "41dbbc04929a1eb431baaa9cdd7c982a3b284a45c442040882875eb21c7dfe6d"},
+        "result": {"const": "pass"},
+        "publication_status": {"const": "held"}
+      }
+    },
+    "opaque_boundary_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpoint", "gate_id", "candidate_count", "protocol_limit_count",
+        "protocol_limit_projection_sha256", "local_report_control_count",
+        "local_report_projection_sha256", "boundary_family_count",
+        "fixed_regression_count", "open_regression_count",
+        "result_identity_sha256", "result", "publication_status"
+      ],
+      "properties": {
+        "checkpoint": {"const": "step_1254"},
+        "gate_id": {"const": "GATE_V9_PRIVATE_BOUNDARY"},
+        "candidate_count": {"const": 9},
+        "protocol_limit_count": {"const": 20},
+        "protocol_limit_projection_sha256": {"const": "110729bd0f787b7685a885f7f7a268f184f76265ca373d096106210793d456cf"},
+        "local_report_control_count": {"const": 6},
+        "local_report_projection_sha256": {"const": "e31a94af2d88d70713584697d7f8d3f587d61ad51ed7ad4fdffd83d7f5d3dbf2"},
+        "boundary_family_count": {"const": 9},
+        "fixed_regression_count": {"const": 20},
+        "open_regression_count": {"const": 3},
+        "result_identity_sha256": {"const": "baf98df9cba206a7a4f6c8dcdbabf7562fb9cc061504beeaab5e318a08165099"},
         "result": {"const": "pass"},
         "publication_status": {"const": "held"}
       }

@@ -134,8 +134,19 @@ publication status remains `held`.
 | `step_1241` | `V-RESOURCE` | pass |
 | `step_1242` | `V-RESOURCE` | pass |
 | `step_1243` | `V-RESOURCE` | pass |
-| `step_1244` | `V-FULL-RUST` | active |
-| `step_1245` | `V-TS` | next |
+| `step_1244` | `V-FULL-RUST` | pass |
+| `step_1245`–`step_1253` | `V-TS` | pass |
+| `step_1254` | `V-EVIDENCE` | active |
+| `step_1255` | `V-TS` | next |
+
+The opaque compatibility boundary closure binds nine ordered candidates from
+`step_1245` through `step_1253`, all 20 neutral draft protocol limits, six
+explicitly implementation-local report controls, and nine boundary families.
+The protocol-limit projection is normative for the draft and provisional for
+production; the report controls remain non-normative. The closed record also
+binds 104 validation-source entries, 15 deterministic mutation probes, 340
+passing tests, 16 intentional skips, 20 fixed regressions, and three open
+regressions without exposing private paths, source, commands, or artifacts.
 
 The Rust resource closure binds the nine ordered public candidates from
 `step_1235` through `step_1243`, all ten work-counter dimensions, the exact

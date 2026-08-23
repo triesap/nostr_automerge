@@ -1,0 +1,63 @@
+{
+  "schema": "nostr_automerge.opaque_boundary_gate.v9.v1",
+  "checkpoint": "step_1254",
+  "gate_id": "GATE_V9_PRIVATE_BOUNDARY",
+  "authority_stage": "checkpoint_expectations_corrected",
+  "status": "pass",
+  "publication_status": "held",
+  "requirement_ids": ["NCRDT-LIMIT-001", "NCRDT-RESOURCE-001", "NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"],
+  "candidate_chain": [
+    {"checkpoint": "step_1245", "candidate": "4acd5fe954951b2c14eda0c1268bab3616190676", "parent": "3f0a571081e22d9f018f9803bb2efcb248d1e9ec", "scope_entry_count": 7, "scope_identity_sha256": "aaf8575919215f3a0f96e7a68331c9e0ac97528344a86f0ca6beb3bb6a29ce27", "result": "pass"},
+    {"checkpoint": "step_1246", "candidate": "41e1e82ae264751c6640c587726629bfa148208c", "parent": "4acd5fe954951b2c14eda0c1268bab3616190676", "scope_entry_count": 6, "scope_identity_sha256": "9066cb032ca0298c2bc02cbf052237feefa48893d0b5e720f3ae0ba2e90e675a", "result": "pass"},
+    {"checkpoint": "step_1247", "candidate": "35b7a82fcaa49072ec4bfc7f489fb520ab1fe178", "parent": "41e1e82ae264751c6640c587726629bfa148208c", "scope_entry_count": 4, "scope_identity_sha256": "5a431ac5a67f53f7858c08363298037d122b50ba1b79bc9da98ad16f6ba3dd6c", "result": "pass"},
+    {"checkpoint": "step_1248", "candidate": "10e6f7a6bbc8c9bb631e9c7d8f9d2af3b936edf5", "parent": "35b7a82fcaa49072ec4bfc7f489fb520ab1fe178", "scope_entry_count": 4, "scope_identity_sha256": "bf064c0a6774addf6203b6e9d49186677543afb72eb84a6bbc26fc31222185c5", "result": "pass"},
+    {"checkpoint": "step_1249", "candidate": "897c3774e47f2c0e3cd1d966910dead4fde3ca47", "parent": "10e6f7a6bbc8c9bb631e9c7d8f9d2af3b936edf5", "scope_entry_count": 5, "scope_identity_sha256": "d9a2651135b241c9584dcb11b1868247412a71563911f4c762a5f5569e5bd77d", "result": "pass"},
+    {"checkpoint": "step_1250", "candidate": "30fe59a98ade26389265b0319436784cca64ba79", "parent": "897c3774e47f2c0e3cd1d966910dead4fde3ca47", "scope_entry_count": 16, "scope_identity_sha256": "25ee9f4bfeb3abfdf87f63209ee653bbdfff29a493da1e93851ffda062ce7dcb", "result": "pass"},
+    {"checkpoint": "step_1251", "candidate": "d3aba6b196ef8433ba45d68c8e7e9e62517bb790", "parent": "30fe59a98ade26389265b0319436784cca64ba79", "scope_entry_count": 11, "scope_identity_sha256": "b12705356ea6992ac623a896b9dcb14f708cc3d8f75b6b231c76bc50835f192c", "result": "pass"},
+    {"checkpoint": "step_1252", "candidate": "1962b3b5252ec78248a83bcfe52810f98d51c8fe", "parent": "d3aba6b196ef8433ba45d68c8e7e9e62517bb790", "scope_entry_count": 26, "scope_identity_sha256": "8de8cc8bf4ef5d803bc5f9894ae60088a18983c120abd56a5a2503c33940f162", "result": "pass"},
+    {"checkpoint": "step_1253", "candidate": "44f45ef65c6c6a0628d0ffd169ef82c53a9c1b4d", "parent": "1962b3b5252ec78248a83bcfe52810f98d51c8fe", "scope_entry_count": 10, "scope_identity_sha256": "79976bc4500081a771119724723d18563176f082babb13df6f78906f81d7e3c0", "result": "pass"}
+  ],
+  "protocol_limits": {
+    "registry_entry_count": 20,
+    "projection_sha256": "110729bd0f787b7685a885f7f7a268f184f76265ca373d096106210793d456cf",
+    "classification": "normative_for_draft_provisional_for_production",
+    "result": "pass"
+  },
+  "local_report_boundary": {
+    "control_count": 6,
+    "projection_sha256": "e31a94af2d88d70713584697d7f8d3f587d61ad51ed7ad4fdffd83d7f5d3dbf2",
+    "classification": "implementation_local_non_normative",
+    "result": "pass"
+  },
+  "boundary_families": [
+    {"family": "raw_ingress_preflight", "result": "pass"},
+    {"family": "change_qualification_limits", "result": "pass"},
+    {"family": "manifest_control_limits", "result": "pass"},
+    {"family": "checkpoint_limits", "result": "pass"},
+    {"family": "local_report_controls", "result": "pass"},
+    {"family": "structured_ownership", "result": "pass"},
+    {"family": "byte_ownership", "result": "pass"},
+    {"family": "protocol_ordering", "result": "pass"},
+    {"family": "adversarial_constructors", "result": "pass"}
+  ],
+  "validation": {
+    "projection_entry_count": 104,
+    "projection_sha256": "857fb80e41b6119f0acda4eee8470756c8ec18fc0b10cc5146f744d1f3c3a264",
+    "mutation_count": 15,
+    "pass_count": 340,
+    "intentional_skip_count": 16,
+    "fixed_regression_count": 20,
+    "open_regression_count": 3,
+    "full_check": "pass",
+    "result": "pass"
+  },
+  "result_classes": [
+    {"class": "protocol_limit_parity", "result": "pass"},
+    {"class": "local_boundary_classification", "result": "pass"},
+    {"class": "immutability_and_aliasing", "result": "pass"},
+    {"class": "locale_independence", "result": "pass"},
+    {"class": "mutation_detection", "result": "pass"},
+    {"class": "full_private", "result": "pass"}
+  ],
+  "result_identity_sha256": "baf98df9cba206a7a4f6c8dcdbabf7562fb9cc061504beeaab5e318a08165099"
+}

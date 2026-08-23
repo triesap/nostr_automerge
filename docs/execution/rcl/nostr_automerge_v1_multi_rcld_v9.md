@@ -16,10 +16,10 @@ Reviewed applicability SHA-256: `7cda8e59da0d8caf1f9a9985ba27c9367018c572824f092
 Reviewed distribution-v9 manifest SHA-256: `7b4ab5d2146939d142eb92d43060ef2183c95d1fc574132894b3c01c874c7c56`
 Reviewed canonical-output SHA-256: `e193a7b0db3a43e9d33e612afea05bd447a5e968a45e283d098f45278d6ab6fc`
 Steps: `step_1158` through `step_1287` (130 contiguous checkpoints)
-Active RCLD: RCLD 89
-Active checkpoint: `step_1244`
-Next RCLD: RCLD 90
-Next checkpoint: `step_1245`
+Active RCLD: RCLD 90
+Active checkpoint: `step_1254`
+Next RCLD: RCLD 91
+Next checkpoint: `step_1255`
 
 This planning revision changes only the unfinished checkpoint map. Completed
 candidate identities and evidence remain immutable. The public-owned
@@ -538,7 +538,7 @@ Depends on: RCLD 88
 
 ## RCLD 90 — Private Ingress, Limits, Immutability, And Ordering
 
-Status: planned
+Status: complete
 Steps: `step_1245` through `step_1254`
 Gate: `GATE_V9_PRIVATE_BOUNDARY`
 Depends on: RCLD 89
@@ -699,10 +699,10 @@ completion.
 - RCLD 87 — Rust Two-Tier Finalization
 - RCLD 88 — Private Two-Tier Finalization
 - RCLD 89 — Rust Target Work And Shared Bytes
+- RCLD 90 — Private Ingress, Limits, Immutability, And Ordering
 
 ## Unfinished RCLDs
 
-- RCLD 90 — Private Ingress, Limits, Immutability, And Ordering
 - RCLD 91 — Private Target Work, Cancellation, And Scaling
 - RCLD 92 — Signed Conformance V10
 - RCLD 93 — Semantic Proof Catalog V10
