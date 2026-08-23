@@ -20,6 +20,7 @@
     "rust_finalization_gate",
     "rust_resource_gate",
     "opaque_boundary_gate",
+    "opaque_resource_gate",
     "opaque_finalization",
     "report_schema_authority",
     "report_parity_gate"
@@ -377,6 +378,29 @@
         "fixed_regression_count": {"const": 20},
         "open_regression_count": {"const": 3},
         "result_identity_sha256": {"const": "baf98df9cba206a7a4f6c8dcdbabf7562fb9cc061504beeaab5e318a08165099"},
+        "result": {"const": "pass"},
+        "publication_status": {"const": "held"}
+      }
+    },
+    "opaque_resource_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpoint", "gate_id", "candidate_count", "counter_count", "pass_count",
+        "boundary_class_count", "scaling_classification", "fixed_regression_count",
+        "open_regression_count", "result_identity_sha256", "result", "publication_status"
+      ],
+      "properties": {
+        "checkpoint": {"const": "step_1263"},
+        "gate_id": {"const": "GATE_V9_PRIVATE_RESOURCE"},
+        "candidate_count": {"const": 8},
+        "counter_count": {"const": 12},
+        "pass_count": {"const": 24},
+        "boundary_class_count": {"const": 4},
+        "scaling_classification": {"const": "indexed_linear_or_log_linear"},
+        "fixed_regression_count": {"const": 21},
+        "open_regression_count": {"const": 2},
+        "result_identity_sha256": {"const": "730731c61fe5f3002a6db7d5ceedb540991d362f70a560757b45199dbd0d8fde"},
         "result": {"const": "pass"},
         "publication_status": {"const": "held"}
       }

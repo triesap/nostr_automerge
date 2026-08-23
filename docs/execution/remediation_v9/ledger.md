@@ -308,9 +308,15 @@ conformance identity is the same canonical and serialized output pair above.
 The opaque private finalization record binds the exact seven-candidate
 `step_1227` through `step_1233` chain, two-tier settlement counts, typed-stop
 coverage, mutation families, and full private result identities without
-carrying private paths or execution details. There are 45 checkpoints including
-the active checkpoint remaining through
-`step_1287`.
+carrying private paths or execution details. At that checkpoint, 45 checkpoints
+including the active checkpoint remained through `step_1287`.
+
+The opaque private resource record binds the exact eight-candidate `step_1255`
+through `step_1262` chain, twelve counter families, twenty-four named passes,
+exact budget and cancellation boundaries, unrelated-evidence isolation, and
+indexed linear-or-log-linear scaling without carrying private paths or execution
+details. `GATE_V9_PRIVATE_RESOURCE` closes at `step_1263`; 25 checkpoints,
+including the active checkpoint, remain through `step_1287`.
 
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,

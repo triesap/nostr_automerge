@@ -1,15 +1,15 @@
 {
   "schema": "nostr_automerge.runtime_ledger.v9.v1",
   "status": "in_progress",
-  "rcld": 90,
+  "rcld": 91,
   "cursor": {
-    "active_step": "step_1254",
-    "next_step": "step_1255",
+    "active_step": "step_1263",
+    "next_step": "step_1264",
     "last_step": "step_1287",
-    "remaining_checkpoint_count": 34,
-    "first_rcld": 90,
+    "remaining_checkpoint_count": 25,
+    "first_rcld": 91,
     "last_rcld": 94,
-    "remaining_rcld_count": 5
+    "remaining_rcld_count": 4
   },
   "authority_projection": {
     "binding": "monotonic_stage_projection",
@@ -1111,6 +1111,96 @@
       "finding_ids": ["FINDING_093"],
       "deviation_ids": [],
       "result": "pass"
+    },
+    {
+      "step": "step_1254",
+      "candidate": "13f3065de92dc56388215850830057bbf21c990b",
+      "owner_class": "public",
+      "gate_ids": ["V-EVIDENCE"],
+      "requirement_ids": ["NCRDT-LIMIT-001", "NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_087", "FINDING_090", "FINDING_091", "FINDING_092", "FINDING_093"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1255",
+      "candidate": "3ebec1cb4f8206c9560386fedb9e5ad6523f00bc",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_088"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1256",
+      "candidate": "70a1ca45d0bea247ef8784d30febf0db5722d441",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_088"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1257",
+      "candidate": "66d61287b8786e0ae04aad51bcc30bc77257a4a6",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_088"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1258",
+      "candidate": "bbbcf33c5bcc680400081cc77bdd99e8c6487bf6",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_088"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1259",
+      "candidate": "6a6316126691b3be01cb3d6b3ee40a2f9174bd73",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_088"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1260",
+      "candidate": "5e94ed3d44866ede7bd9cdf3723a01bdc61ceea3",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_088"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1261",
+      "candidate": "d7d6c21fd3cf095c6296837b66d7665ffa78de6a",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_088"],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1262",
+      "candidate": "fb585804db1f869014f4d10f57847c081c3635a4",
+      "owner_class": "opaque_private",
+      "gate_ids": ["V-TS"],
+      "requirement_ids": ["NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": ["FINDING_088"],
+      "deviation_ids": [],
+      "result": "pass"
     }
   ],
   "opaque_reproduction": {
@@ -1244,6 +1334,20 @@
     "fixed_regression_count": 20,
     "open_regression_count": 3,
     "result_identity_sha256": "baf98df9cba206a7a4f6c8dcdbabf7562fb9cc061504beeaab5e318a08165099",
+    "result": "pass",
+    "publication_status": "held"
+  },
+  "opaque_resource_gate": {
+    "checkpoint": "step_1263",
+    "gate_id": "GATE_V9_PRIVATE_RESOURCE",
+    "candidate_count": 8,
+    "counter_count": 12,
+    "pass_count": 24,
+    "boundary_class_count": 4,
+    "scaling_classification": "indexed_linear_or_log_linear",
+    "fixed_regression_count": 21,
+    "open_regression_count": 2,
+    "result_identity_sha256": "730731c61fe5f3002a6db7d5ceedb540991d362f70a560757b45199dbd0d8fde",
     "result": "pass",
     "publication_status": "held"
   },

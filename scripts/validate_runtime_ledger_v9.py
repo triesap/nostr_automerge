@@ -27,6 +27,7 @@ RUST_REPORT_GATE_REPORT = "reports/rust_report_gate_v9.json"
 RUST_FINALIZATION_GATE_REPORT = "reports/rust_finalization_gate_v9.json"
 RUST_RESOURCE_GATE_REPORT = "reports/rust_resource_gate_v9.json"
 OPAQUE_BOUNDARY_GATE_REPORT = "reports/opaque_boundary_gate_v9.json"
+OPAQUE_RESOURCE_GATE_REPORT = "reports/opaque_resource_gate_v9.json"
 OPAQUE_FINALIZATION_REPORT = "reports/opaque_finalization_v9.json"
 REPORT_PARITY_GATE_REPORT = "reports/report_parity_v9.json"
 NEUTRAL_REPORT_SCHEMA = "fixtures/schema/report.schema.json"
@@ -49,7 +50,7 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "54fbdd4d21f49ea0cf5bc4c21d2b2cc5d261e08d9fd074d1b209f263db8f9b3a"
+    "4af2711ebdb0e6d3b50dde4a65b7329fea66af013abe0d631236ce927b6d3e05"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
@@ -80,6 +81,9 @@ APPROVED_RUST_RESOURCE_GATE_RESULT_IDENTITY = (
 )
 APPROVED_OPAQUE_BOUNDARY_GATE_RESULT_IDENTITY = (
     "baf98df9cba206a7a4f6c8dcdbabf7562fb9cc061504beeaab5e318a08165099"
+)
+APPROVED_OPAQUE_RESOURCE_GATE_RESULT_IDENTITY = (
+    "730731c61fe5f3002a6db7d5ceedb540991d362f70a560757b45199dbd0d8fde"
 )
 APPROVED_OPAQUE_FINALIZATION_RESULT_IDENTITY = (
     "557e37981f1a196e29ff9dabab647b732ec15745b26b066a9df13aee2696c2e0"
@@ -363,6 +367,15 @@ PREDECESSOR_CANDIDATES = (
     "d3aba6b196ef8433ba45d68c8e7e9e62517bb790",
     "1962b3b5252ec78248a83bcfe52810f98d51c8fe",
     "44f45ef65c6c6a0628d0ffd169ef82c53a9c1b4d",
+    "13f3065de92dc56388215850830057bbf21c990b",
+    "3ebec1cb4f8206c9560386fedb9e5ad6523f00bc",
+    "70a1ca45d0bea247ef8784d30febf0db5722d441",
+    "66d61287b8786e0ae04aad51bcc30bc77257a4a6",
+    "bbbcf33c5bcc680400081cc77bdd99e8c6487bf6",
+    "6a6316126691b3be01cb3d6b3ee40a2f9174bd73",
+    "5e94ed3d44866ede7bd9cdf3723a01bdc61ceea3",
+    "d7d6c21fd3cf095c6296837b66d7665ffa78de6a",
+    "fb585804db1f869014f4d10f57847c081c3635a4",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -483,15 +496,15 @@ CLOSURE_PATHS = frozenset(
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
-        "reports/opaque_boundary_gate_v9.json",
+        "reports/opaque_resource_gate_v9.json",
         "reports/spec_baseline.txt",
         "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
         "scripts/validate_spec.py",
-        "scripts/validate_opaque_boundary_gate_v9.py",
+        "scripts/validate_opaque_resource_gate_v9.py",
         "tools/nostr_automerge_xtask/src/validate.rs",
         "tools/validation/runtime_ledger_v9.schema.json",
-        "tools/validation/opaque_boundary_gate_v9.schema.json",
+        "tools/validation/opaque_resource_gate_v9.schema.json",
     }
 )
 CLOSURE_AMEND_ADDITION = "docs/execution/remediation_v9/ledger.md"
@@ -504,9 +517,9 @@ CLOSURE_AMEND_PATHS = frozenset(
 )
 CLOSURE_NEW_PATHS = frozenset(
     {
-        "reports/opaque_boundary_gate_v9.json",
-        "scripts/validate_opaque_boundary_gate_v9.py",
-        "tools/validation/opaque_boundary_gate_v9.schema.json",
+        "reports/opaque_resource_gate_v9.json",
+        "scripts/validate_opaque_resource_gate_v9.py",
+        "tools/validation/opaque_resource_gate_v9.schema.json",
     }
 )
 EXPECTED_GATES = (
@@ -598,6 +611,15 @@ EXPECTED_GATES = (
     ("V-RESOURCE",),
     ("V-FULL-RUST",),
     ("V-TS",),
+    ("V-TS",),
+    ("V-TS",),
+    ("V-TS",),
+    ("V-TS",),
+    ("V-TS",),
+    ("V-TS",),
+    ("V-TS",),
+    ("V-TS",),
+    ("V-EVIDENCE",),
     ("V-TS",),
     ("V-TS",),
     ("V-TS",),
@@ -772,6 +794,15 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-LIMIT-001", "NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -878,6 +909,15 @@ EXPECTED_FINDINGS = (
     ("FINDING_091",),
     ("FINDING_092",),
     ("FINDING_093",),
+    ("FINDING_087", "FINDING_090", "FINDING_091", "FINDING_092", "FINDING_093"),
+    ("FINDING_088",),
+    ("FINDING_088",),
+    ("FINDING_088",),
+    ("FINDING_088",),
+    ("FINDING_088",),
+    ("FINDING_088",),
+    ("FINDING_088",),
+    ("FINDING_088",),
 )
 FORBIDDEN_KEY_WORDS = {
     "source",
@@ -2050,6 +2090,7 @@ def expected_predecessor(index: int) -> dict[str, Any]:
             or 51 <= index <= 58
             or 69 <= index <= 75
             or 87 <= index <= 95
+            or 97 <= index <= 104
             else "public"
         ),
         "gate_ids": list(EXPECTED_GATES[index]),
@@ -2078,6 +2119,7 @@ def validate_predecessors(
     carrier: dict[str, Any],
     finalization: dict[str, Any],
     opaque_boundary: dict[str, Any],
+    opaque_resource: dict[str, Any],
 ) -> None:
     require(isinstance(rows, list), "predecessors:type")
     approved = [
@@ -2139,6 +2181,10 @@ def validate_predecessors(
                     item["checkpoint"]: (item["candidate"], item["result"] == "pass")
                     for item in opaque_boundary["candidate_chain"]
                 },
+                **{
+                    item["checkpoint"]: (item["candidate"], item["result"] == "pass")
+                    for item in opaque_resource["candidate_chain"]
+                },
                 "step_1207": ("73f089166aa71a999380af907621e8e9b9fffb0d", True),
                 "step_1209": ("f6b067bc782bbe156b6517bf54fecd041159e4c1", True),
                 "step_1210": ("d3dc14cda7d52aa2f62b62454ec81f35f4caad49", True),
@@ -2199,6 +2245,7 @@ def validate_runtime_ledger(
     rust_finalization_gate: dict[str, Any],
     rust_resource_gate: dict[str, Any],
     opaque_boundary_gate: dict[str, Any],
+    opaque_resource_gate: dict[str, Any],
     opaque_finalization: dict[str, Any],
     report_parity_gate: dict[str, Any],
 ) -> None:
@@ -2220,6 +2267,7 @@ def validate_runtime_ledger(
         "rust_finalization_gate",
         "rust_resource_gate",
         "opaque_boundary_gate",
+        "opaque_resource_gate",
         "opaque_finalization",
         "report_schema_authority",
         "report_parity_gate",
@@ -2334,7 +2382,7 @@ def validate_runtime_ledger(
     )
     validate_predecessors(
         ledger.get("predecessors"), active, reproduction, checkpoint, carrier,
-        opaque_finalization, opaque_boundary_gate,
+        opaque_finalization, opaque_boundary_gate, opaque_resource_gate,
     )
     require(
         ledger.get("opaque_reproduction")
@@ -2568,6 +2616,29 @@ def validate_runtime_ledger(
         },
         "ledger:opaque_boundary_gate_binding",
     )
+    require(
+        opaque_resource_gate.get("result_identity_sha256")
+        == APPROVED_OPAQUE_RESOURCE_GATE_RESULT_IDENTITY,
+        "ledger:opaque_resource_gate_result_identity",
+    )
+    require(
+        ledger.get("opaque_resource_gate")
+        == {
+            "checkpoint": opaque_resource_gate["checkpoint"],
+            "gate_id": opaque_resource_gate["gate_id"],
+            "candidate_count": len(opaque_resource_gate["candidate_chain"]),
+            "counter_count": opaque_resource_gate["resource_contract"]["counter_count"],
+            "pass_count": opaque_resource_gate["resource_contract"]["pass_count"],
+            "boundary_class_count": len(opaque_resource_gate["boundary_results"]),
+            "scaling_classification": opaque_resource_gate["scaling"]["classification"],
+            "fixed_regression_count": opaque_resource_gate["validation"]["fixed_regression_count"],
+            "open_regression_count": opaque_resource_gate["validation"]["open_regression_count"],
+            "result_identity_sha256": opaque_resource_gate["result_identity_sha256"],
+            "result": opaque_resource_gate["status"],
+            "publication_status": opaque_resource_gate["publication_status"],
+        },
+        "ledger:opaque_resource_gate_binding",
+    )
     counts = opaque_finalization["settlement_counts"]
     identities = opaque_finalization["identities"]
     require(
@@ -2642,6 +2713,7 @@ def mutation_self_test(
     rust_finalization_gate: dict[str, Any],
     rust_resource_gate: dict[str, Any],
     opaque_boundary_gate: dict[str, Any],
+    opaque_resource_gate: dict[str, Any],
     opaque_finalization: dict[str, Any],
     report_parity_gate: dict[str, Any],
     ledger: dict[str, Any],
@@ -2881,6 +2953,9 @@ def mutation_self_test(
     forged_opaque_boundary = copy.deepcopy(ledger)
     forged_opaque_boundary["opaque_boundary_gate"]["result_identity_sha256"] = "f" * 64
     ledger_mutations.append(("ledger_forged_opaque_boundary", forged_opaque_boundary))
+    forged_opaque_resource = copy.deepcopy(ledger)
+    forged_opaque_resource["opaque_resource_gate"]["result_identity_sha256"] = "f" * 64
+    ledger_mutations.append(("ledger_forged_opaque_resource", forged_opaque_resource))
     report_schema_projection = copy.deepcopy(ledger)
     report_schema_projection["authority_projection"]["report_schema_sha256"] = "f" * 64
     ledger_mutations.append(("ledger_report_schema_projection", report_schema_projection))
@@ -2975,6 +3050,7 @@ def mutation_self_test(
                 rust_finalization_gate,
                 rust_resource_gate,
                 opaque_boundary_gate,
+                opaque_resource_gate,
                 opaque_finalization,
                 report_parity_gate,
             )
@@ -2994,6 +3070,7 @@ def mutation_self_test(
             rust_finalization_gate,
             rust_resource_gate,
             opaque_boundary_gate,
+            opaque_resource_gate,
             opaque_finalization,
             report_parity_gate,
         )
@@ -3126,6 +3203,7 @@ def main() -> int:
     rust_finalization_gate = load_object(RUST_FINALIZATION_GATE_REPORT)
     rust_resource_gate = load_object(RUST_RESOURCE_GATE_REPORT)
     opaque_boundary_gate = load_object(OPAQUE_BOUNDARY_GATE_REPORT)
+    opaque_resource_gate = load_object(OPAQUE_RESOURCE_GATE_REPORT)
     opaque_finalization = load_object(OPAQUE_FINALIZATION_REPORT)
     report_parity_gate = load_object(REPORT_PARITY_GATE_REPORT)
     ledger = load_object(LEDGER)
@@ -3161,6 +3239,7 @@ def main() -> int:
         rust_finalization_gate,
         rust_resource_gate,
         opaque_boundary_gate,
+        opaque_resource_gate,
         opaque_finalization,
         report_parity_gate,
     )
@@ -3174,6 +3253,7 @@ def main() -> int:
         rust_finalization_gate,
         rust_resource_gate,
         opaque_boundary_gate,
+        opaque_resource_gate,
         opaque_finalization,
         report_parity_gate,
         ledger,
@@ -3193,6 +3273,7 @@ def main() -> int:
     print(f"- rust_finalization_gate_identity={rust_finalization_gate['result_identity_sha256']}")
     print(f"- rust_resource_gate_identity={rust_resource_gate['result_identity_sha256']}")
     print(f"- opaque_boundary_gate_identity={opaque_boundary_gate['result_identity_sha256']}")
+    print(f"- opaque_resource_gate_identity={opaque_resource_gate['result_identity_sha256']}")
     print(f"- opaque_finalization_identity={opaque_finalization['result_identity_sha256']}")
     print(f"- report_parity_gate_identity={report_parity_gate['result_identity_sha256']}")
     print(f"- report_revision_inventory={len(REPORT_REVISION_INVENTORY)}")

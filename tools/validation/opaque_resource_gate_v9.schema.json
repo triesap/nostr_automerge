@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "checkpoint", "gate_id", "authority_stage", "status", "publication_status", "requirement_ids", "candidate_chain", "resource_contract", "boundary_results", "scaling", "validation", "result_classes", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.opaque_resource_gate.v9.v1"},
+    "checkpoint": {"const": "step_1263"},
+    "gate_id": {"const": "GATE_V9_PRIVATE_RESOURCE"},
+    "authority_stage": {"const": "checkpoint_expectations_corrected"},
+    "status": {"const": "pass"},
+    "publication_status": {"const": "held"},
+    "requirement_ids": {"type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": {"type": "string"}},
+    "candidate_chain": {"type": "array", "minItems": 8, "maxItems": 8, "items": {"$ref": "#/$defs/candidate"}},
+    "resource_contract": {"$ref": "#/$defs/resource_contract"},
+    "boundary_results": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"$ref": "#/$defs/count_row"}},
+    "scaling": {"$ref": "#/$defs/scaling"},
+    "validation": {"$ref": "#/$defs/validation"},
+    "result_classes": {"type": "array", "minItems": 6, "maxItems": 6, "items": {"$ref": "#/$defs/class_row"}},
+    "result_identity_sha256": {"$ref": "#/$defs/hash"}
+  },
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "candidate": {"type": "object", "additionalProperties": false, "required": ["checkpoint", "candidate", "parent", "scope_entry_count", "scope_identity_sha256", "result"], "properties": {"checkpoint": {"type": "string", "pattern": "^step_12(5[5-9]|6[0-2])$"}, "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "parent": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "scope_entry_count": {"type": "integer", "minimum": 1}, "scope_identity_sha256": {"$ref": "#/$defs/hash"}, "result": {"const": "pass"}}},
+    "resource_contract": {"type": "object", "additionalProperties": false, "required": ["counter_families", "counter_count", "pass_count", "charge_order", "cancellation", "reservation_classification", "result"], "properties": {"counter_families": {"type": "array", "minItems": 12, "maxItems": 12, "uniqueItems": true, "items": {"type": "string"}}, "counter_count": {"const": 12}, "pass_count": {"const": 24}, "charge_order": {"const": "immediately_before_work"}, "cancellation": {"const": "sampled_only_at_charge"}, "reservation_classification": {"const": "classified_at_execution_boundary"}, "result": {"const": "pass"}}},
+    "count_row": {"type": "object", "additionalProperties": false, "required": ["class", "count", "result"], "properties": {"class": {"type": "string"}, "count": {"type": "integer", "minimum": 1}, "result": {"const": "pass"}}},
+    "class_row": {"type": "object", "additionalProperties": false, "required": ["class", "result"], "properties": {"class": {"type": "string"}, "result": {"const": "pass"}}},
+    "scaling": {"type": "object", "additionalProperties": false, "required": ["classification", "sample_sizes", "property_read_counts", "quadratic_regression", "result"], "properties": {"classification": {"const": "indexed_linear_or_log_linear"}, "sample_sizes": {"const": [8, 16, 64, 256]}, "property_read_counts": {"const": [8, 16, 64, 256]}, "quadratic_regression": {"const": "fixed"}, "result": {"const": "pass"}}},
+    "validation": {"type": "object", "additionalProperties": false, "required": ["mutation_count", "pass_count", "intentional_skip_count", "fixed_regression_count", "open_regression_count", "full_check", "result"], "properties": {"mutation_count": {"const": 25}, "pass_count": {"const": 351}, "intentional_skip_count": {"const": 15}, "fixed_regression_count": {"const": 21}, "open_regression_count": {"const": 2}, "full_check": {"const": "pass"}, "result": {"const": "pass"}}}
+  }
+}

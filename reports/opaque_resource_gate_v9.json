@@ -1,0 +1,59 @@
+{
+  "schema": "nostr_automerge.opaque_resource_gate.v9.v1",
+  "checkpoint": "step_1263",
+  "gate_id": "GATE_V9_PRIVATE_RESOURCE",
+  "authority_stage": "checkpoint_expectations_corrected",
+  "status": "pass",
+  "publication_status": "held",
+  "requirement_ids": ["NCRDT-RESOURCE-001", "NCRDT-RESOURCE-014", "NCRDT-EVIDENCE-006"],
+  "candidate_chain": [
+    {"checkpoint": "step_1255", "candidate": "3ebec1cb4f8206c9560386fedb9e5ad6523f00bc", "parent": "44f45ef65c6c6a0628d0ffd169ef82c53a9c1b4d", "scope_entry_count": 4, "scope_identity_sha256": "bab054f7aa8b4ee19bc30136ba912720654a813b854dd52c4b7f5aa4534fcbf8", "result": "pass"},
+    {"checkpoint": "step_1256", "candidate": "70a1ca45d0bea247ef8784d30febf0db5722d441", "parent": "3ebec1cb4f8206c9560386fedb9e5ad6523f00bc", "scope_entry_count": 3, "scope_identity_sha256": "1d9665a41baa05b0965a9e6bc9f40b74b90dfd9fbcc66203d84ddbd43719bd76", "result": "pass"},
+    {"checkpoint": "step_1257", "candidate": "66d61287b8786e0ae04aad51bcc30bc77257a4a6", "parent": "70a1ca45d0bea247ef8784d30febf0db5722d441", "scope_entry_count": 3, "scope_identity_sha256": "9a74a7e4be235189b5198e3b5c4bc59336fed9b89ba52b7b36243eb047dea49a", "result": "pass"},
+    {"checkpoint": "step_1258", "candidate": "bbbcf33c5bcc680400081cc77bdd99e8c6487bf6", "parent": "66d61287b8786e0ae04aad51bcc30bc77257a4a6", "scope_entry_count": 4, "scope_identity_sha256": "dbf0c7cc9b09d1a8c74ee51e0dd06ba9b70ee6143e63536400533521f3cb1068", "result": "pass"},
+    {"checkpoint": "step_1259", "candidate": "6a6316126691b3be01cb3d6b3ee40a2f9174bd73", "parent": "bbbcf33c5bcc680400081cc77bdd99e8c6487bf6", "scope_entry_count": 3, "scope_identity_sha256": "eb19f7ad3d0dd15715d520be7a55a41d9c3267560f1ca1a75cf1594c2e03cda4", "result": "pass"},
+    {"checkpoint": "step_1260", "candidate": "5e94ed3d44866ede7bd9cdf3723a01bdc61ceea3", "parent": "6a6316126691b3be01cb3d6b3ee40a2f9174bd73", "scope_entry_count": 3, "scope_identity_sha256": "9fadf36bd113b6d535d1be9683c5ff4316dca78a734d7ccbc5981042ba1ba75a", "result": "pass"},
+    {"checkpoint": "step_1261", "candidate": "d7d6c21fd3cf095c6296837b66d7665ffa78de6a", "parent": "5e94ed3d44866ede7bd9cdf3723a01bdc61ceea3", "scope_entry_count": 1, "scope_identity_sha256": "aadbd5eb241afd51d6b5973202f3a4a3abc98c495b0bcb9cd1271ad7a40109a4", "result": "pass"},
+    {"checkpoint": "step_1262", "candidate": "fb585804db1f869014f4d10f57847c081c3635a4", "parent": "d7d6c21fd3cf095c6296837b66d7665ffa78de6a", "scope_entry_count": 5, "scope_identity_sha256": "fbd2f5289806ce2dc36b10bbd9b5c7c43ea1c48d317f7a1d7fe224fe9562d538", "result": "pass"}
+  ],
+  "resource_contract": {
+    "counter_families": ["control_items", "branch_items", "ancestry_edges", "dependency_edges", "carrier_items", "prior_knowledge_items", "checkpoint_items", "automerge_items", "closure_edges", "materialized_items", "report_items", "report_bytes"],
+    "counter_count": 12,
+    "pass_count": 24,
+    "charge_order": "immediately_before_work",
+    "cancellation": "sampled_only_at_charge",
+    "reservation_classification": "classified_at_execution_boundary",
+    "result": "pass"
+  },
+  "boundary_results": [
+    {"class": "exact_pass_budgets", "count": 24, "result": "pass"},
+    {"class": "every_boundary_cancellation", "count": 24, "result": "pass"},
+    {"class": "delivery_permutations", "count": 3, "result": "pass"},
+    {"class": "unrelated_evidence_flood", "count": 32, "result": "pass"}
+  ],
+  "scaling": {
+    "classification": "indexed_linear_or_log_linear",
+    "sample_sizes": [8, 16, 64, 256],
+    "property_read_counts": [8, 16, 64, 256],
+    "quadratic_regression": "fixed",
+    "result": "pass"
+  },
+  "validation": {
+    "mutation_count": 25,
+    "pass_count": 351,
+    "intentional_skip_count": 15,
+    "fixed_regression_count": 21,
+    "open_regression_count": 2,
+    "full_check": "pass",
+    "result": "pass"
+  },
+  "result_classes": [
+    {"class": "counter_ownership", "result": "pass"},
+    {"class": "exact_budget_boundaries", "result": "pass"},
+    {"class": "typed_cancellation", "result": "pass"},
+    {"class": "unrelated_work_isolation", "result": "pass"},
+    {"class": "deterministic_scaling", "result": "pass"},
+    {"class": "full_private", "result": "pass"}
+  ],
+  "result_identity_sha256": "730731c61fe5f3002a6db7d5ceedb540991d362f70a560757b45199dbd0d8fde"
+}
