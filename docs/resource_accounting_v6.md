@@ -32,3 +32,10 @@ prior-knowledge classification without inspecting later inputs. Reservation is
 atomic, cross-dimension borrowing is forbidden, and a finalization permit may
 finish only with a zero remainder. The complete path validates the report
 before refunding demonstrably unused optional capacity.
+
+Complete-report reservations account for every owned list construction and
+digest pass. The invariant reservation is a checked conservative function of
+target controls, hashes, Events, evidence, relationships, and checkpoint
+records. Materialized-document authority reuses a digest computed during the
+metered canonical-byte projection rather than rereading snapshot bytes during
+report validation.

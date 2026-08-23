@@ -1288,7 +1288,7 @@ fn document_authority(document: Option<&MaterializedDocumentView>) -> [u8; 32] {
     match document {
         Some(document) => {
             hasher.update([1]);
-            hash_slice(&mut hasher, document.canonical_bytes());
+            hasher.update(document.authority_digest());
         }
         None => hasher.update([0]),
     }
@@ -1555,6 +1555,8 @@ fn carrier_outcomes_match(
     parts: &EvaluationReportParts,
     expected: &BTreeMap<EventId, AttributableCarrierOutcome>,
 ) -> bool {
+    let mut verified_hashes = BTreeSet::new();
+    let mut accepted_hashes = BTreeSet::new();
     if expected
         .iter()
         .any(|(event_id, outcome)| *event_id != outcome.event_id())
@@ -1578,29 +1580,26 @@ fn carrier_outcomes_match(
                         && record.diagnostic() == outcome.diagnostic()
                 })
         })
-        || expected
-            .values()
-            .filter_map(|outcome| outcome.change_hash())
-            .any(|hash| {
-                parts
-                    .dispositions
-                    .binary_search_by_key(&hash, |(candidate, _)| *candidate)
-                    .is_err()
-            })
+        || expected.values().any(|outcome| {
+            let Some(hash) = outcome.change_hash() else {
+                return false;
+            };
+            verified_hashes.insert(hash);
+            if outcome.disposition() == ProtocolDisposition::Accepted {
+                accepted_hashes.insert(hash);
+            }
+            parts
+                .dispositions
+                .binary_search_by_key(&hash, |(candidate, _)| *candidate)
+                .is_err()
+        })
     {
         return false;
     }
 
     parts.dispositions.iter().all(|(hash, disposition)| {
-        let mut matching = expected
-            .values()
-            .filter(|outcome| outcome.change_hash() == Some(*hash));
-        let Some(first) = matching.next() else {
-            return false;
-        };
-        let has_accepted = first.disposition() == ProtocolDisposition::Accepted
-            || matching.any(|outcome| outcome.disposition() == ProtocolDisposition::Accepted);
-        (*disposition == ProtocolDisposition::Accepted) == has_accepted
+        verified_hashes.contains(hash)
+            && ((*disposition == ProtocolDisposition::Accepted) == accepted_hashes.contains(hash))
     })
 }
 

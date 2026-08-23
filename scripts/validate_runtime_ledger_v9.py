@@ -342,6 +342,7 @@ PREDECESSOR_CANDIDATES = (
     "a863d24247c395e6d1988170ac0eca924a9fd570",
     "ef93f361f16ace0fe0a7bc5c61b020485bb6f287",
     "f74a7dae5bcb6a10b67e9596bf368db2b2148936",
+    "627e01f189149592150b47f21ce556b606b70ed9",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -360,11 +361,11 @@ REPORT_REVISION_INVENTORY = (
 REPORT_REVISION_SOURCE_BINDINGS = (
     (
         "crates/nostr_automerge/src/engine/evaluation_report.rs",
-        "fa616b65e518af68cd0219d40b3d510718ba736639bb6b9a8ef0547b40fba708",
+        "896be2a483d6991a59b4939bd867ea6035ddf424442d13ef62adf627e2c1352a",
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "2bdace48d5e61699442c6adcf9da5ad7ee801bb8d478cf9034c40d76ffa74bb6",
+        "67c1450cb56fd494042c90388f494e82dcf140d626e640c0f675e8319ed5e285",
     ),
     (
         "crates/nostr_automerge/src/integrity.rs",
@@ -376,7 +377,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "crates/nostr_automerge/tests/public_engine_api.rs",
-        "894e48bc74c0132f8f89888cc8506166e093b46d98ec74745420357c0201e410",
+        "c2c977eaad01ee38ac8dc0f69bf11448b6eacfb33fa9febb277bbe372a9ac63d",
     ),
     (
         "tools/nostr_automerge_conformance/src/expected.rs",
@@ -459,17 +460,17 @@ HISTORICAL_STEP_1217_CLOSURE_PATHS = frozenset(
 )
 CLOSURE_PATHS = frozenset(
     {
-        "crates/nostr_automerge/src/automerge_adapter/document.rs",
-        "crates/nostr_automerge/src/checkpoint/verify.rs",
-        "crates/nostr_automerge/src/checkpoint/verify_history.rs",
+        "crates/nostr_automerge/src/automerge_adapter/materialized_view.rs",
+        "crates/nostr_automerge/src/engine/evaluation_report.rs",
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "crates/nostr_automerge/src/reference/apply.rs",
-        "crates/nostr_automerge/src/reference/epoch_engine.rs",
         "crates/nostr_automerge/tests/public_engine_api.rs",
+        "docs/api/public_engine.md",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
+        "docs/resource_accounting_v6.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
+        "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
     }
 )
@@ -562,6 +563,7 @@ EXPECTED_GATES = (
     ("V-TS",),
     ("V-FULL-TS",),
     ("V-EVIDENCE",),
+    ("V-RESOURCE",),
     ("V-RESOURCE",),
     ("V-RESOURCE",),
     ("V-RESOURCE",),
@@ -721,6 +723,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -813,6 +816,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_077",),
     ("FINDING_077",),
     ("FINDING_077",),
+    ("FINDING_084",),
     ("FINDING_084",),
 )
 FORBIDDEN_KEY_WORDS = {

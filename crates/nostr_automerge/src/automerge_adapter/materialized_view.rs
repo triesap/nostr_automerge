@@ -6,6 +6,7 @@ use automerge::{
     Automerge, Cursor, LoadOptions, ObjId, ObjType, OnPartialLoad, ROOT, ReadDoc, ScalarValue,
     StringMigration, TextEncoding, Value, VerificationMode,
 };
+use sha2::{Digest, Sha256};
 
 /// One deterministic element in a materialized document path.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -276,6 +277,7 @@ impl MaterializedMark {
 #[derive(Clone, PartialEq, Eq)]
 pub struct MaterializedDocumentView {
     canonical_bytes: Vec<u8>,
+    authority_digest: [u8; 32],
     entries: Vec<MaterializedEntry>,
     marks: Vec<MaterializedMark>,
 }
@@ -306,11 +308,16 @@ impl MaterializedDocumentView {
     }
 
     pub(crate) fn from_canonical_bytes(canonical_bytes: Vec<u8>) -> Result<Self, ProjectionError> {
-        Self::project_canonical_bytes(canonical_bytes, None)
+        let authority_digest = Sha256::digest(&canonical_bytes).into();
+        Self::project_canonical_bytes(canonical_bytes, authority_digest, None)
     }
 
     pub(crate) fn canonical_bytes(&self) -> &[u8] {
         &self.canonical_bytes
+    }
+
+    pub(crate) const fn authority_digest(&self) -> &[u8; 32] {
+        &self.authority_digest
     }
 
     pub(crate) fn from_canonical_bytes_metered(
@@ -329,10 +336,18 @@ impl MaterializedDocumentView {
             return Err(ProjectionError::Cancelled);
         }
         budget
+            .charge(WorkCounter::DecodeByte, bytes)
+            .map_err(|_| ProjectionError::Budget)?;
+        let authority_digest = Sha256::digest(&canonical_bytes).into();
+        if cancellation.is_cancelled() {
+            return Err(ProjectionError::Cancelled);
+        }
+        budget
             .charge(WorkCounter::ApplyChange, 1)
             .map_err(|_| ProjectionError::Budget)?;
         Self::project_canonical_bytes(
             canonical_bytes,
+            authority_digest,
             Some(ProjectionMeter {
                 budget,
                 cancellation,
@@ -342,6 +357,7 @@ impl MaterializedDocumentView {
 
     fn project_canonical_bytes(
         canonical_bytes: Vec<u8>,
+        authority_digest: [u8; 32],
         mut meter: Option<ProjectionMeter<'_>>,
     ) -> Result<Self, ProjectionError> {
         let options = LoadOptions::new()
@@ -368,6 +384,7 @@ impl MaterializedDocumentView {
         marks.sort();
         Ok(Self {
             canonical_bytes,
+            authority_digest,
             entries,
             marks,
         })

@@ -81,8 +81,11 @@ identity namespaces even when their underlying 32 bytes are equal.
 Complete construction independently recomputes both canonical digests and
 matches evidence, checkpoint outcomes, integrity alerts, manifest resolution,
 and the materialized document against a domain-separated authority sealed from
-the evaluator's trusted results before report ownership transfer. Checkpoint
-sub-vectors must already be strictly ordered and unique, manifest and alert
+the evaluator's trusted results before report ownership transfer. Report list,
+digest, and invariant work is reserved from checked target metadata, and
+materialized document authority reuses a digest sealed during metered byte
+projection instead of rereading snapshot bytes during report construction.
+Checkpoint sub-vectors must already be strictly ordered and unique, manifest and alert
 records must retain their causal Event and semantic relationships, and no
 constructor sorts, deduplicates, fills, or repairs these views. Conformance
 state assertions are recomputed from the signed requirement profile and the

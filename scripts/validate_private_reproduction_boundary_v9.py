@@ -122,6 +122,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "docs/execution/remediation_v9/reproductions.md",
+        "docs/resource_accounting_v6.md",
         "docs/provenance",
         "fixtures/v1_draft/scenarios/checkpoint",
         "fixtures/v1_draft/scenarios/checkpoints",
