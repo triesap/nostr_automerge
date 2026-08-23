@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/nostr_automerge/opaque_private_assurance_v10.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "checkpoint", "candidate", "status", "publication_status", "scenario_count", "delivery_order_count", "process_count", "runner_job_count", "results", "opaque_identities", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.opaque_private_assurance.v10.v1"},
+    "checkpoint": {"const": "step_1284"},
+    "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "status": {"const": "pass"},
+    "publication_status": {"const": "held"},
+    "scenario_count": {"const": 192},
+    "delivery_order_count": {"const": 8},
+    "process_count": {"const": 2},
+    "runner_job_count": {"const": 8},
+    "results": {"type": "array", "minItems": 8, "maxItems": 8},
+    "opaque_identities": {"type": "array", "minItems": 8, "maxItems": 8, "items": {"type": "string", "pattern": "^[0-9a-f]{64}$"}},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

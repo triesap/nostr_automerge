@@ -440,6 +440,11 @@ resource, coverage, package, dependency, advisory, license, SBOM, source-only,
 documentation, and policy lanes pass. Seven sustained, external, publication,
 or release campaigns remain explicitly held and are not represented as pass.
 
+At `step_1284`, the private compatibility target is represented only by one
+approved opaque candidate, eight ordered opaque identities, eight passing
+local-run classes, and exact counts for 192 scenarios, eight deliveries, and
+two processes. The public record contains no private path, command, or log.
+
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 `FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`
