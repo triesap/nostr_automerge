@@ -3,10 +3,10 @@
   "status": "in_progress",
   "rcld": 93,
   "cursor": {
-    "active_step": "step_1278",
-    "next_step": "step_1279",
+    "active_step": "step_1279",
+    "next_step": "step_1280",
     "last_step": "step_1287",
-    "remaining_checkpoint_count": 10,
+    "remaining_checkpoint_count": 9,
     "first_rcld": 93,
     "last_rcld": 94,
     "remaining_rcld_count": 2
@@ -1351,6 +1351,22 @@
       "finding_ids": ["FINDING_078"],
       "deviation_ids": [],
       "result": "pass"
+    },
+    {
+      "step": "step_1278",
+      "candidate": "920c768946a2d33449905a0b0891942fa8fb9afe",
+      "owner_class": "public",
+      "gate_ids": ["V-EVIDENCE"],
+      "requirement_ids": ["NCRDT-EVIDENCE-006"],
+      "finding_ids": [
+        "FINDING_073", "FINDING_074", "FINDING_075", "FINDING_076",
+        "FINDING_077", "FINDING_078", "FINDING_079", "FINDING_081",
+        "FINDING_082", "FINDING_083", "FINDING_084", "FINDING_085",
+        "FINDING_086", "FINDING_087", "FINDING_088", "FINDING_089",
+        "FINDING_090", "FINDING_091", "FINDING_092", "FINDING_093"
+      ],
+      "deviation_ids": [],
+      "result": "pass"
     }
   ],
   "opaque_reproduction": {
@@ -1619,6 +1635,25 @@
     "negative_mutation_count": 12,
     "projection_sha256": "234564768204c60ba37ec7861d833bf7ed8d0c5f15326063d72c9cb37d8b51c1",
     "validator_sha256": "a29cf269b3a8a2b0c77c1f937cd9d5bbad931db61655c36fdd7fda4d5835957e",
+    "result": "pass"
+  },
+  "opaque_semantic_proofs": {
+    "checkpoint": "step_1279",
+    "candidate": "920c768946a2d33449905a0b0891942fa8fb9afe",
+    "opaque_evidence_candidate": "b812328043cd514ad8909c0f926435005d27d1fd",
+    "opaque_implementation_candidate": "36db673b8e5b62df69a5ee321b2e13c040fc8237",
+    "requirement_count": 113,
+    "fixture_requirement_count": 49,
+    "assertion_requirement_count": 64,
+    "report_clause_count": 21,
+    "finding_count": 21,
+    "unique_proof_count": 99,
+    "negative_mutation_count": 18,
+    "report_sha256": "594b2510b9302ac040efa5a1225e9a07a90fc60045c9db941272f269c83796e2",
+    "schema_sha256": "0a7611451b17ce0888490cfb38da60801c4729088f4ef93ffe7bcac343baacbb",
+    "importer_sha256": "b16b534739d849269bb5a6433a0d05f66ed98b50fe33f73a5de73608dea6f024",
+    "validator_sha256": "6051c5f57f1813662e0c678adc811ee31c85f1815ad13f08558fdda19d19cbed",
+    "result_identity_sha256": "10f3954ebbe75de9f161ab029c2497b4af0bf264322a3d0ec7a78d51346f676c",
     "result": "pass"
   }
 }

@@ -1,0 +1,33 @@
+{
+  "title": "nostr_automerge opaque semantic proofs v10",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "checkpoint", "public_candidate", "opaque_evidence_candidate", "opaque_implementation_candidate", "opaque_record_sha256", "opaque_record_identity_sha256", "requirement_count", "fixture_requirement_count", "assertion_requirement_count", "report_clause_count", "finding_count", "closed_finding_count", "held_finding_count", "requirements", "report_clauses", "findings", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.opaque_semantic_proofs.v10.v1"},
+    "status": {"const": "pass"},
+    "checkpoint": {"const": "step_1279"},
+    "public_candidate": {"const": "920c768946a2d33449905a0b0891942fa8fb9afe"},
+    "opaque_evidence_candidate": {"const": "b812328043cd514ad8909c0f926435005d27d1fd"},
+    "opaque_implementation_candidate": {"const": "36db673b8e5b62df69a5ee321b2e13c040fc8237"},
+    "opaque_record_sha256": {"const": "ec1f10d92ab050cd1ab8d8917e85f7b0f0762b7341e3c24f9ff4c3dc9bf66443"},
+    "opaque_record_identity_sha256": {"const": "b81d1be479c59b8b29be9b896a4bb6fa0af502b3faa9771ac4142049ee1433c2"},
+    "requirement_count": {"const": 113},
+    "fixture_requirement_count": {"const": 49},
+    "assertion_requirement_count": {"const": 64},
+    "report_clause_count": {"const": 21},
+    "finding_count": {"const": 21},
+    "closed_finding_count": {"const": 20},
+    "held_finding_count": {"const": 1},
+    "requirements": {"type": "array", "minItems": 113, "maxItems": 113, "items": {"$ref": "#/$defs/requirement"}},
+    "report_clauses": {"type": "array", "minItems": 21, "maxItems": 21, "items": {"$ref": "#/$defs/subject"}},
+    "findings": {"type": "array", "minItems": 21, "maxItems": 21, "items": {"$ref": "#/$defs/finding"}},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "$defs": {
+    "proof_ids": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"type": "string", "pattern": "^opaque_(?:fixture|test|hold)_[0-9a-f]{64}$"}},
+    "requirement": {"type": "object", "additionalProperties": false, "required": ["id", "proof_kind", "proof_ids"], "properties": {"id": {"type": "string", "pattern": "^NCRDT-[A-Z0-9]+-[0-9]{3}$"}, "proof_kind": {"enum": ["opaque_fixture", "opaque_test"]}, "proof_ids": {"$ref": "#/$defs/proof_ids"}}},
+    "subject": {"type": "object", "additionalProperties": false, "required": ["id", "proof_ids"], "properties": {"id": {"type": "string", "minLength": 1}, "proof_ids": {"$ref": "#/$defs/proof_ids"}}},
+    "finding": {"type": "object", "additionalProperties": false, "required": ["id", "status", "proof_ids"], "properties": {"id": {"type": "string", "pattern": "^FINDING_[0-9]{3}$"}, "status": {"enum": ["closed", "held"]}, "proof_ids": {"$ref": "#/$defs/proof_ids"}}}
+  }
+}

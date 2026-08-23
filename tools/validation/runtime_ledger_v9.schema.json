@@ -28,7 +28,8 @@
     "semantic_proof_authority",
     "base64_proof",
     "rust_requirement_proofs",
-    "report_finding_proofs"
+    "report_finding_proofs",
+    "opaque_semantic_proofs"
   ],
   "properties": {
     "schema": {"const": "nostr_automerge.runtime_ledger.v9.v1"},
@@ -592,6 +593,30 @@
         "negative_mutation_count": {"const": 12},
         "projection_sha256": {"const": "234564768204c60ba37ec7861d833bf7ed8d0c5f15326063d72c9cb37d8b51c1"},
         "validator_sha256": {"const": "a29cf269b3a8a2b0c77c1f937cd9d5bbad931db61655c36fdd7fda4d5835957e"},
+        "result": {"const": "pass"}
+      }
+    },
+    "opaque_semantic_proofs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checkpoint", "candidate", "opaque_evidence_candidate", "opaque_implementation_candidate", "requirement_count", "fixture_requirement_count", "assertion_requirement_count", "report_clause_count", "finding_count", "unique_proof_count", "negative_mutation_count", "report_sha256", "schema_sha256", "importer_sha256", "validator_sha256", "result_identity_sha256", "result"],
+      "properties": {
+        "checkpoint": {"const": "step_1279"},
+        "candidate": {"const": "920c768946a2d33449905a0b0891942fa8fb9afe"},
+        "opaque_evidence_candidate": {"const": "b812328043cd514ad8909c0f926435005d27d1fd"},
+        "opaque_implementation_candidate": {"const": "36db673b8e5b62df69a5ee321b2e13c040fc8237"},
+        "requirement_count": {"const": 113},
+        "fixture_requirement_count": {"const": 49},
+        "assertion_requirement_count": {"const": 64},
+        "report_clause_count": {"const": 21},
+        "finding_count": {"const": 21},
+        "unique_proof_count": {"const": 99},
+        "negative_mutation_count": {"const": 18},
+        "report_sha256": {"const": "594b2510b9302ac040efa5a1225e9a07a90fc60045c9db941272f269c83796e2"},
+        "schema_sha256": {"const": "0a7611451b17ce0888490cfb38da60801c4729088f4ef93ffe7bcac343baacbb"},
+        "importer_sha256": {"const": "b16b534739d849269bb5a6433a0d05f66ed98b50fe33f73a5de73608dea6f024"},
+        "validator_sha256": {"const": "1327bf40b4927962f8f36633197d033c2028b0e8dcc2944aba47f24775f954b9"},
+        "result_identity_sha256": {"const": "10f3954ebbe75de9f161ab029c2497b4af0bf264322a3d0ec7a78d51346f676c"},
         "result": {"const": "pass"}
       }
     }

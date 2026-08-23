@@ -414,6 +414,11 @@ through 093 bind to 17 unique exact tests or closed validators. Twenty findings
 have passing local closure proof; finding 080 alone remains truthfully held for
 external assurance and publication authority.
 
+The opaque proof overlay binds 113 applicable requirements, all 21 report
+clauses, and all 21 findings to 99 exact opaque fixture, test, or hold IDs. The
+public record contains no private path, command, title, or log; its import binds
+the opaque evidence and implementation candidates and record identity exactly.
+
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 `FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`

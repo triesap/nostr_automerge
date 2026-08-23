@@ -43,6 +43,15 @@ RUST_REQUIREMENT_PROOF_PROJECTION_SHA256 = "9ac4c332bec5726c93573e637109a764afe9
 REPORT_FINDING_PROOF_VALIDATOR = "scripts/validate_report_finding_proofs_v10.py"
 REPORT_FINDING_PROOF_VALIDATOR_SHA256 = "a29cf269b3a8a2b0c77c1f937cd9d5bbad931db61655c36fdd7fda4d5835957e"
 REPORT_FINDING_PROOF_PROJECTION_SHA256 = "234564768204c60ba37ec7861d833bf7ed8d0c5f15326063d72c9cb37d8b51c1"
+OPAQUE_SEMANTIC_PROOF_REPORT = "reports/opaque_semantic_proofs_v10.json"
+OPAQUE_SEMANTIC_PROOF_REPORT_SHA256 = "594b2510b9302ac040efa5a1225e9a07a90fc60045c9db941272f269c83796e2"
+OPAQUE_SEMANTIC_PROOF_SCHEMA = "tools/validation/opaque_semantic_proofs_v10.schema.json"
+OPAQUE_SEMANTIC_PROOF_SCHEMA_SHA256 = "0a7611451b17ce0888490cfb38da60801c4729088f4ef93ffe7bcac343baacbb"
+OPAQUE_SEMANTIC_PROOF_IMPORTER = "scripts/import_opaque_semantic_proofs_v10.py"
+OPAQUE_SEMANTIC_PROOF_IMPORTER_SHA256 = "b16b534739d849269bb5a6433a0d05f66ed98b50fe33f73a5de73608dea6f024"
+OPAQUE_SEMANTIC_PROOF_VALIDATOR = "scripts/validate_opaque_semantic_proofs_v10.py"
+OPAQUE_SEMANTIC_PROOF_VALIDATOR_SHA256 = "6051c5f57f1813662e0c678adc811ee31c85f1815ad13f08558fdda19d19cbed"
+OPAQUE_SEMANTIC_PROOF_IDENTITY = "10f3954ebbe75de9f161ab029c2497b4af0bf264322a3d0ec7a78d51346f676c"
 NEUTRAL_REPORT_SCHEMA = "fixtures/schema/report.schema.json"
 LEDGER = "implementation/runtime_ledger_v9.json"
 LEDGER_SCHEMA = "tools/validation/runtime_ledger_v9.schema.json"
@@ -63,7 +72,7 @@ REPORT_SCHEMA_PROJECTION = (
     "5de6a509ec2cb50e618f3f1915a02931c03902a2d82d5462b0b55354df2a5a9d"
 )
 LEDGER_SCHEMA_PROJECTION = (
-    "169a171277370ae7d7d0718210d596ca938c36b29d68af7d2a47ecd85f94117f"
+    "c49cef2ee1557c010609220e0a0f3e61b7395095042c047946a6d14f8909883a"
 )
 CHECKPOINT_REPORT_SCHEMA_PROJECTION = (
     "efa1620e6a44a45442e8e2671c4f3430baa6bb98828dde293c9f156dac6c8dfc"
@@ -410,6 +419,7 @@ PREDECESSOR_CANDIDATES = (
     "1ff391cd4837f3e17ffa5b06753289eedbb56b80",
     "6fbef81f8f12caef49ddee6fd5135d900bf22093",
     "3b3dd73a93cb4e33ab08a600ff6294538a5b91bd",
+    "920c768946a2d33449905a0b0891942fa8fb9afe",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -532,11 +542,14 @@ CLOSURE_PATHS = frozenset(
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
         "reports/spec_baseline.txt",
+        "reports/opaque_semantic_proofs_v10.json",
+        "scripts/import_opaque_semantic_proofs_v10.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
-        "scripts/validate_report_finding_proofs_v10.py",
+        "scripts/validate_opaque_semantic_proofs_v10.py",
         "scripts/validate_runtime_ledger_v9.py",
         "scripts/validate_spec.py",
         "tools/nostr_automerge_xtask/src/validate.rs",
+        "tools/validation/opaque_semantic_proofs_v10.schema.json",
         "tools/validation/runtime_ledger_v9.schema.json",
     }
 )
@@ -551,7 +564,10 @@ CLOSURE_AMEND_PATHS = frozenset(
 )
 CLOSURE_NEW_PATHS = frozenset(
     {
-        "scripts/validate_report_finding_proofs_v10.py",
+        "reports/opaque_semantic_proofs_v10.json",
+        "scripts/import_opaque_semantic_proofs_v10.py",
+        "scripts/validate_opaque_semantic_proofs_v10.py",
+        "tools/validation/opaque_semantic_proofs_v10.schema.json",
     }
 )
 EXPECTED_GATES = (
@@ -672,6 +688,7 @@ EXPECTED_GATES = (
     ("V-FULL-TS",),
     ("V-CONF",),
     ("V-FULL-RUST",),
+    ("V-EVIDENCE",),
     ("V-EVIDENCE",),
     ("V-EVIDENCE",),
     ("V-EVIDENCE",),
@@ -865,6 +882,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-EVIDENCE-006",),
     ("NCRDT-B64-001", "NCRDT-EVIDENCE-006"),
     ("NCRDT-EVIDENCE-006",),
+    ("NCRDT-EVIDENCE-006",),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -995,6 +1013,7 @@ EXPECTED_FINDINGS = (
     (),
     (),
     ("FINDING_078",),
+    REPRODUCED_IDS,
 )
 FORBIDDEN_KEY_WORDS = {
     "source",
@@ -2355,6 +2374,7 @@ def validate_runtime_ledger(
         "base64_proof",
         "rust_requirement_proofs",
         "report_finding_proofs",
+        "opaque_semantic_proofs",
     }
     require(set(ledger) == expected_keys, "ledger:keys")
     require(ledger.get("schema") == "nostr_automerge.runtime_ledger.v9.v1", "ledger:schema")
@@ -2902,6 +2922,36 @@ def validate_runtime_ledger(
             "result": "pass",
         },
         "ledger:report_finding_proofs_binding",
+    )
+    for relative, expected in (
+        (OPAQUE_SEMANTIC_PROOF_REPORT, OPAQUE_SEMANTIC_PROOF_REPORT_SHA256),
+        (OPAQUE_SEMANTIC_PROOF_SCHEMA, OPAQUE_SEMANTIC_PROOF_SCHEMA_SHA256),
+        (OPAQUE_SEMANTIC_PROOF_IMPORTER, OPAQUE_SEMANTIC_PROOF_IMPORTER_SHA256),
+        (OPAQUE_SEMANTIC_PROOF_VALIDATOR, OPAQUE_SEMANTIC_PROOF_VALIDATOR_SHA256),
+    ):
+        require(file_digest(relative) == expected, f"ledger:opaque_semantic_file:{relative}")
+    require(
+        ledger.get("opaque_semantic_proofs")
+        == {
+            "checkpoint": "step_1279",
+            "candidate": "920c768946a2d33449905a0b0891942fa8fb9afe",
+            "opaque_evidence_candidate": "b812328043cd514ad8909c0f926435005d27d1fd",
+            "opaque_implementation_candidate": "36db673b8e5b62df69a5ee321b2e13c040fc8237",
+            "requirement_count": 113,
+            "fixture_requirement_count": 49,
+            "assertion_requirement_count": 64,
+            "report_clause_count": 21,
+            "finding_count": 21,
+            "unique_proof_count": 99,
+            "negative_mutation_count": 18,
+            "report_sha256": OPAQUE_SEMANTIC_PROOF_REPORT_SHA256,
+            "schema_sha256": OPAQUE_SEMANTIC_PROOF_SCHEMA_SHA256,
+            "importer_sha256": OPAQUE_SEMANTIC_PROOF_IMPORTER_SHA256,
+            "validator_sha256": OPAQUE_SEMANTIC_PROOF_VALIDATOR_SHA256,
+            "result_identity_sha256": OPAQUE_SEMANTIC_PROOF_IDENTITY,
+            "result": "pass",
+        },
+        "ledger:opaque_semantic_proofs_binding",
     )
     validate_no_leak(ledger, "ledger:boundary")
 

@@ -48,6 +48,7 @@ JSON_RECORDS = (
     "reports/opaque_resource_gate_v9.json",
     "reports/opaque_finalization_v9.json",
     "reports/report_parity_v9.json",
+    "reports/opaque_semantic_proofs_v10.json",
     "implementation/runtime_ledger_v9.json",
     "tools/validation/opaque_reproduction_v9.schema.json",
     "tools/validation/opaque_checkpoint_v9.schema.json",
@@ -64,6 +65,7 @@ JSON_RECORDS = (
     "tools/validation/opaque_resource_gate_v9.schema.json",
     "tools/validation/opaque_finalization_v9.schema.json",
     "tools/validation/report_parity_v9.schema.json",
+    "tools/validation/opaque_semantic_proofs_v10.schema.json",
     "tools/validation/runtime_ledger_v9.schema.json",
 )
 TEXT_RECORDS = ("docs/execution/remediation_v9/ledger.md",)
@@ -92,6 +94,8 @@ PYTHON_SURFACES = (
     "scripts/validate_base64_proof_v10.py",
     "scripts/validate_rust_requirement_proofs_v10.py",
     "scripts/validate_report_finding_proofs_v10.py",
+    "scripts/import_opaque_semantic_proofs_v10.py",
+    "scripts/validate_opaque_semantic_proofs_v10.py",
     "scripts/validate_opaque_boundary_gate_v9.py",
     "scripts/validate_opaque_resource_gate_v9.py",
     "scripts/validate_opaque_finalization_v9.py",
@@ -192,6 +196,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/report_parity_v9.json",
         "reports/opaque_boundary_gate_v9.json",
         "reports/opaque_resource_gate_v9.json",
+        "reports/opaque_semantic_proofs_v10.json",
         "reports/external_holds_v8.json",
         "reports/spec_baseline.txt",
         "scripts/validate_architecture.py",
@@ -224,6 +229,8 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_base64_proof_v10.py",
         "scripts/validate_rust_requirement_proofs_v10.py",
         "scripts/validate_report_finding_proofs_v10.py",
+        "scripts/import_opaque_semantic_proofs_v10.py",
+        "scripts/validate_opaque_semantic_proofs_v10.py",
         "scripts/reproduce_remediation_v9.py",
         "scripts/validate_remediation_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
@@ -231,6 +238,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_spec.py",
         "scripts/validate_opaque_boundary_gate_v9.py",
         "scripts/validate_opaque_resource_gate_v9.py",
+        "tools/validation/opaque_semantic_proofs_v10.schema.json",
         "spec/authority_transition_v10.json",
         "spec/companion_authority_v10.json",
         "spec/API_CONTRACTS.md",
@@ -304,7 +312,14 @@ def validate_source_literal(
     for index, pattern in enumerate(UNIVERSAL_SOURCE_PATTERNS):
         matched = pattern.search(value) is not None
         require(
-            not matched or (pattern is COMMAND_TEXT and allow_command_token),
+            not matched
+            or (pattern is COMMAND_TEXT and allow_command_token)
+            or (
+                pattern is PACKAGE_SUFFIX_TEXT
+                and diagnostic.startswith(
+                    "source:scripts/validate_opaque_semantic_proofs_v10.py:"
+                )
+            ),
             f"{diagnostic}:pattern:{index}",
         )
     if RELATIVE_PATH_TEXT.search(value) is not None:
@@ -509,6 +524,10 @@ def validate_source_surfaces() -> None:
                     or (
                         value in {"cargo", "python3"}
                         and relative == "scripts/validate_report_finding_proofs_v10.py"
+                    )
+                    or (
+                        value in {"git", "python3"}
+                        and relative == "scripts/import_opaque_semantic_proofs_v10.py"
                     )
                     or (
                         value in {"cargo", "git"}
