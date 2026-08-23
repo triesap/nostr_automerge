@@ -316,6 +316,7 @@ PREDECESSOR_CANDIDATES = (
     "74c99e241aa32521846c2f0fcc791803e61c778b",
     "1a09181b0db5a0563f699a6483a97a591005578e",
     "6faf4a0922e6ca33c32b1f503ff29a6f3449f86a",
+    "01c6e9e21b4e51a75fd2012d909b7ae16f77f0ef",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -338,7 +339,7 @@ REPORT_REVISION_SOURCE_BINDINGS = (
     ),
     (
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-        "4aa56503308779240ef32020a28cf8769fec4a7babab33bbd5c3035a1f75b256",
+        "27b47666e93ee479550f2c1ecbacda9564ba7639a22e9414b4e70a75a11a0844",
     ),
     (
         "crates/nostr_automerge/src/integrity.rs",
@@ -518,6 +519,7 @@ EXPECTED_GATES = (
     ("V-RESOURCE",),
     ("V-RESOURCE",),
     ("V-RESOURCE",),
+    ("V-RESOURCE",),
 )
 EXPECTED_REQUIREMENTS = (
     (),
@@ -653,6 +655,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-RESOURCE-013", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -723,6 +726,7 @@ EXPECTED_FINDINGS = (
     ("FINDING_090",),
     ("FINDING_090", "FINDING_093"),
     ("FINDING_090", "FINDING_093"),
+    ("FINDING_076",),
     ("FINDING_076",),
     ("FINDING_076",),
     ("FINDING_076",),

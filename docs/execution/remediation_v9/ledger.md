@@ -111,8 +111,9 @@ counts, result classes, and held publication state.
 | `step_1220` | `V-RESOURCE` | pass |
 | `step_1221` | `V-RESOURCE` | pass |
 | `step_1222` | `V-RESOURCE` | pass |
-| `step_1223` | `V-RESOURCE` | active |
-| `step_1224` | `V-RESOURCE` | next |
+| `step_1223` | `V-RESOURCE` | pass |
+| `step_1224` | `V-RESOURCE` | active |
+| `step_1225` | `V-RESOURCE` | next |
 
 The completed report-authority checkpoint binds a closed inventory of complete
 and no-progress construction plus nine revision consumers to exact reviewed
@@ -224,10 +225,16 @@ unperformed complete capacity, consumes only the constant fallback ledger,
 returns an exact empty typed report, and leaves caller target capacity
 unrefunded.
 
-The active validation checkpoint makes complete settlement accept only a
+The completed validation checkpoint makes complete settlement accept only a
 successfully validated complete report. Constructor failure or an incomplete
 candidate fails the permit, forfeits both ledgers, returns a typed error, and
 cannot refund reserved target capacity or fabricate a completion result.
+
+The active boundary checkpoint checks cancellation at each named complete
+pass immediately before capacity consumption. Exact reservation `N-1`, `N`,
+and `N+1` tests, every cancellation position, both fallback stop causes, and
+checked planning overflow prove that no unreserved pass work begins and the
+original typed stop is preserved.
 
 The authority projection is monotonic from `checkpoint_expectations_corrected` to
 `distribution_complete`. It records 148 requirements now and at completion,
@@ -255,7 +262,7 @@ immutable historical record and is not the carrier closure authority.
 `step_1197` through `step_1205` chain ending at
 `321abda8f672ecf1a44aa1919e0cec98830e8df8`; its current two-process
 conformance identity is the same canonical and serialized output pair above.
-There are 65 checkpoints including the active checkpoint remaining through
+There are 64 checkpoints including the active checkpoint remaining through
 `step_1287`.
 
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
