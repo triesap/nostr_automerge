@@ -1,0 +1,23 @@
+{
+  "title": "nostr_automerge Rust resource gate v9",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "checkpoint", "gate_id", "authority_stage", "status", "publication_status", "requirement_ids", "candidate_chain", "resource_contract", "exact_budget_fixtures", "boundary_cases", "regressions", "validation", "result_classes", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.rust_resource_gate.v9.v1"},
+    "checkpoint": {"const": "step_1244"},
+    "gate_id": {"const": "GATE_V9_RUST_RESOURCE"},
+    "authority_stage": {"const": "checkpoint_expectations_corrected"},
+    "status": {"const": "pass"},
+    "publication_status": {"const": "held"},
+    "requirement_ids": {"type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": {"type": "string"}},
+    "candidate_chain": {"type": "array", "minItems": 9, "maxItems": 9, "items": {"type": "object", "additionalProperties": false, "required": ["checkpoint", "candidate", "parent", "scope_entry_count", "scope_identity_sha256", "result"], "properties": {"checkpoint": {"type": "string"}, "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "parent": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "scope_entry_count": {"type": "integer", "minimum": 1}, "scope_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "result": {"const": "pass"}}}},
+    "resource_contract": {"type": "object", "additionalProperties": false, "required": ["work_counters", "counter_count", "ownership", "shared_change_bytes", "charge_order", "cancellation", "result"], "properties": {"work_counters": {"type": "array", "minItems": 10, "maxItems": 10, "uniqueItems": true, "items": {"type": "string"}}, "counter_count": {"const": 10}, "ownership": {"const": "target_local"}, "shared_change_bytes": {"const": "single_canonical_allocation"}, "charge_order": {"const": "immediately_before_work"}, "cancellation": {"const": "sampled_only_at_charge"}, "result": {"const": "pass"}}},
+    "exact_budget_fixtures": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"type": "object", "additionalProperties": false, "required": ["fixture_id", "max_items", "result"], "properties": {"fixture_id": {"type": "string"}, "max_items": {"type": "integer", "minimum": 1}, "result": {"const": "pass"}}}},
+    "boundary_cases": {"type": "array", "minItems": 6, "maxItems": 6, "uniqueItems": true, "items": {"type": "string"}},
+    "regressions": {"type": "object", "additionalProperties": false, "required": ["fixed_count", "open_count", "finding_077", "finding_084", "result"], "properties": {"fixed_count": {"const": 11}, "open_count": {"const": 1}, "finding_077": {"const": "fixed"}, "finding_084": {"const": "fixed"}, "result": {"const": "pass"}}},
+    "validation": {"type": "object", "additionalProperties": false, "required": ["focused_resource", "checkpoint", "report", "conformance", "full_public", "conformance_scenario_count", "delivery_order_count", "process_count", "fixture_manifest_sha256", "canonical_output_sha256", "distribution_run_sha256", "result"], "properties": {"focused_resource": {"const": "pass"}, "checkpoint": {"const": "pass"}, "report": {"const": "pass"}, "conformance": {"const": "pass"}, "full_public": {"const": "pass"}, "conformance_scenario_count": {"const": 180}, "delivery_order_count": {"const": 8}, "process_count": {"const": 2}, "fixture_manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "canonical_output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "distribution_run_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "result": {"const": "pass"}}},
+    "result_classes": {"type": "array", "minItems": 6, "maxItems": 6, "uniqueItems": true, "items": {"type": "object", "additionalProperties": false, "required": ["class", "result"], "properties": {"class": {"type": "string"}, "result": {"const": "pass"}}}},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

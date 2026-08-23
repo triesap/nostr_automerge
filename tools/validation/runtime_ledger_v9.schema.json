@@ -18,6 +18,7 @@
     "carrier_gate",
     "rust_report_gate",
     "rust_finalization_gate",
+    "rust_resource_gate",
     "opaque_finalization",
     "report_schema_authority",
     "report_parity_gate"
@@ -323,6 +324,32 @@
         "open_regression_count": {"const": 3},
         "implementation_identity_sha256": {"const": "8897ef5c9358ff895483dbf6a6c94301ac88080c0e1070cccd29716b33eea640"},
         "result_identity_sha256": {"const": "ab5f4a6900e8ad6df0dac8f7965c981e9f92782922261f88e156e5fc5ed6759d"},
+        "result": {"const": "pass"},
+        "publication_status": {"const": "held"}
+      }
+    },
+    "rust_resource_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpoint", "gate_id", "predecessor_candidate", "candidate_count",
+        "work_counter_count", "exact_budget_fixture_count", "boundary_count",
+        "fixed_regression_count", "open_regression_count",
+        "fixture_manifest_sha256", "result_identity_sha256", "result",
+        "publication_status"
+      ],
+      "properties": {
+        "checkpoint": {"const": "step_1244"},
+        "gate_id": {"const": "GATE_V9_RUST_RESOURCE"},
+        "predecessor_candidate": {"const": "7925b9596a2406000009c3341ca0c79eb1fe89b9"},
+        "candidate_count": {"const": 9},
+        "work_counter_count": {"const": 10},
+        "exact_budget_fixture_count": {"const": 4},
+        "boundary_count": {"const": 6},
+        "fixed_regression_count": {"const": 11},
+        "open_regression_count": {"const": 1},
+        "fixture_manifest_sha256": {"const": "4c6866b91bffbeba9610c4602b99abfc7e5a16c9d262d6e4d624a4e3a9537f9a"},
+        "result_identity_sha256": {"const": "41dbbc04929a1eb431baaa9cdd7c982a3b284a45c442040882875eb21c7dfe6d"},
         "result": {"const": "pass"},
         "publication_status": {"const": "held"}
       }

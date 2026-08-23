@@ -128,8 +128,22 @@ publication status remains `held`.
 | `step_1235` | `V-RESOURCE` | pass |
 | `step_1236` | `V-RESOURCE` | pass |
 | `step_1237` | `V-RESOURCE` | pass |
-| `step_1238` | `V-RESOURCE` | active |
-| `step_1239` | `V-RESOURCE` | next |
+| `step_1238` | `V-RESOURCE` | pass |
+| `step_1239` | `V-RESOURCE` | pass |
+| `step_1240` | `V-RESOURCE` | pass |
+| `step_1241` | `V-RESOURCE` | pass |
+| `step_1242` | `V-RESOURCE` | pass |
+| `step_1243` | `V-RESOURCE` | pass |
+| `step_1244` | `V-FULL-RUST` | active |
+| `step_1245` | `V-TS` | next |
+
+The Rust resource closure binds the nine ordered public candidates from
+`step_1235` through `step_1243`, all ten work-counter dimensions, the exact
+budgets of the four target-work fixtures, shared canonical change-byte
+ownership, target-local accounting, cancellation-before-work, and deterministic
+output. Two fresh 180-scenario by eight-delivery conformance processes agree
+byte-for-byte. Eleven regressions are fixed; the sole remaining remediation-v9
+case is the intentionally held semantic proof addressed by later RCLDs.
 
 The completed report-authority checkpoint binds a closed inventory of complete
 and no-progress construction plus nine revision consumers to exact reviewed

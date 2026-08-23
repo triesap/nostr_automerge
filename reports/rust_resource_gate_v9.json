@@ -1,0 +1,60 @@
+{
+  "schema": "nostr_automerge.rust_resource_gate.v9.v1",
+  "checkpoint": "step_1244",
+  "gate_id": "GATE_V9_RUST_RESOURCE",
+  "authority_stage": "checkpoint_expectations_corrected",
+  "status": "pass",
+  "publication_status": "held",
+  "requirement_ids": ["NCRDT-RESOURCE-014", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+  "candidate_chain": [
+    {"checkpoint": "step_1235", "candidate": "5b08a2b8d271e2df0ccd1711ba564e7b58d4bbc7", "parent": "3bec1ed87f7b2298a7d132dea8c7179b0f9afb20", "scope_entry_count": 7, "scope_identity_sha256": "713e8df3300bc86ac47e87fac2445e79de5abc4c1576243d411d3a33901d638f", "result": "pass"},
+    {"checkpoint": "step_1236", "candidate": "57f789e294f2139899ad273cd576d15a12173b91", "parent": "5b08a2b8d271e2df0ccd1711ba564e7b58d4bbc7", "scope_entry_count": 15, "scope_identity_sha256": "647b7c766b1b687ca9afa5f2fba0a9af161fa470fde86e87b6f1bdd8a66b7feb", "result": "pass"},
+    {"checkpoint": "step_1237", "candidate": "6e9beea4ae0e4ead8af2f1791d21f9952010bee9", "parent": "57f789e294f2139899ad273cd576d15a12173b91", "scope_entry_count": 7, "scope_identity_sha256": "6592f2d4f1dda5cb7f01c76edd1f52b1ad7e5083c23f72eab5b9d3dddd9dc801", "result": "pass"},
+    {"checkpoint": "step_1238", "candidate": "a863d24247c395e6d1988170ac0eca924a9fd570", "parent": "6e9beea4ae0e4ead8af2f1791d21f9952010bee9", "scope_entry_count": 10, "scope_identity_sha256": "2f64a52292678cad3130f67adbdd43a08f72050875b81cb4bd588f68730110c4", "result": "pass"},
+    {"checkpoint": "step_1239", "candidate": "ef93f361f16ace0fe0a7bc5c61b020485bb6f287", "parent": "a863d24247c395e6d1988170ac0eca924a9fd570", "scope_entry_count": 9, "scope_identity_sha256": "e82cd0371ff5b99c7577072a62e3e6c81db12b5cdfc46263488a17144cfe9d4a", "result": "pass"},
+    {"checkpoint": "step_1240", "candidate": "f74a7dae5bcb6a10b67e9596bf368db2b2148936", "parent": "ef93f361f16ace0fe0a7bc5c61b020485bb6f287", "scope_entry_count": 16, "scope_identity_sha256": "f354508ee9858adcdb9888ad76a949478d357b38f3feef0e7577f7442a6c2275", "result": "pass"},
+    {"checkpoint": "step_1241", "candidate": "627e01f189149592150b47f21ce556b606b70ed9", "parent": "f74a7dae5bcb6a10b67e9596bf368db2b2148936", "scope_entry_count": 12, "scope_identity_sha256": "d8a4d2fe7b1e68ecb295277ba0905b6bb092af63bcc609043c46e121da666284", "result": "pass"},
+    {"checkpoint": "step_1242", "candidate": "fec9ef4c38c4044902285d9bcfadf2f078dc3a6e", "parent": "627e01f189149592150b47f21ce556b606b70ed9", "scope_entry_count": 12, "scope_identity_sha256": "9ac40520c18748590bb27c404f8f3b0127274640e74eb5884223fde2811155ce", "result": "pass"},
+    {"checkpoint": "step_1243", "candidate": "7925b9596a2406000009c3341ca0c79eb1fe89b9", "parent": "fec9ef4c38c4044902285d9bcfadf2f078dc3a6e", "scope_entry_count": 19, "scope_identity_sha256": "b5ee954448f7a3ef40a836a71ba817e548ea5144aca00723ca46e527de4e2700", "result": "pass"}
+  ],
+  "resource_contract": {
+    "work_counters": ["event", "control", "carrier", "checkpoint", "assertion", "decode_byte", "crypto_byte", "document_byte", "checkpoint_byte", "report_byte"],
+    "counter_count": 10,
+    "ownership": "target_local",
+    "shared_change_bytes": "single_canonical_allocation",
+    "charge_order": "immediately_before_work",
+    "cancellation": "sampled_only_at_charge",
+    "result": "pass"
+  },
+  "exact_budget_fixtures": [
+    {"fixture_id": "parent_propagation_exact_budget", "max_items": 6912, "result": "pass"},
+    {"fixture_id": "unrelated_control_flood_exact_budget", "max_items": 110, "result": "pass"},
+    {"fixture_id": "foreign_claim_flood_exact_budget", "max_items": 110, "result": "pass"},
+    {"fixture_id": "unrelated_valid_checkpoints_exact_budget", "max_items": 264, "result": "pass"}
+  ],
+  "boundary_cases": ["exact", "n_minus_one", "final_cancellation", "scope_isolation", "deterministic_counters", "deterministic_output"],
+  "regressions": {"fixed_count": 11, "open_count": 1, "finding_077": "fixed", "finding_084": "fixed", "result": "pass"},
+  "validation": {
+    "focused_resource": "pass",
+    "checkpoint": "pass",
+    "report": "pass",
+    "conformance": "pass",
+    "full_public": "pass",
+    "conformance_scenario_count": 180,
+    "delivery_order_count": 8,
+    "process_count": 2,
+    "fixture_manifest_sha256": "4c6866b91bffbeba9610c4602b99abfc7e5a16c9d262d6e4d624a4e3a9537f9a",
+    "canonical_output_sha256": "cfb32cbf0f2248470ae07d7e42f78301df9014afc2822d622e2c260c8c60b5c6",
+    "distribution_run_sha256": "edd05b0ee5f09f8b4fda87b3bf15a1988141a371cd4b13f504a49b27ad345ed4",
+    "result": "pass"
+  },
+  "result_classes": [
+    {"class": "shared_byte_ownership", "result": "pass"},
+    {"class": "target_work_ownership", "result": "pass"},
+    {"class": "exact_boundaries", "result": "pass"},
+    {"class": "cancellation_preservation", "result": "pass"},
+    {"class": "scope_isolation", "result": "pass"},
+    {"class": "deterministic_output", "result": "pass"}
+  ],
+  "result_identity_sha256": "41dbbc04929a1eb431baaa9cdd7c982a3b284a45c442040882875eb21c7dfe6d"
+}
