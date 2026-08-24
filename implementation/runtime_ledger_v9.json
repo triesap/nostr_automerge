@@ -1,15 +1,15 @@
 {
   "schema": "nostr_automerge.runtime_ledger.v9.v1",
-  "status": "in_progress",
+  "status": "code_complete_publication_held",
   "rcld": 94,
   "cursor": {
-    "active_step": "step_1286",
-    "next_step": "step_1287",
+    "active_step": "step_1287",
+    "next_step": "step_1288",
     "last_step": "step_1287",
-    "remaining_checkpoint_count": 2,
+    "remaining_checkpoint_count": 0,
     "first_rcld": 94,
     "last_rcld": 94,
-    "remaining_rcld_count": 1
+    "remaining_rcld_count": 0
   },
   "authority_projection": {
     "binding": "monotonic_stage_projection",
@@ -65,7 +65,7 @@
     "held_ids": [
       "FINDING_080"
     ],
-    "status": "implementation_remediation_required"
+    "status": "code_complete_publication_held"
   },
   "predecessors": [
     {
@@ -1463,6 +1463,18 @@
     {
       "step": "step_1285",
       "candidate": "402c928ad2dfa173e7a5876930fb9e771aba8598",
+      "owner_class": "public",
+      "gate_ids": ["V-EVIDENCE"],
+      "requirement_ids": ["NCRDT-EVIDENCE-006"],
+      "finding_ids": [
+        "FINDING_073", "FINDING_074", "FINDING_075", "FINDING_076", "FINDING_077", "FINDING_078", "FINDING_079", "FINDING_081", "FINDING_082", "FINDING_083", "FINDING_084", "FINDING_085", "FINDING_086", "FINDING_087", "FINDING_088", "FINDING_089", "FINDING_090", "FINDING_091", "FINDING_092", "FINDING_093"
+      ],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1286",
+      "candidate": "ed21e29a7179f9bcd5c2827f2bdd0dfddf36e417",
       "owner_class": "public",
       "gate_ids": ["V-EVIDENCE"],
       "requirement_ids": ["NCRDT-EVIDENCE-006"],

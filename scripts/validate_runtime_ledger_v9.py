@@ -447,6 +447,7 @@ PREDECESSOR_CANDIDATES = (
     "ddb9db4c38d5543cbec8655378f79c842f7a4d53",
     "c9f56626dba5356d373a17af70b921695b6262de",
     "402c928ad2dfa173e7a5876930fb9e771aba8598",
+    "ed21e29a7179f9bcd5c2827f2bdd0dfddf36e417",
 )
 REPORT_REVISION = "draft_2026_08"
 REPORT_REVISION_INVENTORY = (
@@ -568,14 +569,15 @@ CLOSURE_PATHS = frozenset(
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/remediation_v9/ledger.md",
         "implementation/runtime_ledger_v9.json",
-        "reports/final_finding_closure_v10.json",
+        "reports/final_decision_gate_v10.json",
         "reports/spec_baseline.txt",
+        "scripts/validate_authority_transition_v10.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
-        "scripts/validate_final_finding_closure_v10.py",
+        "scripts/validate_final_decision_gate_v10.py",
         "scripts/validate_spec.py",
         "tools/nostr_automerge_xtask/src/validate.rs",
-        "tools/validation/final_finding_closure_v10.schema.json",
+        "tools/validation/final_decision_gate_v10.schema.json",
     }
 )
 CLOSURE_AMEND_ADDITION = "docs/execution/remediation_v9/ledger.md"
@@ -589,9 +591,9 @@ CLOSURE_AMEND_PATHS = frozenset(
 )
 CLOSURE_NEW_PATHS = frozenset(
     {
-        "reports/final_finding_closure_v10.json",
-        "scripts/validate_final_finding_closure_v10.py",
-        "tools/validation/final_finding_closure_v10.schema.json",
+        "reports/final_decision_gate_v10.json",
+        "scripts/validate_final_decision_gate_v10.py",
+        "tools/validation/final_decision_gate_v10.schema.json",
     }
 )
 EXPECTED_GATES = (
@@ -721,6 +723,7 @@ EXPECTED_GATES = (
     ("V-EVIDENCE",),
     ("V-FULL-RUST",),
     ("V-FULL-RUST",),
+    ("V-EVIDENCE",),
     ("V-EVIDENCE",),
     ("V-EVIDENCE",),
 )
@@ -921,6 +924,7 @@ EXPECTED_REQUIREMENTS = (
     ("NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ("NCRDT-EVIDENCE-006",),
+    ("NCRDT-EVIDENCE-006",),
 )
 EXPECTED_FINDINGS = (
     (),
@@ -1051,6 +1055,7 @@ EXPECTED_FINDINGS = (
     (),
     (),
     ("FINDING_078",),
+    REPRODUCED_IDS,
     REPRODUCED_IDS,
     REPRODUCED_IDS,
     REPRODUCED_IDS,
@@ -3373,8 +3378,16 @@ def mutation_self_test(
     stale_evidence_gate["semantic_evidence_gate"]["result_identity_sha256"] = "f" * 64
     ledger_mutations.append(("ledger_semantic_evidence_gate", stale_evidence_gate))
     premature_terminal = copy.deepcopy(ledger)
-    premature_terminal["status"] = "code_complete_publication_held"
-    premature_terminal["findings"]["status"] = "code_complete_publication_held"
+    premature_terminal["status"] = (
+        "in_progress"
+        if ledger["status"] == "code_complete_publication_held"
+        else "code_complete_publication_held"
+    )
+    premature_terminal["findings"]["status"] = (
+        "implementation_remediation_required"
+        if ledger["findings"]["status"] == "code_complete_publication_held"
+        else "code_complete_publication_held"
+    )
     ledger_mutations.append(("ledger_premature_terminal", premature_terminal))
     fabricated_opaque = copy.deepcopy(ledger)
     fabricated_opaque["predecessors"].append(

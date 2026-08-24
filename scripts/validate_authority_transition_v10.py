@@ -1981,7 +1981,10 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
     active_number = int(active.removeprefix("step_"))
     following_number = int(following.removeprefix("step_"))
     active_rcld = step_rcld(active_number)
-    following_rcld = step_rcld(following_number)
+    following_rcld = (
+        step_rcld(following_number) if following_number <= 1287 else active_rcld
+    )
+    terminal = runtime.get("status") == "code_complete_publication_held"
 
     def rcld_title(value: int) -> str:
         match = re.search(rf"^## RCLD {value} — ([^\n]+)$", plan, re.MULTILINE)
@@ -2058,8 +2061,16 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
         (
             "status",
             plan.replace(
-                "Status: in progress — approved for execution",
-                "Status: planned — approved for execution",
+                (
+                    "Status: code complete — publication held"
+                    if terminal
+                    else "Status: in progress — approved for execution"
+                ),
+                (
+                    "Status: in progress — approved for execution"
+                    if terminal
+                    else "Status: planned — approved for execution"
+                ),
                 1,
             ),
             runtime,
@@ -2082,7 +2093,12 @@ def current_plan_progress_self_test(plan: str, runtime: dict[str, Any], stage: s
         (
             "runtime_status",
             plan,
-            {**runtime, "status": "code_complete_publication_held"},
+            {
+                **runtime,
+                "status": (
+                    "in_progress" if terminal else "code_complete_publication_held"
+                ),
+            },
         ),
     ]
 

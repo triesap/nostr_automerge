@@ -1,0 +1,35 @@
+{
+  "schema": "nostr_automerge.final_decision_gate.v10.v1",
+  "checkpoint": "step_1287",
+  "candidate": "ed21e29a7179f9bcd5c2827f2bdd0dfddf36e417",
+  "status": "code_complete_publication_held",
+  "completed_rclds": [81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94],
+  "checkpoint_range": {
+    "first": "step_1158",
+    "last": "step_1287",
+    "count": 130,
+    "contiguous": true
+  },
+  "requirement_count": 148,
+  "scenario_count": 192,
+  "delivery_order_count": 8,
+  "process_count": 2,
+  "finding_count": 21,
+  "closed_finding_count": 20,
+  "held_finding_count": 1,
+  "public_lane_count": 12,
+  "private_result_count": 8,
+  "public_held_campaign_count": 7,
+  "external_hold_count": 6,
+  "evidence_identities": [
+    {"class": "public_assurance", "sha256": "673e00929f9bf917dc4257f3083a959763b34f4fbdc895cc107050342e342897"},
+    {"class": "private_assurance", "sha256": "ee7253d40dc24b0aabf80fa59ee73acf664936e146e8fc4a440849c02e7322b5"},
+    {"class": "semantic_evidence", "sha256": "ac0fe7e42abf41d282a5addd90ca7be3b05426d6858cdcabb9ea52aa5fb03864"},
+    {"class": "signed_conformance", "sha256": "16577552f984f88f0e07cfe001ebae6591b02f8c3dff6d7949380c353bc4ec85"},
+    {"class": "final_identity", "sha256": "87184c80984122078e18950096e23a2bb93df8008a66cdd481d0ad6b0c6f89a5"},
+    {"class": "final_finding_closure", "sha256": "e59c2f7505b36c184ea2991614ae5198a238ab7701647ea4398030f19782cba2"}
+  ],
+  "release_claimed": false,
+  "remote_actions_performed": false,
+  "result_identity_sha256": "785a4499b8e51d7c2f71e692b74d42671ea03ba1c2d377a74a8d04907c5e6392"
+}

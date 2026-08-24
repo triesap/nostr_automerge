@@ -463,3 +463,9 @@ have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 regressions and the typed report-revision, incomplete-report, checkpoint,
 resource, and closure cases are fixed. `FINDING_080` remains held. The maximum
 truthful local status is `code_complete_publication_held`.
+
+At `step_1287`, the final decision gate validates the complete contiguous
+130-checkpoint chain and closes RCLD 81 through RCLD 94. All required local
+public, private, conformance, evidence, policy, and repository validation lanes
+pass. The explicitly held campaigns remain outside the completed RCLD set and
+no release, publication, deployment, or other remote action has occurred.

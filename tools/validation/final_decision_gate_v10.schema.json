@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/nostr_automerge/final_decision_gate_v10.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "checkpoint", "candidate", "status", "completed_rclds",
+    "checkpoint_range", "requirement_count", "scenario_count",
+    "delivery_order_count", "process_count", "finding_count",
+    "closed_finding_count", "held_finding_count", "public_lane_count",
+    "private_result_count", "public_held_campaign_count",
+    "external_hold_count", "evidence_identities", "release_claimed",
+    "remote_actions_performed", "result_identity_sha256"
+  ],
+  "properties": {
+    "schema": {"const": "nostr_automerge.final_decision_gate.v10.v1"},
+    "checkpoint": {"const": "step_1287"},
+    "candidate": {"const": "ed21e29a7179f9bcd5c2827f2bdd0dfddf36e417"},
+    "status": {"const": "code_complete_publication_held"},
+    "completed_rclds": {
+      "type": "array", "minItems": 14, "maxItems": 14,
+      "items": {"type": "integer", "minimum": 81, "maximum": 94},
+      "uniqueItems": true
+    },
+    "checkpoint_range": {
+      "type": "object", "additionalProperties": false,
+      "required": ["first", "last", "count", "contiguous"],
+      "properties": {
+        "first": {"const": "step_1158"},
+        "last": {"const": "step_1287"},
+        "count": {"const": 130},
+        "contiguous": {"const": true}
+      }
+    },
+    "requirement_count": {"const": 148},
+    "scenario_count": {"const": 192},
+    "delivery_order_count": {"const": 8},
+    "process_count": {"const": 2},
+    "finding_count": {"const": 21},
+    "closed_finding_count": {"const": 20},
+    "held_finding_count": {"const": 1},
+    "public_lane_count": {"const": 12},
+    "private_result_count": {"const": 8},
+    "public_held_campaign_count": {"const": 7},
+    "external_hold_count": {"const": 6},
+    "evidence_identities": {
+      "type": "array", "minItems": 6, "maxItems": 6,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["class", "sha256"],
+        "properties": {
+          "class": {"type": "string"},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    },
+    "release_claimed": {"const": false},
+    "remote_actions_performed": {"const": false},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

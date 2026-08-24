@@ -87,6 +87,10 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "scripts/validate_final_finding_closure_v10.py",
     ),
     (
+        "final_decision_gate_v10",
+        "scripts/validate_final_decision_gate_v10.py",
+    ),
+    (
         "opaque_boundary_gate_v9",
         "scripts/validate_opaque_boundary_gate_v9.py",
     ),

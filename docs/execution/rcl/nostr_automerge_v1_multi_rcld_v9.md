@@ -1,6 +1,6 @@
 # nostr_automerge Draft V1 Follow-up Remediation V9 Multi-RCLD
 
-Status: in progress — approved for execution
+Status: code complete — publication held
 Created: 2026-08-21
 Mode: rcl-durable
 Rust Cargo workspace and Git repository: repository root
@@ -17,9 +17,9 @@ Reviewed distribution-v9 manifest SHA-256: `7b4ab5d2146939d142eb92d43060ef2183c9
 Reviewed canonical-output SHA-256: `e193a7b0db3a43e9d33e612afea05bd447a5e968a45e283d098f45278d6ab6fc`
 Steps: `step_1158` through `step_1287` (130 contiguous checkpoints)
 Active RCLD: RCLD 94
-Active checkpoint: `step_1286`
+Active checkpoint: `step_1287`
 Next RCLD: RCLD 94
-Next checkpoint: `step_1287`
+Next checkpoint: `step_1288`
 
 This planning revision changes only the unfinished checkpoint map. Completed
 candidate identities and evidence remain immutable. The public-owned
@@ -616,7 +616,7 @@ Depends on: RCLD 92
 
 ## RCLD 94 — Complete Local Assurance And Truthful Closure
 
-Status: in progress
+Status: complete
 Steps: `step_1283` through `step_1287`
 Gate: `GATE_V9_FINAL`
 Depends on: RCLD 93
@@ -703,9 +703,8 @@ completion.
 - RCLD 91 — Private Target Work, Cancellation, And Scaling
 - RCLD 92 — Signed Conformance V10
 - RCLD 93 — Semantic Proof Catalog V10
+- RCLD 94 — Complete Local Assurance And Truthful Closure
 
 ## Unfinished RCLDs
 
-- RCLD 94 — Complete Local Assurance And Truthful Closure
-
-All 130 checkpoints from `step_1158` through `step_1287` are in progress.
+All 130 checkpoints from `step_1158` through `step_1287` are complete.
