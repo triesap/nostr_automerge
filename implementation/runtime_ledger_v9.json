@@ -3,10 +3,10 @@
   "status": "in_progress",
   "rcld": 94,
   "cursor": {
-    "active_step": "step_1285",
-    "next_step": "step_1286",
+    "active_step": "step_1286",
+    "next_step": "step_1287",
     "last_step": "step_1287",
-    "remaining_checkpoint_count": 3,
+    "remaining_checkpoint_count": 2,
     "first_rcld": 94,
     "last_rcld": 94,
     "remaining_rcld_count": 1
@@ -1454,6 +1454,18 @@
       "owner_class": "public",
       "gate_ids": ["V-EVIDENCE"],
       "requirement_ids": ["NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+      "finding_ids": [
+        "FINDING_073", "FINDING_074", "FINDING_075", "FINDING_076", "FINDING_077", "FINDING_078", "FINDING_079", "FINDING_081", "FINDING_082", "FINDING_083", "FINDING_084", "FINDING_085", "FINDING_086", "FINDING_087", "FINDING_088", "FINDING_089", "FINDING_090", "FINDING_091", "FINDING_092", "FINDING_093"
+      ],
+      "deviation_ids": [],
+      "result": "pass"
+    },
+    {
+      "step": "step_1285",
+      "candidate": "402c928ad2dfa173e7a5876930fb9e771aba8598",
+      "owner_class": "public",
+      "gate_ids": ["V-EVIDENCE"],
+      "requirement_ids": ["NCRDT-EVIDENCE-006"],
       "finding_ids": [
         "FINDING_073", "FINDING_074", "FINDING_075", "FINDING_076", "FINDING_077", "FINDING_078", "FINDING_079", "FINDING_081", "FINDING_082", "FINDING_083", "FINDING_084", "FINDING_085", "FINDING_086", "FINDING_087", "FINDING_088", "FINDING_089", "FINDING_090", "FINDING_091", "FINDING_092", "FINDING_093"
       ],

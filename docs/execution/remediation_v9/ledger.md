@@ -451,11 +451,15 @@ requirements, applicability, external holds, and the authority transition.
 The v9 evidence remains historical and superseded; six external holds remain
 unexecuted, and no remote action is claimed.
 
+At `step_1286`, the closed finding ledger accounts for all 21 findings. Exact
+local proof closes findings 073 through 079 and 081 through 093, while finding
+080 and the six external assurance or publication campaigns remain held. The
+status is `code_complete_publication_held`; no release or remote action is
+claimed.
+
 `FINDING_073` through `FINDING_079` and `FINDING_081` through `FINDING_093`
 have exact reproductions. The enabled `FINDING_073`, `FINDING_074`,
 `FINDING_075`, `FINDING_076`, `FINDING_077`, `FINDING_079`, `FINDING_082`, and `FINDING_083`
-regressions and the typed report-revision, incomplete-report, and checkpoint
-cancellation cases are fixed; one exact behavior case remains open.
-`FINDING_080` remains held. The maximum status
-remains `implementation_remediation_required` while the refactor sequence is
-in progress.
+regressions and the typed report-revision, incomplete-report, checkpoint,
+resource, and closure cases are fixed. `FINDING_080` remains held. The maximum
+truthful local status is `code_complete_publication_held`.

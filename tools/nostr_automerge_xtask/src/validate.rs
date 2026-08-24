@@ -78,7 +78,14 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "opaque_private_assurance_v10",
         "scripts/validate_opaque_private_assurance_v10.py",
     ),
-    ("final_identity_v10", "scripts/validate_final_identity_v10.py"),
+    (
+        "final_identity_v10",
+        "scripts/validate_final_identity_v10.py",
+    ),
+    (
+        "final_finding_closure_v10",
+        "scripts/validate_final_finding_closure_v10.py",
+    ),
     (
         "opaque_boundary_gate_v9",
         "scripts/validate_opaque_boundary_gate_v9.py",
