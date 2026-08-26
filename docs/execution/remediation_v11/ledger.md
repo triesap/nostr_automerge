@@ -31,3 +31,7 @@ At `step_1316`, persistent membership is the exact Boolean projection of the
 metered lookup result. Present and absent membership therefore share lookup's
 visited-node counts and preserve every cancellation boundary without a hidden
 second scan.
+
+At `step_1317`, extension consumes a caller-owned prepared map. Prepared item
+pulls, inherited node inspections, and accepted inserts have distinct immediate
+charges; the child node is published only after every callback succeeds.

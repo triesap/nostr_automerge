@@ -20,6 +20,13 @@ struct DeltaNode<K, V> {
     local: BTreeMap<K, V>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum PersistentDeltaWork {
+    PreparedItem,
+    LookupNode,
+    AcceptedInsert,
+}
+
 impl<K, V> Default for PersistentDeltaMap<K, V> {
     fn default() -> Self {
         Self { tail: None }
@@ -94,6 +101,38 @@ impl<K: Ord, V> PersistentDeltaMap<K, V> {
         }
     }
 
+    pub(crate) fn extend_prepared_metered<E>(
+        &self,
+        mut prepared: BTreeMap<K, V>,
+        mut work: impl FnMut(PersistentDeltaWork) -> Result<(), E>,
+    ) -> Result<Self, E>
+    where
+        V: PartialEq,
+    {
+        let mut accepted = BTreeMap::new();
+        while !prepared.is_empty() {
+            work(PersistentDeltaWork::PreparedItem)?;
+            let Some((key, value)) = prepared.pop_first() else {
+                continue;
+            };
+            let inherited = self.get_metered(&key, || work(PersistentDeltaWork::LookupNode))?;
+            if inherited == Some(&value) {
+                continue;
+            }
+            work(PersistentDeltaWork::AcceptedInsert)?;
+            accepted.insert(key, value);
+        }
+        if accepted.is_empty() {
+            return Ok(self.clone());
+        }
+        Ok(Self {
+            tail: Some(Arc::new(DeltaNode {
+                parent: self.tail.clone(),
+                local: accepted,
+            })),
+        })
+    }
+
     pub(crate) fn materialize_metered<E>(
         &self,
         mut visit: impl FnMut() -> Result<(), E>,
@@ -151,7 +190,7 @@ mod tests {
     use std::process::Command;
     use std::rc::Rc;
 
-    use super::PersistentDeltaMap;
+    use super::{PersistentDeltaMap, PersistentDeltaWork};
 
     #[test]
     fn delta_chain_shares_parent_and_materializes_in_override_order() {
@@ -247,6 +286,58 @@ mod tests {
                 assert!(Rc::ptr_eq(&returned, &injected));
                 assert_eq!(observed.get(), boundary);
             }
+        }
+    }
+
+    #[test]
+    fn metered_extension_publishes_only_after_all_owned_work() {
+        let root = PersistentDeltaMap::from_local(BTreeMap::from([(0_u8, 10_u8)]));
+        let parent = root.extend_local(BTreeMap::from([(1, 11)]));
+        let prepared = BTreeMap::from([(0, 10), (1, 12), (2, 20)]);
+        let expected_work = [
+            PersistentDeltaWork::PreparedItem,
+            PersistentDeltaWork::LookupNode,
+            PersistentDeltaWork::LookupNode,
+            PersistentDeltaWork::PreparedItem,
+            PersistentDeltaWork::LookupNode,
+            PersistentDeltaWork::AcceptedInsert,
+            PersistentDeltaWork::PreparedItem,
+            PersistentDeltaWork::LookupNode,
+            PersistentDeltaWork::LookupNode,
+            PersistentDeltaWork::AcceptedInsert,
+        ];
+
+        let observed = std::cell::RefCell::new(Vec::new());
+        let extended = parent.extend_prepared_metered(prepared.clone(), |stage| {
+            observed.borrow_mut().push(stage);
+            Ok::<(), Rc<&'static str>>(())
+        });
+        assert!(extended.is_ok());
+        assert_eq!(&*observed.borrow(), &expected_work);
+        let Ok(extended) = extended else { return };
+        assert!(extended.shares_parent_with(&parent));
+        assert_eq!(extended.local_len(), 2);
+        assert_eq!(extended.get(&0), Some(&10));
+        assert_eq!(extended.get(&1), Some(&12));
+        assert_eq!(extended.get(&2), Some(&20));
+
+        for boundary in 0..expected_work.len() {
+            let observed = std::cell::RefCell::new(Vec::new());
+            let injected = Rc::new("extension stop");
+            let stopped = parent.extend_prepared_metered(prepared.clone(), |stage| {
+                if observed.borrow().len() == boundary {
+                    return Err(Rc::clone(&injected));
+                }
+                observed.borrow_mut().push(stage);
+                Ok(())
+            });
+            assert!(stopped.is_err());
+            let Err(returned) = stopped else { continue };
+            assert!(Rc::ptr_eq(&returned, &injected));
+            assert_eq!(&*observed.borrow(), &expected_work[..boundary]);
+            assert_eq!(parent.get(&0), Some(&10));
+            assert_eq!(parent.get(&1), Some(&11));
+            assert_eq!(parent.get(&2), None);
         }
     }
 
