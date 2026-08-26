@@ -99,3 +99,4 @@ gates. They do not override unchanged NIP text or authorize publication.
 | [0072](adr_0072_metered_persistent_state.md) | Approved staged | `NCRDT-RESOURCE-015` |
 | [0073](adr_0073_no_post_stop_target_work.md) | Approved staged | `NCRDT-RESOURCE-016` |
 | [0074](adr_0074_unsupported_event_only_identity.md) | Approved staged | `NCRDT-VERSION-003` |
+| [0075](adr_0075_bounded_persistent_teardown.md) | Approved staged | `NCRDT-OWNERSHIP-001` |

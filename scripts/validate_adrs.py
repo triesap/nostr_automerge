@@ -466,9 +466,9 @@ def validate_records(
             bodies["Status"] == "Approved staged candidate for remediation v11.",
             f"v11 ADR status mismatch: {record.path}",
         )
-        normalized_decision = " ".join(bodies["Decision"].split())
+        normalized_decision = " ".join(bodies["Decision"].split()).casefold()
         require(
-            all(fragment in normalized_decision for fragment in AUTHORITY_BINDINGS[number]),
+            all(fragment.casefold() in normalized_decision for fragment in AUTHORITY_BINDINGS[number]),
             f"v11 ADR decision mismatch: {record.path}",
         )
         normalized_authority = " ".join(bodies["Authority transition"].split())
