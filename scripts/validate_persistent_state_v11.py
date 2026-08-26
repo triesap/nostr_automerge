@@ -123,8 +123,53 @@ def validate_sources(sources: dict[str, str]) -> None:
 
     parent = sources[SOURCES[2]]
     require_cfg_test(parent, "pub(crate) fn frontier_knowledge(&self, hash: &ChangeHash)", "parent:knowledge")
+    result_projection = section(
+        parent,
+        "pub(crate) fn from_result_metered<E>(",
+        "    pub(crate) fn extend_prior_knowledge",
+        "parent:result_projection",
+    )
+    require_order(
+        result_projection,
+        (
+            "visit().map_err(ParentEpochViewBuildError::Work)?;",
+            "dispositions.next()",
+            "visit().map_err(ParentEpochViewBuildError::Work)?;",
+            "view.frontier_knowledge.insert(*hash, knowledge);",
+        ),
+        "parent:result_projection",
+    )
+    additional_projection = section(
+        parent,
+        "pub(crate) fn set_additional_prior_knowledge_metered<E>(",
+        "    #[cfg(test)]\n    pub(crate) fn from_parts_for_test",
+        "parent:additional_projection",
+    )
+    require_order(
+        additional_projection,
+        (
+            "visit().map_err(ParentEpochViewBuildError::Work)?;",
+            "items.next()",
+            "visit().map_err(ParentEpochViewBuildError::Work)?;",
+            "projected.insert(*hash, *item);",
+            "self.additional_prior = projected;",
+        ),
+        "parent:additional_projection",
+    )
     parent_metered = section(parent, "pub(crate) fn frontier_knowledge_metered<E>(", "    #[cfg(test)]\n    pub(crate) fn frontier_knowledge", "parent:metered")
-    require(".get_metered(hash, visit)?" in parent_metered, "parent:metered_lookup")
+    require_order(
+        parent_metered,
+        (
+            "visit()?;",
+            "self.frontier_knowledge.get(hash)",
+            ".get_metered(hash, &mut visit)?",
+            "visit()?;",
+            ".additional_prior",
+            "visit()?;",
+            "self.contains(hash)",
+        ),
+        "parent:metered_lookup",
+    )
 
     transition = sources[SOURCES[3]]
     require_cfg_test(transition, "pub(crate) fn validate_base_frontier_antichain(", "transition:antichain")
@@ -177,6 +222,9 @@ def mutation_self_test(sources: dict[str, str]) -> int:
         replaced(sources, branch, "work(PersistentDeltaWork::AcceptedInsert)?;", ""),
         replaced(sources, frontier, "#[cfg(test)]\npub(crate) fn reasoned_frontier_disposition(", "pub(crate) fn reasoned_frontier_disposition("),
         replaced(sources, parent, "#[cfg(test)]\n    pub(crate) fn frontier_knowledge(", "    pub(crate) fn frontier_knowledge("),
+        replaced(sources, parent, "visit().map_err(ParentEpochViewBuildError::Work)?;\n            let Some((hash, disposition))", "let Some((hash, disposition))"),
+        replaced(sources, parent, "visit().map_err(ParentEpochViewBuildError::Work)?;\n            projected.insert(*hash, *item);", "projected.insert(*hash, *item);"),
+        replaced(sources, parent, "visit()?;\n        if let Some(knowledge) = self.frontier_knowledge", "if let Some(knowledge) = self.frontier_knowledge"),
         replaced(sources, transition, "#[cfg(test)]\npub(crate) fn validate_base_frontier_antichain(", "pub(crate) fn validate_base_frontier_antichain("),
         replaced(sources, candidate, "frontier_knowledge_metered(hash", "frontier_knowledge(hash"),
         replaced(sources, epoch, "prior_change_knowledge().get_metered(dependency", "prior_change_knowledge().get(dependency"),

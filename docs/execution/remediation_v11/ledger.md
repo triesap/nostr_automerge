@@ -49,3 +49,9 @@ retained branch-disposition node it actually visits.
 candidate chain, four metered operations, nine source-policy files, five
 enabled boundary tests, and all 15 source-policy mutations. RCLD 101 is green;
 the integrated caller-by-caller qualification remains assigned to RCLD 102.
+
+RCLD 102 starts at `step_1321` by metering parent-view construction,
+additional-prior projection, and frontier-knowledge lookup. Every source pull,
+target insertion, persistent node visit, and ordered fallback lookup occurs only
+after its immediate charge; failed projections publish no partial state and
+preserve the first typed stop.

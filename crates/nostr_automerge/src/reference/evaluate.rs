@@ -6,7 +6,7 @@ use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 use crate::control::ancestry::ControlAncestry;
 use crate::control::candidate::{CandidateResult, evaluate_child_metered};
 use crate::control::epoch_state::{AcceptedEpochState, MeteredAcceptedEpochStateError};
-use crate::control::parent_view::ParentEpochView;
+use crate::control::parent_view::{ParentEpochView, ParentEpochViewBuildError};
 use crate::control::validate::ControlEnvelope;
 use crate::graph::change_candidate::ChangeCandidate;
 use crate::graph::dependency_graph::{MeteredGraphBuildError, build_graph_metered};
@@ -187,8 +187,11 @@ pub(crate) fn evaluate_batch_with_prior(
                 }
             }
         }
-        Err(stop) => {
+        Err(BranchTableError::Stop(stop)) => {
             completion = stop;
+        }
+        Err(BranchTableError::Invariant) => {
+            failure = Some(EvaluationFailure::InvariantViolation);
         }
     }
 
@@ -457,6 +460,17 @@ enum CanonicalBranchError {
     Invariant,
 }
 
+enum BranchTableError {
+    Stop(Completion),
+    Invariant,
+}
+
+impl From<Completion> for BranchTableError {
+    fn from(value: Completion) -> Self {
+        Self::Stop(value)
+    }
+}
+
 fn evaluate_branch_table(
     controls: &BTreeMap<EventId, BatchControl>,
     children_by_parent: &BTreeMap<Option<EventId>, BTreeSet<EventId>>,
@@ -464,7 +478,7 @@ fn evaluate_branch_table(
     preliminary_change_dispositions: &BTreeMap<ChangeHash, ProtocolDisposition>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
-) -> Result<BranchTableEvaluation, Completion> {
+) -> Result<BranchTableEvaluation, BranchTableError> {
     let mut table = BranchTableEvaluation::default();
     let change_memo = BatchChangeMemo::derive(controls, budget, cancellation)?;
     let mut accepted_state_cache = BTreeMap::new();
@@ -477,7 +491,7 @@ fn evaluate_branch_table(
     }
     while let Some(event_id) = ready.pop_first() {
         if cancellation.is_cancelled() {
-            return Err(Completion::Cancelled);
+            return Err(Completion::Cancelled.into());
         }
         charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)?;
         let Some(control) = controls.get(&event_id) else {
@@ -506,12 +520,24 @@ fn evaluate_branch_table(
             parent_branch,
             control.envelope.as_ref(),
         ) {
-            let mut view = ParentEpochView::from_result(&branch.epoch);
+            let mut view = ParentEpochView::from_result_metered(&branch.epoch, || {
+                charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)
+            })
+            .map_err(|error| match error {
+                ParentEpochViewBuildError::Work(stop) => BranchTableError::Stop(stop),
+                ParentEpochViewBuildError::Invariant => BranchTableError::Invariant,
+            })?;
             view.extend_prior_knowledge(&branch.prior_knowledge);
             if let Some(parent_id) = control.parent
                 && let Some(knowledge) = additional_prior.get(&parent_id)
             {
-                view.extend_additional_prior_knowledge(knowledge);
+                view.set_additional_prior_knowledge_metered(knowledge, || {
+                    charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)
+                })
+                .map_err(|error| match error {
+                    ParentEpochViewBuildError::Work(stop) => BranchTableError::Stop(stop),
+                    ParentEpochViewBuildError::Invariant => BranchTableError::Invariant,
+                })?;
             }
             let mut visit = |counter| charge_prior_knowledge_item(counter, budget, cancellation);
             match evaluate_child_metered(parent, child, &branch.ancestry, &view, &mut visit)? {
@@ -696,10 +722,10 @@ fn evaluate_branch_table(
                     );
                 }
                 Err(EpochResolutionError::Schedule(ScheduleError::BudgetExhausted)) => {
-                    return Err(Completion::BudgetExhausted);
+                    return Err(Completion::BudgetExhausted.into());
                 }
                 Err(EpochResolutionError::Schedule(ScheduleError::Cancelled)) => {
-                    return Err(Completion::Cancelled);
+                    return Err(Completion::Cancelled.into());
                 }
                 Err(EpochResolutionError::InvalidState) => {
                     table

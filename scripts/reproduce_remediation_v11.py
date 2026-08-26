@@ -75,9 +75,8 @@ def source_reproduces(row: dict[str, str]) -> bool:
     source = (ROOT / row["path"]).read_text()
     if row["finding"] == "FINDING_097":
         anchors = (
-            "let mut view = ParentEpochView::from_result(&branch.epoch);",
-            "let knowledge = parent_knowledge.extend_local(local_knowledge);",
-            "parent_change_dispositions.extend_local(local_change_dispositions);",
+            "for (hash, item) in additional {",
+            "local_change_dispositions.insert(*hash",
             "let derived_heads = derive_heads(&accepted_changes, &controls);",
         )
         return all(anchor in source for anchor in anchors)

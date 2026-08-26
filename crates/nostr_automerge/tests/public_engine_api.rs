@@ -1224,7 +1224,7 @@ fn no_preselected_control_chain_path() {
         "for (control_index, control_id) in canonical_controls.clone().iter().enumerate()"
     ));
     assert!(evaluator_source.contains("evaluate_branch_table("));
-    assert!(evaluator_source.contains("ParentEpochView::from_result(&branch.epoch)"));
+    assert!(evaluator_source.contains("ParentEpochView::from_result_metered(&branch.epoch"));
     assert!(public_adapter_source.contains("envelope: Some(envelope)"));
     children_are_evaluated_one_epoch_at_a_time();
 }

@@ -8,6 +8,12 @@ use crate::reference::epoch_engine::EpochEvaluationResult;
 use crate::reference::epoch_engine::{PriorChangeKnowledge, PriorKnowledgeState};
 use crate::{ActorId, ChangeHash};
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum ParentEpochViewBuildError<E> {
+    Work(E),
+    Invariant,
+}
+
 #[derive(Clone)]
 pub(crate) struct ParentEpochView {
     payload: ParentEpochPayload,
@@ -51,9 +57,17 @@ impl ParentEpochView {
         }
     }
 
-    pub(crate) fn from_result(result: &EpochEvaluationResult) -> Self {
+    pub(crate) fn from_result_metered<E>(
+        result: &EpochEvaluationResult,
+        mut visit: impl FnMut() -> Result<(), E>,
+    ) -> Result<Self, ParentEpochViewBuildError<E>> {
         let mut view = Self::from_accepted_state(result.accepted_state_handle());
-        for (hash, disposition) in result.dispositions() {
+        let mut dispositions = result.dispositions().iter();
+        for _ in 0..result.dispositions().len() {
+            visit().map_err(ParentEpochViewBuildError::Work)?;
+            let Some((hash, disposition)) = dispositions.next() else {
+                return Err(ParentEpochViewBuildError::Invariant);
+            };
             let knowledge = match disposition {
                 crate::ProtocolDisposition::Accepted => {
                     ParentFrontierReference::AcceptedUnderParent
@@ -67,20 +81,33 @@ impl ParentEpochView {
                     ParentFrontierReference::Unsupported
                 }
             };
+            visit().map_err(ParentEpochViewBuildError::Work)?;
             view.frontier_knowledge.insert(*hash, knowledge);
         }
-        view
+        Ok(view)
     }
 
     pub(crate) fn extend_prior_knowledge(&mut self, knowledge: &PriorKnowledgeState) {
         self.inherited_prior = knowledge.clone();
     }
 
-    pub(crate) fn extend_additional_prior_knowledge(
+    pub(crate) fn set_additional_prior_knowledge_metered<E>(
         &mut self,
         knowledge: &BTreeMap<ChangeHash, PriorChangeKnowledge>,
-    ) {
-        self.additional_prior.extend(knowledge);
+        mut visit: impl FnMut() -> Result<(), E>,
+    ) -> Result<(), ParentEpochViewBuildError<E>> {
+        let mut projected = BTreeMap::new();
+        let mut items = knowledge.iter();
+        for _ in 0..knowledge.len() {
+            visit().map_err(ParentEpochViewBuildError::Work)?;
+            let Some((hash, item)) = items.next() else {
+                return Err(ParentEpochViewBuildError::Invariant);
+            };
+            visit().map_err(ParentEpochViewBuildError::Work)?;
+            projected.insert(*hash, *item);
+        }
+        self.additional_prior = projected;
+        Ok(())
     }
 
     #[cfg(test)]
@@ -174,19 +201,21 @@ impl ParentEpochView {
     pub(crate) fn frontier_knowledge_metered<E>(
         &self,
         hash: &ChangeHash,
-        visit: impl FnMut() -> Result<(), E>,
+        mut visit: impl FnMut() -> Result<(), E>,
     ) -> Result<ParentFrontierReference, E> {
+        visit()?;
         if let Some(knowledge) = self.frontier_knowledge.get(hash).copied() {
             return Ok(knowledge);
         }
         if let Some(knowledge) = self
             .inherited_prior
-            .get_metered(hash, visit)?
+            .get_metered(hash, &mut visit)?
             .copied()
             .and_then(prior_frontier_reference)
         {
             return Ok(knowledge);
         }
+        visit()?;
         if let Some(knowledge) = self
             .additional_prior
             .get(hash)
@@ -195,6 +224,7 @@ impl ParentEpochView {
         {
             return Ok(knowledge);
         }
+        visit()?;
         Ok(if self.contains(hash) {
             ParentFrontierReference::AcceptedUnderParent
         } else {
@@ -260,15 +290,20 @@ fn empty_dependency_map() -> &'static BTreeMap<ChangeHash, BTreeSet<ChangeHash>>
 
 #[cfg(test)]
 mod tests {
+    use std::cell::Cell;
     use std::collections::{BTreeMap, BTreeSet};
+    use std::rc::Rc;
     use std::sync::Arc;
 
-    use super::ParentEpochView;
+    use super::{ParentEpochView, ParentEpochViewBuildError};
     use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
     use crate::control::epoch_state::AcceptedEpochState;
     use crate::graph::actor_state::EpochActorState;
     use crate::graph::change_candidate::ChangeCandidate;
-    use crate::{ActorId, ChangeHash, DevicePublicKey, EventId};
+    use crate::reference::epoch_engine::{
+        EpochEvaluationResult, PriorChangeKnowledge, PriorKnowledgeState,
+    };
+    use crate::{ActorId, ChangeHash, DevicePublicKey, EventId, ProtocolDisposition};
 
     fn candidate(actor: u8, hash: u8) -> ChangeCandidate {
         ChangeCandidate {
@@ -281,6 +316,205 @@ mod tests {
             control_id: EventId::from_bytes([7; 32]),
             author: DevicePublicKey::from_bytes([actor; 32]),
             valid_carriers: vec![EventId::from_bytes([hash; 32])].into(),
+        }
+    }
+
+    fn empty_state() -> Arc<AcceptedEpochState> {
+        let materialized = MaterializedDocumentView::empty_for_test();
+        assert!(materialized.is_ok());
+        let Ok(materialized) = materialized else {
+            unreachable!()
+        };
+        let state = AcceptedEpochState::new(
+            BTreeSet::new(),
+            BTreeSet::new(),
+            BTreeMap::new(),
+            Some(materialized),
+        );
+        assert!(state.is_ok());
+        let Ok(state) = state else { unreachable!() };
+        Arc::new(state)
+    }
+
+    #[test]
+    fn parent_result_projection_charges_before_every_read_and_insert() {
+        let first = ChangeHash::from_bytes([1; 32]);
+        let second = ChangeHash::from_bytes([2; 32]);
+        let result = EpochEvaluationResult::from_shared_state(
+            empty_state(),
+            BTreeMap::from([
+                (first, ProtocolDisposition::Accepted),
+                (second, ProtocolDisposition::Invalid),
+            ]),
+            Vec::new(),
+        );
+        let exact = 4_usize;
+        for capacity in 0..=exact + 1 {
+            let observed = Cell::new(0_usize);
+            let injected = Rc::new("parent projection stop");
+            let projected = ParentEpochView::from_result_metered(&result, || {
+                if observed.get() == capacity {
+                    return Err(Rc::clone(&injected));
+                }
+                observed.set(observed.get() + 1);
+                Ok(())
+            });
+            if capacity < exact {
+                assert!(projected.is_err());
+                let Err(ParentEpochViewBuildError::Work(returned)) = projected else {
+                    return;
+                };
+                assert!(Rc::ptr_eq(&returned, &injected));
+                assert_eq!(observed.get(), capacity);
+            } else {
+                assert!(projected.is_ok());
+                let Ok(view) = projected else {
+                    return;
+                };
+                assert_eq!(observed.get(), exact);
+                assert_eq!(
+                    view.frontier_knowledge.get(&first),
+                    Some(&super::ParentFrontierReference::AcceptedUnderParent)
+                );
+                assert_eq!(
+                    view.frontier_knowledge.get(&second),
+                    Some(&super::ParentFrontierReference::InvalidUnderParent)
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn additional_prior_projection_is_atomic_at_every_boundary() {
+        let first = ChangeHash::from_bytes([3; 32]);
+        let second = ChangeHash::from_bytes([4; 32]);
+        let source = BTreeMap::from([
+            (first, PriorChangeKnowledge::KnownInvalid),
+            (second, PriorChangeKnowledge::KnownOtherControl),
+        ]);
+        let exact = 4_usize;
+        for capacity in 0..=exact + 1 {
+            let observed = Cell::new(0_usize);
+            let injected = Rc::new("additional prior stop");
+            let mut view = ParentEpochView::default();
+            let projected = view.set_additional_prior_knowledge_metered(&source, || {
+                if observed.get() == capacity {
+                    return Err(Rc::clone(&injected));
+                }
+                observed.set(observed.get() + 1);
+                Ok(())
+            });
+            if capacity < exact {
+                assert!(projected.is_err());
+                let Err(ParentEpochViewBuildError::Work(returned)) = projected else {
+                    return;
+                };
+                assert!(Rc::ptr_eq(&returned, &injected));
+                assert_eq!(observed.get(), capacity);
+                assert!(view.additional_prior.is_empty());
+            } else {
+                assert_eq!(projected, Ok(()));
+                assert_eq!(observed.get(), exact);
+                assert_eq!(view.additional_prior, source);
+            }
+        }
+    }
+
+    #[test]
+    fn frontier_knowledge_lookup_exposes_every_ordered_source_boundary() {
+        const DEPTH: u8 = 64;
+        let direct = ChangeHash::from_bytes([80; 32]);
+        let additional = ChangeHash::from_bytes([65; 32]);
+        let accepted = candidate(70, 70);
+        let accepted_hash = accepted.change_hash;
+        let materialized = MaterializedDocumentView::empty_for_test();
+        assert!(materialized.is_ok());
+        let Ok(materialized) = materialized else {
+            return;
+        };
+        let state = AcceptedEpochState::new(
+            BTreeSet::from([accepted_hash]),
+            BTreeSet::from([accepted_hash]),
+            BTreeMap::from([(accepted_hash, accepted)]),
+            Some(materialized),
+        );
+        assert!(state.is_ok());
+        let Ok(state) = state else { return };
+        let mut view = ParentEpochView::from_accepted_state(Arc::new(state));
+        view.frontier_knowledge
+            .insert(direct, super::ParentFrontierReference::PendingUnderParent);
+        let mut prior = PriorKnowledgeState::from(BTreeMap::from([(
+            ChangeHash::from_bytes([0; 32]),
+            PriorChangeKnowledge::KnownInvalid,
+        )]));
+        for value in 1..DEPTH {
+            prior = prior.extend_local(BTreeMap::from([(
+                ChangeHash::from_bytes([value; 32]),
+                PriorChangeKnowledge::KnownInvalid,
+            )]));
+        }
+        view.extend_prior_knowledge(&prior);
+        let additional_source =
+            BTreeMap::from([(additional, PriorChangeKnowledge::KnownOtherControl)]);
+        assert_eq!(
+            view.set_additional_prior_knowledge_metered(&additional_source, || Ok::<(), ()>(())),
+            Ok(())
+        );
+
+        for (hash, expected, exact) in [
+            (
+                direct,
+                super::ParentFrontierReference::PendingUnderParent,
+                1_usize,
+            ),
+            (
+                ChangeHash::from_bytes([DEPTH - 1; 32]),
+                super::ParentFrontierReference::InvalidUnderParent,
+                2,
+            ),
+            (
+                ChangeHash::from_bytes([0; 32]),
+                super::ParentFrontierReference::InvalidUnderParent,
+                1 + usize::from(DEPTH),
+            ),
+            (
+                additional,
+                super::ParentFrontierReference::OtherControl,
+                2 + usize::from(DEPTH),
+            ),
+            (
+                accepted_hash,
+                super::ParentFrontierReference::AcceptedUnderParent,
+                3 + usize::from(DEPTH),
+            ),
+            (
+                ChangeHash::from_bytes([99; 32]),
+                super::ParentFrontierReference::Unknown,
+                3 + usize::from(DEPTH),
+            ),
+        ] {
+            for capacity in 0..=exact + 1 {
+                let observed = Cell::new(0_usize);
+                let injected = Rc::new("frontier knowledge stop");
+                let result = view.frontier_knowledge_metered(&hash, || {
+                    if observed.get() == capacity {
+                        return Err(Rc::clone(&injected));
+                    }
+                    observed.set(observed.get() + 1);
+                    Ok(())
+                });
+                if capacity < exact {
+                    assert!(result.is_err());
+                    let Err(returned) = result else {
+                        return;
+                    };
+                    assert!(Rc::ptr_eq(&returned, &injected));
+                    assert_eq!(observed.get(), capacity);
+                } else {
+                    assert_eq!(result, Ok(expected));
+                    assert_eq!(observed.get(), exact);
+                }
+            }
         }
     }
 

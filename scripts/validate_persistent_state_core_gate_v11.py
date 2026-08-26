@@ -7,7 +7,6 @@ import copy
 import hashlib
 import json
 import pathlib
-import runpy
 import subprocess
 import sys
 
@@ -102,6 +101,15 @@ def sha256(path: pathlib.Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def historical_source(path: str) -> bytes:
+    return subprocess.run(
+        ["git", "show", f"{CANDIDATES[-1][1]}:{path}"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    ).stdout
+
+
 def validate_report(value: object) -> None:
     record = require_record(
         value,
@@ -183,16 +191,18 @@ def validate_repository() -> None:
             capture_output=True, text=True,
         ).stdout.strip()
         require(resolved == parent, f"repository:parent:{step}")
+    historical_sources = {
+        path: historical_source(path) for path, _digest in SOURCE_INVENTORY
+    }
     for path, digest in SOURCE_INVENTORY:
-        require(sha256(ROOT / path) == digest, f"repository:source:{path}")
-    source = BRANCH_STATE.read_text(encoding="utf-8")
+        require(
+            hashlib.sha256(historical_sources[path]).hexdigest() == digest,
+            f"repository:source:{path}",
+        )
+    source = historical_source(BRANCH_STATE.relative_to(ROOT).as_posix()).decode("utf-8")
     require("const DEPTH: u8 = 64;" in source, "repository:depth")
     for test in TESTS:
         require(f"#[test]\n    fn {test}()" in source, f"repository:test:{test}")
-    policy = runpy.run_path(str(ROOT / "scripts/validate_persistent_state_v11.py"))
-    sources = policy["load_sources"]()
-    policy["validate_sources"](sources)
-    require(policy["mutation_self_test"](sources) == 15, "repository:policy_mutations")
 
 
 def mutation_self_test() -> tuple[int, int]:
