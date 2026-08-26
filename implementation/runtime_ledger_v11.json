@@ -3,12 +3,12 @@
   "status": "authority_and_reproduction_correction_required",
   "authority": "spec/remediation_v11_authority.json",
   "cursor": {
-    "active_rcld": 100,
-    "active_step": "step_1314",
-    "next_step": "step_1315",
+    "active_rcld": 101,
+    "active_step": "step_1315",
+    "next_step": "step_1316",
     "last_planned_step": "step_1363",
-    "remaining_checkpoint_count": 50,
-    "remaining_rcld_count": 9
+    "remaining_checkpoint_count": 49,
+    "remaining_rcld_count": 8
   },
   "findings": {
     "open": [
@@ -29,17 +29,10 @@
   ],
   "active_checkpoint_scope": [
     "crates/nostr_automerge/src/reference/branch_state.rs",
-    "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v11.md",
     "docs/execution/remediation_v11/ledger.md",
     "implementation/runtime_ledger_v11.json",
     "reports/spec_baseline.txt",
-    "scripts/local_gate.py",
-    "scripts/reproduce_remediation_v11.py",
-    "scripts/validate_private_reproduction_boundary_v9.py",
-    "scripts/validate_remediation_v11.py",
-    "scripts/validate_spec.py",
-    "spec/remediation_v11_reproductions.json",
-    "tools/nostr_automerge_xtask/src/validate.rs"
+    "scripts/validate_remediation_v11.py"
   ],
   "predecessors": [
     {
@@ -75,6 +68,12 @@
     {
       "step": "step_1313",
       "candidate": "8f5a17d195be7bcb68af78aa20fc99e14934e2e4",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1314",
+      "candidate": "f2816e457876fb6f0a58f37dcd9ab54970360ef6",
       "owner_class": "public",
       "result": "pass"
     }

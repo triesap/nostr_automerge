@@ -21,3 +21,8 @@ contains exactly nine RCLDs and 56 checkpoints. Four executable reproductions
 remain open at `step_1314`: hidden persistent lookup work, post-stop target
 work, the unsupported-identity authority contradiction, and recursive
 persistent teardown.
+
+RCLD 101 starts at `step_1315` with a metered persistent lookup primitive.
+The new boundary counts only retained nodes actually visited and preserves the
+first typed stop; production callers remain on the historical boundary until
+the later integration and bypass-removal checkpoints.

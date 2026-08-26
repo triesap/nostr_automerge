@@ -50,6 +50,22 @@ impl<K: Ord, V> PersistentDeltaMap<K, V> {
         None
     }
 
+    pub(crate) fn get_metered<E>(
+        &self,
+        key: &K,
+        mut visit: impl FnMut() -> Result<(), E>,
+    ) -> Result<Option<&V>, E> {
+        let mut cursor = self.tail.as_deref();
+        while let Some(node) = cursor {
+            visit()?;
+            if let Some(value) = node.local.get(key) {
+                return Ok(Some(value));
+            }
+            cursor = node.parent.as_deref();
+        }
+        Ok(None)
+    }
+
     pub(crate) fn contains_key(&self, key: &K) -> bool {
         self.get(key).is_some()
     }
@@ -161,6 +177,35 @@ mod tests {
             assert_eq!(stopped, Err(()));
             assert_eq!(observed.get(), boundary);
         }
+    }
+
+    #[test]
+    fn metered_lookup_counts_only_nodes_actually_visited() {
+        let mut state = PersistentDeltaMap::from_local(BTreeMap::from([(0_u8, 10_u8)]));
+        for value in 1_u8..=3 {
+            state = state.extend_local(BTreeMap::from([(value, value + 10)]));
+        }
+
+        for (key, expected, expected_visits) in [
+            (3, Some(&13), 1_u64),
+            (1, Some(&11), 3),
+            (0, Some(&10), 4),
+            (4, None, 4),
+        ] {
+            let visits = Cell::new(0_u64);
+            let result = state.get_metered(&key, || {
+                visits.set(visits.get() + 1);
+                Ok::<(), ()>(())
+            });
+            assert_eq!(result, Ok(expected));
+            assert_eq!(visits.get(), expected_visits);
+        }
+
+        let injected = Rc::new("lookup stop");
+        let result = state.get_metered(&0, || Err(Rc::clone(&injected)));
+        assert!(result.is_err(), "metered lookup unexpectedly completed");
+        let Err(returned) = result else { return };
+        assert!(Rc::ptr_eq(&returned, &injected));
     }
 
     #[derive(Clone, Debug)]
