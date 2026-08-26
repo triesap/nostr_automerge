@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.example/nostr_automerge/resource_operation_inventory_v10.schema.json",
+  "title": "nostr_automerge resource operation inventory v10",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "findings", "operations", "reproductions", "result"],
+  "properties": {
+    "schema": { "const": "nostr_automerge.resource_operation_inventory.v10.v1" },
+    "status": { "enum": ["open_reproduced", "implementation_in_progress", "closed"] },
+    "findings": { "const": ["FINDING_094", "FINDING_095"] },
+    "operations": {
+      "type": "array",
+      "minItems": 12,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/operation" }
+    },
+    "reproductions": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "$ref": "#/$defs/reproduction" }
+    },
+    "result": { "const": "pass" }
+  },
+  "$defs": {
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "function", "operation_class", "required_resolution"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]+$" },
+        "path": { "type": "string", "pattern": "^crates/nostr_automerge/src/[a-z0-9_/]+\\.rs$" },
+        "function": { "type": "string", "pattern": "^[a-z][a-z0-9_]+$" },
+        "operation_class": { "type": "string", "pattern": "^[a-z][a-z0-9_]+$" },
+        "required_resolution": { "type": "string", "pattern": "^[a-z][a-z0-9_]+$" }
+      }
+    },
+    "reproduction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["finding", "target", "source", "test", "diagnostic", "expected"],
+      "properties": {
+        "finding": { "enum": ["FINDING_094", "FINDING_095"] },
+        "target": { "const": "lib" },
+        "source": { "type": "string", "pattern": "^crates/nostr_automerge/src/[a-z0-9_/]+\\.rs$" },
+        "test": { "type": "string", "minLength": 1 },
+        "diagnostic": { "type": "string", "minLength": 1 },
+        "expected": { "const": "open_failure" }
+      }
+    }
+  }
+}

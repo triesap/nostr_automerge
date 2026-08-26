@@ -224,4 +224,37 @@ mod tests {
         );
         assert_eq!(view.writer_contribution(&second_actor), Some(second_hash));
     }
+
+    #[test]
+    #[ignore = "open FINDING_094 resource-accounting reproduction"]
+    fn finding_094_parent_epoch_view_shares_accepted_payload() {
+        let retained = candidate(1, 2);
+        let hash = retained.change_hash;
+        let materialized = MaterializedDocumentView::empty_for_test();
+        assert!(materialized.is_ok());
+        let Ok(materialized) = materialized else {
+            return;
+        };
+        let state = AcceptedEpochState::new(
+            BTreeSet::from([hash]),
+            BTreeSet::from([hash]),
+            BTreeMap::from([(hash, retained)]),
+            Some(materialized),
+        );
+        assert!(state.is_ok());
+        let Ok(state) = state else {
+            return;
+        };
+        let view = ParentEpochView::from_accepted_state(&state);
+        let source = state.accepted_closure().iter().next();
+        let inherited = view.accepted().iter().next();
+        let shares_payload = matches!(
+            (source, inherited),
+            (Some(source), Some(inherited)) if core::ptr::eq(source, inherited)
+        );
+        assert!(
+            shares_payload,
+            "FINDING_094 reproduced: ParentEpochView deep-copies retained accepted state"
+        );
+    }
 }

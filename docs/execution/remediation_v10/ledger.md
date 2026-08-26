@@ -6,11 +6,12 @@ The completed RCLD 81 through RCLD 94 sequence and checkpoints `step_1158`
 through `step_1287` are immutable historical evidence. The reviewed public
 predecessor for this append-only follow-up is
 `bfad500706a834bd41ef4392613090d2381bd08b`, with tree
-`98630a87313f524b8efbe8182e19b9b897986e6e`.
+`98630a87313f524b8efbe8182e19b9b897986e6e`. The authority checkpoint
+`step_1288` is complete at `53208563e7aa28bc00162ab3b5802824675df6d8`.
 
 The active sequence is RCLD 95 through RCLD 99 and `step_1288` through
-`step_1307`. It begins at RCLD 95/`step_1288`; the next checkpoint is
-`step_1289`. Twenty checkpoints and five RCLDs remain until final closure.
+`step_1307`. It is active at RCLD 95/`step_1289`; the next checkpoint is
+`step_1290`. Nineteen checkpoints and five RCLDs remain until final closure.
 
 `FINDING_094` is open for exact target-local resource ownership across public
 Rust and the independent private TypeScript implementation. `FINDING_095` is

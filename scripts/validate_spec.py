@@ -55,6 +55,7 @@ VALIDATORS = [
     "validate_private_reproduction_boundary_v9.py",
     "validate_resource_followup_authority_v10.py",
     "validate_runtime_ledger_v10.py",
+    "validate_resource_operation_inventory_v10.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",
@@ -195,6 +196,7 @@ def controlled_files() -> list[pathlib.Path]:
             "tools/validation/runtime_ledger_v9.schema.json",
             "tools/validation/resource_followup_authority_v10.schema.json",
             "tools/validation/runtime_ledger_v10.schema.json",
+            "tools/validation/resource_operation_inventory_v10.schema.json",
         )
     )
     files.extend(path for path in (ROOT / "docs/adr").glob("adr_[0-9][0-9][0-9][0-9]_*.md"))

@@ -4638,6 +4638,78 @@ mod tests {
         ));
     }
 
+    #[test]
+    #[ignore = "open FINDING_095 checkpoint-ancestry reproduction"]
+    fn finding_095_lower_sequence_sibling_is_not_historical() {
+        let coordinate = DocumentCoordinate::new(
+            ControllerPublicKey::from_bytes([0x61; 32]),
+            DocumentId::from_bytes([0x62; 32]),
+        );
+        let parent_id = EventId::from_bytes([0x63; 32]);
+        let sibling_id = EventId::from_bytes([0x64; 32]);
+        let through_id = EventId::from_bytes([0x65; 32]);
+        let control = |event_id, parent, sequence| {
+            ValidatedControlCarrier::for_test(
+                event_id,
+                coordinate.controller(),
+                coordinate,
+                parent,
+                ValidatedControlContent {
+                    base_heads: Vec::new(),
+                    members: Vec::new(),
+                    predecessor: None,
+                    sequence,
+                    successor: None,
+                    terminal: true,
+                },
+            )
+        };
+        let checksum = RawChecksum::test_only([0x66; 32]);
+        let events = std::collections::BTreeMap::from([
+            (
+                parent_id,
+                EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::Control(Box::new(control(parent_id, None, 0))),
+                    raw_checksum: checksum,
+                },
+            ),
+            (
+                sibling_id,
+                EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::Control(Box::new(control(
+                        sibling_id,
+                        Some(parent_id),
+                        1,
+                    ))),
+                    raw_checksum: checksum,
+                },
+            ),
+            (
+                through_id,
+                EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::Control(Box::new(control(
+                        through_id,
+                        Some(parent_id),
+                        2,
+                    ))),
+                    raw_checksum: checksum,
+                },
+            ),
+        ]);
+        let indexes = derive_trusted_indexes(&events, &[]);
+        let corpus = EvidenceCorpus {
+            events,
+            invalid: std::collections::BTreeMap::new(),
+            duplicates: Vec::new(),
+            indexes,
+        };
+        let view = DocumentEvidenceView::derive(&corpus, coordinate);
+        assert!(
+            !carrier_control_is_historical(&view, through_id, sibling_id),
+            "FINDING_095 reproduced: lower sequence is accepted as checkpoint ancestry"
+        );
+    }
+
     fn assert_all_downstream_stages_once(
         observer: &RecordingCheckpointWorkObserver,
         descriptor_id: EventId,

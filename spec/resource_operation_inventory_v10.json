@@ -1,0 +1,113 @@
+{
+  "schema": "nostr_automerge.resource_operation_inventory.v10.v1",
+  "status": "open_reproduced",
+  "findings": [
+    "FINDING_094",
+    "FINDING_095"
+  ],
+  "operations": [
+    {
+      "id": "parent_epoch_view_copy",
+      "path": "crates/nostr_automerge/src/control/parent_view.rs",
+      "function": "from_accepted_state",
+      "operation_class": "target_copy",
+      "required_resolution": "share_payload_or_charge_each_item"
+    },
+    {
+      "id": "branch_prior_knowledge_copy",
+      "path": "crates/nostr_automerge/src/reference/evaluate.rs",
+      "function": "evaluate_batch_with_prior",
+      "operation_class": "target_copy",
+      "required_resolution": "parent_plus_local_delta"
+    },
+    {
+      "id": "branch_disposition_copy",
+      "path": "crates/nostr_automerge/src/reference/evaluate.rs",
+      "function": "evaluate_batch_with_prior",
+      "operation_class": "target_copy",
+      "required_resolution": "parent_plus_local_delta"
+    },
+    {
+      "id": "control_closure_precharge",
+      "path": "crates/nostr_automerge/src/reference/evaluate.rs",
+      "function": "charge_control_closures",
+      "operation_class": "coarse_precharge",
+      "required_resolution": "charge_immediately_before_each_operation"
+    },
+    {
+      "id": "device_ancestry_materialization",
+      "path": "crates/nostr_automerge/src/control/candidate.rs",
+      "function": "evaluate_device_ancestry_metered",
+      "operation_class": "allocation_before_charge",
+      "required_resolution": "charge_before_allocation_and_each_item"
+    },
+    {
+      "id": "accepted_state_reconstruction",
+      "path": "crates/nostr_automerge/src/reference/evaluate.rs",
+      "function": "accepted_state_for_closure",
+      "operation_class": "target_reconstruction",
+      "required_resolution": "metered_shared_builder"
+    },
+    {
+      "id": "authoritative_epoch_preparation",
+      "path": "crates/nostr_automerge/src/reference/evaluate.rs",
+      "function": "resolve_authoritative_epoch",
+      "operation_class": "target_preparation",
+      "required_resolution": "borrow_share_or_charge_each_item"
+    },
+    {
+      "id": "epoch_actor_reconstruction",
+      "path": "crates/nostr_automerge/src/reference/epoch_engine.rs",
+      "function": "evaluate_epoch",
+      "operation_class": "charge_after_copy",
+      "required_resolution": "charge_before_each_candidate_and_actor_item"
+    },
+    {
+      "id": "control_ancestry_index",
+      "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+      "function": "build_control_ancestry_index",
+      "operation_class": "quadratic_materialization",
+      "required_resolution": "persistent_checked_parent_nodes"
+    },
+    {
+      "id": "final_change_lineage",
+      "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+      "function": "reduce_change_dispositions",
+      "operation_class": "nested_target_scan",
+      "required_resolution": "single_charged_lineage_precomputation"
+    },
+    {
+      "id": "carrier_contribution_vectors",
+      "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+      "function": "reduce_change_dispositions",
+      "operation_class": "proportional_temporary",
+      "required_resolution": "stream_fixed_aggregate_state"
+    },
+    {
+      "id": "checkpoint_historical_control",
+      "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+      "function": "carrier_control_is_historical",
+      "operation_class": "sequence_without_ancestry",
+      "required_resolution": "charged_same_or_ancestor_traversal"
+    }
+  ],
+  "reproductions": [
+    {
+      "finding": "FINDING_094",
+      "target": "lib",
+      "source": "crates/nostr_automerge/src/control/parent_view.rs",
+      "test": "control::parent_view::tests::finding_094_parent_epoch_view_shares_accepted_payload",
+      "diagnostic": "FINDING_094 reproduced: ParentEpochView deep-copies retained accepted state",
+      "expected": "open_failure"
+    },
+    {
+      "finding": "FINDING_095",
+      "target": "lib",
+      "source": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+      "test": "engine::reference_evaluator::tests::finding_095_lower_sequence_sibling_is_not_historical",
+      "diagnostic": "FINDING_095 reproduced: lower sequence is accepted as checkpoint ancestry",
+      "expected": "open_failure"
+    }
+  ],
+  "result": "pass"
+}
