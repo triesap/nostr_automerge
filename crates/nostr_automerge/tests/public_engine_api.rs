@@ -3952,6 +3952,161 @@ fn prior_knowledge_exhaustion_is_deterministic_at_every_item_boundary() {
     assert!(prior.contains("Result<"));
 }
 
+struct PersistentIntegrationScenario {
+    corpus: EvidenceCorpus,
+    coordinate: DocumentCoordinate,
+    controls: [EventId; 2],
+    changes: [ChangeHash; 2],
+}
+
+#[allow(clippy::expect_used)]
+fn persistent_integration_scenario() -> PersistentIntegrationScenario {
+    let controller = TestSigner::from_byte(121);
+    let writer = TestSigner::from_byte(122);
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key().to_hex(),
+        "7a".repeat(32)
+    )
+    .parse()
+    .expect("persistent integration coordinate");
+    let members = vec![(writer.public_key().to_hex(), vec!["write"])];
+    let genesis = signed_acl_control(&controller, coordinate, 1, None, 0, members.clone());
+    let genesis_id = VerifiedNip01Event::verify(genesis.clone())
+        .expect("persistent integration genesis")
+        .event_id();
+    let actor = ActorId::derive(coordinate, writer.public_key());
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, BTreeSet::new()))
+        .expect("persistent integration document");
+    let first = document
+        .author_change(&[Operation::PutString {
+            key: "parent".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .expect("persistent integration parent change");
+    let child = signed_acl_control_with_base(
+        &controller,
+        coordinate,
+        2,
+        Some(genesis_id),
+        1,
+        members,
+        &[first.change_hash()],
+    );
+    let child_id = VerifiedNip01Event::verify(child.clone())
+        .expect("persistent integration child")
+        .event_id();
+    let second = document
+        .author_change(&[Operation::PutString {
+            key: "child".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .expect("persistent integration child change");
+    let sign_change =
+        |created_at: u64,
+         control: EventId,
+         authored: &nostr_automerge::authoring::AuthoredChange| {
+            writer.sign(
+                &UnsignedEventDraft::new(
+                    created_at,
+                    1_624,
+                    vec![
+                        vec!["a".to_owned(), coordinate.to_address()],
+                        vec!["e".to_owned(), control.to_hex()],
+                        vec!["x".to_owned(), authored.change_hash().to_hex()],
+                    ],
+                    base64::engine::general_purpose::STANDARD.encode(authored.raw()),
+                )
+                .expect("persistent integration change draft")
+                .prepare(writer.public_key())
+                .expect("persistent integration change preimage"),
+            )
+        };
+    let first_event = sign_change(3, genesis_id, &first);
+    let second_event = sign_change(4, child_id, &second);
+    let mut builder = CorpusBuilder::new();
+    for event in [second_event, child, first_event, genesis] {
+        assert!(matches!(
+            builder.ingest(event),
+            IngestOutcome::Accepted { .. }
+        ));
+    }
+    PersistentIntegrationScenario {
+        corpus: builder.finish(),
+        coordinate,
+        controls: [genesis_id, child_id],
+        changes: [first.change_hash(), second.change_hash()],
+    }
+}
+
+#[test]
+fn persistent_integration_is_exact_at_every_visible_boundary() {
+    let scenario = persistent_integration_scenario();
+    let evaluator = ReferenceEvaluator::new(ProtocolRevision::draft_v1());
+    let run = |items: u64, cancel_at: Option<usize>| {
+        let observations = Cell::new(0_usize);
+        let mut budget = WorkBudget::new(1_000_000, items);
+        let report = if let Some(cancel_at) = cancel_at {
+            evaluator.evaluate_report(&scenario.corpus, scenario.coordinate, &mut budget, &|| {
+                let current = observations.get();
+                observations.set(current + 1);
+                current >= cancel_at
+            })
+        } else {
+            evaluator.evaluate_report(
+                &scenario.corpus,
+                scenario.coordinate,
+                &mut budget,
+                &NeverCancelled,
+            )
+        };
+        (report, budget, observations.get())
+    };
+
+    let (ample, ample_budget, _) = run(1_000_000, None);
+    assert_eq!(ample.completion(), Completion::Complete);
+    assert_eq!(ample.canonical_controls(), scenario.controls);
+    assert_eq!(
+        ample
+            .accepted_changes()
+            .iter()
+            .copied()
+            .collect::<BTreeSet<_>>(),
+        BTreeSet::from(scenario.changes)
+    );
+    assert_eq!(ample.heads(), [scenario.changes[1]]);
+    let consumed_items = 1_000_000 - ample_budget.remaining().1;
+    let mut lower = consumed_items;
+    let mut upper = 1_000_000_u64;
+    while lower < upper {
+        let middle = lower + (upper - lower) / 2;
+        if run(middle, None).0.completion() == Completion::Complete {
+            upper = middle;
+        } else {
+            lower = middle + 1;
+        }
+    }
+    let exact_items = lower;
+    assert!(exact_items > 1);
+
+    let (short, short_budget, _) = run(exact_items - 1, None);
+    assert_eq!(short.completion(), Completion::BudgetExhausted);
+    assert_exact_no_progress_report(&short);
+    assert!(short_budget.consumed().get(WorkCounter::GraphNode) > 0);
+
+    let (exact, exact_budget, observations) = run(exact_items, Some(usize::MAX));
+    assert_eq!(exact, ample);
+    let (after, after_budget, _) = run(exact_items + 1, None);
+    assert_eq!(after, ample);
+    assert_eq!(after_budget.remaining().1, exact_budget.remaining().1 + 1);
+
+    for boundary in 0..observations {
+        let (cancelled, _, _) = run(exact_items, Some(boundary));
+        assert_eq!(cancelled.completion(), Completion::Cancelled, "{boundary}");
+        assert_exact_no_progress_report(&cancelled);
+    }
+}
+
 fn rewrite_change_sequence(
     mut raw: Vec<u8>,
     expected_sequence: u8,

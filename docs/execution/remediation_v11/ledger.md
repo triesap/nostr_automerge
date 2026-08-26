@@ -70,3 +70,8 @@ At `step_1324`, additional-prior and branch-disposition deltas charge source
 pulls and local inserts separately before the core persistent extension charges
 prepared items, inherited duplicate checks, and accepted inserts. Failed work
 returns the original shared state; publication occurs only after full success.
+
+`step_1325` exercises a real signed two-control, two-epoch graph through every
+newly exposed persistent boundary. The minimum completing item capacity N is
+derived independently; N−1 returns canonical no-progress, N and N+1 produce the
+same complete report, and cancellation at every observation is exact.
