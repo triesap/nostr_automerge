@@ -1,6 +1,6 @@
 # nostr_automerge Draft V1 Resource Accounting And Checkpoint Ancestry Follow-up V10 Multi-RCLD
 
-Status: resource accounting remediation required — publication held
+Status: `code_complete_publication_held`
 Created: 2026-08-26
 Mode: rcl-durable
 Public Rust repository and Cargo workspace: repository root
@@ -11,10 +11,10 @@ Reviewed NIP SHA-256: `0dfa683aa0f4a1c7d3df010ec95901bf4ba4094ed3adaacc26e85d95a
 Reviewed companion SHA-256: `a81ad7f3e5cc7e386a9313f6d5355afc1ec95757a5c9a4051ea94b79eafeceb0`
 Reviewed requirements SHA-256: `f6e6070de7a5fc707f8488ced3a031f7dfc36d11c7477d800c3d3c33d532e6ba`
 Steps: `step_1288` through `step_1307` (20 contiguous checkpoints)
-Active RCLD: RCLD 95
-Active checkpoint: `step_1288`
-Next RCLD: RCLD 95
-Next checkpoint: `step_1289`
+Active RCLD: RCLD 99
+Active checkpoint: `step_1307`
+Next RCLD: none
+Next checkpoint: `step_1308` (reserved; not part of this plan)
 
 ## Decision And Outcome
 
@@ -260,7 +260,7 @@ source inspection, and extbuild diagnostics remain direct.
 
 ## RCLD 95 — Follow-up Authority And Executable Findings
 
-Status: active
+Status: complete
 Steps: `step_1288` through `step_1290`
 Depends on: completed RCLD 94
 Gate: `GATE_V10_FOLLOWUP_AUTHORITY`
@@ -273,7 +273,7 @@ Gate: `GATE_V10_FOLLOWUP_AUTHORITY`
 
 ## RCLD 96 — Shared Rust State And Exact Traversal Foundations
 
-Status: pending
+Status: complete
 Steps: `step_1291` through `step_1295`
 Depends on: RCLD 95
 Gate: `GATE_V10_SHARED_RESOURCE_STATE`
@@ -288,7 +288,7 @@ Gate: `GATE_V10_SHARED_RESOURCE_STATE`
 
 ## RCLD 97 — Exact Rust Reduction And Checkpoint Ancestry
 
-Status: pending
+Status: complete
 Steps: `step_1296` through `step_1299`
 Depends on: RCLD 96
 Gate: `GATE_V10_RUST_RESOURCE_AND_ANCESTRY`
@@ -302,7 +302,7 @@ Gate: `GATE_V10_RUST_RESOURCE_AND_ANCESTRY`
 
 ## RCLD 98 — Private Parity And Appended Conformance
 
-Status: pending
+Status: complete
 Steps: `step_1300` through `step_1304`
 Depends on: RCLD 97
 Gate: `GATE_V10_PRIVATE_RESOURCE_PARITY`
@@ -317,7 +317,7 @@ Gate: `GATE_V10_PRIVATE_RESOURCE_PARITY`
 
 ## RCLD 99 — Exact Proof Closure And Held Final Decision
 
-Status: pending
+Status: complete
 Steps: `step_1305` through `step_1307`
 Depends on: RCLD 98
 Gate: `GATE_V10_RESOURCE_FOLLOWUP_FINAL`
@@ -449,8 +449,6 @@ completion.
 
 ## Unfinished RCLDs
 
-- RCLD 95 — Follow-up Authority And Executable Findings (`step_1288`–`step_1290`), active at `step_1288`.
-- RCLD 96 — Shared Rust State And Exact Traversal Foundations (`step_1291`–`step_1295`), pending.
-- RCLD 97 — Exact Rust Reduction And Checkpoint Ancestry (`step_1296`–`step_1299`), pending.
-- RCLD 98 — Private Parity And Appended Conformance (`step_1300`–`step_1304`), pending.
-- RCLD 99 — Exact Proof Closure And Held Final Decision (`step_1305`–`step_1307`), pending.
+None. RCLD 95 through RCLD 99 are complete. External assurance, NIP
+submission, production qualification, publication, release, and remote
+mutation remain held actions rather than unfinished RCLDs.

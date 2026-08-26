@@ -1,0 +1,15 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://example.invalid/nostr-automerge/resource-followup-final-decision-v10.schema.json",
+  "type":"object","additionalProperties":false,
+  "required":["schema","checkpoint","candidate","status","completed_rclds","checkpoint_range","predecessor_count","public_predecessor_count","opaque_private_predecessor_count","requirement_count","followup_requirement_count","scenario_count","delivery_order_count","process_count","finding_count","closed_finding_count","held_finding_count","public_lane_count","evidence_identities","held_actions","release_claimed","remote_actions_performed","result_identity_sha256"],
+  "properties":{
+    "schema":{"const":"nostr_automerge.resource_followup_final_decision.v10.v1"},"checkpoint":{"const":"step_1307"},"candidate":{"$ref":"#/$defs/commit"},"status":{"const":"code_complete_publication_held"},
+    "completed_rclds":{"type":"array","prefixItems":[{"const":95},{"const":96},{"const":97},{"const":98},{"const":99}],"items":false},
+    "checkpoint_range":{"type":"object","additionalProperties":false,"required":["first","last","count","contiguous"],"properties":{"first":{"const":"step_1288"},"last":{"const":"step_1307"},"count":{"const":20},"contiguous":{"const":true}}},
+    "predecessor_count":{"const":19},"public_predecessor_count":{"const":14},"opaque_private_predecessor_count":{"const":5},"requirement_count":{"const":148},"followup_requirement_count":{"const":6},"scenario_count":{"const":193},"delivery_order_count":{"const":8},"process_count":{"const":2},"finding_count":{"const":3},"closed_finding_count":{"const":2},"held_finding_count":{"const":1},"public_lane_count":{"const":15},
+    "evidence_identities":{"type":"array","minItems":7,"maxItems":7,"items":{"type":"object","additionalProperties":false,"required":["class","sha256"],"properties":{"class":{"enum":["followup_authority","operation_inventory","appended_conformance","resource_ancestry_gate","public_assurance","finding_closure","opaque_private_assurance"]},"sha256":{"$ref":"#/$defs/sha"}}}},
+    "held_actions":{"type":"array","minItems":6,"maxItems":6,"uniqueItems":true,"items":{"enum":["external_assurance","nip_submission","production_qualification","publication","release","remote_mutation"]}},"release_claimed":{"const":false},"remote_actions_performed":{"const":false},"result_identity_sha256":{"$ref":"#/$defs/sha"}
+  },
+  "$defs":{"sha":{"type":"string","pattern":"^[0-9a-f]{64}$"},"commit":{"type":"string","pattern":"^[0-9a-f]{40}$"}}
+}

@@ -1,6 +1,6 @@
 # Resource Accounting And Checkpoint Ancestry Follow-up Ledger
 
-Status: `resource_accounting_remediation_required`
+Status: `code_complete_publication_held`
 
 The completed RCLD 81 through RCLD 94 sequence and checkpoints `step_1158`
 through `step_1287` are immutable historical evidence. The reviewed public
@@ -28,16 +28,18 @@ candidate `2d708bb0a7a00523ab5c244fd0a15c96afcf0a4a`.
 The appended public conformance checkpoint `step_1304` is complete at
 `6f561e7ff4b12734e908dff6c98bc8139473052c`, and the exact resource and
 ancestry proof gate `step_1305` is complete at
-`5e3722500c55a52f7fc30e2a168fdca189f03b99`.
+`5e3722500c55a52f7fc30e2a168fdca189f03b99`. The exact public assurance
+checkpoint `step_1306` is complete at
+`51182c8f74b33194fba947631fd3d625bf190606`.
 
-The active sequence is RCLD 95 through RCLD 99 and `step_1288` through
-`step_1307`. RCLD 95 through RCLD 97 are complete. The sequence is active at
-RCLD 99/`step_1306`; the next checkpoint is `step_1307`. Two checkpoints and
-one RCLD remain until final closure.
+The RCLD 95 through RCLD 99 sequence and `step_1288` through `step_1307` are
+complete. The final local decision is active at RCLD 99/`step_1307`; the next
+reserved checkpoint is `step_1308`. No planned checkpoint or RCLD remains.
 
-`FINDING_094` and `FINDING_095` have passing public and private implementation
-evidence. They remain administratively open until this versioned conformance
-checkpoint and the successor proof gate bind the complete evidence chain.
+`FINDING_094` and `FINDING_095` are closed by passing public and opaque-private
+implementation evidence, the versioned conformance checkpoint, the successor
+proof gate, and the exact public assurance record. `FINDING_080` remains held
+because it requires external assurance outside local authority.
 
 The immutable v10 corpus remains byte-for-byte unchanged. The appended v11
 distribution contains 193 signed scenarios: seven explicit successor fixture
@@ -55,10 +57,12 @@ nested-scan, sequence-ancestry, and relocated-charge claims.
 
 The successor resource and ancestry gate binds twenty-one ordered proof rows,
 executes eighteen exact proof commands, and rejects eighteen catalog/gate plus
-five transcript mutations. The active assurance checkpoint records the exact
+five transcript mutations. The assurance checkpoint records the exact
 clean public candidate across fifteen local lanes, including the 193-scenario
 two-process distribution, coverage, package, supply-chain, SBOM, boundary,
-leak, and artifact checks. External assurance and publication remain held.
+leak, and artifact checks. The final finding closure and decision bind those
+results without claiming release or remote mutation. External assurance and
+publication remain held.
 
 The active governing plan is
 `docs/execution/rcl/nostr_automerge_v1_multi_rcld_v10.md`. NIP, wire, protocol
@@ -72,4 +76,4 @@ mutation, NIP submission, and production qualification remain held.
 | `step_1291`–`step_1295` | RCLD 96 | shared Rust state and exact traversals | complete |
 | `step_1296`–`step_1299` | RCLD 97 | exact reduction and checkpoint ancestry | complete |
 | `step_1300`–`step_1304` | RCLD 98 | private parity and appended conformance | complete |
-| `step_1305`–`step_1307` | RCLD 99 | proof closure and held final decision | active |
+| `step_1305`–`step_1307` | RCLD 99 | proof closure and held final decision | complete |

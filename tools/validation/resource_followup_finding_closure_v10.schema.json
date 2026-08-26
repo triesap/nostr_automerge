@@ -1,0 +1,14 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://example.invalid/nostr-automerge/resource-followup-finding-closure-v10.schema.json",
+  "type":"object","additionalProperties":false,
+  "required":["schema","checkpoint","candidate","status","findings","closed_count","held_count","evidence","publication_status","release_claimed","remote_actions_performed","result_identity_sha256"],
+  "properties":{
+    "schema":{"const":"nostr_automerge.resource_followup_finding_closure.v10.v1"},"checkpoint":{"const":"step_1307"},"candidate":{"$ref":"#/$defs/commit"},"status":{"const":"code_complete_publication_held"},
+    "findings":{"type":"array","minItems":3,"maxItems":3,"items":{"type":"object","additionalProperties":false,"required":["id","class","status","requirements","proofs"],"properties":{"id":{"enum":["FINDING_094","FINDING_095","FINDING_080"]},"class":{"enum":["resource_accounting","checkpoint_report_ancestry","external_assurance"]},"status":{"enum":["pass","held"]},"requirements":{"type":"array","uniqueItems":true,"items":{"type":"string"}},"proofs":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string"}}}}},
+    "closed_count":{"const":2},"held_count":{"const":1},
+    "evidence":{"type":"object","additionalProperties":false,"required":["operation_inventory_sha256","appended_conformance_sha256","resource_gate_sha256","assurance_sha256","external_holds_sha256"],"properties":{"operation_inventory_sha256":{"$ref":"#/$defs/sha"},"appended_conformance_sha256":{"$ref":"#/$defs/sha"},"resource_gate_sha256":{"$ref":"#/$defs/sha"},"assurance_sha256":{"$ref":"#/$defs/sha"},"external_holds_sha256":{"$ref":"#/$defs/sha"}}},
+    "publication_status":{"const":"held"},"release_claimed":{"const":false},"remote_actions_performed":{"const":false},"result_identity_sha256":{"$ref":"#/$defs/sha"}
+  },
+  "$defs":{"sha":{"type":"string","pattern":"^[0-9a-f]{64}$"},"commit":{"type":"string","pattern":"^[0-9a-f]{40}$"}}
+}

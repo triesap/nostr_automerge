@@ -18,6 +18,8 @@ SCHEMA_SHA256 = "b80a9daa465d7e0102e3a70c0c3951f422289a2eb6a70b0b0101d4c3083b34b
 PLAN_SHA256 = "c3dd5cebd302edc34c88fdb787c2bc7c6415f5fe11932f2601a12f4219c4dd8d"
 PUBLIC_PREDECESSOR = "bfad500706a834bd41ef4392613090d2381bd08b"
 PUBLIC_TREE = "98630a87313f524b8efbe8182e19b9b897986e6e"
+AUTHORITY_CANDIDATE = "53208563e7aa28bc00162ab3b5802824675df6d8"
+PLAN_PATH = "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v10.md"
 
 EXPECTED_TOP_KEYS = (
     "schema",
@@ -146,8 +148,11 @@ def validate_repository() -> None:
         raise AuthorityError("authority:sha256")
     if sha256(SCHEMA) != SCHEMA_SHA256:
         raise AuthorityError("schema:sha256")
-    plan = ROOT / "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v10.md"
-    if sha256(plan) != PLAN_SHA256:
+    plan = subprocess.run(
+        ["git", "show", f"{AUTHORITY_CANDIDATE}:{PLAN_PATH}"],
+        cwd=ROOT, capture_output=True, check=True,
+    ).stdout
+    if hashlib.sha256(plan).hexdigest() != PLAN_SHA256:
         raise AuthorityError("plan:sha256")
     for relative, expected in FROZEN_FILES.items():
         if sha256(ROOT / relative) != expected:
@@ -158,7 +163,7 @@ def validate_repository() -> None:
     ).stdout.strip()
     if actual_tree != PUBLIC_TREE:
         raise AuthorityError("predecessor:tree")
-    plan_text = plan.read_text()
+    plan_text = plan.decode()
     found_steps = tuple(f"step_{value}" for value in __import__("re").findall(r"^\| `step_(\d+)` \|", plan_text, __import__("re").M))
     if found_steps != EXPECTED_STEPS:
         raise AuthorityError("plan:steps")

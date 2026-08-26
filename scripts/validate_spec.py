@@ -60,6 +60,7 @@ VALIDATORS = [
     "validate_appended_conformance_v11.py",
     "validate_resource_ancestry_gate_v10.py",
     "validate_resource_followup_assurance_v10.py",
+    "validate_resource_followup_final_decision_v10.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",
@@ -78,6 +79,7 @@ HISTORICAL_VALIDATORS = {
     "validate_runtime_ledger_v9.py",
 }
 FOLLOWUP_HISTORICAL_VALIDATORS = {
+    "validate_resource_followup_authority_v10.py",
     "validate_authority_transition_v10.py",
     "validate_checkpoint_parity_v9.py",
     "validate_carrier_gate_v9.py",
@@ -172,6 +174,8 @@ def controlled_files() -> list[pathlib.Path]:
             "reports/appended_conformance_v11.json",
             "reports/resource_ancestry_gate_v10.json",
             "reports/resource_followup_assurance_v10.json",
+            "reports/resource_followup_finding_closure_v10.json",
+            "reports/resource_followup_final_decision_v10.json",
             "scripts/generate_semantic_proof_catalog_final_v10.py",
             "reports/opaque_boundary_gate_v9.json",
             "reports/opaque_resource_gate_v9.json",
@@ -209,6 +213,8 @@ def controlled_files() -> list[pathlib.Path]:
             "tools/validation/resource_ancestry_gate_v10.schema.json",
             "tools/validation/resource_ancestry_proof_catalog_v10.schema.json",
             "tools/validation/resource_followup_assurance_v10.schema.json",
+            "tools/validation/resource_followup_finding_closure_v10.schema.json",
+            "tools/validation/resource_followup_final_decision_v10.schema.json",
             "spec/resource_ancestry_proof_catalog_v10.json",
         )
     )

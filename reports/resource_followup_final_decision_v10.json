@@ -1,0 +1,33 @@
+{
+  "schema":"nostr_automerge.resource_followup_final_decision.v10.v1",
+  "checkpoint":"step_1307",
+  "candidate":"51182c8f74b33194fba947631fd3d625bf190606",
+  "status":"code_complete_publication_held",
+  "completed_rclds":[95,96,97,98,99],
+  "checkpoint_range":{"first":"step_1288","last":"step_1307","count":20,"contiguous":true},
+  "predecessor_count":19,
+  "public_predecessor_count":14,
+  "opaque_private_predecessor_count":5,
+  "requirement_count":148,
+  "followup_requirement_count":6,
+  "scenario_count":193,
+  "delivery_order_count":8,
+  "process_count":2,
+  "finding_count":3,
+  "closed_finding_count":2,
+  "held_finding_count":1,
+  "public_lane_count":15,
+  "evidence_identities":[
+    {"class":"followup_authority","sha256":"0cac9bf4b90c55e428c335797a9d7195bc3ee08eed5bfb49fca4428e62702531"},
+    {"class":"operation_inventory","sha256":"cae0e490046cd70f1798573bcf80e0e9f4d520e37afb19225a84845b11b63525"},
+    {"class":"appended_conformance","sha256":"0b816c4d88382974a710e4777893ded90afc508598936fab12ef9a1218d25c1e"},
+    {"class":"resource_ancestry_gate","sha256":"4649c5fd04973e895517424209af22e663c2390bdc359ff1e5884aa454c68b5c"},
+    {"class":"public_assurance","sha256":"57428dbf3305ebf6bd07038df53e05a1cef1b0b0e76359a518693ece8491341d"},
+    {"class":"finding_closure","sha256":"a544cdf1d2be10a855891e0681df2d236dcaf7a1f7230eb35c4d719ec738dd83"},
+    {"class":"opaque_private_assurance","sha256":"d40e2f7424b04716f5da798da093907234492c43fa629cdca95c5434cb70a9c2"}
+  ],
+  "held_actions":["external_assurance","nip_submission","production_qualification","publication","release","remote_mutation"],
+  "release_claimed":false,
+  "remote_actions_performed":false,
+  "result_identity_sha256":"af495c4e0a6721f7e0481c1de4241d429b88733ddec476eb851dc6b472120fb9"
+}
