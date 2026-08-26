@@ -1,0 +1,30 @@
+{
+  "schema": "nostr_automerge.resource_ancestry_proof_catalog.v10.v1",
+  "status": "closed",
+  "findings": ["FINDING_094", "FINDING_095"],
+  "requirements": ["NCRDT-RESOURCE-001", "NCRDT-RESOURCE-013", "NCRDT-RESOURCE-014", "NCRDT-COMPLETION-001", "NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+  "proofs": [
+    {"id":"operation:parent_epoch_view_copy","category":"resource_operation","finding":"FINDING_094","source":"crates/nostr_automerge/src/control/parent_view.rs","test":"control::parent_view::tests::finding_094_parent_epoch_view_shares_accepted_payload","result":"pass"},
+    {"id":"operation:branch_prior_knowledge_copy","category":"resource_operation","finding":"FINDING_094","source":"crates/nostr_automerge/src/reference/evaluate.rs","test":"reference::evaluate::tests::prior_knowledge_is_charged_per_item_before_access","result":"pass"},
+    {"id":"operation:branch_disposition_copy","category":"resource_operation","finding":"FINDING_094","source":"crates/nostr_automerge/src/reference/branch_state.rs","test":"reference::branch_state::tests::delta_chain_shares_parent_and_materializes_in_override_order","result":"pass"},
+    {"id":"operation:control_closure_precharge","category":"resource_operation","finding":"FINDING_094","source":"crates/nostr_automerge/src/control/frontier.rs","test":"control::frontier::tests::metered_closure_charges_before_every_node_and_edge_operation","result":"pass"},
+    {"id":"operation:device_ancestry_materialization","category":"resource_operation","finding":"FINDING_094","source":"crates/nostr_automerge/src/control/ancestry.rs","test":"control::ancestry::tests::ancestry_member_traversal_stops_at_every_prefix","result":"pass"},
+    {"id":"operation:accepted_state_reconstruction","category":"resource_operation","finding":"FINDING_094","source":"crates/nostr_automerge/src/control/epoch_state.rs","test":"control::epoch_state::tests::metered_builder_has_exact_deep_wide_and_dense_boundaries","result":"pass"},
+    {"id":"operation:authoritative_epoch_preparation","category":"resource_operation","finding":"FINDING_094","source":"crates/nostr_automerge/src/reference/epoch_engine.rs","test":"reference::epoch_engine::tests::candidate_projections_charge_before_each_owned_entry","result":"pass"},
+    {"id":"operation:epoch_actor_reconstruction","category":"resource_operation","finding":"FINDING_094","source":"crates/nostr_automerge/src/reference/epoch_engine.rs","test":"reference::epoch_engine::tests::actor_reconstruction_is_item_metered_before_each_operation","result":"pass"},
+    {"id":"operation:control_ancestry_index","category":"resource_operation","finding":"FINDING_094","source":"crates/nostr_automerge/src/control/ancestry.rs","test":"control::ancestry::tests::persistent_chain_retains_only_the_checked_parent_handle","result":"pass"},
+    {"id":"operation:final_change_lineage","category":"resource_operation","finding":"FINDING_094","source":"crates/nostr_automerge/src/engine/reference_evaluator.rs","test":"engine::reference_evaluator::tests::canonical_lineage_is_one_charged_control_and_hash_traversal","result":"pass"},
+    {"id":"operation:carrier_contribution_vectors","category":"resource_operation","finding":"FINDING_094","source":"crates/nostr_automerge/src/engine/reference_evaluator.rs","test":"engine::reference_evaluator::tests::aggregate_reduction_cannot_rewrite_an_invalid_carrier","result":"pass"},
+    {"id":"operation:checkpoint_historical_control","category":"resource_operation","finding":"FINDING_095","source":"crates/nostr_automerge/src/engine/reference_evaluator.rs","test":"engine::reference_evaluator::tests::finding_095_lower_sequence_sibling_is_not_historical","result":"pass"},
+    {"id":"boundary:n_minus_one_n_n_plus_one","category":"exact_boundary","finding":"FINDING_094","source":"crates/nostr_automerge/tests/public_engine_api.rs","test":"every_v3_work_counter_boundary","result":"pass"},
+    {"id":"boundary:cancellation_prefix","category":"cancellation","finding":"FINDING_094","source":"crates/nostr_automerge/src/reference/evaluate.rs","test":"reference::evaluate::tests::parent_propagation_checks_every_cancellation_boundary","result":"pass"},
+    {"id":"observer:allocation_identity","category":"allocation_observer","finding":"FINDING_094","source":"crates/nostr_automerge/src/control/parent_view.rs","test":"control::parent_view::tests::finding_094_parent_epoch_view_shares_accepted_payload","result":"pass"},
+    {"id":"scaling:graph","category":"scaling","finding":"FINDING_094","source":"crates/nostr_automerge/src/graph/scaling.rs","test":"graph::scaling::graph_scaling_regression_models_are_proportional","result":"pass"},
+    {"id":"scaling:expanded","category":"scaling","finding":"FINDING_094","source":"crates/nostr_automerge/src/graph/scaling.rs","test":"graph::scaling::expanded_control_actor_conflict_and_projection_models_are_bounded","result":"pass"},
+    {"id":"mutation:resource_inventory","category":"mutation_campaign","finding":"FINDING_094","source":"scripts/validate_resource_operation_inventory_v10.py","test":"mutation_self_test+source_mutation_self_test","result":"pass"},
+    {"id":"ancestry:sibling_signed","category":"checkpoint_ancestry","finding":"FINDING_095","source":"fixtures/v11/scenarios/resource_followup/checkpoint_lower_sequence_sibling_not_historical.fixture.json","test":"checkpoint_lower_sequence_sibling_not_historical","result":"pass"},
+    {"id":"conformance:v11","category":"cross_language_conformance","finding":"FINDING_095","source":"reports/appended_conformance_v11.json","test":"193x8x2","result":"pass"},
+    {"id":"opaque:private_resource","category":"opaque_private","finding":"FINDING_094","source":"reports/appended_conformance_v11.json","test":"d40e2f7424b04716f5da798da093907234492c43fa629cdca95c5434cb70a9c2","result":"pass"}
+  ],
+  "result": "pass"
+}

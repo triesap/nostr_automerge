@@ -1,0 +1,11 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://triesap.example/nostr_automerge/resource_ancestry_gate_v10.schema.json",
+  "type":"object","additionalProperties":false,
+  "required":["schema","checkpoint","status","publication_status","public_candidate","catalog_sha256","operation_inventory_sha256","appended_conformance_sha256","appended_conformance_identity","opaque_private_identity","proof_count","operation_count","finding_count","mutation_count","gate_mutation_count","transcript_mutation_count","conformance_scenario_count","delivery_order_count","process_count_per_implementation","findings_evidence_status","result","result_identity_sha256"],
+  "properties":{
+    "schema":{"const":"nostr_automerge.resource_ancestry_gate.v10.v1"},"checkpoint":{"const":"step_1305"},"status":{"const":"pass"},"publication_status":{"const":"held"},
+    "public_candidate":{"$ref":"#/$defs/commit"},"catalog_sha256":{"$ref":"#/$defs/sha"},"operation_inventory_sha256":{"$ref":"#/$defs/sha"},"appended_conformance_sha256":{"$ref":"#/$defs/sha"},"appended_conformance_identity":{"$ref":"#/$defs/sha"},"opaque_private_identity":{"$ref":"#/$defs/sha"},
+    "proof_count":{"const":21},"operation_count":{"const":12},"finding_count":{"const":2},"mutation_count":{"const":41},"gate_mutation_count":{"const":18},"transcript_mutation_count":{"const":5},"conformance_scenario_count":{"const":193},"delivery_order_count":{"const":8},"process_count_per_implementation":{"const":2},"findings_evidence_status":{"const":"complete"},"result":{"const":"pass"},"result_identity_sha256":{"$ref":"#/$defs/sha"}
+  },"$defs":{"sha":{"type":"string","pattern":"^[0-9a-f]{64}$"},"commit":{"type":"string","pattern":"^[0-9a-f]{40}$"}}
+}

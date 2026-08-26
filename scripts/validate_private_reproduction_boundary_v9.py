@@ -81,6 +81,7 @@ PYTHON_SURFACES = (
     "scripts/generate_distribution_v10.py",
     "scripts/generate_distribution_v11.py",
     "scripts/validate_appended_conformance_v11.py",
+    "scripts/validate_resource_ancestry_gate_v10.py",
     "scripts/validate_corrected_checkpoint_expectations_v10.py",
     "scripts/validate_companion_specs.py",
     "scripts/validate_checkpoint_parity_v9.py",
@@ -222,6 +223,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/final_finding_closure_v10.json",
         "reports/final_decision_gate_v10.json",
         "reports/appended_conformance_v11.json",
+        "reports/resource_ancestry_gate_v10.json",
         "reports/external_holds_v8.json",
         "reports/spec_baseline.txt",
         "scripts/validate_architecture.py",
@@ -230,6 +232,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/generate_distribution_v10.py",
         "scripts/generate_distribution_v11.py",
         "scripts/validate_appended_conformance_v11.py",
+        "scripts/validate_resource_ancestry_gate_v10.py",
         "scripts/validate_corrected_checkpoint_expectations_v10.py",
         "scripts/validate_authority_transition_v10.py",
         "scripts/validate_checkpoint_parity_v9.py",
@@ -285,6 +288,10 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/validation/final_finding_closure_v10.schema.json",
         "tools/validation/final_decision_gate_v10.schema.json",
         "tools/validation/appended_conformance_v11.schema.json",
+        "tools/validation/resource_ancestry_gate_v10.schema.json",
+        "tools/validation/resource_ancestry_proof_catalog_v10.schema.json",
+        "spec/resource_ancestry_proof_catalog_v10.json",
+        "spec/resource_operation_inventory_v10.json",
         "tools/validation/distribution_v11.schema.json",
         "spec/authority_transition_v10.json",
         "spec/resource_followup_authority_v10.json",
@@ -607,6 +614,10 @@ def validate_source_surfaces() -> None:
                     or (
                         value in {"cargo", "python3"}
                         and relative == "scripts/validate_appended_conformance_v11.py"
+                    )
+                    or (
+                        value in {"cargo", "git", "python3"}
+                        and relative == "scripts/validate_resource_ancestry_gate_v10.py"
                     )
                 ),
             )

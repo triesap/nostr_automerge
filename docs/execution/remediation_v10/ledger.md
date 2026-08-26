@@ -25,11 +25,13 @@ sequence is complete at `step_1300` candidate
 `29229506554ebe0f23e8896370a316c0340780ae`, `step_1302` candidate
 `d8f1698a15e3821ecf78db84985b8492ac7f0868`, and `step_1303` assurance
 candidate `2d708bb0a7a00523ab5c244fd0a15c96afcf0a4a`.
+The appended public conformance checkpoint `step_1304` is complete at
+`6f561e7ff4b12734e908dff6c98bc8139473052c`.
 
 The active sequence is RCLD 95 through RCLD 99 and `step_1288` through
 `step_1307`. RCLD 95 through RCLD 97 are complete. The sequence is active at
-RCLD 98/`step_1304`; the next checkpoint is `step_1305`. Four checkpoints and
-two RCLDs remain until final closure.
+RCLD 99/`step_1305`; the next checkpoint is `step_1306`. Three checkpoints and
+one RCLD remain until final closure.
 
 `FINDING_094` and `FINDING_095` have passing public and private implementation
 evidence. They remain administratively open until this versioned conformance
@@ -60,5 +62,5 @@ mutation, NIP submission, and production qualification remain held.
 | `step_1288`–`step_1290` | RCLD 95 | authority and executable findings | complete |
 | `step_1291`–`step_1295` | RCLD 96 | shared Rust state and exact traversals | complete |
 | `step_1296`–`step_1299` | RCLD 97 | exact reduction and checkpoint ancestry | complete |
-| `step_1300`–`step_1304` | RCLD 98 | private parity and appended conformance | active |
-| `step_1305`–`step_1307` | RCLD 99 | proof closure and held final decision | pending |
+| `step_1300`–`step_1304` | RCLD 98 | private parity and appended conformance | complete |
+| `step_1305`–`step_1307` | RCLD 99 | proof closure and held final decision | active |
