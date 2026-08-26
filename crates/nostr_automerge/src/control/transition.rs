@@ -3,6 +3,8 @@ use std::collections::BTreeSet;
 use crate::DevicePublicKey;
 use crate::carrier::control::ValidatedControlContent;
 use crate::control::frontier::accepted_frontier_closure;
+use crate::control::frontier::accepted_frontier_closure_antichain_metered;
+use crate::control::frontier::accepted_frontier_closure_metered;
 use crate::control::parent_view::ParentEpochView;
 use crate::control::validate::ControlEnvelope;
 use crate::types::role::Role;
@@ -48,6 +50,42 @@ pub(crate) fn validate_base_frontier_antichain(
     Ok(())
 }
 
+pub(crate) fn validate_base_frontier_antichain_metered<E>(
+    child: &ValidatedControlContent,
+    view: &ParentEpochView,
+    mut visit: impl FnMut(crate::WorkCounter) -> Result<(), E>,
+) -> Result<Result<(), TransitionError>, E> {
+    let complete = accepted_frontier_closure_metered(
+        &child.base_heads,
+        view.accepted(),
+        view.dependency_index(),
+        &mut visit,
+    )?;
+    if !complete.missing.is_empty() {
+        return Ok(Err(TransitionError::MissingBaseEvidence));
+    }
+    if !complete.out_of_parent.is_empty() {
+        return Ok(Err(TransitionError::BaseFrontierAntichain));
+    }
+    let mut head_index = 0;
+    while head_index < child.base_heads.len() {
+        let next_head_index = head_index + 1;
+        let head = &child.base_heads[head_index..next_head_index];
+        head_index += 1;
+        let (_closure, has_ancestor) = accepted_frontier_closure_antichain_metered(
+            head,
+            &child.base_heads,
+            view.accepted(),
+            view.dependency_index(),
+            &mut visit,
+        )?;
+        if has_ancestor {
+            return Ok(Err(TransitionError::BaseFrontierAntichain));
+        }
+    }
+    Ok(Ok(()))
+}
+
 pub(crate) fn validate_retained_writer_frontier(
     parent: &ValidatedControlContent,
     child: &ValidatedControlContent,
@@ -88,26 +126,46 @@ pub(crate) fn validate_retained_writer_frontier_metered(
     visit: &mut impl FnMut() -> Result<(), crate::Completion>,
 ) -> Result<Result<(), TransitionError>, crate::Completion> {
     let mut closure = BTreeSet::new();
-    let mut stack = child.base_heads.clone();
-    while let Some(hash) = stack.pop() {
+    let mut stack = Vec::new();
+    let mut head_index = 0;
+    while head_index < child.base_heads.len() {
         visit()?;
+        stack.push(child.base_heads[head_index]);
+        head_index += 1;
+    }
+    while !stack.is_empty() {
+        visit()?;
+        let Some(hash) = stack.pop() else {
+            break;
+        };
         if !view.contains(&hash) {
             return Ok(Err(TransitionError::MissingBaseEvidence));
         }
         if closure.insert(hash)
             && let Some(dependencies) = view.dependencies(&hash)
         {
-            for dependency in dependencies {
+            let mut dependencies = dependencies.iter();
+            let dependency_count = dependencies.len();
+            for _ in 0..dependency_count {
                 visit()?;
+                let Some(dependency) = dependencies.next() else {
+                    break;
+                };
                 stack.push(*dependency);
             }
         }
     }
-    for grant in &parent.members {
+    let mut grant_index = 0;
+    while grant_index < parent.members.len() {
         visit()?;
+        let grant = &parent.members[grant_index];
+        grant_index += 1;
         let mut retained_writer = false;
-        for role in &grant.roles {
+        let mut role_index = 0;
+        while role_index < grant.roles.len() {
             visit()?;
+            let role = &grant.roles[role_index];
+            role_index += 1;
             if *role == Role::Write {
                 retained_writer = true;
                 break;
@@ -115,8 +173,11 @@ pub(crate) fn validate_retained_writer_frontier_metered(
         }
         if retained_writer {
             retained_writer = false;
-            for child_grant in &child.members {
+            let mut child_grant_index = 0;
+            while child_grant_index < child.members.len() {
                 visit()?;
+                let child_grant = &child.members[child_grant_index];
+                child_grant_index += 1;
                 if child_grant.device == grant.device {
                     retained_writer = true;
                     break;
@@ -199,29 +260,48 @@ pub(crate) fn validate_no_reintroduction_metered(
 ) -> Result<Result<(), TransitionError>, crate::Completion> {
     let mut active = BTreeSet::<DevicePublicKey>::new();
     let mut removed = BTreeSet::<DevicePublicKey>::new();
-    for control in ancestry {
+    let mut control_index = 0;
+    while control_index < ancestry.len() {
         visit()?;
+        let control = ancestry[control_index];
+        control_index += 1;
         let mut next = BTreeSet::new();
-        for grant in &control.members {
+        let mut grant_index = 0;
+        while grant_index < control.members.len() {
             visit()?;
+            let grant = &control.members[grant_index];
+            grant_index += 1;
             next.insert(grant.device);
         }
-        for device in &active {
+        let mut active_iter = active.iter();
+        let active_count = active_iter.len();
+        for _ in 0..active_count {
             visit()?;
+            let Some(device) = active_iter.next() else {
+                break;
+            };
             if !next.contains(device) {
                 removed.insert(*device);
             }
         }
-        for device in &next {
+        let mut next_iter = next.iter();
+        let next_count = next_iter.len();
+        for _ in 0..next_count {
             visit()?;
+            let Some(device) = next_iter.next() else {
+                break;
+            };
             if removed.contains(device) {
                 return Ok(Err(TransitionError::DeviceReintroduced));
             }
         }
         active = next;
     }
-    for grant in &child.members {
+    let mut grant_index = 0;
+    while grant_index < child.members.len() {
         visit()?;
+        let grant = &child.members[grant_index];
+        grant_index += 1;
         if removed.contains(&grant.device) {
             return Ok(Err(TransitionError::DeviceReintroduced));
         }
@@ -251,10 +331,16 @@ pub(crate) fn validate_account_mapping_metered(
     child: &ValidatedControlContent,
     visit: &mut impl FnMut() -> Result<(), crate::Completion>,
 ) -> Result<Result<(), TransitionError>, crate::Completion> {
-    for child_grant in &child.members {
+    let mut child_index = 0;
+    while child_index < child.members.len() {
         visit()?;
-        for parent_grant in &parent.members {
+        let child_grant = &child.members[child_index];
+        child_index += 1;
+        let mut parent_index = 0;
+        while parent_index < parent.members.len() {
             visit()?;
+            let parent_grant = &parent.members[parent_index];
+            parent_index += 1;
             if parent_grant.device == child_grant.device {
                 visit()?;
                 if parent_grant.account != child_grant.account {
@@ -292,18 +378,30 @@ pub(crate) fn validate_monotonic_roles_metered(
     child: &ValidatedControlContent,
     visit: &mut impl FnMut() -> Result<(), crate::Completion>,
 ) -> Result<Result<(), TransitionError>, crate::Completion> {
-    for child_grant in &child.members {
+    let mut child_index = 0;
+    while child_index < child.members.len() {
         visit()?;
-        for parent_grant in &parent.members {
+        let child_grant = &child.members[child_index];
+        child_index += 1;
+        let mut parent_index = 0;
+        while parent_index < parent.members.len() {
             visit()?;
+            let parent_grant = &parent.members[parent_index];
+            parent_index += 1;
             if parent_grant.device != child_grant.device {
                 continue;
             }
-            for child_role in &child_grant.roles {
+            let mut child_role_index = 0;
+            while child_role_index < child_grant.roles.len() {
                 visit()?;
+                let child_role = &child_grant.roles[child_role_index];
+                child_role_index += 1;
                 let mut found = false;
-                for parent_role in &parent_grant.roles {
+                let mut parent_role_index = 0;
+                while parent_role_index < parent_grant.roles.len() {
                     visit()?;
+                    let parent_role = &parent_grant.roles[parent_role_index];
+                    parent_role_index += 1;
                     if parent_role == child_role {
                         found = true;
                         break;

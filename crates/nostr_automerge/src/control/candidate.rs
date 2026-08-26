@@ -1,13 +1,16 @@
 use crate::DiagnosticCode;
 use crate::control::ancestry::ControlAncestry;
-use crate::control::frontier::{accepted_frontier_closure, reasoned_frontier_disposition};
+use crate::control::frontier::{
+    reasoned_frontier_disposition, reasoned_frontier_disposition_metered,
+};
 use crate::control::parent_view::ParentEpochView;
 use crate::control::transition::{
     TransitionError, validate_account_mapping, validate_account_mapping_metered,
-    validate_base_frontier_antichain, validate_monotonic_roles, validate_monotonic_roles_metered,
-    validate_no_reintroduction, validate_no_reintroduction_metered,
-    validate_retained_writer_frontier, validate_retained_writer_frontier_metered,
-    validate_successor_continuity, validate_terminal_child,
+    validate_base_frontier_antichain, validate_base_frontier_antichain_metered,
+    validate_monotonic_roles, validate_monotonic_roles_metered, validate_no_reintroduction,
+    validate_no_reintroduction_metered, validate_retained_writer_frontier,
+    validate_retained_writer_frontier_metered, validate_successor_continuity,
+    validate_terminal_child,
 };
 use crate::control::validate::{
     ControlEnvelope, validate_base_frontier, validate_canonical_collections,
@@ -109,9 +112,17 @@ pub(crate) fn evaluate_device_ancestry_metered(
     child: &ControlEnvelope,
     visit: &mut impl FnMut() -> Result<(), crate::Completion>,
 ) -> Result<CandidateResult, crate::Completion> {
-    let mut contents = Vec::with_capacity(ancestry.len());
-    for control in ancestry {
+    let mut contents = Vec::new();
+    if !ancestry.is_empty() {
         visit()?;
+        contents = Vec::with_capacity(ancestry.len());
+        contents.push(&ancestry[0].content);
+    }
+    let mut index = 1;
+    while index < ancestry.len() {
+        visit()?;
+        let control = &ancestry[index];
+        index += 1;
         contents.push(&control.content);
     }
     Ok(
@@ -191,17 +202,6 @@ pub(crate) fn evaluate_child(
         )
         | None => {}
     }
-    let base_closure = accepted_frontier_closure(
-        child.content.base_heads.iter().copied(),
-        view.accepted(),
-        view.dependency_index(),
-    );
-    if !base_closure.missing.is_empty() {
-        return CandidateResult::Pending(DiagnosticCode::registered("control.frontier"));
-    }
-    if !base_closure.out_of_parent.is_empty() {
-        return CandidateResult::Invalid(DiagnosticCode::registered("control.frontier"));
-    }
     if let result @ CandidateResult::Invalid(_) = evaluate_account_continuity(parent, child) {
         return result;
     }
@@ -234,9 +234,9 @@ pub(crate) fn evaluate_child_metered(
     child: &ControlEnvelope,
     ancestry: &ControlAncestry,
     view: &ParentEpochView,
-    visit: &mut impl FnMut() -> Result<(), crate::Completion>,
+    visit: &mut impl FnMut(crate::WorkCounter) -> Result<(), crate::Completion>,
 ) -> Result<CandidateResult, crate::Completion> {
-    visit()?;
+    visit(crate::WorkCounter::Control)?;
     if let result @ CandidateResult::Invalid(_) = evaluate_parent_continuity(parent, child) {
         return Ok(result);
     }
@@ -247,9 +247,11 @@ pub(crate) fn evaluate_child_metered(
             "control.structure",
         )));
     }
-    match reasoned_frontier_disposition(child.content.base_heads.iter().copied(), |hash| {
-        view.frontier_knowledge(hash)
-    }) {
+    match reasoned_frontier_disposition_metered(
+        &child.content.base_heads,
+        |hash| view.frontier_knowledge(hash),
+        &mut *visit,
+    )? {
         Some(crate::ProtocolDisposition::Pending) => {
             return Ok(CandidateResult::Pending(DiagnosticCode::registered(
                 "control.frontier",
@@ -267,40 +269,27 @@ pub(crate) fn evaluate_child_metered(
         )
         | None => {}
     }
-    let base_closure = accepted_frontier_closure(
-        child.content.base_heads.iter().copied(),
-        view.accepted(),
-        view.dependency_index(),
-    );
-    if !base_closure.missing.is_empty() {
-        return Ok(CandidateResult::Pending(DiagnosticCode::registered(
-            "control.frontier",
-        )));
-    }
-    if !base_closure.out_of_parent.is_empty() {
-        return Ok(CandidateResult::Invalid(DiagnosticCode::registered(
-            "control.frontier",
-        )));
-    }
-    if let result @ CandidateResult::Invalid(_) =
-        evaluate_account_continuity_metered(parent, child, visit)?
-    {
+    let account = evaluate_account_continuity_metered(parent, child, &mut || {
+        visit(crate::WorkCounter::Control)
+    })?;
+    if let result @ CandidateResult::Invalid(_) = account {
         return Ok(result);
     }
-    if let result @ CandidateResult::Invalid(_) =
-        evaluate_role_continuity_metered(parent, child, visit)?
-    {
+    let roles = evaluate_role_continuity_metered(parent, child, &mut || {
+        visit(crate::WorkCounter::Control)
+    })?;
+    if let result @ CandidateResult::Invalid(_) = roles {
         return Ok(result);
     }
     if ancestry
-        .no_reintroduction_metered(&child.content, visit)?
+        .no_reintroduction_metered(&child.content, &mut || visit(crate::WorkCounter::Control))?
         .is_err()
     {
         return Ok(CandidateResult::Invalid(DiagnosticCode::registered(
             "control.device_reintroduced",
         )));
     }
-    visit()?;
+    visit(crate::WorkCounter::Control)?;
     if let Err(error) = validate_terminal_child(&parent.content, &child.content) {
         return Ok(CandidateResult::Invalid(DiagnosticCode::registered(
             match error {
@@ -309,7 +298,7 @@ pub(crate) fn evaluate_child_metered(
             },
         )));
     }
-    match validate_base_frontier_antichain(&child.content, view) {
+    match validate_base_frontier_antichain_metered(&child.content, view, &mut *visit)? {
         Ok(()) => {}
         Err(TransitionError::MissingBaseEvidence) => {
             return Ok(CandidateResult::Pending(DiagnosticCode::registered(
@@ -327,7 +316,7 @@ pub(crate) fn evaluate_child_metered(
             &parent.content,
             &child.content,
             view,
-            visit,
+            &mut || visit(crate::WorkCounter::Control),
         )? {
             Ok(()) => CandidateResult::Valid,
             Err(TransitionError::MissingBaseEvidence) => {
@@ -391,8 +380,8 @@ mod tests {
             return;
         };
         let visits = std::cell::Cell::new(0_u64);
-        let mut count = || {
-            visits.set(visits.get().saturating_add(1));
+        let mut count = |_counter| {
+            visits.set(visits.get() + 1);
             Ok(())
         };
         assert_eq!(
@@ -404,12 +393,12 @@ mod tests {
 
         for boundary in 0..exact {
             let observed = std::cell::Cell::new(0_u64);
-            let mut stop = || {
+            let mut stop = |_counter| {
                 let current = observed.get();
                 if current == boundary {
                     return Err(crate::Completion::Cancelled);
                 }
-                observed.set(current.saturating_add(1));
+                observed.set(current + 1);
                 Ok(())
             };
             assert_eq!(

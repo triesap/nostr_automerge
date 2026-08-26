@@ -46,7 +46,7 @@
         "source": { "type": "string", "pattern": "^crates/nostr_automerge/src/[a-z0-9_/]+\\.rs$" },
         "test": { "type": "string", "minLength": 1 },
         "diagnostic": { "type": "string", "minLength": 1 },
-        "expected": { "const": "open_failure" }
+        "expected": { "enum": ["fixed_pass", "open_failure"] }
       }
     }
   }

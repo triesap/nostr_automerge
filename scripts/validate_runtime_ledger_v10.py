@@ -13,21 +13,21 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 LEDGER = ROOT / "implementation/runtime_ledger_v10.json"
 SCHEMA = ROOT / "tools/validation/runtime_ledger_v10.schema.json"
 
-LEDGER_SHA256 = "9b2d56bc2171d638a73bdc68890b828dc66628bfe4304dc21a09b651f6c5958b"
+LEDGER_SHA256 = "c647e49caedda603e19f618c6b8ae034a529592cdaf420800bc6231df1d16872"
 SCHEMA_SHA256 = "8ae43e4f3aa8d00ea27ebb64a2f0d741b54cd9b10c398900c16ba9cd94ed0814"
 AUTHORITY_SHA256 = "0cac9bf4b90c55e428c335797a9d7195bc3ee08eed5bfb49fca4428e62702531"
 EXPECTED_SCOPE = (
-    "crates/nostr_automerge/src/control/parent_view.rs",
-    "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-    "crates/nostr_automerge/src/reference/branch_state.rs",
-    "crates/nostr_automerge/src/reference/epoch_engine.rs",
+    "crates/nostr_automerge/src/control/candidate.rs",
+    "crates/nostr_automerge/src/control/frontier.rs",
+    "crates/nostr_automerge/src/control/transition.rs",
     "crates/nostr_automerge/src/reference/evaluate.rs",
-    "crates/nostr_automerge/src/reference/mod.rs",
-    "crates/nostr_automerge/tests/public_engine_api.rs",
     "docs/execution/remediation_v10/ledger.md",
     "implementation/runtime_ledger_v10.json",
     "reports/spec_baseline.txt",
+    "scripts/validate_resource_operation_inventory_v10.py",
     "scripts/validate_runtime_ledger_v10.py",
+    "spec/resource_operation_inventory_v10.json",
+    "tools/validation/resource_operation_inventory_v10.schema.json",
 )
 TOP_KEYS = (
     "schema", "status", "authority", "historical_predecessor", "cursor",
@@ -66,10 +66,10 @@ def validate_record(record: object) -> None:
     cursor = record["cursor"]
     if cursor != {
         "active_rcld": 96,
-        "active_step": "step_1294",
-        "next_step": "step_1295",
+        "active_step": "step_1295",
+        "next_step": "step_1296",
         "last_planned_step": "step_1307",
-        "remaining_checkpoint_count": 14,
+        "remaining_checkpoint_count": 13,
         "remaining_rcld_count": 4,
     }:
         raise LedgerError("ledger:cursor")
@@ -116,6 +116,12 @@ def validate_record(record: object) -> None:
         {
             "step": "step_1293",
             "candidate": "499969e897beec0b90755466e7501ec1d48fc54c",
+            "owner_class": "public",
+            "result": "pass",
+        },
+        {
+            "step": "step_1294",
+            "candidate": "beaca83e200d044232d2b7ae91543b5a1ddb501e",
             "owner_class": "public",
             "result": "pass",
         },
@@ -184,7 +190,7 @@ def main() -> None:
     validate_worktree_scope()
     mutations = mutation_self_test()
     print("PASS: runtime ledger v10")
-    print("- active=step_1294")
+    print("- active=step_1295")
     print(f"- mutations={mutations}")
 
 

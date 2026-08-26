@@ -1,6 +1,6 @@
 {
   "schema": "nostr_automerge.resource_operation_inventory.v10.v1",
-  "status": "open_reproduced",
+  "status": "implementation_in_progress",
   "findings": [
     "FINDING_094",
     "FINDING_095"
@@ -29,16 +29,16 @@
     },
     {
       "id": "control_closure_precharge",
-      "path": "crates/nostr_automerge/src/reference/evaluate.rs",
-      "function": "charge_control_closures",
-      "operation_class": "coarse_precharge",
+      "path": "crates/nostr_automerge/src/control/frontier.rs",
+      "function": "accepted_frontier_closure_metered",
+      "operation_class": "item_metered_traversal",
       "required_resolution": "charge_immediately_before_each_operation"
     },
     {
       "id": "device_ancestry_materialization",
       "path": "crates/nostr_automerge/src/control/candidate.rs",
       "function": "evaluate_device_ancestry_metered",
-      "operation_class": "allocation_before_charge",
+      "operation_class": "item_metered_materialization",
       "required_resolution": "charge_before_allocation_and_each_item"
     },
     {

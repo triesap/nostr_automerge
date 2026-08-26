@@ -13,8 +13,8 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 INVENTORY = ROOT / "spec/resource_operation_inventory_v10.json"
 SCHEMA = ROOT / "tools/validation/resource_operation_inventory_v10.schema.json"
 
-INVENTORY_SHA256 = "e681be490a82ccc677aa7362703eb6b698098f88e890eee0279f7465de3532af"
-SCHEMA_SHA256 = "35670628ef63058ed7a41306b43337e30799a06fc63bba74310a88c7a9941501"
+INVENTORY_SHA256 = "7d4d7bea1f995ef48d9718740fef6eac9e8fb3edbb3a99f47b188bbcd19ae86c"
+SCHEMA_SHA256 = "0c8c4a784ba5b24c04b4081fe05f0de5dcde37523761d6a738abb3f16694d896"
 HARNESS_SHA256 = "4d6f6b67170f8c73be05d213bd01bb9f3c6332410038b34e8eedad2b31b61120"
 TOP_KEYS = ("schema", "status", "findings", "operations", "reproductions", "result")
 OPERATION_IDS = (
@@ -50,7 +50,7 @@ def validate_record(record: object, *, inspect_source: bool) -> None:
         raise InventoryError("inventory:keys")
     if record["schema"] != "nostr_automerge.resource_operation_inventory.v10.v1":
         raise InventoryError("inventory:schema")
-    if record["status"] != "open_reproduced" or record["result"] != "pass":
+    if record["status"] != "implementation_in_progress" or record["result"] != "pass":
         raise InventoryError("inventory:status")
     if record["findings"] != ["FINDING_094", "FINDING_095"]:
         raise InventoryError("inventory:findings")
@@ -72,7 +72,8 @@ def validate_record(record: object, *, inspect_source: bool) -> None:
             raise InventoryError(f"operation:path:{operation['id']}")
         source = path.read_text()
         function = re.compile(
-            rf"(?:pub\(crate\)\s+)?(?:const\s+)?fn\s+{re.escape(operation['function'])}\s*\("
+            rf"(?:pub\(crate\)\s+)?(?:const\s+)?fn\s+{re.escape(operation['function'])}"
+            r"(?:<[^>]+>)?\s*\("
         )
         if not function.search(source):
             raise InventoryError(f"operation:function:{operation['id']}")
@@ -88,6 +89,40 @@ def validate_record(record: object, *, inspect_source: bool) -> None:
             raise InventoryError(f"reproduction:attributes:{short_name}")
         if reproduction["diagnostic"] not in source[declaration.start():]:
             raise InventoryError(f"reproduction:diagnostic:{short_name}")
+
+
+METERED_SOURCE_ANCHORS = (
+    (
+        "crates/nostr_automerge/src/control/frontier.rs",
+        "visit(crate::WorkCounter::GraphNode)?;\n        let hash = frontier[index];",
+    ),
+    (
+        "crates/nostr_automerge/src/control/frontier.rs",
+        "visit(crate::WorkCounter::GraphNode)?;\n        stack.push(frontier[frontier_index]);",
+    ),
+    (
+        "crates/nostr_automerge/src/control/frontier.rs",
+        "visit(crate::WorkCounter::GraphNode)?;\n        let Some(hash) = stack.pop()",
+    ),
+    (
+        "crates/nostr_automerge/src/control/frontier.rs",
+        "visit(crate::WorkCounter::GraphEdge)?;\n            let Some(dependency) = dependencies.next()",
+    ),
+    (
+        "crates/nostr_automerge/src/reference/evaluate.rs",
+        "crate::control::frontier::accepted_frontier_closure_metered(",
+    ),
+)
+
+
+def validate_metered_sources(sources: dict[str, str]) -> None:
+    if "fn charge_control_closures(" in sources[
+        "crates/nostr_automerge/src/reference/evaluate.rs"
+    ]:
+        raise InventoryError("metered_source:coarse_precharge")
+    for path, anchor in METERED_SOURCE_ANCHORS:
+        if anchor not in sources[path]:
+            raise InventoryError(f"metered_source:{path}:{anchor[:24]}")
 
 
 def mutation_self_test() -> int:
@@ -116,6 +151,30 @@ def mutation_self_test() -> int:
     return len(mutations)
 
 
+def source_mutation_self_test() -> int:
+    paths = {path for path, _ in METERED_SOURCE_ANCHORS}
+    sources = {path: (ROOT / path).read_text() for path in paths}
+    validate_metered_sources(sources)
+    mutations = []
+    for path, anchor in METERED_SOURCE_ANCHORS:
+        candidate = dict(sources)
+        replacement = anchor.split("\n")[-1] if "\n" in anchor else ""
+        candidate[path] = candidate[path].replace(anchor, replacement)
+        mutations.append(candidate)
+    candidate = dict(sources)
+    candidate["crates/nostr_automerge/src/reference/evaluate.rs"] += (
+        "\nfn charge_control_closures() {}\n"
+    )
+    mutations.append(candidate)
+    for index, mutation in enumerate(mutations):
+        try:
+            validate_metered_sources(mutation)
+        except InventoryError:
+            continue
+        raise InventoryError(f"source_mutation:{index}")
+    return len(mutations)
+
+
 def main() -> None:
     if sha256(INVENTORY) != INVENTORY_SHA256:
         raise InventoryError("inventory:sha256")
@@ -125,10 +184,14 @@ def main() -> None:
         raise InventoryError("harness:sha256")
     validate_record(json.loads(INVENTORY.read_text()), inspect_source=True)
     mutations = mutation_self_test()
+    sources = {path: (ROOT / path).read_text() for path, _ in METERED_SOURCE_ANCHORS}
+    validate_metered_sources(sources)
+    source_mutations = source_mutation_self_test()
     print("PASS: resource operation inventory v10")
     print(f"- operations={len(OPERATION_IDS)}")
     print(f"- reproductions={len(TESTS)}")
     print(f"- mutations={mutations}")
+    print(f"- source_mutations={source_mutations}")
 
 
 if __name__ == "__main__":

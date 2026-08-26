@@ -51,6 +51,33 @@ pub(crate) fn reasoned_frontier_disposition(
     pending.then_some(crate::ProtocolDisposition::Pending)
 }
 
+pub(crate) fn reasoned_frontier_disposition_metered<E>(
+    frontier: &[ChangeHash],
+    mut knowledge: impl FnMut(&ChangeHash) -> ParentFrontierReference,
+    mut visit: impl FnMut(crate::WorkCounter) -> Result<(), E>,
+) -> Result<Option<crate::ProtocolDisposition>, E> {
+    let mut pending = false;
+    let mut index = 0;
+    while index < frontier.len() {
+        visit(crate::WorkCounter::GraphNode)?;
+        let hash = frontier[index];
+        index += 1;
+        match knowledge(&hash).dependent_disposition() {
+            Some(crate::ProtocolDisposition::Invalid) => {
+                return Ok(Some(crate::ProtocolDisposition::Invalid));
+            }
+            Some(crate::ProtocolDisposition::Pending) => pending = true,
+            Some(
+                crate::ProtocolDisposition::Accepted
+                | crate::ProtocolDisposition::Excluded
+                | crate::ProtocolDisposition::UnsupportedRevision,
+            )
+            | None => {}
+        }
+    }
+    Ok(pending.then_some(crate::ProtocolDisposition::Pending))
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct FrontierClosure {
     pub(crate) accepted: BTreeSet<ChangeHash>,
@@ -85,15 +112,97 @@ pub(crate) fn accepted_frontier_closure(
     result
 }
 
+pub(crate) fn accepted_frontier_closure_metered<E>(
+    frontier: &[ChangeHash],
+    accepted_parent: &BTreeSet<ChangeHash>,
+    known_dependencies: &BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
+    visit: impl FnMut(crate::WorkCounter) -> Result<(), E>,
+) -> Result<FrontierClosure, E> {
+    accepted_frontier_closure_metered_with(
+        frontier,
+        accepted_parent,
+        known_dependencies,
+        visit,
+        |_| false,
+    )
+    .map(|(closure, _)| closure)
+}
+
+pub(crate) fn accepted_frontier_closure_antichain_metered<E>(
+    head: &[ChangeHash],
+    full_frontier: &[ChangeHash],
+    accepted_parent: &BTreeSet<ChangeHash>,
+    known_dependencies: &BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
+    visit: impl FnMut(crate::WorkCounter) -> Result<(), E>,
+) -> Result<(FrontierClosure, bool), E> {
+    accepted_frontier_closure_metered_with(
+        head,
+        accepted_parent,
+        known_dependencies,
+        visit,
+        |ancestor| ancestor != head[0] && full_frontier.contains(&ancestor),
+    )
+}
+
+fn accepted_frontier_closure_metered_with<E>(
+    frontier: &[ChangeHash],
+    accepted_parent: &BTreeSet<ChangeHash>,
+    known_dependencies: &BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
+    mut visit: impl FnMut(crate::WorkCounter) -> Result<(), E>,
+    mut accepted_observer: impl FnMut(ChangeHash) -> bool,
+) -> Result<(FrontierClosure, bool), E> {
+    visit(crate::WorkCounter::GraphNode)?;
+    let mut result = FrontierClosure::default();
+    let mut observed = false;
+    let mut visited = BTreeSet::new();
+    let mut stack = Vec::new();
+    let mut frontier_index = 0;
+    while frontier_index < frontier.len() {
+        visit(crate::WorkCounter::GraphNode)?;
+        stack.push(frontier[frontier_index]);
+        frontier_index += 1;
+    }
+    while !stack.is_empty() {
+        visit(crate::WorkCounter::GraphNode)?;
+        let Some(hash) = stack.pop() else {
+            break;
+        };
+        if !visited.insert(hash) {
+            continue;
+        }
+        let Some(dependencies) = known_dependencies.get(&hash) else {
+            result.missing.insert(hash);
+            continue;
+        };
+        if !accepted_parent.contains(&hash) {
+            result.out_of_parent.insert(hash);
+            continue;
+        }
+        observed |= accepted_observer(hash);
+        result.accepted.insert(hash);
+        let mut dependencies = dependencies.iter();
+        let dependency_count = dependencies.len();
+        for _ in 0..dependency_count {
+            visit(crate::WorkCounter::GraphEdge)?;
+            let Some(dependency) = dependencies.next() else {
+                break;
+            };
+            stack.push(*dependency);
+        }
+    }
+    Ok((result, observed))
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
     use super::{
         FrontierClosure, ParentFrontierReference, accepted_frontier_closure,
-        reasoned_frontier_disposition,
+        accepted_frontier_closure_metered, reasoned_frontier_disposition,
+        reasoned_frontier_disposition_metered,
     };
-    use crate::{ChangeHash, ProtocolDisposition};
+    use crate::{ChangeHash, Completion, ProtocolDisposition, WorkCounter};
 
     fn hash(value: u8) -> ChangeHash {
         ChangeHash::from_bytes([value; 32])
@@ -142,6 +251,101 @@ mod tests {
                 out_of_parent: BTreeSet::from([hash(8)]),
             }
         );
+    }
+
+    #[test]
+    fn metered_closure_charges_before_every_node_and_edge_operation() {
+        let dependencies = BTreeMap::from([
+            (hash(1), BTreeSet::new()),
+            (hash(2), BTreeSet::from([hash(1)])),
+        ]);
+        let accepted = dependencies.keys().copied().collect::<BTreeSet<_>>();
+        let expected = vec![
+            WorkCounter::GraphNode,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphEdge,
+            WorkCounter::GraphNode,
+        ];
+        let mut observed = Vec::new();
+        assert_eq!(
+            accepted_frontier_closure_metered(&[hash(2)], &accepted, &dependencies, |counter| {
+                observed.push(counter);
+                Ok::<_, Completion>(())
+            }),
+            Ok(accepted_frontier_closure(
+                [hash(2)],
+                &accepted,
+                &dependencies
+            ))
+        );
+        assert_eq!(observed, expected);
+
+        for boundary in 0..expected.len() {
+            let mut observed = Vec::new();
+            assert_eq!(
+                accepted_frontier_closure_metered(
+                    &[hash(2)],
+                    &accepted,
+                    &dependencies,
+                    |counter| {
+                        if observed.len() == boundary {
+                            return Err(Completion::Cancelled);
+                        }
+                        observed.push(counter);
+                        Ok(())
+                    }
+                ),
+                Err(Completion::Cancelled)
+            );
+            assert_eq!(observed, expected[..boundary]);
+        }
+    }
+
+    #[test]
+    fn metered_frontier_knowledge_stops_before_each_lookup() {
+        let frontier = [hash(1), hash(2), hash(3)];
+        let mut looked_up = Vec::new();
+        let mut charged = Vec::new();
+        assert_eq!(
+            reasoned_frontier_disposition_metered(
+                &frontier,
+                |hash| {
+                    looked_up.push(*hash);
+                    ParentFrontierReference::AcceptedUnderParent
+                },
+                |counter| {
+                    charged.push(counter);
+                    Ok::<_, Completion>(())
+                }
+            ),
+            Ok(None)
+        );
+        assert_eq!(looked_up, frontier);
+        assert_eq!(charged, vec![WorkCounter::GraphNode; frontier.len()]);
+
+        for boundary in 0..frontier.len() {
+            let mut looked_up = Vec::new();
+            let mut charged = 0;
+            assert_eq!(
+                reasoned_frontier_disposition_metered(
+                    &frontier,
+                    |hash| {
+                        looked_up.push(*hash);
+                        ParentFrontierReference::AcceptedUnderParent
+                    },
+                    |_| {
+                        if charged == boundary {
+                            return Err(Completion::BudgetExhausted);
+                        }
+                        charged += 1;
+                        Ok(())
+                    }
+                ),
+                Err(Completion::BudgetExhausted)
+            );
+            assert_eq!(looked_up, frontier[..boundary]);
+        }
     }
 
     #[test]

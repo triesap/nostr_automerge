@@ -6,7 +6,6 @@ use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 use crate::control::ancestry::ControlAncestry;
 use crate::control::candidate::{CandidateResult, evaluate_child_metered};
 use crate::control::epoch_state::{AcceptedEpochState, MeteredAcceptedEpochStateError};
-use crate::control::frontier::accepted_frontier_closure;
 use crate::control::parent_view::ParentEpochView;
 use crate::control::validate::ControlEnvelope;
 use crate::graph::change_candidate::ChangeCandidate;
@@ -477,7 +476,7 @@ fn evaluate_branch_table(
         if cancellation.is_cancelled() {
             return Err(Completion::Cancelled);
         }
-        charge_control_transitions(1, budget).map_err(|_| Completion::BudgetExhausted)?;
+        charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)?;
         let Some(control) = controls.get(&event_id) else {
             table
                 .states
@@ -511,17 +510,15 @@ fn evaluate_branch_table(
             {
                 view.extend_additional_prior_knowledge(knowledge);
             }
-            let singleton = BTreeSet::from([event_id]);
-            charge_control_closures(&singleton, controls, &view, budget, cancellation)?;
-            let mut visit =
-                || charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation);
+            let mut visit = |counter| charge_prior_knowledge_item(counter, budget, cancellation);
             match evaluate_child_metered(parent, child, &branch.ancestry, &view, &mut visit)? {
                 CandidateResult::Valid => Some(
-                    accepted_frontier_closure(
-                        child.base_heads(),
+                    crate::control::frontier::accepted_frontier_closure_metered(
+                        &child.content().base_heads,
                         view.accepted(),
                         view.dependency_index(),
-                    )
+                        |counter| charge_prior_knowledge_item(counter, budget, cancellation),
+                    )?
                     .accepted,
                 ),
                 CandidateResult::Pending(_) => {
@@ -770,57 +767,6 @@ pub(crate) fn propagate_control_parent_dispositions(
         }
     }
     Ok(())
-}
-
-fn charge_control_transitions(
-    candidate_count: usize,
-    budget: &mut WorkBudget,
-) -> Result<(), crate::BudgetExhausted> {
-    budget.charge(
-        WorkCounter::Control,
-        u64::try_from(candidate_count).unwrap_or(u64::MAX),
-    )
-}
-
-fn charge_control_closures(
-    children: &BTreeSet<EventId>,
-    controls: &BTreeMap<EventId, BatchControl>,
-    view: &ParentEpochView,
-    budget: &mut WorkBudget,
-    cancellation: &impl CancellationCheck,
-) -> Result<(), Completion> {
-    let passes = children
-        .iter()
-        .filter_map(|event_id| controls.get(event_id)?.envelope.as_ref())
-        .try_fold(0_u64, |total, child| {
-            total.checked_add(
-                u64::try_from(child.content().base_heads.len())
-                    .unwrap_or(u64::MAX)
-                    .saturating_add(2),
-            )
-        })
-        .unwrap_or(u64::MAX);
-    let nodes = u64::try_from(view.accepted().len())
-        .unwrap_or(u64::MAX)
-        .saturating_add(1)
-        .saturating_mul(passes);
-    let edges = view
-        .dependency_index()
-        .values()
-        .try_fold(0_u64, |total, dependencies| {
-            total.checked_add(u64::try_from(dependencies.len()).unwrap_or(u64::MAX))
-        })
-        .unwrap_or(u64::MAX)
-        .saturating_mul(passes);
-    budget
-        .charge(WorkCounter::GraphNode, nodes)
-        .map_err(|_| Completion::BudgetExhausted)?;
-    if cancellation.is_cancelled() {
-        return Err(Completion::Cancelled);
-    }
-    budget
-        .charge(WorkCounter::GraphEdge, edges)
-        .map_err(|_| Completion::BudgetExhausted)
 }
 
 enum EpochResolutionError {
@@ -1232,7 +1178,7 @@ mod tests {
     use super::{
         AcceptedAtControl, BatchChange, BatchChangeMemo, BatchControl, BatchEvaluationReport,
         BranchEvaluationState, PriorChangeKnowledge, accepted_state_for_closure,
-        charge_control_closures, evaluate_batch, prior_change_knowledge,
+        charge_prior_knowledge_item, evaluate_batch, prior_change_knowledge,
         propagate_control_parent_dispositions,
     };
     use crate::automerge_adapter::decode::decode_change;
@@ -1735,20 +1681,7 @@ mod tests {
     }
 
     #[test]
-    fn control_closure_precharge_exhaustion_is_atomic() {
-        let envelope = crate::control::validate::tests::genesis();
-        let event_id = envelope.event_id();
-        let controls = BTreeMap::from([(
-            event_id,
-            BatchControl {
-                event_id,
-                parent: None,
-                accepted_base: BTreeSet::new(),
-                frozen: false,
-                changes: Vec::new(),
-                envelope: Some(envelope),
-            },
-        )]);
+    fn control_closure_traversal_stops_before_each_node_operation() {
         let accepted = ChangeHash::from_bytes([9; 32]);
         let view = crate::control::parent_view::ParentEpochView::from_parts_for_test(
             BTreeSet::from([accepted]),
@@ -1757,18 +1690,17 @@ mod tests {
             BTreeMap::new(),
             BTreeMap::new(),
         );
-        let mut budget = WorkBudget::new(0, 3);
+        let mut budget = WorkBudget::new(0, 1);
         assert_eq!(
-            charge_control_closures(
-                &BTreeSet::from([event_id]),
-                &controls,
-                &view,
-                &mut budget,
-                &NeverCancelled
+            crate::control::frontier::accepted_frontier_closure_metered(
+                &[accepted],
+                view.accepted(),
+                view.dependency_index(),
+                |counter| charge_prior_knowledge_item(counter, &mut budget, &NeverCancelled)
             ),
             Err(Completion::BudgetExhausted)
         );
-        assert_eq!(budget.consumed().get(WorkCounter::GraphNode), 0);
+        assert_eq!(budget.consumed().get(WorkCounter::GraphNode), 1);
     }
 
     #[test]
