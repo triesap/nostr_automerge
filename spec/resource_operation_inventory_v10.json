@@ -86,9 +86,9 @@
     {
       "id": "checkpoint_historical_control",
       "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-      "function": "carrier_control_is_historical",
-      "operation_class": "sequence_without_ancestry",
-      "required_resolution": "charged_same_or_ancestor_traversal"
+      "function": "checkpoint_historical_control_ancestry",
+      "operation_class": "item_metered_ancestry",
+      "required_resolution": "charged_same_or_ancestor_traversal_complete"
     }
   ],
   "reproductions": [
@@ -105,8 +105,8 @@
       "target": "lib",
       "source": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
       "test": "engine::reference_evaluator::tests::finding_095_lower_sequence_sibling_is_not_historical",
-      "diagnostic": "FINDING_095 reproduced: lower sequence is accepted as checkpoint ancestry",
-      "expected": "open_failure"
+      "diagnostic": "FINDING_095 fixed: lower-sequence siblings are not checkpoint ancestors",
+      "expected": "fixed_pass"
     }
   ],
   "result": "pass"

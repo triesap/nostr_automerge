@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Execute the two intentionally open resource follow-up reproductions."""
+"""Execute the two resource follow-up reproductions."""
 
 from __future__ import annotations
 

@@ -1848,9 +1848,16 @@ fn checkpoint_refusal_report_attribution(
             descriptor_id,
             CheckpointReportAttributionStage::BranchDispositionHash,
         );
+        let historical_controls = checkpoint_historical_control_ancestry(
+            view,
+            descriptor.control_id(),
+            budget,
+            cancellation,
+        )?;
         if let Some(dispositions) = history
             .branch_change_dispositions
             .get(&descriptor.control_id())
+            && let Some(historical_controls) = historical_controls.as_ref()
         {
             for (event_id, carrier) in history.change_carrier_dispositions {
                 charge_checkpoint_work(budget, cancellation, 1)?;
@@ -1859,11 +1866,7 @@ fn checkpoint_refusal_report_attribution(
                     CheckpointReportAttributionStage::BranchDispositionHash,
                 );
                 if dispositions.contains_key(&carrier.change_hash)
-                    && carrier_control_is_historical(
-                        view,
-                        descriptor.control_id(),
-                        carrier.control_id,
-                    )
+                    && carrier_control_is_historical(historical_controls, carrier.control_id)
                     && matches!(
                         carrier.reason,
                         ChangeClaimReason::AuthorizedCanonical
@@ -1883,26 +1886,45 @@ fn checkpoint_refusal_report_attribution(
     })
 }
 
-fn carrier_control_is_historical(
+fn checkpoint_historical_control_ancestry(
     view: &DocumentEvidenceView<'_>,
     through: crate::EventId,
-    candidate: crate::EventId,
-) -> bool {
-    if candidate == through {
-        return true;
-    }
-    let control_sequence = |event_id| match view.corpus().events.get(&event_id) {
-        Some(EventEvidence::VerifiedCarrier {
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<Option<std::collections::BTreeSet<crate::EventId>>, CheckpointWorkStop> {
+    let mut historical = std::collections::BTreeSet::new();
+    let mut current = Some(through);
+    let mut remaining = view.control_count();
+    while let Some(control_id) = current {
+        charge_checkpoint_work(budget, cancellation, 1)?;
+        if !historical.insert(control_id) {
+            return Ok(None);
+        }
+        charge_checkpoint_work(budget, cancellation, 1)?;
+        let Some(EventEvidence::VerifiedCarrier {
             carrier: VerifiedCarrier::Control(control),
             ..
-        }) => Some(control.sequence()),
-        _ => None,
-    };
-    matches!(
-        (control_sequence(candidate), control_sequence(through)),
-        (Some(candidate_sequence), Some(through_sequence))
-            if candidate_sequence < through_sequence
-    )
+        }) = view.corpus().events.get(&control_id)
+        else {
+            return Ok(None);
+        };
+        if control.coordinate() != view.coordinate() {
+            return Ok(None);
+        }
+        let Some(next_remaining) = remaining.checked_sub(1) else {
+            return Ok(None);
+        };
+        remaining = next_remaining;
+        current = control.parent();
+    }
+    Ok(Some(historical))
+}
+
+fn carrier_control_is_historical(
+    historical_controls: &std::collections::BTreeSet<crate::EventId>,
+    candidate: crate::EventId,
+) -> bool {
+    historical_controls.contains(&candidate)
 }
 
 fn checkpoint_after_authorization<T>(
@@ -3646,10 +3668,10 @@ mod tests {
         ReferenceEvaluator, ReportFinalizationPermit, ReportFinalizationPlan,
         aggregate_change_contribution, assembly_status, canonical_ancestor_hashes,
         carrier_control_is_historical, change_carrier_disposition, charge_checkpoint_work,
-        checkpoint_control_refusal, checkpoint_preflight_refusal, join_status,
-        noncanonical_branch_claim_reason, reduce_aggregate_change_outcome,
-        reduce_change_dispositions, scoped_dynamic_event_disposition_records,
-        verify_prepared_checkpoints,
+        checkpoint_control_refusal, checkpoint_historical_control_ancestry,
+        checkpoint_preflight_refusal, join_status, noncanonical_branch_claim_reason,
+        reduce_aggregate_change_outcome, reduce_change_dispositions,
+        scoped_dynamic_event_disposition_records, verify_prepared_checkpoints,
     };
     use crate::CheckpointVerificationStatus as Status;
     use crate::authoring::{ActorState, AuthoringDocument};
@@ -4681,6 +4703,26 @@ mod tests {
         .into();
         let chunk_size = u32::try_from(snapshot.len()).unwrap_or(u32::MAX);
         let mut events = std::collections::BTreeMap::new();
+        events.insert(
+            control_id,
+            EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::Control(Box::new(ValidatedControlCarrier::for_test(
+                    control_id,
+                    coordinate.controller(),
+                    coordinate,
+                    None,
+                    ValidatedControlContent {
+                        base_heads: Vec::new(),
+                        members: Vec::new(),
+                        predecessor: None,
+                        sequence: 0,
+                        successor: None,
+                        terminal: true,
+                    },
+                ))),
+                raw_checksum: RawChecksum::test_only([0x73; 32]),
+            },
+        );
         let mut descriptor_ids = Vec::new();
         for descriptor_byte in descriptor_bytes {
             let descriptor_id = EventId::from_bytes([*descriptor_byte; 32]);
@@ -4807,33 +4849,43 @@ mod tests {
     fn refused_checkpoint_attribution_rejects_unknown_future_carrier_control() {
         let harness = prepared_checkpoint_harness(&[0x10]);
         let view = DocumentEvidenceView::derive(&harness.corpus, harness.coordinate);
-        assert!(carrier_control_is_historical(
+        let historical = checkpoint_historical_control_ancestry(
             &view,
             harness.control_id,
+            &mut WorkBudget::new(0, 2),
+            &crate::NeverCancelled,
+        );
+        assert!(historical.is_ok());
+        let Ok(Some(historical)) = historical else {
+            return;
+        };
+        assert!(carrier_control_is_historical(
+            &historical,
             harness.control_id,
         ));
         assert!(!carrier_control_is_historical(
-            &view,
-            harness.control_id,
+            &historical,
             EventId::from_bytes([0x77; 32]),
         ));
     }
 
     #[test]
-    #[ignore = "open FINDING_095 checkpoint-ancestry reproduction"]
     fn finding_095_lower_sequence_sibling_is_not_historical() {
         let coordinate = DocumentCoordinate::new(
             ControllerPublicKey::from_bytes([0x61; 32]),
             DocumentId::from_bytes([0x62; 32]),
         );
-        let parent_id = EventId::from_bytes([0x63; 32]);
-        let sibling_id = EventId::from_bytes([0x64; 32]);
+        let root_id = EventId::from_bytes([0x63; 32]);
+        let direct_id = EventId::from_bytes([0x64; 32]);
         let through_id = EventId::from_bytes([0x65; 32]);
-        let control = |event_id, parent, sequence| {
+        let sibling_id = EventId::from_bytes([0x66; 32]);
+        let descendant_id = EventId::from_bytes([0x67; 32]);
+        let higher_sibling_id = EventId::from_bytes([0x71; 32]);
+        let control = |event_id, parent, sequence, target_coordinate: DocumentCoordinate| {
             ValidatedControlCarrier::for_test(
                 event_id,
-                coordinate.controller(),
-                coordinate,
+                target_coordinate.controller(),
+                target_coordinate,
                 parent,
                 ValidatedControlContent {
                     base_heads: Vec::new(),
@@ -4845,22 +4897,25 @@ mod tests {
                 },
             )
         };
-        let checksum = RawChecksum::test_only([0x66; 32]);
-        let events = std::collections::BTreeMap::from([
+        let checksum = RawChecksum::test_only([0x68; 32]);
+        let ordered_events = [
             (
-                parent_id,
+                root_id,
                 EventEvidence::VerifiedCarrier {
-                    carrier: VerifiedCarrier::Control(Box::new(control(parent_id, None, 0))),
+                    carrier: VerifiedCarrier::Control(Box::new(control(
+                        root_id, None, 0, coordinate,
+                    ))),
                     raw_checksum: checksum,
                 },
             ),
             (
-                sibling_id,
+                direct_id,
                 EventEvidence::VerifiedCarrier {
                     carrier: VerifiedCarrier::Control(Box::new(control(
-                        sibling_id,
-                        Some(parent_id),
+                        direct_id,
+                        Some(root_id),
                         1,
+                        coordinate,
                     ))),
                     raw_checksum: checksum,
                 },
@@ -4870,24 +4925,252 @@ mod tests {
                 EventEvidence::VerifiedCarrier {
                     carrier: VerifiedCarrier::Control(Box::new(control(
                         through_id,
-                        Some(parent_id),
+                        Some(direct_id),
                         2,
+                        coordinate,
+                    ))),
+                    raw_checksum: checksum,
+                },
+            ),
+            (
+                sibling_id,
+                EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::Control(Box::new(control(
+                        sibling_id,
+                        Some(root_id),
+                        1,
+                        coordinate,
+                    ))),
+                    raw_checksum: checksum,
+                },
+            ),
+            (
+                descendant_id,
+                EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::Control(Box::new(control(
+                        descendant_id,
+                        Some(through_id),
+                        3,
+                        coordinate,
+                    ))),
+                    raw_checksum: checksum,
+                },
+            ),
+            (
+                higher_sibling_id,
+                EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::Control(Box::new(control(
+                        higher_sibling_id,
+                        Some(root_id),
+                        4,
+                        coordinate,
+                    ))),
+                    raw_checksum: checksum,
+                },
+            ),
+        ];
+        let build_corpus = |events: Vec<(EventId, EventEvidence)>| {
+            let events = events
+                .into_iter()
+                .collect::<std::collections::BTreeMap<_, _>>();
+            let indexes = derive_trusted_indexes(&events, &[]);
+            EvidenceCorpus {
+                events,
+                invalid: std::collections::BTreeMap::new(),
+                duplicates: Vec::new(),
+                indexes,
+            }
+        };
+        let corpus = build_corpus(ordered_events.clone().into_iter().collect());
+        let reversed = build_corpus(ordered_events.into_iter().rev().collect());
+        let view = DocumentEvidenceView::derive(&corpus, coordinate);
+        let reversed_view = DocumentEvidenceView::derive(&reversed, coordinate);
+
+        let mut short = WorkBudget::new(0, 5);
+        assert_eq!(
+            checkpoint_historical_control_ancestry(
+                &view,
+                through_id,
+                &mut short,
+                &crate::NeverCancelled,
+            ),
+            Err(CheckpointWorkStop::Budget)
+        );
+        assert_eq!(short.consumed().get(WorkCounter::CheckpointItem), 5);
+
+        let mut exact = WorkBudget::new(0, 6);
+        let historical = checkpoint_historical_control_ancestry(
+            &view,
+            through_id,
+            &mut exact,
+            &crate::NeverCancelled,
+        );
+        assert_eq!(
+            historical,
+            Ok(Some(std::collections::BTreeSet::from([
+                root_id, direct_id, through_id,
+            ])))
+        );
+        assert_eq!(exact.consumed().get(WorkCounter::CheckpointItem), 6);
+        let Ok(Some(historical)) = historical else {
+            return;
+        };
+        assert!(carrier_control_is_historical(&historical, through_id));
+        assert!(carrier_control_is_historical(&historical, direct_id));
+        assert!(carrier_control_is_historical(&historical, root_id));
+        assert!(!carrier_control_is_historical(&historical, sibling_id));
+        assert!(!carrier_control_is_historical(
+            &historical,
+            higher_sibling_id,
+        ));
+        assert!(!carrier_control_is_historical(&historical, descendant_id));
+
+        let mut extra = WorkBudget::new(0, 7);
+        assert_eq!(
+            checkpoint_historical_control_ancestry(
+                &reversed_view,
+                through_id,
+                &mut extra,
+                &crate::NeverCancelled,
+            ),
+            Ok(Some(historical.clone()))
+        );
+        assert_eq!(extra.consumed().get(WorkCounter::CheckpointItem), 6);
+
+        for cancel_at in 1..=6 {
+            let observations = std::cell::Cell::new(0_u64);
+            let cancellation = || {
+                let next = observations.get().saturating_add(1);
+                observations.set(next);
+                next == cancel_at
+            };
+            let mut budget = WorkBudget::new(0, 6);
+            assert_eq!(
+                checkpoint_historical_control_ancestry(
+                    &view,
+                    through_id,
+                    &mut budget,
+                    &cancellation,
+                ),
+                Err(CheckpointWorkStop::Cancelled)
+            );
+            assert_eq!(observations.get(), cancel_at);
+            assert_eq!(
+                budget.consumed().get(WorkCounter::CheckpointItem),
+                cancel_at - 1
+            );
+        }
+
+        let missing_id = EventId::from_bytes([0x69; 32]);
+        let missing_parent_id = EventId::from_bytes([0x6a; 32]);
+        let missing_corpus = build_corpus(vec![(
+            missing_id,
+            EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::Control(Box::new(control(
+                    missing_id,
+                    Some(missing_parent_id),
+                    1,
+                    coordinate,
+                ))),
+                raw_checksum: checksum,
+            },
+        )]);
+        let missing_view = DocumentEvidenceView::derive(&missing_corpus, coordinate);
+        assert_eq!(
+            checkpoint_historical_control_ancestry(
+                &missing_view,
+                missing_id,
+                &mut WorkBudget::new(0, 4),
+                &crate::NeverCancelled,
+            ),
+            Ok(None)
+        );
+
+        let cycle_a = EventId::from_bytes([0x6b; 32]);
+        let cycle_b = EventId::from_bytes([0x6c; 32]);
+        let cycle_corpus = build_corpus(vec![
+            (
+                cycle_a,
+                EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::Control(Box::new(control(
+                        cycle_a,
+                        Some(cycle_b),
+                        1,
+                        coordinate,
+                    ))),
+                    raw_checksum: checksum,
+                },
+            ),
+            (
+                cycle_b,
+                EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::Control(Box::new(control(
+                        cycle_b,
+                        Some(cycle_a),
+                        2,
+                        coordinate,
                     ))),
                     raw_checksum: checksum,
                 },
             ),
         ]);
-        let indexes = derive_trusted_indexes(&events, &[]);
-        let corpus = EvidenceCorpus {
-            events,
-            invalid: std::collections::BTreeMap::new(),
-            duplicates: Vec::new(),
-            indexes,
-        };
-        let view = DocumentEvidenceView::derive(&corpus, coordinate);
+        let cycle_view = DocumentEvidenceView::derive(&cycle_corpus, coordinate);
+        assert_eq!(
+            checkpoint_historical_control_ancestry(
+                &cycle_view,
+                cycle_a,
+                &mut WorkBudget::new(0, 5),
+                &crate::NeverCancelled,
+            ),
+            Ok(None)
+        );
+
+        let other_coordinate = DocumentCoordinate::new(
+            ControllerPublicKey::from_bytes([0x6d; 32]),
+            DocumentId::from_bytes([0x6e; 32]),
+        );
+        let other_id = EventId::from_bytes([0x6f; 32]);
+        let unrelated_root = EventId::from_bytes([0x70; 32]);
+        let unrelated = build_corpus(vec![
+            (
+                unrelated_root,
+                EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::Control(Box::new(control(
+                        unrelated_root,
+                        None,
+                        0,
+                        coordinate,
+                    ))),
+                    raw_checksum: checksum,
+                },
+            ),
+            (
+                other_id,
+                EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::Control(Box::new(control(
+                        other_id,
+                        None,
+                        0,
+                        other_coordinate,
+                    ))),
+                    raw_checksum: checksum,
+                },
+            ),
+        ]);
+        let unrelated_view = DocumentEvidenceView::derive(&unrelated, coordinate);
+        assert_eq!(
+            checkpoint_historical_control_ancestry(
+                &unrelated_view,
+                other_id,
+                &mut WorkBudget::new(0, 2),
+                &crate::NeverCancelled,
+            ),
+            Ok(None)
+        );
+
         assert!(
-            !carrier_control_is_historical(&view, through_id, sibling_id),
-            "FINDING_095 reproduced: lower sequence is accepted as checkpoint ancestry"
+            !carrier_control_is_historical(&historical, sibling_id),
+            "FINDING_095 fixed: lower-sequence siblings are not checkpoint ancestors"
         );
     }
 
@@ -5036,7 +5319,7 @@ mod tests {
             assert_report_attribution(&observer, descriptor_id, accepted_hash, branch_hash);
             assert_eq!(
                 budget.consumed().get(WorkCounter::CheckpointItem),
-                2 + u64::from(accepted_hash) + u64::from(branch_hash)
+                2 + u64::from(accepted_hash) + 3 * u64::from(branch_hash)
             );
         }
     }
@@ -5188,7 +5471,7 @@ mod tests {
         );
 
         let role_denied = std::collections::BTreeMap::from([(descriptor_id, RoleDenied)]);
-        let mut attribution_n_minus_one_budget = WorkBudget::new(0, 3);
+        let mut attribution_n_minus_one_budget = WorkBudget::new(0, 5);
         let mut attribution_n_minus_one_observer = RecordingCheckpointWorkObserver::default();
         let attribution_n_minus_one = evaluate_prepared_checkpoints(
             &harness,
@@ -5206,7 +5489,7 @@ mod tests {
             attribution_n_minus_one_budget
                 .consumed()
                 .get(WorkCounter::CheckpointItem),
-            3
+            5
         );
         assert_eq!(
             attribution_n_minus_one_observer.descriptor_calls(descriptor_id),
@@ -5231,7 +5514,7 @@ mod tests {
             0
         );
 
-        let mut attribution_exact_budget = WorkBudget::new(0, 4);
+        let mut attribution_exact_budget = WorkBudget::new(0, 6);
         let mut attribution_exact_observer = RecordingCheckpointWorkObserver::default();
         let attribution_exact = evaluate_prepared_checkpoints(
             &harness,
@@ -5256,7 +5539,7 @@ mod tests {
             attribution_exact_budget
                 .consumed()
                 .get(WorkCounter::CheckpointItem),
-            4
+            6
         );
         assert_eq!(
             attribution_exact_observer.descriptor_calls(descriptor_id),
@@ -5267,7 +5550,7 @@ mod tests {
         let attribution_cancel_calls = std::cell::Cell::new(0_u64);
         let attribution_cancellation = || {
             attribution_cancel_calls.set(attribution_cancel_calls.get() + 1);
-            attribution_cancel_calls.get() >= 4
+            attribution_cancel_calls.get() >= 6
         };
         let mut attribution_cancel_budget = WorkBudget::new(0, u64::MAX);
         let mut attribution_cancel_observer = RecordingCheckpointWorkObserver::default();
@@ -5283,12 +5566,12 @@ mod tests {
             Some(CheckpointWorkStop::Cancelled)
         );
         assert!(attribution_cancelled.results.is_empty());
-        assert_eq!(attribution_cancel_calls.get(), 4);
+        assert_eq!(attribution_cancel_calls.get(), 6);
         assert_eq!(
             attribution_cancel_budget
                 .consumed()
                 .get(WorkCounter::CheckpointItem),
-            3
+            5
         );
         assert_eq!(
             attribution_cancel_observer.descriptor_calls(descriptor_id),
@@ -5342,7 +5625,7 @@ mod tests {
         let authorizations =
             std::collections::BTreeMap::from([(first, Missing), (second, RoleDenied)]);
 
-        let mut n_minus_one_budget = WorkBudget::new(0, 5);
+        let mut n_minus_one_budget = WorkBudget::new(0, 7);
         let mut n_minus_one_observer = RecordingCheckpointWorkObserver::default();
         let n_minus_one = evaluate_prepared_checkpoints(
             &harness,
@@ -5359,7 +5642,7 @@ mod tests {
             n_minus_one_budget
                 .consumed()
                 .get(WorkCounter::CheckpointItem),
-            5
+            7
         );
         assert_eq!(n_minus_one_observer.descriptor_calls(first), 0);
         assert_eq!(n_minus_one_observer.descriptor_calls(second), 0);
@@ -5373,7 +5656,7 @@ mod tests {
             0
         );
 
-        let mut exact_budget = WorkBudget::new(0, 6);
+        let mut exact_budget = WorkBudget::new(0, 8);
         let mut exact_observer = RecordingCheckpointWorkObserver::default();
         let exact = evaluate_prepared_checkpoints(
             &harness,
@@ -5387,14 +5670,14 @@ mod tests {
         assert_eq!(exact.results[0].descriptor_event(), first);
         assert_eq!(exact.results[1].descriptor_event(), second);
         assert_eq!(exact.results[1].status(), Status::Unauthorized);
-        assert_eq!(exact_budget.consumed().get(WorkCounter::CheckpointItem), 6);
+        assert_eq!(exact_budget.consumed().get(WorkCounter::CheckpointItem), 8);
         assert_report_attribution(&exact_observer, first, false, false);
         assert_report_attribution(&exact_observer, second, true, true);
 
         let cancellation_calls = std::cell::Cell::new(0_u64);
         let cancellation = || {
             cancellation_calls.set(cancellation_calls.get() + 1);
-            cancellation_calls.get() >= 6
+            cancellation_calls.get() >= 8
         };
         let mut cancelled_budget = WorkBudget::new(0, u64::MAX);
         let mut cancelled_observer = RecordingCheckpointWorkObserver::default();
@@ -5408,10 +5691,10 @@ mod tests {
         assert_eq!(cancelled.stop, Some(CheckpointWorkStop::Cancelled));
         assert_eq!(cancelled.results.len(), 1);
         assert_eq!(cancelled.results[0].descriptor_event(), first);
-        assert_eq!(cancellation_calls.get(), 6);
+        assert_eq!(cancellation_calls.get(), 8);
         assert_eq!(
             cancelled_budget.consumed().get(WorkCounter::CheckpointItem),
-            5
+            7
         );
         assert_eq!(cancelled_observer.descriptor_calls(first), 0);
         assert_eq!(cancelled_observer.descriptor_calls(second), 0);

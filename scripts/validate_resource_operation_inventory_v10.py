@@ -13,9 +13,9 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 INVENTORY = ROOT / "spec/resource_operation_inventory_v10.json"
 SCHEMA = ROOT / "tools/validation/resource_operation_inventory_v10.schema.json"
 
-INVENTORY_SHA256 = "435f303d46aefe6d2eb7e1a14892ffb6b3388a8511a63e23a28210fa2ece0ce0"
+INVENTORY_SHA256 = "39e1cfcef6e1f7be42a467d2bb007c0378e5c61c6d41cb857b16784057a5afc5"
 SCHEMA_SHA256 = "0c8c4a784ba5b24c04b4081fe05f0de5dcde37523761d6a738abb3f16694d896"
-HARNESS_SHA256 = "4d6f6b67170f8c73be05d213bd01bb9f3c6332410038b34e8eedad2b31b61120"
+HARNESS_SHA256 = "86a09907bbd61f4a324af88f82d536a711877c16e14e3b80471aa53d83f6c303"
 TOP_KEYS = ("schema", "status", "findings", "operations", "reproductions", "result")
 OPERATION_IDS = (
     "parent_epoch_view_copy",
@@ -62,7 +62,7 @@ def validate_record(record: object, *, inspect_source: bool) -> None:
         raise InventoryError("inventory:reproductions")
     if [item.get("finding") for item in reproductions] != ["FINDING_094", "FINDING_095"]:
         raise InventoryError("inventory:reproduction_findings")
-    if [item.get("expected") for item in reproductions] != ["fixed_pass", "open_failure"]:
+    if [item.get("expected") for item in reproductions] != ["fixed_pass", "fixed_pass"]:
         raise InventoryError("inventory:reproduction_status")
     if not inspect_source:
         return
@@ -161,6 +161,22 @@ METERED_SOURCE_ANCHORS = (
         ".insert(outcome.event_id, outcome)\n                .is_some()",
     ),
     (
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "charge_checkpoint_work(budget, cancellation, 1)?;\n        if !historical.insert(control_id)",
+    ),
+    (
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "charge_checkpoint_work(budget, cancellation, 1)?;\n        let Some(EventEvidence::VerifiedCarrier",
+    ),
+    (
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "let Some(next_remaining) = remaining.checked_sub(1)",
+    ),
+    (
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "let historical_controls = checkpoint_historical_control_ancestry(",
+    ),
+    (
         "tools/nostr_automerge_conformance/src/fixture_generation.rs",
         "assert_eq!(exact, current_exact_budget, \"{fixture_id}\");\n            assert!(signed.budget.max_items < exact, \"{fixture_id}\");",
     ),
@@ -186,6 +202,7 @@ def validate_metered_sources(sources: dict[str, str]) -> None:
         "let mut aggregate_contributions = Vec::new();",
         "let mut outcomes = Vec::new();",
         "batch.canonical_controls.iter().any(",
+        "candidate_sequence < through_sequence",
     ):
         if forbidden in reduction:
             raise InventoryError(f"metered_source:reduction:{forbidden}")
@@ -256,6 +273,7 @@ def source_mutation_self_test() -> int:
         "let mut aggregate_contributions = Vec::new();",
         "let mut outcomes = Vec::new();",
         "batch.canonical_controls.iter().any(",
+        "candidate_sequence < through_sequence",
     ):
         candidate = dict(sources)
         candidate["crates/nostr_automerge/src/engine/reference_evaluator.rs"] += forbidden
