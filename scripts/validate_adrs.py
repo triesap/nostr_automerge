@@ -471,10 +471,11 @@ def validate_records(
             all(fragment in normalized_decision for fragment in AUTHORITY_BINDINGS[number]),
             f"v11 ADR decision mismatch: {record.path}",
         )
+        normalized_authority = " ".join(bodies["Authority transition"].split())
         require(
-            "not\neffective current" in bodies["Authority transition"]
-            and "unchanged NIP" in bodies["Authority transition"]
-            and "NIP-conformance remains\nheld" in bodies["Authority transition"],
+            "not effective current" in normalized_authority
+            and "unchanged NIP" in normalized_authority
+            and "NIP-conformance remains held" in normalized_authority,
             f"v11 ADR authority hold mismatch: {record.path}",
         )
         require(row.identifiers == expected_requirements, f"v11 ADR mapping mismatch: {record.path}")
