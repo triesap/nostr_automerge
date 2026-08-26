@@ -1,4 +1,5 @@
 use crate::DiagnosticCode;
+use crate::control::ancestry::ControlAncestry;
 use crate::control::frontier::{accepted_frontier_closure, reasoned_frontier_disposition};
 use crate::control::parent_view::ParentEpochView;
 use crate::control::transition::{
@@ -231,7 +232,7 @@ pub(crate) fn evaluate_child(
 pub(crate) fn evaluate_child_metered(
     parent: &ControlEnvelope,
     child: &ControlEnvelope,
-    ancestry: &[&crate::carrier::control::ValidatedControlContent],
+    ancestry: &ControlAncestry,
     view: &ParentEpochView,
     visit: &mut impl FnMut() -> Result<(), crate::Completion>,
 ) -> Result<CandidateResult, crate::Completion> {
@@ -291,7 +292,10 @@ pub(crate) fn evaluate_child_metered(
     {
         return Ok(result);
     }
-    if validate_no_reintroduction_metered(ancestry, &child.content, visit)?.is_err() {
+    if ancestry
+        .no_reintroduction_metered(&child.content, visit)?
+        .is_err()
+    {
         return Ok(CandidateResult::Invalid(DiagnosticCode::registered(
             "control.device_reintroduced",
         )));
@@ -341,6 +345,7 @@ mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
     use super::{CandidateResult, evaluate_child, evaluate_child_metered};
+    use crate::control::ancestry::ControlAncestry;
     use crate::control::parent_view::ParentEpochView;
     use crate::control::validate::tests::genesis;
     use crate::{ChangeHash, DiagnosticCode, EventId};
@@ -380,7 +385,11 @@ mod tests {
         child.parent = Some(parent.event_id);
         child.content.sequence = 1;
         let view = ParentEpochView::default();
-        let ancestry = [&parent.content];
+        let ancestry = ControlAncestry::from_ordered([parent.clone()]);
+        assert!(ancestry.is_ok());
+        let Ok(ancestry) = ancestry else {
+            return;
+        };
         let visits = std::cell::Cell::new(0_u64);
         let mut count = || {
             visits.set(visits.get().saturating_add(1));

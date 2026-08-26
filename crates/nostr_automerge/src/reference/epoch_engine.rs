@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use crate::ChangeHash;
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
+use crate::control::ancestry::ControlAncestry;
 use crate::control::epoch_state::{AcceptedEpochState, MeteredAcceptedEpochStateError};
 use crate::control::validate::ControlEnvelope;
 use crate::graph::actor_state::{
@@ -73,7 +74,7 @@ pub(crate) struct EpochEvaluationInput<'a> {
     accepted_base: Arc<AcceptedEpochState>,
     candidate_changes: BTreeMap<ChangeHash, ChangeCandidate>,
     raw_changes: Cow<'a, BTreeMap<ChangeHash, Arc<[u8]>>>,
-    canonical_ancestry: Vec<ControlEnvelope>,
+    canonical_ancestry: ControlAncestry,
     prior_change_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
 }
 
@@ -124,16 +125,9 @@ impl EpochEvaluationInput<'static> {
         if declared_heads != *accepted_base.frontier_heads() {
             return Err(EpochEvaluationInputError::BaseFrontierMismatch);
         }
-        let expected_parent = canonical_ancestry.last().map(ControlEnvelope::event_id);
-        if selected_control.parent() != expected_parent
-            || canonical_ancestry.windows(2).any(|pair| {
-                pair[1].parent() != Some(pair[0].event_id())
-                    || pair[0]
-                        .sequence()
-                        .checked_add(1)
-                        .is_none_or(|sequence| pair[1].sequence() != sequence)
-            })
-        {
+        let canonical_ancestry = ControlAncestry::from_ordered(canonical_ancestry)
+            .map_err(|()| EpochEvaluationInputError::AncestryMismatch)?;
+        if selected_control.parent() != canonical_ancestry.last_event_id() {
             return Err(EpochEvaluationInputError::AncestryMismatch);
         }
         let selected_id = selected_control.event_id();
@@ -167,23 +161,14 @@ impl<'a> EpochEvaluationInput<'a> {
         accepted_base: Arc<AcceptedEpochState>,
         candidate_changes: impl IntoIterator<Item = ChangeCandidate>,
         raw_changes: &'a BTreeMap<ChangeHash, Arc<[u8]>>,
-        canonical_ancestry: Vec<ControlEnvelope>,
+        canonical_ancestry: ControlAncestry,
         prior_change_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
     ) -> Result<Self, EpochEvaluationInputError> {
         let declared_heads = selected_control.base_heads().collect::<BTreeSet<_>>();
         if declared_heads != *accepted_base.frontier_heads() {
             return Err(EpochEvaluationInputError::BaseFrontierMismatch);
         }
-        let expected_parent = canonical_ancestry.last().map(ControlEnvelope::event_id);
-        if selected_control.parent() != expected_parent
-            || canonical_ancestry.windows(2).any(|pair| {
-                pair[1].parent() != Some(pair[0].event_id())
-                    || pair[0]
-                        .sequence()
-                        .checked_add(1)
-                        .is_none_or(|sequence| pair[1].sequence() != sequence)
-            })
-        {
+        if selected_control.parent() != canonical_ancestry.last_event_id() {
             return Err(EpochEvaluationInputError::AncestryMismatch);
         }
         let selected_id = selected_control.event_id();
@@ -227,7 +212,7 @@ impl<'a> EpochEvaluationInput<'a> {
         &self.raw_changes
     }
 
-    pub(crate) fn canonical_ancestry(&self) -> &[ControlEnvelope] {
+    pub(crate) const fn canonical_ancestry(&self) -> &ControlAncestry {
         &self.canonical_ancestry
     }
 

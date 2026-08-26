@@ -1,5 +1,4 @@
 use std::collections::{BTreeMap, BTreeSet};
-use std::sync::Arc;
 
 use super::change_candidate::ChangeCandidate;
 use crate::{ActorId, ChangeHash, WorkCounter};
@@ -33,7 +32,7 @@ pub(crate) enum MeteredActorStateError<E> {
 }
 
 pub(crate) struct MeteredActorState {
-    pub(crate) dependencies: BTreeMap<ChangeHash, Arc<[ChangeHash]>>,
+    pub(crate) dependencies: BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
     pub(crate) frontier_heads: BTreeSet<ChangeHash>,
     pub(crate) actor_states: BTreeMap<ActorId, EpochActorState>,
     pub(crate) writer_contributions: BTreeMap<ActorId, ChangeHash>,
@@ -289,6 +288,7 @@ pub(crate) fn initialize_actor_states_metered<E>(
                 ActorStateError::MissingDependency,
             ));
         }
+        let mut candidate_dependencies = BTreeSet::new();
         let mut dependency_iter = candidate.dependencies.iter();
         for _ in 0..candidate.dependencies.len() {
             charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
@@ -302,6 +302,7 @@ pub(crate) fn initialize_actor_states_metered<E>(
                     ActorStateError::MissingDependency,
                 ));
             }
+            candidate_dependencies.insert(dependency);
             depended_on.insert(dependency);
             dependants.entry(dependency).or_default().insert(*hash);
         }
@@ -309,7 +310,7 @@ pub(crate) fn initialize_actor_states_metered<E>(
             ready.insert(*hash);
         }
         remaining_dependencies.insert(*hash, candidate.dependencies.len());
-        dependencies.insert(*hash, Arc::clone(&candidate.dependencies));
+        dependencies.insert(*hash, candidate_dependencies);
     }
 
     let mut states = BTreeMap::<ActorId, EpochActorState>::new();

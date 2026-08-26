@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use crate::automerge_adapter::document::{AppliedDocument, materialize_history};
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
+use crate::control::ancestry::ControlAncestry;
 use crate::control::candidate::{CandidateResult, evaluate_child_metered};
 use crate::control::epoch_state::{AcceptedEpochState, MeteredAcceptedEpochStateError};
 use crate::control::frontier::accepted_frontier_closure;
@@ -275,7 +276,7 @@ struct ValidBranchEvaluation {
     epoch: EpochEvaluationResult,
     change_dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
     validated_base: BTreeSet<ChangeHash>,
-    ancestry: Vec<ControlEnvelope>,
+    ancestry: ControlAncestry,
     prior_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
 }
 
@@ -511,14 +512,9 @@ fn evaluate_branch_table(
             }
             let singleton = BTreeSet::from([event_id]);
             charge_control_closures(&singleton, controls, &view, budget, cancellation)?;
-            let ancestry = branch
-                .ancestry
-                .iter()
-                .map(ControlEnvelope::content)
-                .collect::<Vec<_>>();
             let mut visit =
                 || charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation);
-            match evaluate_child_metered(parent, child, &ancestry, &view, &mut visit)? {
+            match evaluate_child_metered(parent, child, &branch.ancestry, &view, &mut visit)? {
                 CandidateResult::Valid => Some(
                     accepted_frontier_closure(
                         child.base_heads(),
@@ -594,8 +590,26 @@ fn evaluate_branch_table(
                 }
             }
             let parent_ancestry = parent_branch
-                .map(|branch| branch.ancestry.as_slice())
+                .map(|branch| branch.ancestry.clone())
                 .unwrap_or_default();
+            let ancestry = if let Some(envelope) = control.envelope.as_ref() {
+                let Ok(ancestry) = parent_ancestry.push_checked(envelope.clone()) else {
+                    table
+                        .states
+                        .insert(event_id, BranchEvaluationState::Invalid);
+                    enqueue_children(
+                        event_id,
+                        children_by_parent,
+                        &mut ready,
+                        budget,
+                        cancellation,
+                    )?;
+                    continue;
+                };
+                ancestry
+            } else {
+                parent_ancestry.clone()
+            };
             let retained_knowledge = knowledge.clone();
             match resolve_authoritative_epoch(
                 control,
@@ -626,10 +640,6 @@ fn evaluate_branch_table(
                         branch_change_dispositions.insert(*hash, ProtocolDisposition::Accepted);
                     }
                     branch_change_dispositions.extend(epoch.dispositions().clone());
-                    let mut ancestry = parent_ancestry.to_vec();
-                    if let Some(envelope) = control.envelope.as_ref() {
-                        ancestry.push(envelope.clone());
-                    }
                     table.states.insert(event_id, BranchEvaluationState::Valid);
                     table.valid.insert(
                         event_id,
@@ -806,7 +816,7 @@ fn resolve_authoritative_epoch(
     control: &BatchControl,
     accepted_base: Arc<AcceptedEpochState>,
     prior_change_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
-    ancestry: &[ControlEnvelope],
+    ancestry: ControlAncestry,
     raw_changes: &BTreeMap<ChangeHash, Arc<[u8]>>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
@@ -915,7 +925,6 @@ fn resolve_authoritative_epoch(
             quarantine.alerts,
         ));
     };
-    let canonical_ancestry = ancestry.to_vec();
     let epoch_changes = control
         .changes
         .iter()
@@ -931,7 +940,7 @@ fn resolve_authoritative_epoch(
         accepted_base,
         epoch_changes,
         raw_changes,
-        canonical_ancestry,
+        ancestry,
         prior_change_knowledge,
     )
     .map_err(|_| EpochResolutionError::InvalidState)?;

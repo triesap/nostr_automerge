@@ -31,7 +31,7 @@ pub(crate) struct AcceptedEpochState {
     accepted_closure: Arc<BTreeSet<ChangeHash>>,
     frontier_heads: BTreeSet<ChangeHash>,
     accepted_candidates: BTreeMap<ChangeHash, ChangeCandidate>,
-    dependencies: BTreeMap<ChangeHash, Arc<[ChangeHash]>>,
+    dependencies: BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
     actor_states: BTreeMap<ActorId, EpochActorState>,
     writer_contributions: BTreeMap<ActorId, ChangeHash>,
     materialized: Option<MaterializedDocumentView>,
@@ -49,17 +49,26 @@ impl AcceptedEpochState {
         }
         let dependencies = accepted_candidates
             .iter()
-            .map(|(hash, candidate)| (*hash, Arc::clone(&candidate.dependencies)))
+            .map(|(hash, candidate)| {
+                (
+                    *hash,
+                    candidate
+                        .dependencies
+                        .iter()
+                        .copied()
+                        .collect::<BTreeSet<_>>(),
+                )
+            })
             .collect::<BTreeMap<_, _>>();
         if dependencies
             .values()
-            .any(|items| items.iter().any(|hash| !accepted_closure.contains(hash)))
+            .any(|items| !items.is_subset(&accepted_closure))
         {
             return Err(AcceptedEpochStateError::ClosureMismatch);
         }
         let depended_on = dependencies
             .values()
-            .flat_map(|items| items.iter())
+            .flatten()
             .copied()
             .collect::<BTreeSet<_>>();
         let exact_heads = accepted_closure
@@ -124,7 +133,7 @@ impl AcceptedEpochState {
         &self.accepted_candidates
     }
 
-    pub(crate) fn dependencies(&self) -> &BTreeMap<ChangeHash, Arc<[ChangeHash]>> {
+    pub(crate) fn dependencies(&self) -> &BTreeMap<ChangeHash, BTreeSet<ChangeHash>> {
         &self.dependencies
     }
 

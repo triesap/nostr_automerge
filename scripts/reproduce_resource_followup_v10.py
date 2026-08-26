@@ -33,6 +33,15 @@ def validate_transcript(
         raise ReproductionError(f"{test}:rerun")
 
 
+def validate_pass_transcript(*, test: str, returncode: int, stdout: str) -> None:
+    if returncode != 0:
+        raise ReproductionError(f"{test}:pass_returncode:{returncode}")
+    if f"test {test} ... ok" not in stdout:
+        raise ReproductionError(f"{test}:pass_exact_test")
+    if "test result: ok. 1 passed; 0 failed; 0 ignored;" not in stdout:
+        raise ReproductionError(f"{test}:pass_summary")
+
+
 def mutation_self_test() -> int:
     test = "module::open_case"
     diagnostic = "OPEN reproduced"
@@ -73,18 +82,22 @@ def mutation_self_test() -> int:
     return len(mutations)
 
 
-def verify_open() -> int:
+def verify_expected() -> tuple[int, int]:
     data = json.loads(INVENTORY.read_text())
     reproductions = data.get("reproductions")
     if not isinstance(reproductions, list) or len(reproductions) != 2:
         raise ReproductionError("inventory:reproductions")
+    fixed = 0
+    opened = 0
     for reproduction in reproductions:
         test = reproduction["test"]
-        command = (
+        command = [
             "cargo", "extbuild", "run", "--", "cargo", "test",
             "-p", "nostr_automerge", "--lib", "--locked", "--",
-            "--ignored", "--exact", test,
-        )
+        ]
+        if reproduction["expected"] == "open_failure":
+            command.append("--ignored")
+        command.extend(("--exact", test))
         result = subprocess.run(
             command,
             cwd=ROOT,
@@ -92,14 +105,21 @@ def verify_open() -> int:
             text=True,
             check=False,
         )
-        validate_transcript(
-            test=test,
-            diagnostic=reproduction["diagnostic"],
-            returncode=result.returncode,
-            stdout=result.stdout,
-            stderr=result.stderr,
-        )
-    return len(reproductions)
+        if reproduction["expected"] == "fixed_pass":
+            validate_pass_transcript(
+                test=test, returncode=result.returncode, stdout=result.stdout
+            )
+            fixed += 1
+        else:
+            validate_transcript(
+                test=test,
+                diagnostic=reproduction["diagnostic"],
+                returncode=result.returncode,
+                stdout=result.stdout,
+                stderr=result.stderr,
+            )
+            opened += 1
+    return fixed, opened
 
 
 def main() -> None:
@@ -110,8 +130,9 @@ def main() -> None:
     if args.verify_open == args.self_test_only:
         parser.error("select exactly one mode")
     mutations = mutation_self_test()
-    reproduced = verify_open() if args.verify_open else 0
+    fixed, reproduced = verify_expected() if args.verify_open else (0, 0)
     print("PASS: resource follow-up reproduction harness")
+    print(f"- fixed={fixed}")
     print(f"- open={reproduced}")
     print(f"- mutations={mutations}")
 

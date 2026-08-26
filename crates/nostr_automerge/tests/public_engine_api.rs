@@ -1235,7 +1235,7 @@ fn accepted_at_control_is_exact_closure() {
     for field in [
         "epoch: EpochEvaluationResult",
         "validated_base: BTreeSet<ChangeHash>",
-        "ancestry: Vec<ControlEnvelope>",
+        "ancestry: ControlAncestry",
         "prior_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>",
     ] {
         assert!(evaluator_source.contains(field));

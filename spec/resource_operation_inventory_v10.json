@@ -98,7 +98,7 @@
       "source": "crates/nostr_automerge/src/control/parent_view.rs",
       "test": "control::parent_view::tests::finding_094_parent_epoch_view_shares_accepted_payload",
       "diagnostic": "FINDING_094 reproduced: ParentEpochView deep-copies retained accepted state",
-      "expected": "open_failure"
+      "expected": "fixed_pass"
     },
     {
       "finding": "FINDING_095",

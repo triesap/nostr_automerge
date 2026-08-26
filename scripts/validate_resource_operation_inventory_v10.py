@@ -13,9 +13,9 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 INVENTORY = ROOT / "spec/resource_operation_inventory_v10.json"
 SCHEMA = ROOT / "tools/validation/resource_operation_inventory_v10.schema.json"
 
-INVENTORY_SHA256 = "efcec2699c8e8a6c76cb8f556ba5d3801b8b8ef201c9f5cbe28a46ebb465c735"
+INVENTORY_SHA256 = "e681be490a82ccc677aa7362703eb6b698098f88e890eee0279f7465de3532af"
 SCHEMA_SHA256 = "35670628ef63058ed7a41306b43337e30799a06fc63bba74310a88c7a9941501"
-HARNESS_SHA256 = "2c4632a5813cdbe611aa90f9d7180fc8ecf5fb708537cd31a2da1b9e583fc6ec"
+HARNESS_SHA256 = "4d6f6b67170f8c73be05d213bd01bb9f3c6332410038b34e8eedad2b31b61120"
 TOP_KEYS = ("schema", "status", "findings", "operations", "reproductions", "result")
 OPERATION_IDS = (
     "parent_epoch_view_copy",
@@ -62,7 +62,7 @@ def validate_record(record: object, *, inspect_source: bool) -> None:
         raise InventoryError("inventory:reproductions")
     if [item.get("finding") for item in reproductions] != ["FINDING_094", "FINDING_095"]:
         raise InventoryError("inventory:reproduction_findings")
-    if [item.get("expected") for item in reproductions] != ["open_failure", "open_failure"]:
+    if [item.get("expected") for item in reproductions] != ["fixed_pass", "open_failure"]:
         raise InventoryError("inventory:reproduction_status")
     if not inspect_source:
         return
@@ -83,7 +83,8 @@ def validate_record(record: object, *, inspect_source: bool) -> None:
         if declaration is None:
             raise InventoryError(f"reproduction:test:{short_name}")
         attributes = source[max(0, declaration.start() - 220):declaration.start()]
-        if "#[test]" not in attributes or "#[ignore = \"open FINDING_" not in attributes:
+        ignored = "#[ignore = \"open FINDING_" in attributes
+        if "#[test]" not in attributes or ignored != (reproduction["expected"] == "open_failure"):
             raise InventoryError(f"reproduction:attributes:{short_name}")
         if reproduction["diagnostic"] not in source[declaration.start():]:
             raise InventoryError(f"reproduction:diagnostic:{short_name}")
@@ -100,7 +101,7 @@ def mutation_self_test() -> int:
         lambda value: value["operations"][0].update(id="other"),
         lambda value: value["reproductions"].pop(),
         lambda value: value["reproductions"].reverse(),
-        lambda value: value["reproductions"][0].update(expected="pass"),
+        lambda value: value["reproductions"][0].update(expected="open_failure"),
         lambda value: value.update(extra=False),
     ):
         candidate = copy.deepcopy(original)

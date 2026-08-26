@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use crate::control::epoch_state::AcceptedEpochState;
 use crate::control::frontier::ParentFrontierReference;
@@ -7,42 +8,45 @@ use crate::reference::epoch_engine::EpochEvaluationResult;
 use crate::reference::epoch_engine::PriorChangeKnowledge;
 use crate::{ActorId, ChangeHash};
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone)]
 pub(crate) struct ParentEpochView {
-    accepted: BTreeSet<ChangeHash>,
-    heads: BTreeSet<ChangeHash>,
-    dependencies: BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
-    actors: BTreeMap<ActorId, EpochActorState>,
-    writer_contributions: BTreeMap<ActorId, ChangeHash>,
+    payload: ParentEpochPayload,
     frontier_knowledge: BTreeMap<ChangeHash, ParentFrontierReference>,
 }
 
-impl ParentEpochView {
-    pub(crate) fn from_accepted_state(state: &AcceptedEpochState) -> Self {
-        let frontier_knowledge = state
-            .accepted_closure()
-            .iter()
-            .copied()
-            .map(|hash| (hash, ParentFrontierReference::AcceptedUnderParent))
-            .collect();
+#[derive(Clone)]
+enum ParentEpochPayload {
+    Empty,
+    Shared(Arc<AcceptedEpochState>),
+    #[cfg(test)]
+    Parts {
+        accepted: BTreeSet<ChangeHash>,
+        heads: BTreeSet<ChangeHash>,
+        dependencies: BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
+        actors: BTreeMap<ActorId, EpochActorState>,
+        writer_contributions: BTreeMap<ActorId, ChangeHash>,
+    },
+}
+
+impl Default for ParentEpochView {
+    fn default() -> Self {
         Self {
-            accepted: state.accepted_closure().clone(),
-            heads: state.frontier_heads().clone(),
-            dependencies: state
-                .dependencies()
-                .iter()
-                .map(|(hash, dependencies)| {
-                    (*hash, dependencies.iter().copied().collect::<BTreeSet<_>>())
-                })
-                .collect(),
-            actors: state.actor_states().clone(),
-            writer_contributions: state.writer_contributions().clone(),
-            frontier_knowledge,
+            payload: ParentEpochPayload::Empty,
+            frontier_knowledge: BTreeMap::new(),
+        }
+    }
+}
+
+impl ParentEpochView {
+    pub(crate) fn from_accepted_state(state: Arc<AcceptedEpochState>) -> Self {
+        Self {
+            payload: ParentEpochPayload::Shared(state),
+            frontier_knowledge: BTreeMap::new(),
         }
     }
 
     pub(crate) fn from_result(result: &EpochEvaluationResult) -> Self {
-        let mut view = Self::from_accepted_state(result.accepted_state());
+        let mut view = Self::from_accepted_state(result.accepted_state_handle());
         for (hash, disposition) in result.dispositions() {
             let knowledge = match disposition {
                 crate::ProtocolDisposition::Accepted => {
@@ -100,54 +104,107 @@ impl ParentEpochView {
             .map(|hash| (hash, ParentFrontierReference::AcceptedUnderParent))
             .collect();
         Self {
-            accepted,
-            heads,
-            dependencies,
-            actors,
-            writer_contributions,
+            payload: ParentEpochPayload::Parts {
+                accepted,
+                heads,
+                dependencies,
+                actors,
+                writer_contributions,
+            },
             frontier_knowledge,
         }
     }
 
     pub(crate) fn contains(&self, hash: &ChangeHash) -> bool {
-        self.accepted.contains(hash)
+        self.accepted().contains(hash)
     }
 
     pub(crate) fn accepted(&self) -> &BTreeSet<ChangeHash> {
-        &self.accepted
+        match &self.payload {
+            ParentEpochPayload::Empty => empty_hash_set(),
+            ParentEpochPayload::Shared(state) => state.accepted_closure(),
+            #[cfg(test)]
+            ParentEpochPayload::Parts { accepted, .. } => accepted,
+        }
     }
 
     pub(crate) fn heads(&self) -> &BTreeSet<ChangeHash> {
-        &self.heads
+        match &self.payload {
+            ParentEpochPayload::Empty => empty_hash_set(),
+            ParentEpochPayload::Shared(state) => state.frontier_heads(),
+            #[cfg(test)]
+            ParentEpochPayload::Parts { heads, .. } => heads,
+        }
     }
 
     pub(crate) fn dependencies(&self, hash: &ChangeHash) -> Option<&BTreeSet<ChangeHash>> {
-        self.dependencies.get(hash)
+        match &self.payload {
+            ParentEpochPayload::Empty => None,
+            ParentEpochPayload::Shared(state) => state.dependencies().get(hash),
+            #[cfg(test)]
+            ParentEpochPayload::Parts { dependencies, .. } => dependencies.get(hash),
+        }
     }
 
     pub(crate) fn dependency_index(&self) -> &BTreeMap<ChangeHash, BTreeSet<ChangeHash>> {
-        &self.dependencies
+        match &self.payload {
+            ParentEpochPayload::Empty => empty_dependency_map(),
+            ParentEpochPayload::Shared(state) => state.dependencies(),
+            #[cfg(test)]
+            ParentEpochPayload::Parts { dependencies, .. } => dependencies,
+        }
     }
 
     pub(crate) fn actor_state(&self, actor: &ActorId) -> Option<EpochActorState> {
-        self.actors.get(actor).copied()
+        match &self.payload {
+            ParentEpochPayload::Empty => None,
+            ParentEpochPayload::Shared(state) => state.actor_states().get(actor).copied(),
+            #[cfg(test)]
+            ParentEpochPayload::Parts { actors, .. } => actors.get(actor).copied(),
+        }
     }
 
     pub(crate) fn writer_contribution(&self, actor: &ActorId) -> Option<ChangeHash> {
-        self.writer_contributions.get(actor).copied()
+        match &self.payload {
+            ParentEpochPayload::Empty => None,
+            ParentEpochPayload::Shared(state) => state.writer_contributions().get(actor).copied(),
+            #[cfg(test)]
+            ParentEpochPayload::Parts {
+                writer_contributions,
+                ..
+            } => writer_contributions.get(actor).copied(),
+        }
     }
 
     pub(crate) fn frontier_knowledge(&self, hash: &ChangeHash) -> ParentFrontierReference {
         self.frontier_knowledge
             .get(hash)
             .copied()
-            .unwrap_or(ParentFrontierReference::Unknown)
+            .unwrap_or_else(|| {
+                if self.contains(hash) {
+                    ParentFrontierReference::AcceptedUnderParent
+                } else {
+                    ParentFrontierReference::Unknown
+                }
+            })
     }
+}
+
+fn empty_hash_set() -> &'static BTreeSet<ChangeHash> {
+    static EMPTY: std::sync::OnceLock<BTreeSet<ChangeHash>> = std::sync::OnceLock::new();
+    EMPTY.get_or_init(BTreeSet::new)
+}
+
+fn empty_dependency_map() -> &'static BTreeMap<ChangeHash, BTreeSet<ChangeHash>> {
+    static EMPTY: std::sync::OnceLock<BTreeMap<ChangeHash, BTreeSet<ChangeHash>>> =
+        std::sync::OnceLock::new();
+    EMPTY.get_or_init(BTreeMap::new)
 }
 
 #[cfg(test)]
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
+    use std::sync::Arc;
 
     use super::ParentEpochView;
     use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
@@ -212,7 +269,7 @@ mod tests {
         let Ok(state) = state else {
             return;
         };
-        let view = ParentEpochView::from_accepted_state(&state);
+        let view = ParentEpochView::from_accepted_state(Arc::new(state));
         assert!(view.contains(&first_hash));
         assert_eq!(
             view.frontier_knowledge(&first_hash),
@@ -232,7 +289,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "open FINDING_094 resource-accounting reproduction"]
     fn finding_094_parent_epoch_view_shares_accepted_payload() {
         let retained = candidate(1, 2);
         let hash = retained.change_hash;
@@ -251,7 +307,8 @@ mod tests {
         let Ok(state) = state else {
             return;
         };
-        let view = ParentEpochView::from_accepted_state(&state);
+        let state = Arc::new(state);
+        let view = ParentEpochView::from_accepted_state(Arc::clone(&state));
         let source = state.accepted_closure().iter().next();
         let inherited = view.accepted().iter().next();
         let shares_payload = matches!(
