@@ -252,13 +252,7 @@ pub(crate) fn evaluate_child_metered(
             "control.structure",
         )));
     }
-    match reasoned_frontier_disposition_metered(
-        &child.content.base_heads,
-        |hash, metered| {
-            view.frontier_knowledge_metered(hash, || metered(crate::WorkCounter::GraphNode))
-        },
-        visit,
-    )? {
+    match evaluate_candidate_frontier_metered(child, view, visit)? {
         Some(crate::ProtocolDisposition::Pending) => {
             return Ok(CandidateResult::Pending(DiagnosticCode::registered(
                 "control.frontier",
@@ -336,15 +330,80 @@ pub(crate) fn evaluate_child_metered(
     )
 }
 
+fn evaluate_candidate_frontier_metered(
+    child: &ControlEnvelope,
+    view: &ParentEpochView,
+    visit: &mut impl FnMut(crate::WorkCounter) -> Result<(), crate::Completion>,
+) -> Result<Option<crate::ProtocolDisposition>, crate::Completion> {
+    reasoned_frontier_disposition_metered(
+        &child.content.base_heads,
+        |hash, metered| {
+            view.frontier_knowledge_metered(hash, || metered(crate::WorkCounter::GraphNode))
+        },
+        visit,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
-    use super::{CandidateResult, evaluate_child, evaluate_child_metered};
+    use super::{
+        CandidateResult, evaluate_candidate_frontier_metered, evaluate_child,
+        evaluate_child_metered,
+    };
     use crate::control::ancestry::ControlAncestry;
     use crate::control::parent_view::ParentEpochView;
     use crate::control::validate::tests::genesis;
-    use crate::{ChangeHash, DiagnosticCode, EventId};
+    use crate::reference::epoch_engine::{PriorChangeKnowledge, PriorKnowledgeState};
+    use crate::{
+        ChangeHash, Completion, DiagnosticCode, EventId, ProtocolDisposition, WorkCounter,
+    };
+
+    #[test]
+    fn candidate_frontier_exposes_every_deep_knowledge_charge() {
+        const DEPTH: u8 = 64;
+        let parent = genesis();
+        let mut child = parent.clone();
+        child.event_id = EventId::from_bytes([41; 32]);
+        child.parent = Some(parent.event_id);
+        child.content.sequence = 1;
+        let target = ChangeHash::from_bytes([0; 32]);
+        child.content.base_heads = vec![target];
+        let mut knowledge = PriorKnowledgeState::from(BTreeMap::from([(
+            target,
+            PriorChangeKnowledge::KnownInvalid,
+        )]));
+        for value in 1..DEPTH {
+            knowledge = knowledge.extend_local(BTreeMap::from([(
+                ChangeHash::from_bytes([value; 32]),
+                PriorChangeKnowledge::KnownOtherControl,
+            )]));
+        }
+        let mut view = ParentEpochView::default();
+        view.extend_prior_knowledge(&knowledge);
+        let exact = 2_usize + usize::from(DEPTH);
+
+        for completion in [Completion::BudgetExhausted, Completion::Cancelled] {
+            for capacity in 0..=exact + 1 {
+                let mut observed = Vec::new();
+                let result = evaluate_candidate_frontier_metered(&child, &view, &mut |counter| {
+                    if observed.len() == capacity {
+                        return Err(completion);
+                    }
+                    observed.push(counter);
+                    Ok(())
+                });
+                if capacity < exact {
+                    assert_eq!(result, Err(completion));
+                    assert_eq!(observed.len(), capacity);
+                } else {
+                    assert_eq!(result, Ok(Some(ProtocolDisposition::Invalid)));
+                    assert_eq!(observed, vec![WorkCounter::GraphNode; exact]);
+                }
+            }
+        }
+    }
 
     #[test]
     fn validate_child_candidates_against_parent_state() {

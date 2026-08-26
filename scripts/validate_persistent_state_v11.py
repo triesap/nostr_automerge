@@ -180,6 +180,10 @@ def validate_sources(sources: dict[str, str]) -> None:
     require_cfg_test(candidate, "pub(crate) fn evaluate_retained_writer_continuity(", "candidate:writer")
     require(candidate.count("reasoned_frontier_disposition_metered(") == 1, "candidate:metered_frontier")
     require(candidate.count("frontier_knowledge_metered(hash") == 1, "candidate:metered_knowledge")
+    require(
+        candidate.count("evaluate_candidate_frontier_metered(child, view, visit)?") == 1,
+        "candidate:frontier_boundary",
+    )
 
     epoch = sources[SOURCES[5]]
     require(epoch.count("prior_change_knowledge().get_metered(dependency") == 1, "epoch:metered_prior")
