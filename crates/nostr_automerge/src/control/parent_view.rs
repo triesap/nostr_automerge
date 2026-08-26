@@ -5,13 +5,15 @@ use crate::control::epoch_state::AcceptedEpochState;
 use crate::control::frontier::ParentFrontierReference;
 use crate::graph::actor_state::EpochActorState;
 use crate::reference::epoch_engine::EpochEvaluationResult;
-use crate::reference::epoch_engine::PriorChangeKnowledge;
+use crate::reference::epoch_engine::{PriorChangeKnowledge, PriorKnowledgeState};
 use crate::{ActorId, ChangeHash};
 
 #[derive(Clone)]
 pub(crate) struct ParentEpochView {
     payload: ParentEpochPayload,
     frontier_knowledge: BTreeMap<ChangeHash, ParentFrontierReference>,
+    inherited_prior: PriorKnowledgeState,
+    additional_prior: BTreeMap<ChangeHash, PriorChangeKnowledge>,
 }
 
 #[derive(Clone)]
@@ -33,6 +35,8 @@ impl Default for ParentEpochView {
         Self {
             payload: ParentEpochPayload::Empty,
             frontier_knowledge: BTreeMap::new(),
+            inherited_prior: PriorKnowledgeState::default(),
+            additional_prior: BTreeMap::new(),
         }
     }
 }
@@ -42,6 +46,8 @@ impl ParentEpochView {
         Self {
             payload: ParentEpochPayload::Shared(state),
             frontier_knowledge: BTreeMap::new(),
+            inherited_prior: PriorKnowledgeState::default(),
+            additional_prior: BTreeMap::new(),
         }
     }
 
@@ -66,28 +72,15 @@ impl ParentEpochView {
         view
     }
 
-    pub(crate) fn extend_prior_knowledge(
+    pub(crate) fn extend_prior_knowledge(&mut self, knowledge: &PriorKnowledgeState) {
+        self.inherited_prior = knowledge.clone();
+    }
+
+    pub(crate) fn extend_additional_prior_knowledge(
         &mut self,
         knowledge: &BTreeMap<ChangeHash, PriorChangeKnowledge>,
     ) {
-        for (hash, state) in knowledge {
-            let frontier = match state {
-                PriorChangeKnowledge::AcceptedInBase => {
-                    ParentFrontierReference::AcceptedUnderParent
-                }
-                PriorChangeKnowledge::PrunedCanonicalAncestor
-                | PriorChangeKnowledge::PriorEquivocationExcluded => {
-                    ParentFrontierReference::ExcludedUnderParent
-                }
-                PriorChangeKnowledge::KnownOtherControl => ParentFrontierReference::OtherControl,
-                PriorChangeKnowledge::KnownInvalid => ParentFrontierReference::InvalidUnderParent,
-                PriorChangeKnowledge::KnownUnsupported => ParentFrontierReference::Unsupported,
-                PriorChangeKnowledge::SameEpochCandidate | PriorChangeKnowledge::Unknown => {
-                    continue;
-                }
-            };
-            self.frontier_knowledge.entry(*hash).or_insert(frontier);
-        }
+        self.additional_prior.extend(knowledge);
     }
 
     #[cfg(test)]
@@ -112,6 +105,8 @@ impl ParentEpochView {
                 writer_contributions,
             },
             frontier_knowledge,
+            inherited_prior: PriorKnowledgeState::default(),
+            additional_prior: BTreeMap::new(),
         }
     }
 
@@ -177,17 +172,47 @@ impl ParentEpochView {
     }
 
     pub(crate) fn frontier_knowledge(&self, hash: &ChangeHash) -> ParentFrontierReference {
-        self.frontier_knowledge
+        if let Some(knowledge) = self.frontier_knowledge.get(hash).copied() {
+            return knowledge;
+        }
+        if let Some(knowledge) = self
+            .inherited_prior
             .get(hash)
             .copied()
-            .unwrap_or_else(|| {
-                if self.contains(hash) {
-                    ParentFrontierReference::AcceptedUnderParent
-                } else {
-                    ParentFrontierReference::Unknown
-                }
-            })
+            .and_then(prior_frontier_reference)
+        {
+            return knowledge;
+        }
+        if let Some(knowledge) = self
+            .additional_prior
+            .get(hash)
+            .copied()
+            .and_then(prior_frontier_reference)
+        {
+            return knowledge;
+        }
+        if self.contains(hash) {
+            ParentFrontierReference::AcceptedUnderParent
+        } else {
+            ParentFrontierReference::Unknown
+        }
     }
+}
+
+const fn prior_frontier_reference(
+    knowledge: PriorChangeKnowledge,
+) -> Option<ParentFrontierReference> {
+    Some(match knowledge {
+        PriorChangeKnowledge::AcceptedInBase => ParentFrontierReference::AcceptedUnderParent,
+        PriorChangeKnowledge::PrunedCanonicalAncestor
+        | PriorChangeKnowledge::PriorEquivocationExcluded => {
+            ParentFrontierReference::ExcludedUnderParent
+        }
+        PriorChangeKnowledge::KnownOtherControl => ParentFrontierReference::OtherControl,
+        PriorChangeKnowledge::KnownInvalid => ParentFrontierReference::InvalidUnderParent,
+        PriorChangeKnowledge::KnownUnsupported => ParentFrontierReference::Unsupported,
+        PriorChangeKnowledge::SameEpochCandidate | PriorChangeKnowledge::Unknown => return None,
+    })
 }
 
 fn empty_hash_set() -> &'static BTreeSet<ChangeHash> {

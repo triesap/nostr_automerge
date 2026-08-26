@@ -1234,9 +1234,10 @@ fn accepted_at_control_is_exact_closure() {
     let evaluator_source = include_str!("../src/reference/evaluate.rs");
     for field in [
         "epoch: EpochEvaluationResult",
+        "change_dispositions: PersistentDeltaMap<ChangeHash, ProtocolDisposition>",
         "validated_base: BTreeSet<ChangeHash>",
         "ancestry: ControlAncestry",
-        "prior_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>",
+        "prior_knowledge: PriorKnowledgeState",
     ] {
         assert!(evaluator_source.contains(field));
     }

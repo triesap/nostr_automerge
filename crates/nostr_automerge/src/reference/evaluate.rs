@@ -14,10 +14,11 @@ use crate::graph::dependency_graph::build_graph;
 use crate::graph::equivocation::QuarantineError;
 use crate::graph::equivocation::quarantine_equivocation_descendants;
 use crate::graph::schedule::{ScheduleError, schedule_candidates};
+use crate::reference::branch_state::PersistentDeltaMap;
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
 use crate::reference::epoch_engine::{
     AcceptedAtControl, EpochEvaluationError, EpochEvaluationInput, EpochEvaluationResult,
-    PriorChangeKnowledge, evaluate_epoch,
+    PriorChangeKnowledge, PriorKnowledgeState, evaluate_epoch,
 };
 use crate::{
     CancellationCheck, ChangeHash, Completion, ControllerEquivocationAlert, EvaluationFailure,
@@ -51,7 +52,7 @@ pub(crate) struct BatchEvaluationReport {
     pub(crate) statefully_valid_controls: BTreeSet<EventId>,
     pub(crate) branch_states: BTreeMap<EventId, BranchEvaluationState>,
     pub(crate) branch_change_dispositions:
-        BTreeMap<EventId, BTreeMap<ChangeHash, ProtocolDisposition>>,
+        BTreeMap<EventId, PersistentDeltaMap<ChangeHash, ProtocolDisposition>>,
     pub(crate) dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
     pub(crate) accepted_changes: BTreeSet<ChangeHash>,
     pub(crate) heads: BTreeSet<ChangeHash>,
@@ -274,10 +275,10 @@ pub(crate) fn evaluate_batch_with_prior(
 
 struct ValidBranchEvaluation {
     epoch: EpochEvaluationResult,
-    change_dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
+    change_dispositions: PersistentDeltaMap<ChangeHash, ProtocolDisposition>,
     validated_base: BTreeSet<ChangeHash>,
     ancestry: ControlAncestry,
-    prior_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
+    prior_knowledge: PriorKnowledgeState,
 }
 
 #[derive(Default)]
@@ -508,7 +509,7 @@ fn evaluate_branch_table(
             if let Some(parent_id) = control.parent
                 && let Some(knowledge) = additional_prior.get(&parent_id)
             {
-                view.extend_prior_knowledge(knowledge);
+                view.extend_additional_prior_knowledge(knowledge);
             }
             let singleton = BTreeSet::from([event_id]);
             charge_control_closures(&singleton, controls, &view, budget, cancellation)?;
@@ -574,7 +575,7 @@ fn evaluate_branch_table(
                 )?;
                 continue;
             };
-            let mut knowledge = prior_change_knowledge(
+            let mut local_knowledge = prior_change_knowledge(
                 parent_epoch,
                 &validated_base,
                 preliminary_change_dispositions,
@@ -586,9 +587,13 @@ fn evaluate_branch_table(
             if let Some(additional) = additional_prior.get(&event_id) {
                 for (hash, item) in additional {
                     charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;
-                    knowledge.entry(*hash).or_insert(*item);
+                    local_knowledge.entry(*hash).or_insert(*item);
                 }
             }
+            let parent_knowledge = parent_branch
+                .map(|branch| branch.prior_knowledge.clone())
+                .unwrap_or_default();
+            let knowledge = parent_knowledge.extend_local(local_knowledge);
             let parent_ancestry = parent_branch
                 .map(|branch| branch.ancestry.clone())
                 .unwrap_or_default();
@@ -621,25 +626,36 @@ fn evaluate_branch_table(
                 cancellation,
             ) {
                 Ok(epoch) => {
-                    let mut branch_change_dispositions = parent_branch
+                    let parent_change_dispositions = parent_branch
                         .map(|branch| branch.change_dispositions.clone())
                         .unwrap_or_default();
+                    let mut local_change_dispositions = BTreeMap::new();
                     if let Some(parent) = parent_branch {
                         for hash in parent.epoch.accepted_state().accepted_closure() {
-                            branch_change_dispositions.insert(
-                                *hash,
-                                if validated_base.contains(hash) {
-                                    ProtocolDisposition::Accepted
-                                } else {
-                                    ProtocolDisposition::Excluded
-                                },
-                            );
+                            let disposition = if validated_base.contains(hash) {
+                                ProtocolDisposition::Accepted
+                            } else {
+                                ProtocolDisposition::Excluded
+                            };
+                            if parent_change_dispositions.get(hash) != Some(&disposition) {
+                                local_change_dispositions.insert(*hash, disposition);
+                            }
                         }
                     }
                     for hash in &validated_base {
-                        branch_change_dispositions.insert(*hash, ProtocolDisposition::Accepted);
+                        if parent_change_dispositions.get(hash)
+                            != Some(&ProtocolDisposition::Accepted)
+                        {
+                            local_change_dispositions.insert(*hash, ProtocolDisposition::Accepted);
+                        }
                     }
-                    branch_change_dispositions.extend(epoch.dispositions().clone());
+                    for (hash, disposition) in epoch.dispositions() {
+                        if parent_change_dispositions.get(hash) != Some(disposition) {
+                            local_change_dispositions.insert(*hash, *disposition);
+                        }
+                    }
+                    let branch_change_dispositions =
+                        parent_change_dispositions.extend_local(local_change_dispositions);
                     table.states.insert(event_id, BranchEvaluationState::Valid);
                     table.valid.insert(
                         event_id,
@@ -815,7 +831,7 @@ enum EpochResolutionError {
 fn resolve_authoritative_epoch(
     control: &BatchControl,
     accepted_base: Arc<AcceptedEpochState>,
-    prior_change_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
+    prior_change_knowledge: PriorKnowledgeState,
     ancestry: ControlAncestry,
     raw_changes: &BTreeMap<ChangeHash, Arc<[u8]>>,
     budget: &mut WorkBudget,
@@ -1786,8 +1802,8 @@ mod tests {
         assert_eq!(basic_report.completion, Completion::Complete);
         assert_eq!(
             basic_report.branch_change_dispositions[&EventId::from_bytes([1; 32])]
-                [&basic.candidate.change_hash],
-            ProtocolDisposition::Accepted
+                .get(&basic.candidate.change_hash),
+            Some(&ProtocolDisposition::Accepted)
         );
         assert_eq!(
             basic_report.referenced_branch_change_disposition(
@@ -2045,20 +2061,20 @@ mod tests {
         );
         let branch = &report.branch_change_dispositions[&EventId::from_bytes([2; 32])];
         assert_eq!(
-            branch[&invalid.candidate.change_hash],
-            ProtocolDisposition::Invalid
+            branch.get(&invalid.candidate.change_hash),
+            Some(&ProtocolDisposition::Invalid)
         );
         assert_eq!(
-            branch[&pending.candidate.change_hash],
-            ProtocolDisposition::Pending
+            branch.get(&pending.candidate.change_hash),
+            Some(&ProtocolDisposition::Pending)
         );
         assert_eq!(
-            branch[&equivocation_a.candidate.change_hash],
-            ProtocolDisposition::Excluded
+            branch.get(&equivocation_a.candidate.change_hash),
+            Some(&ProtocolDisposition::Excluded)
         );
         assert_eq!(
-            branch[&equivocation_b.candidate.change_hash],
-            ProtocolDisposition::Excluded
+            branch.get(&equivocation_b.candidate.change_hash),
+            Some(&ProtocolDisposition::Excluded)
         );
         assert_eq!(report.integrity_alerts.len(), 2);
         assert!(

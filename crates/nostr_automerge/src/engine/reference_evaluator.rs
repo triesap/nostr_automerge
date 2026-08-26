@@ -1448,7 +1448,7 @@ struct CheckpointHistoryInputs<'view> {
     accepted_at_control: &'view std::collections::BTreeMap<crate::EventId, AcceptedAtControl>,
     branch_change_dispositions: &'view std::collections::BTreeMap<
         crate::EventId,
-        std::collections::BTreeMap<ChangeHash, ProtocolDisposition>,
+        crate::reference::branch_state::PersistentDeltaMap<ChangeHash, ProtocolDisposition>,
     >,
     change_carrier_dispositions:
         &'view std::collections::BTreeMap<crate::EventId, ChangeCarrierOutcome>,
@@ -4591,10 +4591,12 @@ mod tests {
         )]);
         let branch_change_dispositions = std::collections::BTreeMap::from([(
             harness.control_id,
-            std::collections::BTreeMap::from([(
-                harness.attribution_hash,
-                ProtocolDisposition::Accepted,
-            )]),
+            crate::reference::branch_state::PersistentDeltaMap::from_local(
+                std::collections::BTreeMap::from([(
+                    harness.attribution_hash,
+                    ProtocolDisposition::Accepted,
+                )]),
+            ),
         )]);
         let change_carrier_dispositions = std::collections::BTreeMap::from([(
             harness.attribution_event_id,

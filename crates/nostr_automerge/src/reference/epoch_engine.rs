@@ -18,6 +18,7 @@ use crate::graph::epoch::{EpochAncestry, validate_epoch_ancestry};
 use crate::graph::equivocation::{QuarantineError, quarantine_equivocation_descendants};
 use crate::graph::schedule::ScheduleError;
 use crate::reference::apply::apply_exact_closure_metered;
+use crate::reference::branch_state::PersistentDeltaMap;
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
 use crate::types::role::Role;
 use crate::{ActorId, IntegrityAlert, ProtocolDisposition};
@@ -51,6 +52,8 @@ pub(crate) enum PriorChangeKnowledge {
     Unknown,
 }
 
+pub(crate) type PriorKnowledgeState = PersistentDeltaMap<ChangeHash, PriorChangeKnowledge>;
+
 impl PriorChangeKnowledge {
     pub(crate) const fn is_known_impossible(self) -> bool {
         matches!(
@@ -75,7 +78,7 @@ pub(crate) struct EpochEvaluationInput<'a> {
     candidate_changes: BTreeMap<ChangeHash, ChangeCandidate>,
     raw_changes: Cow<'a, BTreeMap<ChangeHash, Arc<[u8]>>>,
     canonical_ancestry: ControlAncestry,
-    prior_change_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
+    prior_change_knowledge: PriorKnowledgeState,
 }
 
 impl EpochEvaluationInput<'static> {
@@ -150,7 +153,7 @@ impl EpochEvaluationInput<'static> {
             candidate_changes: candidates,
             raw_changes: Cow::Owned(raw_changes),
             canonical_ancestry,
-            prior_change_knowledge,
+            prior_change_knowledge: PriorKnowledgeState::from_local(prior_change_knowledge),
         })
     }
 }
@@ -162,7 +165,7 @@ impl<'a> EpochEvaluationInput<'a> {
         candidate_changes: impl IntoIterator<Item = ChangeCandidate>,
         raw_changes: &'a BTreeMap<ChangeHash, Arc<[u8]>>,
         canonical_ancestry: ControlAncestry,
-        prior_change_knowledge: BTreeMap<ChangeHash, PriorChangeKnowledge>,
+        prior_change_knowledge: PriorKnowledgeState,
     ) -> Result<Self, EpochEvaluationInputError> {
         let declared_heads = selected_control.base_heads().collect::<BTreeSet<_>>();
         if declared_heads != *accepted_base.frontier_heads() {
@@ -216,9 +219,7 @@ impl<'a> EpochEvaluationInput<'a> {
         &self.canonical_ancestry
     }
 
-    pub(crate) const fn prior_change_knowledge(
-        &self,
-    ) -> &BTreeMap<ChangeHash, PriorChangeKnowledge> {
+    pub(crate) const fn prior_change_knowledge(&self) -> &PriorKnowledgeState {
         &self.prior_change_knowledge
     }
 }
