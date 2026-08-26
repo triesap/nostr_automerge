@@ -47,7 +47,8 @@ pub(crate) struct BatchControl {
 
 struct InitialBatchMaps {
     controls: BTreeMap<EventId, BatchControl>,
-    children_by_parent: BTreeMap<Option<EventId>, BTreeSet<EventId>>,
+    root_controls: BTreeSet<EventId>,
+    children_by_parent: BTreeMap<EventId, BTreeSet<EventId>>,
     control_dispositions: BTreeMap<EventId, ProtocolDisposition>,
     change_dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
 }
@@ -99,12 +100,34 @@ pub(crate) fn evaluate_batch(
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> BatchEvaluationReport {
-    evaluate_batch_with_prior(controls, &BTreeMap::new(), budget, cancellation)
+    evaluate_batch_with_prior_and_control_dispositions(
+        controls,
+        &BTreeMap::new(),
+        BTreeMap::new(),
+        budget,
+        cancellation,
+    )
 }
 
 pub(crate) fn evaluate_batch_with_prior(
     controls: impl IntoIterator<Item = BatchControl>,
     additional_prior: &BTreeMap<EventId, BTreeMap<ChangeHash, PriorChangeKnowledge>>,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> BatchEvaluationReport {
+    evaluate_batch_with_prior_and_control_dispositions(
+        controls,
+        additional_prior,
+        BTreeMap::new(),
+        budget,
+        cancellation,
+    )
+}
+
+pub(crate) fn evaluate_batch_with_prior_and_control_dispositions(
+    controls: impl IntoIterator<Item = BatchControl>,
+    additional_prior: &BTreeMap<EventId, BTreeMap<ChangeHash, PriorChangeKnowledge>>,
+    initial_control_dispositions: BTreeMap<EventId, ProtocolDisposition>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> BatchEvaluationReport {
@@ -121,95 +144,70 @@ pub(crate) fn evaluate_batch_with_prior(
         }
         collected.push(control);
     }
-    let initial = match prepare_initial_maps_metered(collected, |counter| {
-        charge_prior_knowledge_item(counter, budget, cancellation)
-    }) {
-        Ok(initial) => initial,
-        Err(InitialMapBuildError::Work(completion)) => {
-            return no_progress_batch_report(completion);
-        }
-        Err(InitialMapBuildError::Invariant) => {
-            return failed_batch_report(EvaluationFailure::InvariantViolation);
-        }
-    };
+    let initial =
+        match prepare_initial_maps_metered(collected, initial_control_dispositions, |counter| {
+            charge_prior_knowledge_item(counter, budget, cancellation)
+        }) {
+            Ok(initial) => initial,
+            Err(InitialMapBuildError::Work(completion)) => {
+                return no_progress_batch_report(completion);
+            }
+            Err(InitialMapBuildError::Invariant) => {
+                return failed_batch_report(EvaluationFailure::InvariantViolation);
+            }
+        };
     let InitialBatchMaps {
         controls,
+        root_controls,
         children_by_parent: by_parent,
-        mut control_dispositions,
+        control_dispositions,
         change_dispositions: mut dispositions,
     } = initial;
-    let mut canonical_controls = Vec::new();
-    let mut integrity_alerts = Vec::new();
-    let mut completion = Completion::Complete;
-    let mut failure = None;
-    let mut accepted_changes = BTreeSet::new();
-    let mut accepted_at_control = BTreeMap::new();
-    let mut statefully_valid_controls = BTreeSet::new();
-    let mut branch_states = BTreeMap::new();
-    let mut branch_change_dispositions = BTreeMap::new();
-    match evaluate_branch_table(
+    let mut table = match evaluate_branch_table(
         &controls,
+        &root_controls,
         &by_parent,
         additional_prior,
         &dispositions,
+        control_dispositions,
         budget,
         cancellation,
     ) {
-        Ok(table) => {
-            branch_states = table.states.clone();
-            statefully_valid_controls = table.valid.keys().copied().collect();
-            accepted_at_control = table
-                .valid
-                .iter()
-                .map(|(event_id, branch)| {
-                    (*event_id, AcceptedAtControl::from_result(&branch.epoch))
-                })
-                .collect();
-            branch_change_dispositions = table
-                .valid
-                .iter()
-                .map(|(event_id, branch)| (*event_id, branch.change_dispositions.clone()))
-                .collect();
-            for (event_id, state) in &branch_states {
-                control_dispositions.insert(*event_id, state.final_disposition(false));
-            }
-            match derive_canonical_branch(
-                &controls,
-                &by_parent,
-                &table,
-                &dispositions,
-                budget,
-                cancellation,
-            ) {
-                Ok(canonical) => {
-                    canonical_controls = canonical.controls;
-                    dispositions = canonical.change_dispositions;
-                    accepted_changes = canonical.accepted_changes;
-                    integrity_alerts = canonical.integrity_alerts;
-                    for selected in &canonical_controls {
-                        control_dispositions.insert(*selected, ProtocolDisposition::Accepted);
-                    }
-                }
-                Err(CanonicalBranchError::Stop(stop)) => completion = stop,
-                Err(CanonicalBranchError::Invariant) => {
-                    failure = Some(EvaluationFailure::InvariantViolation);
-                }
-            }
-        }
-        Err(BranchTableError::Stop(stop)) => {
-            completion = stop;
-        }
+        Ok(table) => table,
+        Err(BranchTableError::Stop(stop)) => return no_progress_batch_report(stop),
         Err(BranchTableError::Invariant) => {
-            failure = Some(EvaluationFailure::InvariantViolation);
+            return failed_batch_report(EvaluationFailure::InvariantViolation);
         }
-    }
-
-    if let Some(failure) = failure {
-        return failed_batch_report(failure);
-    }
-    if completion != Completion::Complete {
-        return no_progress_batch_report(completion);
-    }
+    };
+    let canonical = match derive_canonical_branch(
+        &controls,
+        &root_controls,
+        &by_parent,
+        &mut table,
+        &dispositions,
+        |counter| charge_prior_knowledge_item(counter, budget, cancellation),
+    ) {
+        Ok(canonical) => canonical,
+        Err(CanonicalBranchError::Work(stop)) => return no_progress_batch_report(stop),
+        Err(CanonicalBranchError::Invariant) => {
+            return failed_batch_report(EvaluationFailure::InvariantViolation);
+        }
+    };
+    let BranchTableEvaluation {
+        states: branch_states,
+        valid: _,
+        control_dispositions,
+        accepted_at_control,
+        statefully_valid_controls,
+        branch_change_dispositions,
+    } = table;
+    let CanonicalBranchEvaluation {
+        controls: canonical_controls,
+        change_dispositions,
+        accepted_changes,
+        integrity_alerts,
+    } = canonical;
+    dispositions = change_dispositions;
 
     let candidates = controls
         .values()
@@ -281,13 +279,14 @@ pub(crate) fn evaluate_batch_with_prior(
         heads,
         materialized_document,
         integrity_alerts,
-        completion,
+        completion: Completion::Complete,
         failure: None,
     }
 }
 
 fn prepare_initial_maps_metered<E>(
     collected: Vec<BatchControl>,
+    mut control_dispositions: BTreeMap<EventId, ProtocolDisposition>,
     mut visit: impl FnMut(WorkCounter) -> Result<(), E>,
 ) -> Result<InitialBatchMaps, InitialMapBuildError<E>> {
     let control_count = collected.len();
@@ -301,20 +300,24 @@ fn prepare_initial_maps_metered<E>(
         controls.insert(control.event_id, control);
     }
 
-    let mut children_by_parent = BTreeMap::<Option<EventId>, BTreeSet<EventId>>::new();
+    let mut root_controls = BTreeSet::new();
+    let mut children_by_parent = BTreeMap::<EventId, BTreeSet<EventId>>::new();
     let mut parent_items = controls.values();
     for _ in 0..controls.len() {
         visit(WorkCounter::Control).map_err(InitialMapBuildError::Work)?;
         let Some(control) = parent_items.next() else {
             return Err(InitialMapBuildError::Invariant);
         };
-        children_by_parent
-            .entry(control.parent)
-            .or_default()
-            .insert(control.event_id);
+        if let Some(parent) = control.parent {
+            children_by_parent
+                .entry(parent)
+                .or_default()
+                .insert(control.event_id);
+        } else {
+            root_controls.insert(control.event_id);
+        }
     }
 
-    let mut control_dispositions = BTreeMap::new();
     let mut control_ids = controls.keys();
     for _ in 0..controls.len() {
         visit(WorkCounter::Control).map_err(InitialMapBuildError::Work)?;
@@ -343,6 +346,7 @@ fn prepare_initial_maps_metered<E>(
 
     Ok(InitialBatchMaps {
         controls,
+        root_controls,
         children_by_parent,
         control_dispositions,
         change_dispositions,
@@ -378,6 +382,11 @@ struct ValidBranchEvaluation {
 struct BranchTableEvaluation {
     states: BTreeMap<EventId, BranchEvaluationState>,
     valid: BTreeMap<EventId, ValidBranchEvaluation>,
+    control_dispositions: BTreeMap<EventId, ProtocolDisposition>,
+    accepted_at_control: BTreeMap<EventId, AcceptedAtControl>,
+    statefully_valid_controls: BTreeSet<EventId>,
+    branch_change_dispositions:
+        BTreeMap<EventId, PersistentDeltaMap<ChangeHash, ProtocolDisposition>>,
 }
 
 struct CanonicalBranchEvaluation {
@@ -438,38 +447,53 @@ impl BatchChangeMemo {
     }
 }
 
-fn derive_canonical_branch(
+fn derive_canonical_branch<E>(
     controls: &BTreeMap<EventId, BatchControl>,
-    children_by_parent: &BTreeMap<Option<EventId>, BTreeSet<EventId>>,
-    table: &BranchTableEvaluation,
+    root_controls: &BTreeSet<EventId>,
+    children_by_parent: &BTreeMap<EventId, BTreeSet<EventId>>,
+    table: &mut BranchTableEvaluation,
     preliminary_change_dispositions: &BTreeMap<ChangeHash, ProtocolDisposition>,
-    budget: &mut WorkBudget,
-    cancellation: &impl CancellationCheck,
-) -> Result<CanonicalBranchEvaluation, CanonicalBranchError> {
+    mut visit: impl FnMut(WorkCounter) -> Result<(), E>,
+) -> Result<CanonicalBranchEvaluation, CanonicalBranchError<E>> {
     let mut change_dispositions = BTreeMap::new();
-    for (hash, disposition) in preliminary_change_dispositions {
-        charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)
-            .map_err(CanonicalBranchError::Stop)?;
+    let mut preliminary_items = preliminary_change_dispositions.iter();
+    for _ in 0..preliminary_change_dispositions.len() {
+        visit(WorkCounter::GraphNode).map_err(CanonicalBranchError::Work)?;
+        let Some((hash, disposition)) = preliminary_items.next() else {
+            return Err(CanonicalBranchError::Invariant);
+        };
         change_dispositions.insert(*hash, *disposition);
     }
     let mut canonical_controls = Vec::new();
     let mut canonical_control_ids = BTreeSet::new();
-    let mut accepted_changes = BTreeSet::new();
     let mut integrity_alerts = Vec::new();
     let mut seen_alerts = BTreeSet::new();
     let mut parent_id = None;
-    while let Some(children) = children_by_parent.get(&parent_id) {
+    let mut children = root_controls;
+    let mut final_accepted = None;
+    loop {
         let mut valid_children = Vec::new();
-        for event_id in children {
-            charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)
-                .map_err(CanonicalBranchError::Stop)?;
+        let mut child_items = children.iter();
+        for _ in 0..children.len() {
+            visit(WorkCounter::Control).map_err(CanonicalBranchError::Work)?;
+            let Some(event_id) = child_items.next() else {
+                return Err(CanonicalBranchError::Invariant);
+            };
             if table.states.get(event_id) == Some(&BranchEvaluationState::Valid) {
                 valid_children.push(*event_id);
             }
         }
+        visit(WorkCounter::Control).map_err(CanonicalBranchError::Work)?;
         let Some(selected) = valid_children.first().copied() else {
             break;
         };
+        if table
+            .control_dispositions
+            .insert(selected, ProtocolDisposition::Accepted)
+            .is_none()
+        {
+            return Err(CanonicalBranchError::Invariant);
+        }
         let branch = table
             .valid
             .get(&selected)
@@ -479,6 +503,7 @@ fn derive_canonical_branch(
             .ok_or(CanonicalBranchError::Invariant)?;
         canonical_controls.push(selected);
         canonical_control_ids.insert(selected);
+        final_accepted = Some(branch.epoch.accepted_state().accepted_closure_handle());
         if valid_children.len() > 1 {
             let alert = IntegrityAlert::ControllerEquivocation(
                 ControllerEquivocationAlert::from_validated_parts(
@@ -490,20 +515,22 @@ fn derive_canonical_branch(
             seen_alerts.insert(alert.clone());
             integrity_alerts.push(alert);
         }
-        for (hash, disposition) in branch.epoch.dispositions() {
-            charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)
-                .map_err(CanonicalBranchError::Stop)?;
+        let dispositions = branch.epoch.dispositions();
+        let mut disposition_items = dispositions.iter();
+        for _ in 0..dispositions.len() {
+            visit(WorkCounter::GraphNode).map_err(CanonicalBranchError::Work)?;
+            let Some((hash, disposition)) = disposition_items.next() else {
+                return Err(CanonicalBranchError::Invariant);
+            };
             change_dispositions.insert(*hash, *disposition);
         }
-        accepted_changes.clear();
-        for hash in branch.epoch.accepted_state().accepted_closure() {
-            charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)
-                .map_err(CanonicalBranchError::Stop)?;
-            accepted_changes.insert(*hash);
-        }
-        for alert in branch.epoch.integrity_alerts() {
-            charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)
-                .map_err(CanonicalBranchError::Stop)?;
+        let alerts = branch.epoch.integrity_alerts();
+        let mut alert_items = alerts.iter();
+        for _ in 0..alerts.len() {
+            visit(WorkCounter::Control).map_err(CanonicalBranchError::Work)?;
+            let Some(alert) = alert_items.next() else {
+                return Err(CanonicalBranchError::Invariant);
+            };
             if seen_alerts.insert(alert.clone()) {
                 integrity_alerts.push(alert.clone());
             }
@@ -512,24 +539,51 @@ fn derive_canonical_branch(
             break;
         }
         parent_id = Some(selected);
+        visit(WorkCounter::Control).map_err(CanonicalBranchError::Work)?;
+        let Some(next_children) = children_by_parent.get(&selected) else {
+            break;
+        };
+        children = next_children;
     }
-    for (control_id, branch) in &table.valid {
-        charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)
-            .map_err(CanonicalBranchError::Stop)?;
+    let mut valid_items = table.valid.iter();
+    for _ in 0..table.valid.len() {
+        visit(WorkCounter::Control).map_err(CanonicalBranchError::Work)?;
+        let Some((control_id, branch)) = valid_items.next() else {
+            return Err(CanonicalBranchError::Invariant);
+        };
         if canonical_control_ids.contains(control_id) {
             continue;
         }
-        for alert in branch.epoch.integrity_alerts() {
-            charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)
-                .map_err(CanonicalBranchError::Stop)?;
+        let alerts = branch.epoch.integrity_alerts();
+        let mut alert_items = alerts.iter();
+        for _ in 0..alerts.len() {
+            visit(WorkCounter::Control).map_err(CanonicalBranchError::Work)?;
+            let Some(alert) = alert_items.next() else {
+                return Err(CanonicalBranchError::Invariant);
+            };
             if seen_alerts.insert(alert.clone()) {
                 integrity_alerts.push(alert.clone());
             }
         }
     }
-    for (hash, disposition) in &mut change_dispositions {
-        charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)
-            .map_err(CanonicalBranchError::Stop)?;
+    let mut accepted_changes = BTreeSet::new();
+    if let Some(accepted) = final_accepted {
+        let mut accepted_items = accepted.iter();
+        for _ in 0..accepted.len() {
+            visit(WorkCounter::GraphNode).map_err(CanonicalBranchError::Work)?;
+            let Some(hash) = accepted_items.next() else {
+                return Err(CanonicalBranchError::Invariant);
+            };
+            accepted_changes.insert(*hash);
+        }
+    }
+    let disposition_count = change_dispositions.len();
+    let mut disposition_items = change_dispositions.iter_mut();
+    for _ in 0..disposition_count {
+        visit(WorkCounter::GraphNode).map_err(CanonicalBranchError::Work)?;
+        let Some((hash, disposition)) = disposition_items.next() else {
+            return Err(CanonicalBranchError::Invariant);
+        };
         if accepted_changes.contains(hash) {
             *disposition = ProtocolDisposition::Accepted;
         } else if *disposition == ProtocolDisposition::Accepted {
@@ -544,8 +598,9 @@ fn derive_canonical_branch(
     })
 }
 
-enum CanonicalBranchError {
-    Stop(Completion),
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum CanonicalBranchError<E> {
+    Work(E),
     Invariant,
 }
 
@@ -660,46 +715,124 @@ fn extend_branch_dispositions_metered<E>(
         .map_err(BranchDeltaError::Work)
 }
 
+fn insert_branch_state_metered<E>(
+    states: &mut BTreeMap<EventId, BranchEvaluationState>,
+    control_dispositions: &mut BTreeMap<EventId, ProtocolDisposition>,
+    event_id: EventId,
+    state: BranchEvaluationState,
+    mut visit: impl FnMut(WorkCounter) -> Result<(), E>,
+) -> Result<(), BranchDeltaError<E>> {
+    visit(WorkCounter::Control).map_err(BranchDeltaError::Work)?;
+    if states.insert(event_id, state).is_some()
+        || control_dispositions
+            .insert(event_id, state.final_disposition(false))
+            .is_none()
+    {
+        return Err(BranchDeltaError::Invariant);
+    }
+    Ok(())
+}
+
+fn insert_valid_branch_metered<E>(
+    table: &mut BranchTableEvaluation,
+    event_id: EventId,
+    branch: ValidBranchEvaluation,
+    mut visit: impl FnMut(WorkCounter) -> Result<(), E>,
+) -> Result<(), BranchDeltaError<E>> {
+    visit(WorkCounter::Control).map_err(BranchDeltaError::Work)?;
+    let accepted_projection = AcceptedAtControl::from_result(&branch.epoch);
+    let branch_change_dispositions = branch.change_dispositions.clone();
+    if table
+        .states
+        .insert(event_id, BranchEvaluationState::Valid)
+        .is_some()
+        || table
+            .control_dispositions
+            .insert(event_id, ProtocolDisposition::Excluded)
+            .is_none()
+        || !table.statefully_valid_controls.insert(event_id)
+        || table
+            .accepted_at_control
+            .insert(event_id, accepted_projection)
+            .is_some()
+        || table
+            .branch_change_dispositions
+            .insert(event_id, branch_change_dispositions)
+            .is_some()
+        || table.valid.insert(event_id, branch).is_some()
+    {
+        return Err(BranchDeltaError::Invariant);
+    }
+    Ok(())
+}
+
 fn evaluate_branch_table(
     controls: &BTreeMap<EventId, BatchControl>,
-    children_by_parent: &BTreeMap<Option<EventId>, BTreeSet<EventId>>,
+    root_controls: &BTreeSet<EventId>,
+    children_by_parent: &BTreeMap<EventId, BTreeSet<EventId>>,
     additional_prior: &BTreeMap<EventId, BTreeMap<ChangeHash, PriorChangeKnowledge>>,
     preliminary_change_dispositions: &BTreeMap<ChangeHash, ProtocolDisposition>,
+    control_dispositions: BTreeMap<EventId, ProtocolDisposition>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<BranchTableEvaluation, BranchTableError> {
-    let mut table = BranchTableEvaluation::default();
+    let mut table = BranchTableEvaluation {
+        control_dispositions,
+        ..BranchTableEvaluation::default()
+    };
     let change_memo = BatchChangeMemo::derive(controls, budget, cancellation)?;
     let mut accepted_state_cache = BTreeMap::new();
     let mut ready = BTreeSet::new();
-    if let Some(children) = children_by_parent.get(&None) {
-        for child in children {
-            charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)?;
-            ready.insert(*child);
-        }
+    let mut root_items = root_controls.iter();
+    for _ in 0..root_controls.len() {
+        charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)?;
+        let Some(root) = root_items.next() else {
+            return Err(BranchTableError::Invariant);
+        };
+        ready.insert(*root);
     }
-    while let Some(event_id) = ready.pop_first() {
-        if cancellation.is_cancelled() {
-            return Err(Completion::Cancelled.into());
-        }
+    loop {
+        charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)?;
+        let Some(event_id) = ready.pop_first() else {
+            break;
+        };
         charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)?;
         let Some(control) = controls.get(&event_id) else {
-            table
-                .states
-                .insert(event_id, BranchEvaluationState::Invalid);
+            insert_branch_state_metered(
+                &mut table.states,
+                &mut table.control_dispositions,
+                event_id,
+                BranchEvaluationState::Invalid,
+                |counter| charge_prior_knowledge_item(counter, budget, cancellation),
+            )
+            .map_err(branch_delta_error)?;
             continue;
         };
-        let parent_branch = control.parent.and_then(|parent| table.valid.get(&parent));
-        let inherited = control
-            .parent
-            .and_then(|parent| table.states.get(&parent))
-            .and_then(|state| match state {
+        let parent_branch = if let Some(parent) = control.parent {
+            charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)?;
+            table.valid.get(&parent)
+        } else {
+            None
+        };
+        let inherited = if let Some(parent) = control.parent {
+            charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)?;
+            table.states.get(&parent).and_then(|state| match state {
                 BranchEvaluationState::Pending => Some(BranchEvaluationState::Pending),
                 BranchEvaluationState::Invalid => Some(BranchEvaluationState::Invalid),
                 BranchEvaluationState::Valid => None,
-            });
+            })
+        } else {
+            None
+        };
         let validated_base = if let Some(state) = inherited {
-            table.states.insert(event_id, state);
+            insert_branch_state_metered(
+                &mut table.states,
+                &mut table.control_dispositions,
+                event_id,
+                state,
+                |counter| charge_prior_knowledge_item(counter, budget, cancellation),
+            )
+            .map_err(branch_delta_error)?;
             None
         } else if let (Some(parent), Some(branch), Some(child)) = (
             control
@@ -740,15 +873,25 @@ fn evaluate_branch_table(
                     .accepted,
                 ),
                 CandidateResult::Pending(_) => {
-                    table
-                        .states
-                        .insert(event_id, BranchEvaluationState::Pending);
+                    insert_branch_state_metered(
+                        &mut table.states,
+                        &mut table.control_dispositions,
+                        event_id,
+                        BranchEvaluationState::Pending,
+                        |counter| charge_prior_knowledge_item(counter, budget, cancellation),
+                    )
+                    .map_err(branch_delta_error)?;
                     None
                 }
                 CandidateResult::Invalid(_) => {
-                    table
-                        .states
-                        .insert(event_id, BranchEvaluationState::Invalid);
+                    insert_branch_state_metered(
+                        &mut table.states,
+                        &mut table.control_dispositions,
+                        event_id,
+                        BranchEvaluationState::Invalid,
+                        |counter| charge_prior_knowledge_item(counter, budget, cancellation),
+                    )
+                    .map_err(branch_delta_error)?;
                     None
                 }
             }
@@ -769,9 +912,14 @@ fn evaluate_branch_table(
                 .map_err(branch_delta_error)?,
             )
         } else {
-            table
-                .states
-                .insert(event_id, BranchEvaluationState::Invalid);
+            insert_branch_state_metered(
+                &mut table.states,
+                &mut table.control_dispositions,
+                event_id,
+                BranchEvaluationState::Invalid,
+                |counter| charge_prior_knowledge_item(counter, budget, cancellation),
+            )
+            .map_err(branch_delta_error)?;
             None
         };
 
@@ -786,9 +934,14 @@ fn evaluate_branch_table(
                 cancellation,
             )?
             else {
-                table
-                    .states
-                    .insert(event_id, BranchEvaluationState::Invalid);
+                insert_branch_state_metered(
+                    &mut table.states,
+                    &mut table.control_dispositions,
+                    event_id,
+                    BranchEvaluationState::Invalid,
+                    |counter| charge_prior_knowledge_item(counter, budget, cancellation),
+                )
+                .map_err(branch_delta_error)?;
                 enqueue_children(
                     event_id,
                     children_by_parent,
@@ -822,9 +975,14 @@ fn evaluate_branch_table(
                 .unwrap_or_default();
             let ancestry = if let Some(envelope) = control.envelope.as_ref() {
                 let Ok(ancestry) = parent_ancestry.push_checked(envelope.clone()) else {
-                    table
-                        .states
-                        .insert(event_id, BranchEvaluationState::Invalid);
+                    insert_branch_state_metered(
+                        &mut table.states,
+                        &mut table.control_dispositions,
+                        event_id,
+                        BranchEvaluationState::Invalid,
+                        |counter| charge_prior_knowledge_item(counter, budget, cancellation),
+                    )
+                    .map_err(branch_delta_error)?;
                     enqueue_children(
                         event_id,
                         children_by_parent,
@@ -861,8 +1019,8 @@ fn evaluate_branch_table(
                         |counter| charge_prior_knowledge_item(counter, budget, cancellation),
                     )
                     .map_err(branch_delta_error)?;
-                    table.states.insert(event_id, BranchEvaluationState::Valid);
-                    table.valid.insert(
+                    insert_valid_branch_metered(
+                        &mut table,
                         event_id,
                         ValidBranchEvaluation {
                             epoch,
@@ -871,7 +1029,9 @@ fn evaluate_branch_table(
                             ancestry,
                             prior_knowledge: retained_knowledge,
                         },
-                    );
+                        |counter| charge_prior_knowledge_item(counter, budget, cancellation),
+                    )
+                    .map_err(branch_delta_error)?;
                 }
                 Err(EpochResolutionError::Schedule(ScheduleError::BudgetExhausted)) => {
                     return Err(Completion::BudgetExhausted.into());
@@ -880,9 +1040,14 @@ fn evaluate_branch_table(
                     return Err(Completion::Cancelled.into());
                 }
                 Err(EpochResolutionError::InvalidState) => {
-                    table
-                        .states
-                        .insert(event_id, BranchEvaluationState::Invalid);
+                    insert_branch_state_metered(
+                        &mut table.states,
+                        &mut table.control_dispositions,
+                        event_id,
+                        BranchEvaluationState::Invalid,
+                        |counter| charge_prior_knowledge_item(counter, budget, cancellation),
+                    )
+                    .map_err(branch_delta_error)?;
                 }
             }
         }
@@ -899,14 +1064,19 @@ fn evaluate_branch_table(
 
 fn enqueue_children(
     parent: EventId,
-    children_by_parent: &BTreeMap<Option<EventId>, BTreeSet<EventId>>,
+    children_by_parent: &BTreeMap<EventId, BTreeSet<EventId>>,
     ready: &mut BTreeSet<EventId>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
-) -> Result<(), Completion> {
-    if let Some(children) = children_by_parent.get(&Some(parent)) {
-        for child in children {
+) -> Result<(), BranchTableError> {
+    charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)?;
+    if let Some(children) = children_by_parent.get(&parent) {
+        let mut child_items = children.iter();
+        for _ in 0..children.len() {
             charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)?;
+            let Some(child) = child_items.next() else {
+                return Err(BranchTableError::Invariant);
+            };
             ready.insert(*child);
         }
     }
@@ -1447,13 +1617,32 @@ mod tests {
 
     use super::{
         AcceptedAtControl, BatchChange, BatchChangeMemo, BatchControl, BatchEvaluationReport,
-        BranchDeltaError, BranchEvaluationState, InitialMapBuildError, PersistentDeltaMap,
-        PriorChangeKnowledge, PriorKnowledgeState, accepted_state_for_closure,
-        charge_prior_knowledge_item, clone_hash_set_metered, empty_batch_report, evaluate_batch,
+        BranchDeltaError, BranchEvaluationState, BranchTableEvaluation, InitialMapBuildError,
+        PersistentDeltaMap, PriorChangeKnowledge, PriorKnowledgeState, ValidBranchEvaluation,
+        accepted_state_for_closure, charge_prior_knowledge_item, clone_hash_set_metered,
+        derive_canonical_branch, empty_batch_report, evaluate_batch,
         extend_branch_dispositions_metered, extend_prior_knowledge_metered,
-        prepare_initial_maps_metered, prior_change_knowledge,
-        propagate_control_parent_dispositions,
+        insert_branch_state_metered, insert_valid_branch_metered, prepare_initial_maps_metered,
+        prior_change_knowledge, propagate_control_parent_dispositions,
     };
+
+    fn empty_valid_branch() -> ValidBranchEvaluation {
+        ValidBranchEvaluation {
+            epoch: super::EpochEvaluationResult::new(
+                BTreeSet::new(),
+                BTreeSet::new(),
+                BTreeMap::new(),
+                BTreeMap::new(),
+                Vec::new(),
+                None,
+            )
+            .unwrap_or_else(|_| unreachable!("empty epoch result is valid")),
+            change_dispositions: PersistentDeltaMap::default(),
+            validated_base: BTreeSet::new(),
+            ancestry: super::ControlAncestry::default(),
+            prior_knowledge: PriorKnowledgeState::default(),
+        }
+    }
 
     #[test]
     fn referenced_disposition_lookup_exposes_every_persistent_node() {
@@ -1788,12 +1977,106 @@ mod tests {
     }
 
     #[test]
+    fn canonical_branch_projection_charges_before_every_owned_operation() {
+        let first = EventId::from_bytes([1; 32]);
+        let second = EventId::from_bytes([2; 32]);
+        let hash = ChangeHash::from_bytes([3; 32]);
+        let fixture = || {
+            let controls = BTreeMap::from([
+                (first, control(1, None, Vec::new())),
+                (second, control(2, None, Vec::new())),
+            ]);
+            let roots = BTreeSet::from([first, second]);
+            let children = BTreeMap::new();
+            let table = BranchTableEvaluation {
+                states: BTreeMap::from([
+                    (first, BranchEvaluationState::Valid),
+                    (second, BranchEvaluationState::Valid),
+                ]),
+                valid: BTreeMap::from([
+                    (first, empty_valid_branch()),
+                    (second, empty_valid_branch()),
+                ]),
+                control_dispositions: BTreeMap::from([
+                    (first, ProtocolDisposition::Excluded),
+                    (second, ProtocolDisposition::Excluded),
+                ]),
+                ..BranchTableEvaluation::default()
+            };
+            let dispositions = BTreeMap::from([(hash, ProtocolDisposition::Accepted)]);
+            (controls, roots, children, table, dispositions)
+        };
+        let (controls, roots, children, mut table, dispositions) = fixture();
+        let observed = Cell::new(0_usize);
+        let ample = derive_canonical_branch(
+            &controls,
+            &roots,
+            &children,
+            &mut table,
+            &dispositions,
+            |_| {
+                observed.set(observed.get() + 1);
+                Ok::<(), Completion>(())
+            },
+        )
+        .unwrap_or_else(|_| unreachable!("ample projection"));
+        let exact = observed.get();
+        assert_eq!(ample.controls, vec![first]);
+        assert_eq!(
+            ample.change_dispositions.get(&hash),
+            Some(&ProtocolDisposition::Excluded)
+        );
+        assert_eq!(ample.integrity_alerts.len(), 1);
+        assert_eq!(
+            table.control_dispositions.get(&first),
+            Some(&ProtocolDisposition::Accepted)
+        );
+
+        for stop in [Completion::BudgetExhausted, Completion::Cancelled] {
+            for capacity in 0..=exact + 1 {
+                let (controls, roots, children, mut table, dispositions) = fixture();
+                let observed = Cell::new(0_usize);
+                let result = derive_canonical_branch(
+                    &controls,
+                    &roots,
+                    &children,
+                    &mut table,
+                    &dispositions,
+                    |_| {
+                        if observed.get() == capacity {
+                            return Err(stop);
+                        }
+                        observed.set(observed.get() + 1);
+                        Ok(())
+                    },
+                );
+                if capacity < exact {
+                    assert!(
+                        matches!(result, Err(super::CanonicalBranchError::Work(value)) if value == stop)
+                    );
+                    assert_eq!(observed.get(), capacity);
+                } else {
+                    assert!(result.is_ok());
+                    assert_eq!(observed.get(), exact);
+                }
+            }
+        }
+    }
+
+    #[test]
     fn initial_evaluator_maps_charge_before_every_item() {
         let controls = || {
             vec![
                 control(1, None, vec![change(11, 1, 1)]),
                 control(2, Some(1), vec![change(12, 2, 1)]),
             ]
+        };
+        let retained = EventId::from_bytes([99; 32]);
+        let initial_dispositions = || {
+            BTreeMap::from([
+                (EventId::from_bytes([1; 32]), ProtocolDisposition::Accepted),
+                (retained, ProtocolDisposition::Invalid),
+            ])
         };
         let expected = [
             WorkCounter::Control,
@@ -1812,14 +2095,15 @@ mod tests {
             for capacity in 0..=expected.len() + 1 {
                 let observed = Cell::new(0_usize);
                 let mut counters = Vec::new();
-                let result = prepare_initial_maps_metered(controls(), |counter| {
-                    if observed.get() == capacity {
-                        return Err(stop);
-                    }
-                    counters.push(counter);
-                    observed.set(observed.get() + 1);
-                    Ok(())
-                });
+                let result =
+                    prepare_initial_maps_metered(controls(), initial_dispositions(), |counter| {
+                        if observed.get() == capacity {
+                            return Err(stop);
+                        }
+                        counters.push(counter);
+                        observed.set(observed.get() + 1);
+                        Ok(())
+                    });
                 if capacity < expected.len() {
                     assert!(
                         matches!(result, Err(InitialMapBuildError::Work(value)) if value == stop)
@@ -1832,10 +2116,73 @@ mod tests {
                         assert_eq!(observed.get(), expected.len());
                         assert_eq!(counters, expected);
                         assert_eq!(maps.controls.len(), 2);
-                        assert_eq!(maps.children_by_parent.len(), 2);
-                        assert_eq!(maps.control_dispositions.len(), 2);
+                        assert_eq!(maps.root_controls.len(), 1);
+                        assert_eq!(maps.children_by_parent.len(), 1);
+                        assert_eq!(maps.control_dispositions.len(), 3);
+                        assert_eq!(
+                            maps.control_dispositions.get(&EventId::from_bytes([1; 32])),
+                            Some(&ProtocolDisposition::Excluded)
+                        );
+                        assert_eq!(
+                            maps.control_dispositions.get(&retained),
+                            Some(&ProtocolDisposition::Invalid)
+                        );
                         assert_eq!(maps.change_dispositions.len(), 2);
                     }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn branch_table_publication_charges_before_each_insert() {
+        let event_id = EventId::from_bytes([19; 32]);
+        for stop in [Completion::BudgetExhausted, Completion::Cancelled] {
+            let table = || BranchTableEvaluation {
+                control_dispositions: BTreeMap::from([(event_id, ProtocolDisposition::Excluded)]),
+                ..BranchTableEvaluation::default()
+            };
+            let mut stopped = table();
+            assert_eq!(
+                insert_branch_state_metered(
+                    &mut stopped.states,
+                    &mut stopped.control_dispositions,
+                    event_id,
+                    BranchEvaluationState::Invalid,
+                    |_| Err(stop),
+                ),
+                Err(BranchDeltaError::Work(stop))
+            );
+            assert!(stopped.states.is_empty());
+            assert_eq!(
+                stopped.control_dispositions.get(&event_id),
+                Some(&ProtocolDisposition::Excluded)
+            );
+
+            for capacity in 0..=2 {
+                let mut table = table();
+                let observed = Cell::new(0_usize);
+                let result =
+                    insert_valid_branch_metered(&mut table, event_id, empty_valid_branch(), |_| {
+                        if observed.get() == capacity {
+                            return Err(stop);
+                        }
+                        observed.set(observed.get() + 1);
+                        Ok(())
+                    });
+                if capacity < 1 {
+                    assert_eq!(result, Err(BranchDeltaError::Work(stop)));
+                    assert_eq!(observed.get(), capacity);
+                    assert!(table.states.is_empty());
+                    assert!(table.valid.is_empty());
+                } else {
+                    assert_eq!(result, Ok(()));
+                    assert_eq!(observed.get(), 1);
+                    assert_eq!(table.states.len(), 1);
+                    assert_eq!(table.valid.len(), 1);
+                    assert_eq!(table.accepted_at_control.len(), 1);
+                    assert_eq!(table.statefully_valid_controls.len(), 1);
+                    assert_eq!(table.branch_change_dispositions.len(), 1);
                 }
             }
         }

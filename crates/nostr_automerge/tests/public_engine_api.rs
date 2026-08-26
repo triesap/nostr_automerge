@@ -3948,8 +3948,8 @@ fn prior_knowledge_exhaustion_is_deterministic_at_every_item_boundary() {
         .and_then(|(_, source)| source.split_once("enum ChangeClaimReason"))
         .map(|(source, _)| source)
         .unwrap_or_default();
-    assert!(prior.contains("Completion"));
-    assert!(prior.contains("Result<"));
+    assert!(prior.contains("AdditionalPriorKnowledgeError::Stopped"));
+    assert!(prior.contains("AdditionalPriorKnowledgeError::Invariant"));
 }
 
 struct PersistentIntegrationScenario {

@@ -92,3 +92,13 @@ reads, membership lookups, clones, and target insertions into immediate charged
 operations. Inherited prior knowledge is explicitly shared through its
 immutable persistent tail, so it remains a constant-time clone rather than a
 hidden target-sized copy.
+
+At `step_1329`, each charged branch-table publication atomically owns its state,
+accepted-at-control, local-disposition, and result-map entries. Preliminary
+control dispositions move into initial batch construction, and canonical
+selection updates the same owned result map, so no target-sized late overlay or
+projection remains. Exact budget and cancellation matrices cover every helper
+boundary; the checked input-order fixture bytes stay unchanged while its
+permutation maximum records the newly visible work. The remaining open resource
+reproduction is anchored only to candidate, raw-change, and head projections
+assigned to the following checkpoints.

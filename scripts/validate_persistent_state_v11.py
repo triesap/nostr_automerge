@@ -235,7 +235,8 @@ def validate_sources(sources: dict[str, str]) -> None:
             "controls.insert(control.event_id, control);",
             "let mut parent_items = controls.values();",
             "parent_items.next()",
-            ".entry(control.parent)",
+            ".entry(parent)",
+            "root_controls.insert(control.event_id);",
             "let mut control_ids = controls.keys();",
             "control_ids.next()",
             "control_dispositions.insert(*event_id, ProtocolDisposition::Excluded);",
@@ -310,6 +311,106 @@ def validate_sources(sources: dict[str, str]) -> None:
     require(branch_extension.count(".get_metered(") == 3, "evaluate:branch_duplicate_checks")
     require(evaluate.count("extend_prior_knowledge_metered(") == 2, "evaluate:prior_route")
     require(evaluate.count("extend_branch_dispositions_metered(") == 2, "evaluate:branch_route")
+    branch_publication = section(
+        evaluate,
+        "fn insert_branch_state_metered<E>(",
+        "\n}\n\nfn evaluate_branch_table(",
+        "evaluate:branch_publication",
+    )
+    require(
+        branch_publication.count("visit(WorkCounter::Control).map_err(BranchDeltaError::Work)?;") == 2,
+        "evaluate:branch_publication:charges",
+    )
+    require_order(
+        branch_publication,
+        (
+            "visit(WorkCounter::Control).map_err(BranchDeltaError::Work)?;",
+            "states.insert(event_id, state)",
+            "control_dispositions\n            .insert(event_id, state.final_disposition(false))",
+            "visit(WorkCounter::Control).map_err(BranchDeltaError::Work)?;",
+            "let accepted_projection = AcceptedAtControl::from_result(&branch.epoch);",
+            "let branch_change_dispositions = branch.change_dispositions.clone();",
+            "table\n        .states\n        .insert(event_id, BranchEvaluationState::Valid)",
+            "table.statefully_valid_controls.insert(event_id)",
+            "table\n            .accepted_at_control\n            .insert(event_id, accepted_projection)",
+            "table\n            .branch_change_dispositions\n            .insert(event_id, branch_change_dispositions)",
+            "table.valid.insert(event_id, branch)",
+        ),
+        "evaluate:branch_publication",
+    )
+    result_ownership = section(
+        evaluate,
+        "pub(crate) fn evaluate_batch_with_prior_and_control_dispositions(",
+        "\n}\n\nfn prepare_initial_maps_metered<E>(",
+        "evaluate:result_ownership",
+    )
+    require(
+        "project_branch_results_metered" not in evaluate,
+        "evaluate:late_result_projection",
+    )
+    require_order(
+        result_ownership,
+        (
+            "initial_control_dispositions: BTreeMap<EventId, ProtocolDisposition>",
+            "prepare_initial_maps_metered(collected, initial_control_dispositions",
+            "let mut table = match evaluate_branch_table(",
+            "&dispositions,\n        control_dispositions,",
+            "let BranchTableEvaluation {",
+            "control_dispositions,",
+            "branch_change_dispositions,",
+        ),
+        "evaluate:result_ownership",
+    )
+    canonical_projection = section(
+        evaluate,
+        "fn derive_canonical_branch<E>(",
+        "\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\nenum CanonicalBranchError",
+        "evaluate:canonical_projection",
+    )
+    require(
+        canonical_projection.count("visit(WorkCounter::Control).map_err(CanonicalBranchError::Work)?;") == 6,
+        "evaluate:canonical_projection:control_charges",
+    )
+    require(
+        canonical_projection.count("visit(WorkCounter::GraphNode).map_err(CanonicalBranchError::Work)?;") == 4,
+        "evaluate:canonical_projection:graph_charges",
+    )
+    require("accepted_changes.clear()" not in canonical_projection, "evaluate:canonical_clear")
+    require_order(
+        canonical_projection,
+        (
+            "let mut preliminary_items = preliminary_change_dispositions.iter();",
+            "preliminary_items.next()",
+            "change_dispositions.insert(*hash, *disposition);",
+            "let mut child_items = children.iter();",
+            "child_items.next()",
+            "table.states.get(event_id)",
+            "valid_children.push(*event_id);",
+            "control_dispositions\n            .insert(selected, ProtocolDisposition::Accepted)",
+            "canonical_controls.push(selected);",
+            "canonical_control_ids.insert(selected);",
+            "final_accepted = Some(branch.epoch.accepted_state().accepted_closure_handle());",
+            "let mut disposition_items = dispositions.iter();",
+            "disposition_items.next()",
+            "change_dispositions.insert(*hash, *disposition);",
+            "let mut accepted_items = accepted.iter();",
+            "accepted_items.next()",
+            "accepted_changes.insert(*hash);",
+            "let mut disposition_items = change_dispositions.iter_mut();",
+            "accepted_changes.contains(hash)",
+        ),
+        "evaluate:canonical_projection",
+    )
+    branch_table = section(
+        evaluate,
+        "fn evaluate_branch_table(",
+        "\n}\n\nfn enqueue_children",
+        "evaluate:branch_table",
+    )
+    require(branch_table.count("insert_branch_state_metered(") == 8, "evaluate:branch_state_routes")
+    require(branch_table.count("insert_valid_branch_metered(") == 1, "evaluate:valid_branch_route")
+    require("table.states.insert" not in branch_table, "evaluate:branch_state_bypass")
+    require("table.valid.insert" not in branch_table, "evaluate:valid_branch_bypass")
     referenced = section(
         evaluate,
         "pub(crate) fn referenced_branch_change_disposition_metered<E>(",
@@ -361,6 +462,20 @@ def validate_sources(sources: dict[str, str]) -> None:
     require(evaluator.count("referenced_branch_change_disposition_metered(") == 1, "evaluator:referenced_metered")
     require("dispositions.contains_key(&carrier.change_hash)" not in evaluator, "evaluator:membership_bypass")
     require(evaluator.count("dispositions.contains_key_metered(&carrier.change_hash") == 1, "evaluator:membership_metered")
+    require(
+        "transfer_control_dispositions_metered" not in evaluator,
+        "evaluator:late_control_disposition_transfer",
+    )
+    require_order(
+        evaluator,
+        (
+            "let (controls, preliminary_control_dispositions) = prepared_controls.into_parts();",
+            "evaluate_batch_with_prior_and_control_dispositions(",
+            "&additional_prior,\n            preliminary_control_dispositions,",
+        ),
+        "evaluator:control_disposition_ownership",
+    )
+    require("control_disposition_map.extend" not in evaluator, "evaluator:control_disposition_bulk_extend")
 
 
 def replaced(sources: dict[str, str], relative: str, old: str, new: str) -> dict[str, str]:
@@ -396,8 +511,13 @@ def mutation_self_test(sources: dict[str, str]) -> int:
         replaced(sources, evaluate, "charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;\n    cache.insert(cache_key", "cache.insert(cache_key"),
         replaced(sources, evaluate, "visit(WorkCounter::GraphNode).map_err(BranchDeltaError::Work)?;\n        cloned.insert(*hash);", "cloned.insert(*hash);"),
         replaced(sources, evaluate, "let branch_change_dispositions = extend_branch_dispositions_metered(", "let branch_change_dispositions = parent_change_dispositions.extend_prepared_metered("),
+        replaced(sources, evaluate, "visit(WorkCounter::Control).map_err(BranchDeltaError::Work)?;\n    if states.insert(event_id, state)", "if states.insert(event_id, state)"),
+        replaced(sources, evaluate, "visit(WorkCounter::Control).map_err(BranchDeltaError::Work)?;\n    let accepted_projection = AcceptedAtControl::from_result(&branch.epoch);", "let accepted_projection = AcceptedAtControl::from_result(&branch.epoch);"),
+        replaced(sources, evaluate, "|| table\n            .accepted_at_control\n            .insert(event_id, accepted_projection)\n            .is_some()", "|| false"),
+        replaced(sources, evaluate, "visit(WorkCounter::GraphNode).map_err(CanonicalBranchError::Work)?;\n        let Some((hash, disposition)) = preliminary_items.next()", "let Some((hash, disposition)) = preliminary_items.next()"),
         replaced(sources, evaluator, "dispositions.contains_key_metered(&carrier.change_hash", "dispositions.contains_key(&carrier.change_hash"),
         replaced(sources, evaluator, "charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;\n        projected.insert(selected.event_id, knowledge);", "projected.insert(selected.event_id, knowledge);"),
+        replaced(sources, evaluator, "&additional_prior,\n            preliminary_control_dispositions,", "&additional_prior,\n            BTreeMap::new(),"),
     ]
     missing = copy.deepcopy(sources)
     missing.pop(evaluator)

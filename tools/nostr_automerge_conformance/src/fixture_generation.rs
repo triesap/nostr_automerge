@@ -6443,19 +6443,19 @@ mod tests {
     #[allow(clippy::expect_used)]
     fn exact_resource_fixtures_bind_budget_isolation_and_output_bytes() {
         let cases = [
-            ("resource", "parent_propagation_exact_budget", false, 6_937),
+            ("resource", "parent_propagation_exact_budget", false, 7_262),
             (
                 "resource",
                 "unrelated_control_flood_exact_budget",
                 true,
-                111,
+                124,
             ),
-            ("scope", "foreign_claim_flood_exact_budget", true, 111),
+            ("scope", "foreign_claim_flood_exact_budget", true, 124),
             (
                 "scope",
                 "unrelated_valid_checkpoints_exact_budget",
                 true,
-                265,
+                278,
             ),
         ];
 

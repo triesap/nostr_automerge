@@ -25,8 +25,8 @@ use crate::graph::change_candidate::{CandidateCarrier, ChangeCandidate};
 use crate::reference::epoch_engine::AcceptedAtControl;
 use crate::reference::epoch_engine::PriorChangeKnowledge;
 use crate::reference::evaluate::{
-    BatchChange, BatchControl, BatchEvaluationReport, evaluate_batch_with_prior,
-    propagate_control_parent_dispositions,
+    BatchChange, BatchControl, BatchEvaluationReport,
+    evaluate_batch_with_prior_and_control_dispositions, propagate_control_parent_dispositions,
 };
 use crate::types::role::Role;
 use crate::{
@@ -183,8 +183,13 @@ impl ReferenceEvaluator {
                     ));
                 }
             };
-        let mut batch =
-            evaluate_batch_with_prior(controls, &additional_prior, budget, cancellation);
+        let mut batch = evaluate_batch_with_prior_and_control_dispositions(
+            controls,
+            &additional_prior,
+            preliminary_control_dispositions,
+            budget,
+            cancellation,
+        );
         match (batch.completion, batch.failure) {
             (Completion::Complete, None) => {}
             (Completion::BudgetExhausted, Some(EvaluationFailure::BudgetExhausted)) => {
@@ -228,9 +233,6 @@ impl ReferenceEvaluator {
                 ));
             }
         }
-        let mut control_disposition_map = preliminary_control_dispositions;
-        control_disposition_map.extend(core::mem::take(&mut batch.control_dispositions));
-        batch.control_dispositions = control_disposition_map;
         let change_carrier_dispositions =
             match reduce_change_dispositions(&view, &mut batch, budget, cancellation) {
                 Ok(dispositions) => dispositions,
