@@ -103,10 +103,17 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "scripts/validate_opaque_finalization_v9.py",
     ),
     ("report_parity_v9", "scripts/validate_report_parity_v9.py"),
-    ("runtime_ledger_v9", "scripts/validate_runtime_ledger_v9.py"),
     (
         "private_reproduction_boundary_v9",
         "scripts/validate_private_reproduction_boundary_v9.py",
+    ),
+    (
+        "resource_followup_authority_v10",
+        "scripts/validate_resource_followup_authority_v10.py",
+    ),
+    (
+        "runtime_ledger_v10",
+        "scripts/validate_runtime_ledger_v10.py",
     ),
     ("complete_specification", "scripts/validate_spec.py"),
     (
@@ -127,7 +134,13 @@ pub(crate) struct ValidationReport {
 
 pub(crate) fn validate_repository(root: &Path) -> Result<ValidationReport, String> {
     let mut validators = Vec::new();
+    let followup_active = root
+        .join("spec/resource_followup_authority_v10.json")
+        .is_file();
     for (name, script) in PYTHON_VALIDATORS {
+        if followup_active && followup_historical_validator(name) {
+            continue;
+        }
         let output = Command::new("python3")
             .current_dir(root)
             .env("PYTHONDONTWRITEBYTECODE", "1")
@@ -161,6 +174,40 @@ pub(crate) fn validate_repository(root: &Path) -> Result<ValidationReport, Strin
     })
 }
 
+fn followup_historical_validator(name: &str) -> bool {
+    matches!(
+        name,
+        "authority_transition_v10"
+            | "checkpoint_parity_v9"
+            | "carrier_gate_v9"
+            | "report_contract_v9"
+            | "rust_report_gate_v9"
+            | "rust_finalization_gate_v9"
+            | "rust_resource_gate_v9"
+            | "rust_conformance_v10"
+            | "opaque_conformance_v10"
+            | "signed_conformance_gate_v10"
+            | "semantic_proof_catalog_v10"
+            | "base64_proof_v10"
+            | "rust_requirement_proofs_v10"
+            | "report_finding_proofs_v10"
+            | "opaque_semantic_proofs_v10"
+            | "semantic_proof_mutations_v10"
+            | "semantic_proof_catalog_final_v10"
+            | "semantic_evidence_gate_v10"
+            | "public_assurance_v10"
+            | "opaque_private_assurance_v10"
+            | "final_identity_v10"
+            | "final_finding_closure_v10"
+            | "final_decision_gate_v10"
+            | "opaque_boundary_gate_v9"
+            | "opaque_resource_gate_v9"
+            | "opaque_finalization_v9"
+            | "report_parity_v9"
+            | "private_reproduction_boundary_v9"
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::Path;
@@ -189,8 +236,9 @@ mod tests {
         assert!(names.contains(&"opaque_resource_gate_v9"));
         assert!(names.contains(&"opaque_finalization_v9"));
         assert!(names.contains(&"report_parity_v9"));
-        assert!(names.contains(&"runtime_ledger_v9"));
         assert!(names.contains(&"private_reproduction_boundary_v9"));
+        assert!(names.contains(&"resource_followup_authority_v10"));
+        assert!(names.contains(&"runtime_ledger_v10"));
         assert!(names.contains(&"complete_specification"));
         assert!(names.contains(&"sealed_constants"));
         assert!(names.contains(&"automerge_boundary"));

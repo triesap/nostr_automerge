@@ -1,0 +1,65 @@
+{
+  "schema": "nostr_automerge.runtime_ledger.v10.v1",
+  "status": "resource_accounting_remediation_required",
+  "authority": {
+    "path": "spec/resource_followup_authority_v10.json",
+    "sha256": "0cac9bf4b90c55e428c335797a9d7195bc3ee08eed5bfb49fca4428e62702531"
+  },
+  "historical_predecessor": {
+    "candidate": "bfad500706a834bd41ef4392613090d2381bd08b",
+    "tree": "98630a87313f524b8efbe8182e19b9b897986e6e",
+    "last_completed_rcld": 94,
+    "last_completed_step": "step_1287",
+    "final_decision_sha256": "a32fcbec532f8513c811a8b6b1eeac65d9ad64043210fe270e81f0387bc0302a"
+  },
+  "cursor": {
+    "active_rcld": 95,
+    "active_step": "step_1288",
+    "next_step": "step_1289",
+    "last_planned_step": "step_1307",
+    "remaining_checkpoint_count": 20,
+    "remaining_rcld_count": 5
+  },
+  "findings": {
+    "open": [
+      "FINDING_094",
+      "FINDING_095"
+    ],
+    "closed": [],
+    "held": [
+      "FINDING_080"
+    ]
+  },
+  "requirements": [
+    "NCRDT-RESOURCE-001",
+    "NCRDT-RESOURCE-013",
+    "NCRDT-RESOURCE-014",
+    "NCRDT-COMPLETION-001",
+    "NCRDT-CONF-010",
+    "NCRDT-EVIDENCE-006"
+  ],
+  "active_checkpoint_scope": [
+    "AGENTS.md",
+    "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v10.md",
+    "docs/execution/remediation_v10/ledger.md",
+    "implementation/runtime_ledger_v10.json",
+    "reports/spec_baseline.txt",
+    "scripts/validate_resource_followup_authority_v10.py",
+    "scripts/validate_runtime_ledger_v10.py",
+    "scripts/validate_spec.py",
+    "spec/resource_followup_authority_v10.json",
+    "tools/nostr_automerge_xtask/src/validate.rs",
+    "tools/validation/resource_followup_authority_v10.schema.json",
+    "tools/validation/runtime_ledger_v10.schema.json"
+  ],
+  "predecessors": [],
+  "holds": [
+    "external_assurance",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "remote_mutation"
+  ],
+  "result": "pass"
+}

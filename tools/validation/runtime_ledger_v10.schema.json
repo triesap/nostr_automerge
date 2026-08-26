@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.example/nostr_automerge/runtime_ledger_v10.schema.json",
+  "title": "nostr_automerge runtime ledger v10",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "status",
+    "authority",
+    "historical_predecessor",
+    "cursor",
+    "findings",
+    "requirements",
+    "active_checkpoint_scope",
+    "predecessors",
+    "holds",
+    "result"
+  ],
+  "properties": {
+    "schema": { "const": "nostr_automerge.runtime_ledger.v10.v1" },
+    "status": { "enum": ["resource_accounting_remediation_required", "code_complete_publication_held"] },
+    "authority": { "$ref": "#/$defs/authority" },
+    "historical_predecessor": { "$ref": "#/$defs/historicalPredecessor" },
+    "cursor": { "$ref": "#/$defs/cursor" },
+    "findings": { "$ref": "#/$defs/findings" },
+    "requirements": {
+      "type": "array",
+      "minItems": 6,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^NCRDT-[A-Z]+-[0-9]{3}$" }
+    },
+    "active_checkpoint_scope": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "predecessors": {
+      "type": "array",
+      "maxItems": 20,
+      "items": { "$ref": "#/$defs/predecessor" }
+    },
+    "holds": {
+      "type": "array",
+      "minItems": 6,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "result": { "const": "pass" }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "const": "spec/resource_followup_authority_v10.json" },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "historicalPredecessor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate", "tree", "last_completed_rcld", "last_completed_step", "final_decision_sha256"],
+      "properties": {
+        "candidate": { "$ref": "#/$defs/commit" },
+        "tree": { "$ref": "#/$defs/commit" },
+        "last_completed_rcld": { "const": 94 },
+        "last_completed_step": { "const": "step_1287" },
+        "final_decision_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "cursor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"],
+      "properties": {
+        "active_rcld": { "type": "integer", "minimum": 95, "maximum": 99 },
+        "active_step": { "type": "string", "pattern": "^step_1[23][0-9]{2}$" },
+        "next_step": { "type": "string", "pattern": "^step_1[23][0-9]{2}$" },
+        "last_planned_step": { "const": "step_1307" },
+        "remaining_checkpoint_count": { "type": "integer", "minimum": 0, "maximum": 20 },
+        "remaining_rcld_count": { "type": "integer", "minimum": 0, "maximum": 5 }
+      }
+    },
+    "findings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["open", "closed", "held"],
+      "properties": {
+        "open": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^FINDING_[0-9]{3}$" } },
+        "closed": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^FINDING_[0-9]{3}$" } },
+        "held": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^FINDING_[0-9]{3}$" } }
+      }
+    },
+    "predecessor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step", "candidate", "owner_class", "result"],
+      "properties": {
+        "step": { "type": "string", "pattern": "^step_1[23][0-9]{2}$" },
+        "candidate": { "$ref": "#/$defs/commit" },
+        "owner_class": { "enum": ["public", "opaque_private"] },
+        "result": { "const": "pass" }
+      }
+    }
+  }
+}

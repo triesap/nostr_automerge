@@ -1,0 +1,71 @@
+{
+  "schema": "nostr_automerge.resource_followup_authority.v10.v1",
+  "status": "resource_accounting_remediation_required",
+  "reviewed_predecessor": {
+    "candidate": "bfad500706a834bd41ef4392613090d2381bd08b",
+    "tree": "98630a87313f524b8efbe8182e19b9b897986e6e",
+    "opaque_typescript_candidate": "fd8c436af0ae67aac996fba5ce6eb50e22a7914e"
+  },
+  "historical_closure": {
+    "rcld_first": 81,
+    "rcld_last": 94,
+    "step_first": "step_1158",
+    "step_last": "step_1287",
+    "plan_sha256": "a2239f84ac7ae30f203061a5ab8dfd8ca543f87e59018f91c0c2244486c9807e",
+    "runtime_ledger_sha256": "3135b669f1b25cbcedbe9612888a4ceb63ff26f1e403e5fc48ff0661b52b4eff",
+    "final_decision_sha256": "a32fcbec532f8513c811a8b6b1eeac65d9ad64043210fe270e81f0387bc0302a",
+    "final_decision_result_identity": "785a4499b8e51d7c2f71e692b74d42671ea03ba1c2d377a74a8d04907c5e6392",
+    "current_status": "historical_superseded_for_current_status"
+  },
+  "active_sequence": {
+    "plan": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v10.md",
+    "plan_sha256": "c3dd5cebd302edc34c88fdb787c2bc7c6415f5fe11932f2601a12f4219c4dd8d",
+    "rcld_first": 95,
+    "rcld_last": 99,
+    "step_first": "step_1288",
+    "step_last": "step_1307",
+    "active_rcld": 95,
+    "active_step": "step_1288",
+    "next_step": "step_1289",
+    "checkpoint_count": 20,
+    "remaining_checkpoint_count": 20,
+    "remaining_rcld_count": 5
+  },
+  "findings": [
+    {
+      "id": "FINDING_094",
+      "status": "open",
+      "class": "resource_accounting",
+      "requirement_ids": [
+        "NCRDT-RESOURCE-001",
+        "NCRDT-RESOURCE-014",
+        "NCRDT-COMPLETION-001"
+      ]
+    },
+    {
+      "id": "FINDING_095",
+      "status": "open",
+      "class": "checkpoint_report_ancestry",
+      "requirement_ids": [
+        "NCRDT-CONF-010",
+        "NCRDT-EVIDENCE-006"
+      ]
+    }
+  ],
+  "frozen_authority": {
+    "nip_sha256": "0dfa683aa0f4a1c7d3df010ec95901bf4ba4094ed3adaacc26e85d95aaa4ded1",
+    "companion_sha256": "a81ad7f3e5cc7e386a9313f6d5355afc1ec95757a5c9a4051ea94b79eafeceb0",
+    "requirements_sha256": "f6e6070de7a5fc707f8488ced3a031f7dfc36d11c7477d800c3d3c33d532e6ba",
+    "distribution_v10_manifest_sha256": "86ec32f34dd99ef0c1e5ea3531360a1f78bf07d62818375096e0bdf0f209b8e5",
+    "protocol_revision": "draft_2026_08"
+  },
+  "holds": {
+    "publication": true,
+    "release": true,
+    "deployment": true,
+    "remote_mutation": true,
+    "nip_submission": true,
+    "production_qualification": true
+  },
+  "result": "pass"
+}

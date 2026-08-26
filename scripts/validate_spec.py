@@ -42,7 +42,6 @@ VALIDATORS = [
     "validate_final_finding_closure_v10.py",
     "validate_final_decision_gate_v10.py",
     "validate_remediation_v9.py",
-    "validate_checkpoint_parity_v9.py",
     "validate_carrier_gate_v9.py",
     "validate_report_contract_v9.py",
     "validate_rust_report_gate_v9.py",
@@ -54,6 +53,8 @@ VALIDATORS = [
     "validate_report_parity_v9.py",
     "validate_runtime_ledger_v9.py",
     "validate_private_reproduction_boundary_v9.py",
+    "validate_resource_followup_authority_v10.py",
+    "validate_runtime_ledger_v10.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",
@@ -69,6 +70,40 @@ HISTORICAL_VALIDATORS = {
     "validate_final_identity_v8.py",
     "validate_local_gate_summary_v8.py",
     "validate_remediation_v8_final.py",
+    "validate_runtime_ledger_v9.py",
+}
+FOLLOWUP_HISTORICAL_VALIDATORS = {
+    "validate_authority_transition_v10.py",
+    "validate_checkpoint_parity_v9.py",
+    "validate_carrier_gate_v9.py",
+    "validate_report_contract_v9.py",
+    "validate_rust_report_gate_v9.py",
+    "validate_rust_finalization_gate_v9.py",
+    "validate_rust_resource_gate_v9.py",
+    "validate_rust_conformance_v10.py",
+    "validate_opaque_conformance_v10.py",
+    "validate_signed_conformance_gate_v10.py",
+    "validate_semantic_proof_catalog_v10.py",
+    "validate_base64_proof_v10.py",
+    "validate_rust_requirement_proofs_v10.py",
+    "validate_report_finding_proofs_v10.py",
+    "validate_opaque_semantic_proofs_v10.py",
+    "validate_semantic_proof_mutations_v10.py",
+    "validate_semantic_proof_catalog_final_v10.py",
+    "validate_semantic_evidence_gate_v10.py",
+    "validate_public_assurance_v10.py",
+    "validate_opaque_private_assurance_v10.py",
+    "validate_final_identity_v10.py",
+    "validate_final_finding_closure_v10.py",
+    "validate_final_decision_gate_v10.py",
+    "validate_remediation_v9.py",
+    "validate_checkpoint_parity_v9.py",
+    "validate_opaque_boundary_gate_v9.py",
+    "validate_opaque_resource_gate_v9.py",
+    "validate_opaque_finalization_v9.py",
+    "validate_report_parity_v9.py",
+    "validate_runtime_ledger_v9.py",
+    "validate_private_reproduction_boundary_v9.py",
 }
 
 
@@ -82,6 +117,13 @@ def transition_stage() -> str:
 
 
 def active_validators(stage: str) -> list[str]:
+    if (ROOT / "spec/resource_followup_authority_v10.json").is_file():
+        return [
+            validator
+            for validator in VALIDATORS
+            if validator not in HISTORICAL_VALIDATORS
+            and validator not in FOLLOWUP_HISTORICAL_VALIDATORS
+        ]
     if stage == "transition_installed":
         return VALIDATORS
     return [validator for validator in VALIDATORS if validator not in HISTORICAL_VALIDATORS]
@@ -98,7 +140,10 @@ def controlled_files() -> list[pathlib.Path]:
         ROOT / name
         for name in (
             "docs/execution/remediation_v9/ledger.md",
+            "docs/execution/remediation_v10/ledger.md",
+            "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v10.md",
             "implementation/runtime_ledger_v9.json",
+            "implementation/runtime_ledger_v10.json",
             "reports/carrier_gate_v9.json",
             "reports/checkpoint_parity_v9.json",
             "reports/opaque_carrier_v9.json",
@@ -148,6 +193,8 @@ def controlled_files() -> list[pathlib.Path]:
             "tools/validation/opaque_finalization_v9.schema.json",
             "tools/validation/report_parity_v9.schema.json",
             "tools/validation/runtime_ledger_v9.schema.json",
+            "tools/validation/resource_followup_authority_v10.schema.json",
+            "tools/validation/runtime_ledger_v10.schema.json",
         )
     )
     files.extend(path for path in (ROOT / "docs/adr").glob("adr_[0-9][0-9][0-9][0-9]_*.md"))

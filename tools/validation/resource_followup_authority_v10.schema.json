@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.example/nostr_automerge/resource_followup_authority_v10.schema.json",
+  "title": "nostr_automerge resource follow-up authority v10",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "status",
+    "reviewed_predecessor",
+    "historical_closure",
+    "active_sequence",
+    "findings",
+    "frozen_authority",
+    "holds",
+    "result"
+  ],
+  "properties": {
+    "schema": { "const": "nostr_automerge.resource_followup_authority.v10.v1" },
+    "status": { "const": "resource_accounting_remediation_required" },
+    "reviewed_predecessor": { "$ref": "#/$defs/reviewedPredecessor" },
+    "historical_closure": { "$ref": "#/$defs/historicalClosure" },
+    "active_sequence": { "$ref": "#/$defs/activeSequence" },
+    "findings": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "prefixItems": [
+        { "$ref": "#/$defs/resourceFinding" },
+        { "$ref": "#/$defs/ancestryFinding" }
+      ],
+      "items": false
+    },
+    "frozen_authority": { "$ref": "#/$defs/frozenAuthority" },
+    "holds": { "$ref": "#/$defs/holds" },
+    "result": { "const": "pass" }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "reviewedPredecessor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate", "tree", "opaque_typescript_candidate"],
+      "properties": {
+        "candidate": { "$ref": "#/$defs/commit" },
+        "tree": { "$ref": "#/$defs/commit" },
+        "opaque_typescript_candidate": { "$ref": "#/$defs/commit" }
+      }
+    },
+    "historicalClosure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rcld_first", "rcld_last", "step_first", "step_last", "plan_sha256", "runtime_ledger_sha256", "final_decision_sha256", "final_decision_result_identity", "current_status"],
+      "properties": {
+        "rcld_first": { "const": 81 },
+        "rcld_last": { "const": 94 },
+        "step_first": { "const": "step_1158" },
+        "step_last": { "const": "step_1287" },
+        "plan_sha256": { "$ref": "#/$defs/sha256" },
+        "runtime_ledger_sha256": { "$ref": "#/$defs/sha256" },
+        "final_decision_sha256": { "$ref": "#/$defs/sha256" },
+        "final_decision_result_identity": { "$ref": "#/$defs/sha256" },
+        "current_status": { "const": "historical_superseded_for_current_status" }
+      }
+    },
+    "activeSequence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["plan", "plan_sha256", "rcld_first", "rcld_last", "step_first", "step_last", "active_rcld", "active_step", "next_step", "checkpoint_count", "remaining_checkpoint_count", "remaining_rcld_count"],
+      "properties": {
+        "plan": { "const": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v10.md" },
+        "plan_sha256": { "$ref": "#/$defs/sha256" },
+        "rcld_first": { "const": 95 },
+        "rcld_last": { "const": 99 },
+        "step_first": { "const": "step_1288" },
+        "step_last": { "const": "step_1307" },
+        "active_rcld": { "const": 95 },
+        "active_step": { "const": "step_1288" },
+        "next_step": { "const": "step_1289" },
+        "checkpoint_count": { "const": 20 },
+        "remaining_checkpoint_count": { "const": 20 },
+        "remaining_rcld_count": { "const": 5 }
+      }
+    },
+    "resourceFinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "class", "requirement_ids"],
+      "properties": {
+        "id": { "const": "FINDING_094" },
+        "status": { "const": "open" },
+        "class": { "const": "resource_accounting" },
+        "requirement_ids": { "const": ["NCRDT-RESOURCE-001", "NCRDT-RESOURCE-014", "NCRDT-COMPLETION-001"] }
+      }
+    },
+    "ancestryFinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "class", "requirement_ids"],
+      "properties": {
+        "id": { "const": "FINDING_095" },
+        "status": { "const": "open" },
+        "class": { "const": "checkpoint_report_ancestry" },
+        "requirement_ids": { "const": ["NCRDT-CONF-010", "NCRDT-EVIDENCE-006"] }
+      }
+    },
+    "frozenAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nip_sha256", "companion_sha256", "requirements_sha256", "distribution_v10_manifest_sha256", "protocol_revision"],
+      "properties": {
+        "nip_sha256": { "$ref": "#/$defs/sha256" },
+        "companion_sha256": { "$ref": "#/$defs/sha256" },
+        "requirements_sha256": { "$ref": "#/$defs/sha256" },
+        "distribution_v10_manifest_sha256": { "$ref": "#/$defs/sha256" },
+        "protocol_revision": { "const": "draft_2026_08" }
+      }
+    },
+    "holds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["publication", "release", "deployment", "remote_mutation", "nip_submission", "production_qualification"],
+      "properties": {
+        "publication": { "const": true },
+        "release": { "const": true },
+        "deployment": { "const": true },
+        "remote_mutation": { "const": true },
+        "nip_submission": { "const": true },
+        "production_qualification": { "const": true }
+      }
+    }
+  }
+}
