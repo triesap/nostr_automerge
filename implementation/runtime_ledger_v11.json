@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v11_authority.json",
   "cursor": {
     "active_rcld": 100,
-    "active_step": "step_1310",
-    "next_step": "step_1311",
+    "active_step": "step_1311",
+    "next_step": "step_1312",
     "last_planned_step": "step_1363",
-    "remaining_checkpoint_count": 54,
+    "remaining_checkpoint_count": 53,
     "remaining_rcld_count": 9
   },
   "findings": {
@@ -29,10 +29,9 @@
   ],
   "active_checkpoint_scope": [
     "docs/adr/README.md",
-    "docs/adr/adr_0072_metered_persistent_state.md",
+    "docs/adr/adr_0073_no_post_stop_target_work.md",
     "implementation/runtime_ledger_v11.json",
     "reports/spec_baseline.txt",
-    "scripts/validate_adrs.py",
     "scripts/validate_remediation_v11.py"
   ],
   "predecessors": [
@@ -45,6 +44,12 @@
     {
       "step": "step_1309",
       "candidate": "a582868b753400bd74b77090292aa3621f61d910",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1310",
+      "candidate": "4f9599a6cfcf0efe214fe68b0a858295bd616519",
       "owner_class": "public",
       "result": "pass"
     }
