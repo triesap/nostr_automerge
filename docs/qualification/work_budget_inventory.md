@@ -40,6 +40,14 @@ source panic policy. Deep-control and many-checkpoint public-engine tests prove
 deterministic work and compact interruption without recursive traversal or
 post-stop refusal expansion.
 
+The v10 operation inventory names twelve unique enabled tests, one per row.
+The resource gate executes that exact proof set together with deep/wide graph
+scaling, repeated accepted-state cache boundaries, many-checkpoint and
+unrelated-evidence public cases, both finding reproductions, and the resource
+benchmark. The inventory validator rejects source mutations that delete or
+relocate charges, restore full copies or nested lineage scans, or reintroduce
+sequence-based checkpoint history.
+
 ## Frozen Counter Semantics
 
 `decode_byte` and `checkpoint_byte` consume byte capacity. Every other counter

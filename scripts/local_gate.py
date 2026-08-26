@@ -103,6 +103,8 @@ def robustness() -> None:
 
 def resource() -> None:
     started = time.monotonic_ns()
+    run("python3", "scripts/validate_resource_operation_inventory_v10.py", "--run-proofs")
+    run("python3", "scripts/reproduce_resource_followup_v10.py", "--verify-open")
     run("cargo", "bench", "-p", "nostr_automerge", "--bench", "resource_smoke", "--locked")
     run(
         "cargo", "test", "-p", "nostr_automerge", "--lib",

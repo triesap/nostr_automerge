@@ -13,19 +13,19 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 LEDGER = ROOT / "implementation/runtime_ledger_v10.json"
 SCHEMA = ROOT / "tools/validation/runtime_ledger_v10.schema.json"
 
-LEDGER_SHA256 = "4ad8c09cbe6907693e8cbbb7b4f42adde7de2781b067e764bbda19e61c38cb89"
+LEDGER_SHA256 = "f50313b9027d53c0d3a0341f375b53aaa8802ee608cf0c05b633fa414018b2e2"
 SCHEMA_SHA256 = "8ae43e4f3aa8d00ea27ebb64a2f0d741b54cd9b10c398900c16ba9cd94ed0814"
 AUTHORITY_SHA256 = "0cac9bf4b90c55e428c335797a9d7195bc3ee08eed5bfb49fca4428e62702531"
 EXPECTED_SCOPE = (
-    "crates/nostr_automerge/src/engine/reference_evaluator.rs",
     "docs/execution/remediation_v10/ledger.md",
     "docs/qualification/work_budget_inventory.md",
     "implementation/runtime_ledger_v10.json",
     "reports/spec_baseline.txt",
-    "scripts/reproduce_resource_followup_v10.py",
+    "scripts/local_gate.py",
     "scripts/validate_resource_operation_inventory_v10.py",
     "scripts/validate_runtime_ledger_v10.py",
     "spec/resource_operation_inventory_v10.json",
+    "tools/validation/resource_operation_inventory_v10.schema.json",
 )
 TOP_KEYS = (
     "schema", "status", "authority", "historical_predecessor", "cursor",
@@ -64,10 +64,10 @@ def validate_record(record: object) -> None:
     cursor = record["cursor"]
     if cursor != {
         "active_rcld": 97,
-        "active_step": "step_1298",
-        "next_step": "step_1299",
+        "active_step": "step_1299",
+        "next_step": "step_1300",
         "last_planned_step": "step_1307",
-        "remaining_checkpoint_count": 10,
+        "remaining_checkpoint_count": 9,
         "remaining_rcld_count": 3,
     }:
         raise LedgerError("ledger:cursor")
@@ -141,6 +141,12 @@ def validate_record(record: object) -> None:
             "owner_class": "public",
             "result": "pass",
         },
+        {
+            "step": "step_1298",
+            "candidate": "516d15f03f6285366d5d259de8d647aebbdbcb2e",
+            "owner_class": "public",
+            "result": "pass",
+        },
     ]:
         raise LedgerError("ledger:predecessors")
     if tuple(record["holds"]) != (
@@ -206,7 +212,7 @@ def main() -> None:
     validate_worktree_scope()
     mutations = mutation_self_test()
     print("PASS: runtime ledger v10")
-    print("- active=step_1298")
+    print("- active=step_1299")
     print(f"- mutations={mutations}")
 
 

@@ -3,18 +3,20 @@
 
 from __future__ import annotations
 
+import argparse
 import copy
 import hashlib
 import json
 import pathlib
 import re
+import subprocess
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 INVENTORY = ROOT / "spec/resource_operation_inventory_v10.json"
 SCHEMA = ROOT / "tools/validation/resource_operation_inventory_v10.schema.json"
 
-INVENTORY_SHA256 = "39e1cfcef6e1f7be42a467d2bb007c0378e5c61c6d41cb857b16784057a5afc5"
-SCHEMA_SHA256 = "0c8c4a784ba5b24c04b4081fe05f0de5dcde37523761d6a738abb3f16694d896"
+INVENTORY_SHA256 = "cae0e490046cd70f1798573bcf80e0e9f4d520e37afb19225a84845b11b63525"
+SCHEMA_SHA256 = "6144d398c8f839c0a1442de04b4c9de1c34339f0b374bd11a1af8ecc859c15c0"
 HARNESS_SHA256 = "86a09907bbd61f4a324af88f82d536a711877c16e14e3b80471aa53d83f6c303"
 TOP_KEYS = ("schema", "status", "findings", "operations", "reproductions", "result")
 OPERATION_IDS = (
@@ -35,6 +37,20 @@ TESTS = (
     "control::parent_view::tests::finding_094_parent_epoch_view_shares_accepted_payload",
     "engine::reference_evaluator::tests::finding_095_lower_sequence_sibling_is_not_historical",
 )
+PROOF_TESTS = (
+    "control::parent_view::tests::finding_094_parent_epoch_view_shares_accepted_payload",
+    "reference::evaluate::tests::prior_knowledge_is_charged_per_item_before_access",
+    "reference::branch_state::tests::delta_chain_shares_parent_and_materializes_in_override_order",
+    "control::frontier::tests::metered_closure_charges_before_every_node_and_edge_operation",
+    "control::ancestry::tests::ancestry_member_traversal_stops_at_every_prefix",
+    "control::epoch_state::tests::metered_builder_has_exact_deep_wide_and_dense_boundaries",
+    "reference::epoch_engine::tests::candidate_projections_charge_before_each_owned_entry",
+    "reference::epoch_engine::tests::actor_reconstruction_is_item_metered_before_each_operation",
+    "control::ancestry::tests::persistent_chain_retains_only_the_checked_parent_handle",
+    "engine::reference_evaluator::tests::canonical_lineage_is_one_charged_control_and_hash_traversal",
+    "engine::reference_evaluator::tests::aggregate_reduction_cannot_rewrite_an_invalid_carrier",
+    "engine::reference_evaluator::tests::finding_095_lower_sequence_sibling_is_not_historical",
+)
 
 
 class InventoryError(RuntimeError):
@@ -50,13 +66,17 @@ def validate_record(record: object, *, inspect_source: bool) -> None:
         raise InventoryError("inventory:keys")
     if record["schema"] != "nostr_automerge.resource_operation_inventory.v10.v1":
         raise InventoryError("inventory:schema")
-    if record["status"] != "implementation_in_progress" or record["result"] != "pass":
+    if record["status"] != "closed" or record["result"] != "pass":
         raise InventoryError("inventory:status")
     if record["findings"] != ["FINDING_094", "FINDING_095"]:
         raise InventoryError("inventory:findings")
     operations = record["operations"]
     if not isinstance(operations, list) or tuple(item.get("id") for item in operations if isinstance(item, dict)) != OPERATION_IDS:
         raise InventoryError("inventory:operations")
+    if tuple(item.get("proof_test") for item in operations if isinstance(item, dict)) != PROOF_TESTS:
+        raise InventoryError("inventory:proof_tests")
+    if len(set(PROOF_TESTS)) != len(PROOF_TESTS):
+        raise InventoryError("inventory:proof_duplicates")
     reproductions = record["reproductions"]
     if not isinstance(reproductions, list) or tuple(item.get("test") for item in reproductions if isinstance(item, dict)) != TESTS:
         raise InventoryError("inventory:reproductions")
@@ -77,6 +97,14 @@ def validate_record(record: object, *, inspect_source: bool) -> None:
         )
         if not function.search(source):
             raise InventoryError(f"operation:function:{operation['id']}")
+        proof_source = (ROOT / operation["proof_source"]).read_text()
+        short_name = operation["proof_test"].rsplit("::", 1)[1]
+        declaration = re.search(rf"fn\s+{re.escape(short_name)}\s*\(\)", proof_source)
+        if declaration is None:
+            raise InventoryError(f"operation:proof:{operation['id']}")
+        attributes = proof_source[max(0, declaration.start() - 220):declaration.start()]
+        if "#[test]" not in attributes or "#[ignore" in attributes:
+            raise InventoryError(f"operation:proof_attributes:{operation['id']}")
     for reproduction in reproductions:
         source = (ROOT / reproduction["source"]).read_text()
         short_name = reproduction["test"].rsplit("::", 1)[1]
@@ -221,11 +249,13 @@ def mutation_self_test() -> int:
     original = json.loads(INVENTORY.read_text())
     mutations = []
     for mutate in (
-        lambda value: value.update(status="closed"),
+        lambda value: value.update(status="implementation_in_progress"),
         lambda value: value["findings"].reverse(),
         lambda value: value["operations"].pop(),
         lambda value: value["operations"].reverse(),
         lambda value: value["operations"][0].update(id="other"),
+        lambda value: value["operations"][0].update(proof_test="module::other"),
+        lambda value: value["operations"][1].update(proof_test=PROOF_TESTS[0]),
         lambda value: value["reproductions"].pop(),
         lambda value: value["reproductions"].reverse(),
         lambda value: value["reproductions"][0].update(expected="open_failure"),
@@ -287,7 +317,26 @@ def source_mutation_self_test() -> int:
     return len(mutations)
 
 
+def run_proofs() -> int:
+    for proof in PROOF_TESTS:
+        result = subprocess.run(
+            [
+                "cargo", "extbuild", "run", "--", "cargo", "test",
+                "-p", "nostr_automerge", "--lib", "--locked", "--",
+                "--exact", proof,
+            ],
+            cwd=ROOT,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise InventoryError(f"proof:failed:{proof}")
+    return len(PROOF_TESTS)
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--run-proofs", action="store_true")
+    args = parser.parse_args()
     if sha256(INVENTORY) != INVENTORY_SHA256:
         raise InventoryError("inventory:sha256")
     if sha256(SCHEMA) != SCHEMA_SHA256:
@@ -299,11 +348,14 @@ def main() -> None:
     sources = {path: (ROOT / path).read_text() for path, _ in METERED_SOURCE_ANCHORS}
     validate_metered_sources(sources)
     source_mutations = source_mutation_self_test()
+    executed = run_proofs() if args.run_proofs else 0
     print("PASS: resource operation inventory v10")
     print(f"- operations={len(OPERATION_IDS)}")
     print(f"- reproductions={len(TESTS)}")
     print(f"- mutations={mutations}")
     print(f"- source_mutations={source_mutations}")
+    print(f"- proofs={len(PROOF_TESTS)}")
+    print(f"- executed={executed}")
 
 
 if __name__ == "__main__":

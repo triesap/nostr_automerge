@@ -1,6 +1,6 @@
 {
   "schema": "nostr_automerge.resource_operation_inventory.v10.v1",
-  "status": "implementation_in_progress",
+  "status": "closed",
   "findings": [
     "FINDING_094",
     "FINDING_095"
@@ -11,84 +11,108 @@
       "path": "crates/nostr_automerge/src/control/parent_view.rs",
       "function": "from_accepted_state",
       "operation_class": "target_copy",
-      "required_resolution": "share_payload_or_charge_each_item"
+      "required_resolution": "share_payload_or_charge_each_item",
+      "proof_source": "crates/nostr_automerge/src/control/parent_view.rs",
+      "proof_test": "control::parent_view::tests::finding_094_parent_epoch_view_shares_accepted_payload"
     },
     {
       "id": "branch_prior_knowledge_copy",
       "path": "crates/nostr_automerge/src/reference/evaluate.rs",
       "function": "evaluate_batch_with_prior",
       "operation_class": "target_copy",
-      "required_resolution": "parent_plus_local_delta"
+      "required_resolution": "parent_plus_local_delta",
+      "proof_source": "crates/nostr_automerge/src/reference/evaluate.rs",
+      "proof_test": "reference::evaluate::tests::prior_knowledge_is_charged_per_item_before_access"
     },
     {
       "id": "branch_disposition_copy",
       "path": "crates/nostr_automerge/src/reference/evaluate.rs",
       "function": "evaluate_batch_with_prior",
       "operation_class": "target_copy",
-      "required_resolution": "parent_plus_local_delta"
+      "required_resolution": "parent_plus_local_delta",
+      "proof_source": "crates/nostr_automerge/src/reference/branch_state.rs",
+      "proof_test": "reference::branch_state::tests::delta_chain_shares_parent_and_materializes_in_override_order"
     },
     {
       "id": "control_closure_precharge",
       "path": "crates/nostr_automerge/src/control/frontier.rs",
       "function": "accepted_frontier_closure_metered",
       "operation_class": "item_metered_traversal",
-      "required_resolution": "charge_immediately_before_each_operation"
+      "required_resolution": "charge_immediately_before_each_operation",
+      "proof_source": "crates/nostr_automerge/src/control/frontier.rs",
+      "proof_test": "control::frontier::tests::metered_closure_charges_before_every_node_and_edge_operation"
     },
     {
       "id": "device_ancestry_materialization",
       "path": "crates/nostr_automerge/src/control/candidate.rs",
       "function": "evaluate_device_ancestry_metered",
       "operation_class": "item_metered_materialization",
-      "required_resolution": "charge_before_allocation_and_each_item"
+      "required_resolution": "charge_before_allocation_and_each_item",
+      "proof_source": "crates/nostr_automerge/src/control/ancestry.rs",
+      "proof_test": "control::ancestry::tests::ancestry_member_traversal_stops_at_every_prefix"
     },
     {
       "id": "accepted_state_reconstruction",
       "path": "crates/nostr_automerge/src/reference/evaluate.rs",
       "function": "accepted_state_for_closure",
       "operation_class": "item_metered_shared_builder",
-      "required_resolution": "metered_shared_builder"
+      "required_resolution": "metered_shared_builder",
+      "proof_source": "crates/nostr_automerge/src/control/epoch_state.rs",
+      "proof_test": "control::epoch_state::tests::metered_builder_has_exact_deep_wide_and_dense_boundaries"
     },
     {
       "id": "authoritative_epoch_preparation",
       "path": "crates/nostr_automerge/src/reference/evaluate.rs",
       "function": "resolve_authoritative_epoch",
       "operation_class": "item_metered_projection",
-      "required_resolution": "borrow_share_or_charge_each_item"
+      "required_resolution": "borrow_share_or_charge_each_item",
+      "proof_source": "crates/nostr_automerge/src/reference/epoch_engine.rs",
+      "proof_test": "reference::epoch_engine::tests::candidate_projections_charge_before_each_owned_entry"
     },
     {
       "id": "epoch_actor_reconstruction",
       "path": "crates/nostr_automerge/src/reference/epoch_engine.rs",
       "function": "evaluate_epoch",
       "operation_class": "item_metered_reconstruction",
-      "required_resolution": "charge_before_each_candidate_and_actor_item"
+      "required_resolution": "charge_before_each_candidate_and_actor_item",
+      "proof_source": "crates/nostr_automerge/src/reference/epoch_engine.rs",
+      "proof_test": "reference::epoch_engine::tests::actor_reconstruction_is_item_metered_before_each_operation"
     },
     {
       "id": "control_ancestry_index",
       "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
       "function": "build_control_ancestry_index",
       "operation_class": "quadratic_materialization",
-      "required_resolution": "persistent_checked_parent_nodes"
+      "required_resolution": "persistent_checked_parent_nodes",
+      "proof_source": "crates/nostr_automerge/src/control/ancestry.rs",
+      "proof_test": "control::ancestry::tests::persistent_chain_retains_only_the_checked_parent_handle"
     },
     {
       "id": "final_change_lineage",
       "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
       "function": "reduce_change_dispositions",
       "operation_class": "item_metered_lineage",
-      "required_resolution": "single_charged_lineage_precomputation_complete"
+      "required_resolution": "single_charged_lineage_precomputation_complete",
+      "proof_source": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+      "proof_test": "engine::reference_evaluator::tests::canonical_lineage_is_one_charged_control_and_hash_traversal"
     },
     {
       "id": "carrier_contribution_vectors",
       "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
       "function": "reduce_change_dispositions",
       "operation_class": "item_metered_streaming_reduction",
-      "required_resolution": "stream_fixed_aggregate_state_complete"
+      "required_resolution": "stream_fixed_aggregate_state_complete",
+      "proof_source": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+      "proof_test": "engine::reference_evaluator::tests::aggregate_reduction_cannot_rewrite_an_invalid_carrier"
     },
     {
       "id": "checkpoint_historical_control",
       "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
       "function": "checkpoint_historical_control_ancestry",
       "operation_class": "item_metered_ancestry",
-      "required_resolution": "charged_same_or_ancestor_traversal_complete"
+      "required_resolution": "charged_same_or_ancestor_traversal_complete",
+      "proof_source": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+      "proof_test": "engine::reference_evaluator::tests::finding_095_lower_sequence_sibling_is_not_historical"
     }
   ],
   "reproductions": [

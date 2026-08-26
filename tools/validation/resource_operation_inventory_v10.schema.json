@@ -27,13 +27,15 @@
     "operation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "path", "function", "operation_class", "required_resolution"],
+      "required": ["id", "path", "function", "operation_class", "required_resolution", "proof_source", "proof_test"],
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]+$" },
         "path": { "type": "string", "pattern": "^crates/nostr_automerge/src/[a-z0-9_/]+\\.rs$" },
         "function": { "type": "string", "pattern": "^[a-z][a-z0-9_]+$" },
         "operation_class": { "type": "string", "pattern": "^[a-z][a-z0-9_]+$" },
-        "required_resolution": { "type": "string", "pattern": "^[a-z][a-z0-9_]+$" }
+        "required_resolution": { "type": "string", "pattern": "^[a-z][a-z0-9_]+$" },
+        "proof_source": { "type": "string", "pattern": "^crates/nostr_automerge/src/[a-z0-9_/]+\\.rs$" },
+        "proof_test": { "type": "string", "minLength": 1 }
       }
     },
     "reproduction": {
