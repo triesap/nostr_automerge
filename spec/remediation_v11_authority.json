@@ -1,0 +1,43 @@
+{
+  "schema": "nostr_automerge.remediation_v11_authority.v1",
+  "status": "authority_and_reproduction_correction_required",
+  "reviewed_public": {
+    "candidate": "e1b4f461c0d2a1e8cc8e520bed2dfa64a62270f2",
+    "tree": "5e62938bfe576d6c67b3bfe355d5b5dd47585e87"
+  },
+  "opaque_private": {
+    "candidate": "2d708bb0a7a00523ab5c244fd0a15c96afcf0a4a",
+    "source_disclosure": false
+  },
+  "prior_handoff_sha256": "e333873b2b2e42b42bc7d9e652012195ab70760b586eb184462e655a5682be44",
+  "historical_sequence": {
+    "rcld_first": 95,
+    "rcld_last": 99,
+    "step_first": "step_1288",
+    "step_last": "step_1307",
+    "status": "immutable_historical_superseded_for_v11_scope"
+  },
+  "active_sequence": {
+    "rcld_first": 100,
+    "rcld_last": 108,
+    "step_first": "step_1308",
+    "step_last": "step_1363",
+    "step_count": 56
+  },
+  "counts": {
+    "requirements_current": 148,
+    "requirements_target": 152,
+    "scenarios_current": 193,
+    "scenarios_target": 198
+  },
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "remote_mutation"
+  ],
+  "result": "pass"
+}

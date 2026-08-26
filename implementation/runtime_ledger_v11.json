@@ -1,0 +1,50 @@
+{
+  "schema": "nostr_automerge.runtime_ledger.v11.v1",
+  "status": "authority_and_reproduction_correction_required",
+  "authority": "spec/remediation_v11_authority.json",
+  "cursor": {
+    "active_rcld": 100,
+    "active_step": "step_1308",
+    "next_step": "step_1309",
+    "last_planned_step": "step_1363",
+    "remaining_checkpoint_count": 56,
+    "remaining_rcld_count": 9
+  },
+  "findings": {
+    "open": [
+      "FINDING_096",
+      "FINDING_097",
+      "FINDING_098",
+      "FINDING_099"
+    ],
+    "held": [
+      "FINDING_080"
+    ]
+  },
+  "requirements": [
+    "NCRDT-RESOURCE-015",
+    "NCRDT-RESOURCE-016",
+    "NCRDT-VERSION-003",
+    "NCRDT-OWNERSHIP-001"
+  ],
+  "active_checkpoint_scope": [
+    "docs/execution/remediation_v11/baseline.md",
+    "implementation/runtime_ledger_v11.json",
+    "reports/spec_baseline.txt",
+    "scripts/validate_remediation_v11.py",
+    "scripts/validate_runtime_ledger_v10.py",
+    "scripts/validate_spec.py",
+    "spec/remediation_v11_authority.json"
+  ],
+  "predecessors": [],
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "remote_mutation"
+  ],
+  "result": "pass"
+}

@@ -32,6 +32,15 @@ EXPECTED_SCOPE = (
     "tools/validation/resource_followup_final_decision_v10.schema.json",
     "tools/validation/resource_followup_finding_closure_v10.schema.json",
 )
+SUCCESSOR_STEP_1308_SCOPE = (
+    "docs/execution/remediation_v11/baseline.md",
+    "implementation/runtime_ledger_v11.json",
+    "reports/spec_baseline.txt",
+    "scripts/validate_remediation_v11.py",
+    "scripts/validate_runtime_ledger_v10.py",
+    "scripts/validate_spec.py",
+    "spec/remediation_v11_authority.json",
+)
 TOP_KEYS = (
     "schema", "status", "authority", "historical_predecessor", "cursor",
     "findings", "requirements", "active_checkpoint_scope", "predecessors",
@@ -223,7 +232,13 @@ def validate_worktree_scope() -> None:
         if status not in {" M", "M ", "MM", "A ", "AM", "??"} or " -> " in path:
             raise LedgerError(f"worktree:status:{status}:{path}")
         paths.append(path)
-    if len(paths) != len(set(paths)) or not set(paths).issubset(EXPECTED_SCOPE):
+    if len(paths) != len(set(paths)):
+        raise LedgerError("worktree:scope")
+    path_set = set(paths)
+    if not (
+        path_set.issubset(EXPECTED_SCOPE)
+        or path_set.issubset(SUCCESSOR_STEP_1308_SCOPE)
+    ):
         raise LedgerError("worktree:scope")
 
 

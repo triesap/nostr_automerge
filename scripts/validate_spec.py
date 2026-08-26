@@ -4,6 +4,7 @@
 import argparse
 import hashlib
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -61,6 +62,7 @@ VALIDATORS = [
     "validate_resource_ancestry_gate_v10.py",
     "validate_resource_followup_assurance_v10.py",
     "validate_resource_followup_final_decision_v10.py",
+    "validate_remediation_v11.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",
@@ -253,8 +255,17 @@ def main() -> None:
     args = parser.parse_args()
     stage = transition_stage()
     validators = active_validators(stage)
+    validator_env = dict(os.environ)
+    validator_env["PYTHONDONTWRITEBYTECODE"] = "1"
     for validator in validators:
-        result = subprocess.run([sys.executable, str(ROOT / "scripts" / validator)], cwd=ROOT, capture_output=True, text=True, check=False)
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / validator)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+            env=validator_env,
+        )
         if result.returncode:
             sys.stderr.write(result.stdout + result.stderr)
             raise SystemExit(f"FAIL: {validator}")
