@@ -103,10 +103,10 @@ mod tests {
         dependency.change_hash = ChangeHash::from_bytes([1; 32]);
         let mut dependant = candidate(2, 1, 1, 1);
         dependant.change_hash = ChangeHash::from_bytes([2; 32]);
-        dependant.dependencies = vec![dependency.change_hash];
+        dependant.dependencies = vec![dependency.change_hash].into();
         let mut missing = candidate(3, 1, 1, 1);
         missing.change_hash = ChangeHash::from_bytes([3; 32]);
-        missing.dependencies = vec![ChangeHash::from_bytes([9; 32])];
+        missing.dependencies = vec![ChangeHash::from_bytes([9; 32])].into();
         let mut invalid = candidate(4, 1, 1, 1);
         invalid.change_hash = ChangeHash::from_bytes([4; 32]);
         let mut excluded = candidate(5, 1, 1, 1);
@@ -167,10 +167,10 @@ mod tests {
         invalid.change_hash = ChangeHash::from_bytes([1; 32]);
         let mut child = candidate(2, 1, 1, 1);
         child.change_hash = ChangeHash::from_bytes([2; 32]);
-        child.dependencies = vec![invalid.change_hash];
+        child.dependencies = vec![invalid.change_hash].into();
         let mut grandchild = candidate(3, 1, 1, 1);
         grandchild.change_hash = ChangeHash::from_bytes([3; 32]);
-        grandchild.dependencies = vec![child.change_hash];
+        grandchild.dependencies = vec![child.change_hash].into();
         let inputs = [
             EpochCandidate {
                 candidate: grandchild.clone(),

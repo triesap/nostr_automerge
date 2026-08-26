@@ -33,7 +33,7 @@ pub(crate) fn candidate_dependency_closure(
 ) -> Result<CandidateDependencyClosure, CandidateClosureError> {
     let mut result = CandidateDependencyClosure::default();
     let mut pending = Vec::with_capacity(candidate.dependencies.len());
-    for dependency in &candidate.dependencies {
+    for dependency in candidate.dependencies.iter() {
         charge_closure_work(budget, cancellation, WorkCounter::GraphEdge)?;
         pending.push(*dependency);
     }
@@ -43,7 +43,7 @@ pub(crate) fn candidate_dependency_closure(
             continue;
         }
         if let Some(ancestor) = candidates.get(&hash) {
-            for dependency in &ancestor.dependencies {
+            for dependency in ancestor.dependencies.iter() {
                 charge_closure_work(budget, cancellation, WorkCounter::GraphEdge)?;
                 pending.push(*dependency);
             }
@@ -228,13 +228,13 @@ mod tests {
         root.change_hash = hash(1);
         let mut left = candidate(2, 1, 1, 1);
         left.change_hash = hash(2);
-        left.dependencies = vec![root.change_hash];
+        left.dependencies = vec![root.change_hash].into();
         let mut right = candidate(3, 1, 1, 1);
         right.change_hash = hash(3);
-        right.dependencies = vec![root.change_hash];
+        right.dependencies = vec![root.change_hash].into();
         let mut diamond = candidate(4, 1, 1, 1);
         diamond.change_hash = hash(4);
-        diamond.dependencies = vec![left.change_hash, right.change_hash];
+        diamond.dependencies = vec![left.change_hash, right.change_hash].into();
         let candidates = [root.clone(), left.clone(), right.clone(), diamond.clone()]
             .into_iter()
             .map(|candidate| (candidate.change_hash, candidate))
@@ -250,7 +250,7 @@ mod tests {
         assert!(closure.missing.is_empty() && closure.cyclic.is_empty());
 
         let mut multiple_roots = diamond.clone();
-        multiple_roots.dependencies = vec![left.change_hash, right.change_hash, hash(9)];
+        multiple_roots.dependencies = vec![left.change_hash, right.change_hash, hash(9)].into();
         let closure = candidate_dependency_closure(
             &multiple_roots,
             &candidates,
@@ -264,14 +264,14 @@ mod tests {
 
         let mut cycle_left = left;
         let mut cycle_right = right;
-        cycle_left.dependencies = vec![cycle_right.change_hash];
-        cycle_right.dependencies = vec![cycle_left.change_hash];
+        cycle_left.dependencies = vec![cycle_right.change_hash].into();
+        cycle_right.dependencies = vec![cycle_left.change_hash].into();
         let cycle_candidates = [cycle_left.clone(), cycle_right.clone()]
             .into_iter()
             .map(|candidate| (candidate.change_hash, candidate))
             .collect::<BTreeMap<_, _>>();
         let mut cycle_root = root;
-        cycle_root.dependencies = vec![cycle_left.change_hash];
+        cycle_root.dependencies = vec![cycle_left.change_hash].into();
         let closure = candidate_dependency_closure(
             &cycle_root,
             &cycle_candidates,

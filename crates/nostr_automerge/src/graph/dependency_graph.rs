@@ -117,10 +117,11 @@ mod tests {
             dependencies: dependencies
                 .into_iter()
                 .map(|byte| ChangeHash::from_bytes([byte; 32]))
-                .collect(),
+                .collect::<Vec<_>>()
+                .into(),
             control_id: EventId::from_bytes([2; 32]),
             author: DevicePublicKey::from_bytes([3; 32]),
-            valid_carriers: BTreeSet::from([EventId::from_bytes([hash; 32])]),
+            valid_carriers: vec![EventId::from_bytes([hash; 32])].into(),
         }
     }
 

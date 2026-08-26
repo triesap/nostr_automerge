@@ -23,10 +23,10 @@ fn candidate(value: u16, dependencies: Vec<ChangeHash>) -> ChangeCandidate {
         sequence: u64::from(value),
         start_op: u64::from(value),
         operation_count: 1,
-        dependencies,
+        dependencies: dependencies.into(),
         control_id: EventId::from_bytes([2; 32]),
         author: DevicePublicKey::from_bytes([3; 32]),
-        valid_carriers: BTreeSet::from([EventId::from_bytes(*hash(value).as_bytes())]),
+        valid_carriers: vec![EventId::from_bytes(*hash(value).as_bytes())].into(),
     }
 }
 

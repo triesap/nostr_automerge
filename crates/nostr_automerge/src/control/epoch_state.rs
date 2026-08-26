@@ -130,10 +130,10 @@ mod tests {
             sequence: 1,
             start_op: 1,
             operation_count: 1,
-            dependencies: Vec::new(),
+            dependencies: Vec::new().into(),
             control_id: EventId::from_bytes([2; 32]),
             author: DevicePublicKey::from_bytes([3; 32]),
-            valid_carriers: BTreeSet::from([EventId::from_bytes([4; 32])]),
+            valid_carriers: vec![EventId::from_bytes([4; 32])].into(),
         }
     }
 

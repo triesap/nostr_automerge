@@ -13,12 +13,12 @@
     "final_decision_sha256": "a32fcbec532f8513c811a8b6b1eeac65d9ad64043210fe270e81f0387bc0302a"
   },
   "cursor": {
-    "active_rcld": 95,
-    "active_step": "step_1289",
-    "next_step": "step_1290",
+    "active_rcld": 96,
+    "active_step": "step_1291",
+    "next_step": "step_1292",
     "last_planned_step": "step_1307",
-    "remaining_checkpoint_count": 19,
-    "remaining_rcld_count": 5
+    "remaining_checkpoint_count": 17,
+    "remaining_rcld_count": 4
   },
   "findings": {
     "open": [
@@ -39,25 +39,40 @@
     "NCRDT-EVIDENCE-006"
   ],
   "active_checkpoint_scope": [
+    "crates/nostr_automerge/src/control/epoch_state.rs",
     "crates/nostr_automerge/src/control/parent_view.rs",
-    "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+    "crates/nostr_automerge/src/graph/actor_state.rs",
+    "crates/nostr_automerge/src/graph/change_candidate.rs",
+    "crates/nostr_automerge/src/graph/closure.rs",
+    "crates/nostr_automerge/src/graph/dependency_graph.rs",
+    "crates/nostr_automerge/src/graph/equivocation.rs",
+    "crates/nostr_automerge/src/graph/scaling.rs",
+    "crates/nostr_automerge/src/graph/schedule.rs",
+    "crates/nostr_automerge/src/reference/epoch.rs",
+    "crates/nostr_automerge/src/reference/epoch_engine.rs",
+    "crates/nostr_automerge/src/reference/evaluate.rs",
     "docs/execution/remediation_v10/ledger.md",
     "implementation/runtime_ledger_v10.json",
     "reports/spec_baseline.txt",
-    "scripts/local_gate.py",
-    "scripts/reproduce_resource_followup_v10.py",
-    "scripts/validate_resource_operation_inventory_v10.py",
-    "scripts/validate_runtime_ledger_v10.py",
-    "scripts/validate_spec.py",
-    "spec/resource_operation_inventory_v10.json",
-    "tools/nostr_automerge_xtask/src/validate.rs",
-    "tools/validation/resource_operation_inventory_v10.schema.json"
+    "scripts/validate_runtime_ledger_v10.py"
   ],
   "predecessors": [
     {
       "step": "step_1288",
       "candidate": "53208563e7aa28bc00162ab3b5802824675df6d8",
       "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1289",
+      "candidate": "3991ca4933318581cdde23680b9e03758f92b5df",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1290",
+      "candidate": "19420942f7814051ae458fb05f49050244394271",
+      "owner_class": "opaque_private",
       "result": "pass"
     }
   ],

@@ -157,10 +157,10 @@ mod tests {
             sequence: 1,
             start_op: 1,
             operation_count: 1,
-            dependencies: Vec::new(),
+            dependencies: Vec::new().into(),
             control_id: EventId::from_bytes([7; 32]),
             author: DevicePublicKey::from_bytes([actor; 32]),
-            valid_carriers: BTreeSet::from([EventId::from_bytes([hash; 32])]),
+            valid_carriers: vec![EventId::from_bytes([hash; 32])].into(),
         }
     }
 

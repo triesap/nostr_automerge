@@ -1039,7 +1039,7 @@ fn accepted_state_for_closure(
     }
     let mut depended_on = BTreeSet::new();
     for candidate in candidates.values() {
-        for dependency in &candidate.dependencies {
+        for dependency in candidate.dependencies.iter() {
             charge_prior_knowledge_item(WorkCounter::GraphEdge, budget, cancellation)?;
             if accepted.contains(dependency) {
                 depended_on.insert(*dependency);
@@ -1891,14 +1891,89 @@ mod tests {
     }
 
     #[test]
+    fn batch_memo_clones_only_shared_candidate_payload_handles() {
+        let mut value = change(7, 7, 1);
+        value.candidate.dependencies = (0_u8..64)
+            .map(|byte| ChangeHash::from_bytes([byte; 32]))
+            .collect::<Vec<_>>()
+            .into();
+        value.candidate.valid_carriers = (64_u8..=96)
+            .map(|byte| EventId::from_bytes([byte; 32]))
+            .collect::<Vec<_>>()
+            .into();
+        let dependency_payload = value.candidate.dependencies.clone();
+        let carrier_payload = value.candidate.valid_carriers.clone();
+        let controls =
+            BTreeMap::from([(EventId::from_bytes([1; 32]), control(1, None, vec![value]))]);
+        let mut budget = WorkBudget::new(0, 1_000);
+        let retained = BatchChangeMemo::derive(&controls, &mut budget, &NeverCancelled)
+            .ok()
+            .and_then(|memo| memo.candidates.into_values().next());
+        let Some(retained) = retained else {
+            return;
+        };
+        assert!(Arc::ptr_eq(&dependency_payload, &retained.dependencies));
+        assert!(Arc::ptr_eq(&carrier_payload, &retained.valid_carriers));
+    }
+
+    #[test]
+    fn batch_memo_sharing_starts_only_after_exact_graph_charges() {
+        let controls = || {
+            let mut value = change(7, 7, 1);
+            value.candidate.dependencies = (0_u8..64)
+                .map(|byte| ChangeHash::from_bytes([byte; 32]))
+                .collect::<Vec<_>>()
+                .into();
+            let dependencies = value.candidate.dependencies.clone();
+            (
+                BTreeMap::from([(EventId::from_bytes([1; 32]), control(1, None, vec![value]))]),
+                dependencies,
+            )
+        };
+
+        let (insufficient_controls, insufficient_payload) = controls();
+        let mut insufficient = WorkBudget::new(0, 64);
+        assert_eq!(
+            BatchChangeMemo::derive(&insufficient_controls, &mut insufficient, &NeverCancelled,)
+                .map(|_| ()),
+            Err(Completion::BudgetExhausted)
+        );
+        assert_eq!(Arc::strong_count(&insufficient_payload), 2);
+
+        for limit in [65_u64, 66] {
+            let (exact_controls, exact_payload) = controls();
+            let mut budget = WorkBudget::new(0, limit);
+            let memo = BatchChangeMemo::derive(&exact_controls, &mut budget, &NeverCancelled);
+            assert!(memo.is_ok(), "limit:{limit}");
+            let memo = memo.ok();
+            assert_eq!(Arc::strong_count(&exact_payload), 3, "limit:{limit}");
+            assert_eq!(budget.remaining().1, limit - 65, "limit:{limit}");
+            drop(memo);
+        }
+
+        let (cancelled_controls, cancelled_payload) = controls();
+        let mut cancelled = WorkBudget::new(0, 65);
+        assert_eq!(
+            BatchChangeMemo::derive(&cancelled_controls, &mut cancelled, &|| true).map(|_| ()),
+            Err(Completion::Cancelled)
+        );
+        assert_eq!(Arc::strong_count(&cancelled_payload), 2);
+        assert_eq!(cancelled.consumed().get(WorkCounter::GraphNode), 0);
+    }
+
+    #[test]
     fn losing_branch_preserves_pending_invalid_and_equivocation_outcomes() {
         let mut invalid = change(3, 3, 1);
         invalid.legacy_eligible = false;
         let mut pending = change(4, 4, 1);
-        pending
+        pending.candidate.dependencies = pending
             .candidate
             .dependencies
-            .push(ChangeHash::from_bytes([99; 32]));
+            .iter()
+            .copied()
+            .chain([ChangeHash::from_bytes([99; 32])])
+            .collect::<Vec<_>>()
+            .into();
         let equivocation_a = change(5, 5, 1);
         let equivocation_b = change(6, 5, 1);
         let report = evaluate_batch(
@@ -1996,7 +2071,7 @@ mod tests {
         let second_hash = second.candidate.change_hash;
         let parent = control(1, None, vec![first, second]);
         let mut dependant = change(3, 3, 1);
-        dependant.candidate.dependencies = vec![second_hash];
+        dependant.candidate.dependencies = vec![second_hash].into();
         let dependant_hash = dependant.candidate.change_hash;
         let mut child = control(2, Some(1), vec![dependant]);
         child.accepted_base = BTreeSet::from([first_hash]);

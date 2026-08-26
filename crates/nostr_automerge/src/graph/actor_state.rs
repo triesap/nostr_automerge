@@ -266,10 +266,10 @@ pub(crate) mod tests {
             sequence,
             start_op: start,
             operation_count: count,
-            dependencies: Vec::new(),
+            dependencies: Vec::new().into(),
             control_id: EventId::from_bytes([9; 32]),
             author: DevicePublicKey::from_bytes([actor; 32]),
-            valid_carriers: BTreeSet::from([EventId::from_bytes([actor; 32])]),
+            valid_carriers: vec![EventId::from_bytes([actor; 32])].into(),
         }
     }
 
@@ -279,7 +279,7 @@ pub(crate) mod tests {
         first.change_hash = ChangeHash::from_bytes([9; 32]);
         let mut empty_second = candidate(1, 2, 3, 0);
         empty_second.change_hash = ChangeHash::from_bytes([1; 32]);
-        empty_second.dependencies = vec![first.change_hash];
+        empty_second.dependencies = vec![first.change_hash].into();
         let mut other_actor = candidate(2, 1, 1, 0);
         other_actor.change_hash = ChangeHash::from_bytes([8; 32]);
         let states = initialize_actor_states([empty_second.clone(), other_actor, first.clone()]);
@@ -306,7 +306,7 @@ pub(crate) mod tests {
         );
 
         let mut missing = candidate(3, 1, 1, 1);
-        missing.dependencies = vec![ChangeHash::from_bytes([7; 32])];
+        missing.dependencies = vec![ChangeHash::from_bytes([7; 32])].into();
         assert_eq!(
             initialize_actor_states([missing]),
             Err(ActorStateError::MissingDependency)
@@ -316,8 +316,8 @@ pub(crate) mod tests {
         left.change_hash = ChangeHash::from_bytes([3; 32]);
         let mut right = candidate(4, 1, 1, 1);
         right.change_hash = ChangeHash::from_bytes([4; 32]);
-        left.dependencies = vec![right.change_hash];
-        right.dependencies = vec![left.change_hash];
+        left.dependencies = vec![right.change_hash].into();
+        right.dependencies = vec![left.change_hash].into();
         assert_eq!(
             initialize_actor_states([right, left]),
             Err(ActorStateError::DependencyCycle)
@@ -429,13 +429,13 @@ pub(crate) mod tests {
         base.change_hash = ChangeHash::from_bytes([1; 32]);
         let mut left = candidate(2, 1, 2, 1);
         left.change_hash = ChangeHash::from_bytes([2; 32]);
-        left.dependencies = vec![base.change_hash];
+        left.dependencies = vec![base.change_hash].into();
         let mut right = candidate(3, 1, 2, 1);
         right.change_hash = ChangeHash::from_bytes([3; 32]);
-        right.dependencies = vec![base.change_hash];
+        right.dependencies = vec![base.change_hash].into();
         let mut merge = candidate(4, 1, 3, 0);
         merge.change_hash = ChangeHash::from_bytes([4; 32]);
-        merge.dependencies = vec![left.change_hash, right.change_hash];
+        merge.dependencies = vec![left.change_hash, right.change_hash].into();
         let states = initialize_actor_states([merge, right, base, left]);
         assert!(states.is_ok());
     }
@@ -494,7 +494,7 @@ pub(crate) mod tests {
                 input["start_op"].as_u64().unwrap_or_default(),
                 input["operation_count"].as_u64().unwrap_or_default(),
             );
-            candidate.dependencies = current_heads.iter().copied().collect();
+            candidate.dependencies = current_heads.iter().copied().collect::<Vec<_>>().into();
             let result = if input["empty"].as_bool() == Some(true) {
                 apply_empty_counter(&mut states, &candidate, &current_heads)
             } else {
@@ -540,7 +540,7 @@ pub(crate) mod tests {
         let first_head = ChangeHash::from_bytes([7; 32]);
         let mut empty = candidate(1, 2, 3, 0);
         empty.change_hash = ChangeHash::from_bytes([2; 32]);
-        empty.dependencies = vec![first_head];
+        empty.dependencies = vec![first_head].into();
         assert_eq!(
             apply_empty_counter(&mut states, &empty, &BTreeSet::from([first_head])),
             Ok(())
@@ -549,7 +549,7 @@ pub(crate) mod tests {
 
         let mut second_empty = candidate(1, 3, 3, 0);
         second_empty.change_hash = ChangeHash::from_bytes([3; 32]);
-        second_empty.dependencies = vec![empty.change_hash];
+        second_empty.dependencies = vec![empty.change_hash].into();
         assert_eq!(
             apply_empty_counter(
                 &mut states,
@@ -559,7 +559,7 @@ pub(crate) mod tests {
             Ok(())
         );
         let mut wrong_start = candidate(1, 4, 4, 0);
-        wrong_start.dependencies = vec![second_empty.change_hash];
+        wrong_start.dependencies = vec![second_empty.change_hash].into();
         assert_eq!(
             apply_empty_counter(
                 &mut states.clone(),

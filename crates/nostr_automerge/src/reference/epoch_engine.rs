@@ -416,7 +416,7 @@ pub(crate) fn evaluate_epoch(
                 false
             } else {
                 let mut dependencies = BTreeSet::new();
-                for dependency in &candidate.dependencies {
+                for dependency in candidate.dependencies.iter() {
                     charge_epoch_item(WorkCounter::GraphEdge, budget, cancellation)
                         .map_err(EpochEvaluationError::Schedule)?;
                     dependencies.insert(*dependency);
@@ -674,10 +674,10 @@ mod tests {
             sequence: 1,
             start_op: 1,
             operation_count: 1,
-            dependencies: Vec::new(),
+            dependencies: Vec::new().into(),
             control_id: EventId::from_bytes([3; 32]),
             author: DevicePublicKey::from_bytes([7; 32]),
-            valid_carriers: BTreeSet::new(),
+            valid_carriers: std::sync::Arc::from([]),
         };
         let mut exhausted = WorkBudget::new(0, 1);
         assert_eq!(
@@ -705,10 +705,10 @@ mod tests {
             sequence: 1,
             start_op: 1,
             operation_count: 1,
-            dependencies: Vec::new(),
+            dependencies: Vec::new().into(),
             control_id: EventId::from_bytes([3; 32]),
             author: DevicePublicKey::from_bytes([7; 32]),
-            valid_carriers: BTreeSet::from([EventId::from_bytes([8; 32])]),
+            valid_carriers: vec![EventId::from_bytes([8; 32])].into(),
         };
         let accepted = AcceptedEpochState::new(
             BTreeSet::from([hash]),
@@ -735,10 +735,10 @@ mod tests {
             sequence: 1,
             start_op: 1,
             operation_count: 1,
-            dependencies: Vec::new(),
+            dependencies: Vec::new().into(),
             control_id: EventId::from_bytes([3; 32]),
             author: DevicePublicKey::from_bytes([11; 32]),
-            valid_carriers: BTreeSet::from([EventId::from_bytes([12; 32])]),
+            valid_carriers: vec![EventId::from_bytes([12; 32])].into(),
         };
         let actors = BTreeMap::from([(
             actor,

@@ -13,23 +13,26 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 LEDGER = ROOT / "implementation/runtime_ledger_v10.json"
 SCHEMA = ROOT / "tools/validation/runtime_ledger_v10.schema.json"
 
-LEDGER_SHA256 = "96f74d5cb0ed4b5302e30e1b8d1082f1f291969059705ff57953c7940c26cd24"
+LEDGER_SHA256 = "72353098c2b63fd832661214b4afe3d33e32614ce9e31e7cd352ca57c308e57b"
 SCHEMA_SHA256 = "8ae43e4f3aa8d00ea27ebb64a2f0d741b54cd9b10c398900c16ba9cd94ed0814"
 AUTHORITY_SHA256 = "0cac9bf4b90c55e428c335797a9d7195bc3ee08eed5bfb49fca4428e62702531"
 EXPECTED_SCOPE = (
+    "crates/nostr_automerge/src/control/epoch_state.rs",
     "crates/nostr_automerge/src/control/parent_view.rs",
-    "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+    "crates/nostr_automerge/src/graph/actor_state.rs",
+    "crates/nostr_automerge/src/graph/change_candidate.rs",
+    "crates/nostr_automerge/src/graph/closure.rs",
+    "crates/nostr_automerge/src/graph/dependency_graph.rs",
+    "crates/nostr_automerge/src/graph/equivocation.rs",
+    "crates/nostr_automerge/src/graph/scaling.rs",
+    "crates/nostr_automerge/src/graph/schedule.rs",
+    "crates/nostr_automerge/src/reference/epoch.rs",
+    "crates/nostr_automerge/src/reference/epoch_engine.rs",
+    "crates/nostr_automerge/src/reference/evaluate.rs",
     "docs/execution/remediation_v10/ledger.md",
     "implementation/runtime_ledger_v10.json",
     "reports/spec_baseline.txt",
-    "scripts/local_gate.py",
-    "scripts/reproduce_resource_followup_v10.py",
-    "scripts/validate_resource_operation_inventory_v10.py",
     "scripts/validate_runtime_ledger_v10.py",
-    "scripts/validate_spec.py",
-    "spec/resource_operation_inventory_v10.json",
-    "tools/nostr_automerge_xtask/src/validate.rs",
-    "tools/validation/resource_operation_inventory_v10.schema.json",
 )
 TOP_KEYS = (
     "schema", "status", "authority", "historical_predecessor", "cursor",
@@ -67,12 +70,12 @@ def validate_record(record: object) -> None:
         raise LedgerError("ledger:historical")
     cursor = record["cursor"]
     if cursor != {
-        "active_rcld": 95,
-        "active_step": "step_1289",
-        "next_step": "step_1290",
+        "active_rcld": 96,
+        "active_step": "step_1291",
+        "next_step": "step_1292",
         "last_planned_step": "step_1307",
-        "remaining_checkpoint_count": 19,
-        "remaining_rcld_count": 5,
+        "remaining_checkpoint_count": 17,
+        "remaining_rcld_count": 4,
     }:
         raise LedgerError("ledger:cursor")
     if record["findings"] != {"open": ["FINDING_094", "FINDING_095"], "closed": [], "held": ["FINDING_080"]}:
@@ -84,12 +87,26 @@ def validate_record(record: object) -> None:
         raise LedgerError("ledger:requirements")
     if tuple(record["active_checkpoint_scope"]) != EXPECTED_SCOPE:
         raise LedgerError("ledger:scope")
-    if record["predecessors"] != [{
-        "step": "step_1288",
-        "candidate": "53208563e7aa28bc00162ab3b5802824675df6d8",
-        "owner_class": "public",
-        "result": "pass",
-    }]:
+    if record["predecessors"] != [
+        {
+            "step": "step_1288",
+            "candidate": "53208563e7aa28bc00162ab3b5802824675df6d8",
+            "owner_class": "public",
+            "result": "pass",
+        },
+        {
+            "step": "step_1289",
+            "candidate": "3991ca4933318581cdde23680b9e03758f92b5df",
+            "owner_class": "public",
+            "result": "pass",
+        },
+        {
+            "step": "step_1290",
+            "candidate": "19420942f7814051ae458fb05f49050244394271",
+            "owner_class": "opaque_private",
+            "result": "pass",
+        },
+    ]:
         raise LedgerError("ledger:predecessors")
     if tuple(record["holds"]) != (
         "external_assurance", "nip_submission", "production_qualification",
@@ -123,7 +140,7 @@ def mutation_self_test() -> int:
         lambda value: value.update(status="code_complete_publication_held"),
         lambda value: value["authority"].update(sha256="0" * 64),
         lambda value: value["historical_predecessor"].update(candidate="0" * 40),
-        lambda value: value["cursor"].update(active_step="step_1290"),
+        lambda value: value["cursor"].update(active_step="step_1292"),
         lambda value: value["cursor"].update(remaining_checkpoint_count=18),
         lambda value: value["findings"]["open"].reverse(),
         lambda value: value["active_checkpoint_scope"].pop(),
@@ -154,7 +171,7 @@ def main() -> None:
     validate_worktree_scope()
     mutations = mutation_self_test()
     print("PASS: runtime ledger v10")
-    print("- active=step_1289")
+    print("- active=step_1291")
     print(f"- mutations={mutations}")
 
 

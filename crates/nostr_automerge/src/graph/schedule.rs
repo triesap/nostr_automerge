@@ -43,7 +43,7 @@ pub(crate) fn schedule_candidates(
             .filter(|dependency| !accepted_base.contains(dependency))
             .count();
         unresolved.insert(*hash, count);
-        for dependency in &candidate.dependencies {
+        for dependency in candidate.dependencies.iter() {
             if cancellation.is_cancelled() {
                 return Err(ScheduleError::Cancelled);
             }
@@ -91,7 +91,7 @@ pub(crate) fn schedule_candidates(
     }
     let mut missing_dependencies = BTreeSet::new();
     for candidate in remaining.values() {
-        for dependency in &candidate.dependencies {
+        for dependency in candidate.dependencies.iter() {
             if cancellation.is_cancelled() {
                 return Err(ScheduleError::Cancelled);
             }
@@ -171,7 +171,7 @@ mod tests {
         high.change_hash = ChangeHash::from_bytes([2; 32]);
         let mut dependant = candidate(1, 2, 2, 1);
         dependant.change_hash = ChangeHash::from_bytes([3; 32]);
-        dependant.dependencies = vec![high.change_hash];
+        dependant.dependencies = vec![high.change_hash].into();
         let evaluate = |candidates| {
             schedule_candidates(
                 candidates,
@@ -203,7 +203,7 @@ mod tests {
         assert_eq!(measured.consumed().get(WorkCounter::GraphEdge), 2);
         let missing_hash = ChangeHash::from_bytes([9; 32]);
         let mut missing = high.clone();
-        missing.dependencies = vec![missing_hash];
+        missing.dependencies = vec![missing_hash].into();
         let missing_schedule = evaluate(vec![missing]).map(|schedule| {
             (
                 schedule.pending,
@@ -220,9 +220,9 @@ mod tests {
             ))
         );
         let mut cycle_low = low.clone();
-        cycle_low.dependencies = vec![high.change_hash];
+        cycle_low.dependencies = vec![high.change_hash].into();
         let mut cycle_high = high.clone();
-        cycle_high.dependencies = vec![low.change_hash];
+        cycle_high.dependencies = vec![low.change_hash].into();
         assert_eq!(
             evaluate(vec![cycle_high, cycle_low])
                 .map(|schedule| (schedule.pending, schedule.cyclic)),
@@ -233,10 +233,10 @@ mod tests {
         );
         let mut fan_out = candidate(3, 1, 1, 1);
         fan_out.change_hash = ChangeHash::from_bytes([4; 32]);
-        fan_out.dependencies = vec![low.change_hash];
+        fan_out.dependencies = vec![low.change_hash].into();
         let mut fan_in = candidate(4, 1, 1, 1);
         fan_in.change_hash = ChangeHash::from_bytes([5; 32]);
-        fan_in.dependencies = vec![dependant.change_hash, fan_out.change_hash];
+        fan_in.dependencies = vec![dependant.change_hash, fan_out.change_hash].into();
         assert_eq!(
             evaluate(vec![
                 fan_in.clone(),
@@ -285,11 +285,11 @@ mod tests {
         left.change_hash = ChangeHash::from_bytes([1; 32]);
         let mut right = candidate(2, 1, 1, 1);
         right.change_hash = ChangeHash::from_bytes([2; 32]);
-        left.dependencies = vec![right.change_hash];
-        right.dependencies = vec![left.change_hash];
+        left.dependencies = vec![right.change_hash].into();
+        right.dependencies = vec![left.change_hash].into();
         let mut descendant = candidate(3, 1, 1, 1);
         descendant.change_hash = ChangeHash::from_bytes([3; 32]);
-        descendant.dependencies = vec![right.change_hash];
+        descendant.dependencies = vec![right.change_hash].into();
         assert_eq!(
             evaluate(vec![descendant.clone(), right.clone(), left.clone()])
                 .map(|schedule| schedule.cyclic),
@@ -302,8 +302,8 @@ mod tests {
 
         let mut third = candidate(3, 1, 1, 1);
         third.change_hash = ChangeHash::from_bytes([4; 32]);
-        right.dependencies = vec![third.change_hash];
-        third.dependencies = vec![left.change_hash];
+        right.dependencies = vec![third.change_hash].into();
+        third.dependencies = vec![left.change_hash].into();
         assert_eq!(
             evaluate(vec![third.clone(), right, left.clone()]).map(|schedule| schedule.cyclic),
             Ok(BTreeSet::from([
@@ -315,7 +315,7 @@ mod tests {
 
         let mut self_cycle = candidate(4, 1, 1, 1);
         self_cycle.change_hash = ChangeHash::from_bytes([5; 32]);
-        self_cycle.dependencies = vec![self_cycle.change_hash];
+        self_cycle.dependencies = vec![self_cycle.change_hash].into();
         assert_eq!(
             evaluate(vec![self_cycle.clone()]).map(|schedule| schedule.cyclic),
             Ok(BTreeSet::from([self_cycle.change_hash]))

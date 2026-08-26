@@ -48,7 +48,7 @@ pub(crate) fn detect_equivocations(
             .or_default()
             .entry(candidate.change_hash)
             .or_default()
-            .extend(candidate.valid_carriers);
+            .extend(candidate.valid_carriers.iter().copied());
     }
     let mut first_by_actor = BTreeMap::<ActorId, EquivocationGroup>::new();
     for ((actor, sequence), changes) in groups {
@@ -275,10 +275,10 @@ mod tests {
         conflict.change_hash = ChangeHash::from_bytes([2; 32]);
         let mut later_same_actor = candidate(1, 2, 2, 1);
         later_same_actor.change_hash = ChangeHash::from_bytes([3; 32]);
-        later_same_actor.dependencies = vec![first.change_hash];
+        later_same_actor.dependencies = vec![first.change_hash].into();
         let mut cross_actor = candidate(2, 1, 1, 1);
         cross_actor.change_hash = ChangeHash::from_bytes([4; 32]);
-        cross_actor.dependencies = vec![later_same_actor.change_hash];
+        cross_actor.dependencies = vec![later_same_actor.change_hash].into();
         let mut independent = candidate(3, 1, 1, 1);
         independent.change_hash = ChangeHash::from_bytes([5; 32]);
         let input = vec![
@@ -335,7 +335,7 @@ mod tests {
 
         let mut deep = independent;
         deep.change_hash = ChangeHash::from_bytes([6; 32]);
-        deep.dependencies = vec![cross_actor.change_hash];
+        deep.dependencies = vec![cross_actor.change_hash].into();
         let mut extended = input;
         extended.push(deep.clone());
         let graph = build_graph(extended.clone(), BTreeSet::new());
@@ -374,7 +374,7 @@ mod tests {
         conflict.change_hash = ChangeHash::from_bytes([2; 32]);
         let mut dependent = candidate(7, 2, 2, 1);
         dependent.change_hash = ChangeHash::from_bytes([3; 32]);
-        dependent.dependencies = vec![first.change_hash];
+        dependent.dependencies = vec![first.change_hash].into();
         let mut independent = candidate(7, 3, 3, 1);
         independent.change_hash = ChangeHash::from_bytes([4; 32]);
         let inputs = vec![
