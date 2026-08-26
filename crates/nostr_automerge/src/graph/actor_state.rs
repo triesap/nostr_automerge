@@ -1,7 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use super::change_candidate::ChangeCandidate;
-use crate::{ActorId, ChangeHash};
+use crate::{ActorId, ChangeHash, WorkCounter};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct EpochActorState {
@@ -23,6 +24,19 @@ pub(crate) enum ActorStateError {
     DependencyFrontier,
     MissingDependency,
     DependencyCycle,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum MeteredActorStateError<E> {
+    Work(E),
+    State(ActorStateError),
+}
+
+pub(crate) struct MeteredActorState {
+    pub(crate) dependencies: BTreeMap<ChangeHash, Arc<[ChangeHash]>>,
+    pub(crate) frontier_heads: BTreeSet<ChangeHash>,
+    pub(crate) actor_states: BTreeMap<ActorId, EpochActorState>,
+    pub(crate) writer_contributions: BTreeMap<ActorId, ChangeHash>,
 }
 
 pub(crate) fn apply_empty_counter(
@@ -245,6 +259,170 @@ pub(crate) fn initialize_actor_states(
         return Err(ActorStateError::DependencyCycle);
     }
     Ok(states)
+}
+
+pub(crate) fn initialize_actor_states_metered<E>(
+    accepted_closure: &BTreeSet<ChangeHash>,
+    changes: &BTreeMap<ChangeHash, ChangeCandidate>,
+    mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
+) -> Result<MeteredActorState, MeteredActorStateError<E>> {
+    if accepted_closure.len() != changes.len() {
+        return Err(MeteredActorStateError::State(
+            ActorStateError::MissingDependency,
+        ));
+    }
+    let mut dependencies = BTreeMap::new();
+    let mut depended_on = BTreeSet::new();
+    let mut remaining_dependencies = BTreeMap::new();
+    let mut dependants = BTreeMap::<ChangeHash, BTreeSet<ChangeHash>>::new();
+    let mut ready = BTreeSet::new();
+    let mut changes_iter = changes.iter();
+    for _ in 0..changes.len() {
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+        let Some((hash, candidate)) = changes_iter.next() else {
+            return Err(MeteredActorStateError::State(
+                ActorStateError::DependencyCycle,
+            ));
+        };
+        if !accepted_closure.contains(hash) {
+            return Err(MeteredActorStateError::State(
+                ActorStateError::MissingDependency,
+            ));
+        }
+        let mut dependency_iter = candidate.dependencies.iter();
+        for _ in 0..candidate.dependencies.len() {
+            charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
+            let Some(dependency) = dependency_iter.next().copied() else {
+                return Err(MeteredActorStateError::State(
+                    ActorStateError::DependencyCycle,
+                ));
+            };
+            if !changes.contains_key(&dependency) {
+                return Err(MeteredActorStateError::State(
+                    ActorStateError::MissingDependency,
+                ));
+            }
+            depended_on.insert(dependency);
+            dependants.entry(dependency).or_default().insert(*hash);
+        }
+        if candidate.dependencies.is_empty() {
+            ready.insert(*hash);
+        }
+        remaining_dependencies.insert(*hash, candidate.dependencies.len());
+        dependencies.insert(*hash, Arc::clone(&candidate.dependencies));
+    }
+
+    let mut states = BTreeMap::<ActorId, EpochActorState>::new();
+    let mut frontier_heads = BTreeSet::new();
+    let mut writer_contributions = BTreeMap::new();
+    let mut causal_next_by_change = BTreeMap::<ChangeHash, u64>::new();
+    let mut processed = 0usize;
+    while !ready.is_empty() {
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+        let Some(hash) = ready.pop_first() else {
+            return Err(MeteredActorStateError::State(
+                ActorStateError::DependencyCycle,
+            ));
+        };
+        let candidate = &changes[&hash];
+        if !depended_on.contains(&hash) {
+            frontier_heads.insert(hash);
+        }
+        let expected_sequence = match states.get(&candidate.actor) {
+            Some(state) => state
+                .last_sequence
+                .checked_add(1)
+                .ok_or(MeteredActorStateError::State(ActorStateError::SequenceGap))?,
+            None => 1,
+        };
+        if candidate.sequence < expected_sequence {
+            return Err(MeteredActorStateError::State(ActorStateError::Equivocation));
+        }
+        if candidate.sequence != expected_sequence {
+            return Err(MeteredActorStateError::State(ActorStateError::SequenceGap));
+        }
+        let mut next_op = 1;
+        let mut dependency_iter = candidate.dependencies.iter();
+        for _ in 0..candidate.dependencies.len() {
+            charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
+            let Some(dependency) = dependency_iter.next() else {
+                return Err(MeteredActorStateError::State(
+                    ActorStateError::DependencyCycle,
+                ));
+            };
+            if let Some(value) = causal_next_by_change.get(dependency) {
+                next_op = next_op.max(*value);
+            }
+        }
+        let advanced =
+            if candidate.operation_count == 0 {
+                if candidate.start_op != next_op {
+                    return Err(MeteredActorStateError::State(
+                        ActorStateError::OperationCounter,
+                    ));
+                }
+                next_op
+            } else {
+                if candidate.start_op != next_op {
+                    return Err(MeteredActorStateError::State(
+                        ActorStateError::OperationCounter,
+                    ));
+                }
+                next_op.checked_add(candidate.operation_count).ok_or(
+                    MeteredActorStateError::State(ActorStateError::OperationCounter),
+                )?
+            };
+        states.insert(
+            candidate.actor,
+            EpochActorState {
+                last_sequence: candidate.sequence,
+                next_op: advanced,
+                highest_change: candidate.change_hash,
+            },
+        );
+        writer_contributions.insert(candidate.actor, candidate.change_hash);
+        causal_next_by_change.insert(candidate.change_hash, advanced);
+        processed = processed
+            .checked_add(1)
+            .ok_or(MeteredActorStateError::State(
+                ActorStateError::DependencyCycle,
+            ))?;
+        if let Some(children) = dependants.get(&hash) {
+            let mut child_iter = children.iter();
+            for _ in 0..children.len() {
+                charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
+                let Some(child) = child_iter.next() else {
+                    return Err(MeteredActorStateError::State(
+                        ActorStateError::DependencyCycle,
+                    ));
+                };
+                let Some(remaining) = remaining_dependencies.get_mut(child) else {
+                    return Err(MeteredActorStateError::State(
+                        ActorStateError::MissingDependency,
+                    ));
+                };
+                *remaining = remaining
+                    .checked_sub(1)
+                    .ok_or(MeteredActorStateError::State(
+                        ActorStateError::DependencyCycle,
+                    ))?;
+                if *remaining == 0 {
+                    ready.insert(*child);
+                }
+            }
+        }
+    }
+    if processed != changes.len() {
+        return Err(MeteredActorStateError::State(
+            ActorStateError::DependencyCycle,
+        ));
+    }
+    Ok(MeteredActorState {
+        dependencies,
+        frontier_heads,
+        actor_states: states,
+        writer_contributions,
+    })
 }
 
 #[cfg(test)]

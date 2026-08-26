@@ -4,7 +4,7 @@ use std::sync::Arc;
 use crate::automerge_adapter::document::{AppliedDocument, materialize_history};
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 use crate::control::candidate::{CandidateResult, evaluate_child_metered};
-use crate::control::epoch_state::AcceptedEpochState;
+use crate::control::epoch_state::{AcceptedEpochState, MeteredAcceptedEpochStateError};
 use crate::control::frontier::accepted_frontier_closure;
 use crate::control::parent_view::ParentEpochView;
 use crate::control::validate::ControlEnvelope;
@@ -885,24 +885,35 @@ fn resolve_authoritative_epoch(
             .then_some((change.candidate.change_hash, change.candidate.clone()))
         }));
         let accepted_closure = accepted_candidates.keys().copied().collect::<BTreeSet<_>>();
-        let depended_on = accepted_candidates
-            .values()
-            .flat_map(|candidate| candidate.dependencies.iter().copied())
-            .filter(|hash| accepted_closure.contains(hash))
-            .collect::<BTreeSet<_>>();
-        let frontier_heads = accepted_closure.difference(&depended_on).copied().collect();
-        let materialized = (accepted_closure == *accepted_base.accepted_closure())
-            .then(|| accepted_base.materialized().cloned())
-            .flatten();
-        return EpochEvaluationResult::new(
-            accepted_closure,
-            frontier_heads,
+        if metered_hash_sets_equal(
+            &accepted_closure,
+            accepted_base.accepted_closure(),
+            budget,
+            cancellation,
+        )
+        .map_err(epoch_resolution_stop)?
+        {
+            return Ok(EpochEvaluationResult::from_shared_state(
+                accepted_base,
+                dispositions,
+                quarantine.alerts,
+            ));
+        }
+        let accepted_state = AcceptedEpochState::new_metered(
+            Arc::new(accepted_closure),
             accepted_candidates,
+            None,
+            |counter| charge_prior_knowledge_item(counter, budget, cancellation),
+        )
+        .map_err(|error| match error {
+            MeteredAcceptedEpochStateError::Work(stop) => epoch_resolution_stop(stop),
+            MeteredAcceptedEpochStateError::State(_) => EpochResolutionError::InvalidState,
+        })?;
+        return Ok(EpochEvaluationResult::from_shared_state(
+            Arc::new(accepted_state),
             dispositions,
             quarantine.alerts,
-            materialized,
-        )
-        .map_err(|_| EpochResolutionError::InvalidState);
+        ));
     };
     let canonical_ancestry = ancestry.to_vec();
     let epoch_changes = control
@@ -936,6 +947,16 @@ fn resolve_authoritative_epoch(
         | EpochEvaluationError::Graph(_)
         | EpochEvaluationError::State(_) => EpochResolutionError::InvalidState,
     })
+}
+
+const fn epoch_resolution_stop(stop: Completion) -> EpochResolutionError {
+    match stop {
+        Completion::BudgetExhausted => {
+            EpochResolutionError::Schedule(ScheduleError::BudgetExhausted)
+        }
+        Completion::Cancelled => EpochResolutionError::Schedule(ScheduleError::Cancelled),
+        Completion::Complete => EpochResolutionError::InvalidState,
+    }
 }
 
 fn prior_change_knowledge(
@@ -1017,7 +1038,7 @@ fn accepted_state_for_closure(
     accepted: &BTreeSet<ChangeHash>,
     candidates_by_hash: &BTreeMap<ChangeHash, ChangeCandidate>,
     parent: Option<&EpochEvaluationResult>,
-    cache: &mut BTreeMap<BTreeSet<ChangeHash>, Arc<AcceptedEpochState>>,
+    cache: &mut BTreeMap<Arc<BTreeSet<ChangeHash>>, Arc<AcceptedEpochState>>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<Option<Arc<AcceptedEpochState>>, Completion> {
@@ -1026,8 +1047,21 @@ fn accepted_state_for_closure(
         charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;
         cache_key.insert(*hash);
     }
-    if let Some(cached) = cache.get(&cache_key) {
+    let cache_key = Arc::new(cache_key);
+    if let Some(cached) = cache.get(cache_key.as_ref()) {
         return Ok(Some(Arc::clone(cached)));
+    }
+    if let Some(parent) = parent
+        && metered_hash_sets_equal(
+            parent.accepted_state().accepted_closure(),
+            accepted,
+            budget,
+            cancellation,
+        )?
+    {
+        let shared = parent.accepted_state_handle();
+        cache.insert(Arc::clone(&cache_key), Arc::clone(&shared));
+        return Ok(Some(shared));
     }
     let mut candidates = BTreeMap::new();
     for hash in accepted {
@@ -1037,38 +1071,44 @@ fn accepted_state_for_closure(
         };
         candidates.insert(*hash, candidate.clone());
     }
-    let mut depended_on = BTreeSet::new();
-    for candidate in candidates.values() {
-        for dependency in candidate.dependencies.iter() {
-            charge_prior_knowledge_item(WorkCounter::GraphEdge, budget, cancellation)?;
-            if accepted.contains(dependency) {
-                depended_on.insert(*dependency);
-            }
-        }
-    }
-    let mut heads = BTreeSet::new();
-    for hash in accepted {
-        charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;
-        if !depended_on.contains(hash) {
-            heads.insert(*hash);
-        }
-    }
-    let materialized = parent.and_then(|result| {
-        (result.accepted_state().accepted_closure() == accepted)
-            .then(|| result.accepted_state().materialized().cloned())
-            .flatten()
-    });
-    let materialized = if accepted.is_empty() && materialized.is_none() {
+    let materialized = if accepted.is_empty() {
         MaterializedDocumentView::empty().ok()
     } else {
-        materialized
+        None
     };
-    let state = match AcceptedEpochState::new(cache_key.clone(), heads, candidates, materialized) {
-        Ok(state) => Arc::new(state),
-        Err(_) => return Ok(None),
+    let state = match AcceptedEpochState::new_metered(
+        Arc::clone(&cache_key),
+        candidates,
+        materialized,
+        |counter| charge_prior_knowledge_item(counter, budget, cancellation),
+    ) {
+        Ok(state) => state,
+        Err(MeteredAcceptedEpochStateError::Work(stop)) => return Err(stop),
+        Err(MeteredAcceptedEpochStateError::State(_)) => return Ok(None),
     };
+    let state = Arc::new(state);
     cache.insert(cache_key, Arc::clone(&state));
     Ok(Some(state))
+}
+
+fn metered_hash_sets_equal(
+    left: &BTreeSet<ChangeHash>,
+    right: &BTreeSet<ChangeHash>,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<bool, Completion> {
+    if left.len() != right.len() {
+        return Ok(false);
+    }
+    let mut left_iter = left.iter();
+    let mut right_iter = right.iter();
+    for _ in 0..left.len() {
+        charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;
+        if left_iter.next() != right_iter.next() {
+            return Ok(false);
+        }
+    }
+    Ok(true)
 }
 
 fn applied_heads_agree(
@@ -1204,7 +1244,7 @@ mod tests {
         let accepted = BTreeSet::from([retained.change_hash]);
         let candidates = BTreeMap::from([(retained.change_hash, retained)]);
         let mut cache = BTreeMap::new();
-        let mut exact = WorkBudget::new(0, 4);
+        let mut exact = WorkBudget::new(0, 5);
 
         let first = accepted_state_for_closure(
             &accepted,
@@ -1227,10 +1267,10 @@ mod tests {
         .ok()
         .flatten();
         assert!(matches!((&first, &second), (Some(left), Some(right)) if Arc::ptr_eq(left, right)));
-        assert_eq!(exact.consumed().get(WorkCounter::GraphNode), 4);
+        assert_eq!(exact.consumed().get(WorkCounter::GraphNode), 5);
 
         let mut insufficient_cache = BTreeMap::new();
-        let mut insufficient = WorkBudget::new(0, 2);
+        let mut insufficient = WorkBudget::new(0, 3);
         assert!(matches!(
             accepted_state_for_closure(
                 &accepted,
@@ -1242,10 +1282,11 @@ mod tests {
             ),
             Err(Completion::BudgetExhausted)
         ));
-        assert_eq!(insufficient.consumed().get(WorkCounter::GraphNode), 2);
+        assert_eq!(insufficient.consumed().get(WorkCounter::GraphNode), 3);
+        assert!(insufficient_cache.is_empty());
 
         let mut cancelled_cache = BTreeMap::new();
-        let mut cancelled = WorkBudget::new(0, 3);
+        let mut cancelled = WorkBudget::new(0, 5);
         assert!(matches!(
             accepted_state_for_closure(
                 &accepted,

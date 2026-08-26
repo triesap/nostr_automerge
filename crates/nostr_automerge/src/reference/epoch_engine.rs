@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use crate::ChangeHash;
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
-use crate::control::epoch_state::AcceptedEpochState;
+use crate::control::epoch_state::{AcceptedEpochState, MeteredAcceptedEpochStateError};
 use crate::control::validate::ControlEnvelope;
 use crate::graph::actor_state::{
     EpochActorState, apply_empty_counter, apply_nonempty_counter, initialize_actor_states,
@@ -215,6 +215,10 @@ impl<'a> EpochEvaluationInput<'a> {
         &self.accepted_base
     }
 
+    pub(crate) fn accepted_base_handle(&self) -> Arc<AcceptedEpochState> {
+        Arc::clone(&self.accepted_base)
+    }
+
     pub(crate) const fn candidate_changes(&self) -> &BTreeMap<ChangeHash, ChangeCandidate> {
         &self.candidate_changes
     }
@@ -237,7 +241,7 @@ impl<'a> EpochEvaluationInput<'a> {
 /// Complete authoritative output of evaluating one selected control epoch.
 #[derive(Clone)]
 pub(crate) struct EpochEvaluationResult {
-    accepted_state: AcceptedEpochState,
+    accepted_state: Arc<AcceptedEpochState>,
     dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
     integrity_alerts: Vec<IntegrityAlert>,
 }
@@ -296,14 +300,30 @@ impl EpochEvaluationResult {
             materialized,
         )?;
         Ok(Self {
-            accepted_state,
+            accepted_state: Arc::new(accepted_state),
             dispositions,
             integrity_alerts,
         })
     }
 
-    pub(crate) const fn accepted_state(&self) -> &AcceptedEpochState {
+    pub(crate) fn from_shared_state(
+        accepted_state: Arc<AcceptedEpochState>,
+        dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
+        integrity_alerts: Vec<IntegrityAlert>,
+    ) -> Self {
+        Self {
+            accepted_state,
+            dispositions,
+            integrity_alerts,
+        }
+    }
+
+    pub(crate) fn accepted_state(&self) -> &AcceptedEpochState {
         &self.accepted_state
+    }
+
+    pub(crate) fn accepted_state_handle(&self) -> Arc<AcceptedEpochState> {
+        Arc::clone(&self.accepted_state)
     }
 
     pub(crate) const fn dispositions(&self) -> &BTreeMap<ChangeHash, ProtocolDisposition> {
@@ -493,32 +513,53 @@ pub(crate) fn evaluate_epoch(
     accepted_candidates
         .retain(|hash, _| dispositions.get(hash) != Some(&ProtocolDisposition::Excluded));
     let accepted_closure = accepted_candidates.keys().copied().collect::<BTreeSet<_>>();
-    let depended_on = accepted_candidates
-        .values()
-        .flat_map(|candidate| candidate.dependencies.iter().copied())
-        .filter(|hash| accepted_closure.contains(hash))
-        .collect::<BTreeSet<_>>();
-    let frontier_heads = accepted_closure.difference(&depended_on).copied().collect();
-    let materialized = if accepted_closure == *input.accepted_base().accepted_closure() {
-        input.accepted_base().materialized().cloned()
-    } else {
-        None
-    };
-    charge_actor_reconstruction(
-        &accepted_candidates.values().cloned().collect::<Vec<_>>(),
+    if metered_hash_sets_equal(
+        &accepted_closure,
+        input.accepted_base().accepted_closure(),
         budget,
         cancellation,
-    )
-    .map_err(EpochEvaluationError::Schedule)?;
-    EpochEvaluationResult::new(
-        accepted_closure,
-        frontier_heads,
-        accepted_candidates,
+    )? {
+        return Ok(EpochEvaluationResult::from_shared_state(
+            input.accepted_base_handle(),
+            dispositions,
+            quarantine.alerts,
+        ));
+    }
+    let accepted_closure = Arc::new(accepted_closure);
+    let accepted_state =
+        AcceptedEpochState::new_metered(accepted_closure, accepted_candidates, None, |counter| {
+            charge_epoch_item(counter, budget, cancellation)
+        })
+        .map_err(|error| match error {
+            MeteredAcceptedEpochStateError::Work(error) => EpochEvaluationError::Schedule(error),
+            MeteredAcceptedEpochStateError::State(error) => EpochEvaluationError::State(error),
+        })?;
+    Ok(EpochEvaluationResult::from_shared_state(
+        Arc::new(accepted_state),
         dispositions,
         quarantine.alerts,
-        materialized,
-    )
-    .map_err(EpochEvaluationError::State)
+    ))
+}
+
+fn metered_hash_sets_equal(
+    left: &BTreeSet<ChangeHash>,
+    right: &BTreeSet<ChangeHash>,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<bool, EpochEvaluationError> {
+    if left.len() != right.len() {
+        return Ok(false);
+    }
+    let mut left_iter = left.iter();
+    let mut right_iter = right.iter();
+    for _ in 0..left.len() {
+        charge_epoch_item(WorkCounter::GraphNode, budget, cancellation)
+            .map_err(EpochEvaluationError::Schedule)?;
+        if left_iter.next() != right_iter.next() {
+            return Ok(false);
+        }
+    }
+    Ok(true)
 }
 
 fn charge_actor_reconstruction(

@@ -9,12 +9,13 @@ predecessor for this append-only follow-up is
 `98630a87313f524b8efbe8182e19b9b897986e6e`. The authority checkpoint
 `step_1288` is complete at `53208563e7aa28bc00162ab3b5802824675df6d8`,
 `step_1289` is complete at `3991ca4933318581cdde23680b9e03758f92b5df`,
-and the approved opaque private `step_1290` candidate is
-`19420942f7814051ae458fb05f49050244394271`.
+the approved opaque private `step_1290` candidate is
+`19420942f7814051ae458fb05f49050244394271`, and `step_1291` is complete at
+`9657f53a54c9d33926fd91f6ef891f0625bdfdf4`.
 
 The active sequence is RCLD 95 through RCLD 99 and `step_1288` through
 `step_1307`. RCLD 95 is complete. The sequence is active at RCLD
-96/`step_1291`; the next checkpoint is `step_1292`. Seventeen checkpoints and
+96/`step_1292`; the next checkpoint is `step_1293`. Sixteen checkpoints and
 four RCLDs remain until final closure.
 
 `FINDING_094` is open for exact target-local resource ownership across public

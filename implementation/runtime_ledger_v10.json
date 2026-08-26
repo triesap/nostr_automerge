@@ -14,10 +14,10 @@
   },
   "cursor": {
     "active_rcld": 96,
-    "active_step": "step_1291",
-    "next_step": "step_1292",
+    "active_step": "step_1292",
+    "next_step": "step_1293",
     "last_planned_step": "step_1307",
-    "remaining_checkpoint_count": 17,
+    "remaining_checkpoint_count": 16,
     "remaining_rcld_count": 4
   },
   "findings": {
@@ -73,6 +73,12 @@
       "step": "step_1290",
       "candidate": "19420942f7814051ae458fb05f49050244394271",
       "owner_class": "opaque_private",
+      "result": "pass"
+    },
+    {
+      "step": "step_1291",
+      "candidate": "9657f53a54c9d33926fd91f6ef891f0625bdfdf4",
+      "owner_class": "public",
       "result": "pass"
     }
   ],

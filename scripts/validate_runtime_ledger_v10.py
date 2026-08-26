@@ -13,7 +13,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 LEDGER = ROOT / "implementation/runtime_ledger_v10.json"
 SCHEMA = ROOT / "tools/validation/runtime_ledger_v10.schema.json"
 
-LEDGER_SHA256 = "72353098c2b63fd832661214b4afe3d33e32614ce9e31e7cd352ca57c308e57b"
+LEDGER_SHA256 = "ad88d7c8f1722b0b0478e94fb5f21b64a0e39ac9a126eb0cfbc2c0705156f1d9"
 SCHEMA_SHA256 = "8ae43e4f3aa8d00ea27ebb64a2f0d741b54cd9b10c398900c16ba9cd94ed0814"
 AUTHORITY_SHA256 = "0cac9bf4b90c55e428c335797a9d7195bc3ee08eed5bfb49fca4428e62702531"
 EXPECTED_SCOPE = (
@@ -71,10 +71,10 @@ def validate_record(record: object) -> None:
     cursor = record["cursor"]
     if cursor != {
         "active_rcld": 96,
-        "active_step": "step_1291",
-        "next_step": "step_1292",
+        "active_step": "step_1292",
+        "next_step": "step_1293",
         "last_planned_step": "step_1307",
-        "remaining_checkpoint_count": 17,
+        "remaining_checkpoint_count": 16,
         "remaining_rcld_count": 4,
     }:
         raise LedgerError("ledger:cursor")
@@ -104,6 +104,12 @@ def validate_record(record: object) -> None:
             "step": "step_1290",
             "candidate": "19420942f7814051ae458fb05f49050244394271",
             "owner_class": "opaque_private",
+            "result": "pass",
+        },
+        {
+            "step": "step_1291",
+            "candidate": "9657f53a54c9d33926fd91f6ef891f0625bdfdf4",
+            "owner_class": "public",
             "result": "pass",
         },
     ]:
@@ -140,7 +146,7 @@ def mutation_self_test() -> int:
         lambda value: value.update(status="code_complete_publication_held"),
         lambda value: value["authority"].update(sha256="0" * 64),
         lambda value: value["historical_predecessor"].update(candidate="0" * 40),
-        lambda value: value["cursor"].update(active_step="step_1292"),
+        lambda value: value["cursor"].update(active_step="step_1291"),
         lambda value: value["cursor"].update(remaining_checkpoint_count=18),
         lambda value: value["findings"]["open"].reverse(),
         lambda value: value["active_checkpoint_scope"].pop(),
@@ -171,7 +177,7 @@ def main() -> None:
     validate_worktree_scope()
     mutations = mutation_self_test()
     print("PASS: runtime ledger v10")
-    print("- active=step_1291")
+    print("- active=step_1292")
     print(f"- mutations={mutations}")
 
 

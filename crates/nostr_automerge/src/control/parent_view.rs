@@ -28,7 +28,13 @@ impl ParentEpochView {
         Self {
             accepted: state.accepted_closure().clone(),
             heads: state.frontier_heads().clone(),
-            dependencies: state.dependencies().clone(),
+            dependencies: state
+                .dependencies()
+                .iter()
+                .map(|(hash, dependencies)| {
+                    (*hash, dependencies.iter().copied().collect::<BTreeSet<_>>())
+                })
+                .collect(),
             actors: state.actor_states().clone(),
             writer_contributions: state.writer_contributions().clone(),
             frontier_knowledge,
