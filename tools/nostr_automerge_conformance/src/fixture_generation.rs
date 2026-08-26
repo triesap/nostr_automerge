@@ -6173,13 +6173,23 @@ mod tests {
     #[allow(clippy::expect_used)]
     fn exact_resource_fixtures_bind_budget_isolation_and_output_bytes() {
         let cases = [
-            ("resource", "parent_propagation_exact_budget", false),
-            ("resource", "unrelated_control_flood_exact_budget", true),
-            ("scope", "foreign_claim_flood_exact_budget", true),
-            ("scope", "unrelated_valid_checkpoints_exact_budget", true),
+            ("resource", "parent_propagation_exact_budget", false, 6_937),
+            (
+                "resource",
+                "unrelated_control_flood_exact_budget",
+                true,
+                111,
+            ),
+            ("scope", "foreign_claim_flood_exact_budget", true, 111),
+            (
+                "scope",
+                "unrelated_valid_checkpoints_exact_budget",
+                true,
+                265,
+            ),
         ];
 
-        for (family, fixture_id, has_unrelated_flood) in cases {
+        for (family, fixture_id, has_unrelated_flood, current_exact_budget) in cases {
             let path = repository_root()
                 .join("fixtures/v1_draft/scenarios")
                 .join(family)
@@ -6205,18 +6215,30 @@ mod tests {
                 .collect::<Vec<_>>();
             let exact = minimum_complete_item_budget(coordinate, &events)
                 .expect("measured exact resource budget");
-            assert_eq!(signed.budget.max_items, exact, "{fixture_id}");
+            assert_eq!(exact, current_exact_budget, "{fixture_id}");
+            assert!(signed.budget.max_items < exact, "{fixture_id}");
+
+            let historical = generic_report(
+                fixture_id,
+                signed.clone().into_scenario(),
+                StateAssertionPolicy::None,
+            )
+            .expect("historical resource boundary report");
 
             let expected = serde_json::from_value::<ExpectedReport>(signed.expected_report.clone())
                 .expect("closed expected resource report");
             let expected_bytes =
                 write_canonical_report(&expected).expect("canonical expected resource report");
-            let exact_report = generic_report(
-                fixture_id,
-                signed.clone().into_scenario(),
-                StateAssertionPolicy::None,
-            )
-            .expect("exact resource report");
+            assert_eq!(
+                write_canonical_report(&historical).expect("historical resource report"),
+                expected_bytes,
+                "{fixture_id}",
+            );
+            let mut exact_scenario = signed.clone().into_scenario();
+            exact_scenario.budget.max_items = exact;
+            let exact_report =
+                generic_report(fixture_id, exact_scenario, StateAssertionPolicy::None)
+                    .expect("exact resource report");
             assert_eq!(
                 write_canonical_report(&exact_report).expect("canonical exact resource report"),
                 expected_bytes,

@@ -228,13 +228,19 @@ impl ReferenceEvaluator {
         let change_carrier_dispositions =
             match reduce_change_dispositions(&view, &mut batch, budget, cancellation) {
                 Ok(dispositions) => dispositions,
-                Err(completion) => {
+                Err(ChangeReductionError::Stopped(completion)) => {
                     return reserved_interrupted_report(
                         self.revision,
                         coordinate,
                         completion,
                         &mut finalization,
                     );
+                }
+                Err(ChangeReductionError::Invariant) => {
+                    return Err(settle_reserved_error(
+                        &mut finalization,
+                        EvaluationError::ReportInvariant,
+                    ));
                 }
             };
         if let Err(completion) =
@@ -763,6 +769,45 @@ enum AggregateChangeContribution {
     ConclusiveInvalid,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+struct AggregateChangeState {
+    saw_any: bool,
+    saw_unresolved: bool,
+    saw_authorized_excluded: bool,
+}
+
+impl AggregateChangeState {
+    const fn observe(&mut self, contribution: AggregateChangeContribution) {
+        self.saw_any = true;
+        match contribution {
+            AggregateChangeContribution::AuthorizedCanonical => {}
+            AggregateChangeContribution::Unresolved => self.saw_unresolved = true,
+            AggregateChangeContribution::AuthorizedExcluded => {
+                self.saw_authorized_excluded = true;
+            }
+            AggregateChangeContribution::ConclusiveInvalid => {}
+        }
+    }
+
+    const fn disposition(self, lineage: FinalLineageChangeState) -> ProtocolDisposition {
+        match lineage {
+            FinalLineageChangeState::Accepted => ProtocolDisposition::Accepted,
+            FinalLineageChangeState::CanonicalPruned => ProtocolDisposition::Excluded,
+            FinalLineageChangeState::Current if self.saw_unresolved => ProtocolDisposition::Pending,
+            FinalLineageChangeState::Current if self.saw_authorized_excluded => {
+                ProtocolDisposition::Excluded
+            }
+            FinalLineageChangeState::Current => ProtocolDisposition::Invalid,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ChangeReductionError {
+    Stopped(Completion),
+    Invariant,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct ChangeCarrierOutcome {
     event_id: crate::EventId,
@@ -847,39 +892,106 @@ fn noncanonical_branch_claim_reason(outcome: Option<ProtocolDisposition>) -> Cha
     }
 }
 
+fn canonical_ancestor_hashes(
+    batch: &BatchEvaluationReport,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<std::collections::BTreeSet<ChangeHash>, ChangeReductionError> {
+    let mut hashes = std::collections::BTreeSet::new();
+    let mut controls = batch.canonical_controls.iter();
+    for _ in 0..batch.canonical_controls.len() {
+        charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)
+            .map_err(ChangeReductionError::Stopped)?;
+        let Some(control_id) = controls.next() else {
+            return Err(ChangeReductionError::Invariant);
+        };
+        let Some(accepted) = batch.accepted_at_control.get(control_id) else {
+            return Err(ChangeReductionError::Invariant);
+        };
+        let closure = accepted.accepted_closure();
+        let mut closure_hashes = closure.iter();
+        for _ in 0..closure.len() {
+            charge_evaluation_work(budget, cancellation, WorkCounter::GraphNode, 1)
+                .map_err(ChangeReductionError::Stopped)?;
+            let Some(hash) = closure_hashes.next() else {
+                return Err(ChangeReductionError::Invariant);
+            };
+            hashes.insert(*hash);
+        }
+    }
+    Ok(hashes)
+}
+
+fn control_authorizes_change(
+    control: &crate::carrier::control::ValidatedControlCarrier,
+    actor: crate::ActorId,
+    author: crate::DevicePublicKey,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<bool, ChangeReductionError> {
+    if control.terminal() {
+        return Ok(false);
+    }
+    let mut members = control.members().iter();
+    for _ in 0..control.members().len() {
+        charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)
+            .map_err(ChangeReductionError::Stopped)?;
+        let Some(member) = members.next() else {
+            return Err(ChangeReductionError::Invariant);
+        };
+        if member.actor == actor && member.device == author && member.roles.contains(&Role::Write) {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
 fn reduce_change_dispositions(
     view: &DocumentEvidenceView<'_>,
     batch: &mut BatchEvaluationReport,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
-) -> Result<std::collections::BTreeMap<crate::EventId, ChangeCarrierOutcome>, Completion> {
+) -> Result<std::collections::BTreeMap<crate::EventId, ChangeCarrierOutcome>, ChangeReductionError>
+{
     let corpus = view.corpus();
-    let final_accepted = batch.accepted_changes.clone();
+    let canonical_ancestors = canonical_ancestor_hashes(batch, budget, cancellation)?;
+    let final_accepted = &batch.accepted_changes;
     let mut change_carrier_dispositions = std::collections::BTreeMap::new();
-    for hash in view.change_hashes() {
-        charge_evaluation_work(budget, cancellation, WorkCounter::GraphNode, 1)?;
+    let change_hash_count = view.change_hash_set().map_or(0, |hashes| hashes.len());
+    let mut hash_iter = view.change_hash_set().into_iter().flatten();
+    for _ in 0..change_hash_count {
+        charge_evaluation_work(budget, cancellation, WorkCounter::GraphNode, 1)
+            .map_err(ChangeReductionError::Stopped)?;
+        let Some(hash) = hash_iter.next().copied() else {
+            return Err(ChangeReductionError::Invariant);
+        };
         let lineage = if final_accepted.contains(&hash) {
             FinalLineageChangeState::Accepted
-        } else if batch.canonical_controls.iter().any(|control_id| {
-            batch
-                .accepted_at_control
-                .get(control_id)
-                .is_some_and(|accepted| accepted.accepted_closure().contains(&hash))
-        }) {
+        } else if canonical_ancestors.contains(&hash) {
             FinalLineageChangeState::CanonicalPruned
         } else {
             FinalLineageChangeState::Current
         };
-        let mut outcomes = Vec::new();
-        let mut aggregate_contributions = Vec::new();
-        for event_id in view.change_claim_event_ids(hash) {
-            charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)?;
+        let mut aggregate = AggregateChangeState::default();
+        let Some(event_ids) = view.change_claim_event_id_set(hash) else {
+            return Err(ChangeReductionError::Invariant);
+        };
+        let mut event_iter = event_ids.iter();
+        for _ in 0..event_ids.len() {
+            charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)
+                .map_err(ChangeReductionError::Stopped)?;
+            let Some(event_id) = event_iter.next().copied() else {
+                return Err(ChangeReductionError::Invariant);
+            };
             let Some(claim) = corpus.indexes.changes.claims_by_event.get(&event_id) else {
-                continue;
+                return Err(ChangeReductionError::Invariant);
             };
             let Some(semantic) = corpus.indexes.changes.semantic_by_hash.get(&hash) else {
-                continue;
+                return Err(ChangeReductionError::Invariant);
             };
+            if claim.event_id != event_id || claim.change_hash != hash {
+                return Err(ChangeReductionError::Invariant);
+            }
             let state = resolve_referenced_control(
                 corpus,
                 claim.control_id,
@@ -889,18 +1001,13 @@ fn reduce_change_dispositions(
             );
             let reason = match state {
                 ReferencedControlState::Canonical(control) => {
-                    charge_evaluation_work(
+                    let authorized = control_authorizes_change(
+                        control,
+                        semantic.actor,
+                        claim.author,
                         budget,
                         cancellation,
-                        WorkCounter::Control,
-                        u64::try_from(control.members().len()).unwrap_or(u64::MAX),
                     )?;
-                    let authorized = !control.terminal()
-                        && control.members().iter().any(|member| {
-                            member.actor == semantic.actor
-                                && member.device == claim.author
-                                && member.roles.contains(&Role::Write)
-                        });
                     if !authorized {
                         ChangeClaimReason::Unauthorized
                     } else {
@@ -923,18 +1030,13 @@ fn reduce_change_dispositions(
                     }
                 }
                 ReferencedControlState::NoncanonicalValid(control) => {
-                    charge_evaluation_work(
+                    let authorized = control_authorizes_change(
+                        control,
+                        semantic.actor,
+                        claim.author,
                         budget,
                         cancellation,
-                        WorkCounter::Control,
-                        u64::try_from(control.members().len()).unwrap_or(u64::MAX),
                     )?;
-                    let authorized = !control.terminal()
-                        && control.members().iter().any(|member| {
-                            member.actor == semantic.actor
-                                && member.device == claim.author
-                                && member.roles.contains(&Role::Write)
-                        });
                     if !authorized {
                         ChangeClaimReason::Unauthorized
                     } else {
@@ -956,40 +1058,39 @@ fn reduce_change_dispositions(
                     ChangeClaimReason::InvalidReferencedControl
                 }
             };
-            aggregate_contributions.push(aggregate_change_contribution(reason));
-            outcomes.push(ChangeCarrierOutcome::new(
+            aggregate.observe(aggregate_change_contribution(reason));
+            let outcome = ChangeCarrierOutcome::new(
                 claim.event_id,
                 claim.change_hash,
                 claim.control_id,
                 reason,
-            ));
+            );
+            if change_carrier_dispositions
+                .insert(outcome.event_id, outcome)
+                .is_some()
+            {
+                return Err(ChangeReductionError::Invariant);
+            }
         }
-        let disposition = reduce_aggregate_change_outcome(lineage, &aggregate_contributions);
+        if !aggregate.saw_any {
+            return Err(ChangeReductionError::Invariant);
+        }
+        let disposition = aggregate.disposition(lineage);
         batch.dispositions.insert(hash, disposition);
-        change_carrier_dispositions.extend(
-            outcomes
-                .into_iter()
-                .map(|outcome| (outcome.event_id, outcome)),
-        );
     }
     Ok(change_carrier_dispositions)
 }
 
+#[cfg(test)]
 fn reduce_aggregate_change_outcome(
     lineage: FinalLineageChangeState,
     contributions: &[AggregateChangeContribution],
 ) -> ProtocolDisposition {
-    if lineage == FinalLineageChangeState::Accepted {
-        ProtocolDisposition::Accepted
-    } else if lineage == FinalLineageChangeState::CanonicalPruned {
-        ProtocolDisposition::Excluded
-    } else if contributions.contains(&AggregateChangeContribution::Unresolved) {
-        ProtocolDisposition::Pending
-    } else if contributions.contains(&AggregateChangeContribution::AuthorizedExcluded) {
-        ProtocolDisposition::Excluded
-    } else {
-        ProtocolDisposition::Invalid
+    let mut aggregate = AggregateChangeState::default();
+    for contribution in contributions {
+        aggregate.observe(*contribution);
     }
+    aggregate.disposition(lineage)
 }
 
 fn resolve_selected_manifest(
@@ -3535,19 +3636,20 @@ fn charge_evaluation_work(
 mod tests {
     use super::{
         AggregateChangeContribution, BatchEvaluationReport, ChangeCarrierOutcome,
-        ChangeClaimReason, CheckpointDownstreamStage, CheckpointHistoryInputs,
-        CheckpointReportAttributionStage, CheckpointWorkObserver, CheckpointWorkStop,
-        CompleteReportPass, EvaluationError, FINALIZATION_PASS_OBSERVATIONS,
+        ChangeClaimReason, ChangeReductionError, CheckpointDownstreamStage,
+        CheckpointHistoryInputs, CheckpointReportAttributionStage, CheckpointWorkObserver,
+        CheckpointWorkStop, CompleteReportPass, EvaluationError, FINALIZATION_PASS_OBSERVATIONS,
         FinalLineageChangeState, FinalizationBoundaryError, FinalizationDimension,
         FinalizationPassObservation, FinalizationPermitError, FinalizationPermitState,
         FinalizationReservationUnit, FixedFallbackLedger, FixedFallbackPass,
         PreparedCheckpointInputs, REEVALUATION_STAGE_OBSERVATIONS, REPORT_INVARIANT_ITEMS,
         ReferenceEvaluator, ReportFinalizationPermit, ReportFinalizationPlan,
-        aggregate_change_contribution, assembly_status, carrier_control_is_historical,
-        change_carrier_disposition, charge_checkpoint_work, checkpoint_control_refusal,
-        checkpoint_preflight_refusal, join_status, noncanonical_branch_claim_reason,
-        reduce_aggregate_change_outcome, reduce_change_dispositions,
-        scoped_dynamic_event_disposition_records, verify_prepared_checkpoints,
+        aggregate_change_contribution, assembly_status, canonical_ancestor_hashes,
+        carrier_control_is_historical, change_carrier_disposition, charge_checkpoint_work,
+        checkpoint_control_refusal, checkpoint_preflight_refusal, join_status,
+        noncanonical_branch_claim_reason, reduce_aggregate_change_outcome,
+        reduce_change_dispositions, scoped_dynamic_event_disposition_records,
+        verify_prepared_checkpoints,
     };
     use crate::CheckpointVerificationStatus as Status;
     use crate::authoring::{ActorState, AuthoringDocument};
@@ -3768,6 +3870,79 @@ mod tests {
     }
 
     #[test]
+    fn canonical_lineage_is_one_charged_control_and_hash_traversal() {
+        let control_a = EventId::from_bytes([0x31; 32]);
+        let control_b = EventId::from_bytes([0x32; 32]);
+        let control_c = EventId::from_bytes([0x33; 32]);
+        let hash_a = ChangeHash::from_bytes([0x41; 32]);
+        let hash_b = ChangeHash::from_bytes([0x42; 32]);
+        let hash_c = ChangeHash::from_bytes([0x43; 32]);
+        let batch = BatchEvaluationReport {
+            canonical_controls: vec![control_a, control_b, control_c],
+            control_dispositions: std::collections::BTreeMap::new(),
+            accepted_at_control: std::collections::BTreeMap::from([
+                (
+                    control_a,
+                    AcceptedAtControl::for_test(std::collections::BTreeSet::from([hash_a])),
+                ),
+                (
+                    control_b,
+                    AcceptedAtControl::for_test(std::collections::BTreeSet::from([hash_a, hash_b])),
+                ),
+                (
+                    control_c,
+                    AcceptedAtControl::for_test(std::collections::BTreeSet::from([
+                        hash_a, hash_b, hash_c,
+                    ])),
+                ),
+            ]),
+            statefully_valid_controls: std::collections::BTreeSet::new(),
+            branch_states: std::collections::BTreeMap::new(),
+            branch_change_dispositions: std::collections::BTreeMap::new(),
+            dispositions: std::collections::BTreeMap::new(),
+            accepted_changes: std::collections::BTreeSet::from([hash_c]),
+            heads: std::collections::BTreeSet::from([hash_c]),
+            materialized_document: None,
+            integrity_alerts: Vec::new(),
+            completion: crate::Completion::Complete,
+            failure: None,
+        };
+
+        let mut short = WorkBudget::new(0, 8);
+        assert_eq!(
+            canonical_ancestor_hashes(&batch, &mut short, &crate::NeverCancelled),
+            Err(ChangeReductionError::Stopped(
+                crate::Completion::BudgetExhausted
+            ))
+        );
+        assert_eq!(short.consumed().get(WorkCounter::Control), 3);
+        assert_eq!(short.consumed().get(WorkCounter::GraphNode), 5);
+
+        let mut exact = WorkBudget::new(0, 9);
+        assert_eq!(
+            canonical_ancestor_hashes(&batch, &mut exact, &crate::NeverCancelled),
+            Ok(std::collections::BTreeSet::from([hash_a, hash_b, hash_c]))
+        );
+        assert_eq!(exact.consumed().get(WorkCounter::Control), 3);
+        assert_eq!(exact.consumed().get(WorkCounter::GraphNode), 6);
+
+        let observations = std::cell::Cell::new(0_u64);
+        let cancel_last = || {
+            let next = observations.get().saturating_add(1);
+            observations.set(next);
+            next == 9
+        };
+        let mut cancelled = WorkBudget::new(0, 9);
+        assert_eq!(
+            canonical_ancestor_hashes(&batch, &mut cancelled, &cancel_last),
+            Err(ChangeReductionError::Stopped(crate::Completion::Cancelled))
+        );
+        assert_eq!(observations.get(), 9);
+        assert_eq!(cancelled.consumed().get(WorkCounter::Control), 3);
+        assert_eq!(cancelled.consumed().get(WorkCounter::GraphNode), 5);
+    }
+
+    #[test]
     fn carrier_claim_traversal_preserves_the_original_typed_stop() {
         let coordinate = DocumentCoordinate::new(
             ControllerPublicKey::from_bytes([0x11; 32]),
@@ -3871,7 +4046,9 @@ mod tests {
                 &mut exhausted,
                 &budget_cancellation,
             ),
-            Err(crate::Completion::BudgetExhausted)
+            Err(ChangeReductionError::Stopped(
+                crate::Completion::BudgetExhausted
+            ))
         );
         assert_eq!(budget_observations.get(), 2);
         assert_eq!(exhausted.consumed().get(WorkCounter::GraphNode), 1);
@@ -3886,7 +4063,7 @@ mod tests {
         let mut cancelled_batch = batch();
         assert_eq!(
             reduce_change_dispositions(&view, &mut cancelled_batch, &mut available, &cancellation,),
-            Err(crate::Completion::Cancelled)
+            Err(ChangeReductionError::Stopped(crate::Completion::Cancelled))
         );
         assert_eq!(cancellation_observations.get(), 2);
         assert_eq!(available.consumed().get(WorkCounter::GraphNode), 1);
@@ -3909,7 +4086,9 @@ mod tests {
                 &mut member_exhausted,
                 &member_budget_cancellation,
             ),
-            Err(crate::Completion::BudgetExhausted)
+            Err(ChangeReductionError::Stopped(
+                crate::Completion::BudgetExhausted
+            ))
         );
         assert_eq!(member_budget_observations.get(), 3);
         assert_eq!(member_exhausted.consumed().get(WorkCounter::GraphNode), 1);
@@ -3934,7 +4113,7 @@ mod tests {
                 &mut member_available,
                 &member_cancellation,
             ),
-            Err(crate::Completion::Cancelled)
+            Err(ChangeReductionError::Stopped(crate::Completion::Cancelled))
         );
         assert_eq!(member_cancellation_observations.get(), 3);
         assert_eq!(member_available.consumed().get(WorkCounter::GraphNode), 1);

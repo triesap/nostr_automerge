@@ -13,7 +13,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 INVENTORY = ROOT / "spec/resource_operation_inventory_v10.json"
 SCHEMA = ROOT / "tools/validation/resource_operation_inventory_v10.schema.json"
 
-INVENTORY_SHA256 = "1e7ddf9c89062e08a25c04197cc9fab9d4c9300386f4a2a11812a1ba6f84b0ac"
+INVENTORY_SHA256 = "435f303d46aefe6d2eb7e1a14892ffb6b3388a8511a63e23a28210fa2ece0ce0"
 SCHEMA_SHA256 = "0c8c4a784ba5b24c04b4081fe05f0de5dcde37523761d6a738abb3f16694d896"
 HARNESS_SHA256 = "4d6f6b67170f8c73be05d213bd01bb9f3c6332410038b34e8eedad2b31b61120"
 TOP_KEYS = ("schema", "status", "findings", "operations", "reproductions", "result")
@@ -140,6 +140,30 @@ METERED_SOURCE_ANCHORS = (
         "crates/nostr_automerge/src/reference/epoch.rs",
         "budget\n                    .charge(WorkCounter::GraphEdge, 1)\n                    .map_err(|_| ScheduleError::BudgetExhausted)?;\n                let Some(dependency) = dependency_iter.next()",
     ),
+    (
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)\n            .map_err(ChangeReductionError::Stopped)?;\n        let Some(control_id) = controls.next()",
+    ),
+    (
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "charge_evaluation_work(budget, cancellation, WorkCounter::GraphNode, 1)\n                .map_err(ChangeReductionError::Stopped)?;\n            let Some(hash) = closure_hashes.next()",
+    ),
+    (
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)\n                .map_err(ChangeReductionError::Stopped)?;\n            let Some(event_id) = event_iter.next().copied()",
+    ),
+    (
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "let final_accepted = &batch.accepted_changes;",
+    ),
+    (
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        ".insert(outcome.event_id, outcome)\n                .is_some()",
+    ),
+    (
+        "tools/nostr_automerge_conformance/src/fixture_generation.rs",
+        "assert_eq!(exact, current_exact_budget, \"{fixture_id}\");\n            assert!(signed.budget.max_items < exact, \"{fixture_id}\");",
+    ),
 )
 
 
@@ -156,6 +180,15 @@ def validate_metered_sources(sources: dict[str, str]) -> None:
         "crates/nostr_automerge/src/reference/epoch.rs"
     ]:
         raise InventoryError("metered_source:disposition_clone")
+    reduction = sources["crates/nostr_automerge/src/engine/reference_evaluator.rs"]
+    for forbidden in (
+        "let final_accepted = batch.accepted_changes.clone();",
+        "let mut aggregate_contributions = Vec::new();",
+        "let mut outcomes = Vec::new();",
+        "batch.canonical_controls.iter().any(",
+    ):
+        if forbidden in reduction:
+            raise InventoryError(f"metered_source:reduction:{forbidden}")
     for path in (
         "crates/nostr_automerge/src/reference/epoch_engine.rs",
         "crates/nostr_automerge/src/reference/evaluate.rs",
@@ -218,6 +251,15 @@ def source_mutation_self_test() -> int:
         "\nfn stale_clone() { let before = dispositions.clone(); }\n"
     )
     mutations.append(candidate)
+    for forbidden in (
+        "let final_accepted = batch.accepted_changes.clone();",
+        "let mut aggregate_contributions = Vec::new();",
+        "let mut outcomes = Vec::new();",
+        "batch.canonical_controls.iter().any(",
+    ):
+        candidate = dict(sources)
+        candidate["crates/nostr_automerge/src/engine/reference_evaluator.rs"] += forbidden
+        mutations.append(candidate)
     for index, mutation in enumerate(mutations):
         try:
             validate_metered_sources(mutation)

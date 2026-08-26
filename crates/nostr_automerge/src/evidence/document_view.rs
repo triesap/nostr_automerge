@@ -76,6 +76,14 @@ impl<'a> DocumentEvidenceView<'a> {
             .copied()
     }
 
+    pub(crate) fn change_hash_set(&self) -> Option<&'a BTreeSet<ChangeHash>> {
+        self.corpus
+            .indexes
+            .coordinates
+            .change_hashes
+            .get(&self.coordinate)
+    }
+
     pub(crate) fn control_event_ids(&self) -> impl Iterator<Item = EventId> + '_ {
         self.corpus
             .indexes
@@ -175,6 +183,18 @@ impl<'a> DocumentEvidenceView<'a> {
             .flat_map(move |claims| claims.get(&hash))
             .flatten()
             .copied()
+    }
+
+    pub(crate) fn change_claim_event_id_set(
+        &self,
+        hash: ChangeHash,
+    ) -> Option<&'a BTreeSet<EventId>> {
+        self.corpus
+            .indexes
+            .changes
+            .prior_claims_by_coordinate
+            .get(&self.coordinate)
+            .and_then(|claims| claims.get(&hash))
     }
 
     pub(crate) fn control_count(&self) -> usize {

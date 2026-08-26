@@ -73,15 +73,15 @@
       "id": "final_change_lineage",
       "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
       "function": "reduce_change_dispositions",
-      "operation_class": "nested_target_scan",
-      "required_resolution": "single_charged_lineage_precomputation"
+      "operation_class": "item_metered_lineage",
+      "required_resolution": "single_charged_lineage_precomputation_complete"
     },
     {
       "id": "carrier_contribution_vectors",
       "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
       "function": "reduce_change_dispositions",
-      "operation_class": "proportional_temporary",
-      "required_resolution": "stream_fixed_aggregate_state"
+      "operation_class": "item_metered_streaming_reduction",
+      "required_resolution": "stream_fixed_aggregate_state_complete"
     },
     {
       "id": "checkpoint_historical_control",

@@ -14,10 +14,10 @@
   },
   "cursor": {
     "active_rcld": 97,
-    "active_step": "step_1296",
-    "next_step": "step_1297",
+    "active_step": "step_1297",
+    "next_step": "step_1298",
     "last_planned_step": "step_1307",
-    "remaining_checkpoint_count": 12,
+    "remaining_checkpoint_count": 11,
     "remaining_rcld_count": 3
   },
   "findings": {
@@ -39,20 +39,16 @@
     "NCRDT-EVIDENCE-006"
   ],
   "active_checkpoint_scope": [
-    "crates/nostr_automerge/src/control/epoch_state.rs",
-    "crates/nostr_automerge/src/graph/actor_state.rs",
-    "crates/nostr_automerge/src/graph/dependency_graph.rs",
-    "crates/nostr_automerge/src/graph/schedule.rs",
-    "crates/nostr_automerge/src/reference/epoch.rs",
-    "crates/nostr_automerge/src/reference/epoch_engine.rs",
-    "crates/nostr_automerge/src/reference/evaluate.rs",
+    "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+    "crates/nostr_automerge/src/evidence/document_view.rs",
     "docs/execution/remediation_v10/ledger.md",
     "docs/qualification/work_budget_inventory.md",
     "implementation/runtime_ledger_v10.json",
     "reports/spec_baseline.txt",
     "scripts/validate_resource_operation_inventory_v10.py",
     "scripts/validate_runtime_ledger_v10.py",
-    "spec/resource_operation_inventory_v10.json"
+    "spec/resource_operation_inventory_v10.json",
+    "tools/nostr_automerge_conformance/src/fixture_generation.rs"
   ],
   "predecessors": [
     {
@@ -100,6 +96,12 @@
     {
       "step": "step_1295",
       "candidate": "f093da1d6cb9b27c0e425853adc7856992517d45",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1296",
+      "candidate": "a4170d63df63a1db41bd63a57d14f70226109f85",
       "owner_class": "public",
       "result": "pass"
     }
