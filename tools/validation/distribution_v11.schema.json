@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/fixtures/schema/distribution.schema.v11.json",
+  "title": "nostr_automerge signed fixture distribution v11",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["distribution_schema", "distribution_id", "protocol_revision", "status", "target_fixture_count", "fixture_count", "complete", "base_manifest_sha256", "preserved_v10_fixture_count", "preserved_v10_file_count", "preserved_v10_files_sha256", "intentional_v10_fixture_replacements", "appended_v11_fixtures", "requirements_sha256", "opaque_private_assurance_identity", "supersedes", "profiles", "fixtures", "files"],
+  "properties": {
+    "distribution_schema": {"const": "nostr_automerge.fixture_distribution.v11"},
+    "distribution_id": {"const": "draft_2026_08_signed_neutral_11"},
+    "protocol_revision": {"const": "draft_2026_08"},
+    "status": {"const": "canonical_signed_neutral_corpus"},
+    "target_fixture_count": {"const": 193},
+    "fixture_count": {"const": 193},
+    "complete": {"const": true},
+    "base_manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "preserved_v10_fixture_count": {"const": 192},
+    "preserved_v10_file_count": {"const": 597},
+    "preserved_v10_files_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "intentional_v10_fixture_replacements": {"const": ["foreign_claim_flood_exact_budget", "interrupted_after_checkpoint_resolution_returns_no_progress", "parent_propagation_exact_budget", "target_preparation_exact_budget", "target_raw_memo_exact_budget", "unrelated_control_flood_exact_budget", "unrelated_valid_checkpoints_exact_budget"]},
+    "appended_v11_fixtures": {"const": ["checkpoint_lower_sequence_sibling_not_historical"]},
+    "requirements_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "opaque_private_assurance_identity": {"const": "d40e2f7424b04716f5da798da093907234492c43fa629cdca95c5434cb70a9c2"},
+    "supersedes": {"const": "fixtures/distribution/manifest_v10.json"},
+    "profiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checkpoint", "core", "malformed", "property", "resource"],
+      "properties": {
+        "checkpoint": {"$ref": "#/$defs/identifiers"},
+        "core": {"$ref": "#/$defs/identifiers"},
+        "malformed": {"$ref": "#/$defs/identifiers"},
+        "property": {"$ref": "#/$defs/identifiers"},
+        "resource": {"$ref": "#/$defs/identifiers"}
+      }
+    },
+    "fixtures": {"type": "array", "minItems": 193, "maxItems": 193, "items": {"$ref": "#/$defs/fixture"}},
+    "files": {"type": "array", "minItems": 622, "maxItems": 622, "items": {"$ref": "#/$defs/file"}}
+  },
+  "$defs": {
+    "identifiers": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "fixture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expected_path", "fixture_id", "input_paths", "metadata_path", "profile", "requirements"],
+      "properties": {
+        "expected_path": {"type": "string", "minLength": 1},
+        "fixture_id": {"type": "string", "minLength": 1},
+        "input_paths": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "metadata_path": {"type": "string", "minLength": 1},
+        "profile": {"enum": ["checkpoint", "core", "malformed", "property", "resource"]},
+        "requirements": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
+      }
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    }
+  }
+}

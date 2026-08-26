@@ -1,0 +1,52 @@
+{
+  "schema": "nostr_automerge.appended_conformance.v11.v1",
+  "checkpoint": "step_1304",
+  "status": "pass",
+  "publication_status": "held",
+  "public_predecessor": "a097c0c948925b0bae5e47faca8433e38b856a8c",
+  "private_assurance": {
+    "candidate": "2d708bb0a7a00523ab5c244fd0a15c96afcf0a4a",
+    "implementation_candidate": "d8f1698a15e3821ecf78db84985b8492ac7f0868",
+    "result_identity_sha256": "d40e2f7424b04716f5da798da093907234492c43fa629cdca95c5434cb70a9c2",
+    "scenario_count": 192,
+    "delivery_order_count": 8,
+    "process_count": 2,
+    "result": "pass"
+  },
+  "distribution": {
+    "id": "draft_2026_08_signed_neutral_11",
+    "protocol_revision": "draft_2026_08",
+    "manifest_sha256": "db247fa3e6891e850f32ed9b00fb08cfd78d30c9eb88ea36a00bd22dabb63f5a",
+    "schema_sha256": "45e1cf7f3581a34da823cadcedde2b031a0f063be53b11ab738f3bf262354acf",
+    "generator_sha256": "b411dd5214a227734a2cd979a3398aa6e00b2d344cc45c7e6444287b4f89d32a",
+    "fixture_generation_sha256": "c2e49e7d9b7f97a0936e55bc913f0c0ec3bb7a835e56a7ca2afc756c3952b6af",
+    "runner_sha256": "cd6925bc0fe0153e252f1547241f9739e6900fd133411dc54728c61ea5f6c021",
+    "base_manifest_sha256": "86ec32f34dd99ef0c1e5ea3531360a1f78bf07d62818375096e0bdf0f209b8e5",
+    "fixture_count": 193,
+    "file_count": 622,
+    "preserved_v10_fixture_count": 192,
+    "preserved_v10_file_count": 597,
+    "intentional_replacement_count": 7,
+    "appended_fixture": "checkpoint_lower_sequence_sibling_not_historical"
+  },
+  "execution": {
+    "rust_process_count": 2,
+    "typescript_process_count": 2,
+    "delivery_order_count": 8,
+    "report_count_per_process": 193,
+    "mismatch_count": 0,
+    "canonical_output_sha256": "5d50a1656f5723975df9b668c949abc8a0e06619e70aa989d3b52d193dfa2d10",
+    "serialized_run_sha256": "1f811f77dfe6ca91e2aec2045c6c17e2496d5b9407e25f4b7f07af1c2ae64563",
+    "result": "pass"
+  },
+  "transition": {
+    "v10_bytes_preserved": true,
+    "unchanged_raw_replacement_count": 6,
+    "corrected_raw_replacement": "interrupted_after_checkpoint_resolution_returns_no_progress",
+    "sibling_checkpoint_status": "unauthorized",
+    "sibling_historical_carriers": [],
+    "findings_evidence_passed": ["FINDING_094", "FINDING_095"],
+    "result": "pass"
+  },
+  "result_identity_sha256": "4b4f76c7d36bfd2a8af80a2c1b14703fd22a1db6d65b372a925ba9fa5e89e1a1"
+}

@@ -79,6 +79,8 @@ LEGITIMATE_PUBLIC_COMMANDS = frozenset(
 )
 PYTHON_SURFACES = (
     "scripts/generate_distribution_v10.py",
+    "scripts/generate_distribution_v11.py",
+    "scripts/validate_appended_conformance_v11.py",
     "scripts/validate_corrected_checkpoint_expectations_v10.py",
     "scripts/validate_companion_specs.py",
     "scripts/validate_checkpoint_parity_v9.py",
@@ -160,7 +162,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "docs/import_adaptation.json",
         "docs/provenance/source_package_manifest.json",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
+        "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v10.md",
         "docs/execution/remediation_v9/ledger.md",
+        "docs/execution/remediation_v10/ledger.md",
         "docs/execution/remediation_v9/reproductions.md",
         "docs/resource_accounting_v6.md",
         "docs/provenance",
@@ -182,12 +186,15 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_kind_control.input.json",
         "fixtures/v1_draft",
         "fixtures/distribution/manifest_v10.json",
+        "fixtures/distribution/manifest_v11.json",
         "fixtures/README.md",
         "fixtures/examples",
         "fixtures/schema",
         "fixtures/schema/distribution.schema.v10.json",
+        "fixtures/v11/scenarios/resource_followup",
         "fixtures/schema/report.schema.json",
         "implementation/runtime_ledger_v9.json",
+        "implementation/runtime_ledger_v10.json",
         "reports/checkpoint_parity_v9.json",
         "reports/carrier_gate_v9.json",
         "reports/opaque_checkpoint_v9.json",
@@ -214,12 +221,15 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/final_identity_v10.json",
         "reports/final_finding_closure_v10.json",
         "reports/final_decision_gate_v10.json",
+        "reports/appended_conformance_v11.json",
         "reports/external_holds_v8.json",
         "reports/spec_baseline.txt",
         "scripts/validate_architecture.py",
         "scripts/validate_assurance_v9.py",
         "scripts/validate_automerge_qualification.py",
         "scripts/generate_distribution_v10.py",
+        "scripts/generate_distribution_v11.py",
+        "scripts/validate_appended_conformance_v11.py",
         "scripts/validate_corrected_checkpoint_expectations_v10.py",
         "scripts/validate_authority_transition_v10.py",
         "scripts/validate_checkpoint_parity_v9.py",
@@ -260,6 +270,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/reproduce_remediation_v9.py",
         "scripts/validate_remediation_v9.py",
         "scripts/validate_runtime_ledger_v9.py",
+        "scripts/validate_resource_followup_authority_v10.py",
+        "scripts/validate_runtime_ledger_v10.py",
+        "scripts/validate_resource_operation_inventory_v10.py",
         "scripts/validate_reports.py",
         "scripts/validate_spec.py",
         "scripts/validate_opaque_boundary_gate_v9.py",
@@ -271,7 +284,10 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/validation/final_identity_v10.schema.json",
         "tools/validation/final_finding_closure_v10.schema.json",
         "tools/validation/final_decision_gate_v10.schema.json",
+        "tools/validation/appended_conformance_v11.schema.json",
+        "tools/validation/distribution_v11.schema.json",
         "spec/authority_transition_v10.json",
+        "spec/resource_followup_authority_v10.json",
         "spec/companion_authority_v10.json",
         "spec/API_CONTRACTS.md",
         "spec/CHECKPOINT_PROFILE.md",
@@ -312,6 +328,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/validation/opaque_carrier_v9.schema.json",
         "tools/validation/authority_transition_v10.schema.json",
         "tools/validation/runtime_ledger_v9.schema.json",
+        "tools/validation/resource_followup_authority_v10.schema.json",
+        "tools/validation/runtime_ledger_v10.schema.json",
+        "tools/validation/resource_operation_inventory_v10.schema.json",
     }
 )
 RUST_STRING = re.compile(r'"([^"\\]*(?:\\.[^"\\]*)*)"')
@@ -375,6 +394,7 @@ def is_public_route(value: str) -> bool:
         or value.startswith("fixtures/v1_draft/scenarios/change_claims/")
         or value.startswith("fixtures/v1_draft/scenarios/interrupted/")
         or value.startswith("fixtures/v1_draft/scenarios/resource/")
+        or value.startswith("fixtures/v11/scenarios/resource_followup/")
         or value.startswith("fixtures/v1_draft/scenarios/scope/")
         or value.startswith("fixtures/v1_draft/checkpoints/")
         or value in {row["value"] for row in APPROVED_WIRE_DOMAINS}
@@ -583,6 +603,10 @@ def validate_source_surfaces() -> None:
                     or (
                         value in {"git", "python3"}
                         and relative == "scripts/validate_signed_conformance_gate_v10.py"
+                    )
+                    or (
+                        value in {"cargo", "python3"}
+                        and relative == "scripts/validate_appended_conformance_v11.py"
                     )
                 ),
             )

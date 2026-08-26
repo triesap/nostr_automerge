@@ -13,19 +13,50 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 LEDGER = ROOT / "implementation/runtime_ledger_v10.json"
 SCHEMA = ROOT / "tools/validation/runtime_ledger_v10.schema.json"
 
-LEDGER_SHA256 = "f50313b9027d53c0d3a0341f375b53aaa8802ee608cf0c05b633fa414018b2e2"
+LEDGER_SHA256 = "af306d00302d9469a5afb54c63a43ecfc6cb67cadbca044649aa7fd695eebd77"
 SCHEMA_SHA256 = "8ae43e4f3aa8d00ea27ebb64a2f0d741b54cd9b10c398900c16ba9cd94ed0814"
 AUTHORITY_SHA256 = "0cac9bf4b90c55e428c335797a9d7195bc3ee08eed5bfb49fca4428e62702531"
 EXPECTED_SCOPE = (
     "docs/execution/remediation_v10/ledger.md",
-    "docs/qualification/work_budget_inventory.md",
+    "fixtures/distribution/manifest_v11.json",
+    "fixtures/v11/scenarios/resource_followup/checkpoint_lower_sequence_sibling_not_historical.expected.json",
+    "fixtures/v11/scenarios/resource_followup/checkpoint_lower_sequence_sibling_not_historical.fixture.json",
+    "fixtures/v11/scenarios/resource_followup/checkpoint_lower_sequence_sibling_not_historical.input.json",
+    "fixtures/v11/scenarios/resource_followup/foreign_claim_flood_exact_budget.expected.json",
+    "fixtures/v11/scenarios/resource_followup/foreign_claim_flood_exact_budget.fixture.json",
+    "fixtures/v11/scenarios/resource_followup/foreign_claim_flood_exact_budget.input.json",
+    "fixtures/v11/scenarios/resource_followup/interrupted_after_checkpoint_resolution_returns_no_progress.expected.json",
+    "fixtures/v11/scenarios/resource_followup/interrupted_after_checkpoint_resolution_returns_no_progress.fixture.json",
+    "fixtures/v11/scenarios/resource_followup/interrupted_after_checkpoint_resolution_returns_no_progress.input.json",
+    "fixtures/v11/scenarios/resource_followup/parent_propagation_exact_budget.expected.json",
+    "fixtures/v11/scenarios/resource_followup/parent_propagation_exact_budget.fixture.json",
+    "fixtures/v11/scenarios/resource_followup/parent_propagation_exact_budget.input.json",
+    "fixtures/v11/scenarios/resource_followup/target_preparation_exact_budget.expected.json",
+    "fixtures/v11/scenarios/resource_followup/target_preparation_exact_budget.fixture.json",
+    "fixtures/v11/scenarios/resource_followup/target_preparation_exact_budget.input.json",
+    "fixtures/v11/scenarios/resource_followup/target_raw_memo_exact_budget.expected.json",
+    "fixtures/v11/scenarios/resource_followup/target_raw_memo_exact_budget.fixture.json",
+    "fixtures/v11/scenarios/resource_followup/target_raw_memo_exact_budget.input.json",
+    "fixtures/v11/scenarios/resource_followup/unrelated_control_flood_exact_budget.expected.json",
+    "fixtures/v11/scenarios/resource_followup/unrelated_control_flood_exact_budget.fixture.json",
+    "fixtures/v11/scenarios/resource_followup/unrelated_control_flood_exact_budget.input.json",
+    "fixtures/v11/scenarios/resource_followup/unrelated_valid_checkpoints_exact_budget.expected.json",
+    "fixtures/v11/scenarios/resource_followup/unrelated_valid_checkpoints_exact_budget.fixture.json",
+    "fixtures/v11/scenarios/resource_followup/unrelated_valid_checkpoints_exact_budget.input.json",
     "implementation/runtime_ledger_v10.json",
+    "reports/appended_conformance_v11.json",
     "reports/spec_baseline.txt",
+    "scripts/generate_distribution_v11.py",
     "scripts/local_gate.py",
-    "scripts/validate_resource_operation_inventory_v10.py",
+    "scripts/validate_appended_conformance_v11.py",
+    "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_runtime_ledger_v10.py",
-    "spec/resource_operation_inventory_v10.json",
-    "tools/validation/resource_operation_inventory_v10.schema.json",
+    "scripts/validate_spec.py",
+    "tools/nostr_automerge_conformance/src/fixture_generation.rs",
+    "tools/nostr_automerge_conformance/src/runner.rs",
+    "tools/nostr_automerge_xtask/src/validate.rs",
+    "tools/validation/appended_conformance_v11.schema.json",
+    "tools/validation/distribution_v11.schema.json",
 )
 TOP_KEYS = (
     "schema", "status", "authority", "historical_predecessor", "cursor",
@@ -63,12 +94,12 @@ def validate_record(record: object) -> None:
         raise LedgerError("ledger:historical")
     cursor = record["cursor"]
     if cursor != {
-        "active_rcld": 97,
-        "active_step": "step_1299",
-        "next_step": "step_1300",
+        "active_rcld": 98,
+        "active_step": "step_1304",
+        "next_step": "step_1305",
         "last_planned_step": "step_1307",
-        "remaining_checkpoint_count": 9,
-        "remaining_rcld_count": 3,
+        "remaining_checkpoint_count": 4,
+        "remaining_rcld_count": 2,
     }:
         raise LedgerError("ledger:cursor")
     if record["findings"] != {"open": ["FINDING_094", "FINDING_095"], "closed": [], "held": ["FINDING_080"]}:
@@ -147,6 +178,36 @@ def validate_record(record: object) -> None:
             "owner_class": "public",
             "result": "pass",
         },
+        {
+            "step": "step_1299",
+            "candidate": "a097c0c948925b0bae5e47faca8433e38b856a8c",
+            "owner_class": "public",
+            "result": "pass",
+        },
+        {
+            "step": "step_1300",
+            "candidate": "1212f212729a45bfc0c2ac66dd60870a5183a583",
+            "owner_class": "opaque_private",
+            "result": "pass",
+        },
+        {
+            "step": "step_1301",
+            "candidate": "29229506554ebe0f23e8896370a316c0340780ae",
+            "owner_class": "opaque_private",
+            "result": "pass",
+        },
+        {
+            "step": "step_1302",
+            "candidate": "d8f1698a15e3821ecf78db84985b8492ac7f0868",
+            "owner_class": "opaque_private",
+            "result": "pass",
+        },
+        {
+            "step": "step_1303",
+            "candidate": "2d708bb0a7a00523ab5c244fd0a15c96afcf0a4a",
+            "owner_class": "opaque_private",
+            "result": "pass",
+        },
     ]:
         raise LedgerError("ledger:predecessors")
     if tuple(record["holds"]) != (
@@ -181,8 +242,8 @@ def mutation_self_test() -> int:
         lambda value: value.update(status="code_complete_publication_held"),
         lambda value: value["authority"].update(sha256="0" * 64),
         lambda value: value["historical_predecessor"].update(candidate="0" * 40),
-        lambda value: value["cursor"].update(active_step="step_1293"),
-        lambda value: value["cursor"].update(remaining_checkpoint_count=18),
+        lambda value: value["cursor"].update(active_step="step_1299"),
+        lambda value: value["cursor"].update(remaining_checkpoint_count=9),
         lambda value: value["findings"]["open"].reverse(),
         lambda value: value["active_checkpoint_scope"].pop(),
         lambda value: value["active_checkpoint_scope"].append("foreign"),
@@ -212,7 +273,7 @@ def main() -> None:
     validate_worktree_scope()
     mutations = mutation_self_test()
     print("PASS: runtime ledger v10")
-    print("- active=step_1299")
+    print("- active=step_1304")
     print(f"- mutations={mutations}")
 
 

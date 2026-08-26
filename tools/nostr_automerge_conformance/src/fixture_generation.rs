@@ -65,8 +65,278 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "remediation_v10_carrier_independence" => generate_remediation_v10_carrier_independence(),
         "remediation_v10_interruptions" => generate_remediation_v10_interruptions(),
         "remediation_v10_target_work" => generate_remediation_v10_target_work(),
+        "resource_followup_v11" => generate_resource_followup_v11(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
+}
+
+fn generate_resource_followup_v11() -> Result<(), String> {
+    let root = repository_root().join("fixtures/v11/scenarios/resource_followup");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+
+    let interruption_controller = Signer::from_byte(204)?;
+    let interruption_writer = Signer::from_byte(205)?;
+    let interruption_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        interruption_controller.public_key.to_hex(),
+        "e2".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid resource-followup interruption coordinate".to_owned())?;
+    let interruption_control = sign_control(
+        &interruption_controller,
+        1,
+        interruption_coordinate,
+        None,
+        control_content_full(
+            0,
+            vec![(&interruption_writer, None, &["checkpoint", "write"])],
+            "automerge-change-v1",
+        ),
+    )?;
+    let interruption_control_id = event_id(&interruption_control)?;
+    let mut interruption_document = AuthoringDocument::empty(ActorState::initial(
+        ActorId::derive(interruption_coordinate, interruption_writer.public_key),
+        Default::default(),
+    ))
+    .map_err(|error| format!("resource-followup interruption document: {error:?}"))?;
+    let interruption_authored = interruption_document
+        .author_change(&[Operation::PutString {
+            key: "v10-interruption".to_owned(),
+            value: "evidence".to_owned(),
+        }])
+        .map_err(|error| format!("resource-followup interruption change: {error:?}"))?;
+    let interruption_raw = interruption_authored.raw().to_vec();
+    let interruption_hash = interruption_authored.change_hash();
+    let interruption_change = sign_change(
+        &interruption_writer,
+        2,
+        interruption_coordinate,
+        interruption_control_id,
+        interruption_hash,
+        &interruption_raw,
+    )?;
+    let interruption_snapshot = interruption_document.accepted_state_bytes();
+    let mut interruption_commitment = Sha256::new();
+    interruption_commitment.update(b"nostr-crdt/automerge/change-set/v1");
+    interruption_commitment.update([0]);
+    interruption_commitment.update(1_u64.to_be_bytes());
+    interruption_commitment.update(interruption_hash.as_bytes());
+    let interruption_commitment: [u8; 32] = interruption_commitment.finalize().into();
+    let interruption_descriptor = sign_checkpoint_descriptor_revision(
+        &interruption_writer,
+        3,
+        interruption_coordinate,
+        interruption_control_id,
+        &interruption_snapshot,
+        &[interruption_hash],
+        interruption_commitment,
+        None,
+        1,
+    )?;
+    let interruption_chunk = sign_checkpoint_chunk(
+        &interruption_writer,
+        4,
+        interruption_coordinate,
+        event_id(&interruption_descriptor)?,
+        &interruption_snapshot,
+    )?;
+    write_fixture_with_execution(
+        &root,
+        "interrupted_after_checkpoint_resolution_returns_no_progress",
+        interruption_coordinate,
+        vec![
+            interruption_control,
+            interruption_change,
+            interruption_descriptor,
+            interruption_chunk,
+        ],
+        &["NCRDT-CONF-010", "NCRDT-INTERRUPT-001"],
+        "resource_followup_v11",
+        Vec::new(),
+        ScenarioBudget {
+            max_bytes: 1_000_000,
+            max_items: 1_000_000,
+        },
+        None,
+    )?;
+
+    for (fixture_id, relative, profile) in [
+        (
+            "target_preparation_exact_budget",
+            "resource/target_preparation_exact_budget.input.json",
+            "resource",
+        ),
+        (
+            "target_raw_memo_exact_budget",
+            "resource/target_raw_memo_exact_budget.input.json",
+            "resource",
+        ),
+        (
+            "parent_propagation_exact_budget",
+            "resource/parent_propagation_exact_budget.input.json",
+            "core",
+        ),
+        (
+            "unrelated_control_flood_exact_budget",
+            "resource/unrelated_control_flood_exact_budget.input.json",
+            "resource",
+        ),
+        (
+            "foreign_claim_flood_exact_budget",
+            "scope/foreign_claim_flood_exact_budget.input.json",
+            "core",
+        ),
+        (
+            "unrelated_valid_checkpoints_exact_budget",
+            "scope/unrelated_valid_checkpoints_exact_budget.input.json",
+            "core",
+        ),
+    ] {
+        let source = repository_root()
+            .join("fixtures/v1_draft/scenarios")
+            .join(relative);
+        let value: Value =
+            serde_json::from_slice(&std::fs::read(source).map_err(|error| error.to_string())?)
+                .map_err(|error| error.to_string())?;
+        let coordinate: DocumentCoordinate = value["coordinate"]
+            .as_str()
+            .ok_or_else(|| format!("missing coordinate for {fixture_id}"))?
+            .parse()
+            .map_err(|_| format!("invalid coordinate for {fixture_id}"))?;
+        let raw_events = value["raw_events"]
+            .as_array()
+            .ok_or_else(|| format!("missing raw events for {fixture_id}"))?
+            .iter()
+            .map(|entry| {
+                let data = entry["data"]
+                    .as_str()
+                    .ok_or_else(|| format!("missing raw event for {fixture_id}"))?;
+                RawEventBytes::new(data.as_bytes(), ProtocolRevision::draft_v1())
+                    .map_err(|error| format!("raw event for {fixture_id}: {error}"))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let requirement_strings = value["requirements"]
+            .as_array()
+            .ok_or_else(|| format!("missing requirements for {fixture_id}"))?
+            .iter()
+            .map(|requirement| {
+                requirement
+                    .as_str()
+                    .ok_or_else(|| format!("invalid requirement for {fixture_id}"))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        write_fixture_with_execution(
+            &root,
+            fixture_id,
+            coordinate,
+            raw_events,
+            &requirement_strings,
+            profile,
+            Vec::new(),
+            ScenarioBudget {
+                max_bytes: 1_000_000,
+                max_items: 1_000_000,
+            },
+            None,
+        )?;
+    }
+
+    let controller = Signer::from_byte(211)?;
+    let writer = Signer::from_byte(212)?;
+    let intruder = Signer::from_byte(213)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "e7".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid resource-followup ancestry coordinate".to_owned())?;
+    let members = || vec![(&writer, None, &["write"][..])];
+    let genesis = sign_control(
+        &controller,
+        10,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let genesis_id = event_id(&genesis)?;
+    let left = sign_control(
+        &controller,
+        11,
+        coordinate,
+        Some(genesis_id),
+        control_content_with_links(1, members(), &[], None, None),
+    )?;
+    let right = sign_control(
+        &controller,
+        12,
+        coordinate,
+        Some(genesis_id),
+        control_content_with_links(1, members(), &[], None, None),
+    )?;
+    let (canonical_child, sibling) = if event_id(&left)? < event_id(&right)? {
+        (left.clone(), right.clone())
+    } else {
+        (right.clone(), left.clone())
+    };
+    let descriptor_control = sign_control(
+        &controller,
+        13,
+        coordinate,
+        Some(event_id(&canonical_child)?),
+        control_content_with_links(2, members(), &[], None, None),
+    )?;
+    let (sibling_raw, sibling_hash) = author_root_change(coordinate, &writer, "v11-sibling")?;
+    let sibling_carrier = sign_change(
+        &writer,
+        14,
+        coordinate,
+        event_id(&sibling)?,
+        sibling_hash,
+        &sibling_raw,
+    )?;
+    let empty_snapshot = AuthoringDocument::empty(ActorState::initial(
+        ActorId::derive(coordinate, writer.public_key),
+        Default::default(),
+    ))
+    .map_err(|error| format!("resource-followup ancestry document: {error:?}"))?
+    .accepted_state_bytes();
+    let empty_commitment: [u8; 32] = Sha256::digest(
+        [
+            b"nostr-crdt/automerge/change-set/v1".as_slice(),
+            &[0],
+            &0_u64.to_be_bytes(),
+        ]
+        .concat(),
+    )
+    .into();
+    let descriptor = sign_checkpoint_descriptor_revision(
+        &intruder,
+        15,
+        coordinate,
+        event_id(&descriptor_control)?,
+        &empty_snapshot,
+        &[],
+        empty_commitment,
+        None,
+        1,
+    )?;
+    write_fixture_with_requirements(
+        &root,
+        "checkpoint_lower_sequence_sibling_not_historical",
+        coordinate,
+        vec![
+            genesis,
+            left,
+            right,
+            descriptor_control,
+            sibling_carrier,
+            descriptor,
+        ],
+        &["NCRDT-CONF-010", "NCRDT-EVIDENCE-006"],
+        "resource_followup_v11",
+    )
 }
 
 fn generate_remediation_v10_target_work() -> Result<(), String> {

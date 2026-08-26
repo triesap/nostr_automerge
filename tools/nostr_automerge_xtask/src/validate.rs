@@ -119,6 +119,10 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "resource_operation_inventory_v10",
         "scripts/validate_resource_operation_inventory_v10.py",
     ),
+    (
+        "appended_conformance_v11",
+        "scripts/validate_appended_conformance_v11.py",
+    ),
     ("complete_specification", "scripts/validate_spec.py"),
     (
         "fixture_schema_checksum_snake_case",
@@ -244,6 +248,7 @@ mod tests {
         assert!(names.contains(&"resource_followup_authority_v10"));
         assert!(names.contains(&"runtime_ledger_v10"));
         assert!(names.contains(&"resource_operation_inventory_v10"));
+        assert!(names.contains(&"appended_conformance_v11"));
         assert!(names.contains(&"complete_specification"));
         assert!(names.contains(&"sealed_constants"));
         assert!(names.contains(&"automerge_boundary"));

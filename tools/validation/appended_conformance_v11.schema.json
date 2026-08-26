@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.example/nostr_automerge/appended_conformance_v11.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "checkpoint", "status", "publication_status", "public_predecessor", "private_assurance", "distribution", "execution", "transition", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.appended_conformance.v11.v1"},
+    "checkpoint": {"const": "step_1304"},
+    "status": {"const": "pass"},
+    "publication_status": {"const": "held"},
+    "public_predecessor": {"$ref": "#/$defs/commit"},
+    "private_assurance": {"$ref": "#/$defs/private"},
+    "distribution": {"$ref": "#/$defs/distribution"},
+    "execution": {"$ref": "#/$defs/execution"},
+    "transition": {"$ref": "#/$defs/transition"},
+    "result_identity_sha256": {"$ref": "#/$defs/sha"}
+  },
+  "$defs": {
+    "sha": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "private": {"type": "object", "additionalProperties": false, "required": ["candidate", "implementation_candidate", "result_identity_sha256", "scenario_count", "delivery_order_count", "process_count", "result"], "properties": {"candidate": {"$ref": "#/$defs/commit"}, "implementation_candidate": {"$ref": "#/$defs/commit"}, "result_identity_sha256": {"$ref": "#/$defs/sha"}, "scenario_count": {"const": 192}, "delivery_order_count": {"const": 8}, "process_count": {"const": 2}, "result": {"const": "pass"}}},
+    "distribution": {"type": "object", "additionalProperties": false, "required": ["id", "protocol_revision", "manifest_sha256", "schema_sha256", "generator_sha256", "fixture_generation_sha256", "runner_sha256", "base_manifest_sha256", "fixture_count", "file_count", "preserved_v10_fixture_count", "preserved_v10_file_count", "intentional_replacement_count", "appended_fixture"], "properties": {"id": {"const": "draft_2026_08_signed_neutral_11"}, "protocol_revision": {"const": "draft_2026_08"}, "manifest_sha256": {"$ref": "#/$defs/sha"}, "schema_sha256": {"$ref": "#/$defs/sha"}, "generator_sha256": {"$ref": "#/$defs/sha"}, "fixture_generation_sha256": {"$ref": "#/$defs/sha"}, "runner_sha256": {"$ref": "#/$defs/sha"}, "base_manifest_sha256": {"$ref": "#/$defs/sha"}, "fixture_count": {"const": 193}, "file_count": {"const": 622}, "preserved_v10_fixture_count": {"const": 192}, "preserved_v10_file_count": {"const": 597}, "intentional_replacement_count": {"const": 7}, "appended_fixture": {"const": "checkpoint_lower_sequence_sibling_not_historical"}}},
+    "execution": {"type": "object", "additionalProperties": false, "required": ["rust_process_count", "typescript_process_count", "delivery_order_count", "report_count_per_process", "mismatch_count", "canonical_output_sha256", "serialized_run_sha256", "result"], "properties": {"rust_process_count": {"const": 2}, "typescript_process_count": {"const": 2}, "delivery_order_count": {"const": 8}, "report_count_per_process": {"const": 193}, "mismatch_count": {"const": 0}, "canonical_output_sha256": {"$ref": "#/$defs/sha"}, "serialized_run_sha256": {"$ref": "#/$defs/sha"}, "result": {"const": "pass"}}},
+    "transition": {"type": "object", "additionalProperties": false, "required": ["v10_bytes_preserved", "unchanged_raw_replacement_count", "corrected_raw_replacement", "sibling_checkpoint_status", "sibling_historical_carriers", "findings_evidence_passed", "result"], "properties": {"v10_bytes_preserved": {"const": true}, "unchanged_raw_replacement_count": {"const": 6}, "corrected_raw_replacement": {"const": "interrupted_after_checkpoint_resolution_returns_no_progress"}, "sibling_checkpoint_status": {"const": "unauthorized"}, "sibling_historical_carriers": {"type": "array", "maxItems": 0}, "findings_evidence_passed": {"const": ["FINDING_094", "FINDING_095"]}, "result": {"const": "pass"}}}
+  }
+}

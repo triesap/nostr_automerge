@@ -18,26 +18,29 @@ the approved opaque private `step_1290` candidate is
 `f093da1d6cb9b27c0e425853adc7856992517d45`. `step_1296` is complete at
 `a4170d63df63a1db41bd63a57d14f70226109f85`, and `step_1297` is complete at
 `3a66b118b1909b3771332983b6c81846ab0cf3d8`. `step_1298` is complete at
-`516d15f03f6285366d5d259de8d647aebbdbcb2e`.
+`516d15f03f6285366d5d259de8d647aebbdbcb2e`, and `step_1299` is complete at
+`a097c0c948925b0bae5e47faca8433e38b856a8c`. The approved opaque private
+sequence is complete at `step_1300` candidate
+`1212f212729a45bfc0c2ac66dd60870a5183a583`, `step_1301` candidate
+`29229506554ebe0f23e8896370a316c0340780ae`, `step_1302` candidate
+`d8f1698a15e3821ecf78db84985b8492ac7f0868`, and `step_1303` assurance
+candidate `2d708bb0a7a00523ab5c244fd0a15c96afcf0a4a`.
 
 The active sequence is RCLD 95 through RCLD 99 and `step_1288` through
-`step_1307`. RCLD 95 is complete. The sequence is active at RCLD
-97/`step_1299`; the next checkpoint is `step_1300`. Nine checkpoints and
-three RCLDs remain until final closure.
+`step_1307`. RCLD 95 through RCLD 97 are complete. The sequence is active at
+RCLD 98/`step_1304`; the next checkpoint is `step_1305`. Four checkpoints and
+two RCLDs remain until final closure.
 
-`FINDING_094` remains open until public/private resource proof closure.
-`FINDING_095` now has an enabled ancestry-backed implementation and exact
-same/direct/transitive/sibling/descendant/missing/cycle/budget/cancellation
-evidence; it remains administratively open until the versioned report and
-closure checkpoints bind that correction.
+`FINDING_094` and `FINDING_095` have passing public and private implementation
+evidence. They remain administratively open until this versioned conformance
+checkpoint and the successor proof gate bind the complete evidence chain.
 
-The immutable v10 corpus still reports exactly six expected exact-budget reds
-(`target_preparation`, `target_raw_memo`, `parent_propagation`,
-`unrelated_control_flood`, `foreign_claim_flood`, and
-`unrelated_valid_checkpoints`) because the completed resource-accounting
-checkpoints moved their truthful N boundary. All other 186 scenarios pass.
-The authorized appended distribution and expectation-lock transition remain
-owned by `step_1304`; this checkpoint does not rewrite historical fixture bytes.
+The immutable v10 corpus remains byte-for-byte unchanged. The appended v11
+distribution contains 193 signed scenarios: seven explicit successor fixture
+replacements for the corrected work boundaries and one new lower-sequence
+sibling checkpoint scenario. Rust and the opaque private implementation each
+produce the same canonical bytes in two processes across all eight delivery
+orders. The original v10 manifest and all files named by it remain unchanged.
 
 The closed public operation inventory binds all twelve operation families to
 twelve unique enabled behavioral tests. Its resource job executes those exact
@@ -56,6 +59,6 @@ mutation, NIP submission, and production qualification remain held.
 | --- | --- | --- | --- |
 | `step_1288`–`step_1290` | RCLD 95 | authority and executable findings | complete |
 | `step_1291`–`step_1295` | RCLD 96 | shared Rust state and exact traversals | complete |
-| `step_1296`–`step_1299` | RCLD 97 | exact reduction and checkpoint ancestry | active |
-| `step_1300`–`step_1304` | RCLD 98 | private parity and appended conformance | pending |
+| `step_1296`–`step_1299` | RCLD 97 | exact reduction and checkpoint ancestry | complete |
+| `step_1300`–`step_1304` | RCLD 98 | private parity and appended conformance | active |
 | `step_1305`–`step_1307` | RCLD 99 | proof closure and held final decision | pending |

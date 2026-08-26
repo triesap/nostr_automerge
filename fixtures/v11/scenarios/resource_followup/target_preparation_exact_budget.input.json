@@ -1,0 +1,149 @@
+{
+  "budget": {
+    "max_bytes": 1000000,
+    "max_items": 1000000
+  },
+  "cancel_after": null,
+  "coordinate": "31624:6610cc09608f33aefab52096055707e02df6a0694354f69ec8c58d801fa1ffa3:e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3",
+  "expected_report": {
+    "accepted_changes": [],
+    "canonical_controls": [
+      "0ad2b65f45b510bc34dbeb05617ed294250e6091f8c63342c8e6b99fb8b92d06"
+    ],
+    "completion": "complete",
+    "coordinate": "31624:6610cc09608f33aefab52096055707e02df6a0694354f69ec8c58d801fa1ffa3:e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3",
+    "disposition_records": [
+      {
+        "disposition": "accepted",
+        "identifier": "0ad2b65f45b510bc34dbeb05617ed294250e6091f8c63342c8e6b99fb8b92d06",
+        "namespace": "control_event"
+      }
+    ],
+    "dispositions_digest": "c86bb77c3df76988f64ffbd0b28c48b163fa310b1117868f1d0d924af4e8b72a",
+    "excluded_changes": [],
+    "fixture_id": "target_preparation_exact_budget",
+    "heads": [],
+    "history_digest": "71216bb66e3e0a209112f7b5c7bfd639d7c9512d2b0485bfaa0003059da616df",
+    "integrity_alerts": [],
+    "invalid_changes": [],
+    "invalid_events": [],
+    "pending_changes": [],
+    "report_schema": "nostr_automerge.report.v1",
+    "revision": "draft_2026_08",
+    "state_assertions": [],
+    "unsupported_events": []
+  },
+  "fixture_id": "target_preparation_exact_budget",
+  "raw_events": [
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":0,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":1,\"id\":\"0ad2b65f45b510bc34dbeb05617ed294250e6091f8c63342c8e6b99fb8b92d06\",\"kind\":1625,\"pubkey\":\"6610cc09608f33aefab52096055707e02df6a0694354f69ec8c58d801fa1ffa3\",\"sig\":\"e6cdb15a53be004c4ff660c01df156ec18d6c3173c3bc125e0e38d4e22240909f45ce8914868fc615fd7b636500f8ab4e1ad650ee744e213a533e4496900191e\",\"tags\":[[\"a\",\"31624:6610cc09608f33aefab52096055707e02df6a0694354f69ec8c58d801fa1ffa3:e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":0,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":2,\"id\":\"34dc436ee1f38d328e5619ada210cb230234173df121e4959c135687107f087b\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"4093222cb18f8daa76107b7f7c92c288ffa5ccaeefd03e8038acf0d285a4d71bc07a103958cdbaca1427b3a0e7ab957c9f7d6ac1a2a508b54b7c2d9276cc46bf\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":1,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":3,\"id\":\"3dedb332cd9e97b26e698828af662304860948bc91bea1aae4d8d51511d7a2e9\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"88c1db0264baff7720cd0d4cfbdea45a05e78dd571be036b559f6ab3d427476e82ffb4f07b875e730afb0ca74e5827832426fbabba85d1354613a8729947e017\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"34dc436ee1f38d328e5619ada210cb230234173df121e4959c135687107f087b\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":2,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":4,\"id\":\"8fd0a780c4c70459877f70b0bc4e9d74013abc468463a8a190cc587b046e3e1d\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"792b477379f7676563a1fa0cf6d52f951d06c3aacb1c5d472f0d845fdf32f93dc116b34ed8088eae07ff884facfe90fd231fe02b06542510a3af848c908e4dd5\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"3dedb332cd9e97b26e698828af662304860948bc91bea1aae4d8d51511d7a2e9\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":3,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":5,\"id\":\"3944ee6f9d3be13c446936bac65bc076e9f2ee5a3b7f098dcc64ca662c2eac65\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"7e9de19cf88affedd1b8395ee612552b1fdfc2d7d47ed0bc6b2db2ee6190be29ffb1098783bf7e019f1a571ce51afea7d5750cc33c20d6dab1bc714d143bd4ab\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"8fd0a780c4c70459877f70b0bc4e9d74013abc468463a8a190cc587b046e3e1d\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":4,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":6,\"id\":\"4ffe4a27acafd92affde7df4ea2b942fbb170be9b47b927906f4d22bb610c4c0\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"5038d347e3da673f0b4a2bc499fc2d31d49e08a55835b05a70371588b1001e19d87bb6888b028bf8749ed58237aa5f49dcde781ec7dd63180f9b3f93f2826737\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"3944ee6f9d3be13c446936bac65bc076e9f2ee5a3b7f098dcc64ca662c2eac65\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":5,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":7,\"id\":\"463cd865bd093774bc2cf87140b291e475272cf6d043e5a107931d9d4e10c28f\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"adb4342c238067e7a83dcb39cc691ed081a99e679124e20150f65adbbe947dd8ac5c5a65060459dbb59282fbed97e5e56a59895843329fc1d2f02ee2b3711272\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"4ffe4a27acafd92affde7df4ea2b942fbb170be9b47b927906f4d22bb610c4c0\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":6,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":8,\"id\":\"e3fe72fbc510c9e4c371aec09574746bb3343f9b20365c93336532e1be8d97a7\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"6481a3b18aa3c3659ee0c65460bd350c4d5bbb443c64a34bdcbf444b929f5c111d49b2b6cc5c146f57eb70ea6aa59c9b453fbb3c4e51673e21ab9605c43dacc5\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"463cd865bd093774bc2cf87140b291e475272cf6d043e5a107931d9d4e10c28f\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":7,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":9,\"id\":\"5d00f1db346005cb3baa0677d1c86adb5862cdce3d090d5bfbb40a11146ac5ff\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"8fb550a8b24ac2357d66f120f2a29b4fabac0b3e26377463af380913371223f5f4fec3953722279f50e25e49f45ba07dfa7f76d792ce9b84b67ba5ba11e65f19\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"e3fe72fbc510c9e4c371aec09574746bb3343f9b20365c93336532e1be8d97a7\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":8,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":10,\"id\":\"8d83591671a741fcf4a66d14352379974c73d15b7c6c616e9de0dbcad477bc08\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"b7a13dc7b7da4e60eb1633d4b8da3066384511fb2b91e3b1302f9572e9909cb128a41ba8364c6467b7fe35ad041782c79d56dbb857dc3f3393aab58733e70fc2\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"5d00f1db346005cb3baa0677d1c86adb5862cdce3d090d5bfbb40a11146ac5ff\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":9,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":11,\"id\":\"719ad62cbaf7b59107dd840f67b499a9acdd53532b154bded9b43922feb9be85\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"759ada3c53bb840ce704b44b7968c840f709495041704a03d672efaea3fdf681820c22bc6346792b83f5842eb0afe42cf13724582a219cef36f4f1d769d9e698\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"8d83591671a741fcf4a66d14352379974c73d15b7c6c616e9de0dbcad477bc08\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":10,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":12,\"id\":\"e827944bfba67b368124fcd7c01efd6e3d7000f926cbaf02132dd7f3354e4593\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"e10c93eb5d3d58f82fb0a0cd8d0a0aef7120e551f1fa56a11bb5c59855a084194cb5c3f77742519c1a698aaf3a0037b0152e37cb9c31c8531bee327bf30becce\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"719ad62cbaf7b59107dd840f67b499a9acdd53532b154bded9b43922feb9be85\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":11,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":13,\"id\":\"383c7fab24f38c72032ed772b17e8e3c0493c5dacaa98454932b27fbded9d8fd\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"fe76fd531d6771865aca249cb1937b10a0c61e85a1ebb2b34a9feb77b45909d8fcc35bfe80120753c33dbaa4bf5e300b8d3fd946e209aaeb75a89c86b21bd7c8\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"e827944bfba67b368124fcd7c01efd6e3d7000f926cbaf02132dd7f3354e4593\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":12,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":14,\"id\":\"448415a41afb9ef25601e99bac69c49718e265b1e5d6cd5561fa3435ee5a7c57\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"efa34d574a87b27d133482621878209513b518bec2b5361a3383f3f1c7f415a2cdaf1b9ae4fbbe8939cc6132237a12c414c3835316665c5c97ca7db8c7596539\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"383c7fab24f38c72032ed772b17e8e3c0493c5dacaa98454932b27fbded9d8fd\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":13,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":15,\"id\":\"8ba908cf46056d41323e1652c8a7fa3c7080e283c05ca44b6e0225eb1399667a\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"9c7135968951560e3b4301c1d689972d2df07c50703913f619d6d0102d1fb2c70381db70895967a55f4addee560ad13049d801a4138472097b6b9d1f2476da68\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"448415a41afb9ef25601e99bac69c49718e265b1e5d6cd5561fa3435ee5a7c57\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":14,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":16,\"id\":\"1b24283515b6d357647a1fdbee4340f64d6cad11e3d9d8e7a16e25006ed75e96\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"b3d60b9e6d97443061d6cf97948ebf82187e12905a35ec3fe0e484ffff929b6f47ca6c477db5e9dda02900325d2727d72ef0f4bc7ea48776df6b39c2359539cf\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"8ba908cf46056d41323e1652c8a7fa3c7080e283c05ca44b6e0225eb1399667a\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":15,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":17,\"id\":\"95dc38ec8138e67f34e58aadb30bf90fcca0c8c0021d581d5a2ac97663f95351\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"0722d1763c503004fb2c9c958c59694e00b3fc75e01b270c16568ee735da0450cbdf6db2cd9de6af834f979fa7192fd3a7eea02aada4edab60abb85fd813d2a5\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"1b24283515b6d357647a1fdbee4340f64d6cad11e3d9d8e7a16e25006ed75e96\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":16,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":18,\"id\":\"34ea342da5494e3721992dbc7e066c8af4e06a78a0e68eef5c7584407b6a7771\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"b456e90a4d9e73a2d359e191f04803688f6c8a77836e42640840fbe3778a7a352713f9e0af0c5febe3056e0e7aede62fe30a9d096c6626134514365dcc6b5cfd\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"95dc38ec8138e67f34e58aadb30bf90fcca0c8c0021d581d5a2ac97663f95351\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":17,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":19,\"id\":\"acd06bbf7b74747bbfd181c8a3a33d90226829a9eabc2aa97c8bd2108257fa0d\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"90f02ce2775d04f4104194020aa28774c1260e1b9c610cb6cef859e0e9c23a1347adf72f454ebb7754a95987dedf48d950401e71ef8fb878b5c5873bfba5d75c\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"34ea342da5494e3721992dbc7e066c8af4e06a78a0e68eef5c7584407b6a7771\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":18,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":20,\"id\":\"19b71d8db4e4021016af858b6909e0c530f0db27726f61256d0182b3ce6eb9fc\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"c3c8741a0f7330b87ecad351d1d0fd1dc84a539b1467bea7a63e8e5fd14a6a76cfb8358369a5767f6785814a708a8c4ea826101c117d800afcf540b69b819120\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"acd06bbf7b74747bbfd181c8a3a33d90226829a9eabc2aa97c8bd2108257fa0d\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":19,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":21,\"id\":\"19a25bf57041f327476cbb35791d0d6411cda1aac2c5df2a28b3facf0bd572da\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"b66723eed031bdb3e5a1e62e2ec746a2b4554bdd49c580063697c265ecd36fccd0e0406749a026b44aebe613c50a4c3ac0e8bac48b4eb351696dc05abf912c7e\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"19b71d8db4e4021016af858b6909e0c530f0db27726f61256d0182b3ce6eb9fc\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":20,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":22,\"id\":\"63156470aa3086e6c122481c71e0eae0e849d71a3270949e5849a70ccc730bd3\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"5018ef56ff6a74b92f20c86eca2b40ea79fcd629fed4ca0fff2643304a927599a1778dbcf998124a8ecd191f37a0a7e6e6139ad43fa6cb5fb7052880aadc8de0\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"19a25bf57041f327476cbb35791d0d6411cda1aac2c5df2a28b3facf0bd572da\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":21,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":23,\"id\":\"c46a4dd55112d0b9c58ed2aad77ae6fa9e41c6c567a9c25dbbc1aa8a7db45a66\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"cd8c99e64d384280db8dcb14b092a5fe0873ef720e9d6231e4c206ae97ac0b014d1a9db35e6d939f54303270aa7f9d80fc7d79f936b9481680207b638ee8e160\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"63156470aa3086e6c122481c71e0eae0e849d71a3270949e5849a70ccc730bd3\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":22,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":24,\"id\":\"a95faffd1bd80a25fc1b2ab99dc79aa25d6ab5c963c4645d20a7a86b0cb33376\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"c95ad05694df5a49c18b0dacdb93ae5db896f8f436480ab9f4c78a6ec28e2294bf205c9543b19779bd8a4a429c6b3050d78d8c535d81002b9beffd4dd069688b\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"c46a4dd55112d0b9c58ed2aad77ae6fa9e41c6c567a9c25dbbc1aa8a7db45a66\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":23,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":25,\"id\":\"6ad9e84b99c98044e15155d4e261d1ad8adaa3e775db71d3590a1eb58be297ff\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"ca31d79510dcd1f3deb834fc25290c9fb2ae1589e1e2e3de785fc3fcab2009eb59a066f99d0ce48c83a2dd23c00814524a64522fa38dfcdeb90c79eb5f90a700\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"a95faffd1bd80a25fc1b2ab99dc79aa25d6ab5c963c4645d20a7a86b0cb33376\"]]}",
+      "encoding": "utf8"
+    },
+    {
+      "data": "{\"content\":\"{\\\"base_heads\\\":[],\\\"format\\\":\\\"automerge-change-v1\\\",\\\"members\\\":[{\\\"account\\\":null,\\\"pubkey\\\":\\\"5b1062cfe407ceb90fb84ae02c6802d2b530ac72587c107d13f4c91c05d0c40e\\\",\\\"roles\\\":[\\\"write\\\"]}],\\\"policy\\\":\\\"controller-acl-v1\\\",\\\"predecessor\\\":null,\\\"seq\\\":24,\\\"successor\\\":null,\\\"text_encoding\\\":\\\"utf16\\\",\\\"v\\\":1}\",\"created_at\":26,\"id\":\"04fa58eb382b7bcda81b4d98fc4a036118a45d14f035d3b367998bcad99eda9f\",\"kind\":1625,\"pubkey\":\"6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874\",\"sig\":\"7570686d27fb6e45755e155e866d5d9ce406533c4dddf983445aa5aa7f68cc7bb2a88a825db88a51d4467e7af41b2d4588a348ed6caf5623e4b8736e5b2f5b7d\",\"tags\":[[\"a\",\"31624:6144373d5c39a77d1a5d1a2cb28c3ab2685d4b053440451800ae51647c399874:e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4\"],[\"e\",\"6ad9e84b99c98044e15155d4e261d1ad8adaa3e775db71d3590a1eb58be297ff\"]]}",
+      "encoding": "utf8"
+    }
+  ],
+  "requirements": [
+    "NCRDT-CONF-010",
+    "NCRDT-RESOURCE-014"
+  ],
+  "revision": "draft_2026_08",
+  "scenario_schema": "nostr_automerge.signed_scenario.v2"
+}

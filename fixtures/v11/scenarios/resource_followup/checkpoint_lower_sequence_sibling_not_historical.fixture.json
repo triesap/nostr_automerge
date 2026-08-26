@@ -1,0 +1,30 @@
+{
+  "expected": {
+    "report_path": "checkpoint_lower_sequence_sibling_not_historical.expected.json",
+    "sha256": "1367f3007f5a7378bcf6d8f39cdbc9a1a3d027fd20c22c65c8f7cbf5f60dc5ee"
+  },
+  "fixture_id": "checkpoint_lower_sequence_sibling_not_historical",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "checkpoint_lower_sequence_sibling_not_historical.input.json",
+      "sha256": "1c3d99b96061e43566dbf8daeb3e87ce4155ee1fe60d6cc57be0b52a969c215b"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile resource_followup_v11",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-CONF-010",
+    "NCRDT-EVIDENCE-006"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}

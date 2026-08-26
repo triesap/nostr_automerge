@@ -689,6 +689,7 @@ fn validate_distribution_authority(manifest: &DistributionManifest) -> Result<()
         {
             192
         }
+        "nostr_automerge.fixture_distribution.v11" if manifest.transition_stage.is_none() => 193,
         _ => return Err(RunError::Fixture),
     };
     let actual_count = u64::try_from(manifest.fixtures.len()).map_err(|_| RunError::Fixture)?;
@@ -1356,6 +1357,32 @@ mod tests {
             Err(super::RunError::Fixture)
         );
         missing.complete = false;
+        assert_eq!(
+            super::validate_distribution_authority(&missing),
+            Err(super::RunError::Fixture)
+        );
+    }
+
+    #[test]
+    fn appended_distribution_authority_requires_exact_v11_inventory() {
+        let fixtures = (0..193)
+            .map(|index| super::DistributionFixture {
+                fixture_id: format!("fixture_{index:03}"),
+                metadata_path: format!("fixture_{index:03}.fixture.json"),
+            })
+            .collect::<Vec<_>>();
+        let manifest = super::DistributionManifest {
+            complete: true,
+            distribution_schema: "nostr_automerge.fixture_distribution.v11".to_owned(),
+            fixture_count: 193,
+            fixtures,
+            status: "canonical_signed_neutral_corpus".to_owned(),
+            target_fixture_count: 193,
+            transition_stage: None,
+        };
+        assert!(super::validate_distribution_authority(&manifest).is_ok());
+        let mut missing = manifest;
+        missing.fixtures.pop();
         assert_eq!(
             super::validate_distribution_authority(&missing),
             Err(super::RunError::Fixture)

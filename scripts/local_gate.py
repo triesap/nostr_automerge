@@ -54,18 +54,18 @@ def standard() -> None:
 def conformance() -> None:
     command = (
         "cargo", "run", "--quiet", "-p", "nostr_automerge_conformance",
-        "--locked", "--", "run_corpus", "fixtures/v1_draft/scenarios",
+        "--locked", "--", "run_distribution", "fixtures/distribution/manifest_v11.json",
     )
     first = run(*command, capture=True).stdout
     second = run(*command, capture=True).stdout
     if first != second:
         raise AssertionError("Rust corpus output changed between local runs")
     summary = json.loads(first)
-    if summary.get("failed") != 0 or summary.get("passed") != summary.get("total"):
-        raise AssertionError("Rust corpus did not pass in both independent processes")
+    if summary.get("status") != "pass" or summary.get("fixture_count") != 193:
+        raise AssertionError("Rust distribution did not pass in both independent processes")
     OUTPUT.mkdir(parents=True, exist_ok=True)
-    (OUTPUT / "rust_corpus.json").write_text(first, encoding="utf-8")
-    (OUTPUT / "rust_corpus_process_evidence.json").write_text(
+    (OUTPUT / "rust_distribution_v11.json").write_text(first, encoding="utf-8")
+    (OUTPUT / "rust_distribution_v11_process_evidence.json").write_text(
         json.dumps(
             {
                 "canonical_bytes": "identical",
