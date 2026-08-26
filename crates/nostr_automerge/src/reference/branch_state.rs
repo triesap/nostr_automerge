@@ -70,6 +70,14 @@ impl<K: Ord, V> PersistentDeltaMap<K, V> {
         self.get(key).is_some()
     }
 
+    pub(crate) fn contains_key_metered<E>(
+        &self,
+        key: &K,
+        visit: impl FnMut() -> Result<(), E>,
+    ) -> Result<bool, E> {
+        self.get_metered(key, visit).map(|value| value.is_some())
+    }
+
     pub(crate) fn extend_local(&self, mut local: BTreeMap<K, V>) -> Self
     where
         V: PartialEq,
@@ -206,6 +214,40 @@ mod tests {
         assert!(result.is_err(), "metered lookup unexpectedly completed");
         let Err(returned) = result else { return };
         assert!(Rc::ptr_eq(&returned, &injected));
+    }
+
+    #[test]
+    fn metered_membership_reuses_lookup_without_hidden_scans() {
+        let mut state = PersistentDeltaMap::from_local(BTreeMap::from([(0_u8, 10_u8)]));
+        for value in 1_u8..=3 {
+            state = state.extend_local(BTreeMap::from([(value, value + 10)]));
+        }
+
+        for (key, expected, expected_visits) in [(3, true, 1_u64), (0, true, 4), (4, false, 4)] {
+            let visits = Cell::new(0_u64);
+            let complete = state.contains_key_metered(&key, || {
+                visits.set(visits.get() + 1);
+                Ok::<(), Rc<&'static str>>(())
+            });
+            assert_eq!(complete, Ok(expected));
+            assert_eq!(visits.get(), expected_visits);
+
+            for boundary in 0..expected_visits {
+                let observed = Cell::new(0_u64);
+                let injected = Rc::new("membership stop");
+                let stopped = state.contains_key_metered(&key, || {
+                    if observed.get() == boundary {
+                        return Err(Rc::clone(&injected));
+                    }
+                    observed.set(observed.get() + 1);
+                    Ok(())
+                });
+                assert!(stopped.is_err());
+                let Err(returned) = stopped else { continue };
+                assert!(Rc::ptr_eq(&returned, &injected));
+                assert_eq!(observed.get(), boundary);
+            }
+        }
     }
 
     #[derive(Clone, Debug)]

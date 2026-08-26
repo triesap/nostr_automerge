@@ -26,3 +26,8 @@ RCLD 101 starts at `step_1315` with a metered persistent lookup primitive.
 The new boundary counts only retained nodes actually visited and preserves the
 first typed stop; production callers remain on the historical boundary until
 the later integration and bypass-removal checkpoints.
+
+At `step_1316`, persistent membership is the exact Boolean projection of the
+metered lookup result. Present and absent membership therefore share lookup's
+visited-node counts and preserve every cancellation boundary without a hidden
+second scan.
