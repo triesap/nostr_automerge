@@ -1,0 +1,63 @@
+{
+  "schema": "nostr_automerge.persistent_state_integration.v11.v1",
+  "status": "pass",
+  "stage": "rust_persistent_state_integration",
+  "revision": "draft_2026_08",
+  "core_gate_sha256": "e540248bab985856d9aba407758ed1343c3c0e039f81347d29e4909abdecf695",
+  "candidates": [
+    { "step": "step_1321", "candidate": "e04e0e557755c5f7a460eb60231f6e123c86ebb1" },
+    { "step": "step_1322", "candidate": "64604f274341df014634a9dcf4084b95b644a46d" },
+    { "step": "step_1323", "candidate": "4191a65a7c6cf8e27184d8c5d61b42381f9cf250" },
+    { "step": "step_1324", "candidate": "9ae36ba68525be4284fb96266c5e76c3c576fa13" },
+    { "step": "step_1325", "candidate": "27618d0ed85f2d9bb38e2f4f6258262f801bb2df" }
+  ],
+  "call_sites": [
+    { "name": "parent_result_projection", "boundary": "from_result_metered", "owner": "graph_node" },
+    { "name": "parent_additional_projection", "boundary": "set_additional_prior_knowledge_metered", "owner": "graph_node" },
+    { "name": "parent_frontier_lookup", "boundary": "frontier_knowledge_metered", "owner": "graph_node" },
+    { "name": "candidate_frontier", "boundary": "evaluate_candidate_frontier_metered", "owner": "graph_node" },
+    { "name": "epoch_dependencies", "boundary": "prior_dependencies_valid_metered", "owner": "graph_edge_and_graph_node" },
+    { "name": "referenced_branch_disposition", "boundary": "referenced_branch_change_disposition_metered", "owner": "graph_node" },
+    { "name": "prior_extension", "boundary": "extend_prior_knowledge_metered", "owner": "graph_node" },
+    { "name": "branch_disposition_extension", "boundary": "extend_branch_dispositions_metered", "owner": "graph_node" }
+  ],
+  "source_inventory": [
+    { "path": "crates/nostr_automerge/src/control/parent_view.rs", "sha256": "52c546be373661f607c06503bba36c9f22486aa7843c9e3b3c4495f9ddcd6388" },
+    { "path": "crates/nostr_automerge/src/control/candidate.rs", "sha256": "69a25ffb3c2cf8e8b61bdd3ff146ace90aa0f8e6097b6c11f065f66c278de3d5" },
+    { "path": "crates/nostr_automerge/src/reference/epoch_engine.rs", "sha256": "819af3a1594ccdeb3c464ba5c98b9d470d15d6cbf38e7e3bae783bd6ad885e98" },
+    { "path": "crates/nostr_automerge/src/reference/evaluate.rs", "sha256": "9a63fe6d420af47794fd8845ffbece1011c5784a89ee59ef1a4c02095aa717e4" },
+    { "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs", "sha256": "2668986962170911e4362f442c61493bbb487840276f8089b100057aa6c293db" },
+    { "path": "crates/nostr_automerge/tests/public_engine_api.rs", "sha256": "07caa6cbaca73c6e940107aaaf301652383ce5af68d64772a8f42f7b9aa249f5" },
+    { "path": "scripts/validate_persistent_state_v11.py", "sha256": "7c62023fb37955f8b3612f5b6dbdf7783eafeece1d7991123966212a1866411e" }
+  ],
+  "source_projection_sha256": "aae63c79619e4f42ad68f40a7b082d9f597388ff8479f4d02de9d7c1691639e1",
+  "tests": [
+    "parent_result_projection_charges_before_every_read_and_insert",
+    "candidate_frontier_exposes_every_deep_knowledge_charge",
+    "dependency_lookup_charges_before_outer_reads_and_persistent_nodes",
+    "referenced_disposition_lookup_exposes_every_persistent_node",
+    "branch_local_extension_owns_preparation_and_publication",
+    "persistent_integration_is_exact_at_every_visible_boundary"
+  ],
+  "counts": {
+    "candidate_count": 5,
+    "call_site_count": 8,
+    "source_file_count": 7,
+    "enabled_test_count": 6,
+    "deep_chain_nodes": 64,
+    "source_policy_mutations": 21,
+    "integration_controls": 2,
+    "integration_changes": 2
+  },
+  "properties": {
+    "outer_item_read_before_charge": false,
+    "persistent_node_read_before_charge": false,
+    "failed_extension_publishes_state": false,
+    "typed_stop_preserved": true,
+    "n_minus_one_no_progress": true,
+    "n_and_n_plus_one_compatible": true,
+    "every_observed_boundary_cancellable": true,
+    "runtime_unmetered_bypass": false
+  },
+  "result": "pass"
+}

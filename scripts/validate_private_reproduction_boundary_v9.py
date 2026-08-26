@@ -72,12 +72,15 @@ PUBLIC_JSON_RECORDS = (
     "spec/remediation_v11_reproductions.json",
     "reports/persistent_state_core_v11.json",
     "tools/validation/persistent_state_core_v11.schema.json",
+    "reports/persistent_state_integration_v11.json",
+    "tools/validation/persistent_state_integration_v11.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
     for value in (
         b"https://json-schema.org/draft/2020-12/schema",
         b"https://nostr-automerge.example/schema/persistent_state_core_v11.schema.json",
+        b"https://nostr-automerge.example/schema/persistent_state_integration_v11.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -137,6 +140,7 @@ PYTHON_SURFACES = (
     "scripts/validate_remediation_v11.py",
     "scripts/validate_persistent_state_v11.py",
     "scripts/validate_persistent_state_core_gate_v11.py",
+    "scripts/validate_persistent_state_integration_gate_v11.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -321,6 +325,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_persistent_state_core_gate_v11.py",
         "reports/persistent_state_core_v11.json",
         "tools/validation/persistent_state_core_v11.schema.json",
+        "scripts/validate_persistent_state_integration_gate_v11.py",
+        "reports/persistent_state_integration_v11.json",
+        "tools/validation/persistent_state_integration_v11.schema.json",
         "scripts/validate_opaque_boundary_gate_v9.py",
         "scripts/validate_opaque_resource_gate_v9.py",
         "tools/validation/opaque_semantic_proofs_v10.schema.json",
@@ -640,6 +647,7 @@ def validate_source_surfaces() -> None:
                             "scripts/validate_final_identity_v10.py",
                             "scripts/validate_remediation_v11.py",
                             "scripts/validate_persistent_state_core_gate_v11.py",
+                            "scripts/validate_persistent_state_integration_gate_v11.py",
                             "scripts/validate_runtime_ledger_v9.py",
                         }
                     )

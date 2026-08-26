@@ -75,3 +75,8 @@ returns the original shared state; publication occurs only after full success.
 newly exposed persistent boundary. The minimum completing item capacity N is
 derived independently; N−1 returns canonical no-progress, N and N+1 produce the
 same complete report, and cancellation at every observation is exact.
+
+`step_1326` closes the Rust persistent-state integration gate over the exact
+five-step candidate chain, eight production call sites, seven source files, six
+enabled boundary tests, and the 21-mutation active source policy. RCLD 102 is
+green; complete target-work ownership remains assigned to RCLD 103.
