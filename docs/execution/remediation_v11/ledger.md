@@ -65,3 +65,8 @@ At `step_1323`, declared and missing dependency items are charged before their
 outer reads, and their prior-state lookups expose every retained node. Public
 referenced-branch disposition lookup likewise charges the branch-map read and
 each persistent node while preserving the first budget or cancellation stop.
+
+At `step_1324`, additional-prior and branch-disposition deltas charge source
+pulls and local inserts separately before the core persistent extension charges
+prepared items, inherited duplicate checks, and accepted inserts. Failed work
+returns the original shared state; publication occurs only after full success.

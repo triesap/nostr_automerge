@@ -212,6 +212,33 @@ def validate_sources(sources: dict[str, str]) -> None:
     evaluate = sources[SOURCES[6]]
     require(evaluate.count(".extend_prepared_metered(") == 2, "evaluate:extensions")
     require(evaluate.count(".get_metered(") >= 4, "evaluate:lookups")
+    prior_extension = section(
+        evaluate,
+        "fn extend_prior_knowledge_metered<E>(",
+        "\n}\n\nfn extend_branch_dispositions_metered",
+        "evaluate:prior_extension",
+    )
+    require_order(
+        prior_extension,
+        (
+            "visit(WorkCounter::GraphNode).map_err(BranchDeltaError::Work)?;",
+            "items.next()",
+            "visit(WorkCounter::GraphNode).map_err(BranchDeltaError::Work)?;",
+            "local.entry(*hash).or_insert(*item);",
+            ".extend_prepared_metered(local",
+        ),
+        "evaluate:prior_extension",
+    )
+    branch_extension = section(
+        evaluate,
+        "fn extend_branch_dispositions_metered<E>(",
+        "\n}\n\nfn evaluate_branch_table",
+        "evaluate:branch_extension",
+    )
+    require(branch_extension.count(".extend_prepared_metered(local") == 1, "evaluate:branch_publication")
+    require(branch_extension.count(".get_metered(") == 3, "evaluate:branch_duplicate_checks")
+    require(evaluate.count("extend_prior_knowledge_metered(") == 2, "evaluate:prior_route")
+    require(evaluate.count("extend_branch_dispositions_metered(") == 2, "evaluate:branch_route")
     referenced = section(
         evaluate,
         "pub(crate) fn referenced_branch_change_disposition_metered<E>(",
@@ -254,6 +281,8 @@ def mutation_self_test(sources: dict[str, str]) -> int:
         replaced(sources, epoch, "visit(WorkCounter::GraphEdge)?;\n        let Some(dependency) = declared_items.next()", "let Some(dependency) = declared_items.next()"),
         replaced(sources, epoch, ".get_metered(dependency, || visit(WorkCounter::GraphNode))?", ".get(dependency)"),
         replaced(sources, evaluate, "dispositions.get_metered(&hash, visit)?", "dispositions.get(&hash)"),
+        replaced(sources, evaluate, "visit(WorkCounter::GraphNode).map_err(BranchDeltaError::Work)?;\n            local.entry(*hash).or_insert(*item);", "local.entry(*hash).or_insert(*item);"),
+        replaced(sources, evaluate, "let branch_change_dispositions = extend_branch_dispositions_metered(", "let branch_change_dispositions = parent_change_dispositions.extend_prepared_metered("),
         replaced(sources, evaluator, "dispositions.contains_key_metered(&carrier.change_hash", "dispositions.contains_key(&carrier.change_hash"),
     ]
     missing = copy.deepcopy(sources)

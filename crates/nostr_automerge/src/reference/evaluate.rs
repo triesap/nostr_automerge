@@ -465,10 +465,110 @@ enum BranchTableError {
     Invariant,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum BranchDeltaError<E> {
+    Work(E),
+    Invariant,
+}
+
 impl From<Completion> for BranchTableError {
     fn from(value: Completion) -> Self {
         Self::Stop(value)
     }
+}
+
+fn branch_delta_error(error: BranchDeltaError<Completion>) -> BranchTableError {
+    match error {
+        BranchDeltaError::Work(stop) => BranchTableError::Stop(stop),
+        BranchDeltaError::Invariant => BranchTableError::Invariant,
+    }
+}
+
+fn extend_prior_knowledge_metered<E>(
+    parent: &PriorKnowledgeState,
+    mut local: BTreeMap<ChangeHash, PriorChangeKnowledge>,
+    additional: Option<&BTreeMap<ChangeHash, PriorChangeKnowledge>>,
+    mut visit: impl FnMut(WorkCounter) -> Result<(), E>,
+) -> Result<PriorKnowledgeState, BranchDeltaError<E>> {
+    if let Some(additional) = additional {
+        let mut items = additional.iter();
+        for _ in 0..additional.len() {
+            visit(WorkCounter::GraphNode).map_err(BranchDeltaError::Work)?;
+            let Some((hash, item)) = items.next() else {
+                return Err(BranchDeltaError::Invariant);
+            };
+            visit(WorkCounter::GraphNode).map_err(BranchDeltaError::Work)?;
+            local.entry(*hash).or_insert(*item);
+        }
+    }
+    parent
+        .extend_prepared_metered(local, |_| visit(WorkCounter::GraphNode))
+        .map_err(BranchDeltaError::Work)
+}
+
+fn extend_branch_dispositions_metered<E>(
+    parent: &PersistentDeltaMap<ChangeHash, ProtocolDisposition>,
+    parent_accepted: Option<&BTreeSet<ChangeHash>>,
+    validated_base: &BTreeSet<ChangeHash>,
+    epoch_dispositions: &BTreeMap<ChangeHash, ProtocolDisposition>,
+    mut visit: impl FnMut(WorkCounter) -> Result<(), E>,
+) -> Result<PersistentDeltaMap<ChangeHash, ProtocolDisposition>, BranchDeltaError<E>> {
+    let mut local = BTreeMap::new();
+    if let Some(parent_accepted) = parent_accepted {
+        let mut items = parent_accepted.iter();
+        for _ in 0..parent_accepted.len() {
+            visit(WorkCounter::GraphNode).map_err(BranchDeltaError::Work)?;
+            let Some(hash) = items.next() else {
+                return Err(BranchDeltaError::Invariant);
+            };
+            let disposition = if validated_base.contains(hash) {
+                ProtocolDisposition::Accepted
+            } else {
+                ProtocolDisposition::Excluded
+            };
+            if parent
+                .get_metered(hash, || visit(WorkCounter::GraphNode))
+                .map_err(BranchDeltaError::Work)?
+                != Some(&disposition)
+            {
+                visit(WorkCounter::GraphNode).map_err(BranchDeltaError::Work)?;
+                local.insert(*hash, disposition);
+            }
+        }
+    }
+    let mut validated_items = validated_base.iter();
+    for _ in 0..validated_base.len() {
+        visit(WorkCounter::GraphNode).map_err(BranchDeltaError::Work)?;
+        let Some(hash) = validated_items.next() else {
+            return Err(BranchDeltaError::Invariant);
+        };
+        if parent
+            .get_metered(hash, || visit(WorkCounter::GraphNode))
+            .map_err(BranchDeltaError::Work)?
+            != Some(&ProtocolDisposition::Accepted)
+        {
+            visit(WorkCounter::GraphNode).map_err(BranchDeltaError::Work)?;
+            local.insert(*hash, ProtocolDisposition::Accepted);
+        }
+    }
+    let mut epoch_items = epoch_dispositions.iter();
+    for _ in 0..epoch_dispositions.len() {
+        visit(WorkCounter::GraphNode).map_err(BranchDeltaError::Work)?;
+        let Some((hash, disposition)) = epoch_items.next() else {
+            return Err(BranchDeltaError::Invariant);
+        };
+        if parent
+            .get_metered(hash, || visit(WorkCounter::GraphNode))
+            .map_err(BranchDeltaError::Work)?
+            != Some(disposition)
+        {
+            visit(WorkCounter::GraphNode).map_err(BranchDeltaError::Work)?;
+            local.insert(*hash, *disposition);
+        }
+    }
+    parent
+        .extend_prepared_metered(local, |_| visit(WorkCounter::GraphNode))
+        .map_err(BranchDeltaError::Work)
 }
 
 fn evaluate_branch_table(
@@ -601,7 +701,7 @@ fn evaluate_branch_table(
                 )?;
                 continue;
             };
-            let mut local_knowledge = prior_change_knowledge(
+            let local_knowledge = prior_change_knowledge(
                 parent_epoch,
                 &validated_base,
                 preliminary_change_dispositions,
@@ -610,18 +710,16 @@ fn evaluate_branch_table(
                 budget,
                 cancellation,
             )?;
-            if let Some(additional) = additional_prior.get(&event_id) {
-                for (hash, item) in additional {
-                    charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;
-                    local_knowledge.entry(*hash).or_insert(*item);
-                }
-            }
             let parent_knowledge = parent_branch
                 .map(|branch| branch.prior_knowledge.clone())
                 .unwrap_or_default();
-            let knowledge = parent_knowledge.extend_prepared_metered(local_knowledge, |_| {
-                charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)
-            })?;
+            let knowledge = extend_prior_knowledge_metered(
+                &parent_knowledge,
+                local_knowledge,
+                additional_prior.get(&event_id),
+                |counter| charge_prior_knowledge_item(counter, budget, cancellation),
+            )
+            .map_err(branch_delta_error)?;
             let parent_ancestry = parent_branch
                 .map(|branch| branch.ancestry.clone())
                 .unwrap_or_default();
@@ -657,58 +755,15 @@ fn evaluate_branch_table(
                     let parent_change_dispositions = parent_branch
                         .map(|branch| branch.change_dispositions.clone())
                         .unwrap_or_default();
-                    let mut local_change_dispositions = BTreeMap::new();
-                    if let Some(parent) = parent_branch {
-                        for hash in parent.epoch.accepted_state().accepted_closure() {
-                            let disposition = if validated_base.contains(hash) {
-                                ProtocolDisposition::Accepted
-                            } else {
-                                ProtocolDisposition::Excluded
-                            };
-                            if parent_change_dispositions.get_metered(hash, || {
-                                charge_prior_knowledge_item(
-                                    WorkCounter::GraphNode,
-                                    budget,
-                                    cancellation,
-                                )
-                            })? != Some(&disposition)
-                            {
-                                local_change_dispositions.insert(*hash, disposition);
-                            }
-                        }
-                    }
-                    for hash in &validated_base {
-                        if parent_change_dispositions.get_metered(hash, || {
-                            charge_prior_knowledge_item(
-                                WorkCounter::GraphNode,
-                                budget,
-                                cancellation,
-                            )
-                        })? != Some(&ProtocolDisposition::Accepted)
-                        {
-                            local_change_dispositions.insert(*hash, ProtocolDisposition::Accepted);
-                        }
-                    }
-                    for (hash, disposition) in epoch.dispositions() {
-                        if parent_change_dispositions.get_metered(hash, || {
-                            charge_prior_knowledge_item(
-                                WorkCounter::GraphNode,
-                                budget,
-                                cancellation,
-                            )
-                        })? != Some(disposition)
-                        {
-                            local_change_dispositions.insert(*hash, *disposition);
-                        }
-                    }
-                    let branch_change_dispositions = parent_change_dispositions
-                        .extend_prepared_metered(local_change_dispositions, |_| {
-                            charge_prior_knowledge_item(
-                                WorkCounter::GraphNode,
-                                budget,
-                                cancellation,
-                            )
-                        })?;
+                    let branch_change_dispositions = extend_branch_dispositions_metered(
+                        &parent_change_dispositions,
+                        parent_branch
+                            .map(|parent| parent.epoch.accepted_state().accepted_closure()),
+                        &validated_base,
+                        epoch.dispositions(),
+                        |counter| charge_prior_knowledge_item(counter, budget, cancellation),
+                    )
+                    .map_err(branch_delta_error)?;
                     table.states.insert(event_id, BranchEvaluationState::Valid);
                     table.valid.insert(
                         event_id,
@@ -1293,9 +1348,11 @@ mod tests {
 
     use super::{
         AcceptedAtControl, BatchChange, BatchChangeMemo, BatchControl, BatchEvaluationReport,
-        BranchEvaluationState, PersistentDeltaMap, PriorChangeKnowledge,
-        accepted_state_for_closure, charge_prior_knowledge_item, empty_batch_report,
-        evaluate_batch, prior_change_knowledge, propagate_control_parent_dispositions,
+        BranchDeltaError, BranchEvaluationState, PersistentDeltaMap, PriorChangeKnowledge,
+        PriorKnowledgeState, accepted_state_for_closure, charge_prior_knowledge_item,
+        empty_batch_report, evaluate_batch, extend_branch_dispositions_metered,
+        extend_prior_knowledge_metered, prior_change_knowledge,
+        propagate_control_parent_dispositions,
     };
 
     #[test]
@@ -1334,6 +1391,98 @@ mod tests {
                 } else {
                     assert_eq!(result, Ok(Some(ProtocolDisposition::Accepted)));
                     assert_eq!(observed.get(), exact);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn branch_local_extension_owns_preparation_and_publication() {
+        const DEPTH: u8 = 64;
+        let target = ChangeHash::from_bytes([0; 32]);
+        let mut parent_prior = PriorKnowledgeState::from(BTreeMap::from([(
+            target,
+            PriorChangeKnowledge::KnownInvalid,
+        )]));
+        let mut parent_dispositions =
+            PersistentDeltaMap::from(BTreeMap::from([(target, ProtocolDisposition::Excluded)]));
+        for value in 1..DEPTH {
+            let hash = ChangeHash::from_bytes([value; 32]);
+            parent_prior = parent_prior.extend_local(BTreeMap::from([(
+                hash,
+                PriorChangeKnowledge::KnownOtherControl,
+            )]));
+            parent_dispositions = parent_dispositions
+                .extend_local(BTreeMap::from([(hash, ProtocolDisposition::Excluded)]));
+        }
+
+        let additional = BTreeMap::from([(target, PriorChangeKnowledge::AcceptedInBase)]);
+        let prior_exact = 2_usize + 1 + usize::from(DEPTH) + 1;
+        for completion in [Completion::BudgetExhausted, Completion::Cancelled] {
+            for capacity in 0..=prior_exact + 1 {
+                let observed = Cell::new(0_usize);
+                let result = extend_prior_knowledge_metered(
+                    &parent_prior,
+                    BTreeMap::new(),
+                    Some(&additional),
+                    |_| {
+                        if observed.get() == capacity {
+                            return Err(completion);
+                        }
+                        observed.set(observed.get() + 1);
+                        Ok(())
+                    },
+                );
+                if capacity < prior_exact {
+                    assert!(
+                        matches!(result, Err(BranchDeltaError::Work(stop)) if stop == completion)
+                    );
+                    assert_eq!(observed.get(), capacity);
+                    assert_eq!(
+                        parent_prior.get(&target),
+                        Some(&PriorChangeKnowledge::KnownInvalid)
+                    );
+                } else {
+                    assert!(
+                        matches!(result, Ok(ref state) if state.get(&target) == Some(&PriorChangeKnowledge::AcceptedInBase))
+                    );
+                    assert_eq!(observed.get(), prior_exact);
+                }
+            }
+        }
+
+        let validated = BTreeSet::from([target]);
+        let disposition_exact = 2 * (1_usize + usize::from(DEPTH) + 1);
+        for completion in [Completion::BudgetExhausted, Completion::Cancelled] {
+            for capacity in 0..=disposition_exact + 1 {
+                let observed = Cell::new(0_usize);
+                let result = extend_branch_dispositions_metered(
+                    &parent_dispositions,
+                    None,
+                    &validated,
+                    &BTreeMap::new(),
+                    |_| {
+                        if observed.get() == capacity {
+                            return Err(completion);
+                        }
+                        observed.set(observed.get() + 1);
+                        Ok(())
+                    },
+                );
+                if capacity < disposition_exact {
+                    assert!(
+                        matches!(result, Err(BranchDeltaError::Work(stop)) if stop == completion)
+                    );
+                    assert_eq!(observed.get(), capacity);
+                    assert_eq!(
+                        parent_dispositions.get(&target),
+                        Some(&ProtocolDisposition::Excluded)
+                    );
+                } else {
+                    assert!(
+                        matches!(result, Ok(ref state) if state.get(&target) == Some(&ProtocolDisposition::Accepted))
+                    );
+                    assert_eq!(observed.get(), disposition_exact);
                 }
             }
         }
