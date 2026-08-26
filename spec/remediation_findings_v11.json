@@ -1,0 +1,90 @@
+{
+  "schema": "nostr_automerge.remediation_findings.v11.v1",
+  "status": "implementation_remediation_required",
+  "findings": [
+    {
+      "id": "FINDING_096",
+      "severity": "high",
+      "class": "resource_accounting",
+      "title": "Persistent delta lookup and extension hide branch-depth work",
+      "requirements": [
+        "NCRDT-RESOURCE-001",
+        "NCRDT-RESOURCE-014",
+        "NCRDT-RESOURCE-015",
+        "NCRDT-COMPLETION-001"
+      ],
+      "source_paths": [
+        "crates/nostr_automerge/src/reference/branch_state.rs",
+        "crates/nostr_automerge/src/control/parent_view.rs",
+        "crates/nostr_automerge/src/reference/evaluate.rs",
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs"
+      ],
+      "closure": "Meter every visited persistent node, stop before work after a failed charge, prove deep present/absent/extension boundaries, and reject runtime unmetered bypasses.",
+      "status": "open"
+    },
+    {
+      "id": "FINDING_097",
+      "severity": "high",
+      "class": "resource_accounting",
+      "title": "Remaining target-sized branch and result work is not mechanically charged",
+      "requirements": [
+        "NCRDT-RESOURCE-001",
+        "NCRDT-RESOURCE-014",
+        "NCRDT-RESOURCE-016",
+        "NCRDT-COMPLETION-001"
+      ],
+      "source_paths": [
+        "crates/nostr_automerge/src/control/parent_view.rs",
+        "crates/nostr_automerge/src/reference/evaluate.rs",
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs"
+      ],
+      "closure": "Give every target-sized traversal, allocation, copy, comparison, insertion, and head derivation one exact owner and prove zero work after the first stop.",
+      "status": "open"
+    },
+    {
+      "id": "FINDING_098",
+      "severity": "high",
+      "class": "specification_authority",
+      "title": "The authoritative NIP contradicts Event-only unsupported identity",
+      "requirements": [
+        "NCRDT-VERSION-002",
+        "NCRDT-VERSION-003",
+        "NCRDT-EVIDENCE-006"
+      ],
+      "source_paths": [
+        "spec/NIP_DRAFT.md",
+        "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs"
+      ],
+      "closure": "Make unverified unsupported change-shaped evidence Event-only in every authority and implementation, then regenerate the affected identities.",
+      "status": "open"
+    },
+    {
+      "id": "FINDING_099",
+      "severity": "medium",
+      "class": "ownership_hardening",
+      "title": "Deep persistent Arc-chain teardown is not qualified",
+      "requirements": [
+        "NCRDT-OWNERSHIP-001",
+        "NCRDT-RESOURCE-001"
+      ],
+      "source_paths": [
+        "crates/nostr_automerge/src/reference/branch_state.rs",
+        "crates/nostr_automerge/src/control/ancestry.rs"
+      ],
+      "closure": "Prove bounded-stack destruction for deep unique chains and wide shared forks without changing protocol output.",
+      "status": "open"
+    },
+    {
+      "id": "FINDING_080",
+      "severity": "hold",
+      "class": "external_assurance",
+      "title": "External assurance and publication authority remain held",
+      "requirements": [],
+      "source_paths": [],
+      "closure": "Preserve the hold; it cannot be closed by this local sequence.",
+      "status": "held"
+    }
+  ],
+  "result": "pass"
+}

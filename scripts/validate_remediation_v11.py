@@ -1,38 +1,58 @@
 #!/usr/bin/env python3
-"""Validate the closed remediation v11 baseline and initial runtime cursor."""
+"""Validate the closed remediation v11 authority, findings, and runtime cursor."""
 
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import pathlib
 import subprocess
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 AUTHORITY = ROOT / "spec/remediation_v11_authority.json"
+FINDINGS = ROOT / "spec/remediation_findings_v11.json"
+EVIDENCE = ROOT / "reports/evidence_transition_v11.json"
 LEDGER = ROOT / "implementation/runtime_ledger_v11.json"
 
 PUBLIC_CANDIDATE = "e1b4f461c0d2a1e8cc8e520bed2dfa64a62270f2"
 PUBLIC_TREE = "5e62938bfe576d6c67b3bfe355d5b5dd47585e87"
 PRIVATE_CANDIDATE = "2d708bb0a7a00523ab5c244fd0a15c96afcf0a4a"
 PRIOR_HANDOFF = "e333873b2b2e42b42bc7d9e652012195ab70760b586eb184462e655a5682be44"
+STEP_1308 = "e3c88c6803dcd862b225ff169cf6d65ac5655a6f"
 HOLDS = (
-    "external_assurance",
-    "event_kind_allocation",
-    "nip_submission",
-    "production_qualification",
-    "publication",
-    "release",
-    "remote_mutation",
+    "external_assurance", "event_kind_allocation", "nip_submission",
+    "production_qualification", "publication", "release", "remote_mutation",
+)
+FINDING_IDS = ("FINDING_096", "FINDING_097", "FINDING_098", "FINDING_099", "FINDING_080")
+FINDING_CLASSES = (
+    "resource_accounting", "resource_accounting", "specification_authority",
+    "ownership_hardening", "external_assurance",
+)
+FINDING_SEVERITIES = ("high", "high", "high", "medium", "hold")
+FINDING_REQUIREMENTS = (
+    ("NCRDT-RESOURCE-001", "NCRDT-RESOURCE-014", "NCRDT-RESOURCE-015", "NCRDT-COMPLETION-001"),
+    ("NCRDT-RESOURCE-001", "NCRDT-RESOURCE-014", "NCRDT-RESOURCE-016", "NCRDT-COMPLETION-001"),
+    ("NCRDT-VERSION-002", "NCRDT-VERSION-003", "NCRDT-EVIDENCE-006"),
+    ("NCRDT-OWNERSHIP-001", "NCRDT-RESOURCE-001"),
+    (),
+)
+HISTORICAL_EVIDENCE = (
+    ("spec/resource_followup_authority_v10.json", "0cac9bf4b90c55e428c335797a9d7195bc3ee08eed5bfb49fca4428e62702531"),
+    ("spec/resource_operation_inventory_v10.json", "cae0e490046cd70f1798573bcf80e0e9f4d520e37afb19225a84845b11b63525"),
+    ("spec/resource_ancestry_proof_catalog_v10.json", "a6158951a9e67b7dfcf16765bccb752a6fd20e6e6feb2fde3468c1c66ca1d238"),
+    ("implementation/runtime_ledger_v10.json", "9f1227ccb391d8ca120463b5be25ce14b14647c28546721afc685d985f8915d0"),
+    ("reports/resource_followup_finding_closure_v10.json", "a544cdf1d2be10a855891e0681df2d236dcaf7a1f7230eb35c4d719ec738dd83"),
+    ("reports/resource_followup_final_decision_v10.json", "43d28679234b7c11878f615faf57fc65f298fa99505cdcc70f2d86022b40dd9c"),
 )
 SCOPE = (
-    "docs/execution/remediation_v11/baseline.md",
+    "docs/execution/remediation_v11/ledger.md",
     "implementation/runtime_ledger_v11.json",
+    "reports/evidence_transition_v11.json",
     "reports/spec_baseline.txt",
     "scripts/validate_remediation_v11.py",
-    "scripts/validate_runtime_ledger_v10.py",
     "scripts/validate_spec.py",
-    "spec/remediation_v11_authority.json",
+    "spec/remediation_findings_v11.json",
 )
 
 
@@ -46,180 +66,164 @@ def require_record(value: object, keys: tuple[str, ...], label: str) -> dict[str
     return value
 
 
+def sha256(path: pathlib.Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 def validate_authority(value: object) -> None:
     record = require_record(
         value,
-        (
-            "schema",
-            "status",
-            "reviewed_public",
-            "opaque_private",
-            "prior_handoff_sha256",
-            "historical_sequence",
-            "active_sequence",
-            "counts",
-            "holds",
-            "result",
-        ),
+        ("schema", "status", "reviewed_public", "opaque_private", "prior_handoff_sha256", "historical_sequence", "active_sequence", "counts", "holds", "result"),
         "authority",
     )
-    if record["schema"] != "nostr_automerge.remediation_v11_authority.v1":
-        raise ValidationError("authority:schema")
+    if record["schema"] != "nostr_automerge.remediation_v11_authority.v1" or record["result"] != "pass":
+        raise ValidationError("authority:identity")
     if record["status"] != "authority_and_reproduction_correction_required":
         raise ValidationError("authority:status")
-    if record["result"] != "pass":
-        raise ValidationError("authority:result")
-    if record["reviewed_public"] != {
-        "candidate": PUBLIC_CANDIDATE,
-        "tree": PUBLIC_TREE,
-    }:
+    if record["reviewed_public"] != {"candidate": PUBLIC_CANDIDATE, "tree": PUBLIC_TREE}:
         raise ValidationError("authority:public")
-    if record["opaque_private"] != {
-        "candidate": PRIVATE_CANDIDATE,
-        "source_disclosure": False,
-    }:
+    if record["opaque_private"] != {"candidate": PRIVATE_CANDIDATE, "source_disclosure": False}:
         raise ValidationError("authority:private")
     if record["prior_handoff_sha256"] != PRIOR_HANDOFF:
         raise ValidationError("authority:handoff")
-    if record["historical_sequence"] != {
-        "rcld_first": 95,
-        "rcld_last": 99,
-        "step_first": "step_1288",
-        "step_last": "step_1307",
-        "status": "immutable_historical_superseded_for_v11_scope",
-    }:
+    if record["historical_sequence"] != {"rcld_first": 95, "rcld_last": 99, "step_first": "step_1288", "step_last": "step_1307", "status": "immutable_historical_superseded_for_v11_scope"}:
         raise ValidationError("authority:history")
-    if record["active_sequence"] != {
-        "rcld_first": 100,
-        "rcld_last": 108,
-        "step_first": "step_1308",
-        "step_last": "step_1363",
-        "step_count": 56,
-    }:
+    if record["active_sequence"] != {"rcld_first": 100, "rcld_last": 108, "step_first": "step_1308", "step_last": "step_1363", "step_count": 56}:
         raise ValidationError("authority:sequence")
-    if record["counts"] != {
-        "requirements_current": 148,
-        "requirements_target": 152,
-        "scenarios_current": 193,
-        "scenarios_target": 198,
-    }:
+    if record["counts"] != {"requirements_current": 148, "requirements_target": 152, "scenarios_current": 193, "scenarios_target": 198}:
         raise ValidationError("authority:counts")
     if tuple(record["holds"]) != HOLDS:
         raise ValidationError("authority:holds")
 
 
+def validate_findings(value: object) -> None:
+    record = require_record(value, ("schema", "status", "findings", "result"), "findings")
+    if record["schema"] != "nostr_automerge.remediation_findings.v11.v1" or record["status"] != "implementation_remediation_required" or record["result"] != "pass":
+        raise ValidationError("findings:identity")
+    rows = record["findings"]
+    if not isinstance(rows, list) or len(rows) != 5:
+        raise ValidationError("findings:count")
+    for index, row in enumerate(rows):
+        item = require_record(row, ("id", "severity", "class", "title", "requirements", "source_paths", "closure", "status"), f"finding:{index}")
+        if item["id"] != FINDING_IDS[index] or item["severity"] != FINDING_SEVERITIES[index] or item["class"] != FINDING_CLASSES[index]:
+            raise ValidationError(f"finding:{index}:identity")
+        if tuple(item["requirements"]) != FINDING_REQUIREMENTS[index]:
+            raise ValidationError(f"finding:{index}:requirements")
+        expected_status = "held" if item["id"] == "FINDING_080" else "open"
+        if item["status"] != expected_status:
+            raise ValidationError(f"finding:{index}:status")
+        if not isinstance(item["title"], str) or not item["title"] or not isinstance(item["closure"], str) or not item["closure"]:
+            raise ValidationError(f"finding:{index}:text")
+        paths = item["source_paths"]
+        if not isinstance(paths, list) or len(paths) != len(set(paths)) or any(not isinstance(path, str) or not (ROOT / path).is_file() for path in paths):
+            raise ValidationError(f"finding:{index}:paths")
+
+
+def validate_evidence(value: object, check_files: bool = False) -> None:
+    record = require_record(value, ("schema", "status", "historical_findings", "new_findings", "retained_hold", "historical_evidence", "supersession", "result"), "evidence")
+    if record["schema"] != "nostr_automerge.evidence_transition.v11.v1" or record["status"] != "historical_v10_superseded_for_v11_resource_scope" or record["result"] != "pass":
+        raise ValidationError("evidence:identity")
+    if tuple(record["historical_findings"]) != ("FINDING_094", "FINDING_095") or tuple(record["new_findings"]) != FINDING_IDS[:4] or record["retained_hold"] != "FINDING_080":
+        raise ValidationError("evidence:findings")
+    rows = record["historical_evidence"]
+    if not isinstance(rows, list) or tuple((row.get("path"), row.get("sha256")) for row in rows if isinstance(row, dict)) != HISTORICAL_EVIDENCE:
+        raise ValidationError("evidence:artifacts")
+    for row in rows:
+        require_record(row, ("path", "sha256"), "evidence:artifact")
+    if check_files:
+        for path, digest in HISTORICAL_EVIDENCE:
+            if sha256(ROOT / path) != digest:
+                raise ValidationError(f"evidence:hash:{path}")
+    if record["supersession"] != {
+        "preserved_claims": "FINDING_094 and FINDING_095 remain closed for their exact recorded operations and checkpoint ancestry behavior.",
+        "superseded_claims": "The v10 inventory does not prove every retained-depth persistent lookup or every remaining target-sized preparation operation required by Findings 096 and 097.",
+        "historical_bytes_mutable": False,
+        "v11_closure_required": True,
+    }:
+        raise ValidationError("evidence:supersession")
+
+
 def validate_ledger(value: object) -> None:
-    record = require_record(
-        value,
-        (
-            "schema",
-            "status",
-            "authority",
-            "cursor",
-            "findings",
-            "requirements",
-            "active_checkpoint_scope",
-            "predecessors",
-            "holds",
-            "result",
-        ),
-        "ledger",
-    )
-    if record["schema"] != "nostr_automerge.runtime_ledger.v11.v1":
-        raise ValidationError("ledger:schema")
-    if record["status"] != "authority_and_reproduction_correction_required":
-        raise ValidationError("ledger:status")
+    record = require_record(value, ("schema", "status", "authority", "cursor", "findings", "requirements", "active_checkpoint_scope", "predecessors", "holds", "result"), "ledger")
+    if record["schema"] != "nostr_automerge.runtime_ledger.v11.v1" or record["status"] != "authority_and_reproduction_correction_required" or record["result"] != "pass":
+        raise ValidationError("ledger:identity")
     if record["authority"] != "spec/remediation_v11_authority.json":
         raise ValidationError("ledger:authority")
-    if record["cursor"] != {
-        "active_rcld": 100,
-        "active_step": "step_1308",
-        "next_step": "step_1309",
-        "last_planned_step": "step_1363",
-        "remaining_checkpoint_count": 56,
-        "remaining_rcld_count": 9,
-    }:
+    if record["cursor"] != {"active_rcld": 100, "active_step": "step_1309", "next_step": "step_1310", "last_planned_step": "step_1363", "remaining_checkpoint_count": 55, "remaining_rcld_count": 9}:
         raise ValidationError("ledger:cursor")
-    if record["findings"] != {
-        "open": ["FINDING_096", "FINDING_097", "FINDING_098", "FINDING_099"],
-        "held": ["FINDING_080"],
-    }:
+    if record["findings"] != {"open": list(FINDING_IDS[:4]), "held": ["FINDING_080"]}:
         raise ValidationError("ledger:findings")
-    if tuple(record["requirements"]) != (
-        "NCRDT-RESOURCE-015",
-        "NCRDT-RESOURCE-016",
-        "NCRDT-VERSION-003",
-        "NCRDT-OWNERSHIP-001",
-    ):
+    if tuple(record["requirements"]) != ("NCRDT-RESOURCE-015", "NCRDT-RESOURCE-016", "NCRDT-VERSION-003", "NCRDT-OWNERSHIP-001"):
         raise ValidationError("ledger:requirements")
     if tuple(record["active_checkpoint_scope"]) != SCOPE:
         raise ValidationError("ledger:scope")
-    if record["predecessors"] != []:
+    if record["predecessors"] != [{"step": "step_1308", "candidate": STEP_1308, "owner_class": "public", "result": "pass"}]:
         raise ValidationError("ledger:predecessors")
-    if tuple(record["holds"]) != HOLDS or record["result"] != "pass":
-        raise ValidationError("ledger:result")
+    if tuple(record["holds"]) != HOLDS:
+        raise ValidationError("ledger:holds")
 
 
 def validate_repository() -> None:
     validate_authority(json.loads(AUTHORITY.read_text()))
+    validate_findings(json.loads(FINDINGS.read_text()))
+    validate_evidence(json.loads(EVIDENCE.read_text()), check_files=True)
     validate_ledger(json.loads(LEDGER.read_text()))
-    tree = subprocess.run(
-        ["git", "rev-parse", f"{PUBLIC_CANDIDATE}^{{tree}}"],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
+    tree = subprocess.run(["git", "rev-parse", f"{PUBLIC_CANDIDATE}^{{tree}}"], cwd=ROOT, check=True, capture_output=True, text=True).stdout.strip()
     if tree != PUBLIC_TREE:
         raise ValidationError("repository:tree")
-    status = subprocess.run(
-        ["git", "status", "--porcelain=v1", "-z", "--untracked-files=all"],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-    ).stdout.decode().split("\0")
+    status = subprocess.run(["git", "status", "--porcelain=v1", "-z", "--untracked-files=all"], cwd=ROOT, check=True, capture_output=True).stdout.decode().split("\0")
     paths = tuple(sorted(entry[3:] for entry in status if entry))
     if len(paths) != len(set(paths)) or not set(paths).issubset(SCOPE):
         raise ValidationError(f"repository:scope:{paths}")
 
 
 def mutation_self_test() -> int:
-    authority = json.loads(AUTHORITY.read_text())
+    findings = json.loads(FINDINGS.read_text())
+    evidence = json.loads(EVIDENCE.read_text())
     ledger = json.loads(LEDGER.read_text())
     mutations: list[tuple[str, object]] = []
     for mutate in (
-        lambda value: value["reviewed_public"].update(candidate="0" * 40),
-        lambda value: value["reviewed_public"].update(tree="0" * 40),
-        lambda value: value["opaque_private"].update(source_disclosure=True),
-        lambda value: value.update(prior_handoff_sha256="0" * 64),
-        lambda value: value["historical_sequence"].update(status="current"),
-        lambda value: value["active_sequence"].update(step_count=55),
-        lambda value: value["counts"].update(scenarios_target=199),
-        lambda value: value["holds"].pop(),
+        lambda value: value["findings"].pop(),
+        lambda value: value["findings"].reverse(),
+        lambda value: value["findings"][0].update(severity="medium"),
+        lambda value: value["findings"][0].update(status="closed"),
+        lambda value: value["findings"][4].update(status="closed"),
+        lambda value: value["findings"][1]["requirements"].pop(),
         lambda value: value.update(extra=False),
     ):
-        candidate = copy.deepcopy(authority)
+        candidate = copy.deepcopy(findings)
         mutate(candidate)
-        mutations.append(("authority", candidate))
+        mutations.append(("findings", candidate))
     for mutate in (
-        lambda value: value["cursor"].update(active_step="step_1309"),
-        lambda value: value["cursor"].update(remaining_checkpoint_count=55),
+        lambda value: value["historical_findings"].reverse(),
+        lambda value: value["new_findings"].pop(),
+        lambda value: value.update(retained_hold="FINDING_099"),
+        lambda value: value["historical_evidence"].pop(),
+        lambda value: value["historical_evidence"].reverse(),
+        lambda value: value["historical_evidence"][0].update(sha256="0" * 64),
+        lambda value: value["supersession"].update(historical_bytes_mutable=True),
+        lambda value: value["supersession"].update(v11_closure_required=False),
+        lambda value: value.update(extra=False),
+    ):
+        candidate = copy.deepcopy(evidence)
+        mutate(candidate)
+        mutations.append(("evidence", candidate))
+    for mutate in (
+        lambda value: value["cursor"].update(active_step="step_1310"),
+        lambda value: value["cursor"].update(remaining_checkpoint_count=54),
         lambda value: value["findings"]["open"].reverse(),
-        lambda value: value["requirements"].pop(),
         lambda value: value["active_checkpoint_scope"].reverse(),
-        lambda value: value["predecessors"].append({"step": "step_1308"}),
+        lambda value: value["predecessors"][0].update(candidate="0" * 40),
         lambda value: value["holds"].pop(),
         lambda value: value.update(extra=False),
     ):
         candidate = copy.deepcopy(ledger)
         mutate(candidate)
         mutations.append(("ledger", candidate))
+    validators = {"findings": validate_findings, "evidence": validate_evidence, "ledger": validate_ledger}
     for kind, candidate in mutations:
         try:
-            if kind == "authority":
-                validate_authority(candidate)
-            else:
-                validate_ledger(candidate)
+            validators[kind](candidate)
         except ValidationError:
             continue
         raise ValidationError(f"mutation:{kind}")
@@ -229,10 +233,10 @@ def mutation_self_test() -> int:
 def main() -> None:
     validate_repository()
     mutations = mutation_self_test()
-    print("PASS: remediation v11 baseline")
+    print("PASS: remediation v11 findings and evidence transition")
     print(f"- mutations={mutations}")
-    print("- steps=56")
-    print("- rclds=9")
+    print("- findings=4_open+1_held")
+    print("- historical_artifacts=6")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,48 @@
+{
+  "schema": "nostr_automerge.evidence_transition.v11.v1",
+  "status": "historical_v10_superseded_for_v11_resource_scope",
+  "historical_findings": [
+    "FINDING_094",
+    "FINDING_095"
+  ],
+  "new_findings": [
+    "FINDING_096",
+    "FINDING_097",
+    "FINDING_098",
+    "FINDING_099"
+  ],
+  "retained_hold": "FINDING_080",
+  "historical_evidence": [
+    {
+      "path": "spec/resource_followup_authority_v10.json",
+      "sha256": "0cac9bf4b90c55e428c335797a9d7195bc3ee08eed5bfb49fca4428e62702531"
+    },
+    {
+      "path": "spec/resource_operation_inventory_v10.json",
+      "sha256": "cae0e490046cd70f1798573bcf80e0e9f4d520e37afb19225a84845b11b63525"
+    },
+    {
+      "path": "spec/resource_ancestry_proof_catalog_v10.json",
+      "sha256": "a6158951a9e67b7dfcf16765bccb752a6fd20e6e6feb2fde3468c1c66ca1d238"
+    },
+    {
+      "path": "implementation/runtime_ledger_v10.json",
+      "sha256": "9f1227ccb391d8ca120463b5be25ce14b14647c28546721afc685d985f8915d0"
+    },
+    {
+      "path": "reports/resource_followup_finding_closure_v10.json",
+      "sha256": "a544cdf1d2be10a855891e0681df2d236dcaf7a1f7230eb35c4d719ec738dd83"
+    },
+    {
+      "path": "reports/resource_followup_final_decision_v10.json",
+      "sha256": "43d28679234b7c11878f615faf57fc65f298fa99505cdcc70f2d86022b40dd9c"
+    }
+  ],
+  "supersession": {
+    "preserved_claims": "FINDING_094 and FINDING_095 remain closed for their exact recorded operations and checkpoint ancestry behavior.",
+    "superseded_claims": "The v10 inventory does not prove every retained-depth persistent lookup or every remaining target-sized preparation operation required by Findings 096 and 097.",
+    "historical_bytes_mutable": false,
+    "v11_closure_required": true
+  },
+  "result": "pass"
+}

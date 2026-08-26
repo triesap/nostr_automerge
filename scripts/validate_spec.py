@@ -113,6 +113,7 @@ FOLLOWUP_HISTORICAL_VALIDATORS = {
     "validate_report_parity_v9.py",
     "validate_runtime_ledger_v9.py",
     "validate_private_reproduction_boundary_v9.py",
+    "validate_runtime_ledger_v10.py",
 }
 
 
@@ -150,9 +151,11 @@ def controlled_files() -> list[pathlib.Path]:
         for name in (
             "docs/execution/remediation_v9/ledger.md",
             "docs/execution/remediation_v10/ledger.md",
+            "docs/execution/remediation_v11/ledger.md",
             "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v10.md",
             "implementation/runtime_ledger_v9.json",
             "implementation/runtime_ledger_v10.json",
+            "implementation/runtime_ledger_v11.json",
             "reports/carrier_gate_v9.json",
             "reports/checkpoint_parity_v9.json",
             "reports/opaque_carrier_v9.json",
@@ -178,6 +181,7 @@ def controlled_files() -> list[pathlib.Path]:
             "reports/resource_followup_assurance_v10.json",
             "reports/resource_followup_finding_closure_v10.json",
             "reports/resource_followup_final_decision_v10.json",
+            "reports/evidence_transition_v11.json",
             "scripts/generate_semantic_proof_catalog_final_v10.py",
             "reports/opaque_boundary_gate_v9.json",
             "reports/opaque_resource_gate_v9.json",
