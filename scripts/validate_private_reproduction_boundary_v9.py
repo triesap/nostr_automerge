@@ -68,7 +68,11 @@ JSON_RECORDS = (
     "tools/validation/opaque_semantic_proofs_v10.schema.json",
     "tools/validation/runtime_ledger_v9.schema.json",
 )
-TEXT_RECORDS = ("docs/execution/remediation_v9/ledger.md",)
+PUBLIC_JSON_RECORDS = ("spec/remediation_v11_reproductions.json",)
+TEXT_RECORDS = (
+    "docs/execution/remediation_v9/ledger.md",
+    "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v11.md",
+)
 LEGITIMATE_PUBLIC_COMMANDS = frozenset(
     {
         "cargo run --quiet -p nostr_automerge_conformance --locked -- run_distribution fixtures/distribution/manifest_v9.json",
@@ -118,6 +122,8 @@ PYTHON_SURFACES = (
     "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_rust_conformance_v9.py",
     "scripts/validate_spec.py",
+    "scripts/reproduce_remediation_v11.py",
+    "scripts/validate_remediation_v11.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -154,6 +160,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "crates/nostr_automerge/src/graph/scaling.rs",
         "crates/nostr_automerge/src/integrity.rs",
         "crates/nostr_automerge/src/reference/apply.rs",
+        "crates/nostr_automerge/src/reference/branch_state.rs",
         "crates/nostr_automerge/src/reference/epoch_engine.rs",
         "crates/nostr_automerge/src/reference/evaluate.rs",
         "crates/nostr_automerge/src/types/actor_id.rs",
@@ -169,8 +176,10 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "docs/provenance/source_package_manifest.json",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v9.md",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v10.md",
+        "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v11.md",
         "docs/execution/remediation_v9/ledger.md",
         "docs/execution/remediation_v10/ledger.md",
+        "docs/execution/remediation_v11/ledger.md",
         "docs/execution/remediation_v9/reproductions.md",
         "docs/resource_accounting_v6.md",
         "docs/provenance",
@@ -201,6 +210,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "fixtures/schema/report.schema.json",
         "implementation/runtime_ledger_v9.json",
         "implementation/runtime_ledger_v10.json",
+        "implementation/runtime_ledger_v11.json",
         "reports/checkpoint_parity_v9.json",
         "reports/carrier_gate_v9.json",
         "reports/opaque_checkpoint_v9.json",
@@ -232,9 +242,12 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/resource_followup_assurance_v10.json",
         "reports/resource_followup_finding_closure_v10.json",
         "reports/resource_followup_final_decision_v10.json",
+        "reports/evidence_transition_v11.json",
         "reports/external_holds_v8.json",
         "reports/spec_baseline.txt",
         "scripts/validate_architecture.py",
+        "scripts/reproduce_remediation_v11.py",
+        "scripts/local_gate.py",
         "scripts/validate_assurance_v9.py",
         "scripts/validate_automerge_qualification.py",
         "scripts/generate_distribution_v10.py",
@@ -288,6 +301,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_resource_operation_inventory_v10.py",
         "scripts/validate_reports.py",
         "scripts/validate_spec.py",
+        "scripts/validate_remediation_v11.py",
         "scripts/validate_opaque_boundary_gate_v9.py",
         "scripts/validate_opaque_resource_gate_v9.py",
         "tools/validation/opaque_semantic_proofs_v10.schema.json",
@@ -308,6 +322,11 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/validation/distribution_v11.schema.json",
         "spec/authority_transition_v10.json",
         "spec/resource_followup_authority_v10.json",
+        "spec/API_CONTRACTS.md",
+        "spec/NIP_DRAFT.md",
+        "spec/remediation_v11_reproductions.json",
+        "spec/remediation_v11_authority.json",
+        "spec/remediation_findings_v11.json",
         "spec/companion_authority_v10.json",
         "spec/API_CONTRACTS.md",
         "spec/CHECKPOINT_PROFILE.md",
@@ -375,6 +394,20 @@ def validate_records(records: list[dict[str, Any]], text: list[str]) -> None:
         validate_no_leak(record, f"json_record:{index}")
     for index, value in enumerate(text):
         validate_no_leak(value, f"text_record:{index}")
+
+
+def validate_public_record(value: Any, diagnostic: str) -> None:
+    if isinstance(value, dict):
+        for key, child in value.items():
+            validate_source_literal(key, f"{diagnostic}:key")
+            validate_public_record(child, f"{diagnostic}:{key}")
+        return
+    if isinstance(value, list):
+        for index, child in enumerate(value):
+            validate_public_record(child, f"{diagnostic}:{index}")
+        return
+    if isinstance(value, str):
+        validate_source_literal(value, diagnostic)
 
 
 def validate_source_literal(
@@ -576,6 +609,7 @@ def validate_source_surfaces() -> None:
                             "scripts/validate_semantic_evidence_gate_v10.py",
                             "scripts/validate_public_assurance_v10.py",
                             "scripts/validate_final_identity_v10.py",
+                            "scripts/validate_remediation_v11.py",
                             "scripts/validate_runtime_ledger_v9.py",
                         }
                     )
@@ -595,6 +629,10 @@ def validate_source_surfaces() -> None:
                     or (
                         value == "cargo"
                         and relative == "scripts/validate_report_contract_v9.py"
+                    )
+                    or (
+                        value == "cargo"
+                        and relative == "scripts/reproduce_remediation_v11.py"
                     )
                     or (
                         value == "cargo"
@@ -764,6 +802,17 @@ def mutation_self_test(records: list[dict[str, Any]], text: list[str]) -> int:
     return caught
 
 
+def public_record_mutation_self_test(records: list[dict[str, Any]]) -> int:
+    candidates = copy.deepcopy(records)
+    candidates[0]["cases"][0]["path"] = "private" + chr(47) + "hidden.rs"
+    try:
+        for index, record in enumerate(candidates):
+            validate_public_record(record, f"public_json_record:{index}")
+    except LedgerError:
+        return 1
+    raise LedgerError("public_record_mutation_survived:private_route")
+
+
 def source_mutation_self_test() -> int:
     separator = chr(47)
     underscore = chr(95)
@@ -822,19 +871,25 @@ def source_mutation_self_test() -> int:
 
 def main() -> int:
     records = [load_object(relative) for relative in JSON_RECORDS]
+    public_records = [load_object(relative) for relative in PUBLIC_JSON_RECORDS]
     try:
         text = [(ROOT / relative).read_text(encoding="utf-8") for relative in TEXT_RECORDS]
     except (OSError, UnicodeDecodeError) as error:
         raise LedgerError("text_record") from error
     validate_records(records, text)
+    for index, record in enumerate(public_records):
+        validate_public_record(record, f"public_json_record:{index}")
     validate_tracked_boundary()
     validate_source_surfaces()
     mutations = mutation_self_test(records, text)
+    public_mutations = public_record_mutation_self_test(public_records)
     source_mutations = source_mutation_self_test()
     print("PASS: opaque reproduction boundary v9")
     print(f"- json_records={len(records)}")
+    print(f"- public_json_records={len(public_records)}")
     print(f"- text_records={len(text)}")
     print(f"- negative_mutations={mutations}")
+    print(f"- public_record_negative_mutations={public_mutations}")
     print(f"- source_negative_mutations={source_mutations}")
     return 0
 

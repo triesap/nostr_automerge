@@ -14,6 +14,8 @@ AUTHORITY = ROOT / "spec/remediation_v11_authority.json"
 FINDINGS = ROOT / "spec/remediation_findings_v11.json"
 EVIDENCE = ROOT / "reports/evidence_transition_v11.json"
 LEDGER = ROOT / "implementation/runtime_ledger_v11.json"
+PLAN = ROOT / "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v11.md"
+REPRODUCTIONS = ROOT / "spec/remediation_v11_reproductions.json"
 
 PUBLIC_CANDIDATE = "e1b4f461c0d2a1e8cc8e520bed2dfa64a62270f2"
 PUBLIC_TREE = "5e62938bfe576d6c67b3bfe355d5b5dd47585e87"
@@ -24,6 +26,10 @@ STEP_1309 = "a582868b753400bd74b77090292aa3621f61d910"
 STEP_1310 = "4f9599a6cfcf0efe214fe68b0a858295bd616519"
 STEP_1311 = "0884fadfa7e9c4227acec351f2385a14a00d2ab2"
 STEP_1312 = "ca36b2efac805f67173f9ba384e6c00243578a12"
+STEP_1313 = "8f5a17d195be7bcb68af78aa20fc99e14934e2e4"
+PLAN_SHA256 = "02348e20f719c0ffceda9a2d8afb9cfbeaafc579a4b9b23ba36cf719b948dc42"
+HARNESS_SHA256 = "c83c5810f2d8b545b11fdbc93eee6572c0e12c324614da91ad48d5089f8cd523"
+REPRODUCTIONS_SHA256 = "48501be122679e5cd0846bd2d002bea3e3356355e086c9148a184b2384a266b6"
 HOLDS = (
     "external_assurance", "event_kind_allocation", "nip_submission",
     "production_qualification", "publication", "release", "remote_mutation",
@@ -50,12 +56,18 @@ HISTORICAL_EVIDENCE = (
     ("reports/resource_followup_final_decision_v10.json", "43d28679234b7c11878f615faf57fc65f298fa99505cdcc70f2d86022b40dd9c"),
 )
 SCOPE = (
-    "docs/adr/README.md",
-    "docs/adr/adr_0075_bounded_persistent_teardown.md",
+    "crates/nostr_automerge/src/reference/branch_state.rs",
+    "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v11.md",
+    "docs/execution/remediation_v11/ledger.md",
     "implementation/runtime_ledger_v11.json",
     "reports/spec_baseline.txt",
-    "scripts/validate_adrs.py",
+    "scripts/local_gate.py",
+    "scripts/reproduce_remediation_v11.py",
+    "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v11.py",
+    "scripts/validate_spec.py",
+    "spec/remediation_v11_reproductions.json",
+    "tools/nostr_automerge_xtask/src/validate.rs",
 )
 
 
@@ -146,13 +158,61 @@ def validate_evidence(value: object, check_files: bool = False) -> None:
         raise ValidationError("evidence:supersession")
 
 
+def validate_plan(value: object) -> None:
+    if not isinstance(value, str):
+        raise ValidationError("plan:type")
+    ranges = (
+        (100, "step_1308", "step_1314"),
+        (101, "step_1315", "step_1320"),
+        (102, "step_1321", "step_1326"),
+        (103, "step_1327", "step_1334"),
+        (104, "step_1335", "step_1339"),
+        (105, "step_1340", "step_1345"),
+        (106, "step_1346", "step_1351"),
+        (107, "step_1352", "step_1358"),
+        (108, "step_1359", "step_1363"),
+    )
+    if value.count("| RCLD | Checkpoints | Lane | Exit condition |") != 1:
+        raise ValidationError("plan:table")
+    for rcld, first, last in ranges:
+        marker = f"| {rcld} | `{first}`–`{last}` |"
+        if value.count(marker) != 1:
+            raise ValidationError(f"plan:rcld:{rcld}")
+    if "Steps `step_1308` through `step_1363` are 56 contiguous checkpoints." not in value:
+        raise ValidationError("plan:count")
+    if "No remote\naction is authorized." not in value:
+        raise ValidationError("plan:remote")
+    if "A red checkpoint is repaired, split, or blocked and is never committed." not in value:
+        raise ValidationError("plan:red")
+
+
+def validate_reproductions(value: object) -> None:
+    record = require_record(value, ("schema", "cases", "result"), "reproductions")
+    if record["schema"] != "nostr_automerge.remediation_v11_reproductions.v1" or record["result"] != "pass":
+        raise ValidationError("reproductions:identity")
+    cases = record["cases"]
+    if not isinstance(cases, list) or len(cases) != 4:
+        raise ValidationError("reproductions:count")
+    kinds = ("rust_failure", "source_failure", "source_failure", "rust_failure")
+    for index, case in enumerate(cases):
+        item = require_record(case, ("finding", "kind", "path", "test", "diagnostic", "expected"), f"reproduction:{index}")
+        if item["finding"] != FINDING_IDS[index] or item["kind"] != kinds[index] or item["expected"] != "open_failure":
+            raise ValidationError(f"reproduction:{index}:identity")
+        if not all(isinstance(item[key], str) and item[key] for key in ("path", "test", "diagnostic")):
+            raise ValidationError(f"reproduction:{index}:value")
+        if not (ROOT / item["path"]).is_file():
+            raise ValidationError(f"reproduction:{index}:path")
+    if len({case["test"] for case in cases}) != 4:
+        raise ValidationError("reproductions:duplicate")
+
+
 def validate_ledger(value: object) -> None:
     record = require_record(value, ("schema", "status", "authority", "cursor", "findings", "requirements", "active_checkpoint_scope", "predecessors", "holds", "result"), "ledger")
     if record["schema"] != "nostr_automerge.runtime_ledger.v11.v1" or record["status"] != "authority_and_reproduction_correction_required" or record["result"] != "pass":
         raise ValidationError("ledger:identity")
     if record["authority"] != "spec/remediation_v11_authority.json":
         raise ValidationError("ledger:authority")
-    if record["cursor"] != {"active_rcld": 100, "active_step": "step_1313", "next_step": "step_1314", "last_planned_step": "step_1363", "remaining_checkpoint_count": 51, "remaining_rcld_count": 9}:
+    if record["cursor"] != {"active_rcld": 100, "active_step": "step_1314", "next_step": "step_1315", "last_planned_step": "step_1363", "remaining_checkpoint_count": 50, "remaining_rcld_count": 9}:
         raise ValidationError("ledger:cursor")
     if record["findings"] != {"open": list(FINDING_IDS[:4]), "held": ["FINDING_080"]}:
         raise ValidationError("ledger:findings")
@@ -166,6 +226,7 @@ def validate_ledger(value: object) -> None:
         {"step": "step_1310", "candidate": STEP_1310, "owner_class": "public", "result": "pass"},
         {"step": "step_1311", "candidate": STEP_1311, "owner_class": "public", "result": "pass"},
         {"step": "step_1312", "candidate": STEP_1312, "owner_class": "public", "result": "pass"},
+        {"step": "step_1313", "candidate": STEP_1313, "owner_class": "public", "result": "pass"},
     ]:
         raise ValidationError("ledger:predecessors")
     if tuple(record["holds"]) != HOLDS:
@@ -176,7 +237,15 @@ def validate_repository() -> None:
     validate_authority(json.loads(AUTHORITY.read_text()))
     validate_findings(json.loads(FINDINGS.read_text()))
     validate_evidence(json.loads(EVIDENCE.read_text()), check_files=True)
+    validate_plan(PLAN.read_text())
+    validate_reproductions(json.loads(REPRODUCTIONS.read_text()))
     validate_ledger(json.loads(LEDGER.read_text()))
+    if sha256(PLAN) != PLAN_SHA256:
+        raise ValidationError("repository:plan_hash")
+    if sha256(ROOT / "scripts/reproduce_remediation_v11.py") != HARNESS_SHA256:
+        raise ValidationError("repository:harness_hash")
+    if sha256(REPRODUCTIONS) != REPRODUCTIONS_SHA256:
+        raise ValidationError("repository:reproductions_hash")
     tree = subprocess.run(["git", "rev-parse", f"{PUBLIC_CANDIDATE}^{{tree}}"], cwd=ROOT, check=True, capture_output=True, text=True).stdout.strip()
     if tree != PUBLIC_TREE:
         raise ValidationError("repository:tree")
@@ -189,6 +258,7 @@ def validate_repository() -> None:
 def mutation_self_test() -> int:
     findings = json.loads(FINDINGS.read_text())
     evidence = json.loads(EVIDENCE.read_text())
+    reproductions = json.loads(REPRODUCTIONS.read_text())
     ledger = json.loads(LEDGER.read_text())
     mutations: list[tuple[str, object]] = []
     for mutate in (
@@ -218,8 +288,20 @@ def mutation_self_test() -> int:
         mutate(candidate)
         mutations.append(("evidence", candidate))
     for mutate in (
-        lambda value: value["cursor"].update(active_step="step_1314"),
-        lambda value: value["cursor"].update(remaining_checkpoint_count=50),
+        lambda value: value["cases"].pop(),
+        lambda value: value["cases"].reverse(),
+        lambda value: value["cases"][0].update(finding="FINDING_097"),
+        lambda value: value["cases"][0].update(expected="fixed_pass"),
+        lambda value: value["cases"][1].update(path="missing"),
+        lambda value: value.update(extra=False),
+    ):
+        candidate = copy.deepcopy(reproductions)
+        mutate(candidate)
+        mutations.append(("reproductions", candidate))
+    mutations.append(("plan", PLAN.read_text().replace("`step_1315`–`step_1320`", "`step_1315`–`step_1321`", 1)))
+    for mutate in (
+        lambda value: value["cursor"].update(active_step="step_1315"),
+        lambda value: value["cursor"].update(remaining_checkpoint_count=49),
         lambda value: value["findings"]["open"].reverse(),
         lambda value: value["active_checkpoint_scope"].reverse(),
         lambda value: value["predecessors"][0].update(candidate="0" * 40),
@@ -229,7 +311,13 @@ def mutation_self_test() -> int:
         candidate = copy.deepcopy(ledger)
         mutate(candidate)
         mutations.append(("ledger", candidate))
-    validators = {"findings": validate_findings, "evidence": validate_evidence, "ledger": validate_ledger}
+    validators = {
+        "findings": validate_findings,
+        "evidence": validate_evidence,
+        "reproductions": validate_reproductions,
+        "plan": validate_plan,
+        "ledger": validate_ledger,
+    }
     for kind, candidate in mutations:
         try:
             validators[kind](candidate)

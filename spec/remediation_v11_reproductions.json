@@ -1,0 +1,38 @@
+{
+  "schema": "nostr_automerge.remediation_v11_reproductions.v1",
+  "cases": [
+    {
+      "finding": "FINDING_096",
+      "kind": "rust_failure",
+      "path": "crates/nostr_automerge/src/reference/branch_state.rs",
+      "test": "reference::branch_state::tests::finding_096_deep_persistent_lookup_is_internally_metered",
+      "diagnostic": "FINDING_096 reproduced: persistent lookup visited multiple retained nodes without an internal charge",
+      "expected": "open_failure"
+    },
+    {
+      "finding": "FINDING_097",
+      "kind": "source_failure",
+      "path": "crates/nostr_automerge/src/reference/evaluate.rs",
+      "test": "source::finding_097_post_stop_target_work",
+      "diagnostic": "FINDING_097 reproduced: target-sized branch and head work remains outside an immediate charge",
+      "expected": "open_failure"
+    },
+    {
+      "finding": "FINDING_098",
+      "kind": "source_failure",
+      "path": "spec/NIP_DRAFT.md",
+      "test": "source::finding_098_unsupported_identity_contradiction",
+      "diagnostic": "FINDING_098 reproduced: NIP still creates an unsupported-only semantic ChangeHash outcome",
+      "expected": "open_failure"
+    },
+    {
+      "finding": "FINDING_099",
+      "kind": "rust_failure",
+      "path": "crates/nostr_automerge/src/reference/branch_state.rs",
+      "test": "reference::branch_state::tests::finding_099_deep_persistent_chain_teardown_is_bounded_stack",
+      "diagnostic": "FINDING_099 reproduced: deep uniquely owned persistent teardown exceeded the constrained stack",
+      "expected": "open_failure"
+    }
+  ],
+  "result": "pass"
+}

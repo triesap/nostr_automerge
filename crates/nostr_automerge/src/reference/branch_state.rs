@@ -122,7 +122,10 @@ impl<K: Ord, V> From<BTreeMap<K, V>> for PersistentDeltaMap<K, V> {
 #[cfg(test)]
 mod tests {
     use std::cell::Cell;
+    use std::cmp::Ordering;
     use std::collections::BTreeMap;
+    use std::process::Command;
+    use std::rc::Rc;
 
     use super::PersistentDeltaMap;
 
@@ -158,5 +161,96 @@ mod tests {
             assert_eq!(stopped, Err(()));
             assert_eq!(observed.get(), boundary);
         }
+    }
+
+    #[derive(Clone, Debug)]
+    struct CountedKey {
+        value: u16,
+        comparisons: Rc<Cell<usize>>,
+    }
+
+    impl PartialEq for CountedKey {
+        fn eq(&self, other: &Self) -> bool {
+            self.cmp(other) == Ordering::Equal
+        }
+    }
+
+    impl Eq for CountedKey {}
+
+    impl PartialOrd for CountedKey {
+        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+            Some(self.cmp(other))
+        }
+    }
+
+    impl Ord for CountedKey {
+        fn cmp(&self, other: &Self) -> Ordering {
+            self.comparisons.set(self.comparisons.get() + 1);
+            self.value.cmp(&other.value)
+        }
+    }
+
+    #[test]
+    #[ignore = "open remediation v11 finding"]
+    fn finding_096_deep_persistent_lookup_is_internally_metered() {
+        let comparisons = Rc::new(Cell::new(0));
+        let key = |value| CountedKey {
+            value,
+            comparisons: Rc::clone(&comparisons),
+        };
+        let mut state = PersistentDeltaMap::from_local(BTreeMap::from([(key(0), 1_u8)]));
+        for value in 1_u16..=64 {
+            state = state.extend_local(BTreeMap::from([(key(value), 1)]));
+        }
+        comparisons.set(0);
+        assert_eq!(state.get(&key(0)), Some(&1));
+        assert_eq!(
+            comparisons.get(),
+            1,
+            "FINDING_096 reproduced: persistent lookup visited multiple retained nodes without an internal charge"
+        );
+    }
+
+    #[test]
+    #[ignore = "open remediation v11 finding"]
+    fn finding_099_deep_persistent_chain_teardown_is_bounded_stack() {
+        const TEST_NAME: &str = "reference::branch_state::tests::finding_099_deep_persistent_chain_teardown_is_bounded_stack";
+        const CHILD_ENV: &str = "NOSTR_AUTOMERGE_FINDING_099_CHILD";
+        if std::env::var_os(CHILD_ENV).is_some() {
+            let child = std::thread::Builder::new().stack_size(64 * 1024).spawn(|| {
+                let mut state = PersistentDeltaMap::from_local(BTreeMap::from([(0_u8, 0_usize)]));
+                for value in 1_usize..=100_000 {
+                    state = state.extend_local(BTreeMap::from([(0, value)]));
+                }
+                drop(state);
+            });
+            assert!(
+                child.is_ok(),
+                "construct constrained-stack thread: {child:?}"
+            );
+            let Ok(handle) = child else { return };
+            assert!(handle.join().is_ok());
+            return;
+        }
+
+        let executable = std::env::current_exe();
+        assert!(
+            executable.is_ok(),
+            "resolve current test executable: {executable:?}"
+        );
+        let Ok(executable) = executable else { return };
+        let output = Command::new(executable)
+            .args(["--ignored", "--exact", TEST_NAME])
+            .env(CHILD_ENV, "1")
+            .output();
+        assert!(
+            output.is_ok(),
+            "execute isolated teardown reproduction: {output:?}"
+        );
+        let Ok(output) = output else { return };
+        assert!(
+            output.status.success(),
+            "FINDING_099 reproduced: deep uniquely owned persistent teardown exceeded the constrained stack"
+        );
     }
 }
