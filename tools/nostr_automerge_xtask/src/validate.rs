@@ -140,6 +140,10 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "persistent_state_v11",
         "scripts/validate_persistent_state_v11.py",
     ),
+    (
+        "persistent_state_core_gate_v11",
+        "scripts/validate_persistent_state_core_gate_v11.py",
+    ),
     ("complete_specification", "scripts/validate_spec.py"),
     (
         "fixture_schema_checksum_snake_case",

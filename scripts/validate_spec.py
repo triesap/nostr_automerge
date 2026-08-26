@@ -64,6 +64,7 @@ VALIDATORS = [
     "validate_resource_followup_final_decision_v10.py",
     "validate_remediation_v11.py",
     "validate_persistent_state_v11.py",
+    "validate_persistent_state_core_gate_v11.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",
@@ -184,6 +185,8 @@ def controlled_files() -> list[pathlib.Path]:
             "reports/resource_followup_finding_closure_v10.json",
             "reports/resource_followup_final_decision_v10.json",
             "reports/evidence_transition_v11.json",
+            "reports/persistent_state_core_v11.json",
+            "tools/validation/persistent_state_core_v11.schema.json",
             "scripts/generate_semantic_proof_catalog_final_v10.py",
             "scripts/reproduce_remediation_v11.py",
             "reports/opaque_boundary_gate_v9.json",

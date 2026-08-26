@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nostr-automerge.example/schema/persistent_state_core_v11.schema.json",
+  "title": "nostr_automerge persistent state core v11 gate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "status",
+    "stage",
+    "revision",
+    "candidates",
+    "operations",
+    "source_inventory",
+    "source_projection_sha256",
+    "tests",
+    "counts",
+    "properties",
+    "result"
+  ],
+  "properties": {
+    "schema": { "const": "nostr_automerge.persistent_state_core.v11.v1" },
+    "status": { "const": "pass" },
+    "stage": { "const": "rust_persistent_state_core" },
+    "revision": { "const": "draft_2026_08" },
+    "candidates": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["step", "candidate"],
+        "properties": {
+          "step": { "type": "string" },
+          "candidate": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+        }
+      }
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "method", "count", "publication"],
+        "properties": {
+          "name": { "type": "string" },
+          "method": { "type": "string" },
+          "count": { "type": "string" },
+          "publication": { "type": "string" }
+        }
+      }
+    },
+    "source_inventory": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": { "type": "string" },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "source_projection_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "tests": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": { "type": "string" }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deep_chain_nodes", "enabled_tests", "source_files", "source_policy_mutations"],
+      "properties": {
+        "deep_chain_nodes": { "const": 64 },
+        "enabled_tests": { "const": 5 },
+        "source_files": { "const": 9 },
+        "source_policy_mutations": { "const": 15 }
+      }
+    },
+    "properties": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "every_prefix_cancellable",
+        "n_minus_one_n_n_plus_one",
+        "failed_work_publishes_state",
+        "unexpected_error_identity_preserved",
+        "runtime_unmetered_bypass",
+        "ample_capacity_behavior_compatible"
+      ],
+      "properties": {
+        "every_prefix_cancellable": { "const": true },
+        "n_minus_one_n_n_plus_one": { "const": true },
+        "failed_work_publishes_state": { "const": false },
+        "unexpected_error_identity_preserved": { "const": true },
+        "runtime_unmetered_bypass": { "const": false },
+        "ample_capacity_behavior_compatible": { "const": true }
+      }
+    },
+    "result": { "const": "pass" }
+  }
+}

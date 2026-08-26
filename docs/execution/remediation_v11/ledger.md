@@ -44,3 +44,8 @@ At `step_1319`, every production persistent-map lookup, membership check, and
 extension routes through a mandatory metered callback. Historical unmetered
 helpers are test-only, and checkpoint refusal attribution now accounts for the
 retained branch-disposition node it actually visits.
+
+`step_1320` closes the Rust persistent-state core gate over the exact five-step
+candidate chain, four metered operations, nine source-policy files, five
+enabled boundary tests, and all 15 source-policy mutations. RCLD 101 is green;
+the integrated caller-by-caller qualification remains assigned to RCLD 102.

@@ -68,7 +68,18 @@ JSON_RECORDS = (
     "tools/validation/opaque_semantic_proofs_v10.schema.json",
     "tools/validation/runtime_ledger_v9.schema.json",
 )
-PUBLIC_JSON_RECORDS = ("spec/remediation_v11_reproductions.json",)
+PUBLIC_JSON_RECORDS = (
+    "spec/remediation_v11_reproductions.json",
+    "reports/persistent_state_core_v11.json",
+    "tools/validation/persistent_state_core_v11.schema.json",
+)
+PUBLIC_SCHEMA_URIS = frozenset(
+    value.decode("ascii")
+    for value in (
+        b"https://json-schema.org/draft/2020-12/schema",
+        b"https://nostr-automerge.example/schema/persistent_state_core_v11.schema.json",
+    )
+)
 TEXT_RECORDS = (
     "docs/execution/remediation_v9/ledger.md",
     "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v11.md",
@@ -125,6 +136,7 @@ PYTHON_SURFACES = (
     "scripts/reproduce_remediation_v11.py",
     "scripts/validate_remediation_v11.py",
     "scripts/validate_persistent_state_v11.py",
+    "scripts/validate_persistent_state_core_gate_v11.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -306,6 +318,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_spec.py",
         "scripts/validate_remediation_v11.py",
         "scripts/validate_persistent_state_v11.py",
+        "scripts/validate_persistent_state_core_gate_v11.py",
+        "reports/persistent_state_core_v11.json",
+        "tools/validation/persistent_state_core_v11.schema.json",
         "scripts/validate_opaque_boundary_gate_v9.py",
         "scripts/validate_opaque_resource_gate_v9.py",
         "tools/validation/opaque_semantic_proofs_v10.schema.json",
@@ -404,6 +419,9 @@ def validate_public_record(value: Any, diagnostic: str) -> None:
     if isinstance(value, dict):
         for key, child in value.items():
             validate_source_literal(key, f"{diagnostic}:key")
+            if key in {"$schema", "$id"}:
+                require(child in PUBLIC_SCHEMA_URIS, f"{diagnostic}:{key}:uri")
+                continue
             validate_public_record(child, f"{diagnostic}:{key}")
         return
     if isinstance(value, list):
@@ -422,6 +440,13 @@ def validate_source_literal(
         require(
             not matched
             or (pattern is COMMAND_TEXT and allow_command_token)
+            or (
+                pattern is URI_TEXT
+                and diagnostic.startswith(
+                    "source:scripts/validate_private_reproduction_boundary_v9.py:"
+                )
+                and value in PUBLIC_SCHEMA_URIS
+            )
             or (
                 pattern is PACKAGE_SUFFIX_TEXT
                 and (
@@ -614,6 +639,7 @@ def validate_source_surfaces() -> None:
                             "scripts/validate_public_assurance_v10.py",
                             "scripts/validate_final_identity_v10.py",
                             "scripts/validate_remediation_v11.py",
+                            "scripts/validate_persistent_state_core_gate_v11.py",
                             "scripts/validate_runtime_ledger_v9.py",
                         }
                     )

@@ -1,0 +1,115 @@
+{
+  "schema": "nostr_automerge.persistent_state_core.v11.v1",
+  "status": "pass",
+  "stage": "rust_persistent_state_core",
+  "revision": "draft_2026_08",
+  "candidates": [
+    {
+      "step": "step_1315",
+      "candidate": "9f180d4141455522d647579fee049551a415aff9"
+    },
+    {
+      "step": "step_1316",
+      "candidate": "d6d7f4fb9984e72041cafe242aae5c14494ece8d"
+    },
+    {
+      "step": "step_1317",
+      "candidate": "3b41019d78a50b25d3d131065b5a94c307663f3b"
+    },
+    {
+      "step": "step_1318",
+      "candidate": "5ca15673198af818aa64a9413d775da7fe9240b8"
+    },
+    {
+      "step": "step_1319",
+      "candidate": "c0a3f89c913b3d1df7aadf07460db8d533d61a43"
+    }
+  ],
+  "operations": [
+    {
+      "name": "lookup",
+      "method": "get_metered",
+      "count": "persistent_nodes_actually_visited",
+      "publication": "read_only"
+    },
+    {
+      "name": "membership",
+      "method": "contains_key_metered",
+      "count": "exact_lookup_projection",
+      "publication": "read_only"
+    },
+    {
+      "name": "extension",
+      "method": "extend_prepared_metered",
+      "count": "prepared_item_lookup_node_accepted_insert",
+      "publication": "after_all_work_succeeds"
+    },
+    {
+      "name": "materialization",
+      "method": "materialize_metered",
+      "count": "persistent_nodes_and_emitted_items",
+      "publication": "after_each_charged_item"
+    }
+  ],
+  "source_inventory": [
+    {
+      "path": "crates/nostr_automerge/src/reference/branch_state.rs",
+      "sha256": "c9b5489f27e5e085b2978b80a96786f081d94dc9911ae208f46b42973411f2cf"
+    },
+    {
+      "path": "crates/nostr_automerge/src/control/frontier.rs",
+      "sha256": "f2132e0ba8c49d2dcdb1633192cbdbc3c7da845efbdf0776e44c0bd969ab012e"
+    },
+    {
+      "path": "crates/nostr_automerge/src/control/parent_view.rs",
+      "sha256": "8ea34fb7284179de573111134ada57138182f910ea8a43bde32deafc20a09745"
+    },
+    {
+      "path": "crates/nostr_automerge/src/control/transition.rs",
+      "sha256": "f51eda0c0e51502b87e00c8d2e8d5844088df21657ca99ed55ae5d97dc2ce26c"
+    },
+    {
+      "path": "crates/nostr_automerge/src/control/candidate.rs",
+      "sha256": "fc30a0f85b9ebd25402d7040a89a827ed308ec53ecb789ddf9bebab208543c57"
+    },
+    {
+      "path": "crates/nostr_automerge/src/reference/epoch_engine.rs",
+      "sha256": "8a2f3b610fa9541774079fed27096f9dcf3ba45bc392f8173c8feda734d53ad1"
+    },
+    {
+      "path": "crates/nostr_automerge/src/reference/evaluate.rs",
+      "sha256": "a94e6ff7b885b70b32a00b0a7b798107f038efccb51d84fb8d6f17e79c9ddd0c"
+    },
+    {
+      "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+      "sha256": "2668986962170911e4362f442c61493bbb487840276f8089b100057aa6c293db"
+    },
+    {
+      "path": "scripts/validate_persistent_state_v11.py",
+      "sha256": "13e5b115f4ca9d2bf0d55d2446cd435ab59e4d0c37c73aaec82a8c1542681a21"
+    }
+  ],
+  "source_projection_sha256": "d1d95e3411de4433b49959d42f1710e0e4233f19650db5d13eb3409bac9fe7d3",
+  "tests": [
+    "delta_chain_shares_parent_and_materializes_in_override_order",
+    "metered_lookup_counts_only_nodes_actually_visited",
+    "metered_membership_reuses_lookup_without_hidden_scans",
+    "metered_extension_publishes_only_after_all_owned_work",
+    "deep_persistent_boundaries_are_exact_and_cancellable"
+  ],
+  "counts": {
+    "deep_chain_nodes": 64,
+    "enabled_tests": 5,
+    "source_files": 9,
+    "source_policy_mutations": 15
+  },
+  "properties": {
+    "every_prefix_cancellable": true,
+    "n_minus_one_n_n_plus_one": true,
+    "failed_work_publishes_state": false,
+    "unexpected_error_identity_preserved": true,
+    "runtime_unmetered_bypass": false,
+    "ample_capacity_behavior_compatible": true
+  },
+  "result": "pass"
+}
