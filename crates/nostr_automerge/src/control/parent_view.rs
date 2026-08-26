@@ -171,6 +171,38 @@ impl ParentEpochView {
         }
     }
 
+    pub(crate) fn frontier_knowledge_metered<E>(
+        &self,
+        hash: &ChangeHash,
+        visit: impl FnMut() -> Result<(), E>,
+    ) -> Result<ParentFrontierReference, E> {
+        if let Some(knowledge) = self.frontier_knowledge.get(hash).copied() {
+            return Ok(knowledge);
+        }
+        if let Some(knowledge) = self
+            .inherited_prior
+            .get_metered(hash, visit)?
+            .copied()
+            .and_then(prior_frontier_reference)
+        {
+            return Ok(knowledge);
+        }
+        if let Some(knowledge) = self
+            .additional_prior
+            .get(hash)
+            .copied()
+            .and_then(prior_frontier_reference)
+        {
+            return Ok(knowledge);
+        }
+        Ok(if self.contains(hash) {
+            ParentFrontierReference::AcceptedUnderParent
+        } else {
+            ParentFrontierReference::Unknown
+        })
+    }
+
+    #[cfg(test)]
     pub(crate) fn frontier_knowledge(&self, hash: &ChangeHash) -> ParentFrontierReference {
         if let Some(knowledge) = self.frontier_knowledge.get(hash).copied() {
             return knowledge;

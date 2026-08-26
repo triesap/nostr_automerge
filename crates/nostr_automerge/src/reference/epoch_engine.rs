@@ -458,17 +458,17 @@ pub(crate) fn evaluate_epoch(
             ),
             EpochAncestry::InvalidOmission(_)
         );
-        let prior_dependencies_valid =
-            !candidate
-                .dependencies
-                .iter()
-                .chain(&closure.missing)
-                .any(|dependency| {
-                    input
-                        .prior_change_knowledge()
-                        .get(dependency)
-                        .is_some_and(|knowledge| knowledge.is_known_impossible())
-                });
+        let mut prior_dependencies_valid = true;
+        for dependency in candidate.dependencies.iter().chain(&closure.missing) {
+            let knowledge = input.prior_change_knowledge().get_metered(dependency, || {
+                charge_epoch_item(WorkCounter::GraphNode, budget, cancellation)
+                    .map_err(EpochEvaluationError::Schedule)
+            })?;
+            if knowledge.is_some_and(|knowledge| knowledge.is_known_impossible()) {
+                prior_dependencies_valid = false;
+                break;
+            }
+        }
         let prior_semantics_valid = authorized
             && actor_sequence_valid
             && actor_counter_valid

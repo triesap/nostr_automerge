@@ -1041,7 +1041,19 @@ fn reduce_change_dispositions(
                         ChangeClaimReason::Unauthorized
                     } else {
                         noncanonical_branch_claim_reason(
-                            batch.referenced_branch_change_disposition(claim.control_id, hash),
+                            batch.referenced_branch_change_disposition_metered(
+                                claim.control_id,
+                                hash,
+                                || {
+                                    charge_evaluation_work(
+                                        budget,
+                                        cancellation,
+                                        WorkCounter::GraphNode,
+                                        1,
+                                    )
+                                    .map_err(ChangeReductionError::Stopped)
+                                },
+                            )?,
                         )
                     }
                 }
@@ -1865,8 +1877,9 @@ fn checkpoint_refusal_report_attribution(
                     descriptor_id,
                     CheckpointReportAttributionStage::BranchDispositionHash,
                 );
-                if dispositions.contains_key(&carrier.change_hash)
-                    && carrier_control_is_historical(historical_controls, carrier.control_id)
+                if dispositions.contains_key_metered(&carrier.change_hash, || {
+                    charge_checkpoint_work(budget, cancellation, 1)
+                })? && carrier_control_is_historical(historical_controls, carrier.control_id)
                     && matches!(
                         carrier.reason,
                         ChangeClaimReason::AuthorizedCanonical
@@ -5319,7 +5332,7 @@ mod tests {
             assert_report_attribution(&observer, descriptor_id, accepted_hash, branch_hash);
             assert_eq!(
                 budget.consumed().get(WorkCounter::CheckpointItem),
-                2 + u64::from(accepted_hash) + 3 * u64::from(branch_hash)
+                2 + u64::from(accepted_hash) + 4 * u64::from(branch_hash)
             );
         }
     }
@@ -5471,7 +5484,7 @@ mod tests {
         );
 
         let role_denied = std::collections::BTreeMap::from([(descriptor_id, RoleDenied)]);
-        let mut attribution_n_minus_one_budget = WorkBudget::new(0, 5);
+        let mut attribution_n_minus_one_budget = WorkBudget::new(0, 6);
         let mut attribution_n_minus_one_observer = RecordingCheckpointWorkObserver::default();
         let attribution_n_minus_one = evaluate_prepared_checkpoints(
             &harness,
@@ -5489,7 +5502,7 @@ mod tests {
             attribution_n_minus_one_budget
                 .consumed()
                 .get(WorkCounter::CheckpointItem),
-            5
+            6
         );
         assert_eq!(
             attribution_n_minus_one_observer.descriptor_calls(descriptor_id),
@@ -5497,7 +5510,7 @@ mod tests {
         );
         assert_eq!(
             attribution_n_minus_one_observer.descriptor_report_items(descriptor_id),
-            2
+            3
         );
         assert_eq!(
             attribution_n_minus_one_observer.report_calls(
@@ -5511,10 +5524,10 @@ mod tests {
                 descriptor_id,
                 CheckpointReportAttributionStage::BranchDispositionHash
             ),
-            0
+            1
         );
 
-        let mut attribution_exact_budget = WorkBudget::new(0, 6);
+        let mut attribution_exact_budget = WorkBudget::new(0, 7);
         let mut attribution_exact_observer = RecordingCheckpointWorkObserver::default();
         let attribution_exact = evaluate_prepared_checkpoints(
             &harness,
@@ -5539,7 +5552,7 @@ mod tests {
             attribution_exact_budget
                 .consumed()
                 .get(WorkCounter::CheckpointItem),
-            6
+            7
         );
         assert_eq!(
             attribution_exact_observer.descriptor_calls(descriptor_id),
@@ -5550,7 +5563,7 @@ mod tests {
         let attribution_cancel_calls = std::cell::Cell::new(0_u64);
         let attribution_cancellation = || {
             attribution_cancel_calls.set(attribution_cancel_calls.get() + 1);
-            attribution_cancel_calls.get() >= 6
+            attribution_cancel_calls.get() >= 7
         };
         let mut attribution_cancel_budget = WorkBudget::new(0, u64::MAX);
         let mut attribution_cancel_observer = RecordingCheckpointWorkObserver::default();
@@ -5566,12 +5579,12 @@ mod tests {
             Some(CheckpointWorkStop::Cancelled)
         );
         assert!(attribution_cancelled.results.is_empty());
-        assert_eq!(attribution_cancel_calls.get(), 6);
+        assert_eq!(attribution_cancel_calls.get(), 7);
         assert_eq!(
             attribution_cancel_budget
                 .consumed()
                 .get(WorkCounter::CheckpointItem),
-            5
+            6
         );
         assert_eq!(
             attribution_cancel_observer.descriptor_calls(descriptor_id),
@@ -5579,7 +5592,7 @@ mod tests {
         );
         assert_eq!(
             attribution_cancel_observer.descriptor_report_items(descriptor_id),
-            2
+            3
         );
 
         let mut cancelled_budget = WorkBudget::new(0, u64::MAX);
@@ -5625,7 +5638,7 @@ mod tests {
         let authorizations =
             std::collections::BTreeMap::from([(first, Missing), (second, RoleDenied)]);
 
-        let mut n_minus_one_budget = WorkBudget::new(0, 7);
+        let mut n_minus_one_budget = WorkBudget::new(0, 8);
         let mut n_minus_one_observer = RecordingCheckpointWorkObserver::default();
         let n_minus_one = evaluate_prepared_checkpoints(
             &harness,
@@ -5642,21 +5655,21 @@ mod tests {
             n_minus_one_budget
                 .consumed()
                 .get(WorkCounter::CheckpointItem),
-            7
+            8
         );
         assert_eq!(n_minus_one_observer.descriptor_calls(first), 0);
         assert_eq!(n_minus_one_observer.descriptor_calls(second), 0);
         assert_report_attribution(&n_minus_one_observer, first, false, false);
-        assert_eq!(n_minus_one_observer.descriptor_report_items(second), 2);
+        assert_eq!(n_minus_one_observer.descriptor_report_items(second), 3);
         assert_eq!(
             n_minus_one_observer.report_items(
                 second,
                 CheckpointReportAttributionStage::BranchDispositionHash
             ),
-            0
+            1
         );
 
-        let mut exact_budget = WorkBudget::new(0, 8);
+        let mut exact_budget = WorkBudget::new(0, 9);
         let mut exact_observer = RecordingCheckpointWorkObserver::default();
         let exact = evaluate_prepared_checkpoints(
             &harness,
@@ -5670,14 +5683,14 @@ mod tests {
         assert_eq!(exact.results[0].descriptor_event(), first);
         assert_eq!(exact.results[1].descriptor_event(), second);
         assert_eq!(exact.results[1].status(), Status::Unauthorized);
-        assert_eq!(exact_budget.consumed().get(WorkCounter::CheckpointItem), 8);
+        assert_eq!(exact_budget.consumed().get(WorkCounter::CheckpointItem), 9);
         assert_report_attribution(&exact_observer, first, false, false);
         assert_report_attribution(&exact_observer, second, true, true);
 
         let cancellation_calls = std::cell::Cell::new(0_u64);
         let cancellation = || {
             cancellation_calls.set(cancellation_calls.get() + 1);
-            cancellation_calls.get() >= 8
+            cancellation_calls.get() >= 9
         };
         let mut cancelled_budget = WorkBudget::new(0, u64::MAX);
         let mut cancelled_observer = RecordingCheckpointWorkObserver::default();
@@ -5691,14 +5704,14 @@ mod tests {
         assert_eq!(cancelled.stop, Some(CheckpointWorkStop::Cancelled));
         assert_eq!(cancelled.results.len(), 1);
         assert_eq!(cancelled.results[0].descriptor_event(), first);
-        assert_eq!(cancellation_calls.get(), 8);
+        assert_eq!(cancellation_calls.get(), 9);
         assert_eq!(
             cancelled_budget.consumed().get(WorkCounter::CheckpointItem),
-            7
+            8
         );
         assert_eq!(cancelled_observer.descriptor_calls(first), 0);
         assert_eq!(cancelled_observer.descriptor_calls(second), 0);
-        assert_eq!(cancelled_observer.descriptor_report_items(second), 2);
+        assert_eq!(cancelled_observer.descriptor_report_items(second), 3);
     }
 
     #[test]

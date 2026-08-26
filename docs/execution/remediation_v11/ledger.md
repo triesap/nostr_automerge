@@ -39,3 +39,8 @@ charges; the child node is published only after every callback succeeds.
 `step_1318` qualifies a 64-node retained chain. Early and deep hits, absence,
 override, no-op, and new-key extension pass every-prefix and N−1/N/N+1
 boundaries with exact stage order and injected-error provenance.
+
+At `step_1319`, every production persistent-map lookup, membership check, and
+extension routes through a mandatory metered callback. Historical unmetered
+helpers are test-only, and checkpoint refusal attribution now accounts for the
+retained branch-disposition node it actually visits.

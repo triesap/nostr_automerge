@@ -593,7 +593,9 @@ fn evaluate_branch_table(
             let parent_knowledge = parent_branch
                 .map(|branch| branch.prior_knowledge.clone())
                 .unwrap_or_default();
-            let knowledge = parent_knowledge.extend_local(local_knowledge);
+            let knowledge = parent_knowledge.extend_prepared_metered(local_knowledge, |_| {
+                charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)
+            })?;
             let parent_ancestry = parent_branch
                 .map(|branch| branch.ancestry.clone())
                 .unwrap_or_default();
@@ -637,25 +639,50 @@ fn evaluate_branch_table(
                             } else {
                                 ProtocolDisposition::Excluded
                             };
-                            if parent_change_dispositions.get(hash) != Some(&disposition) {
+                            if parent_change_dispositions.get_metered(hash, || {
+                                charge_prior_knowledge_item(
+                                    WorkCounter::GraphNode,
+                                    budget,
+                                    cancellation,
+                                )
+                            })? != Some(&disposition)
+                            {
                                 local_change_dispositions.insert(*hash, disposition);
                             }
                         }
                     }
                     for hash in &validated_base {
-                        if parent_change_dispositions.get(hash)
-                            != Some(&ProtocolDisposition::Accepted)
+                        if parent_change_dispositions.get_metered(hash, || {
+                            charge_prior_knowledge_item(
+                                WorkCounter::GraphNode,
+                                budget,
+                                cancellation,
+                            )
+                        })? != Some(&ProtocolDisposition::Accepted)
                         {
                             local_change_dispositions.insert(*hash, ProtocolDisposition::Accepted);
                         }
                     }
                     for (hash, disposition) in epoch.dispositions() {
-                        if parent_change_dispositions.get(hash) != Some(disposition) {
+                        if parent_change_dispositions.get_metered(hash, || {
+                            charge_prior_knowledge_item(
+                                WorkCounter::GraphNode,
+                                budget,
+                                cancellation,
+                            )
+                        })? != Some(disposition)
+                        {
                             local_change_dispositions.insert(*hash, *disposition);
                         }
                     }
-                    let branch_change_dispositions =
-                        parent_change_dispositions.extend_local(local_change_dispositions);
+                    let branch_change_dispositions = parent_change_dispositions
+                        .extend_prepared_metered(local_change_dispositions, |_| {
+                            charge_prior_knowledge_item(
+                                WorkCounter::GraphNode,
+                                budget,
+                                cancellation,
+                            )
+                        })?;
                     table.states.insert(event_id, BranchEvaluationState::Valid);
                     table.valid.insert(
                         event_id,
@@ -839,7 +866,10 @@ fn resolve_authoritative_epoch(
                     return Err(EpochResolutionError::InvalidState);
                 };
                 if prior_change_knowledge
-                    .get(dependency)
+                    .get_metered(dependency, || {
+                        charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)
+                            .map_err(epoch_resolution_stop)
+                    })?
                     .is_some_and(|knowledge| knowledge.is_known_impossible())
                 {
                     dependencies_valid = false;
@@ -1168,15 +1198,17 @@ fn charge_application_work(
 }
 
 impl BatchEvaluationReport {
-    pub(crate) fn referenced_branch_change_disposition(
+    pub(crate) fn referenced_branch_change_disposition_metered<E>(
         &self,
         control: EventId,
         hash: ChangeHash,
-    ) -> Option<ProtocolDisposition> {
-        self.branch_change_dispositions
-            .get(&control)
-            .and_then(|dispositions| dispositions.get(&hash))
-            .copied()
+        mut visit: impl FnMut() -> Result<(), E>,
+    ) -> Result<Option<ProtocolDisposition>, E> {
+        visit()?;
+        let Some(dispositions) = self.branch_change_dispositions.get(&control) else {
+            return Ok(None);
+        };
+        Ok(dispositions.get_metered(&hash, visit)?.copied())
     }
 }
 
@@ -1229,6 +1261,7 @@ fn derive_heads(
 
 #[cfg(test)]
 mod tests {
+    use std::cell::Cell;
     use std::collections::{BTreeMap, BTreeSet};
     use std::sync::Arc;
 
@@ -1794,13 +1827,19 @@ mod tests {
                 .get(&basic.candidate.change_hash),
             Some(&ProtocolDisposition::Accepted)
         );
+        let disposition_visits = Cell::new(0_u8);
         assert_eq!(
-            basic_report.referenced_branch_change_disposition(
+            basic_report.referenced_branch_change_disposition_metered(
                 EventId::from_bytes([1; 32]),
                 basic.candidate.change_hash,
+                || {
+                    disposition_visits.set(disposition_visits.get() + 1);
+                    Ok::<(), ()>(())
+                },
             ),
-            Some(ProtocolDisposition::Accepted)
+            Ok(Some(ProtocolDisposition::Accepted))
         );
+        assert_eq!(disposition_visits.get(), 2);
         assert_eq!(
             basic_report
                 .accepted_at_control

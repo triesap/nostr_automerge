@@ -124,6 +124,7 @@ PYTHON_SURFACES = (
     "scripts/validate_spec.py",
     "scripts/reproduce_remediation_v11.py",
     "scripts/validate_remediation_v11.py",
+    "scripts/validate_persistent_state_v11.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -149,6 +150,8 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "crates/nostr_automerge/src/conformance/dispositions_digest.rs",
         "crates/nostr_automerge/src/conformance/history_digest.rs",
         "crates/nostr_automerge/src/control/candidate.rs",
+        "crates/nostr_automerge/src/control/frontier.rs",
+        "crates/nostr_automerge/src/control/parent_view.rs",
         "crates/nostr_automerge/src/control/transition.rs",
         "crates/nostr_automerge/src/automerge_adapter/materialized_view.rs",
         "crates/nostr_automerge/src/engine/checkpoint_result.rs",
@@ -302,6 +305,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_reports.py",
         "scripts/validate_spec.py",
         "scripts/validate_remediation_v11.py",
+        "scripts/validate_persistent_state_v11.py",
         "scripts/validate_opaque_boundary_gate_v9.py",
         "scripts/validate_opaque_resource_gate_v9.py",
         "tools/validation/opaque_semantic_proofs_v10.schema.json",

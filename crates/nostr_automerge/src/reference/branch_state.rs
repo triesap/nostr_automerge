@@ -46,6 +46,7 @@ impl<K: Ord, V> PersistentDeltaMap<K, V> {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn get(&self, key: &K) -> Option<&V> {
         let mut cursor = self.tail.as_deref();
         while let Some(node) = cursor {
@@ -73,6 +74,7 @@ impl<K: Ord, V> PersistentDeltaMap<K, V> {
         Ok(None)
     }
 
+    #[cfg(test)]
     pub(crate) fn contains_key(&self, key: &K) -> bool {
         self.get(key).is_some()
     }
@@ -85,6 +87,7 @@ impl<K: Ord, V> PersistentDeltaMap<K, V> {
         self.get_metered(key, visit).map(|value| value.is_some())
     }
 
+    #[cfg(test)]
     pub(crate) fn extend_local(&self, mut local: BTreeMap<K, V>) -> Self
     where
         V: PartialEq,
@@ -185,6 +188,7 @@ impl<K: Ord, V> PersistentDeltaMap<K, V> {
     }
 }
 
+#[cfg(test)]
 impl<K: Ord, V> From<BTreeMap<K, V>> for PersistentDeltaMap<K, V> {
     fn from(local: BTreeMap<K, V>) -> Self {
         Self::from_local(local)

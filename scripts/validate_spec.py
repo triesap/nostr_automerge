@@ -63,6 +63,7 @@ VALIDATORS = [
     "validate_resource_followup_assurance_v10.py",
     "validate_resource_followup_final_decision_v10.py",
     "validate_remediation_v11.py",
+    "validate_persistent_state_v11.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",

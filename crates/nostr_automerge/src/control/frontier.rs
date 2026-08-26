@@ -29,6 +29,7 @@ impl ParentFrontierReference {
     }
 }
 
+#[cfg(test)]
 pub(crate) fn reasoned_frontier_disposition(
     frontier: impl IntoIterator<Item = ChangeHash>,
     mut knowledge: impl FnMut(&ChangeHash) -> ParentFrontierReference,
@@ -53,8 +54,11 @@ pub(crate) fn reasoned_frontier_disposition(
 
 pub(crate) fn reasoned_frontier_disposition_metered<E>(
     frontier: &[ChangeHash],
-    mut knowledge: impl FnMut(&ChangeHash) -> ParentFrontierReference,
-    mut visit: impl FnMut(crate::WorkCounter) -> Result<(), E>,
+    mut knowledge: impl FnMut(
+        &ChangeHash,
+        &mut dyn FnMut(crate::WorkCounter) -> Result<(), E>,
+    ) -> Result<ParentFrontierReference, E>,
+    visit: &mut impl FnMut(crate::WorkCounter) -> Result<(), E>,
 ) -> Result<Option<crate::ProtocolDisposition>, E> {
     let mut pending = false;
     let mut index = 0;
@@ -62,7 +66,7 @@ pub(crate) fn reasoned_frontier_disposition_metered<E>(
         visit(crate::WorkCounter::GraphNode)?;
         let hash = frontier[index];
         index += 1;
-        match knowledge(&hash).dependent_disposition() {
+        match knowledge(&hash, visit)?.dependent_disposition() {
             Some(crate::ProtocolDisposition::Invalid) => {
                 return Ok(Some(crate::ProtocolDisposition::Invalid));
             }
@@ -86,6 +90,7 @@ pub(crate) struct FrontierClosure {
 }
 
 /// Resolve a frontier iteratively against accepted parent history.
+#[cfg(test)]
 pub(crate) fn accepted_frontier_closure(
     frontier: impl IntoIterator<Item = ChangeHash>,
     accepted_parent: &BTreeSet<ChangeHash>,
@@ -307,17 +312,18 @@ mod tests {
         let frontier = [hash(1), hash(2), hash(3)];
         let mut looked_up = Vec::new();
         let mut charged = Vec::new();
+        let mut visit = |counter| {
+            charged.push(counter);
+            Ok::<_, Completion>(())
+        };
         assert_eq!(
             reasoned_frontier_disposition_metered(
                 &frontier,
-                |hash| {
+                |hash, _| {
                     looked_up.push(*hash);
-                    ParentFrontierReference::AcceptedUnderParent
+                    Ok(ParentFrontierReference::AcceptedUnderParent)
                 },
-                |counter| {
-                    charged.push(counter);
-                    Ok::<_, Completion>(())
-                }
+                &mut visit,
             ),
             Ok(None)
         );
@@ -327,20 +333,21 @@ mod tests {
         for boundary in 0..frontier.len() {
             let mut looked_up = Vec::new();
             let mut charged = 0;
+            let mut visit = |_| {
+                if charged == boundary {
+                    return Err(Completion::BudgetExhausted);
+                }
+                charged += 1;
+                Ok(())
+            };
             assert_eq!(
                 reasoned_frontier_disposition_metered(
                     &frontier,
-                    |hash| {
+                    |hash, _| {
                         looked_up.push(*hash);
-                        ParentFrontierReference::AcceptedUnderParent
+                        Ok(ParentFrontierReference::AcceptedUnderParent)
                     },
-                    |_| {
-                        if charged == boundary {
-                            return Err(Completion::BudgetExhausted);
-                        }
-                        charged += 1;
-                        Ok(())
-                    }
+                    &mut visit,
                 ),
                 Err(Completion::BudgetExhausted)
             );

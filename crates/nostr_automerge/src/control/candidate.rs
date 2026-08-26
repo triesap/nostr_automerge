@@ -1,16 +1,19 @@
 use crate::DiagnosticCode;
 use crate::control::ancestry::ControlAncestry;
-use crate::control::frontier::{
-    reasoned_frontier_disposition, reasoned_frontier_disposition_metered,
-};
+#[cfg(test)]
+use crate::control::frontier::reasoned_frontier_disposition;
+use crate::control::frontier::reasoned_frontier_disposition_metered;
 use crate::control::parent_view::ParentEpochView;
 use crate::control::transition::{
     TransitionError, validate_account_mapping, validate_account_mapping_metered,
-    validate_base_frontier_antichain, validate_base_frontier_antichain_metered,
-    validate_monotonic_roles, validate_monotonic_roles_metered, validate_no_reintroduction,
-    validate_no_reintroduction_metered, validate_retained_writer_frontier,
-    validate_retained_writer_frontier_metered, validate_successor_continuity,
-    validate_terminal_child,
+    validate_base_frontier_antichain_metered, validate_monotonic_roles,
+    validate_monotonic_roles_metered, validate_no_reintroduction,
+    validate_no_reintroduction_metered, validate_retained_writer_frontier_metered,
+    validate_successor_continuity, validate_terminal_child,
+};
+#[cfg(test)]
+use crate::control::transition::{
+    validate_base_frontier_antichain, validate_retained_writer_frontier,
 };
 use crate::control::validate::{
     ControlEnvelope, validate_base_frontier, validate_canonical_collections,
@@ -158,6 +161,7 @@ pub(crate) fn evaluate_successor_genesis(
     }
 }
 
+#[cfg(test)]
 pub(crate) fn evaluate_retained_writer_continuity(
     parent: &ControlEnvelope,
     child: &ControlEnvelope,
@@ -172,6 +176,7 @@ pub(crate) fn evaluate_retained_writer_continuity(
     }
 }
 
+#[cfg(test)]
 pub(crate) fn evaluate_child(
     parent: &ControlEnvelope,
     child: &ControlEnvelope,
@@ -249,8 +254,10 @@ pub(crate) fn evaluate_child_metered(
     }
     match reasoned_frontier_disposition_metered(
         &child.content.base_heads,
-        |hash| view.frontier_knowledge(hash),
-        &mut *visit,
+        |hash, metered| {
+            view.frontier_knowledge_metered(hash, || metered(crate::WorkCounter::GraphNode))
+        },
+        visit,
     )? {
         Some(crate::ProtocolDisposition::Pending) => {
             return Ok(CandidateResult::Pending(DiagnosticCode::registered(

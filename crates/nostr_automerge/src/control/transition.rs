@@ -2,6 +2,7 @@ use std::collections::BTreeSet;
 
 use crate::DevicePublicKey;
 use crate::carrier::control::ValidatedControlContent;
+#[cfg(test)]
 use crate::control::frontier::accepted_frontier_closure;
 use crate::control::frontier::accepted_frontier_closure_antichain_metered;
 use crate::control::frontier::accepted_frontier_closure_metered;
@@ -21,6 +22,7 @@ pub(crate) enum TransitionError {
     RetainedWriterFrontier,
 }
 
+#[cfg(test)]
 pub(crate) fn validate_base_frontier_antichain(
     child: &ValidatedControlContent,
     view: &ParentEpochView,
@@ -86,6 +88,7 @@ pub(crate) fn validate_base_frontier_antichain_metered<E>(
     Ok(Ok(()))
 }
 
+#[cfg(test)]
 pub(crate) fn validate_retained_writer_frontier(
     parent: &ValidatedControlContent,
     child: &ValidatedControlContent,
