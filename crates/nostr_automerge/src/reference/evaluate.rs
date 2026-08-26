@@ -349,6 +349,23 @@ fn prepare_initial_maps_metered<E>(
     })
 }
 
+fn clone_hash_set_metered<E>(
+    source: &BTreeSet<ChangeHash>,
+    mut visit: impl FnMut(WorkCounter) -> Result<(), E>,
+) -> Result<BTreeSet<ChangeHash>, BranchDeltaError<E>> {
+    let mut cloned = BTreeSet::new();
+    let mut items = source.iter();
+    for _ in 0..source.len() {
+        visit(WorkCounter::GraphNode).map_err(BranchDeltaError::Work)?;
+        let Some(hash) = items.next() else {
+            return Err(BranchDeltaError::Invariant);
+        };
+        visit(WorkCounter::GraphNode).map_err(BranchDeltaError::Work)?;
+        cloned.insert(*hash);
+    }
+    Ok(cloned)
+}
+
 struct ValidBranchEvaluation {
     epoch: EpochEvaluationResult,
     change_dispositions: PersistentDeltaMap<ChangeHash, ProtocolDisposition>,
@@ -699,7 +716,7 @@ fn evaluate_branch_table(
                 ParentEpochViewBuildError::Work(stop) => BranchTableError::Stop(stop),
                 ParentEpochViewBuildError::Invariant => BranchTableError::Invariant,
             })?;
-            view.extend_prior_knowledge(&branch.prior_knowledge);
+            view.share_inherited_prior(&branch.prior_knowledge);
             if let Some(parent_id) = control.parent
                 && let Some(knowledge) = additional_prior.get(&parent_id)
             {
@@ -739,10 +756,18 @@ fn evaluate_branch_table(
             Some(if control.envelope.is_some() {
                 BTreeSet::new()
             } else {
-                control.accepted_base.clone()
+                clone_hash_set_metered(&control.accepted_base, |counter| {
+                    charge_prior_knowledge_item(counter, budget, cancellation)
+                })
+                .map_err(branch_delta_error)?
             })
         } else if control.envelope.is_none() && parent_branch.is_some() {
-            Some(control.accepted_base.clone())
+            Some(
+                clone_hash_set_metered(&control.accepted_base, |counter| {
+                    charge_prior_knowledge_item(counter, budget, cancellation)
+                })
+                .map_err(branch_delta_error)?,
+            )
         } else {
             table
                 .states
@@ -1424,7 +1449,7 @@ mod tests {
         AcceptedAtControl, BatchChange, BatchChangeMemo, BatchControl, BatchEvaluationReport,
         BranchDeltaError, BranchEvaluationState, InitialMapBuildError, PersistentDeltaMap,
         PriorChangeKnowledge, PriorKnowledgeState, accepted_state_for_closure,
-        charge_prior_knowledge_item, empty_batch_report, evaluate_batch,
+        charge_prior_knowledge_item, clone_hash_set_metered, empty_batch_report, evaluate_batch,
         extend_branch_dispositions_metered, extend_prior_knowledge_metered,
         prepare_initial_maps_metered, prior_change_knowledge,
         propagate_control_parent_dispositions,
@@ -1811,6 +1836,35 @@ mod tests {
                         assert_eq!(maps.control_dispositions.len(), 2);
                         assert_eq!(maps.change_dispositions.len(), 2);
                     }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn accepted_base_projection_charges_before_every_read_and_insert() {
+        let source = BTreeSet::from([
+            ChangeHash::from_bytes([21; 32]),
+            ChangeHash::from_bytes([22; 32]),
+            ChangeHash::from_bytes([23; 32]),
+        ]);
+        let exact = source.len() * 2;
+        for stop in [Completion::BudgetExhausted, Completion::Cancelled] {
+            for capacity in 0..=exact + 1 {
+                let observed = Cell::new(0_usize);
+                let result = clone_hash_set_metered(&source, |_| {
+                    if observed.get() == capacity {
+                        return Err(stop);
+                    }
+                    observed.set(observed.get() + 1);
+                    Ok(())
+                });
+                if capacity < exact {
+                    assert!(matches!(result, Err(BranchDeltaError::Work(value)) if value == stop));
+                    assert_eq!(observed.get(), capacity);
+                } else {
+                    assert_eq!(result, Ok(source.clone()));
+                    assert_eq!(observed.get(), exact);
                 }
             }
         }

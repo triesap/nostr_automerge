@@ -168,13 +168,19 @@ impl ReferenceEvaluator {
         let additional_prior =
             match additional_prior_knowledge(&view, &controls, budget, cancellation) {
                 Ok(knowledge) => knowledge,
-                Err(completion) => {
+                Err(AdditionalPriorKnowledgeError::Stopped(completion)) => {
                     return reserved_interrupted_report(
                         self.revision,
                         coordinate,
                         completion,
                         &mut finalization,
                     );
+                }
+                Err(AdditionalPriorKnowledgeError::Invariant) => {
+                    return Err(settle_reserved_error(
+                        &mut finalization,
+                        EvaluationError::ReportInvariant,
+                    ));
                 }
             };
         let mut batch =
@@ -661,6 +667,67 @@ impl ReferenceEvaluator {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum AdditionalPriorKnowledgeError {
+    Stopped(Completion),
+    Invariant,
+}
+
+impl From<Completion> for AdditionalPriorKnowledgeError {
+    fn from(value: Completion) -> Self {
+        Self::Stopped(value)
+    }
+}
+
+fn project_selected_prior_knowledge_metered<E>(
+    selected: &BatchControl,
+    all_hashes: &std::collections::BTreeSet<ChangeHash>,
+    selected_hashes: Option<&std::collections::BTreeSet<ChangeHash>>,
+    reasoned_by_hash: &std::collections::BTreeMap<ChangeHash, PriorChangeKnowledge>,
+    mut visit: impl FnMut(WorkCounter) -> Result<(), E>,
+) -> Result<
+    std::collections::BTreeMap<ChangeHash, PriorChangeKnowledge>,
+    AdditionalPriorProjectionError<E>,
+> {
+    let mut knowledge = std::collections::BTreeMap::new();
+    let mut hashes = all_hashes.iter();
+    for _ in 0..all_hashes.len() {
+        visit(WorkCounter::GraphNode).map_err(AdditionalPriorProjectionError::Work)?;
+        let Some(hash) = hashes.next() else {
+            return Err(AdditionalPriorProjectionError::Invariant);
+        };
+        visit(WorkCounter::GraphNode).map_err(AdditionalPriorProjectionError::Work)?;
+        let accepted_in_base = selected.accepted_base.contains(hash);
+        let same_epoch = if accepted_in_base {
+            false
+        } else if let Some(selected_hashes) = selected_hashes {
+            visit(WorkCounter::GraphNode).map_err(AdditionalPriorProjectionError::Work)?;
+            selected_hashes.contains(hash)
+        } else {
+            false
+        };
+        let state = if accepted_in_base {
+            Some(PriorChangeKnowledge::AcceptedInBase)
+        } else if same_epoch {
+            Some(PriorChangeKnowledge::SameEpochCandidate)
+        } else {
+            visit(WorkCounter::GraphNode).map_err(AdditionalPriorProjectionError::Work)?;
+            reasoned_by_hash.get(hash).copied()
+        };
+        if let Some(state) = state {
+            visit(WorkCounter::GraphNode).map_err(AdditionalPriorProjectionError::Work)?;
+            knowledge.insert(*hash, state);
+        }
+    }
+    Ok(knowledge)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum AdditionalPriorProjectionError<E> {
+    Work(E),
+    Invariant,
+}
+
 fn additional_prior_knowledge(
     view: &DocumentEvidenceView<'_>,
     controls: &[BatchControl],
@@ -671,18 +738,29 @@ fn additional_prior_knowledge(
         crate::EventId,
         std::collections::BTreeMap<ChangeHash, PriorChangeKnowledge>,
     >,
-    Completion,
+    AdditionalPriorKnowledgeError,
 > {
     charge_evaluation_work(budget, cancellation, WorkCounter::Control, 0)?;
     let corpus = view.corpus();
     let mut reasoned_by_hash = std::collections::BTreeMap::new();
-    for hash in view.change_hashes() {
+    let empty_hashes = std::collections::BTreeSet::new();
+    let all_hashes = view.change_hash_set().unwrap_or(&empty_hashes);
+    let mut hashes = all_hashes.iter();
+    for _ in 0..all_hashes.len() {
         charge_evaluation_work(budget, cancellation, WorkCounter::GraphNode, 1)?;
+        let Some(hash) = hashes.next().copied() else {
+            return Err(AdditionalPriorKnowledgeError::Invariant);
+        };
         let mut saw_claim = false;
         let mut all_unsupported = true;
         let mut all_invalid = true;
-        for event_id in view.change_claim_event_ids(hash) {
+        let claim_event_ids = view.change_claim_event_id_set(hash);
+        let mut claims = claim_event_ids.into_iter().flatten();
+        for _ in 0..claim_event_ids.map_or(0, std::collections::BTreeSet::len) {
             charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)?;
+            let Some(event_id) = claims.next().copied() else {
+                return Err(AdditionalPriorKnowledgeError::Invariant);
+            };
             let Some(claim) = corpus.indexes.changes.claims_by_event.get(&event_id) else {
                 continue;
             };
@@ -715,6 +793,7 @@ fn additional_prior_knowledge(
             }
         }
         if saw_claim {
+            charge_evaluation_work(budget, cancellation, WorkCounter::GraphNode, 1)?;
             reasoned_by_hash.insert(
                 hash,
                 if all_unsupported {
@@ -727,28 +806,31 @@ fn additional_prior_knowledge(
             );
         }
     }
-    controls
-        .iter()
-        .map(|selected| {
-            charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
-            let selected_hashes = view.change_hashes_for_control(selected.event_id);
-            let mut knowledge = std::collections::BTreeMap::new();
-            for hash in view.change_hashes() {
-                charge_evaluation_work(budget, cancellation, WorkCounter::GraphNode, 1)?;
-                let state = if selected.accepted_base.contains(&hash) {
-                    Some(PriorChangeKnowledge::AcceptedInBase)
-                } else if selected_hashes.is_some_and(|hashes| hashes.contains(&hash)) {
-                    Some(PriorChangeKnowledge::SameEpochCandidate)
-                } else {
-                    reasoned_by_hash.get(&hash).copied()
-                };
-                if let Some(state) = state {
-                    knowledge.insert(hash, state);
-                }
+    let mut projected = std::collections::BTreeMap::new();
+    for index in 0..controls.len() {
+        charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
+        let Some(selected) = controls.get(index) else {
+            return Err(AdditionalPriorKnowledgeError::Invariant);
+        };
+        charge_evaluation_work(budget, cancellation, WorkCounter::GraphNode, 1)?;
+        let selected_hashes = view.change_hashes_for_control(selected.event_id);
+        let knowledge = project_selected_prior_knowledge_metered(
+            selected,
+            all_hashes,
+            selected_hashes,
+            &reasoned_by_hash,
+            |counter| charge_evaluation_work(budget, cancellation, counter, 1),
+        )
+        .map_err(|error| match error {
+            AdditionalPriorProjectionError::Work(stop) => {
+                AdditionalPriorKnowledgeError::Stopped(stop)
             }
-            Ok((selected.event_id, knowledge))
-        })
-        .collect()
+            AdditionalPriorProjectionError::Invariant => AdditionalPriorKnowledgeError::Invariant,
+        })?;
+        charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
+        projected.insert(selected.event_id, knowledge);
+    }
+    Ok(projected)
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -3670,21 +3752,22 @@ fn charge_evaluation_work(
 #[cfg(test)]
 mod tests {
     use super::{
-        AggregateChangeContribution, BatchEvaluationReport, ChangeCarrierOutcome,
-        ChangeClaimReason, ChangeReductionError, CheckpointDownstreamStage,
-        CheckpointHistoryInputs, CheckpointReportAttributionStage, CheckpointWorkObserver,
-        CheckpointWorkStop, CompleteReportPass, EvaluationError, FINALIZATION_PASS_OBSERVATIONS,
-        FinalLineageChangeState, FinalizationBoundaryError, FinalizationDimension,
-        FinalizationPassObservation, FinalizationPermitError, FinalizationPermitState,
-        FinalizationReservationUnit, FixedFallbackLedger, FixedFallbackPass,
-        PreparedCheckpointInputs, REEVALUATION_STAGE_OBSERVATIONS, REPORT_INVARIANT_ITEMS,
-        ReferenceEvaluator, ReportFinalizationPermit, ReportFinalizationPlan,
-        aggregate_change_contribution, assembly_status, canonical_ancestor_hashes,
-        carrier_control_is_historical, change_carrier_disposition, charge_checkpoint_work,
-        checkpoint_control_refusal, checkpoint_historical_control_ancestry,
+        AdditionalPriorProjectionError, AggregateChangeContribution, BatchControl,
+        BatchEvaluationReport, ChangeCarrierOutcome, ChangeClaimReason, ChangeReductionError,
+        CheckpointDownstreamStage, CheckpointHistoryInputs, CheckpointReportAttributionStage,
+        CheckpointWorkObserver, CheckpointWorkStop, CompleteReportPass, EvaluationError,
+        FINALIZATION_PASS_OBSERVATIONS, FinalLineageChangeState, FinalizationBoundaryError,
+        FinalizationDimension, FinalizationPassObservation, FinalizationPermitError,
+        FinalizationPermitState, FinalizationReservationUnit, FixedFallbackLedger,
+        FixedFallbackPass, PreparedCheckpointInputs, REEVALUATION_STAGE_OBSERVATIONS,
+        REPORT_INVARIANT_ITEMS, ReferenceEvaluator, ReportFinalizationPermit,
+        ReportFinalizationPlan, aggregate_change_contribution, assembly_status,
+        canonical_ancestor_hashes, carrier_control_is_historical, change_carrier_disposition,
+        charge_checkpoint_work, checkpoint_control_refusal, checkpoint_historical_control_ancestry,
         checkpoint_preflight_refusal, join_status, noncanonical_branch_claim_reason,
-        reduce_aggregate_change_outcome, reduce_change_dispositions,
-        scoped_dynamic_event_disposition_records, verify_prepared_checkpoints,
+        project_selected_prior_knowledge_metered, reduce_aggregate_change_outcome,
+        reduce_change_dispositions, scoped_dynamic_event_disposition_records,
+        verify_prepared_checkpoints,
     };
     use crate::CheckpointVerificationStatus as Status;
     use crate::authoring::{ActorState, AuthoringDocument};
@@ -3712,6 +3795,76 @@ mod tests {
         ProtocolDisposition, ResolvedManifestAvailability, SnapshotHash, WorkBudget, WorkCounter,
     };
     use sha2::{Digest, Sha256};
+
+    #[test]
+    fn additional_prior_projection_charges_before_every_read_and_insert() {
+        let accepted = ChangeHash::from_bytes([31; 32]);
+        let same_epoch = ChangeHash::from_bytes([32; 32]);
+        let reasoned = ChangeHash::from_bytes([33; 32]);
+        let selected = BatchControl {
+            event_id: EventId::from_bytes([34; 32]),
+            parent: None,
+            accepted_base: std::collections::BTreeSet::from([accepted]),
+            frozen: false,
+            changes: Vec::new(),
+            envelope: None,
+        };
+        let all_hashes = std::collections::BTreeSet::from([accepted, same_epoch, reasoned]);
+        let selected_hashes = std::collections::BTreeSet::from([same_epoch]);
+        let reasoned_by_hash = std::collections::BTreeMap::from([(
+            reasoned,
+            crate::reference::epoch_engine::PriorChangeKnowledge::KnownInvalid,
+        )]);
+        let exact = 12_usize;
+        for stop in [Completion::BudgetExhausted, Completion::Cancelled] {
+            for capacity in 0..=exact + 1 {
+                let mut observed = Vec::new();
+                let result = project_selected_prior_knowledge_metered(
+                    &selected,
+                    &all_hashes,
+                    Some(&selected_hashes),
+                    &reasoned_by_hash,
+                    |counter| {
+                        if observed.len() == capacity {
+                            return Err(stop);
+                        }
+                        observed.push(counter);
+                        Ok(())
+                    },
+                );
+                if capacity < exact {
+                    assert!(
+                        matches!(result, Err(AdditionalPriorProjectionError::Work(value)) if value == stop)
+                    );
+                    assert_eq!(observed.len(), capacity);
+                } else {
+                    assert!(result.is_ok());
+                    if let Ok(projected) = result {
+                        assert_eq!(observed.len(), exact);
+                        assert_eq!(projected.len(), 3);
+                        assert_eq!(
+                            projected.get(&accepted),
+                            Some(
+                                &crate::reference::epoch_engine::PriorChangeKnowledge::AcceptedInBase
+                            )
+                        );
+                        assert_eq!(
+                            projected.get(&same_epoch),
+                            Some(
+                                &crate::reference::epoch_engine::PriorChangeKnowledge::SameEpochCandidate
+                            )
+                        );
+                        assert_eq!(
+                            projected.get(&reasoned),
+                            Some(
+                                &crate::reference::epoch_engine::PriorChangeKnowledge::KnownInvalid
+                            )
+                        );
+                    }
+                }
+            }
+        }
+    }
 
     fn consume_fixed_fallback(ledger: &mut FixedFallbackLedger) {
         assert!(

@@ -87,7 +87,8 @@ impl ParentEpochView {
         Ok(view)
     }
 
-    pub(crate) fn extend_prior_knowledge(&mut self, knowledge: &PriorKnowledgeState) {
+    /// Shares the immutable persistent prior-state tail in constant time.
+    pub(crate) fn share_inherited_prior(&mut self, knowledge: &PriorKnowledgeState) {
         self.inherited_prior = knowledge.clone();
     }
 
@@ -453,7 +454,7 @@ mod tests {
                 PriorChangeKnowledge::KnownInvalid,
             )]));
         }
-        view.extend_prior_knowledge(&prior);
+        view.share_inherited_prior(&prior);
         let additional_source =
             BTreeMap::from([(additional, PriorChangeKnowledge::KnownOtherControl)]);
         assert_eq!(

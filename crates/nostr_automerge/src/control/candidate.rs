@@ -381,7 +381,7 @@ mod tests {
             )]));
         }
         let mut view = ParentEpochView::default();
-        view.extend_prior_knowledge(&knowledge);
+        view.share_inherited_prior(&knowledge);
         let exact = 2_usize + usize::from(DEPTH);
 
         for completion in [Completion::BudgetExhausted, Completion::Cancelled] {

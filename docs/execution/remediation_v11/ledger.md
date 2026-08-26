@@ -86,3 +86,9 @@ grouping, control/hash disposition initialization, and accepted-state cache
 publication immediately before each owned item operation. Exact budget and
 cancellation boundaries publish neither partial initial maps nor an uncharged
 accepted-state cache entry.
+
+At `step_1328`, accepted-base and additional-prior projections separate source
+reads, membership lookups, clones, and target insertions into immediate charged
+operations. Inherited prior knowledge is explicitly shared through its
+immutable persistent tail, so it remains a constant-time clone rather than a
+hidden target-sized copy.

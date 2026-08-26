@@ -126,7 +126,7 @@ def validate_sources(sources: dict[str, str]) -> None:
     result_projection = section(
         parent,
         "pub(crate) fn from_result_metered<E>(",
-        "    pub(crate) fn extend_prior_knowledge",
+        "    pub(crate) fn share_inherited_prior",
         "parent:result_projection",
     )
     require_order(
@@ -144,6 +144,16 @@ def validate_sources(sources: dict[str, str]) -> None:
         "pub(crate) fn set_additional_prior_knowledge_metered<E>(",
         "    #[cfg(test)]\n    pub(crate) fn from_parts_for_test",
         "parent:additional_projection",
+    )
+    inherited_prior = section(
+        parent,
+        "pub(crate) fn share_inherited_prior(",
+        "    pub(crate) fn set_additional_prior_knowledge_metered<E>(",
+        "parent:inherited_prior",
+    )
+    require(
+        inherited_prior.count("self.inherited_prior = knowledge.clone();") == 1,
+        "parent:inherited_prior:shared_clone",
     )
     require_order(
         additional_projection,
@@ -254,6 +264,23 @@ def validate_sources(sources: dict[str, str]) -> None:
         ),
         "evaluate:accepted_state_cache_inserts",
     )
+    accepted_base = section(
+        evaluate,
+        "fn clone_hash_set_metered<E>(",
+        "\n}\n\nstruct ValidBranchEvaluation",
+        "evaluate:accepted_base_projection",
+    )
+    require_order(
+        accepted_base,
+        (
+            "visit(WorkCounter::GraphNode).map_err(BranchDeltaError::Work)?;",
+            "items.next()",
+            "visit(WorkCounter::GraphNode).map_err(BranchDeltaError::Work)?;",
+            "cloned.insert(*hash);",
+        ),
+        "evaluate:accepted_base_projection",
+    )
+    require(evaluate.count("clone_hash_set_metered(&control.accepted_base") == 2, "evaluate:accepted_base_routes")
     require(evaluate.count(".extend_prepared_metered(") == 2, "evaluate:extensions")
     require(evaluate.count(".get_metered(") >= 4, "evaluate:lookups")
     prior_extension = section(
@@ -292,6 +319,44 @@ def validate_sources(sources: dict[str, str]) -> None:
     require_order(referenced, ("visit()?;", "branch_change_dispositions.get(&control)", "dispositions.get_metered(&hash, visit)?"), "evaluate:referenced")
 
     evaluator = sources[SOURCES[7]]
+    selected_prior = section(
+        evaluator,
+        "fn project_selected_prior_knowledge_metered<E>(",
+        "\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\nenum AdditionalPriorProjectionError",
+        "evaluator:selected_prior_projection",
+    )
+    require_order(
+        selected_prior,
+        (
+            "visit(WorkCounter::GraphNode).map_err(AdditionalPriorProjectionError::Work)?;",
+            "hashes.next()",
+            "visit(WorkCounter::GraphNode).map_err(AdditionalPriorProjectionError::Work)?;",
+            "selected.accepted_base.contains(hash)",
+            "reasoned_by_hash.get(hash).copied()",
+            "knowledge.insert(*hash, state);",
+        ),
+        "evaluator:selected_prior_projection",
+    )
+    additional_prior = section(
+        evaluator,
+        "fn additional_prior_knowledge(",
+        "\n}\n\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\nenum ChangeClaimReason",
+        "evaluator:additional_prior_projection",
+    )
+    require_order(
+        additional_prior,
+        (
+            "charge_evaluation_work(budget, cancellation, WorkCounter::GraphNode, 1)?;",
+            "hashes.next()",
+            "reasoned_by_hash.insert(",
+            "charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;",
+            "controls.get(index)",
+            "project_selected_prior_knowledge_metered(",
+            "charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;",
+            "projected.insert(selected.event_id, knowledge);",
+        ),
+        "evaluator:additional_prior_projection",
+    )
     require("batch.referenced_branch_change_disposition(" not in evaluator, "evaluator:referenced_bypass")
     require(evaluator.count("referenced_branch_change_disposition_metered(") == 1, "evaluator:referenced_metered")
     require("dispositions.contains_key(&carrier.change_hash)" not in evaluator, "evaluator:membership_bypass")
@@ -320,6 +385,7 @@ def mutation_self_test(sources: dict[str, str]) -> int:
         replaced(sources, parent, "visit().map_err(ParentEpochViewBuildError::Work)?;\n            let Some((hash, disposition))", "let Some((hash, disposition))"),
         replaced(sources, parent, "visit().map_err(ParentEpochViewBuildError::Work)?;\n            projected.insert(*hash, *item);", "projected.insert(*hash, *item);"),
         replaced(sources, parent, "visit()?;\n        if let Some(knowledge) = self.frontier_knowledge", "if let Some(knowledge) = self.frontier_knowledge"),
+        replaced(sources, parent, "self.inherited_prior = knowledge.clone();", "self.inherited_prior = PriorKnowledgeState::default();"),
         replaced(sources, transition, "#[cfg(test)]\npub(crate) fn validate_base_frontier_antichain(", "pub(crate) fn validate_base_frontier_antichain("),
         replaced(sources, candidate, "frontier_knowledge_metered(hash", "frontier_knowledge(hash"),
         replaced(sources, epoch, "visit(WorkCounter::GraphEdge)?;\n        let Some(dependency) = declared_items.next()", "let Some(dependency) = declared_items.next()"),
@@ -328,8 +394,10 @@ def mutation_self_test(sources: dict[str, str]) -> int:
         replaced(sources, evaluate, "visit(WorkCounter::GraphNode).map_err(BranchDeltaError::Work)?;\n            local.entry(*hash).or_insert(*item);", "local.entry(*hash).or_insert(*item);"),
         replaced(sources, evaluate, "visit(WorkCounter::Control).map_err(InitialMapBuildError::Work)?;\n        let Some(control) = collected_items.next()", "let Some(control) = collected_items.next()"),
         replaced(sources, evaluate, "charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;\n    cache.insert(cache_key", "cache.insert(cache_key"),
+        replaced(sources, evaluate, "visit(WorkCounter::GraphNode).map_err(BranchDeltaError::Work)?;\n        cloned.insert(*hash);", "cloned.insert(*hash);"),
         replaced(sources, evaluate, "let branch_change_dispositions = extend_branch_dispositions_metered(", "let branch_change_dispositions = parent_change_dispositions.extend_prepared_metered("),
         replaced(sources, evaluator, "dispositions.contains_key_metered(&carrier.change_hash", "dispositions.contains_key(&carrier.change_hash"),
+        replaced(sources, evaluator, "charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;\n        projected.insert(selected.event_id, knowledge);", "projected.insert(selected.event_id, knowledge);"),
     ]
     missing = copy.deepcopy(sources)
     missing.pop(evaluator)
