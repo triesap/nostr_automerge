@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ADR_ROOT = ROOT / "docs/adr"
-EXPECTED_ADR_COUNT = 71
+BASE_ADR_COUNT = 71
 BASELINE_REQUIREMENT_COUNT = 139
 TARGET_REQUIREMENT_COUNT = 148
 STAGED_REQUIREMENTS = (
@@ -48,6 +48,18 @@ NEW_ADRS = {
         ("NCRDT-CONF-010", "NCRDT-EVIDENCE-006"),
     ),
 }
+V11_STAGED_REQUIREMENTS = (
+    "NCRDT-RESOURCE-015",
+    "NCRDT-RESOURCE-016",
+    "NCRDT-VERSION-003",
+    "NCRDT-OWNERSHIP-001",
+)
+V11_ADRS = {
+    72: ("adr_0072_metered_persistent_state.md", ("NCRDT-RESOURCE-015",)),
+    73: ("adr_0073_no_post_stop_target_work.md", ("NCRDT-RESOURCE-016",)),
+    74: ("adr_0074_unsupported_event_only_identity.md", ("NCRDT-VERSION-003",)),
+    75: ("adr_0075_bounded_persistent_teardown.md", ("NCRDT-OWNERSHIP-001",)),
+}
 REQUIRED_NEW_HEADINGS = (
     "Status",
     "Authority transition",
@@ -72,6 +84,14 @@ AUTHORITY_BINDINGS = {
         "`NCRDT-CONF-009`",
         "does not supersede ADR 0064's local-NIP reconciliation",
     ),
+    72: (
+        "counts the nodes actually visited",
+        "caller owns local-delta preparation",
+        "persistent boundary owns only inherited lookup and insertion",
+    ),
+    73: ("live-metered", "constant-time", "exact-reserved"),
+    74: ("Event-only", "no semantic ChangeHash identity"),
+    75: ("iterative", "deep unique", "wide shared"),
 }
 EXPECTED_INDEX_INTRO = """# Architecture decision records
 
@@ -93,6 +113,10 @@ The nine future requirement mappings are staged by
 `spec/authority_transition_v10.json`. Before `requirements_appended`, those
 identifiers are planned mappings and are not live rows in
 `spec/requirements.json`.
+
+ADRs 0072 through 0075 are the approved staged decisions for remediation v11.
+They become effective only through their ordered implementation and evidence
+gates. They do not override unchanged NIP text or authorize publication.
 
 | ADR | Status | Primary requirements |
 | --- | --- | --- |
@@ -290,11 +314,17 @@ def parse_index(index: str) -> list[IndexRecord]:
     ]
 
 
-def expected_new_index_tail() -> str:
+def expected_new_index_tail(present_v11: tuple[int, ...]) -> str:
     """Build the exact staged index tail."""
 
     rows = []
     for number, (adr_path, requirements) in NEW_ADRS.items():
+        requirement_cell = ", ".join(f"`{identifier}`" for identifier in requirements)
+        rows.append(
+            f"| [{number:04d}]({adr_path}) | Approved staged | {requirement_cell} |"
+        )
+    for number in present_v11:
+        adr_path, requirements = V11_ADRS[number]
         requirement_cell = ", ".join(f"`{identifier}`" for identifier in requirements)
         rows.append(
             f"| [{number:04d}]({adr_path}) | Approved staged | {requirement_cell} |"
@@ -314,13 +344,13 @@ def validate_portable_text(text: str, diagnostic: str) -> None:
     require(WINDOWS_ABSOLUTE_PATH.search(text) is None, f"{diagnostic}:absolute_windows")
 
 
-def validate_index_contract(index: str) -> None:
+def validate_index_contract(index: str, present_v11: tuple[int, ...]) -> None:
     """Exact-bind the staged index explanation and complete new tail."""
 
     require(index.startswith(EXPECTED_INDEX_INTRO), "ADR index staged introduction changed")
     require(index.count(INDEX_TAIL_ANCHOR) == 1, "ADR index tail anchor changed")
     _, new_tail = index.split(INDEX_TAIL_ANCHOR, 1)
-    require(new_tail == expected_new_index_tail(), "ADR index staged tail changed")
+    require(new_tail == expected_new_index_tail(present_v11), "ADR index staged tail changed")
     validate_portable_text(index, "ADR index scope")
 
 
@@ -343,15 +373,19 @@ def validate_records(
 ) -> None:
     """Validate one complete in-memory ADR and index projection."""
 
-    validate_index_contract(index_text)
-    require(len(records) == EXPECTED_ADR_COUNT, f"expected {EXPECTED_ADR_COUNT} ADRs")
+    present_v11 = tuple(record.number for record in records if record.number in V11_ADRS)
+    expected_v11 = tuple(range(72, 72 + len(present_v11)))
+    require(present_v11 == expected_v11, "v11 ADR sequence is not an exact prefix")
+    expected_adr_count = BASE_ADR_COUNT + len(present_v11)
+    validate_index_contract(index_text, present_v11)
+    require(len(records) == expected_adr_count, f"expected {expected_adr_count} ADRs")
     require(
-        [record.number for record in records] == list(range(1, EXPECTED_ADR_COUNT + 1)),
+        [record.number for record in records] == list(range(1, expected_adr_count + 1)),
         "ADR numbering gap",
     )
-    require(len(indexed) == EXPECTED_ADR_COUNT, "ADR index row count mismatch")
+    require(len(indexed) == expected_adr_count, "ADR index row count mismatch")
     require(
-        [record.number for record in indexed] == list(range(1, EXPECTED_ADR_COUNT + 1)),
+        [record.number for record in indexed] == list(range(1, expected_adr_count + 1)),
         "ADR index numbering gap",
     )
     index_by_number = {record.number: record for record in indexed}
@@ -359,7 +393,7 @@ def validate_records(
 
     live = set(authority.live_identifiers)
     staged = set(authority.staged_identifiers)
-    allowed_requirements = live | staged
+    allowed_requirements = live | staged | set(V11_STAGED_REQUIREMENTS)
     mapped_staged: set[str] = set()
     for record in records:
         require(
@@ -372,7 +406,7 @@ def validate_records(
         )
         row = index_by_number[record.number]
         require(row.path == record.path, f"ADR index path mismatch: {record.path}")
-        expected_status = "Approved staged" if record.number in NEW_ADRS else "Approved"
+        expected_status = "Approved staged" if record.number in NEW_ADRS or record.number in V11_ADRS else "Approved"
         require(row.status == expected_status, f"ADR index status mismatch: {record.path}")
         canonical_cell = ", ".join(f"`{identifier}`" for identifier in row.identifiers)
         require(
@@ -419,7 +453,46 @@ def validate_records(
         require(row.identifiers == expected_requirements, f"new ADR mapping mismatch: {record.path}")
         validate_portable_text(record.text, f"new ADR scope:{record.path}")
 
+    for number in present_v11:
+        expected_path, expected_requirements = V11_ADRS[number]
+        record = records[number - 1]
+        row = index_by_number[number]
+        require(record.path == expected_path, f"v11 ADR filename mismatch: {number:04d}")
+        headings = tuple(re.findall(r"^## (.+)$", record.text, re.MULTILINE))
+        require(headings == REQUIRED_NEW_HEADINGS, f"v11 ADR heading order: {record.path}")
+        bodies = {heading: section_body(record.text, heading) for heading in headings}
+        require(all(bodies.values()), f"v11 ADR section body is empty: {record.path}")
+        require(
+            bodies["Status"] == "Approved staged candidate for remediation v11.",
+            f"v11 ADR status mismatch: {record.path}",
+        )
+        normalized_decision = " ".join(bodies["Decision"].split())
+        require(
+            all(fragment in normalized_decision for fragment in AUTHORITY_BINDINGS[number]),
+            f"v11 ADR decision mismatch: {record.path}",
+        )
+        require(
+            "not\neffective current" in bodies["Authority transition"]
+            and "unchanged NIP" in bodies["Authority transition"]
+            and "NIP-conformance remains\nheld" in bodies["Authority transition"],
+            f"v11 ADR authority hold mismatch: {record.path}",
+        )
+        require(row.identifiers == expected_requirements, f"v11 ADR mapping mismatch: {record.path}")
+        validate_portable_text(record.text, f"v11 ADR scope:{record.path}")
+
     require(mapped_staged == staged, "staged ADR requirement coverage mismatch")
+    mapped_v11 = {
+        identifier
+        for number in present_v11
+        for identifier in index_by_number[number].identifiers
+        if identifier.startswith("NCRDT-")
+    }
+    expected_mapped_v11 = {
+        identifier
+        for number in present_v11
+        for identifier in V11_ADRS[number][1]
+    }
+    require(mapped_v11 == expected_mapped_v11, "v11 staged ADR requirement coverage mismatch")
     if authority.before_requirements_appended:
         future_references = {
             identifier
@@ -488,6 +561,13 @@ def mutation_self_test(
         changed[64].text += f"\n{leaked}\n"
         mutations.append((name, changed, copy.deepcopy(indexed), index_text))
 
+    if len(records) > BASE_ADR_COUNT:
+        wrong_v11 = copy.deepcopy(records)
+        wrong_v11[BASE_ADR_COUNT].text = wrong_v11[BASE_ADR_COUNT].text.replace(
+            "counts the nodes actually visited", "counts only the outer call", 1
+        )
+        mutations.append(("v11_decision", wrong_v11, copy.deepcopy(indexed), index_text))
+
     caught = 0
     for name, changed_records, changed_index, changed_text in mutations:
         try:
@@ -533,7 +613,8 @@ def main() -> int:
     print("PASS: architecture decision records")
     print(f"- decisions={len(records)}")
     print("- current_decisions=64")
-    print("- staged_candidate_decisions=7")
+    print(f"- staged_candidate_decisions={len(records) - 64}")
+    print(f"- v11_staged_decisions={max(0, len(records) - BASE_ADR_COUNT)}")
     print(f"- staged_requirement_mappings={len(authority.staged_identifiers)}")
     print(
         "- staged_requirements_live="

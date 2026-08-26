@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v11_authority.json",
   "cursor": {
     "active_rcld": 100,
-    "active_step": "step_1309",
-    "next_step": "step_1310",
+    "active_step": "step_1310",
+    "next_step": "step_1311",
     "last_planned_step": "step_1363",
-    "remaining_checkpoint_count": 55,
+    "remaining_checkpoint_count": 54,
     "remaining_rcld_count": 9
   },
   "findings": {
@@ -28,18 +28,23 @@
     "NCRDT-OWNERSHIP-001"
   ],
   "active_checkpoint_scope": [
-    "docs/execution/remediation_v11/ledger.md",
+    "docs/adr/README.md",
+    "docs/adr/adr_0072_metered_persistent_state.md",
     "implementation/runtime_ledger_v11.json",
-    "reports/evidence_transition_v11.json",
     "reports/spec_baseline.txt",
-    "scripts/validate_remediation_v11.py",
-    "scripts/validate_spec.py",
-    "spec/remediation_findings_v11.json"
+    "scripts/validate_adrs.py",
+    "scripts/validate_remediation_v11.py"
   ],
   "predecessors": [
     {
       "step": "step_1308",
       "candidate": "e3c88c6803dcd862b225ff169cf6d65ac5655a6f",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1309",
+      "candidate": "a582868b753400bd74b77090292aa3621f61d910",
       "owner_class": "public",
       "result": "pass"
     }

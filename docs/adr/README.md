@@ -19,6 +19,10 @@ The nine future requirement mappings are staged by
 identifiers are planned mappings and are not live rows in
 `spec/requirements.json`.
 
+ADRs 0072 through 0075 are the approved staged decisions for remediation v11.
+They become effective only through their ordered implementation and evidence
+gates. They do not override unchanged NIP text or authorize publication.
+
 | ADR | Status | Primary requirements |
 | --- | --- | --- |
 | [0001](adr_0001_standalone_repository.md) | Approved | `NCRDT-REPO-001`, `NCRDT-CORE-001` |
@@ -92,3 +96,4 @@ identifiers are planned mappings and are not live rows in
 | [0069](adr_0069_target_work_and_shared_raw_bytes.md) | Approved staged | `NCRDT-RESOURCE-014` |
 | [0070](adr_0070_independent_compatibility_limits_and_immutability.md) | Approved staged | `NCRDT-TS-001`, `NCRDT-LIMIT-001`, `NCRDT-LIMITS-001`, `NCRDT-STATE-002` |
 | [0071](adr_0071_signed_conformance_and_semantic_evidence_v10.md) | Approved staged | `NCRDT-CONF-010`, `NCRDT-EVIDENCE-006` |
+| [0072](adr_0072_metered_persistent_state.md) | Approved staged | `NCRDT-RESOURCE-015` |

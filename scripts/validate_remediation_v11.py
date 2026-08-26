@@ -20,6 +20,7 @@ PUBLIC_TREE = "5e62938bfe576d6c67b3bfe355d5b5dd47585e87"
 PRIVATE_CANDIDATE = "2d708bb0a7a00523ab5c244fd0a15c96afcf0a4a"
 PRIOR_HANDOFF = "e333873b2b2e42b42bc7d9e652012195ab70760b586eb184462e655a5682be44"
 STEP_1308 = "e3c88c6803dcd862b225ff169cf6d65ac5655a6f"
+STEP_1309 = "a582868b753400bd74b77090292aa3621f61d910"
 HOLDS = (
     "external_assurance", "event_kind_allocation", "nip_submission",
     "production_qualification", "publication", "release", "remote_mutation",
@@ -46,13 +47,12 @@ HISTORICAL_EVIDENCE = (
     ("reports/resource_followup_final_decision_v10.json", "43d28679234b7c11878f615faf57fc65f298fa99505cdcc70f2d86022b40dd9c"),
 )
 SCOPE = (
-    "docs/execution/remediation_v11/ledger.md",
+    "docs/adr/README.md",
+    "docs/adr/adr_0072_metered_persistent_state.md",
     "implementation/runtime_ledger_v11.json",
-    "reports/evidence_transition_v11.json",
     "reports/spec_baseline.txt",
+    "scripts/validate_adrs.py",
     "scripts/validate_remediation_v11.py",
-    "scripts/validate_spec.py",
-    "spec/remediation_findings_v11.json",
 )
 
 
@@ -149,7 +149,7 @@ def validate_ledger(value: object) -> None:
         raise ValidationError("ledger:identity")
     if record["authority"] != "spec/remediation_v11_authority.json":
         raise ValidationError("ledger:authority")
-    if record["cursor"] != {"active_rcld": 100, "active_step": "step_1309", "next_step": "step_1310", "last_planned_step": "step_1363", "remaining_checkpoint_count": 55, "remaining_rcld_count": 9}:
+    if record["cursor"] != {"active_rcld": 100, "active_step": "step_1310", "next_step": "step_1311", "last_planned_step": "step_1363", "remaining_checkpoint_count": 54, "remaining_rcld_count": 9}:
         raise ValidationError("ledger:cursor")
     if record["findings"] != {"open": list(FINDING_IDS[:4]), "held": ["FINDING_080"]}:
         raise ValidationError("ledger:findings")
@@ -157,7 +157,10 @@ def validate_ledger(value: object) -> None:
         raise ValidationError("ledger:requirements")
     if tuple(record["active_checkpoint_scope"]) != SCOPE:
         raise ValidationError("ledger:scope")
-    if record["predecessors"] != [{"step": "step_1308", "candidate": STEP_1308, "owner_class": "public", "result": "pass"}]:
+    if record["predecessors"] != [
+        {"step": "step_1308", "candidate": STEP_1308, "owner_class": "public", "result": "pass"},
+        {"step": "step_1309", "candidate": STEP_1309, "owner_class": "public", "result": "pass"},
+    ]:
         raise ValidationError("ledger:predecessors")
     if tuple(record["holds"]) != HOLDS:
         raise ValidationError("ledger:holds")
@@ -209,8 +212,8 @@ def mutation_self_test() -> int:
         mutate(candidate)
         mutations.append(("evidence", candidate))
     for mutate in (
-        lambda value: value["cursor"].update(active_step="step_1310"),
-        lambda value: value["cursor"].update(remaining_checkpoint_count=54),
+        lambda value: value["cursor"].update(active_step="step_1311"),
+        lambda value: value["cursor"].update(remaining_checkpoint_count=53),
         lambda value: value["findings"]["open"].reverse(),
         lambda value: value["active_checkpoint_scope"].reverse(),
         lambda value: value["predecessors"][0].update(candidate="0" * 40),
