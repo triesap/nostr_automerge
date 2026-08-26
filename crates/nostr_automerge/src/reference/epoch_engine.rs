@@ -8,12 +8,14 @@ use crate::control::ancestry::ControlAncestry;
 use crate::control::epoch_state::{AcceptedEpochState, MeteredAcceptedEpochStateError};
 use crate::control::validate::ControlEnvelope;
 use crate::graph::actor_state::{
-    EpochActorState, apply_empty_counter, apply_nonempty_counter, initialize_actor_states,
-    validate_actor_predecessor,
+    EpochActorState, MeteredActorStateError, apply_empty_counter, apply_nonempty_counter,
+    initialize_actor_states_metered, validate_actor_predecessor,
 };
 use crate::graph::change_candidate::ChangeCandidate;
 use crate::graph::closure::{CandidateClosureError, candidate_dependency_closure};
-use crate::graph::dependency_graph::{GraphBuildError, build_graph};
+use crate::graph::dependency_graph::{
+    GraphBuildError, MeteredGraphBuildError, build_graph_metered,
+};
 use crate::graph::epoch::{EpochAncestry, validate_epoch_ancestry};
 use crate::graph::equivocation::{QuarantineError, quarantine_equivocation_descendants};
 use crate::graph::schedule::ScheduleError;
@@ -30,6 +32,12 @@ pub(crate) enum EpochEvaluationInputError {
     AncestryMismatch,
     CandidateControlMismatch,
     DuplicateCandidate,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum MeteredEpochEvaluationInputError<E> {
+    Work(E),
+    Input(EpochEvaluationInputError),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -159,6 +167,61 @@ impl EpochEvaluationInput<'static> {
 }
 
 impl<'a> EpochEvaluationInput<'a> {
+    pub(crate) fn new_with_metered_candidate_map(
+        selected_control: ControlEnvelope,
+        accepted_base: Arc<AcceptedEpochState>,
+        candidate_changes: BTreeMap<ChangeHash, ChangeCandidate>,
+        raw_changes: &'a BTreeMap<ChangeHash, Arc<[u8]>>,
+        canonical_ancestry: ControlAncestry,
+        prior_change_knowledge: PriorKnowledgeState,
+        mut charge: impl FnMut(WorkCounter) -> Result<(), ScheduleError>,
+    ) -> Result<Self, MeteredEpochEvaluationInputError<ScheduleError>> {
+        let mut declared_heads = BTreeSet::new();
+        let mut head_iter = selected_control.content().base_heads.iter();
+        for _ in 0..selected_control.content().base_heads.len() {
+            charge(WorkCounter::GraphNode).map_err(MeteredEpochEvaluationInputError::Work)?;
+            let Some(head) = head_iter.next() else {
+                return Err(MeteredEpochEvaluationInputError::Input(
+                    EpochEvaluationInputError::BaseFrontierMismatch,
+                ));
+            };
+            declared_heads.insert(*head);
+        }
+        if declared_heads != *accepted_base.frontier_heads() {
+            return Err(MeteredEpochEvaluationInputError::Input(
+                EpochEvaluationInputError::BaseFrontierMismatch,
+            ));
+        }
+        if selected_control.parent() != canonical_ancestry.last_event_id() {
+            return Err(MeteredEpochEvaluationInputError::Input(
+                EpochEvaluationInputError::AncestryMismatch,
+            ));
+        }
+        let selected_id = selected_control.event_id();
+        let mut candidate_iter = candidate_changes.iter();
+        for _ in 0..candidate_changes.len() {
+            charge(WorkCounter::GraphNode).map_err(MeteredEpochEvaluationInputError::Work)?;
+            let Some((hash, candidate)) = candidate_iter.next() else {
+                return Err(MeteredEpochEvaluationInputError::Input(
+                    EpochEvaluationInputError::DuplicateCandidate,
+                ));
+            };
+            if candidate.change_hash != *hash || candidate.control_id != selected_id {
+                return Err(MeteredEpochEvaluationInputError::Input(
+                    EpochEvaluationInputError::CandidateControlMismatch,
+                ));
+            }
+        }
+        Ok(Self {
+            selected_control,
+            accepted_base,
+            candidate_changes,
+            raw_changes: Cow::Borrowed(raw_changes),
+            canonical_ancestry,
+            prior_change_knowledge,
+        })
+    }
+
     pub(crate) fn new_with_borrowed_raw_and_prior(
         selected_control: ControlEnvelope,
         accepted_base: Arc<AcceptedEpochState>,
@@ -234,38 +297,38 @@ pub(crate) struct EpochEvaluationResult {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct AcceptedAtControl {
-    accepted_closure: BTreeSet<ChangeHash>,
-    frontier_heads: BTreeSet<ChangeHash>,
-    actor_states: BTreeMap<ActorId, EpochActorState>,
+    accepted_closure: Arc<BTreeSet<ChangeHash>>,
+    frontier_heads: Arc<BTreeSet<ChangeHash>>,
+    actor_states: Arc<BTreeMap<ActorId, EpochActorState>>,
 }
 
 impl AcceptedAtControl {
     pub(crate) fn from_result(result: &EpochEvaluationResult) -> Self {
         Self {
-            accepted_closure: result.accepted_state().accepted_closure().clone(),
-            frontier_heads: result.accepted_state().frontier_heads().clone(),
-            actor_states: result.accepted_state().actor_states().clone(),
+            accepted_closure: result.accepted_state().accepted_closure_handle(),
+            frontier_heads: result.accepted_state().frontier_heads_handle(),
+            actor_states: result.accepted_state().actor_states_handle(),
         }
     }
 
-    pub(crate) const fn accepted_closure(&self) -> &BTreeSet<ChangeHash> {
+    pub(crate) fn accepted_closure(&self) -> &BTreeSet<ChangeHash> {
         &self.accepted_closure
     }
 
-    pub(crate) const fn frontier_heads(&self) -> &BTreeSet<ChangeHash> {
+    pub(crate) fn frontier_heads(&self) -> &BTreeSet<ChangeHash> {
         &self.frontier_heads
     }
 
-    pub(crate) const fn actor_states(&self) -> &BTreeMap<ActorId, EpochActorState> {
+    pub(crate) fn actor_states(&self) -> &BTreeMap<ActorId, EpochActorState> {
         &self.actor_states
     }
 
     #[cfg(test)]
     pub(crate) fn for_test(accepted_closure: BTreeSet<ChangeHash>) -> Self {
         Self {
-            frontier_heads: accepted_closure.clone(),
-            accepted_closure,
-            actor_states: BTreeMap::new(),
+            frontier_heads: Arc::new(accepted_closure.clone()),
+            accepted_closure: Arc::new(accepted_closure),
+            actor_states: Arc::new(BTreeMap::new()),
         }
     }
 }
@@ -328,10 +391,23 @@ pub(crate) fn evaluate_epoch(
 ) -> Result<EpochEvaluationResult, EpochEvaluationError> {
     let selected = input.selected_control();
     let terminal = selected.content().terminal;
-    let mut all_candidates = input.accepted_base().accepted_candidates().clone();
-    all_candidates.extend(input.candidate_changes().clone());
+    let all_candidates = clone_candidate_maps_metered(
+        input.accepted_base().accepted_candidates(),
+        input.candidate_changes(),
+        budget,
+        cancellation,
+    )
+    .map_err(EpochEvaluationError::Schedule)?;
     let mut epoch_candidates = Vec::with_capacity(input.candidate_changes().len());
-    for candidate in input.candidate_changes().values().cloned() {
+    let mut candidate_iter = input.candidate_changes().values();
+    for _ in 0..input.candidate_changes().len() {
+        charge_epoch_item(WorkCounter::GraphNode, budget, cancellation)
+            .map_err(EpochEvaluationError::Schedule)?;
+        let Some(candidate) = candidate_iter.next().cloned() else {
+            return Err(EpochEvaluationError::State(
+                crate::control::epoch_state::AcceptedEpochStateError::ClosureMismatch,
+            ));
+        };
         let authorized = selected.content().members.iter().any(|member| {
             member.actor == candidate.actor
                 && member.device == candidate.author
@@ -345,24 +421,20 @@ pub(crate) fn evaluate_epoch(
             validate_actor_predecessor(&candidate, known, &all_candidates).is_ok()
         });
         let actor_counter_valid = if let Some(known) = complete_closure {
-            let base = known
-                .iter()
-                .filter_map(|hash| all_candidates.get(hash).cloned())
-                .collect::<Vec<_>>();
-            charge_actor_reconstruction(&base, budget, cancellation)
-                .map_err(EpochEvaluationError::Schedule)?;
-            initialize_actor_states(base).is_ok_and(|mut states| {
+            let projection =
+                match initialize_actor_states_metered(known, &all_candidates, |counter| {
+                    charge_epoch_item(counter, budget, cancellation)
+                }) {
+                    Ok(projection) => Some(projection),
+                    Err(MeteredActorStateError::Work(error)) => {
+                        return Err(EpochEvaluationError::Schedule(error));
+                    }
+                    Err(MeteredActorStateError::State(_)) => None,
+                };
+            projection.is_some_and(|projection| {
+                let mut states = projection.actor_states;
                 if candidate.operation_count == 0 {
-                    let depended_on = known
-                        .iter()
-                        .filter_map(|hash| all_candidates.get(hash))
-                        .flat_map(|ancestor| ancestor.dependencies.iter().copied())
-                        .filter(|hash| known.contains(hash))
-                        .collect::<BTreeSet<_>>();
-                    let mut current_heads = known
-                        .difference(&depended_on)
-                        .copied()
-                        .collect::<BTreeSet<_>>();
+                    let mut current_heads = projection.frontier_heads;
                     current_heads.extend(
                         input
                             .accepted_base()
@@ -460,45 +532,41 @@ pub(crate) fn evaluate_epoch(
     }
     let mut dispositions = resolve_epoch(
         epoch_candidates,
-        input.accepted_base().accepted_closure().clone(),
+        input.accepted_base().accepted_closure(),
         budget,
         cancellation,
     )
     .map_err(EpochEvaluationError::Schedule)?;
-    let eligible = all_candidates
-        .values()
-        .filter(|candidate| {
-            input
-                .accepted_base()
-                .accepted_closure()
-                .contains(&candidate.change_hash)
-                || dispositions.get(&candidate.change_hash) == Some(&ProtocolDisposition::Accepted)
-        })
-        .cloned()
-        .collect::<Vec<_>>();
-    let graph = build_graph(
-        eligible.clone(),
-        input.accepted_base().accepted_closure().clone(),
+    let eligible = collect_eligible_candidates_metered(
+        &all_candidates,
+        input.accepted_base().accepted_closure(),
+        &dispositions,
+        budget,
+        cancellation,
     )
-    .map_err(EpochEvaluationError::Graph)?;
+    .map_err(EpochEvaluationError::Schedule)?;
+    let graph = build_graph_metered(
+        &eligible,
+        input.accepted_base().accepted_closure(),
+        |counter| charge_epoch_item(counter, budget, cancellation),
+    )
+    .map_err(|error| match error {
+        MeteredGraphBuildError::Work(error) => EpochEvaluationError::Schedule(error),
+        MeteredGraphBuildError::Graph(error) => EpochEvaluationError::Graph(error),
+    })?;
     let quarantine = quarantine_equivocation_descendants(eligible, &graph, budget, cancellation)
         .map_err(EpochEvaluationError::Quarantine)?;
     for hash in &quarantine.quarantined {
         dispositions.insert(*hash, ProtocolDisposition::Excluded);
     }
-    let mut accepted_candidates = input.accepted_base().accepted_candidates().clone();
-    accepted_candidates.extend(
-        input
-            .candidate_changes()
-            .iter()
-            .filter_map(|(hash, candidate)| {
-                (dispositions.get(hash) == Some(&ProtocolDisposition::Accepted))
-                    .then_some((*hash, candidate.clone()))
-            }),
-    );
-    accepted_candidates
-        .retain(|hash, _| dispositions.get(hash) != Some(&ProtocolDisposition::Excluded));
-    let accepted_closure = accepted_candidates.keys().copied().collect::<BTreeSet<_>>();
+    let (accepted_closure, accepted_candidates) = project_accepted_candidates_metered(
+        &all_candidates,
+        input.accepted_base().accepted_closure(),
+        &dispositions,
+        budget,
+        cancellation,
+    )
+    .map_err(EpochEvaluationError::Schedule)?;
     if metered_hash_sets_equal(
         &accepted_closure,
         input.accepted_base().accepted_closure(),
@@ -548,34 +616,73 @@ fn metered_hash_sets_equal(
     Ok(true)
 }
 
-fn charge_actor_reconstruction(
-    candidates: &[ChangeCandidate],
+pub(crate) fn clone_candidate_maps_metered(
+    base: &BTreeMap<ChangeHash, ChangeCandidate>,
+    local: &BTreeMap<ChangeHash, ChangeCandidate>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
-) -> Result<(), ScheduleError> {
-    if cancellation.is_cancelled() {
-        return Err(ScheduleError::Cancelled);
+) -> Result<BTreeMap<ChangeHash, ChangeCandidate>, ScheduleError> {
+    let mut result = BTreeMap::new();
+    for source in [base, local] {
+        let mut iter = source.iter();
+        for _ in 0..source.len() {
+            charge_epoch_item(WorkCounter::GraphNode, budget, cancellation)?;
+            let Some((hash, candidate)) = iter.next() else {
+                return Err(ScheduleError::BudgetExhausted);
+            };
+            result.insert(*hash, candidate.clone());
+        }
     }
-    let nodes = u64::try_from(candidates.len())
-        .ok()
-        .and_then(|count| count.checked_mul(2))
-        .ok_or(ScheduleError::BudgetExhausted)?;
-    let edges = candidates.iter().try_fold(0_u64, |total, candidate| {
-        u64::try_from(candidate.dependencies.len())
-            .ok()
-            .and_then(|count| count.checked_mul(2))
-            .and_then(|count| total.checked_add(count))
-    });
-    let edges = edges.ok_or(ScheduleError::BudgetExhausted)?;
-    budget
-        .charge(WorkCounter::GraphNode, nodes)
-        .map_err(|_| ScheduleError::BudgetExhausted)?;
-    if cancellation.is_cancelled() {
-        return Err(ScheduleError::Cancelled);
+    Ok(result)
+}
+
+pub(crate) fn collect_eligible_candidates_metered(
+    candidates: &BTreeMap<ChangeHash, ChangeCandidate>,
+    accepted_base: &BTreeSet<ChangeHash>,
+    dispositions: &BTreeMap<ChangeHash, ProtocolDisposition>,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<Vec<ChangeCandidate>, ScheduleError> {
+    let mut result = Vec::new();
+    let mut iter = candidates.iter();
+    for _ in 0..candidates.len() {
+        charge_epoch_item(WorkCounter::GraphNode, budget, cancellation)?;
+        let Some((hash, candidate)) = iter.next() else {
+            return Err(ScheduleError::BudgetExhausted);
+        };
+        if accepted_base.contains(hash)
+            || dispositions.get(hash) == Some(&ProtocolDisposition::Accepted)
+        {
+            result.push(candidate.clone());
+        }
     }
-    budget
-        .charge(WorkCounter::GraphEdge, edges)
-        .map_err(|_| ScheduleError::BudgetExhausted)
+    Ok(result)
+}
+
+pub(crate) fn project_accepted_candidates_metered(
+    candidates: &BTreeMap<ChangeHash, ChangeCandidate>,
+    accepted_base: &BTreeSet<ChangeHash>,
+    dispositions: &BTreeMap<ChangeHash, ProtocolDisposition>,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<(BTreeSet<ChangeHash>, BTreeMap<ChangeHash, ChangeCandidate>), ScheduleError> {
+    let mut accepted_closure = BTreeSet::new();
+    let mut accepted_candidates = BTreeMap::new();
+    let mut iter = candidates.iter();
+    for _ in 0..candidates.len() {
+        charge_epoch_item(WorkCounter::GraphNode, budget, cancellation)?;
+        let Some((hash, candidate)) = iter.next() else {
+            return Err(ScheduleError::BudgetExhausted);
+        };
+        if (accepted_base.contains(hash)
+            || dispositions.get(hash) == Some(&ProtocolDisposition::Accepted))
+            && dispositions.get(hash) != Some(&ProtocolDisposition::Excluded)
+        {
+            accepted_closure.insert(*hash);
+            accepted_candidates.insert(*hash, candidate.clone());
+        }
+    }
+    Ok((accepted_closure, accepted_candidates))
 }
 
 fn charge_epoch_item(
@@ -601,10 +708,12 @@ const fn closure_schedule_error(error: CandidateClosureError) -> ScheduleError {
 #[cfg(test)]
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
+    use std::sync::Arc;
 
     use super::{
         AcceptedAtControl, EpochEvaluationInput, EpochEvaluationInputError, EpochEvaluationResult,
-        PriorChangeKnowledge, charge_actor_reconstruction, evaluate_epoch,
+        PriorChangeKnowledge, clone_candidate_maps_metered, collect_eligible_candidates_metered,
+        evaluate_epoch, project_accepted_candidates_metered,
     };
     use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
     use crate::carrier::control::{ValidatedControlCarrier, ValidatedControlContent};
@@ -694,7 +803,7 @@ mod tests {
     }
 
     #[test]
-    fn actor_reconstruction_precharge_is_bounded_and_atomic() {
+    fn actor_reconstruction_is_item_metered_before_each_operation() {
         let candidate = ChangeCandidate {
             change_hash: ChangeHash::from_bytes([5; 32]),
             actor: ActorId::from_bytes([6; 32]),
@@ -706,20 +815,91 @@ mod tests {
             author: DevicePublicKey::from_bytes([7; 32]),
             valid_carriers: std::sync::Arc::from([]),
         };
+        let closure = BTreeSet::from([candidate.change_hash]);
+        let candidates = BTreeMap::from([(candidate.change_hash, candidate)]);
         let mut exhausted = WorkBudget::new(0, 1);
-        assert_eq!(
-            charge_actor_reconstruction(
-                std::slice::from_ref(&candidate),
-                &mut exhausted,
-                &NeverCancelled,
-            ),
-            Err(crate::graph::schedule::ScheduleError::BudgetExhausted)
+        let short = crate::graph::actor_state::initialize_actor_states_metered(
+            &closure,
+            &candidates,
+            |counter| {
+                exhausted
+                    .charge(counter, 1)
+                    .map_err(|_| crate::graph::schedule::ScheduleError::BudgetExhausted)
+            },
         );
-        assert_eq!(exhausted.consumed().get(WorkCounter::GraphNode), 0);
+        assert!(matches!(
+            short,
+            Err(crate::graph::actor_state::MeteredActorStateError::Work(
+                crate::graph::schedule::ScheduleError::BudgetExhausted
+            ))
+        ));
+        assert_eq!(exhausted.consumed().get(WorkCounter::GraphNode), 1);
 
         let mut exact = WorkBudget::new(0, 2);
-        assert!(charge_actor_reconstruction(&[candidate], &mut exact, &NeverCancelled).is_ok());
+        let result = crate::graph::actor_state::initialize_actor_states_metered(
+            &closure,
+            &candidates,
+            |counter| {
+                exact
+                    .charge(counter, 1)
+                    .map_err(|_| crate::graph::schedule::ScheduleError::BudgetExhausted)
+            },
+        );
+        assert!(result.is_ok());
         assert_eq!(exact.consumed().get(WorkCounter::GraphNode), 2);
+    }
+
+    #[test]
+    fn candidate_projections_charge_before_each_owned_entry() {
+        let first = ChangeCandidate {
+            change_hash: ChangeHash::from_bytes([5; 32]),
+            actor: ActorId::from_bytes([6; 32]),
+            sequence: 1,
+            start_op: 1,
+            operation_count: 1,
+            dependencies: Vec::new().into(),
+            control_id: EventId::from_bytes([3; 32]),
+            author: DevicePublicKey::from_bytes([7; 32]),
+            valid_carriers: std::sync::Arc::from([]),
+        };
+        let mut second = first.clone();
+        second.change_hash = ChangeHash::from_bytes([8; 32]);
+        let base = BTreeMap::from([(first.change_hash, first.clone())]);
+        let local = BTreeMap::from([(second.change_hash, second.clone())]);
+
+        let mut short = WorkBudget::new(0, 1);
+        assert_eq!(
+            clone_candidate_maps_metered(&base, &local, &mut short, &NeverCancelled),
+            Err(crate::graph::schedule::ScheduleError::BudgetExhausted)
+        );
+        assert_eq!(short.consumed().get(WorkCounter::GraphNode), 1);
+
+        let mut exact = WorkBudget::new(0, 6);
+        let all = clone_candidate_maps_metered(&base, &local, &mut exact, &NeverCancelled);
+        let Ok(all) = all else {
+            return;
+        };
+        let dispositions = BTreeMap::from([(second.change_hash, ProtocolDisposition::Accepted)]);
+        let eligible = collect_eligible_candidates_metered(
+            &all,
+            &BTreeSet::from([first.change_hash]),
+            &dispositions,
+            &mut exact,
+            &NeverCancelled,
+        );
+        assert_eq!(eligible.as_ref().map(Vec::len), Ok(2));
+        let projected = project_accepted_candidates_metered(
+            &all,
+            &BTreeSet::from([first.change_hash]),
+            &dispositions,
+            &mut exact,
+            &NeverCancelled,
+        );
+        assert!(
+            projected
+                .is_ok_and(|(closure, candidates)| { closure.len() == 2 && candidates.len() == 2 })
+        );
+        assert_eq!(exact.consumed().get(WorkCounter::GraphNode), 6);
     }
 
     #[test]
@@ -796,6 +976,18 @@ mod tests {
         assert_eq!(result.dispositions(), &dispositions);
         assert!(result.integrity_alerts().is_empty());
         let snapshot = AcceptedAtControl::from_result(&result);
+        assert!(Arc::ptr_eq(
+            &snapshot.accepted_closure,
+            &result.accepted_state().accepted_closure_handle()
+        ));
+        assert!(Arc::ptr_eq(
+            &snapshot.frontier_heads,
+            &result.accepted_state().frontier_heads_handle()
+        ));
+        assert!(Arc::ptr_eq(
+            &snapshot.actor_states,
+            &result.accepted_state().actor_states_handle()
+        ));
         assert_eq!(snapshot.accepted_closure(), &BTreeSet::from([hash]));
         assert_eq!(snapshot.frontier_heads(), &BTreeSet::from([hash]));
         assert_eq!(snapshot.actor_states(), &actors);

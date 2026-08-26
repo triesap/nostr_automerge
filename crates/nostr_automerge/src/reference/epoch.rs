@@ -13,7 +13,7 @@ pub(crate) struct EpochCandidate {
 
 pub(crate) fn resolve_epoch(
     candidates: impl IntoIterator<Item = EpochCandidate>,
-    accepted_base: BTreeSet<ChangeHash>,
+    accepted_base: &BTreeSet<ChangeHash>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<BTreeMap<ChangeHash, ProtocolDisposition>, ScheduleError> {
@@ -21,16 +21,24 @@ pub(crate) fn resolve_epoch(
     let mut dependencies = BTreeMap::new();
     let mut eligible = Vec::new();
     for input in candidates {
+        if cancellation.is_cancelled() {
+            return Err(ScheduleError::Cancelled);
+        }
+        budget
+            .charge(WorkCounter::GraphNode, 1)
+            .map_err(|_| ScheduleError::BudgetExhausted)?;
         let hash = input.candidate.change_hash;
-        dependencies.insert(
-            hash,
-            input
-                .candidate
-                .dependencies
-                .iter()
-                .copied()
-                .collect::<BTreeSet<_>>(),
-        );
+        let mut candidate_dependencies = BTreeSet::new();
+        for dependency in input.candidate.dependencies.iter() {
+            if cancellation.is_cancelled() {
+                return Err(ScheduleError::Cancelled);
+            }
+            budget
+                .charge(WorkCounter::GraphEdge, 1)
+                .map_err(|_| ScheduleError::BudgetExhausted)?;
+            candidate_dependencies.insert(*dependency);
+        }
+        dependencies.insert(hash, candidate_dependencies);
         if !input.canonical_control {
             dispositions.insert(hash, ProtocolDisposition::Excluded);
         } else if !input.semantically_valid {
@@ -39,7 +47,7 @@ pub(crate) fn resolve_epoch(
             eligible.push(input.candidate);
         }
     }
-    let schedule = schedule_candidates(eligible, accepted_base.clone(), budget, cancellation)?;
+    let schedule = schedule_candidates(eligible, accepted_base, budget, cancellation)?;
     let _missing_dependencies = schedule.missing_dependencies;
     for hash in schedule.ordered {
         dispositions.insert(hash, ProtocolDisposition::Accepted);
@@ -51,7 +59,7 @@ pub(crate) fn resolve_epoch(
         dispositions.insert(hash, ProtocolDisposition::Invalid);
     }
     loop {
-        let before = dispositions.clone();
+        let mut updates = BTreeMap::new();
         for (hash, candidate_dependencies) in &dependencies {
             if cancellation.is_cancelled() {
                 return Err(ScheduleError::Cancelled);
@@ -59,31 +67,55 @@ pub(crate) fn resolve_epoch(
             budget
                 .charge(WorkCounter::GraphNode, 1)
                 .map_err(|_| ScheduleError::BudgetExhausted)?;
-            let current = before.get(hash).copied();
+            let current = dispositions.get(hash).copied();
             if !matches!(
                 current,
                 Some(ProtocolDisposition::Accepted | ProtocolDisposition::Pending)
             ) {
                 continue;
             }
-            if candidate_dependencies.iter().any(|dependency| {
-                matches!(
-                    before.get(dependency),
+            let mut rejected_dependency = false;
+            let mut all_dependencies_accepted = true;
+            let mut dependency_iter = candidate_dependencies.iter();
+            for _ in 0..candidate_dependencies.len() {
+                if cancellation.is_cancelled() {
+                    return Err(ScheduleError::Cancelled);
+                }
+                budget
+                    .charge(WorkCounter::GraphEdge, 1)
+                    .map_err(|_| ScheduleError::BudgetExhausted)?;
+                let Some(dependency) = dependency_iter.next() else {
+                    return Err(ScheduleError::BudgetExhausted);
+                };
+                rejected_dependency |= matches!(
+                    dispositions.get(dependency),
                     Some(ProtocolDisposition::Invalid | ProtocolDisposition::Excluded)
-                )
-            }) {
-                dispositions.insert(*hash, ProtocolDisposition::Invalid);
-            } else if current == Some(ProtocolDisposition::Pending)
-                && candidate_dependencies.iter().all(|dependency| {
-                    accepted_base.contains(dependency)
-                        || before.get(dependency) == Some(&ProtocolDisposition::Accepted)
-                })
-            {
-                dispositions.insert(*hash, ProtocolDisposition::Accepted);
+                );
+                all_dependencies_accepted &= accepted_base.contains(dependency)
+                    || dispositions.get(dependency) == Some(&ProtocolDisposition::Accepted);
+            }
+            if rejected_dependency {
+                updates.insert(*hash, ProtocolDisposition::Invalid);
+            } else if current == Some(ProtocolDisposition::Pending) && all_dependencies_accepted {
+                updates.insert(*hash, ProtocolDisposition::Accepted);
             }
         }
-        if dispositions == before {
+        if updates.is_empty() {
             break;
+        }
+        let update_count = updates.len();
+        let mut update_iter = updates.into_iter();
+        for _ in 0..update_count {
+            if cancellation.is_cancelled() {
+                return Err(ScheduleError::Cancelled);
+            }
+            budget
+                .charge(WorkCounter::GraphNode, 1)
+                .map_err(|_| ScheduleError::BudgetExhausted)?;
+            let Some((hash, disposition)) = update_iter.next() else {
+                return Err(ScheduleError::BudgetExhausted);
+            };
+            dispositions.insert(hash, disposition);
         }
     }
     Ok(dispositions)
@@ -139,7 +171,7 @@ mod tests {
                     canonical_control: false,
                 },
             ],
-            BTreeSet::new(),
+            &BTreeSet::new(),
             &mut WorkBudget::new(0, 100),
             &NeverCancelled,
         );
@@ -190,7 +222,7 @@ mod tests {
         ];
         let result = resolve_epoch(
             inputs,
-            BTreeSet::new(),
+            &BTreeSet::new(),
             &mut WorkBudget::new(0, 100),
             &NeverCancelled,
         );

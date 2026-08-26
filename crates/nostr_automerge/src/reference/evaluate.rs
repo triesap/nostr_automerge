@@ -9,7 +9,7 @@ use crate::control::epoch_state::{AcceptedEpochState, MeteredAcceptedEpochStateE
 use crate::control::parent_view::ParentEpochView;
 use crate::control::validate::ControlEnvelope;
 use crate::graph::change_candidate::ChangeCandidate;
-use crate::graph::dependency_graph::build_graph;
+use crate::graph::dependency_graph::{MeteredGraphBuildError, build_graph_metered};
 use crate::graph::equivocation::QuarantineError;
 use crate::graph::equivocation::quarantine_equivocation_descendants;
 use crate::graph::schedule::{ScheduleError, schedule_candidates};
@@ -17,7 +17,9 @@ use crate::reference::branch_state::PersistentDeltaMap;
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
 use crate::reference::epoch_engine::{
     AcceptedAtControl, EpochEvaluationError, EpochEvaluationInput, EpochEvaluationResult,
-    PriorChangeKnowledge, PriorKnowledgeState, evaluate_epoch,
+    MeteredEpochEvaluationInputError, PriorChangeKnowledge, PriorKnowledgeState,
+    clone_candidate_maps_metered, collect_eligible_candidates_metered, evaluate_epoch,
+    project_accepted_candidates_metered,
 };
 use crate::{
     CancellationCheck, ChangeHash, Completion, ControllerEquivocationAlert, EvaluationFailure,
@@ -316,12 +318,13 @@ impl BatchChangeMemo {
                 budget
                     .charge(WorkCounter::GraphNode, 1)
                     .map_err(|_| Completion::BudgetExhausted)?;
-                budget
-                    .charge(
-                        WorkCounter::GraphEdge,
-                        u64::try_from(change.candidate.dependencies.len()).unwrap_or(u64::MAX),
-                    )
-                    .map_err(|_| Completion::BudgetExhausted)?;
+                let mut dependencies = change.candidate.dependencies.iter();
+                for _ in 0..change.candidate.dependencies.len() {
+                    charge_prior_knowledge_item(WorkCounter::GraphEdge, budget, cancellation)?;
+                    if dependencies.next().is_none() {
+                        return Err(Completion::BudgetExhausted);
+                    }
+                }
                 let hash = change.candidate.change_hash;
                 memo.candidates
                     .entry(hash)
@@ -774,6 +777,27 @@ enum EpochResolutionError {
     InvalidState,
 }
 
+fn collect_control_candidates_metered(
+    control: &BatchControl,
+    accepted_base: &BTreeSet<ChangeHash>,
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<BTreeMap<ChangeHash, ChangeCandidate>, Completion> {
+    let mut candidates = BTreeMap::new();
+    let mut changes = control.changes.iter();
+    for _ in 0..control.changes.len() {
+        charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;
+        let Some(change) = changes.next() else {
+            return Err(Completion::BudgetExhausted);
+        };
+        let hash = change.candidate.change_hash;
+        if !accepted_base.contains(&hash) {
+            candidates.insert(hash, change.candidate.clone());
+        }
+    }
+    Ok(candidates)
+}
+
 fn resolve_authoritative_epoch(
     control: &BatchControl,
     accepted_base: Arc<AcceptedEpochState>,
@@ -784,51 +808,82 @@ fn resolve_authoritative_epoch(
     cancellation: &impl CancellationCheck,
 ) -> Result<EpochEvaluationResult, EpochResolutionError> {
     let Some(selected) = control.envelope.clone() else {
-        let epoch_inputs = control
-            .changes
-            .iter()
-            .filter(|change| {
-                !accepted_base
-                    .accepted_closure()
-                    .contains(&change.candidate.change_hash)
-            })
-            .map(|change| EpochCandidate {
-                candidate: change.candidate.clone(),
-                semantically_valid: change.legacy_eligible
-                    && change.candidate.dependencies.iter().all(|dependency| {
-                        !prior_change_knowledge
-                            .get(dependency)
-                            .is_some_and(|knowledge| knowledge.is_known_impossible())
-                    }),
+        let local_candidates = collect_control_candidates_metered(
+            control,
+            accepted_base.accepted_closure(),
+            budget,
+            cancellation,
+        )
+        .map_err(epoch_resolution_stop)?;
+        let mut epoch_inputs = Vec::with_capacity(local_candidates.len());
+        let mut change_iter = control.changes.iter();
+        for _ in 0..control.changes.len() {
+            charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)
+                .map_err(epoch_resolution_stop)?;
+            let Some(change) = change_iter.next() else {
+                return Err(EpochResolutionError::InvalidState);
+            };
+            let candidate = &change.candidate;
+            if accepted_base
+                .accepted_closure()
+                .contains(&candidate.change_hash)
+            {
+                continue;
+            }
+            let mut dependencies_valid = true;
+            let mut dependency_iter = candidate.dependencies.iter();
+            for _ in 0..candidate.dependencies.len() {
+                charge_prior_knowledge_item(WorkCounter::GraphEdge, budget, cancellation)
+                    .map_err(epoch_resolution_stop)?;
+                let Some(dependency) = dependency_iter.next() else {
+                    return Err(EpochResolutionError::InvalidState);
+                };
+                if prior_change_knowledge
+                    .get(dependency)
+                    .is_some_and(|knowledge| knowledge.is_known_impossible())
+                {
+                    dependencies_valid = false;
+                }
+            }
+            epoch_inputs.push(EpochCandidate {
+                candidate: candidate.clone(),
+                semantically_valid: change.legacy_eligible && dependencies_valid,
                 canonical_control: !control.frozen,
             });
+        }
         let mut dispositions = resolve_epoch(
             epoch_inputs,
-            accepted_base.accepted_closure().clone(),
+            accepted_base.accepted_closure(),
             budget,
             cancellation,
         )
         .map_err(EpochResolutionError::Schedule)?;
-        let mut all_candidates = accepted_base.accepted_candidates().clone();
-        all_candidates.extend(control.changes.iter().filter_map(|change| {
-            (!accepted_base
-                .accepted_closure()
-                .contains(&change.candidate.change_hash))
-            .then_some((change.candidate.change_hash, change.candidate.clone()))
-        }));
-        let eligible = all_candidates
-            .values()
-            .filter(|candidate| {
-                accepted_base
-                    .accepted_closure()
-                    .contains(&candidate.change_hash)
-                    || dispositions.get(&candidate.change_hash)
-                        == Some(&ProtocolDisposition::Accepted)
+        let all_candidates = clone_candidate_maps_metered(
+            accepted_base.accepted_candidates(),
+            &local_candidates,
+            budget,
+            cancellation,
+        )
+        .map_err(EpochResolutionError::Schedule)?;
+        let eligible = collect_eligible_candidates_metered(
+            &all_candidates,
+            accepted_base.accepted_closure(),
+            &dispositions,
+            budget,
+            cancellation,
+        )
+        .map_err(EpochResolutionError::Schedule)?;
+        let graph = build_graph_metered(&eligible, accepted_base.accepted_closure(), |counter| {
+            charge_prior_knowledge_item(counter, budget, cancellation).map_err(|stop| match stop {
+                Completion::BudgetExhausted => ScheduleError::BudgetExhausted,
+                Completion::Cancelled => ScheduleError::Cancelled,
+                Completion::Complete => ScheduleError::BudgetExhausted,
             })
-            .cloned()
-            .collect::<Vec<_>>();
-        let graph = build_graph(eligible.clone(), accepted_base.accepted_closure().clone())
-            .map_err(|_| EpochResolutionError::InvalidState)?;
+        })
+        .map_err(|error| match error {
+            MeteredGraphBuildError::Work(stop) => EpochResolutionError::Schedule(stop),
+            MeteredGraphBuildError::Graph(_) => EpochResolutionError::InvalidState,
+        })?;
         let quarantine =
             quarantine_equivocation_descendants(eligible, &graph, budget, cancellation).map_err(
                 |error| match error {
@@ -844,19 +899,14 @@ fn resolve_authoritative_epoch(
         for hash in &quarantine.quarantined {
             dispositions.insert(*hash, ProtocolDisposition::Excluded);
         }
-        let mut accepted_candidates = accepted_base.accepted_candidates().clone();
-        accepted_candidates.extend(control.changes.iter().filter_map(|change| {
-            if accepted_base
-                .accepted_closure()
-                .contains(&change.candidate.change_hash)
-            {
-                return None;
-            }
-            (dispositions.get(&change.candidate.change_hash)
-                == Some(&ProtocolDisposition::Accepted))
-            .then_some((change.candidate.change_hash, change.candidate.clone()))
-        }));
-        let accepted_closure = accepted_candidates.keys().copied().collect::<BTreeSet<_>>();
+        let (accepted_closure, accepted_candidates) = project_accepted_candidates_metered(
+            &all_candidates,
+            accepted_base.accepted_closure(),
+            &dispositions,
+            budget,
+            cancellation,
+        )
+        .map_err(EpochResolutionError::Schedule)?;
         if metered_hash_sets_equal(
             &accepted_closure,
             accepted_base.accepted_closure(),
@@ -887,25 +937,32 @@ fn resolve_authoritative_epoch(
             quarantine.alerts,
         ));
     };
-    let epoch_changes = control
-        .changes
-        .iter()
-        .filter(|change| {
-            !accepted_base
-                .accepted_closure()
-                .contains(&change.candidate.change_hash)
-        })
-        .map(|change| change.candidate.clone())
-        .collect::<Vec<_>>();
-    let input = EpochEvaluationInput::new_with_borrowed_raw_and_prior(
+    let epoch_changes = collect_control_candidates_metered(
+        control,
+        accepted_base.accepted_closure(),
+        budget,
+        cancellation,
+    )
+    .map_err(epoch_resolution_stop)?;
+    let input = EpochEvaluationInput::new_with_metered_candidate_map(
         selected,
         accepted_base,
         epoch_changes,
         raw_changes,
         ancestry,
         prior_change_knowledge,
+        |counter| {
+            charge_prior_knowledge_item(counter, budget, cancellation).map_err(|stop| match stop {
+                Completion::BudgetExhausted => ScheduleError::BudgetExhausted,
+                Completion::Cancelled => ScheduleError::Cancelled,
+                Completion::Complete => ScheduleError::BudgetExhausted,
+            })
+        },
     )
-    .map_err(|_| EpochResolutionError::InvalidState)?;
+    .map_err(|error| match error {
+        MeteredEpochEvaluationInputError::Work(stop) => EpochResolutionError::Schedule(stop),
+        MeteredEpochEvaluationInputError::Input(_) => EpochResolutionError::InvalidState,
+    })?;
     evaluate_epoch(&input, budget, cancellation).map_err(|error| match error {
         EpochEvaluationError::Schedule(error) => EpochResolutionError::Schedule(error),
         EpochEvaluationError::Quarantine(QuarantineError::BudgetExhausted) => {
@@ -2055,10 +2112,15 @@ mod tests {
     #[test]
     fn accepted_base_candidates_are_filtered_from_both_epoch_paths() {
         let source = include_str!("evaluate.rs");
-        let exclusion = "!accepted_base\n                    .accepted_closure()\n                    .contains(&change.candidate.change_hash)";
-        assert_eq!(source.matches(exclusion).count(), 1);
-        let selected_exclusion = "!accepted_base\n                .accepted_closure()\n                .contains(&change.candidate.change_hash)";
-        assert_eq!(source.matches(selected_exclusion).count(), 2);
+        let production = source.split("#[cfg(test)]").next().unwrap_or(source);
+        assert_eq!(
+            production
+                .matches("collect_control_candidates_metered(")
+                .count(),
+            3,
+            "one closed helper plus the legacy and selected epoch call sites"
+        );
+        assert!(production.contains("if !accepted_base.contains(&hash)"));
     }
 
     #[test]

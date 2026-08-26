@@ -265,29 +265,24 @@ pub(crate) fn initialize_actor_states_metered<E>(
     changes: &BTreeMap<ChangeHash, ChangeCandidate>,
     mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
 ) -> Result<MeteredActorState, MeteredActorStateError<E>> {
-    if accepted_closure.len() != changes.len() {
-        return Err(MeteredActorStateError::State(
-            ActorStateError::MissingDependency,
-        ));
-    }
     let mut dependencies = BTreeMap::new();
     let mut depended_on = BTreeSet::new();
     let mut remaining_dependencies = BTreeMap::new();
     let mut dependants = BTreeMap::<ChangeHash, BTreeSet<ChangeHash>>::new();
     let mut ready = BTreeSet::new();
-    let mut changes_iter = changes.iter();
-    for _ in 0..changes.len() {
+    let mut closure_iter = accepted_closure.iter();
+    for _ in 0..accepted_closure.len() {
         charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        let Some((hash, candidate)) = changes_iter.next() else {
+        let Some(hash) = closure_iter.next() else {
             return Err(MeteredActorStateError::State(
                 ActorStateError::DependencyCycle,
             ));
         };
-        if !accepted_closure.contains(hash) {
+        let Some(candidate) = changes.get(hash) else {
             return Err(MeteredActorStateError::State(
                 ActorStateError::MissingDependency,
             ));
-        }
+        };
         let mut candidate_dependencies = BTreeSet::new();
         let mut dependency_iter = candidate.dependencies.iter();
         for _ in 0..candidate.dependencies.len() {
@@ -297,7 +292,7 @@ pub(crate) fn initialize_actor_states_metered<E>(
                     ActorStateError::DependencyCycle,
                 ));
             };
-            if !changes.contains_key(&dependency) {
+            if !accepted_closure.contains(&dependency) {
                 return Err(MeteredActorStateError::State(
                     ActorStateError::MissingDependency,
                 ));
@@ -342,19 +337,7 @@ pub(crate) fn initialize_actor_states_metered<E>(
         if candidate.sequence != expected_sequence {
             return Err(MeteredActorStateError::State(ActorStateError::SequenceGap));
         }
-        let mut next_op = 1;
-        let mut dependency_iter = candidate.dependencies.iter();
-        for _ in 0..candidate.dependencies.len() {
-            charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
-            let Some(dependency) = dependency_iter.next() else {
-                return Err(MeteredActorStateError::State(
-                    ActorStateError::DependencyCycle,
-                ));
-            };
-            if let Some(value) = causal_next_by_change.get(dependency) {
-                next_op = next_op.max(*value);
-            }
-        }
+        let next_op = causal_next_by_change.get(&hash).copied().unwrap_or(1);
         let advanced =
             if candidate.operation_count == 0 {
                 if candidate.start_op != next_op {
@@ -407,13 +390,17 @@ pub(crate) fn initialize_actor_states_metered<E>(
                     .ok_or(MeteredActorStateError::State(
                         ActorStateError::DependencyCycle,
                     ))?;
+                causal_next_by_change
+                    .entry(*child)
+                    .and_modify(|value| *value = (*value).max(advanced))
+                    .or_insert(advanced);
                 if *remaining == 0 {
                     ready.insert(*child);
                 }
             }
         }
     }
-    if processed != changes.len() {
+    if processed != accepted_closure.len() {
         return Err(MeteredActorStateError::State(
             ActorStateError::DependencyCycle,
         ));
@@ -432,10 +419,10 @@ pub(crate) mod tests {
 
     use super::{
         ActorStateError, EpochActorState, apply_empty_counter, apply_nonempty_counter,
-        initialize_actor_states, validate_actor_predecessor,
+        initialize_actor_states, initialize_actor_states_metered, validate_actor_predecessor,
     };
     use crate::graph::change_candidate::ChangeCandidate;
-    use crate::{ActorId, ChangeHash, DevicePublicKey, EventId};
+    use crate::{ActorId, ChangeHash, DevicePublicKey, EventId, WorkCounter};
     use std::collections::BTreeMap;
 
     pub(crate) fn candidate(actor: u8, sequence: u64, start: u64, count: u64) -> ChangeCandidate {
@@ -500,6 +487,32 @@ pub(crate) mod tests {
         assert_eq!(
             initialize_actor_states([right, left]),
             Err(ActorStateError::DependencyCycle)
+        );
+    }
+
+    #[test]
+    fn metered_actor_projection_borrows_a_candidate_superset() {
+        let first = candidate(1, 1, 1, 1);
+        let mut ignored = candidate(2, 1, 1, 1);
+        ignored.change_hash = ChangeHash::from_bytes([2; 32]);
+        let closure = BTreeSet::from([first.change_hash]);
+        let candidates = BTreeMap::from([
+            (first.change_hash, first.clone()),
+            (ignored.change_hash, ignored),
+        ]);
+        let mut charges = Vec::new();
+        let result = initialize_actor_states_metered(&closure, &candidates, |counter| {
+            charges.push(counter);
+            Ok::<_, ()>(())
+        });
+        assert!(result.is_ok_and(|projection| {
+            projection.actor_states.len() == 1
+                && projection.actor_states.contains_key(&first.actor)
+                && projection.frontier_heads == closure
+        }));
+        assert_eq!(
+            charges,
+            vec![WorkCounter::GraphNode, WorkCounter::GraphNode]
         );
     }
 

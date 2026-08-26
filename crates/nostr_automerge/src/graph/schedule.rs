@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::change_candidate::ChangeCandidate;
@@ -19,10 +20,11 @@ pub(crate) enum ScheduleError {
 
 pub(crate) fn schedule_candidates(
     candidates: impl IntoIterator<Item = ChangeCandidate>,
-    accepted_base: BTreeSet<ChangeHash>,
+    accepted_base: impl Borrow<BTreeSet<ChangeHash>>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<Schedule, ScheduleError> {
+    let accepted_base = accepted_base.borrow();
     let mut remaining = BTreeMap::new();
     for candidate in candidates {
         if cancellation.is_cancelled() {

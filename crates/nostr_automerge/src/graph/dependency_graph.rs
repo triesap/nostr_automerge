@@ -20,6 +20,100 @@ pub(crate) enum GraphBuildError {
     Limit,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum MeteredGraphBuildError<E> {
+    Work(E),
+    Graph(GraphBuildError),
+}
+
+pub(crate) fn build_graph_metered<E>(
+    candidates: &[ChangeCandidate],
+    accepted_base: &BTreeSet<ChangeHash>,
+    mut charge: impl FnMut(crate::WorkCounter) -> Result<(), E>,
+) -> Result<DependencyGraph, MeteredGraphBuildError<E>> {
+    let mut nodes = BTreeMap::new();
+    let mut edges = 0_u64;
+    let mut candidate_iter = candidates.iter();
+    for _ in 0..candidates.len() {
+        charge(crate::WorkCounter::GraphNode).map_err(MeteredGraphBuildError::Work)?;
+        let Some(candidate) = candidate_iter.next() else {
+            return Err(MeteredGraphBuildError::Graph(GraphBuildError::Limit));
+        };
+        let mut dependencies = BTreeSet::new();
+        let mut dependency_iter = candidate.dependencies.iter();
+        for _ in 0..candidate.dependencies.len() {
+            charge(crate::WorkCounter::GraphEdge).map_err(MeteredGraphBuildError::Work)?;
+            let Some(dependency) = dependency_iter.next().copied() else {
+                return Err(MeteredGraphBuildError::Graph(GraphBuildError::Limit));
+            };
+            if !dependencies.insert(dependency) {
+                return Err(MeteredGraphBuildError::Graph(
+                    GraphBuildError::DuplicateDependency,
+                ));
+            }
+        }
+        if dependencies.contains(&candidate.change_hash) {
+            return Err(MeteredGraphBuildError::Graph(
+                GraphBuildError::SelfDependency,
+            ));
+        }
+        edges = edges
+            .checked_add(
+                u64::try_from(dependencies.len())
+                    .map_err(|_| MeteredGraphBuildError::Graph(GraphBuildError::Limit))?,
+            )
+            .ok_or(MeteredGraphBuildError::Graph(GraphBuildError::Limit))?;
+        if nodes.insert(candidate.change_hash, dependencies).is_some() {
+            return Err(MeteredGraphBuildError::Graph(
+                GraphBuildError::DuplicateNode,
+            ));
+        }
+    }
+
+    let mut dependants = BTreeMap::<ChangeHash, BTreeSet<ChangeHash>>::new();
+    let mut indegrees = BTreeMap::new();
+    let mut node_iter = nodes.iter();
+    for _ in 0..nodes.len() {
+        charge(crate::WorkCounter::GraphNode).map_err(MeteredGraphBuildError::Work)?;
+        let Some((hash, dependencies)) = node_iter.next() else {
+            return Err(MeteredGraphBuildError::Graph(GraphBuildError::Limit));
+        };
+        dependants.entry(*hash).or_default();
+        let mut indegree = 0_u64;
+        let mut dependency_iter = dependencies.iter();
+        for _ in 0..dependencies.len() {
+            charge(crate::WorkCounter::GraphEdge).map_err(MeteredGraphBuildError::Work)?;
+            let Some(dependency) = dependency_iter.next() else {
+                return Err(MeteredGraphBuildError::Graph(GraphBuildError::Limit));
+            };
+            dependants.entry(*dependency).or_default().insert(*hash);
+            if nodes.contains_key(dependency) {
+                indegree = indegree
+                    .checked_add(1)
+                    .ok_or(MeteredGraphBuildError::Graph(GraphBuildError::Limit))?;
+            }
+        }
+        indegrees.insert(*hash, indegree);
+    }
+
+    let mut owned_base = BTreeSet::new();
+    let mut base_iter = accepted_base.iter();
+    for _ in 0..accepted_base.len() {
+        charge(crate::WorkCounter::GraphNode).map_err(MeteredGraphBuildError::Work)?;
+        let Some(hash) = base_iter.next() else {
+            return Err(MeteredGraphBuildError::Graph(GraphBuildError::Limit));
+        };
+        owned_base.insert(*hash);
+    }
+    Ok(DependencyGraph {
+        nodes,
+        dependants,
+        indegrees,
+        accepted_base: owned_base,
+        edge_count: edges,
+    })
+}
+
 pub(crate) fn build_graph(
     candidates: impl IntoIterator<Item = ChangeCandidate>,
     accepted_base: BTreeSet<ChangeHash>,
@@ -103,7 +197,7 @@ fn build(
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
-    use super::{GraphBuildError, build_graph, build_with_limits};
+    use super::{GraphBuildError, build_graph, build_graph_metered, build_with_limits};
     use crate::graph::change_candidate::ChangeCandidate;
     use crate::{ActorId, ChangeHash, DevicePublicKey, EventId};
 
@@ -196,6 +290,37 @@ mod tests {
                 1,
             ),
             Err(GraphBuildError::Limit)
+        );
+    }
+
+    #[test]
+    fn metered_graph_matches_unmetered_topology_and_charges_each_pass() {
+        let candidates = vec![
+            candidate(1, vec![]),
+            candidate(2, vec![1]),
+            candidate(3, vec![1]),
+            candidate(4, vec![2, 3]),
+        ];
+        let expected = build_graph(candidates.clone(), BTreeSet::new());
+        let mut charges = Vec::new();
+        let measured = build_graph_metered(&candidates, &BTreeSet::new(), |counter| {
+            charges.push(counter);
+            Ok::<_, ()>(())
+        });
+        assert_eq!(measured.map_err(|_| GraphBuildError::Limit), expected);
+        assert_eq!(
+            charges
+                .iter()
+                .filter(|counter| **counter == crate::WorkCounter::GraphNode)
+                .count(),
+            8
+        );
+        assert_eq!(
+            charges
+                .iter()
+                .filter(|counter| **counter == crate::WorkCounter::GraphEdge)
+                .count(),
+            8
         );
     }
 }

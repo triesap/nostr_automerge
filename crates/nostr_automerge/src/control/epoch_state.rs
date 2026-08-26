@@ -29,10 +29,10 @@ pub(crate) enum MeteredAcceptedEpochStateError<E> {
 #[derive(Clone, PartialEq, Eq)]
 pub(crate) struct AcceptedEpochState {
     accepted_closure: Arc<BTreeSet<ChangeHash>>,
-    frontier_heads: BTreeSet<ChangeHash>,
+    frontier_heads: Arc<BTreeSet<ChangeHash>>,
     accepted_candidates: BTreeMap<ChangeHash, ChangeCandidate>,
     dependencies: BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
-    actor_states: BTreeMap<ActorId, EpochActorState>,
+    actor_states: Arc<BTreeMap<ActorId, EpochActorState>>,
     writer_contributions: BTreeMap<ActorId, ChangeHash>,
     materialized: Option<MaterializedDocumentView>,
 }
@@ -86,10 +86,10 @@ impl AcceptedEpochState {
             .collect();
         Ok(Self {
             accepted_closure: Arc::new(accepted_closure),
-            frontier_heads,
+            frontier_heads: Arc::new(frontier_heads),
             accepted_candidates,
             dependencies,
-            actor_states,
+            actor_states: Arc::new(actor_states),
             writer_contributions,
             materialized,
         })
@@ -112,10 +112,10 @@ impl AcceptedEpochState {
 
         Ok(Self {
             accepted_closure,
-            frontier_heads: projection.frontier_heads,
+            frontier_heads: Arc::new(projection.frontier_heads),
             accepted_candidates,
             dependencies: projection.dependencies,
-            actor_states: projection.actor_states,
+            actor_states: Arc::new(projection.actor_states),
             writer_contributions: projection.writer_contributions,
             materialized,
         })
@@ -125,8 +125,16 @@ impl AcceptedEpochState {
         &self.accepted_closure
     }
 
+    pub(crate) fn accepted_closure_handle(&self) -> Arc<BTreeSet<ChangeHash>> {
+        Arc::clone(&self.accepted_closure)
+    }
+
     pub(crate) fn frontier_heads(&self) -> &BTreeSet<ChangeHash> {
         &self.frontier_heads
+    }
+
+    pub(crate) fn frontier_heads_handle(&self) -> Arc<BTreeSet<ChangeHash>> {
+        Arc::clone(&self.frontier_heads)
     }
 
     pub(crate) fn accepted_candidates(&self) -> &BTreeMap<ChangeHash, ChangeCandidate> {
@@ -139,6 +147,10 @@ impl AcceptedEpochState {
 
     pub(crate) fn actor_states(&self) -> &BTreeMap<ActorId, EpochActorState> {
         &self.actor_states
+    }
+
+    pub(crate) fn actor_states_handle(&self) -> Arc<BTreeMap<ActorId, EpochActorState>> {
+        Arc::clone(&self.actor_states)
     }
 
     pub(crate) fn writer_contributions(&self) -> &BTreeMap<ActorId, ChangeHash> {
@@ -300,7 +312,7 @@ mod tests {
             prior = Some(candidate.change_hash);
             deep.insert(candidate.change_hash, candidate);
         }
-        let (deep_exact, deep_budget, _) = build_with_limit(deep.clone(), 37, None);
+        let (deep_exact, deep_budget, _) = build_with_limit(deep.clone(), 30, None);
         assert!(deep_exact.is_ok());
         assert_eq!(
             deep_budget.consumed().get(crate::WorkCounter::GraphNode),
@@ -308,9 +320,9 @@ mod tests {
         );
         assert_eq!(
             deep_budget.consumed().get(crate::WorkCounter::GraphEdge),
-            21
+            14
         );
-        let (deep_short, deep_short_budget, _) = build_with_limit(deep, 36, None);
+        let (deep_short, deep_short_budget, _) = build_with_limit(deep, 29, None);
         assert!(matches!(
             deep_short,
             Err(MeteredAcceptedEpochStateError::Work(
@@ -324,7 +336,7 @@ mod tests {
                 + deep_short_budget
                     .consumed()
                     .get(crate::WorkCounter::GraphEdge),
-            36
+            29
         );
 
         let wide = (1_u8..=8)
@@ -348,7 +360,7 @@ mod tests {
             earlier.push(candidate.change_hash);
             dense.insert(candidate.change_hash, candidate);
         }
-        let (dense_exact, dense_budget, _) = build_with_limit(dense.clone(), 100, None);
+        let (dense_exact, dense_budget, _) = build_with_limit(dense.clone(), 72, None);
         assert!(dense_exact.is_ok());
         assert_eq!(
             dense_budget.consumed().get(crate::WorkCounter::GraphNode),
@@ -356,10 +368,10 @@ mod tests {
         );
         assert_eq!(
             dense_budget.consumed().get(crate::WorkCounter::GraphEdge),
-            84
+            56
         );
         let (dense_cancelled, dense_cancelled_budget, observations) =
-            build_with_limit(dense, 100, Some(50));
+            build_with_limit(dense, 72, Some(50));
         assert!(matches!(
             dense_cancelled,
             Err(MeteredAcceptedEpochStateError::Work(Completion::Cancelled))

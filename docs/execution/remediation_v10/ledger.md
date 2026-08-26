@@ -14,12 +14,13 @@ the approved opaque private `step_1290` candidate is
 `9657f53a54c9d33926fd91f6ef891f0625bdfdf4`. `step_1292` is complete at
 `c54c3d847cfadecec60cc980c3453184a4ec70e2`, and `step_1293` is complete at
 `499969e897beec0b90755466e7501ec1d48fc54c`. `step_1294` is complete at
-`beaca83e200d044232d2b7ae91543b5a1ddb501e`.
+`beaca83e200d044232d2b7ae91543b5a1ddb501e`, and `step_1295` is complete at
+`f093da1d6cb9b27c0e425853adc7856992517d45`.
 
 The active sequence is RCLD 95 through RCLD 99 and `step_1288` through
 `step_1307`. RCLD 95 is complete. The sequence is active at RCLD
-96/`step_1295`; the next checkpoint is `step_1296`. Thirteen checkpoints and
-four RCLDs remain until final closure.
+97/`step_1296`; the next checkpoint is `step_1297`. Twelve checkpoints and
+three RCLDs remain until final closure.
 
 `FINDING_094` is open for exact target-local resource ownership across public
 Rust and the independent private TypeScript implementation. `FINDING_095` is
@@ -35,7 +36,7 @@ mutation, NIP submission, and production qualification remain held.
 | Checkpoint range | RCLD | Lane | Status |
 | --- | --- | --- | --- |
 | `step_1288`–`step_1290` | RCLD 95 | authority and executable findings | complete |
-| `step_1291`–`step_1295` | RCLD 96 | shared Rust state and exact traversals | active |
-| `step_1296`–`step_1299` | RCLD 97 | exact reduction and checkpoint ancestry | pending |
+| `step_1291`–`step_1295` | RCLD 96 | shared Rust state and exact traversals | complete |
+| `step_1296`–`step_1299` | RCLD 97 | exact reduction and checkpoint ancestry | active |
 | `step_1300`–`step_1304` | RCLD 98 | private parity and appended conformance | pending |
 | `step_1305`–`step_1307` | RCLD 99 | proof closure and held final decision | pending |

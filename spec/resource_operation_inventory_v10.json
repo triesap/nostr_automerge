@@ -45,21 +45,21 @@
       "id": "accepted_state_reconstruction",
       "path": "crates/nostr_automerge/src/reference/evaluate.rs",
       "function": "accepted_state_for_closure",
-      "operation_class": "target_reconstruction",
+      "operation_class": "item_metered_shared_builder",
       "required_resolution": "metered_shared_builder"
     },
     {
       "id": "authoritative_epoch_preparation",
       "path": "crates/nostr_automerge/src/reference/evaluate.rs",
       "function": "resolve_authoritative_epoch",
-      "operation_class": "target_preparation",
+      "operation_class": "item_metered_projection",
       "required_resolution": "borrow_share_or_charge_each_item"
     },
     {
       "id": "epoch_actor_reconstruction",
       "path": "crates/nostr_automerge/src/reference/epoch_engine.rs",
       "function": "evaluate_epoch",
-      "operation_class": "charge_after_copy",
+      "operation_class": "item_metered_reconstruction",
       "required_resolution": "charge_before_each_candidate_and_actor_item"
     },
     {

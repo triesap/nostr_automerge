@@ -13,7 +13,7 @@ evidence.
 | child transition | `reference::evaluate::charge_control_transitions` and `control::candidate` | `control` before any candidate transition; graph counters for closures | epoch cancellation boundary | metered |
 | control ancestry | `engine::reference_evaluator::build_control_ancestry_index` and incremental canonical ancestry in `reference::evaluate` | `control` per indexed node, memoized vector element, and comparison | every indexed node and epoch boundary | metered; one index plus one incremental canonical vector |
 | frontier closure | `reference::evaluate::charge_control_closures` and `control::frontier` | conservative `graph_node` and `graph_edge` precharge for every closure pass | before nodes and before edges | metered |
-| actor reconstruction | `reference::epoch_engine::charge_actor_reconstruction` and `graph::actor_state` | conservative `graph_node` and `graph_edge` precharge for topology indexing and traversal | before reconstruction and between node/edge charges | metered |
+| actor reconstruction | `graph::actor_state::initialize_actor_states_metered` | exact `graph_node` and `graph_edge` visits for accepted-closure topology indexing and traversal | immediately before each closure/candidate/dependency operation | metered |
 | dependency scheduling | `graph::schedule` and `graph::closure::candidate_dependency_closure` | `graph_node`, `graph_edge` | every queue, set, topology, and adjacency loop | metered |
 | ancestor closure | `graph::closure::ancestor_closure` | `graph_node`, `graph_edge` | every stack and dependency loop | metered |
 | equivocation grouping | `graph::equivocation` | `graph_node`, `graph_edge` | every candidate, carrier, group, affected-set, queue, descendant, and quarantine walk | metered |

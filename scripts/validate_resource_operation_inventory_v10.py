@@ -13,7 +13,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 INVENTORY = ROOT / "spec/resource_operation_inventory_v10.json"
 SCHEMA = ROOT / "tools/validation/resource_operation_inventory_v10.schema.json"
 
-INVENTORY_SHA256 = "7d4d7bea1f995ef48d9718740fef6eac9e8fb3edbb3a99f47b188bbcd19ae86c"
+INVENTORY_SHA256 = "1e7ddf9c89062e08a25c04197cc9fab9d4c9300386f4a2a11812a1ba6f84b0ac"
 SCHEMA_SHA256 = "0c8c4a784ba5b24c04b4081fe05f0de5dcde37523761d6a738abb3f16694d896"
 HARNESS_SHA256 = "4d6f6b67170f8c73be05d213bd01bb9f3c6332410038b34e8eedad2b31b61120"
 TOP_KEYS = ("schema", "status", "findings", "operations", "reproductions", "result")
@@ -112,6 +112,34 @@ METERED_SOURCE_ANCHORS = (
         "crates/nostr_automerge/src/reference/evaluate.rs",
         "crate::control::frontier::accepted_frontier_closure_metered(",
     ),
+    (
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;\n        let Some(hash) = closure_iter.next()",
+    ),
+    (
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;\n            let Some(dependency) = dependency_iter.next().copied()",
+    ),
+    (
+        "crates/nostr_automerge/src/graph/dependency_graph.rs",
+        "charge(crate::WorkCounter::GraphNode).map_err(MeteredGraphBuildError::Work)?;\n        let Some(candidate) = candidate_iter.next()",
+    ),
+    (
+        "crates/nostr_automerge/src/graph/dependency_graph.rs",
+        "charge(crate::WorkCounter::GraphEdge).map_err(MeteredGraphBuildError::Work)?;\n            let Some(dependency) = dependency_iter.next().copied()",
+    ),
+    (
+        "crates/nostr_automerge/src/reference/epoch_engine.rs",
+        "charge_epoch_item(WorkCounter::GraphNode, budget, cancellation)?;\n            let Some((hash, candidate)) = iter.next()",
+    ),
+    (
+        "crates/nostr_automerge/src/reference/evaluate.rs",
+        "charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;\n        let Some(change) = changes.next()",
+    ),
+    (
+        "crates/nostr_automerge/src/reference/epoch.rs",
+        "budget\n                    .charge(WorkCounter::GraphEdge, 1)\n                    .map_err(|_| ScheduleError::BudgetExhausted)?;\n                let Some(dependency) = dependency_iter.next()",
+    ),
 )
 
 
@@ -120,6 +148,20 @@ def validate_metered_sources(sources: dict[str, str]) -> None:
         "crates/nostr_automerge/src/reference/evaluate.rs"
     ]:
         raise InventoryError("metered_source:coarse_precharge")
+    if "fn charge_actor_reconstruction(" in sources[
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+    ]:
+        raise InventoryError("metered_source:actor_precharge")
+    if "let before = dispositions.clone();" in sources[
+        "crates/nostr_automerge/src/reference/epoch.rs"
+    ]:
+        raise InventoryError("metered_source:disposition_clone")
+    for path in (
+        "crates/nostr_automerge/src/reference/epoch_engine.rs",
+        "crates/nostr_automerge/src/reference/evaluate.rs",
+    ):
+        if "build_graph_metered(" not in sources[path]:
+            raise InventoryError(f"metered_source:graph_bypass:{path}")
     for path, anchor in METERED_SOURCE_ANCHORS:
         if anchor not in sources[path]:
             raise InventoryError(f"metered_source:{path}:{anchor[:24]}")
@@ -164,6 +206,16 @@ def source_mutation_self_test() -> int:
     candidate = dict(sources)
     candidate["crates/nostr_automerge/src/reference/evaluate.rs"] += (
         "\nfn charge_control_closures() {}\n"
+    )
+    mutations.append(candidate)
+    candidate = dict(sources)
+    candidate["crates/nostr_automerge/src/reference/epoch_engine.rs"] += (
+        "\nfn charge_actor_reconstruction() {}\n"
+    )
+    mutations.append(candidate)
+    candidate = dict(sources)
+    candidate["crates/nostr_automerge/src/reference/epoch.rs"] += (
+        "\nfn stale_clone() { let before = dispositions.clone(); }\n"
     )
     mutations.append(candidate)
     for index, mutation in enumerate(mutations):
