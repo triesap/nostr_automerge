@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v11_authority.json",
   "cursor": {
     "active_rcld": 101,
-    "active_step": "step_1317",
-    "next_step": "step_1318",
+    "active_step": "step_1318",
+    "next_step": "step_1319",
     "last_planned_step": "step_1363",
-    "remaining_checkpoint_count": 47,
+    "remaining_checkpoint_count": 46,
     "remaining_rcld_count": 8
   },
   "findings": {
@@ -86,6 +86,12 @@
     {
       "step": "step_1316",
       "candidate": "d6d7f4fb9984e72041cafe242aae5c14494ece8d",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1317",
+      "candidate": "3b41019d78a50b25d3d131065b5a94c307663f3b",
       "owner_class": "public",
       "result": "pass"
     }

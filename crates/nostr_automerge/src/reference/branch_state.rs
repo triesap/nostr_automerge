@@ -174,6 +174,15 @@ impl<K: Ord, V> PersistentDeltaMap<K, V> {
     fn local_len(&self) -> usize {
         self.tail.as_ref().map_or(0, |tail| tail.local.len())
     }
+
+    #[cfg(test)]
+    fn shares_tail_with(&self, other: &Self) -> bool {
+        match (&self.tail, &other.tail) {
+            (Some(left), Some(right)) => Arc::ptr_eq(left, right),
+            (None, None) => true,
+            _ => false,
+        }
+    }
 }
 
 impl<K: Ord, V> From<BTreeMap<K, V>> for PersistentDeltaMap<K, V> {
@@ -338,6 +347,77 @@ mod tests {
             assert_eq!(parent.get(&0), Some(&10));
             assert_eq!(parent.get(&1), Some(&11));
             assert_eq!(parent.get(&2), None);
+        }
+    }
+
+    #[test]
+    fn deep_persistent_boundaries_are_exact_and_cancellable() {
+        const DEPTH: u8 = 64;
+        let mut state = PersistentDeltaMap::from_local(BTreeMap::from([(0_u8, 0_u8)]));
+        for key in 1..DEPTH {
+            state = state.extend_local(BTreeMap::from([(key, key)]));
+        }
+
+        for (key, expected, expected_work) in [
+            (DEPTH - 1, Some(&(DEPTH - 1)), 1_usize),
+            (0, Some(&0), usize::from(DEPTH)),
+            (DEPTH, None, usize::from(DEPTH)),
+        ] {
+            for capacity in 0..=expected_work + 1 {
+                let observed = Cell::new(0_usize);
+                let injected = Rc::new("deep lookup stop");
+                let result = state.get_metered(&key, || {
+                    if observed.get() == capacity {
+                        return Err(Rc::clone(&injected));
+                    }
+                    observed.set(observed.get() + 1);
+                    Ok(())
+                });
+                if capacity < expected_work {
+                    assert!(result.is_err());
+                    let Err(returned) = result else { continue };
+                    assert!(Rc::ptr_eq(&returned, &injected));
+                    assert_eq!(observed.get(), capacity);
+                } else {
+                    assert_eq!(result, Ok(expected));
+                    assert_eq!(observed.get(), expected_work);
+                }
+            }
+        }
+
+        let lookup_stages = vec![PersistentDeltaWork::LookupNode; usize::from(DEPTH)];
+        for (key, value, accepted) in [(0, 99, true), (0, 0, false), (DEPTH, DEPTH, true)] {
+            let mut expected_stages = Vec::with_capacity(usize::from(DEPTH) + 2);
+            expected_stages.push(PersistentDeltaWork::PreparedItem);
+            expected_stages.extend_from_slice(&lookup_stages);
+            if accepted {
+                expected_stages.push(PersistentDeltaWork::AcceptedInsert);
+            }
+            for capacity in 0..=expected_stages.len() + 1 {
+                let observed = std::cell::RefCell::new(Vec::new());
+                let injected = Rc::new("deep extension stop");
+                let result =
+                    state.extend_prepared_metered(BTreeMap::from([(key, value)]), |stage| {
+                        if observed.borrow().len() == capacity {
+                            return Err(Rc::clone(&injected));
+                        }
+                        observed.borrow_mut().push(stage);
+                        Ok(())
+                    });
+                if capacity < expected_stages.len() {
+                    assert!(result.is_err());
+                    let Err(returned) = result else { continue };
+                    assert!(Rc::ptr_eq(&returned, &injected));
+                    assert_eq!(&*observed.borrow(), &expected_stages[..capacity]);
+                } else {
+                    assert!(result.is_ok());
+                    let Ok(extended) = result else { continue };
+                    assert_eq!(&*observed.borrow(), &expected_stages);
+                    assert_eq!(extended.get(&key), Some(&value));
+                    assert_eq!(extended.shares_tail_with(&state), !accepted);
+                    assert_eq!(extended.local_len(), 1);
+                }
+            }
         }
     }
 

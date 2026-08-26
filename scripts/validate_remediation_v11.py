@@ -30,6 +30,7 @@ STEP_1313 = "8f5a17d195be7bcb68af78aa20fc99e14934e2e4"
 STEP_1314 = "f2816e457876fb6f0a58f37dcd9ab54970360ef6"
 STEP_1315 = "9f180d4141455522d647579fee049551a415aff9"
 STEP_1316 = "d6d7f4fb9984e72041cafe242aae5c14494ece8d"
+STEP_1317 = "3b41019d78a50b25d3d131065b5a94c307663f3b"
 PLAN_SHA256 = "02348e20f719c0ffceda9a2d8afb9cfbeaafc579a4b9b23ba36cf719b948dc42"
 HARNESS_SHA256 = "c83c5810f2d8b545b11fdbc93eee6572c0e12c324614da91ad48d5089f8cd523"
 REPRODUCTIONS_SHA256 = "48501be122679e5cd0846bd2d002bea3e3356355e086c9148a184b2384a266b6"
@@ -208,7 +209,7 @@ def validate_ledger(value: object) -> None:
         raise ValidationError("ledger:identity")
     if record["authority"] != "spec/remediation_v11_authority.json":
         raise ValidationError("ledger:authority")
-    if record["cursor"] != {"active_rcld": 101, "active_step": "step_1317", "next_step": "step_1318", "last_planned_step": "step_1363", "remaining_checkpoint_count": 47, "remaining_rcld_count": 8}:
+    if record["cursor"] != {"active_rcld": 101, "active_step": "step_1318", "next_step": "step_1319", "last_planned_step": "step_1363", "remaining_checkpoint_count": 46, "remaining_rcld_count": 8}:
         raise ValidationError("ledger:cursor")
     if record["findings"] != {"open": list(FINDING_IDS[:4]), "held": ["FINDING_080"]}:
         raise ValidationError("ledger:findings")
@@ -226,6 +227,7 @@ def validate_ledger(value: object) -> None:
         {"step": "step_1314", "candidate": STEP_1314, "owner_class": "public", "result": "pass"},
         {"step": "step_1315", "candidate": STEP_1315, "owner_class": "public", "result": "pass"},
         {"step": "step_1316", "candidate": STEP_1316, "owner_class": "public", "result": "pass"},
+        {"step": "step_1317", "candidate": STEP_1317, "owner_class": "public", "result": "pass"},
     ]:
         raise ValidationError("ledger:predecessors")
     if tuple(record["holds"]) != HOLDS:
@@ -299,8 +301,8 @@ def mutation_self_test() -> int:
         mutations.append(("reproductions", candidate))
     mutations.append(("plan", PLAN.read_text().replace("`step_1315`–`step_1320`", "`step_1315`–`step_1321`", 1)))
     for mutate in (
-        lambda value: value["cursor"].update(active_step="step_1318"),
-        lambda value: value["cursor"].update(remaining_checkpoint_count=46),
+        lambda value: value["cursor"].update(active_step="step_1319"),
+        lambda value: value["cursor"].update(remaining_checkpoint_count=45),
         lambda value: value["findings"]["open"].reverse(),
         lambda value: value["active_checkpoint_scope"].reverse(),
         lambda value: value["predecessors"][0].update(candidate="0" * 40),
