@@ -59,6 +59,7 @@ VALIDATORS = [
     "generate_distribution_v11.py",
     "validate_appended_conformance_v11.py",
     "validate_resource_ancestry_gate_v10.py",
+    "validate_resource_followup_assurance_v10.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",
@@ -170,6 +171,7 @@ def controlled_files() -> list[pathlib.Path]:
             "reports/final_decision_gate_v10.json",
             "reports/appended_conformance_v11.json",
             "reports/resource_ancestry_gate_v10.json",
+            "reports/resource_followup_assurance_v10.json",
             "scripts/generate_semantic_proof_catalog_final_v10.py",
             "reports/opaque_boundary_gate_v9.json",
             "reports/opaque_resource_gate_v9.json",
@@ -206,6 +208,7 @@ def controlled_files() -> list[pathlib.Path]:
             "tools/validation/distribution_v11.schema.json",
             "tools/validation/resource_ancestry_gate_v10.schema.json",
             "tools/validation/resource_ancestry_proof_catalog_v10.schema.json",
+            "tools/validation/resource_followup_assurance_v10.schema.json",
             "spec/resource_ancestry_proof_catalog_v10.json",
         )
     )

@@ -26,11 +26,13 @@ sequence is complete at `step_1300` candidate
 `d8f1698a15e3821ecf78db84985b8492ac7f0868`, and `step_1303` assurance
 candidate `2d708bb0a7a00523ab5c244fd0a15c96afcf0a4a`.
 The appended public conformance checkpoint `step_1304` is complete at
-`6f561e7ff4b12734e908dff6c98bc8139473052c`.
+`6f561e7ff4b12734e908dff6c98bc8139473052c`, and the exact resource and
+ancestry proof gate `step_1305` is complete at
+`5e3722500c55a52f7fc30e2a168fdca189f03b99`.
 
 The active sequence is RCLD 95 through RCLD 99 and `step_1288` through
 `step_1307`. RCLD 95 through RCLD 97 are complete. The sequence is active at
-RCLD 99/`step_1305`; the next checkpoint is `step_1306`. Three checkpoints and
+RCLD 99/`step_1306`; the next checkpoint is `step_1307`. Two checkpoints and
 one RCLD remain until final closure.
 
 `FINDING_094` and `FINDING_095` have passing public and private implementation
@@ -50,6 +52,13 @@ proofs, the two finding reproductions, the benchmark, the deep/wide scaling
 suite, and the public work-counter matrix. Eleven record mutations and thirty
 source mutations reject missing, reordered, duplicated, stale, copied,
 nested-scan, sequence-ancestry, and relocated-charge claims.
+
+The successor resource and ancestry gate binds twenty-one ordered proof rows,
+executes eighteen exact proof commands, and rejects eighteen catalog/gate plus
+five transcript mutations. The active assurance checkpoint records the exact
+clean public candidate across fifteen local lanes, including the 193-scenario
+two-process distribution, coverage, package, supply-chain, SBOM, boundary,
+leak, and artifact checks. External assurance and publication remain held.
 
 The active governing plan is
 `docs/execution/rcl/nostr_automerge_v1_multi_rcld_v10.md`. NIP, wire, protocol

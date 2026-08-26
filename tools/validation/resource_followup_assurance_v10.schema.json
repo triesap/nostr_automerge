@@ -1,0 +1,25 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://example.invalid/nostr-automerge/resource-followup-assurance-v10.schema.json",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema","checkpoint","candidate","status","publication_status","lanes","tests","resource","conformance","coverage","package","supply_chain","sbom","evidence","held_actions","release_claimed","remote_actions_performed","result_identity_sha256"],
+  "properties":{
+    "schema":{"const":"nostr_automerge.resource_followup_assurance.v10.v1"},
+    "checkpoint":{"const":"step_1306"},
+    "candidate":{"$ref":"#/$defs/commit"},
+    "status":{"const":"pass"},
+    "publication_status":{"const":"held"},
+    "lanes":{"type":"array","minItems":15,"maxItems":15,"items":{"$ref":"#/$defs/result"}},
+    "tests":{"$ref":"#/$defs/object"},"resource":{"$ref":"#/$defs/object"},"conformance":{"$ref":"#/$defs/object"},"coverage":{"$ref":"#/$defs/object"},"package":{"$ref":"#/$defs/object"},"supply_chain":{"$ref":"#/$defs/object"},"sbom":{"$ref":"#/$defs/object"},"evidence":{"$ref":"#/$defs/object"},
+    "held_actions":{"type":"array","minItems":6,"maxItems":6,"items":{"type":"string"}},
+    "release_claimed":{"const":false},"remote_actions_performed":{"const":false},
+    "result_identity_sha256":{"$ref":"#/$defs/sha"}
+  },
+  "$defs":{
+    "sha":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "commit":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "result":{"type":"object","additionalProperties":false,"required":["id","result"],"properties":{"id":{"type":"string"},"result":{"const":"pass"}}},
+    "object":{"type":"object"}
+  }
+}
