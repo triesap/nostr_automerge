@@ -458,17 +458,15 @@ pub(crate) fn evaluate_epoch(
             ),
             EpochAncestry::InvalidOmission(_)
         );
-        let mut prior_dependencies_valid = true;
-        for dependency in candidate.dependencies.iter().chain(&closure.missing) {
-            let knowledge = input.prior_change_knowledge().get_metered(dependency, || {
-                charge_epoch_item(WorkCounter::GraphNode, budget, cancellation)
+        let prior_dependencies_valid = prior_dependencies_valid_metered(
+            input.prior_change_knowledge(),
+            &candidate.dependencies,
+            &closure.missing,
+            |counter| {
+                charge_epoch_item(counter, budget, cancellation)
                     .map_err(EpochEvaluationError::Schedule)
-            })?;
-            if knowledge.is_some_and(|knowledge| knowledge.is_known_impossible()) {
-                prior_dependencies_valid = false;
-                break;
-            }
-        }
+            },
+        )?;
         let prior_semantics_valid = authorized
             && actor_sequence_valid
             && actor_counter_valid
@@ -595,6 +593,41 @@ pub(crate) fn evaluate_epoch(
     ))
 }
 
+fn prior_dependencies_valid_metered<E>(
+    prior: &PriorKnowledgeState,
+    declared: &[ChangeHash],
+    missing: &BTreeSet<ChangeHash>,
+    mut visit: impl FnMut(WorkCounter) -> Result<(), E>,
+) -> Result<bool, E> {
+    let mut declared_items = declared.iter();
+    for _ in 0..declared.len() {
+        visit(WorkCounter::GraphEdge)?;
+        let Some(dependency) = declared_items.next() else {
+            return Ok(false);
+        };
+        if prior
+            .get_metered(dependency, || visit(WorkCounter::GraphNode))?
+            .is_some_and(|knowledge| knowledge.is_known_impossible())
+        {
+            return Ok(false);
+        }
+    }
+    let mut missing_items = missing.iter();
+    for _ in 0..missing.len() {
+        visit(WorkCounter::GraphEdge)?;
+        let Some(dependency) = missing_items.next() else {
+            return Ok(false);
+        };
+        if prior
+            .get_metered(dependency, || visit(WorkCounter::GraphNode))?
+            .is_some_and(|knowledge| knowledge.is_known_impossible())
+        {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
 fn metered_hash_sets_equal(
     left: &BTreeSet<ChangeHash>,
     right: &BTreeSet<ChangeHash>,
@@ -712,8 +745,9 @@ mod tests {
 
     use super::{
         AcceptedAtControl, EpochEvaluationInput, EpochEvaluationInputError, EpochEvaluationResult,
-        PriorChangeKnowledge, clone_candidate_maps_metered, collect_eligible_candidates_metered,
-        evaluate_epoch, project_accepted_candidates_metered,
+        PriorChangeKnowledge, PriorKnowledgeState, clone_candidate_maps_metered,
+        collect_eligible_candidates_metered, evaluate_epoch, prior_dependencies_valid_metered,
+        project_accepted_candidates_metered,
     };
     use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
     use crate::carrier::control::{ValidatedControlCarrier, ValidatedControlContent};
@@ -722,9 +756,53 @@ mod tests {
     use crate::graph::actor_state::EpochActorState;
     use crate::graph::change_candidate::ChangeCandidate;
     use crate::{
-        ActorId, ChangeHash, ControllerPublicKey, DevicePublicKey, DocumentCoordinate, DocumentId,
-        EventId, NeverCancelled, ProtocolDisposition, WorkBudget, WorkCounter,
+        ActorId, ChangeHash, Completion, ControllerPublicKey, DevicePublicKey, DocumentCoordinate,
+        DocumentId, EventId, NeverCancelled, ProtocolDisposition, WorkBudget, WorkCounter,
     };
+
+    #[test]
+    fn dependency_lookup_charges_before_outer_reads_and_persistent_nodes() {
+        const DEPTH: u8 = 64;
+        let target = ChangeHash::from_bytes([0; 32]);
+        let mut prior = PriorKnowledgeState::from(BTreeMap::from([(
+            target,
+            PriorChangeKnowledge::KnownInvalid,
+        )]));
+        for value in 1..DEPTH {
+            prior = prior.extend_local(BTreeMap::from([(
+                ChangeHash::from_bytes([value; 32]),
+                PriorChangeKnowledge::KnownOtherControl,
+            )]));
+        }
+        let exact = 1_usize + usize::from(DEPTH);
+        for (declared, missing) in [
+            (vec![target], BTreeSet::new()),
+            (Vec::new(), BTreeSet::from([target])),
+        ] {
+            for completion in [Completion::BudgetExhausted, Completion::Cancelled] {
+                for capacity in 0..=exact + 1 {
+                    let mut observed = Vec::new();
+                    let result =
+                        prior_dependencies_valid_metered(&prior, &declared, &missing, |counter| {
+                            if observed.len() == capacity {
+                                return Err(completion);
+                            }
+                            observed.push(counter);
+                            Ok(())
+                        });
+                    if capacity < exact {
+                        assert_eq!(result, Err(completion));
+                        assert_eq!(observed.len(), capacity);
+                    } else {
+                        assert_eq!(result, Ok(false));
+                        let mut expected = vec![WorkCounter::GraphEdge];
+                        expected.extend(vec![WorkCounter::GraphNode; usize::from(DEPTH)]);
+                        assert_eq!(observed, expected);
+                    }
+                }
+            }
+        }
+    }
 
     fn control(base_heads: Vec<ChangeHash>) -> ControlEnvelope {
         let controller = ControllerPublicKey::from_bytes([1; 32]);

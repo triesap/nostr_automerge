@@ -60,3 +60,8 @@ At `step_1322`, candidate base-frontier classification uses one closed metered
 boundary. Its trace exposes the head pull, direct parent lookup, and every
 retained prior-knowledge node; N−1, N, N+1, budget, and cancellation preserve
 the exact candidate disposition without hidden deep work.
+
+At `step_1323`, declared and missing dependency items are charged before their
+outer reads, and their prior-state lookups expose every retained node. Public
+referenced-branch disposition lookup likewise charges the branch-map read and
+each persistent node while preserving the first budget or cancellation stop.

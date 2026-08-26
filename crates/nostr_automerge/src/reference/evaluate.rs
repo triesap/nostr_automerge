@@ -1293,10 +1293,51 @@ mod tests {
 
     use super::{
         AcceptedAtControl, BatchChange, BatchChangeMemo, BatchControl, BatchEvaluationReport,
-        BranchEvaluationState, PriorChangeKnowledge, accepted_state_for_closure,
-        charge_prior_knowledge_item, evaluate_batch, prior_change_knowledge,
-        propagate_control_parent_dispositions,
+        BranchEvaluationState, PersistentDeltaMap, PriorChangeKnowledge,
+        accepted_state_for_closure, charge_prior_knowledge_item, empty_batch_report,
+        evaluate_batch, prior_change_knowledge, propagate_control_parent_dispositions,
     };
+
+    #[test]
+    fn referenced_disposition_lookup_exposes_every_persistent_node() {
+        const DEPTH: u8 = 64;
+        let control = EventId::from_bytes([90; 32]);
+        let target = ChangeHash::from_bytes([0; 32]);
+        let mut dispositions =
+            PersistentDeltaMap::from(BTreeMap::from([(target, ProtocolDisposition::Accepted)]));
+        for value in 1..DEPTH {
+            dispositions = dispositions.extend_local(BTreeMap::from([(
+                ChangeHash::from_bytes([value; 32]),
+                ProtocolDisposition::Excluded,
+            )]));
+        }
+        let mut report = empty_batch_report(Completion::Complete, None);
+        report
+            .branch_change_dispositions
+            .insert(control, dispositions);
+        let exact = 1_usize + usize::from(DEPTH);
+
+        for completion in [Completion::BudgetExhausted, Completion::Cancelled] {
+            for capacity in 0..=exact + 1 {
+                let observed = Cell::new(0_usize);
+                let result =
+                    report.referenced_branch_change_disposition_metered(control, target, || {
+                        if observed.get() == capacity {
+                            return Err(completion);
+                        }
+                        observed.set(observed.get() + 1);
+                        Ok(())
+                    });
+                if capacity < exact {
+                    assert_eq!(result, Err(completion));
+                    assert_eq!(observed.get(), capacity);
+                } else {
+                    assert_eq!(result, Ok(Some(ProtocolDisposition::Accepted)));
+                    assert_eq!(observed.get(), exact);
+                }
+            }
+        }
+    }
     use crate::automerge_adapter::decode::decode_change;
     use crate::graph::actor_state::tests::candidate;
     use crate::{

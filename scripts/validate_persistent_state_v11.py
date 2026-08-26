@@ -186,8 +186,28 @@ def validate_sources(sources: dict[str, str]) -> None:
     )
 
     epoch = sources[SOURCES[5]]
-    require(epoch.count("prior_change_knowledge().get_metered(dependency") == 1, "epoch:metered_prior")
-    require("prior_change_knowledge().get(dependency" not in epoch, "epoch:unmetered_prior")
+    dependency_lookup = section(
+        epoch,
+        "fn prior_dependencies_valid_metered<E>(",
+        "\n}\n\nfn metered_hash_sets_equal",
+        "epoch:dependency_lookup",
+    )
+    require_order(
+        dependency_lookup,
+        (
+            "visit(WorkCounter::GraphEdge)?;",
+            "declared_items.next()",
+            ".get_metered(dependency, || visit(WorkCounter::GraphNode))?",
+        ),
+        "epoch:dependency_lookup",
+    )
+    require(
+        dependency_lookup.count(".get_metered(dependency, || visit(WorkCounter::GraphNode))?")
+        == 2,
+        "epoch:dependency_persistent_reads",
+    )
+    require(".get(dependency)" not in dependency_lookup, "epoch:dependency_bypass")
+    require(epoch.count("prior_dependencies_valid_metered(") == 2, "epoch:dependency_boundary")
 
     evaluate = sources[SOURCES[6]]
     require(evaluate.count(".extend_prepared_metered(") == 2, "evaluate:extensions")
@@ -231,7 +251,8 @@ def mutation_self_test(sources: dict[str, str]) -> int:
         replaced(sources, parent, "visit()?;\n        if let Some(knowledge) = self.frontier_knowledge", "if let Some(knowledge) = self.frontier_knowledge"),
         replaced(sources, transition, "#[cfg(test)]\npub(crate) fn validate_base_frontier_antichain(", "pub(crate) fn validate_base_frontier_antichain("),
         replaced(sources, candidate, "frontier_knowledge_metered(hash", "frontier_knowledge(hash"),
-        replaced(sources, epoch, "prior_change_knowledge().get_metered(dependency", "prior_change_knowledge().get(dependency"),
+        replaced(sources, epoch, "visit(WorkCounter::GraphEdge)?;\n        let Some(dependency) = declared_items.next()", "let Some(dependency) = declared_items.next()"),
+        replaced(sources, epoch, ".get_metered(dependency, || visit(WorkCounter::GraphNode))?", ".get(dependency)"),
         replaced(sources, evaluate, "dispositions.get_metered(&hash, visit)?", "dispositions.get(&hash)"),
         replaced(sources, evaluator, "dispositions.contains_key_metered(&carrier.change_hash", "dispositions.contains_key(&carrier.change_hash"),
     ]
