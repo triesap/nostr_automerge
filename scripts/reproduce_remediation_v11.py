@@ -75,8 +75,7 @@ def source_reproduces(row: dict[str, str]) -> bool:
     source = (ROOT / row["path"]).read_text()
     if row["finding"] == "FINDING_097":
         anchors = (
-            "let controls = collected",
-            "let mut control_dispositions = controls",
+            "branch_states = table.states.clone();",
             "let raw_changes = controls",
             "let derived_heads = derive_heads(&accepted_changes, &controls);",
         )

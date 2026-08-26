@@ -45,6 +45,19 @@ pub(crate) struct BatchControl {
     pub(crate) envelope: Option<ControlEnvelope>,
 }
 
+struct InitialBatchMaps {
+    controls: BTreeMap<EventId, BatchControl>,
+    children_by_parent: BTreeMap<Option<EventId>, BTreeSet<EventId>>,
+    control_dispositions: BTreeMap<EventId, ProtocolDisposition>,
+    change_dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum InitialMapBuildError<E> {
+    Work(E),
+    Invariant,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct BatchEvaluationReport {
     pub(crate) canonical_controls: Vec<EventId>,
@@ -108,27 +121,23 @@ pub(crate) fn evaluate_batch_with_prior(
         }
         collected.push(control);
     }
-    let controls = collected
-        .into_iter()
-        .map(|control| (control.event_id, control))
-        .collect::<BTreeMap<_, _>>();
-    let mut by_parent = BTreeMap::<Option<EventId>, BTreeSet<EventId>>::new();
-    for control in controls.values() {
-        by_parent
-            .entry(control.parent)
-            .or_default()
-            .insert(control.event_id);
-    }
-    let mut control_dispositions = controls
-        .keys()
-        .copied()
-        .map(|event_id| (event_id, ProtocolDisposition::Excluded))
-        .collect::<BTreeMap<_, _>>();
-    let mut dispositions = controls
-        .values()
-        .flat_map(|control| control.changes.iter())
-        .map(|change| (change.candidate.change_hash, ProtocolDisposition::Excluded))
-        .collect::<BTreeMap<_, _>>();
+    let initial = match prepare_initial_maps_metered(collected, |counter| {
+        charge_prior_knowledge_item(counter, budget, cancellation)
+    }) {
+        Ok(initial) => initial,
+        Err(InitialMapBuildError::Work(completion)) => {
+            return no_progress_batch_report(completion);
+        }
+        Err(InitialMapBuildError::Invariant) => {
+            return failed_batch_report(EvaluationFailure::InvariantViolation);
+        }
+    };
+    let InitialBatchMaps {
+        controls,
+        children_by_parent: by_parent,
+        mut control_dispositions,
+        change_dispositions: mut dispositions,
+    } = initial;
     let mut canonical_controls = Vec::new();
     let mut integrity_alerts = Vec::new();
     let mut completion = Completion::Complete;
@@ -275,6 +284,69 @@ pub(crate) fn evaluate_batch_with_prior(
         completion,
         failure: None,
     }
+}
+
+fn prepare_initial_maps_metered<E>(
+    collected: Vec<BatchControl>,
+    mut visit: impl FnMut(WorkCounter) -> Result<(), E>,
+) -> Result<InitialBatchMaps, InitialMapBuildError<E>> {
+    let control_count = collected.len();
+    let mut controls = BTreeMap::new();
+    let mut collected_items = collected.into_iter();
+    for _ in 0..control_count {
+        visit(WorkCounter::Control).map_err(InitialMapBuildError::Work)?;
+        let Some(control) = collected_items.next() else {
+            return Err(InitialMapBuildError::Invariant);
+        };
+        controls.insert(control.event_id, control);
+    }
+
+    let mut children_by_parent = BTreeMap::<Option<EventId>, BTreeSet<EventId>>::new();
+    let mut parent_items = controls.values();
+    for _ in 0..controls.len() {
+        visit(WorkCounter::Control).map_err(InitialMapBuildError::Work)?;
+        let Some(control) = parent_items.next() else {
+            return Err(InitialMapBuildError::Invariant);
+        };
+        children_by_parent
+            .entry(control.parent)
+            .or_default()
+            .insert(control.event_id);
+    }
+
+    let mut control_dispositions = BTreeMap::new();
+    let mut control_ids = controls.keys();
+    for _ in 0..controls.len() {
+        visit(WorkCounter::Control).map_err(InitialMapBuildError::Work)?;
+        let Some(event_id) = control_ids.next() else {
+            return Err(InitialMapBuildError::Invariant);
+        };
+        control_dispositions.insert(*event_id, ProtocolDisposition::Excluded);
+    }
+
+    let mut change_dispositions = BTreeMap::new();
+    let mut control_items = controls.values();
+    for _ in 0..controls.len() {
+        visit(WorkCounter::Control).map_err(InitialMapBuildError::Work)?;
+        let Some(control) = control_items.next() else {
+            return Err(InitialMapBuildError::Invariant);
+        };
+        let mut changes = control.changes.iter();
+        for _ in 0..control.changes.len() {
+            visit(WorkCounter::GraphNode).map_err(InitialMapBuildError::Work)?;
+            let Some(change) = changes.next() else {
+                return Err(InitialMapBuildError::Invariant);
+            };
+            change_dispositions.insert(change.candidate.change_hash, ProtocolDisposition::Excluded);
+        }
+    }
+
+    Ok(InitialBatchMaps {
+        controls,
+        children_by_parent,
+        control_dispositions,
+        change_dispositions,
+    })
 }
 
 struct ValidBranchEvaluation {
@@ -1199,6 +1271,7 @@ fn accepted_state_for_closure(
         )?
     {
         let shared = parent.accepted_state_handle();
+        charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;
         cache.insert(Arc::clone(&cache_key), Arc::clone(&shared));
         return Ok(Some(shared));
     }
@@ -1226,6 +1299,7 @@ fn accepted_state_for_closure(
         Err(MeteredAcceptedEpochStateError::State(_)) => return Ok(None),
     };
     let state = Arc::new(state);
+    charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;
     cache.insert(cache_key, Arc::clone(&state));
     Ok(Some(state))
 }
@@ -1348,10 +1422,11 @@ mod tests {
 
     use super::{
         AcceptedAtControl, BatchChange, BatchChangeMemo, BatchControl, BatchEvaluationReport,
-        BranchDeltaError, BranchEvaluationState, PersistentDeltaMap, PriorChangeKnowledge,
-        PriorKnowledgeState, accepted_state_for_closure, charge_prior_knowledge_item,
-        empty_batch_report, evaluate_batch, extend_branch_dispositions_metered,
-        extend_prior_knowledge_metered, prior_change_knowledge,
+        BranchDeltaError, BranchEvaluationState, InitialMapBuildError, PersistentDeltaMap,
+        PriorChangeKnowledge, PriorKnowledgeState, accepted_state_for_closure,
+        charge_prior_knowledge_item, empty_batch_report, evaluate_batch,
+        extend_branch_dispositions_metered, extend_prior_knowledge_metered,
+        prepare_initial_maps_metered, prior_change_knowledge,
         propagate_control_parent_dispositions,
     };
 
@@ -1515,13 +1590,13 @@ mod tests {
     }
 
     #[test]
-    fn accepted_state_cache_is_shared_and_charged_per_key() {
+    fn accepted_state_cache_is_shared_and_charged_per_key_and_insert() {
         let mut retained = candidate(1, 1, 1, 1);
         retained.change_hash = ChangeHash::from_bytes([7; 32]);
         let accepted = BTreeSet::from([retained.change_hash]);
         let candidates = BTreeMap::from([(retained.change_hash, retained)]);
         let mut cache = BTreeMap::new();
-        let mut exact = WorkBudget::new(0, 5);
+        let mut exact = WorkBudget::new(0, 6);
 
         let first = accepted_state_for_closure(
             &accepted,
@@ -1544,10 +1619,10 @@ mod tests {
         .ok()
         .flatten();
         assert!(matches!((&first, &second), (Some(left), Some(right)) if Arc::ptr_eq(left, right)));
-        assert_eq!(exact.consumed().get(WorkCounter::GraphNode), 5);
+        assert_eq!(exact.consumed().get(WorkCounter::GraphNode), 6);
 
         let mut insufficient_cache = BTreeMap::new();
-        let mut insufficient = WorkBudget::new(0, 3);
+        let mut insufficient = WorkBudget::new(0, 4);
         assert!(matches!(
             accepted_state_for_closure(
                 &accepted,
@@ -1559,7 +1634,7 @@ mod tests {
             ),
             Err(Completion::BudgetExhausted)
         ));
-        assert_eq!(insufficient.consumed().get(WorkCounter::GraphNode), 3);
+        assert_eq!(insufficient.consumed().get(WorkCounter::GraphNode), 4);
         assert!(insufficient_cache.is_empty());
 
         let mut cancelled_cache = BTreeMap::new();
@@ -1684,6 +1759,60 @@ mod tests {
             candidate: value,
             legacy_eligible: true,
             raw_change: None,
+        }
+    }
+
+    #[test]
+    fn initial_evaluator_maps_charge_before_every_item() {
+        let controls = || {
+            vec![
+                control(1, None, vec![change(11, 1, 1)]),
+                control(2, Some(1), vec![change(12, 2, 1)]),
+            ]
+        };
+        let expected = [
+            WorkCounter::Control,
+            WorkCounter::Control,
+            WorkCounter::Control,
+            WorkCounter::Control,
+            WorkCounter::Control,
+            WorkCounter::Control,
+            WorkCounter::Control,
+            WorkCounter::GraphNode,
+            WorkCounter::Control,
+            WorkCounter::GraphNode,
+        ];
+
+        for stop in [Completion::BudgetExhausted, Completion::Cancelled] {
+            for capacity in 0..=expected.len() + 1 {
+                let observed = Cell::new(0_usize);
+                let mut counters = Vec::new();
+                let result = prepare_initial_maps_metered(controls(), |counter| {
+                    if observed.get() == capacity {
+                        return Err(stop);
+                    }
+                    counters.push(counter);
+                    observed.set(observed.get() + 1);
+                    Ok(())
+                });
+                if capacity < expected.len() {
+                    assert!(
+                        matches!(result, Err(InitialMapBuildError::Work(value)) if value == stop)
+                    );
+                    assert_eq!(observed.get(), capacity);
+                    assert_eq!(counters, expected[..capacity]);
+                } else {
+                    assert!(result.is_ok());
+                    if let Ok(maps) = result {
+                        assert_eq!(observed.get(), expected.len());
+                        assert_eq!(counters, expected);
+                        assert_eq!(maps.controls.len(), 2);
+                        assert_eq!(maps.children_by_parent.len(), 2);
+                        assert_eq!(maps.control_dispositions.len(), 2);
+                        assert_eq!(maps.change_dispositions.len(), 2);
+                    }
+                }
+            }
         }
     }
 

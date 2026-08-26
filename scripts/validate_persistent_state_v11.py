@@ -210,6 +210,50 @@ def validate_sources(sources: dict[str, str]) -> None:
     require(epoch.count("prior_dependencies_valid_metered(") == 2, "epoch:dependency_boundary")
 
     evaluate = sources[SOURCES[6]]
+    initial_maps = section(
+        evaluate,
+        "fn prepare_initial_maps_metered<E>(",
+        "\n}\n\nstruct ValidBranchEvaluation",
+        "evaluate:initial_maps",
+    )
+    require_order(
+        initial_maps,
+        (
+            "let mut collected_items = collected.into_iter();",
+            "visit(WorkCounter::Control).map_err(InitialMapBuildError::Work)?;",
+            "collected_items.next()",
+            "controls.insert(control.event_id, control);",
+            "let mut parent_items = controls.values();",
+            "parent_items.next()",
+            ".entry(control.parent)",
+            "let mut control_ids = controls.keys();",
+            "control_ids.next()",
+            "control_dispositions.insert(*event_id, ProtocolDisposition::Excluded);",
+            "let mut control_items = controls.values();",
+            "control_items.next()",
+            "changes.next()",
+            "change_dispositions.insert(",
+        ),
+        "evaluate:initial_maps",
+    )
+    accepted_state = section(
+        evaluate,
+        "fn accepted_state_for_closure(",
+        "\n}\n\nfn metered_hash_sets_equal",
+        "evaluate:accepted_state",
+    )
+    require_order(
+        accepted_state,
+        (
+            "let shared = parent.accepted_state_handle();",
+            "charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;",
+            "cache.insert(Arc::clone(&cache_key), Arc::clone(&shared));",
+            "let state = Arc::new(state);",
+            "charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;",
+            "cache.insert(cache_key, Arc::clone(&state));",
+        ),
+        "evaluate:accepted_state_cache_inserts",
+    )
     require(evaluate.count(".extend_prepared_metered(") == 2, "evaluate:extensions")
     require(evaluate.count(".get_metered(") >= 4, "evaluate:lookups")
     prior_extension = section(
@@ -282,6 +326,8 @@ def mutation_self_test(sources: dict[str, str]) -> int:
         replaced(sources, epoch, ".get_metered(dependency, || visit(WorkCounter::GraphNode))?", ".get(dependency)"),
         replaced(sources, evaluate, "dispositions.get_metered(&hash, visit)?", "dispositions.get(&hash)"),
         replaced(sources, evaluate, "visit(WorkCounter::GraphNode).map_err(BranchDeltaError::Work)?;\n            local.entry(*hash).or_insert(*item);", "local.entry(*hash).or_insert(*item);"),
+        replaced(sources, evaluate, "visit(WorkCounter::Control).map_err(InitialMapBuildError::Work)?;\n        let Some(control) = collected_items.next()", "let Some(control) = collected_items.next()"),
+        replaced(sources, evaluate, "charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)?;\n    cache.insert(cache_key", "cache.insert(cache_key"),
         replaced(sources, evaluate, "let branch_change_dispositions = extend_branch_dispositions_metered(", "let branch_change_dispositions = parent_change_dispositions.extend_prepared_metered("),
         replaced(sources, evaluator, "dispositions.contains_key_metered(&carrier.change_hash", "dispositions.contains_key(&carrier.change_hash"),
     ]

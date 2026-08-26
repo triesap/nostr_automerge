@@ -80,3 +80,9 @@ same complete report, and cancellation at every observation is exact.
 five-step candidate chain, eight production call sites, seven source files, six
 enabled boundary tests, and the 21-mutation active source policy. RCLD 102 is
 green; complete target-work ownership remains assigned to RCLD 103.
+
+RCLD 103 starts at `step_1327` by charging initial control indexing, parent
+grouping, control/hash disposition initialization, and accepted-state cache
+publication immediately before each owned item operation. Exact budget and
+cancellation boundaries publish neither partial initial maps nor an uncharged
+accepted-state cache entry.
