@@ -148,3 +148,10 @@ reproduce recursive teardown failure in child processes, while 10,000-way
 delta and 4,096-way ancestry forks drop safely because the retained parent is
 shared. This checkpoint is test-only and intentionally does not alter drop
 behavior before the two implementation checkpoints.
+
+At `step_1336`, `PersistentDeltaMap` owns bounded teardown directly. It
+iteratively unwraps uniquely owned nodes, detaches each parent before the
+node is dropped, and stops at the first shared `Arc`. The 100,000-node delta
+chain now tears down on a 64 KiB stack without modifying a retained shared
+parent. Finding 099 remains open against the independently isolated control
+ancestry chain until `step_1337`.

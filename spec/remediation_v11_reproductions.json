@@ -28,9 +28,9 @@
     {
       "finding": "FINDING_099",
       "kind": "rust_failure",
-      "path": "crates/nostr_automerge/src/reference/branch_state.rs",
-      "test": "reference::branch_state::tests::finding_099_deep_persistent_chain_teardown_is_bounded_stack",
-      "diagnostic": "FINDING_099 reproduced: deep uniquely owned persistent teardown exceeded the constrained stack",
+      "path": "crates/nostr_automerge/src/control/ancestry.rs",
+      "test": "control::ancestry::tests::deep_unique_control_ancestry_teardown_is_bounded_stack",
+      "diagnostic": "deep uniquely owned control ancestry exceeded the constrained stack",
       "expected": "open_failure"
     }
   ],

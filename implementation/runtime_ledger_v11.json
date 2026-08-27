@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v11_authority.json",
   "cursor": {
     "active_rcld": 104,
-    "active_step": "step_1335",
-    "next_step": "step_1336",
+    "active_step": "step_1336",
+    "next_step": "step_1337",
     "last_planned_step": "step_1363",
-    "remaining_checkpoint_count": 29,
+    "remaining_checkpoint_count": 28,
     "remaining_rcld_count": 6
   },
   "findings": {
@@ -28,13 +28,12 @@
     "NCRDT-OWNERSHIP-001"
   ],
   "active_checkpoint_scope": [
-    "crates/nostr_automerge/src/control/ancestry.rs",
     "crates/nostr_automerge/src/reference/branch_state.rs",
     "docs/execution/remediation_v11/ledger.md",
     "implementation/runtime_ledger_v11.json",
     "reports/spec_baseline.txt",
     "scripts/validate_remediation_v11.py",
-    "scripts/validate_target_work_accounting_v11.py"
+    "spec/remediation_v11_reproductions.json"
   ],
   "predecessors": [
     {
@@ -196,6 +195,12 @@
     {
       "step": "step_1334",
       "candidate": "5d5a3ca0cb6133ce14dc55c501b4caefdab88a7c",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1335",
+      "candidate": "ca9870f1ac0a4c70b7df5b9a4c437c06dde61fcd",
       "owner_class": "public",
       "result": "pass"
     }
