@@ -453,7 +453,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "open remediation v11 finding"]
     fn finding_096_deep_persistent_lookup_is_internally_metered() {
         let comparisons = Rc::new(Cell::new(0));
         let key = |value| CountedKey {
@@ -465,11 +464,16 @@ mod tests {
             state = state.extend_local(BTreeMap::from([(key(value), 1)]));
         }
         comparisons.set(0);
-        assert_eq!(state.get(&key(0)), Some(&1));
+        let visits = Cell::new(0_usize);
+        let result = state.get_metered(&key(0), || {
+            visits.set(visits.get() + 1);
+            Ok::<(), ()>(())
+        });
+        assert_eq!(result, Ok(Some(&1)));
         assert_eq!(
-            comparisons.get(),
-            1,
-            "FINDING_096 reproduced: persistent lookup visited multiple retained nodes without an internal charge"
+            (visits.get(), comparisons.get()),
+            (65, 65),
+            "every retained-node lookup must have one immediately preceding work observation"
         );
     }
 

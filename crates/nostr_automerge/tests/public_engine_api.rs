@@ -3881,6 +3881,11 @@ fn cancellation_is_safe_at_every_evaluator_boundary() {
         assert_eq!(report.completion(), Completion::Cancelled, "{cancel_at}");
         assert_eq!(report.failure(), Some(EvaluationFailure::Cancelled));
         assert_exact_no_progress_report(&report);
+        assert_eq!(
+            calls.get(),
+            cancel_at + 1,
+            "no work boundary may be observed after the first positive cancellation"
+        );
     }
 }
 

@@ -133,3 +133,11 @@ collection adapters with charged pulls, comparisons, insertions, and pushes.
 The only remaining unmetered manifest selection is explicitly named as part of
 the sealed `ReportInvariants` finalization reservation; the complete-report
 reservation arithmetic and pass ordering remain exact and unchanged.
+
+`step_1334` closes RCLD 103 with a 15-family operation inventory and 17 exact
+enabled proofs. The end-to-end evaluator now requires exactly one cancellation
+observation at the first positive stop and no later observation, while source
+policy proves that every live target operation is behind such an immediate
+charge or the unchanged sealed finalization reservation. Findings 096 and 097
+therefore have passing reproductions; Findings 098 and 099 remain open, and
+bounded persistent teardown remains explicitly unqualified for RCLD 104.

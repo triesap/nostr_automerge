@@ -7,7 +7,7 @@
       "path": "crates/nostr_automerge/src/reference/branch_state.rs",
       "test": "reference::branch_state::tests::finding_096_deep_persistent_lookup_is_internally_metered",
       "diagnostic": "FINDING_096 reproduced: persistent lookup visited multiple retained nodes without an internal charge",
-      "expected": "open_failure"
+      "expected": "fixed_pass"
     },
     {
       "finding": "FINDING_097",
@@ -15,7 +15,7 @@
       "path": "crates/nostr_automerge/src/reference/evaluate.rs",
       "test": "source::finding_097_post_stop_target_work",
       "diagnostic": "FINDING_097 reproduced: target-sized branch and head work remains outside an immediate charge",
-      "expected": "open_failure"
+      "expected": "fixed_pass"
     },
     {
       "finding": "FINDING_098",

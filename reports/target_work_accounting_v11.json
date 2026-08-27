@@ -1,0 +1,93 @@
+{
+  "schema": "nostr_automerge.target_work_accounting.v11.v1",
+  "status": "pass",
+  "stage": "rust_complete_target_work_accounting",
+  "revision": "draft_2026_08",
+  "imported_gates": {
+    "persistent_core_sha256": "e540248bab985856d9aba407758ed1343c3c0e039f81347d29e4909abdecf695",
+    "persistent_integration_sha256": "d5f7feb42dba21f079cbbcbf7b200cb84f2126dd851e51a0240de63b8eb0b55d"
+  },
+  "candidates": [
+    { "step": "step_1327", "candidate": "e819055185480850d83330631744bb99b44c2c19" },
+    { "step": "step_1328", "candidate": "9d0fb75bd5a617b48fc6927cd945bd3df60622b3" },
+    { "step": "step_1329", "candidate": "9c342f89535b9e0c0a5d3552e82ad043a75195cd" },
+    { "step": "step_1330", "candidate": "1e2215c2398db9d4e02ecbb969afde7686a0437f" },
+    { "step": "step_1331", "candidate": "045a4317436915fed12fcfb8fa8552655bf14a5c" },
+    { "step": "step_1332", "candidate": "61776aea62b838e467b23451b5db766079caf128" },
+    { "step": "step_1333", "candidate": "cdd1218a7eb10e453f47bea980f0d7efbacf995e" }
+  ],
+  "operations": [
+    { "family": "persistent_delta", "mode": "item_metered", "owner": "graph_node", "boundary": "PersistentDeltaMap::*_metered", "proof": "finding_096_deep_persistent_lookup_is_internally_metered" },
+    { "family": "initial_control_parent_hash_maps", "mode": "item_metered", "owner": "control_and_graph_node", "boundary": "prepare_initial_maps_metered", "proof": "initial_evaluator_maps_charge_before_every_item" },
+    { "family": "accepted_state_cache", "mode": "item_metered", "owner": "graph_node", "boundary": "record_control_metered", "proof": "accepted_state_cache_is_shared_and_charged_per_key_and_insert" },
+    { "family": "parent_and_prior_projection", "mode": "item_metered", "owner": "graph_node", "boundary": "ParentEpochView::*_metered", "proof": "parent_result_projection_charges_before_every_read_and_insert" },
+    { "family": "additional_prior_projection", "mode": "item_metered", "owner": "graph_node", "boundary": "project_selected_prior_knowledge_metered", "proof": "additional_prior_projection_charges_before_every_read_and_insert" },
+    { "family": "accepted_base_projection", "mode": "item_metered", "owner": "graph_node", "boundary": "clone_hash_set_metered", "proof": "accepted_base_projection_charges_before_every_read_and_insert" },
+    { "family": "branch_and_result_projection", "mode": "item_metered", "owner": "graph_node", "boundary": "insert_branch_state_metered", "proof": "branch_table_publication_charges_before_each_insert" },
+    { "family": "accepted_candidate_and_raw_maps", "mode": "item_metered", "owner": "graph_node", "boundary": "project_accepted_candidate_maps_metered", "proof": "accepted_candidate_and_raw_projection_charges_each_owned_operation" },
+    { "family": "document_application_and_materialization", "mode": "item_metered", "owner": "decode_byte_and_apply_change", "boundary": "apply_exact_closure_metered", "proof": "automerge_application_and_materialization_are_charged" },
+    { "family": "head_derivation", "mode": "item_metered", "owner": "graph_node_and_graph_edge", "boundary": "derive_heads_metered", "proof": "head_derivation_charges_deep_forked_and_duplicate_inputs_exactly" },
+    { "family": "member_and_dependency_scans", "mode": "item_metered", "owner": "control_and_graph_edge", "boundary": "collect_change_dependencies_metered", "proof": "member_and_dependency_preparation_interleaves_every_owned_operation" },
+    { "family": "selected_manifest", "mode": "item_metered", "owner": "carrier_and_control", "boundary": "selected_manifest_in_metered", "proof": "selected_manifest_metering_owns_every_read_clone_comparison_and_replacement" },
+    { "family": "equivocation_quarantine", "mode": "item_metered", "owner": "graph_node_and_graph_edge", "boundary": "quarantine_equivocation_descendants", "proof": "quarantine_traversal_has_exact_prefix_and_cancellation_boundaries" },
+    { "family": "complete_report_finalization", "mode": "exact_reservation", "owner": "assertion_report_invariants", "boundary": "ReportFinalizationPermit", "proof": "complete_finalization_passes_start_only_after_exact_consumption" },
+    { "family": "typed_stop_fallback", "mode": "constant_time", "owner": "sealed_fallback", "boundary": "reserved_interrupted_report", "proof": "every_interrupted_prefix_uses_only_fallback_and_never_refunds" }
+  ],
+  "source_inventory": [
+    { "path": "crates/nostr_automerge/src/reference/branch_state.rs", "sha256": "33daec27868516b00d97fa4a9155c57ffe5ddf8f2ef7428bb36267435096e7b3" },
+    { "path": "crates/nostr_automerge/src/control/parent_view.rs", "sha256": "99f0edd7e72f5e1b624691750151febc297da5a1dd8710fa839eecbad896d10f" },
+    { "path": "crates/nostr_automerge/src/control/candidate.rs", "sha256": "a7d483d349fd33670da6f48df3122ba103853c4d834f85ae1513940724517db6" },
+    { "path": "crates/nostr_automerge/src/reference/epoch_engine.rs", "sha256": "819af3a1594ccdeb3c464ba5c98b9d470d15d6cbf38e7e3bae783bd6ad885e98" },
+    { "path": "crates/nostr_automerge/src/reference/evaluate.rs", "sha256": "72ce5642c1849992cabf5f6e46b2664a0d3cc33c4b92a8b3e175c35fe677a75f" },
+    { "path": "crates/nostr_automerge/src/engine/reference_evaluator.rs", "sha256": "9a7dab9b8563f3fc8e4f7d8e228692d30e52e949349c620fc16e8559a9310f53" },
+    { "path": "crates/nostr_automerge/src/automerge_adapter/document.rs", "sha256": "5c62ae05bddddedc93d296b57390b2c683a217c3e4017d4885c23c4fb443263c" },
+    { "path": "crates/nostr_automerge/src/carrier/manifest.rs", "sha256": "4f82e1c60486fd930e06eb4580d87a070176b60f3a2ebe34f935a71b144841a6" },
+    { "path": "crates/nostr_automerge/src/evidence/corpus_builder.rs", "sha256": "0bcb14c272d451f8548daf53327ac7d2acf930a77efec9d35b394d229473c948" },
+    { "path": "crates/nostr_automerge/src/evidence/document_view.rs", "sha256": "927b6561b9cb69f2191b47dc1efff85127be760e40eb46bddbdd3e6adb47b10b" },
+    { "path": "crates/nostr_automerge/src/graph/equivocation.rs", "sha256": "b22393f86b862bea2841d96674dd352b779766c143c539e48ceba16d30c8088a" },
+    { "path": "crates/nostr_automerge/src/integrity.rs", "sha256": "3e55b011fdbab6005ea91eebbf9260ebcf424821a40cdb12ac1054bd493fc4e4" },
+    { "path": "crates/nostr_automerge/src/engine/evaluation_report.rs", "sha256": "d54dff4dce0be14442784aa70c90fe07f2315d072e102275ceb44156050b8dcc" },
+    { "path": "crates/nostr_automerge/tests/public_engine_api.rs", "sha256": "40cd466ac0a6920997f4446270e4697f02a2d1904dbb3b9c1451149c40fd358e" },
+    { "path": "scripts/validate_persistent_state_v11.py", "sha256": "6501c795816151fa6f7ebd2b83a1a2b116d88eaec25c28fa5688b1ab64cbcdbf" }
+  ],
+  "source_projection_sha256": "8c64daf8acf34937a6f28728f5e550285c502d8f27067ebd76f30144a244b4f8",
+  "tests": [
+    "finding_096_deep_persistent_lookup_is_internally_metered",
+    "initial_evaluator_maps_charge_before_every_item",
+    "accepted_state_cache_is_shared_and_charged_per_key_and_insert",
+    "parent_result_projection_charges_before_every_read_and_insert",
+    "additional_prior_projection_charges_before_every_read_and_insert",
+    "accepted_base_projection_charges_before_every_read_and_insert",
+    "canonical_branch_projection_charges_before_every_owned_operation",
+    "branch_table_publication_charges_before_each_insert",
+    "accepted_candidate_and_raw_projection_charges_each_owned_operation",
+    "automerge_application_and_materialization_are_charged",
+    "head_derivation_charges_deep_forked_and_duplicate_inputs_exactly",
+    "member_and_dependency_preparation_interleaves_every_owned_operation",
+    "selected_manifest_metering_owns_every_read_clone_comparison_and_replacement",
+    "quarantine_traversal_has_exact_prefix_and_cancellation_boundaries",
+    "complete_finalization_passes_start_only_after_exact_consumption",
+    "every_interrupted_prefix_uses_only_fallback_and_never_refunds",
+    "cancellation_is_safe_at_every_evaluator_boundary"
+  ],
+  "counts": {
+    "candidate_count": 7,
+    "operation_family_count": 15,
+    "source_file_count": 15,
+    "enabled_test_count": 17,
+    "source_policy_mutations": 63,
+    "fixed_reproduction_count": 2,
+    "open_reproduction_count": 2
+  },
+  "properties": {
+    "every_proportional_operation_classified": true,
+    "every_live_target_operation_item_metered": true,
+    "sealed_reservation_broadened": false,
+    "post_stop_observations": 0,
+    "typed_stop_preserved": true,
+    "canonical_no_progress_only": true,
+    "ample_capacity_reports_compatible": true,
+    "bounded_teardown_qualified": false
+  },
+  "result": "pass"
+}

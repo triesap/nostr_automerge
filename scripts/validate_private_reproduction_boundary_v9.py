@@ -74,6 +74,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/persistent_state_core_v11.schema.json",
     "reports/persistent_state_integration_v11.json",
     "tools/validation/persistent_state_integration_v11.schema.json",
+    "reports/target_work_accounting_v11.json",
+    "tools/validation/target_work_accounting_v11.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -81,6 +83,7 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://json-schema.org/draft/2020-12/schema",
         b"https://nostr-automerge.example/schema/persistent_state_core_v11.schema.json",
         b"https://nostr-automerge.example/schema/persistent_state_integration_v11.schema.json",
+        b"https://nostr-automerge.example/schema/target_work_accounting_v11.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -141,6 +144,7 @@ PYTHON_SURFACES = (
     "scripts/validate_persistent_state_v11.py",
     "scripts/validate_persistent_state_core_gate_v11.py",
     "scripts/validate_persistent_state_integration_gate_v11.py",
+    "scripts/validate_target_work_accounting_v11.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -160,6 +164,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "crates/nostr_automerge/src/checkpoint/verify_history.rs",
         "crates/nostr_automerge/src/checkpoint/verify.rs",
         "crates/nostr_automerge/src/carrier/change.rs",
+        "crates/nostr_automerge/src/carrier/manifest.rs",
         "crates/nostr_automerge/src/wire/base64.rs",
         "crates/nostr_automerge/tests/base64_contract.rs",
         "crates/nostr_automerge/src/automerge_adapter/document.rs",
@@ -175,8 +180,10 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "crates/nostr_automerge/src/control/reference_state.rs",
         "crates/nostr_automerge/src/engine/reference_evaluator.rs",
         "crates/nostr_automerge/src/evidence/document_view.rs",
+        "crates/nostr_automerge/src/evidence/corpus_builder.rs",
         "crates/nostr_automerge/src/evidence/indexes.rs",
         "crates/nostr_automerge/src/graph/scaling.rs",
+        "crates/nostr_automerge/src/graph/equivocation.rs",
         "crates/nostr_automerge/src/integrity.rs",
         "crates/nostr_automerge/src/reference/apply.rs",
         "crates/nostr_automerge/src/reference/branch_state.rs",
@@ -328,6 +335,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_persistent_state_integration_gate_v11.py",
         "reports/persistent_state_integration_v11.json",
         "tools/validation/persistent_state_integration_v11.schema.json",
+        "scripts/validate_target_work_accounting_v11.py",
+        "reports/target_work_accounting_v11.json",
+        "tools/validation/target_work_accounting_v11.schema.json",
         "scripts/validate_opaque_boundary_gate_v9.py",
         "scripts/validate_opaque_resource_gate_v9.py",
         "tools/validation/opaque_semantic_proofs_v10.schema.json",
@@ -703,6 +713,10 @@ def validate_source_surfaces() -> None:
                     or (
                         value in {"cargo", "python3"}
                         and relative == "scripts/validate_appended_conformance_v11.py"
+                    )
+                    or (
+                        value in {"cargo", "git", "python3"}
+                        and relative == "scripts/validate_target_work_accounting_v11.py"
                     )
                     or (
                         value in {"cargo", "git", "python3"}
