@@ -1,0 +1,83 @@
+{
+  "title": "nostr_automerge opaque distribution parity v12",
+  "type": "object",
+  "required": ["schema", "status", "checkpoint", "public_predecessor", "manifest_sha256", "candidate_chain", "rust_evidence", "opaque_private_evidence", "comparison", "rcld", "publication_status", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.opaque_distribution_parity.v12.v1"},
+    "status": {"const": "pass"},
+    "checkpoint": {"const": "step_1358"},
+    "public_predecessor": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "candidate_chain": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "required": ["step", "candidate", "owner_class", "result"],
+        "properties": {
+          "step": {"type": "string"},
+          "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "owner_class": {"enum": ["public", "opaque_private"]},
+          "result": {"const": "pass"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "rust_evidence": {
+      "type": "object",
+      "required": ["candidate", "result_identity_sha256", "serialized_run_sha256", "result"],
+      "properties": {
+        "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "serialized_run_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "result": {"const": "pass"}
+      },
+      "additionalProperties": false
+    },
+    "opaque_private_evidence": {
+      "type": "object",
+      "required": ["candidate", "predecessor", "result_identity_sha256", "execution_identity_sha256", "signed_input_projection_sha256", "result"],
+      "properties": {
+        "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "predecessor": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "execution_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "signed_input_projection_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "result": {"const": "pass"}
+      },
+      "additionalProperties": false
+    },
+    "comparison": {
+      "type": "object",
+      "required": ["scenario_count", "signed_input_count", "signed_event_count", "delivery_permutations", "process_count_per_implementation", "canonical_output_sha256", "byte_mismatch_count", "deliberate_expectation_mismatch", "aggregation", "result"],
+      "properties": {
+        "scenario_count": {"const": 198},
+        "signed_input_count": {"const": 5},
+        "signed_event_count": {"const": 55},
+        "delivery_permutations": {"const": 8},
+        "process_count_per_implementation": {"const": 2},
+        "canonical_output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "byte_mismatch_count": {"const": 0},
+        "deliberate_expectation_mismatch": {"const": "rejected_by_both"},
+        "aggregation": {"const": "ordered_fixture_id_and_canonical_report_bytes_length_prefixed_sha256"},
+        "result": {"const": "pass"}
+      },
+      "additionalProperties": false
+    },
+    "rcld": {
+      "type": "object",
+      "required": ["id", "first_step", "last_step", "status"],
+      "properties": {
+        "id": {"const": 107},
+        "first_step": {"const": "step_1352"},
+        "last_step": {"const": "step_1358"},
+        "status": {"const": "complete"}
+      },
+      "additionalProperties": false
+    },
+    "publication_status": {"const": "held"},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

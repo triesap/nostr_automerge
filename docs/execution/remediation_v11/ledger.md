@@ -275,3 +275,18 @@ that fixture ID to a v12-only budget correction while retaining every v11
 file byte; all other scenario data and the expected report are identical.
 Both full process outputs are byte-identical, and a deliberate valid expected
 report mutation is rejected by the runner comparator.
+
+At `step_1357`, the independent implementation imports exactly the five signed
+v12 inputs and evaluates the complete 198-scenario authority in eight delivery
+orders and two processes under its pinned toolchain. Its opaque result binds 55
+signed Events, rejects a deliberate expected-report mismatch, and produces the
+same canonical aggregate identity as Rust without exposing implementation
+paths, commands, or source.
+
+`step_1358` closes RCLD 107 with one public opaque parity record. It binds the
+exact six committed predecessor candidates, both implementation result
+identities, both two-process executions, the closed 198-scenario manifest, and
+the common canonical aggregate. Coordinated candidate/result drift, manifest
+drift, schema opening, byte mismatch, and removal of the publication hold all
+fail closed. Distribution-v12 parity is green; the superseding proof inventory
+and final assurance remain assigned to RCLD 108.

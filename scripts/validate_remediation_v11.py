@@ -69,6 +69,8 @@ STEP_1352 = "892939f83901109b2acc85e7346168d123b32fff"
 STEP_1353 = "561e99287479b7831fb7e9912b1442880f1dcc51"
 STEP_1354 = "983e3ae7cbdd59ba0c0a8aa7bb86e4a6e2da04b6"
 STEP_1355 = "69a9e10050c8674a462a712f0c8215351f4657a7"
+STEP_1356 = "de716296d88b9908e350ec2eb7bc9406573a2a5d"
+STEP_1357 = "5d833e0235efe64f970b9c6a5a7c4e748a031b52"
 PLAN_SHA256 = "02348e20f719c0ffceda9a2d8afb9cfbeaafc579a4b9b23ba36cf719b948dc42"
 HARNESS_SHA256 = "ec6c7b73217b454c2b03b843cbcf124792e4bd026da507a437cf309e5f6a40d3"
 REPRODUCTIONS_SHA256 = "a782519eb39fa33b2b2c7b40c0558140c99298b3e2004f9bb5a689235ead7039"
@@ -99,23 +101,15 @@ HISTORICAL_EVIDENCE = (
 )
 SCOPE = (
     "docs/execution/remediation_v11/ledger.md",
-    "fixtures/distribution/manifest_v12.json",
-    "fixtures/v12/scenarios/resource_followup/canonical_derivation_exact_budget.expected.json",
-    "fixtures/v12/scenarios/resource_followup/canonical_derivation_exact_budget.fixture.json",
-    "fixtures/v12/scenarios/resource_followup/canonical_derivation_exact_budget.input.json",
     "implementation/runtime_ledger_v11.json",
-    "reports/rust_conformance_v12.json",
+    "reports/opaque_distribution_parity_v12.json",
     "reports/spec_baseline.txt",
-    "scripts/generate_distribution_v12.py",
-    "scripts/validate_distribution_v12.py",
+    "scripts/validate_opaque_distribution_parity_v12.py",
     "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v11.py",
-    "scripts/validate_rust_conformance_v12.py",
     "scripts/validate_spec.py",
-    "tools/nostr_automerge_conformance/src/runner.rs",
     "tools/nostr_automerge_xtask/src/validate.rs",
-    "tools/validation/distribution_v12.schema.json",
-    "tools/validation/rust_conformance_v12.schema.json",
+    "tools/validation/opaque_distribution_parity_v12.schema.json",
 )
 
 
@@ -261,7 +255,7 @@ def validate_ledger(value: object) -> None:
         raise ValidationError("ledger:identity")
     if record["authority"] != "spec/remediation_v11_authority.json":
         raise ValidationError("ledger:authority")
-    if record["cursor"] != {"active_rcld": 107, "active_step": "step_1356", "next_step": "step_1357", "last_planned_step": "step_1363", "remaining_checkpoint_count": 8, "remaining_rcld_count": 2}:
+    if record["cursor"] != {"active_rcld": 107, "active_step": "step_1358", "next_step": "step_1359", "last_planned_step": "step_1363", "remaining_checkpoint_count": 5, "remaining_rcld_count": 2}:
         raise ValidationError("ledger:cursor")
     if record["findings"] != {"open": list(FINDING_IDS[:4]), "held": ["FINDING_080"]}:
         raise ValidationError("ledger:findings")
@@ -318,6 +312,8 @@ def validate_ledger(value: object) -> None:
         {"step": "step_1353", "candidate": STEP_1353, "owner_class": "public", "result": "pass"},
         {"step": "step_1354", "candidate": STEP_1354, "owner_class": "public", "result": "pass"},
         {"step": "step_1355", "candidate": STEP_1355, "owner_class": "public", "result": "pass"},
+        {"step": "step_1356", "candidate": STEP_1356, "owner_class": "public", "result": "pass"},
+        {"step": "step_1357", "candidate": STEP_1357, "owner_class": "opaque_private", "result": "pass"},
     ]:
         raise ValidationError("ledger:predecessors")
     if tuple(record["holds"]) != HOLDS:

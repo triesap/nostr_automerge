@@ -1,0 +1,49 @@
+{
+  "schema": "nostr_automerge.opaque_distribution_parity.v12.v1",
+  "status": "pass",
+  "checkpoint": "step_1358",
+  "public_predecessor": "de716296d88b9908e350ec2eb7bc9406573a2a5d",
+  "manifest_sha256": "29d1304aae027d33ff66b39b2cc499cca0e40fb24e5d4f5d749e33bf7dafd7c0",
+  "candidate_chain": [
+    {"step": "step_1352", "candidate": "892939f83901109b2acc85e7346168d123b32fff", "owner_class": "public", "result": "pass"},
+    {"step": "step_1353", "candidate": "561e99287479b7831fb7e9912b1442880f1dcc51", "owner_class": "public", "result": "pass"},
+    {"step": "step_1354", "candidate": "983e3ae7cbdd59ba0c0a8aa7bb86e4a6e2da04b6", "owner_class": "public", "result": "pass"},
+    {"step": "step_1355", "candidate": "69a9e10050c8674a462a712f0c8215351f4657a7", "owner_class": "public", "result": "pass"},
+    {"step": "step_1356", "candidate": "de716296d88b9908e350ec2eb7bc9406573a2a5d", "owner_class": "public", "result": "pass"},
+    {"step": "step_1357", "candidate": "5d833e0235efe64f970b9c6a5a7c4e748a031b52", "owner_class": "opaque_private", "result": "pass"}
+  ],
+  "rust_evidence": {
+    "candidate": "de716296d88b9908e350ec2eb7bc9406573a2a5d",
+    "result_identity_sha256": "e9ab4602f209a03a9366ec9ac2953fcd4d41b9aaab55f94ca6b1e3d5a3158967",
+    "serialized_run_sha256": "27e2febf15d800a81a9b87066ec9a4989d861fa8b8938b73c7a4fc3e87881932",
+    "result": "pass"
+  },
+  "opaque_private_evidence": {
+    "candidate": "5d833e0235efe64f970b9c6a5a7c4e748a031b52",
+    "predecessor": "8250cfae174ab619808cfde1a076299ec6b60923",
+    "result_identity_sha256": "16d10e8a508cb7b2448dd16f371d3260c02a0ac1b5e994485aa26ae6aff24da6",
+    "execution_identity_sha256": "05645677994e5f245443d9742ec6f908546d124d979b39b12b7bee8e6de7d7a6",
+    "signed_input_projection_sha256": "a326bbe748b4dfe0e8e75afcd3c2ef02896d15ad54038b33ef1e3ad889af611d",
+    "result": "pass"
+  },
+  "comparison": {
+    "scenario_count": 198,
+    "signed_input_count": 5,
+    "signed_event_count": 55,
+    "delivery_permutations": 8,
+    "process_count_per_implementation": 2,
+    "canonical_output_sha256": "ac1d326a2fe6fbc3ba495ecd7635250efd72179ac50985392757c1784cf59372",
+    "byte_mismatch_count": 0,
+    "deliberate_expectation_mismatch": "rejected_by_both",
+    "aggregation": "ordered_fixture_id_and_canonical_report_bytes_length_prefixed_sha256",
+    "result": "pass"
+  },
+  "rcld": {
+    "id": 107,
+    "first_step": "step_1352",
+    "last_step": "step_1358",
+    "status": "complete"
+  },
+  "publication_status": "held",
+  "result_identity_sha256": "5f54f900673660f8e41220e1da2ccab265975292ac9dab8e8d31371ae34ea9d7"
+}

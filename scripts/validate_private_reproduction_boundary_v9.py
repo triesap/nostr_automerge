@@ -49,6 +49,7 @@ JSON_RECORDS = (
     "reports/opaque_finalization_v9.json",
     "reports/report_parity_v9.json",
     "reports/opaque_semantic_proofs_v10.json",
+    "reports/opaque_distribution_parity_v12.json",
     "implementation/runtime_ledger_v9.json",
     "tools/validation/opaque_reproduction_v9.schema.json",
     "tools/validation/opaque_checkpoint_v9.schema.json",
@@ -66,6 +67,7 @@ JSON_RECORDS = (
     "tools/validation/opaque_finalization_v9.schema.json",
     "tools/validation/report_parity_v9.schema.json",
     "tools/validation/opaque_semantic_proofs_v10.schema.json",
+    "tools/validation/opaque_distribution_parity_v12.schema.json",
     "tools/validation/runtime_ledger_v9.schema.json",
 )
 PUBLIC_JSON_RECORDS = (
@@ -160,6 +162,7 @@ PYTHON_SURFACES = (
     "scripts/validate_unsupported_identity_contradiction_v11.py",
     "scripts/validate_remediation_v11_authority_gate.py",
     "scripts/validate_rust_conformance_v12.py",
+    "scripts/validate_opaque_distribution_parity_v12.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -295,6 +298,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/evidence_transition_v11.json",
         "reports/remediation_v11_authority_gate.json",
         "reports/rust_conformance_v12.json",
+        "reports/opaque_distribution_parity_v12.json",
         "reports/external_holds_v8.json",
         "reports/spec_baseline.txt",
         "scripts/validate_adrs.py",
@@ -336,6 +340,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_rust_conformance_v9.py",
         "scripts/validate_rust_conformance_v10.py",
         "scripts/validate_rust_conformance_v12.py",
+        "scripts/validate_opaque_distribution_parity_v12.py",
         "scripts/validate_opaque_conformance_v10.py",
         "scripts/validate_signed_conformance_gate_v10.py",
         "scripts/validate_semantic_proof_catalog_v10.py",
@@ -436,6 +441,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/validation/rust_resource_gate_v9.schema.json",
         "tools/validation/rust_conformance_v10.schema.json",
         "tools/validation/rust_conformance_v12.schema.json",
+        "tools/validation/opaque_distribution_parity_v12.schema.json",
         "tools/validation/opaque_conformance_v10.schema.json",
         "tools/validation/signed_conformance_gate_v10.schema.json",
         "tools/validation/semantic_proof_catalog_v10.schema.json",
@@ -707,6 +713,7 @@ def validate_source_surfaces() -> None:
                             "scripts/validate_persistent_state_core_gate_v11.py",
                             "scripts/validate_persistent_state_integration_gate_v11.py",
                             "scripts/validate_remediation_v11_authority_gate.py",
+                            "scripts/validate_opaque_distribution_parity_v12.py",
                             "scripts/validate_runtime_ledger_v9.py",
                         }
                     )
