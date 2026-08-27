@@ -43,6 +43,7 @@ STEP_1326 = "31e9ec2358fe6dd956baf43b7581273deaf5240d"
 STEP_1327 = "e819055185480850d83330631744bb99b44c2c19"
 STEP_1328 = "9d0fb75bd5a617b48fc6927cd945bd3df60622b3"
 STEP_1329 = "9c342f89535b9e0c0a5d3552e82ad043a75195cd"
+STEP_1330 = "1e2215c2398db9d4e02ecbb969afde7686a0437f"
 PLAN_SHA256 = "02348e20f719c0ffceda9a2d8afb9cfbeaafc579a4b9b23ba36cf719b948dc42"
 HARNESS_SHA256 = "ec6c7b73217b454c2b03b843cbcf124792e4bd026da507a437cf309e5f6a40d3"
 REPRODUCTIONS_SHA256 = "48501be122679e5cd0846bd2d002bea3e3356355e086c9148a184b2384a266b6"
@@ -72,15 +73,12 @@ HISTORICAL_EVIDENCE = (
     ("reports/resource_followup_final_decision_v10.json", "43d28679234b7c11878f615faf57fc65f298fa99505cdcc70f2d86022b40dd9c"),
 )
 SCOPE = (
-    "crates/nostr_automerge/src/automerge_adapter/document.rs",
     "crates/nostr_automerge/src/reference/evaluate.rs",
     "docs/execution/remediation_v11/ledger.md",
     "implementation/runtime_ledger_v11.json",
     "reports/spec_baseline.txt",
     "scripts/validate_persistent_state_v11.py",
     "scripts/validate_remediation_v11.py",
-    "tools/nostr_automerge_conformance/src/fixture_generation.rs",
-    "tools/nostr_automerge_conformance/src/runner.rs",
 )
 
 
@@ -225,7 +223,7 @@ def validate_ledger(value: object) -> None:
         raise ValidationError("ledger:identity")
     if record["authority"] != "spec/remediation_v11_authority.json":
         raise ValidationError("ledger:authority")
-    if record["cursor"] != {"active_rcld": 103, "active_step": "step_1330", "next_step": "step_1331", "last_planned_step": "step_1363", "remaining_checkpoint_count": 34, "remaining_rcld_count": 7}:
+    if record["cursor"] != {"active_rcld": 103, "active_step": "step_1331", "next_step": "step_1332", "last_planned_step": "step_1363", "remaining_checkpoint_count": 33, "remaining_rcld_count": 7}:
         raise ValidationError("ledger:cursor")
     if record["findings"] != {"open": list(FINDING_IDS[:4]), "held": ["FINDING_080"]}:
         raise ValidationError("ledger:findings")
@@ -256,6 +254,7 @@ def validate_ledger(value: object) -> None:
         {"step": "step_1327", "candidate": STEP_1327, "owner_class": "public", "result": "pass"},
         {"step": "step_1328", "candidate": STEP_1328, "owner_class": "public", "result": "pass"},
         {"step": "step_1329", "candidate": STEP_1329, "owner_class": "public", "result": "pass"},
+        {"step": "step_1330", "candidate": STEP_1330, "owner_class": "public", "result": "pass"},
     ]:
         raise ValidationError("ledger:predecessors")
     if tuple(record["holds"]) != HOLDS:
@@ -329,8 +328,8 @@ def mutation_self_test() -> int:
         mutations.append(("reproductions", candidate))
     mutations.append(("plan", PLAN.read_text().replace("`step_1315`–`step_1320`", "`step_1315`–`step_1321`", 1)))
     for mutate in (
-        lambda value: value["cursor"].update(active_step="step_1331"),
-        lambda value: value["cursor"].update(remaining_checkpoint_count=33),
+        lambda value: value["cursor"].update(active_step="step_1332"),
+        lambda value: value["cursor"].update(remaining_checkpoint_count=32),
         lambda value: value["findings"]["open"].reverse(),
         lambda value: value["active_checkpoint_scope"].reverse(),
         lambda value: value["predecessors"][0].update(candidate="0" * 40),

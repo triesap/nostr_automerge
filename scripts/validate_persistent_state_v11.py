@@ -448,6 +448,47 @@ def validate_sources(sources: dict[str, str]) -> None:
         ),
         "evaluate:candidate_memo",
     )
+    head_derivation = section(
+        evaluate,
+        "fn derive_heads_metered<E>(",
+        "\n}\n\n#[cfg(test)]",
+        "evaluate:head_derivation",
+    )
+    require("fn derive_heads(" not in evaluate, "evaluate:unmetered_head_derivation")
+    require(
+        head_derivation.count(
+            "visit(WorkCounter::GraphNode).map_err(HeadDerivationError::Work)?;"
+        )
+        == 6,
+        "evaluate:head_derivation:node_charges",
+    )
+    require(
+        head_derivation.count(
+            "visit(WorkCounter::GraphEdge).map_err(HeadDerivationError::Work)?;"
+        )
+        == 1,
+        "evaluate:head_derivation:edge_charges",
+    )
+    require_order(
+        head_derivation,
+        (
+            "let mut accepted_items = accepted.iter();",
+            "accepted_items.next()",
+            "memo.candidates.get(hash)",
+            "let mut dependency_items = candidate.dependencies.iter();",
+            "dependency_items.next()",
+            "dependencies.insert(*dependency);",
+            "let mut heads = BTreeSet::new();",
+            "accepted_items.next()",
+            "dependencies.contains(hash)",
+            "heads.insert(*hash);",
+        ),
+        "evaluate:head_derivation",
+    )
+    require(
+        "match derive_heads_metered(&accepted_changes, &change_memo" in evaluate,
+        "evaluate:head_derivation:production_route",
+    )
     referenced = section(
         evaluate,
         "pub(crate) fn referenced_branch_change_disposition_metered<E>(",
@@ -609,6 +650,49 @@ def mutation_self_test(sources: dict[str, str]) -> int:
             return Err(ExactApplyError::ClosureMismatch);
         };
         let raw""",
+        ),
+        replaced(sources, evaluate, "fn derive_heads_metered<E>(", "fn derive_heads<E>("),
+        replaced(
+            sources,
+            evaluate,
+            "visit(WorkCounter::GraphNode).map_err(HeadDerivationError::Work)?;\n        let Some(hash) = accepted_items.next()",
+            "let Some(hash) = accepted_items.next()",
+        ),
+        replaced(
+            sources,
+            evaluate,
+            "visit(WorkCounter::GraphNode).map_err(HeadDerivationError::Work)?;\n        let Some(candidate) = memo.candidates.get(hash)",
+            "let Some(candidate) = memo.candidates.get(hash)",
+        ),
+        replaced(
+            sources,
+            evaluate,
+            "visit(WorkCounter::GraphEdge).map_err(HeadDerivationError::Work)?;\n            let Some(dependency) = dependency_items.next()",
+            "let Some(dependency) = dependency_items.next()",
+        ),
+        replaced(
+            sources,
+            evaluate,
+            "visit(WorkCounter::GraphNode).map_err(HeadDerivationError::Work)?;\n            dependencies.insert(*dependency);",
+            "dependencies.insert(*dependency);",
+        ),
+        replaced(
+            sources,
+            evaluate,
+            "visit(WorkCounter::GraphNode).map_err(HeadDerivationError::Work)?;\n        if dependencies.contains(hash)",
+            "if dependencies.contains(hash)",
+        ),
+        replaced(
+            sources,
+            evaluate,
+            "visit(WorkCounter::GraphNode).map_err(HeadDerivationError::Work)?;\n        heads.insert(*hash);",
+            "heads.insert(*hash);",
+        ),
+        replaced(
+            sources,
+            evaluate,
+            "match derive_heads_metered(&accepted_changes, &change_memo",
+            "match derive_heads_metered(&BTreeSet::new(), &change_memo",
         ),
     ]
     missing = copy.deepcopy(sources)

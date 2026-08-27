@@ -111,3 +111,10 @@ membership, decode/application, head collection, and final serialization at
 their actual operations. Exact candidate/raw stop tests preserve the first
 typed cause; fixture bytes remain unchanged while the checked permutation
 budgets record only the newly visible work.
+
+At `step_1331`, head derivation consumes the already-owned accepted-hash and
+candidate views through an exact metered boundary. Every accepted item,
+candidate lookup, dependency edge, dependency-set insertion, membership test,
+and head insertion is charged immediately before the operation. Deep chains,
+forked dependencies, duplicate dependency references, and empty histories pass
+the exact N-1/N/N+1 and cancellation matrix without changing complete reports.

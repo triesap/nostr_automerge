@@ -262,7 +262,17 @@ pub(crate) fn evaluate_batch_with_prior_and_control_dispositions(
     } else {
         None
     };
-    let derived_heads = derive_heads(&accepted_changes, &controls);
+    let derived_heads = match derive_heads_metered(&accepted_changes, &change_memo, |counter| {
+        charge_prior_knowledge_item(counter, budget, cancellation)
+    }) {
+        Ok(heads) => heads,
+        Err(HeadDerivationError::Work(stop)) => {
+            return no_progress_batch_report(stop);
+        }
+        Err(HeadDerivationError::Invariant) => {
+            return failed_batch_report(EvaluationFailure::InvariantViolation);
+        }
+    };
     let (heads, materialized_document) = match materialized {
         Some(AppliedDocument {
             heads,
@@ -1654,17 +1664,54 @@ fn empty_batch_report(
     }
 }
 
-fn derive_heads(
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum HeadDerivationError<E> {
+    Work(E),
+    Invariant,
+}
+
+fn derive_heads_metered<E>(
     accepted: &BTreeSet<ChangeHash>,
-    controls: &BTreeMap<EventId, BatchControl>,
-) -> BTreeSet<ChangeHash> {
-    let dependencies = controls
-        .values()
-        .flat_map(|control| control.changes.iter())
-        .filter(|change| accepted.contains(&change.candidate.change_hash))
-        .flat_map(|change| change.candidate.dependencies.iter().copied())
-        .collect::<BTreeSet<_>>();
-    accepted.difference(&dependencies).copied().collect()
+    memo: &BatchChangeMemo,
+    mut visit: impl FnMut(WorkCounter) -> Result<(), E>,
+) -> Result<BTreeSet<ChangeHash>, HeadDerivationError<E>> {
+    let mut dependencies = BTreeSet::new();
+    let mut accepted_items = accepted.iter();
+    for _ in 0..accepted.len() {
+        visit(WorkCounter::GraphNode).map_err(HeadDerivationError::Work)?;
+        let Some(hash) = accepted_items.next() else {
+            return Err(HeadDerivationError::Invariant);
+        };
+        visit(WorkCounter::GraphNode).map_err(HeadDerivationError::Work)?;
+        let Some(candidate) = memo.candidates.get(hash) else {
+            return Err(HeadDerivationError::Invariant);
+        };
+        let mut dependency_items = candidate.dependencies.iter();
+        for _ in 0..candidate.dependencies.len() {
+            visit(WorkCounter::GraphEdge).map_err(HeadDerivationError::Work)?;
+            let Some(dependency) = dependency_items.next() else {
+                return Err(HeadDerivationError::Invariant);
+            };
+            visit(WorkCounter::GraphNode).map_err(HeadDerivationError::Work)?;
+            dependencies.insert(*dependency);
+        }
+    }
+
+    let mut heads = BTreeSet::new();
+    let mut accepted_items = accepted.iter();
+    for _ in 0..accepted.len() {
+        visit(WorkCounter::GraphNode).map_err(HeadDerivationError::Work)?;
+        let Some(hash) = accepted_items.next() else {
+            return Err(HeadDerivationError::Invariant);
+        };
+        visit(WorkCounter::GraphNode).map_err(HeadDerivationError::Work)?;
+        if dependencies.contains(hash) {
+            continue;
+        }
+        visit(WorkCounter::GraphNode).map_err(HeadDerivationError::Work)?;
+        heads.insert(*hash);
+    }
+    Ok(heads)
 }
 
 #[cfg(test)]
@@ -1678,7 +1725,7 @@ mod tests {
         BranchDeltaError, BranchEvaluationState, BranchTableEvaluation, InitialMapBuildError,
         PersistentDeltaMap, PriorChangeKnowledge, PriorKnowledgeState, ValidBranchEvaluation,
         accepted_state_for_closure, charge_prior_knowledge_item, clone_hash_set_metered,
-        derive_canonical_branch, empty_batch_report, evaluate_batch,
+        derive_canonical_branch, derive_heads_metered, empty_batch_report, evaluate_batch,
         extend_branch_dispositions_metered, extend_prior_knowledge_metered,
         insert_branch_state_metered, insert_valid_branch_metered, prepare_initial_maps_metered,
         prior_change_knowledge, project_accepted_candidate_maps_metered,
@@ -2953,17 +3000,124 @@ mod tests {
 
     #[test]
     fn applied_head_agreement_is_required() {
-        let accepted = BTreeSet::from([ChangeHash::from_bytes([1; 32])]);
-        let controls = std::collections::BTreeMap::from([(
-            EventId::from_bytes([2; 32]),
-            control(2, None, vec![change(1, 1, 1)]),
-        )]);
-        let derived = super::derive_heads(&accepted, &controls);
+        let candidate = change(1, 1, 1).candidate;
+        let accepted = BTreeSet::from([candidate.change_hash]);
+        let memo = BatchChangeMemo {
+            candidates: BTreeMap::from([(candidate.change_hash, candidate)]),
+            ..BatchChangeMemo::default()
+        };
+        let derived = derive_heads_metered(&accepted, &memo, |_| Ok::<(), ()>(()))
+            .unwrap_or_else(|_| unreachable!("complete head derivation is valid"));
         assert!(super::applied_heads_agree(&derived, &accepted));
         assert!(!super::applied_heads_agree(
             &derived,
             &BTreeSet::from([ChangeHash::from_bytes([9; 32])])
         ));
+    }
+
+    #[test]
+    fn head_derivation_charges_deep_forked_and_duplicate_inputs_exactly() {
+        let mut first = change(1, 1, 1).candidate;
+        let mut second = change(2, 1, 2).candidate;
+        let mut third = change(3, 2, 1).candidate;
+        let mut fourth = change(4, 1, 3).candidate;
+        first.dependencies = Vec::new().into();
+        second.dependencies = vec![first.change_hash].into();
+        third.dependencies = vec![first.change_hash].into();
+        fourth.dependencies = vec![second.change_hash, third.change_hash].into();
+        let accepted = BTreeSet::from([
+            first.change_hash,
+            second.change_hash,
+            third.change_hash,
+            fourth.change_hash,
+        ]);
+        let expected_heads = BTreeSet::from([fourth.change_hash]);
+        let memo = BatchChangeMemo {
+            candidates: [first, second, third, fourth]
+                .into_iter()
+                .map(|candidate| (candidate.change_hash, candidate))
+                .collect(),
+            ..BatchChangeMemo::default()
+        };
+        let expected = [
+            WorkCounter::GraphNode,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphEdge,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphEdge,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphEdge,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphEdge,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphNode,
+            WorkCounter::GraphNode,
+        ];
+
+        for capacity in [expected.len() - 1, expected.len(), expected.len() + 1] {
+            let visits = Cell::new(0_usize);
+            let mut budget = WorkBudget::new(0, u64::try_from(capacity).unwrap_or(u64::MAX));
+            let result = derive_heads_metered(&accepted, &memo, |counter| {
+                assert_eq!(counter, expected[visits.get()]);
+                budget
+                    .charge(counter, 1)
+                    .map_err(|_| Completion::BudgetExhausted)?;
+                visits.set(visits.get() + 1);
+                Ok(())
+            });
+            if capacity < expected.len() {
+                assert_eq!(
+                    result,
+                    Err(super::HeadDerivationError::Work(
+                        Completion::BudgetExhausted
+                    ))
+                );
+                assert_eq!(visits.get(), capacity);
+            } else {
+                assert_eq!(result, Ok(expected_heads.clone()));
+                assert_eq!(visits.get(), expected.len());
+            }
+        }
+
+        for cancel_at in 0..expected.len() {
+            let visits = Cell::new(0_usize);
+            let result = derive_heads_metered(&accepted, &memo, |counter| {
+                assert_eq!(counter, expected[visits.get()]);
+                if visits.get() == cancel_at {
+                    return Err(Completion::Cancelled);
+                }
+                visits.set(visits.get() + 1);
+                Ok(())
+            });
+            assert_eq!(
+                result,
+                Err(super::HeadDerivationError::Work(Completion::Cancelled))
+            );
+            assert_eq!(visits.get(), cancel_at);
+        }
+
+        let empty_visits = Cell::new(0_usize);
+        assert_eq!(
+            derive_heads_metered(&BTreeSet::new(), &memo, |_| {
+                empty_visits.set(empty_visits.get() + 1);
+                Ok::<(), ()>(())
+            }),
+            Ok(BTreeSet::new())
+        );
+        assert_eq!(empty_visits.get(), 0);
     }
 
     #[test]
