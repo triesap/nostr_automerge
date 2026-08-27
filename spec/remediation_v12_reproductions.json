@@ -27,6 +27,24 @@
       "test": "graph::actor_state::tests::finding_100_empty_frontier_work_reproduction",
       "diagnostic": "unmetered empty-frontier allocation remains",
       "expected": "open_failure"
+    },
+    {
+      "finding": "FINDING_100",
+      "family": "epoch_ancestry",
+      "kind": "rust_failure",
+      "path": "crates/nostr_automerge/src/graph/epoch.rs",
+      "test": "graph::epoch::tests::finding_100_epoch_ancestry_work_reproduction",
+      "diagnostic": "unmetered epoch ancestry materialization remains",
+      "expected": "open_failure"
+    },
+    {
+      "finding": "FINDING_100",
+      "family": "epoch_writer_authorization",
+      "kind": "rust_failure",
+      "path": "crates/nostr_automerge/src/reference/epoch_engine.rs",
+      "test": "reference::epoch_engine::tests::finding_100_epoch_writer_authorization_work_reproduction",
+      "diagnostic": "unmetered epoch writer authorization scan remains",
+      "expected": "open_failure"
     }
   ],
   "result": "pass"

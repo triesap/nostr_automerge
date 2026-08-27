@@ -33,6 +33,8 @@ HOLDS = [
 ]
 ACTIVE_SCOPE = [
     "crates/nostr_automerge/src/graph/actor_state.rs",
+    "crates/nostr_automerge/src/graph/epoch.rs",
+    "crates/nostr_automerge/src/reference/epoch_engine.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
     "reports/spec_baseline.txt",
@@ -115,39 +117,42 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 109, "active_step": "step_1367", "next_step": "step_1368", "last_planned_step": "step_1419", "remaining_checkpoint_count": 52, "remaining_rcld_count": 7}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 109, "active_step": "step_1368", "next_step": "step_1369", "last_planned_step": "step_1419", "remaining_checkpoint_count": 51, "remaining_rcld_count": 7}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], [], "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 5:
+    if not isinstance(predecessors, list) or len(predecessors) != 6:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
     require_equal(predecessors[2], {"step": "step_1364", "candidate": "22cb8f0c77637647ce485e4d6f206316113e429a", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1364")
     require_equal(predecessors[3], {"step": "step_1365", "candidate": "4e6b9e2c189d407b29a478c5445405b922789aa0", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1365")
     require_equal(predecessors[4], {"step": "step_1366", "candidate": "00fca7681ba079e98ebf8d116bc7fa12926d1a87", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1366")
+    require_equal(predecessors[5], {"step": "step_1367", "candidate": "1de9769b36b5fa610483c3f0ffcd0e7e6ee2768c", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1367")
 
 
 def validate_reproductions(reproductions: object) -> None:
     record = require_keys(reproductions, ["schema", "cases", "result"], "reproductions")
     require_equal(record["schema"], "nostr_automerge.remediation_v12_reproductions.v1", "reproductions:schema")
     rows = record["cases"]
-    if not isinstance(rows, list) or len(rows) != 3:
+    if not isinstance(rows, list) or len(rows) != 5:
         raise EvidenceError("reproductions:rows")
     expected = [
-        ("actor_predecessor", "graph::actor_state::tests::finding_100_actor_predecessor_scan_reproduction", "unmetered actor predecessor collection remains"),
-        ("causal_next_op", "graph::actor_state::tests::finding_100_causal_next_op_scan_reproduction", "unmetered causal next-op scan remains"),
-        ("empty_frontier", "graph::actor_state::tests::finding_100_empty_frontier_work_reproduction", "unmetered empty-frontier allocation remains"),
+        ("actor_predecessor", "crates/nostr_automerge/src/graph/actor_state.rs", "graph::actor_state::tests::finding_100_actor_predecessor_scan_reproduction", "unmetered actor predecessor collection remains"),
+        ("causal_next_op", "crates/nostr_automerge/src/graph/actor_state.rs", "graph::actor_state::tests::finding_100_causal_next_op_scan_reproduction", "unmetered causal next-op scan remains"),
+        ("empty_frontier", "crates/nostr_automerge/src/graph/actor_state.rs", "graph::actor_state::tests::finding_100_empty_frontier_work_reproduction", "unmetered empty-frontier allocation remains"),
+        ("epoch_ancestry", "crates/nostr_automerge/src/graph/epoch.rs", "graph::epoch::tests::finding_100_epoch_ancestry_work_reproduction", "unmetered epoch ancestry materialization remains"),
+        ("epoch_writer_authorization", "crates/nostr_automerge/src/reference/epoch_engine.rs", "reference::epoch_engine::tests::finding_100_epoch_writer_authorization_work_reproduction", "unmetered epoch writer authorization scan remains"),
     ]
-    for index, (family, test, diagnostic) in enumerate(expected):
+    for index, (family, path, test, diagnostic) in enumerate(expected):
         row = require_keys(rows[index], ["finding", "family", "kind", "path", "test", "diagnostic", "expected"], f"reproductions:row:{index}")
         require_equal(row, {
             "finding": "FINDING_100",
             "family": family,
             "kind": "rust_failure",
-            "path": "crates/nostr_automerge/src/graph/actor_state.rs",
+            "path": path,
             "test": test,
             "diagnostic": diagnostic,
             "expected": "open_failure",
@@ -210,7 +215,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1369"),
+        ("cursor", "next_step", "step_1370"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
     ):
@@ -275,7 +280,7 @@ def main() -> None:
     mutation_count = mutation_self_test(authority, ledger, findings, reproductions)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
-    print("- active=RCLD109/step_1367")
+    print("- active=RCLD109/step_1368")
 
 
 if __name__ == "__main__":

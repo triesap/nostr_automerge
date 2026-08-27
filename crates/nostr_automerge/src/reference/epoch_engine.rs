@@ -750,7 +750,7 @@ mod tests {
         project_accepted_candidates_metered,
     };
     use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
-    use crate::carrier::control::{ValidatedControlCarrier, ValidatedControlContent};
+    use crate::carrier::control::{DeviceGrant, ValidatedControlCarrier, ValidatedControlContent};
     use crate::control::epoch_state::{AcceptedEpochState, AcceptedEpochStateError};
     use crate::control::validate::ControlEnvelope;
     use crate::graph::actor_state::EpochActorState;
@@ -878,6 +878,52 @@ mod tests {
         ] {
             assert!(impossible.is_known_impossible());
         }
+    }
+
+    #[test]
+    #[ignore = "remediation v12 expected failure: unmetered writer authorization scan"]
+    fn finding_100_epoch_writer_authorization_work_reproduction() {
+        let coordinate = DocumentCoordinate::new(
+            ControllerPublicKey::from_bytes([1; 32]),
+            DocumentId::from_bytes([2; 32]),
+        );
+        let author = DevicePublicKey::from_bytes([200; 32]);
+        let actor = ActorId::derive(coordinate, author);
+        let member = |value: u8, roles: Vec<crate::types::role::Role>| {
+            let device = DevicePublicKey::from_bytes([value; 32]);
+            DeviceGrant {
+                account: None,
+                actor: ActorId::derive(coordinate, device),
+                device,
+                roles,
+            }
+        };
+        let matches = |members: &[DeviceGrant]| {
+            members.iter().any(|entry| {
+                entry.actor == actor
+                    && entry.device == author
+                    && entry.roles.contains(&crate::types::role::Role::Write)
+            })
+        };
+
+        let absent = (1..=64)
+            .map(|value| member(value, vec![crate::types::role::Role::Checkpoint]))
+            .collect::<Vec<_>>();
+        assert!(!matches(&absent));
+
+        let mut early = absent.clone();
+        early.insert(0, member(200, vec![crate::types::role::Role::Write]));
+        assert!(matches(&early));
+
+        let mut final_match = absent;
+        final_match.push(member(200, vec![crate::types::role::Role::Write]));
+        assert!(matches(&final_match));
+
+        let source = include_str!("epoch_engine.rs");
+        assert!(
+            !source.contains("selected.content().members.iter().any"),
+            "unmetered epoch writer authorization scan remains"
+        );
     }
 
     #[test]

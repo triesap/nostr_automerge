@@ -63,4 +63,32 @@ mod tests {
             EpochAncestry::PendingMissing(vec![hash(9)])
         );
     }
+
+    #[test]
+    #[ignore = "remediation v12 expected failure: unmetered ancestry materialization"]
+    fn finding_100_epoch_ancestry_work_reproduction() {
+        let base = (1..=64).map(hash).collect::<BTreeSet<_>>();
+        assert_eq!(
+            validate_epoch_ancestry(&base, &base, &BTreeSet::new()),
+            EpochAncestry::Valid
+        );
+
+        let closure = (1..64).map(hash).collect::<BTreeSet<_>>();
+        assert_eq!(
+            validate_epoch_ancestry(&base, &closure, &BTreeSet::new()),
+            EpochAncestry::InvalidOmission(vec![hash(64)])
+        );
+        assert_eq!(
+            validate_epoch_ancestry(&base, &closure, &BTreeSet::from([hash(65)])),
+            EpochAncestry::PendingMissing(vec![hash(65)])
+        );
+
+        let source = include_str!("epoch.rs");
+        assert!(
+            !source.contains("PendingMissing(Vec<ChangeHash>)")
+                && !source.contains("InvalidOmission(Vec<ChangeHash>)")
+                && !source.contains(".collect::<Vec<_>>()"),
+            "unmetered epoch ancestry materialization remains"
+        );
+    }
 }

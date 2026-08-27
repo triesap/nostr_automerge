@@ -28,3 +28,10 @@ an expected failure until the projected actor-sequence boundary replaces it.
 the repeated closure-wide causal next-operation scan, and an exact three-head
 empty merge exposes the unmetered dependency-set allocation. Both semantic
 inputs are valid; only their hidden work ownership is the expected failure.
+
+`step_1368` binds the remaining epoch-evaluation resource reproductions. A
+64-head base distinguishes exact ancestry, an omitted final head, and a
+missing dependency while exposing target-sized ancestry materialization. A
+64-member control distinguishes absent, early, and final matching writers
+while exposing the unmetered authorization scan. The semantic classifications
+remain correct; both tests fail only on the hidden work boundaries.
