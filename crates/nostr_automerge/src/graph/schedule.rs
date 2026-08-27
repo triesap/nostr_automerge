@@ -323,4 +323,59 @@ mod tests {
             Ok(BTreeSet::from([self_cycle.change_hash]))
         );
     }
+
+    #[test]
+    #[ignore = "remediation v12 expected failure: schedule readiness is not fully metered"]
+    fn finding_100_schedule_readiness_work_reproduction() {
+        let mut inputs = (1..=64)
+            .rev()
+            .map(|value| {
+                let mut item = candidate(value, 1, 1, 1);
+                item.change_hash = ChangeHash::from_bytes([value; 32]);
+                item
+            })
+            .collect::<Vec<_>>();
+        let expected = (1..=64)
+            .map(|value| ChangeHash::from_bytes([value; 32]))
+            .collect::<Vec<_>>();
+        let scheduled = schedule_candidates(
+            inputs.drain(..),
+            BTreeSet::new(),
+            &mut WorkBudget::new(0, 10_000),
+            &NeverCancelled,
+        );
+        assert_eq!(scheduled.map(|value| value.ordered), Ok(expected));
+
+        let source = include_str!("schedule.rs");
+        assert!(
+            !source.contains("remaining.keys().copied().collect::<BTreeSet<_>>()")
+                && !source.contains(".collect::<BTreeSet<_>>();")
+                && !source.contains("pending.iter().copied().collect::<Vec<_>>()"),
+            "unmetered schedule readiness and pop preparation remains"
+        );
+    }
+
+    #[test]
+    #[ignore = "remediation v12 expected failure: schedule publication is not separately metered"]
+    fn finding_100_schedule_publication_work_reproduction() {
+        let item = candidate(1, 1, 1, 1);
+        let result = schedule_candidates(
+            [item.clone()],
+            BTreeSet::new(),
+            &mut WorkBudget::new(0, 10),
+            &NeverCancelled,
+        );
+        assert_eq!(
+            result.map(|value| value.ordered),
+            Ok(vec![item.change_hash])
+        );
+
+        let source = include_str!("schedule.rs");
+        assert!(
+            !source.contains("remaining.insert(candidate.change_hash, candidate);")
+                && !source.contains("ordered.push(hash);")
+                && !source.contains("Ok(Schedule {"),
+            "unmetered schedule insertion and result publication remains"
+        );
+    }
 }

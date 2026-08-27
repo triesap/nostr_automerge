@@ -35,3 +35,10 @@ missing dependency while exposing target-sized ancestry materialization. A
 64-member control distinguishes absent, early, and final matching writers
 while exposing the unmetered authorization scan. The semantic classifications
 remain correct; both tests fail only on the hidden work boundaries.
+
+`step_1369` completes the Finding 100 reproduction inventory before the
+refactor begins. The five new expected failures bind dependency-closure
+preparation, schedule readiness and pop preparation, candidate/result
+publication, selected and fallback quarantine overlays, and target-sized
+preparation before the first failed charge. Each case first proves the current
+semantic result or stop identity and then identifies only its hidden work.

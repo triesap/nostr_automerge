@@ -303,4 +303,32 @@ mod tests {
             Err(CandidateClosureError::Cancelled)
         );
     }
+
+    #[test]
+    #[ignore = "remediation v12 expected failure: closure preparation is not fully metered"]
+    fn finding_100_dependency_closure_work_reproduction() {
+        let dependencies = (1..=64).map(hash).collect::<Vec<_>>();
+        let mut root = candidate(65, 1, 1, 1);
+        root.change_hash = hash(65);
+        root.dependencies = dependencies.clone().into();
+        let closure = candidate_dependency_closure(
+            &root,
+            &BTreeMap::new(),
+            &mut WorkBudget::new(0, 10_000),
+            &NeverCancelled,
+        );
+        assert!(closure.is_ok_and(|value| {
+            value.known.is_empty()
+                && value.missing == dependencies.into_iter().collect::<BTreeSet<_>>()
+                && value.ordered.is_empty()
+        }));
+
+        let source = include_str!("closure.rs");
+        assert!(
+            !source.contains("Vec::with_capacity(candidate.dependencies.len())")
+                && !source.contains(".collect::<Result<BTreeMap<_, _>, _>>()")
+                && !source.contains(".collect::<Result<Vec<_>, _>>()?"),
+            "unmetered dependency-closure preparation remains"
+        );
+    }
 }

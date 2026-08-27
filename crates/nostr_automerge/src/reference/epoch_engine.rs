@@ -927,6 +927,51 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "remediation v12 expected failure: quarantine overlays are not metered"]
+    fn finding_100_quarantine_overlay_work_reproduction() {
+        let selected_source = include_str!("epoch_engine.rs");
+        let fallback_source = include_str!("evaluate.rs");
+        assert!(
+            !selected_source.contains("for hash in &quarantine.quarantined")
+                && !fallback_source.contains("for hash in &quarantine.quarantined"),
+            "unmetered selected and fallback quarantine overlays remain"
+        );
+    }
+
+    #[test]
+    #[ignore = "remediation v12 expected failure: target work precedes the first charge"]
+    fn finding_100_zero_post_stop_work_reproduction() {
+        let item = ChangeCandidate {
+            change_hash: ChangeHash::from_bytes([5; 32]),
+            actor: ActorId::from_bytes([6; 32]),
+            sequence: 1,
+            start_op: 1,
+            operation_count: 1,
+            dependencies: Vec::new().into(),
+            control_id: EventId::from_bytes([3; 32]),
+            author: DevicePublicKey::from_bytes([7; 32]),
+            valid_carriers: Arc::from([]),
+        };
+        let input =
+            EpochEvaluationInput::new(control(Vec::new()), empty_state(), [item], Vec::new());
+        assert!(input.is_ok());
+        let Ok(input) = input else { return };
+        let result = evaluate_epoch(&input, &mut WorkBudget::new(0, 0), &NeverCancelled);
+        assert!(matches!(
+            result,
+            Err(super::EpochEvaluationError::Schedule(
+                crate::graph::schedule::ScheduleError::BudgetExhausted
+            ))
+        ));
+
+        let source = include_str!("epoch_engine.rs");
+        assert!(
+            !source.contains("Vec::with_capacity(input.candidate_changes().len())"),
+            "unmetered target preparation remains before the first stop"
+        );
+    }
+
+    #[test]
     fn actor_reconstruction_is_item_metered_before_each_operation() {
         let candidate = ChangeCandidate {
             change_hash: ChangeHash::from_bytes([5; 32]),

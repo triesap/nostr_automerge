@@ -32,8 +32,8 @@ HOLDS = [
     "remote_mutation",
 ]
 ACTIVE_SCOPE = [
-    "crates/nostr_automerge/src/graph/actor_state.rs",
-    "crates/nostr_automerge/src/graph/epoch.rs",
+    "crates/nostr_automerge/src/graph/closure.rs",
+    "crates/nostr_automerge/src/graph/schedule.rs",
     "crates/nostr_automerge/src/reference/epoch_engine.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
@@ -117,13 +117,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 109, "active_step": "step_1368", "next_step": "step_1369", "last_planned_step": "step_1419", "remaining_checkpoint_count": 51, "remaining_rcld_count": 7}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 109, "active_step": "step_1369", "next_step": "step_1370", "last_planned_step": "step_1419", "remaining_checkpoint_count": 50, "remaining_rcld_count": 7}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], [], "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 6:
+    if not isinstance(predecessors, list) or len(predecessors) != 7:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -131,13 +131,14 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[3], {"step": "step_1365", "candidate": "4e6b9e2c189d407b29a478c5445405b922789aa0", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1365")
     require_equal(predecessors[4], {"step": "step_1366", "candidate": "00fca7681ba079e98ebf8d116bc7fa12926d1a87", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1366")
     require_equal(predecessors[5], {"step": "step_1367", "candidate": "1de9769b36b5fa610483c3f0ffcd0e7e6ee2768c", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1367")
+    require_equal(predecessors[6], {"step": "step_1368", "candidate": "bb8b8fd4560eaf141ff599ed440edeb68c30a33f", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1368")
 
 
 def validate_reproductions(reproductions: object) -> None:
     record = require_keys(reproductions, ["schema", "cases", "result"], "reproductions")
     require_equal(record["schema"], "nostr_automerge.remediation_v12_reproductions.v1", "reproductions:schema")
     rows = record["cases"]
-    if not isinstance(rows, list) or len(rows) != 5:
+    if not isinstance(rows, list) or len(rows) != 10:
         raise EvidenceError("reproductions:rows")
     expected = [
         ("actor_predecessor", "crates/nostr_automerge/src/graph/actor_state.rs", "graph::actor_state::tests::finding_100_actor_predecessor_scan_reproduction", "unmetered actor predecessor collection remains"),
@@ -145,6 +146,11 @@ def validate_reproductions(reproductions: object) -> None:
         ("empty_frontier", "crates/nostr_automerge/src/graph/actor_state.rs", "graph::actor_state::tests::finding_100_empty_frontier_work_reproduction", "unmetered empty-frontier allocation remains"),
         ("epoch_ancestry", "crates/nostr_automerge/src/graph/epoch.rs", "graph::epoch::tests::finding_100_epoch_ancestry_work_reproduction", "unmetered epoch ancestry materialization remains"),
         ("epoch_writer_authorization", "crates/nostr_automerge/src/reference/epoch_engine.rs", "reference::epoch_engine::tests::finding_100_epoch_writer_authorization_work_reproduction", "unmetered epoch writer authorization scan remains"),
+        ("dependency_closure", "crates/nostr_automerge/src/graph/closure.rs", "graph::closure::tests::finding_100_dependency_closure_work_reproduction", "unmetered dependency-closure preparation remains"),
+        ("schedule_readiness", "crates/nostr_automerge/src/graph/schedule.rs", "graph::schedule::tests::finding_100_schedule_readiness_work_reproduction", "unmetered schedule readiness and pop preparation remains"),
+        ("schedule_publication", "crates/nostr_automerge/src/graph/schedule.rs", "graph::schedule::tests::finding_100_schedule_publication_work_reproduction", "unmetered schedule insertion and result publication remains"),
+        ("quarantine_overlays", "crates/nostr_automerge/src/reference/epoch_engine.rs", "reference::epoch_engine::tests::finding_100_quarantine_overlay_work_reproduction", "unmetered selected and fallback quarantine overlays remain"),
+        ("zero_post_stop", "crates/nostr_automerge/src/reference/epoch_engine.rs", "reference::epoch_engine::tests::finding_100_zero_post_stop_work_reproduction", "unmetered target preparation remains before the first stop"),
     ]
     for index, (family, path, test, diagnostic) in enumerate(expected):
         row = require_keys(rows[index], ["finding", "family", "kind", "path", "test", "diagnostic", "expected"], f"reproductions:row:{index}")
@@ -215,7 +221,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1370"),
+        ("cursor", "next_step", "step_1371"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
     ):
@@ -280,7 +286,7 @@ def main() -> None:
     mutation_count = mutation_self_test(authority, ledger, findings, reproductions)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
-    print("- active=RCLD109/step_1368")
+    print("- active=RCLD109/step_1369")
 
 
 if __name__ == "__main__":
