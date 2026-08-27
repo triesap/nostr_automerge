@@ -1,6 +1,6 @@
 # Remediation v11 ledger
 
-Status: `implementation_remediation_required`.
+Status: `code_complete_publication_held`.
 
 The reviewed baseline is bound by `step_1308` at public candidate
 `e3c88c6803dcd862b225ff169cf6d65ac5655a6f`. `step_1309` registers Findings
@@ -325,3 +325,10 @@ The finding registry and closure record agree on four closed findings and zero
 open findings. Finding 080 remains held because external assurance and
 publication authority cannot be satisfied locally; the seven release and
 publication holds remain unchanged, and no remote action is claimed.
+
+At `step_1363`, the terminal local decision binds all 56 checkpoints across
+RCLDs 100 through 108, the 152-requirement authority, the 198-scenario
+distribution, the complete finding closure, and every final local gate. The
+result is code complete with publication held. It does not claim external
+assurance, event-kind allocation, NIP submission, production qualification,
+publication, release, deployment, or any remote mutation.

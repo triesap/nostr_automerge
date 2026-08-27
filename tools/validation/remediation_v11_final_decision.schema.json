@@ -1,0 +1,25 @@
+{
+  "title": "nostr_automerge remediation v11 final decision",
+  "type": "object",
+  "required": ["schema", "status", "checkpoint", "revision", "candidates", "sequence", "bindings", "requirements", "distribution", "findings", "gates", "holds", "release_claimed", "publication_claimed", "remote_actions", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.remediation_v11_final_decision.v1"},
+    "status": {"const": "code_complete_publication_held"},
+    "checkpoint": {"const": "step_1363"},
+    "revision": {"const": "draft_2026_08"},
+    "candidates": {"type": "object", "required": ["public", "opaque_private"], "properties": {"public": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "opaque_private": {"type": "string", "pattern": "^[0-9a-f]{40}$"}}, "additionalProperties": false},
+    "sequence": {"type": "object", "required": ["rcld_first", "rcld_last", "rcld_count", "step_first", "step_last", "step_count"], "properties": {"rcld_first": {"const": 100}, "rcld_last": {"const": 108}, "rcld_count": {"const": 9}, "step_first": {"const": "step_1308"}, "step_last": {"const": "step_1363"}, "step_count": {"const": 56}}, "additionalProperties": false},
+    "bindings": {"type": "array", "minItems": 8, "maxItems": 8, "items": {"type": "object", "required": ["category", "sha256"], "properties": {"category": {"type": "string"}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}, "additionalProperties": false}},
+    "requirements": {"type": "object", "required": ["total", "added", "result"], "properties": {"total": {"const": 152}, "added": {"const": 4}, "result": {"const": "pass"}}, "additionalProperties": false},
+    "distribution": {"type": "object", "required": ["scenarios", "delivery_permutations", "processes", "canonical_output_sha256", "result"], "properties": {"scenarios": {"const": 198}, "delivery_permutations": {"const": 8}, "processes": {"const": 2}, "canonical_output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "result": {"const": "pass"}}, "additionalProperties": false},
+    "findings": {"type": "object", "required": ["closed", "held", "open"], "properties": {"closed": {"type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true, "items": {"type": "string"}}, "held": {"type": "array", "minItems": 1, "maxItems": 1, "uniqueItems": true, "items": {"type": "string"}}, "open": {"type": "array", "maxItems": 0}}, "additionalProperties": false},
+    "gates": {"type": "object", "required": ["public_standard", "public_conformance", "private_compatibility", "handoff_package", "repository_policy"], "properties": {"public_standard": {"const": "pass"}, "public_conformance": {"const": "pass"}, "private_compatibility": {"const": "pass"}, "handoff_package": {"const": "pass"}, "repository_policy": {"const": "pass"}}, "additionalProperties": false},
+    "holds": {"type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true, "items": {"type": "string"}},
+    "release_claimed": {"const": false},
+    "publication_claimed": {"const": false},
+    "remote_actions": {"const": 0},
+    "result": {"const": "pass"},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

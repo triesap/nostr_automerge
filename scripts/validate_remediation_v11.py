@@ -75,7 +75,8 @@ STEP_1358 = "c65f3ee3294642aa437ea830353ea5847c9295ec"
 STEP_1359 = "9e075bba3636efcd6bc6925e134398ad18db202a"
 STEP_1360 = "9a70e5e9880e01e7d56198f52f9131359823506e"
 STEP_1361 = "35b5636356d5323dd4347162b2c51f3cd98636cc"
-PLAN_SHA256 = "02348e20f719c0ffceda9a2d8afb9cfbeaafc579a4b9b23ba36cf719b948dc42"
+STEP_1362 = "6fe0446d32321d3401a7cbee82774e3e44d9f344"
+PLAN_SHA256 = "65b875c0065c0c81ce01db8f1751ab47e6150390ed857a74e02ed0c6491804b7"
 HARNESS_SHA256 = "ec6c7b73217b454c2b03b843cbcf124792e4bd026da507a437cf309e5f6a40d3"
 REPRODUCTIONS_SHA256 = "a782519eb39fa33b2b2c7b40c0558140c99298b3e2004f9bb5a689235ead7039"
 HOLDS = (
@@ -105,16 +106,16 @@ HISTORICAL_EVIDENCE = (
 )
 SCOPE = (
     "docs/execution/remediation_v11/ledger.md",
+    "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v11.md",
     "implementation/runtime_ledger_v11.json",
-    "reports/remediation_v11_finding_closure.json",
+    "reports/remediation_v11_final_decision.json",
     "reports/spec_baseline.txt",
     "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v11.py",
-    "scripts/validate_remediation_v11_finding_closure.py",
+    "scripts/validate_remediation_v11_final_decision.py",
     "scripts/validate_spec.py",
-    "spec/remediation_findings_v11.json",
     "tools/nostr_automerge_xtask/src/validate.rs",
-    "tools/validation/remediation_v11_finding_closure.schema.json",
+    "tools/validation/remediation_v11_final_decision.schema.json",
 )
 
 
@@ -227,6 +228,8 @@ def validate_plan(value: object) -> None:
             raise ValidationError(f"plan:rcld:{rcld}")
     if "Steps `step_1308` through `step_1363` are 56 contiguous checkpoints." not in value:
         raise ValidationError("plan:count")
+    if value.count("Status: `code_complete_publication_held`") != 1:
+        raise ValidationError("plan:status")
     if "No remote\naction is authorized." not in value:
         raise ValidationError("plan:remote")
     if "A red checkpoint is repaired, split, or blocked and is never committed." not in value:
@@ -256,11 +259,11 @@ def validate_reproductions(value: object) -> None:
 
 def validate_ledger(value: object) -> None:
     record = require_record(value, ("schema", "status", "authority", "cursor", "findings", "requirements", "active_checkpoint_scope", "predecessors", "holds", "result"), "ledger")
-    if record["schema"] != "nostr_automerge.runtime_ledger.v11.v1" or record["status"] != "authority_and_reproduction_correction_required" or record["result"] != "pass":
+    if record["schema"] != "nostr_automerge.runtime_ledger.v11.v1" or record["status"] != "code_complete_publication_held" or record["result"] != "pass":
         raise ValidationError("ledger:identity")
     if record["authority"] != "spec/remediation_v11_authority.json":
         raise ValidationError("ledger:authority")
-    if record["cursor"] != {"active_rcld": 108, "active_step": "step_1362", "next_step": "step_1363", "last_planned_step": "step_1363", "remaining_checkpoint_count": 1, "remaining_rcld_count": 1}:
+    if record["cursor"] != {"active_rcld": 108, "active_step": "step_1363", "next_step": None, "last_planned_step": "step_1363", "remaining_checkpoint_count": 0, "remaining_rcld_count": 0}:
         raise ValidationError("ledger:cursor")
     if record["findings"] != {"open": [], "held": ["FINDING_080"]}:
         raise ValidationError("ledger:findings")
@@ -323,6 +326,7 @@ def validate_ledger(value: object) -> None:
         {"step": "step_1359", "candidate": STEP_1359, "owner_class": "public", "result": "pass"},
         {"step": "step_1360", "candidate": STEP_1360, "owner_class": "public", "result": "pass"},
         {"step": "step_1361", "candidate": STEP_1361, "owner_class": "public", "result": "pass"},
+        {"step": "step_1362", "candidate": STEP_1362, "owner_class": "public", "result": "pass"},
     ]:
         raise ValidationError("ledger:predecessors")
     if tuple(record["holds"]) != HOLDS:

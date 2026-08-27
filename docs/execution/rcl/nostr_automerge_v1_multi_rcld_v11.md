@@ -1,6 +1,6 @@
 # nostr_automerge draft-v1 remediation v11 multi-RCLD plan
 
-Status: `authority_and_reproduction_correction_required`
+Status: `code_complete_publication_held`
 
 The reviewed public predecessor is
 `e1b4f461c0d2a1e8cc8e520bed2dfa64a62270f2`. The approved opaque independent
@@ -42,3 +42,7 @@ action is authorized.
 An RCLD is unfinished until every checkpoint in its inclusive range has a green
 committed candidate and fresh validation. Local completion never implies
 publication or external assurance.
+
+RCLDs 100 through 108 are locally complete. Finding 080 and every external,
+allocation, submission, production-qualification, publication, release, and
+remote-mutation hold remain in force.

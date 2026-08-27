@@ -1,0 +1,31 @@
+{
+  "schema": "nostr_automerge.remediation_v11_final_decision.v1",
+  "status": "code_complete_publication_held",
+  "checkpoint": "step_1363",
+  "revision": "draft_2026_08",
+  "candidates": {
+    "public": "6fe0446d32321d3401a7cbee82774e3e44d9f344",
+    "opaque_private": "5d833e0235efe64f970b9c6a5a7c4e748a031b52"
+  },
+  "sequence": {"rcld_first": 100, "rcld_last": 108, "rcld_count": 9, "step_first": "step_1308", "step_last": "step_1363", "step_count": 56},
+  "bindings": [
+    {"category": "runtime_ledger", "sha256": "f19a161250062f98d6c6892eca8643497c10a4747d77dd43f865c41bc9266809"},
+    {"category": "execution_plan", "sha256": "65b875c0065c0c81ce01db8f1751ab47e6150390ed857a74e02ed0c6491804b7"},
+    {"category": "proof_catalog", "sha256": "0127e7e475e1548d183ea8ab2488ebc5ae89475be2f003c6d7da9f3e3bdef2c0"},
+    {"category": "adversarial_qualification", "sha256": "a1e4a3657214ac21f750173abb2d737f3ecbcc974fa081c38217c8a05c7487c3"},
+    {"category": "local_assurance", "sha256": "3c5fdfdea771aaa7a85ea2ffaa0720313175f3900082cedaa8e9efd1e8ec4982"},
+    {"category": "finding_closure", "sha256": "80a503e9230531f57217f0741cef59bf5256cdacd6285fb7bd5ace21414633e5"},
+    {"category": "distribution_parity", "sha256": "900f90b55b16f75f1e86bb066767449989b2fea67504002de9a62baf8008a145"},
+    {"category": "finding_registry", "sha256": "d271df77b822072591eff4bf46e96ead41027821197b769d74d8565ada6883cc"}
+  ],
+  "requirements": {"total": 152, "added": 4, "result": "pass"},
+  "distribution": {"scenarios": 198, "delivery_permutations": 8, "processes": 2, "canonical_output_sha256": "ac1d326a2fe6fbc3ba495ecd7635250efd72179ac50985392757c1784cf59372", "result": "pass"},
+  "findings": {"closed": ["FINDING_096", "FINDING_097", "FINDING_098", "FINDING_099"], "held": ["FINDING_080"], "open": []},
+  "gates": {"public_standard": "pass", "public_conformance": "pass", "private_compatibility": "pass", "handoff_package": "pass", "repository_policy": "pass"},
+  "holds": ["external_assurance", "event_kind_allocation", "nip_submission", "production_qualification", "publication", "release", "remote_mutation"],
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "689475a07e15c8cf5d9830eca27abb14658759d426a1427b286a7651cfd66adb"
+}
