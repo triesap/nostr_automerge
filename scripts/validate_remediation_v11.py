@@ -49,9 +49,10 @@ STEP_1332 = "61776aea62b838e467b23451b5db766079caf128"
 STEP_1333 = "cdd1218a7eb10e453f47bea980f0d7efbacf995e"
 STEP_1334 = "5d5a3ca0cb6133ce14dc55c501b4caefdab88a7c"
 STEP_1335 = "ca9870f1ac0a4c70b7df5b9a4c437c06dde61fcd"
+STEP_1336 = "cf7150e820ec1625dd0027a160fe3cb362b5b629"
 PLAN_SHA256 = "02348e20f719c0ffceda9a2d8afb9cfbeaafc579a4b9b23ba36cf719b948dc42"
 HARNESS_SHA256 = "ec6c7b73217b454c2b03b843cbcf124792e4bd026da507a437cf309e5f6a40d3"
-REPRODUCTIONS_SHA256 = "fb28e269abf91fac3ea804d7ec2160a563ac209588d10f2d8d187d3e5145bba7"
+REPRODUCTIONS_SHA256 = "2e8ed8219247cec973d680191f798a243d0eb02eec08a36db2fcb1b353ef119f"
 HOLDS = (
     "external_assurance", "event_kind_allocation", "nip_submission",
     "production_qualification", "publication", "release", "remote_mutation",
@@ -78,7 +79,7 @@ HISTORICAL_EVIDENCE = (
     ("reports/resource_followup_final_decision_v10.json", "43d28679234b7c11878f615faf57fc65f298fa99505cdcc70f2d86022b40dd9c"),
 )
 SCOPE = (
-    "crates/nostr_automerge/src/reference/branch_state.rs",
+    "crates/nostr_automerge/src/control/ancestry.rs",
     "docs/execution/remediation_v11/ledger.md",
     "implementation/runtime_ledger_v11.json",
     "reports/spec_baseline.txt",
@@ -212,7 +213,7 @@ def validate_reproductions(value: object) -> None:
     kinds = ("rust_failure", "source_failure", "source_failure", "rust_failure")
     for index, case in enumerate(cases):
         item = require_record(case, ("finding", "kind", "path", "test", "diagnostic", "expected"), f"reproduction:{index}")
-        expected = "fixed_pass" if index < 2 else "open_failure"
+        expected = ("fixed_pass", "fixed_pass", "open_failure", "fixed_pass")[index]
         if item["finding"] != FINDING_IDS[index] or item["kind"] != kinds[index] or item["expected"] != expected:
             raise ValidationError(f"reproduction:{index}:identity")
         if not all(isinstance(item[key], str) and item[key] for key in ("path", "test", "diagnostic")):
@@ -229,7 +230,7 @@ def validate_ledger(value: object) -> None:
         raise ValidationError("ledger:identity")
     if record["authority"] != "spec/remediation_v11_authority.json":
         raise ValidationError("ledger:authority")
-    if record["cursor"] != {"active_rcld": 104, "active_step": "step_1336", "next_step": "step_1337", "last_planned_step": "step_1363", "remaining_checkpoint_count": 28, "remaining_rcld_count": 6}:
+    if record["cursor"] != {"active_rcld": 104, "active_step": "step_1337", "next_step": "step_1338", "last_planned_step": "step_1363", "remaining_checkpoint_count": 27, "remaining_rcld_count": 6}:
         raise ValidationError("ledger:cursor")
     if record["findings"] != {"open": list(FINDING_IDS[:4]), "held": ["FINDING_080"]}:
         raise ValidationError("ledger:findings")
@@ -266,6 +267,7 @@ def validate_ledger(value: object) -> None:
         {"step": "step_1333", "candidate": STEP_1333, "owner_class": "public", "result": "pass"},
         {"step": "step_1334", "candidate": STEP_1334, "owner_class": "public", "result": "pass"},
         {"step": "step_1335", "candidate": STEP_1335, "owner_class": "public", "result": "pass"},
+        {"step": "step_1336", "candidate": STEP_1336, "owner_class": "public", "result": "pass"},
     ]:
         raise ValidationError("ledger:predecessors")
     if tuple(record["holds"]) != HOLDS:
@@ -339,8 +341,8 @@ def mutation_self_test() -> int:
         mutations.append(("reproductions", candidate))
     mutations.append(("plan", PLAN.read_text().replace("`step_1315`–`step_1320`", "`step_1315`–`step_1321`", 1)))
     for mutate in (
-        lambda value: value["cursor"].update(active_step="step_1337"),
-        lambda value: value["cursor"].update(remaining_checkpoint_count=27),
+        lambda value: value["cursor"].update(active_step="step_1338"),
+        lambda value: value["cursor"].update(remaining_checkpoint_count=26),
         lambda value: value["findings"]["open"].reverse(),
         lambda value: value["active_checkpoint_scope"].reverse(),
         lambda value: value["predecessors"][0].update(candidate="0" * 40),

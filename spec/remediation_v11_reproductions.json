@@ -31,7 +31,7 @@
       "path": "crates/nostr_automerge/src/control/ancestry.rs",
       "test": "control::ancestry::tests::deep_unique_control_ancestry_teardown_is_bounded_stack",
       "diagnostic": "deep uniquely owned control ancestry exceeded the constrained stack",
-      "expected": "open_failure"
+      "expected": "fixed_pass"
     }
   ],
   "result": "pass"

@@ -155,3 +155,9 @@ node is dropped, and stops at the first shared `Arc`. The 100,000-node delta
 chain now tears down on a 64 KiB stack without modifying a retained shared
 parent. Finding 099 remains open against the independently isolated control
 ancestry chain until `step_1337`.
+
+At `step_1337`, `ControlAncestry` adopts the same bounded teardown rule. A
+deep unique chain is detached node by node, while a shared parent is left for
+its retaining owner. Both 64 KiB unique-chain probes and both wide-fork probes
+now pass, so Finding 099 has a passing behavior reproduction. Clone/drop,
+panic, and stopped-state qualification remains assigned to `step_1338`.

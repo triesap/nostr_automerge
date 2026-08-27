@@ -15,6 +15,21 @@ struct ControlAncestryNode {
     parent: Option<Arc<ControlAncestryNode>>,
 }
 
+impl Drop for ControlAncestry {
+    fn drop(&mut self) {
+        let mut cursor = self.tail.take();
+        while let Some(node) = cursor {
+            match Arc::try_unwrap(node) {
+                Ok(mut owned) => cursor = owned.parent.take(),
+                Err(shared) => {
+                    drop(shared);
+                    break;
+                }
+            }
+        }
+    }
+}
+
 impl ControlAncestry {
     pub(crate) fn is_empty(&self) -> bool {
         self.tail.is_none()
@@ -219,7 +234,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "open remediation v11 finding"]
     fn deep_unique_control_ancestry_teardown_is_bounded_stack() {
         const TEST_NAME: &str =
             "control::ancestry::tests::deep_unique_control_ancestry_teardown_is_bounded_stack";
@@ -260,7 +274,7 @@ mod tests {
         );
         let Ok(executable) = executable else { return };
         let output = Command::new(executable)
-            .args(["--ignored", "--exact", TEST_NAME])
+            .args(["--exact", TEST_NAME])
             .env(CHILD_ENV, "1")
             .output();
         assert!(
