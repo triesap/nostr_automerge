@@ -141,3 +141,10 @@ policy proves that every live target operation is behind such an immediate
 charge or the unchanged sealed finalization reservation. Findings 096 and 097
 therefore have passing reproductions; Findings 098 and 099 remain open, and
 bounded persistent teardown remains explicitly unqualified for RCLD 104.
+
+RCLD 104 begins at `step_1335` with isolated 64 KiB stack probes for both
+persistent structures. Deep uniquely owned delta and control-ancestry chains
+reproduce recursive teardown failure in child processes, while 10,000-way
+delta and 4,096-way ancestry forks drop safely because the retained parent is
+shared. This checkpoint is test-only and intentionally does not alter drop
+behavior before the two implementation checkpoints.

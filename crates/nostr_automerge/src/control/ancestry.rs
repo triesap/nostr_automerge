@@ -119,6 +119,7 @@ impl ControlAncestry {
 #[cfg(test)]
 mod tests {
     use std::cell::Cell;
+    use std::process::Command;
 
     use super::ControlAncestry;
     use crate::control::transition::TransitionError;
@@ -180,6 +181,97 @@ mod tests {
             };
             assert!(branch.parent_shares_tail_with(&ancestry));
         }
+    }
+
+    #[test]
+    fn constrained_stack_wide_ancestry_fork_preserves_shared_parent_teardown() {
+        let worker = std::thread::Builder::new().stack_size(64 * 1024).spawn(|| {
+            let root = genesis();
+            let ancestry = ControlAncestry::from_ordered([root.clone()]);
+            assert!(ancestry.is_ok());
+            let Ok(ancestry) = ancestry else { return };
+            let mut branches = Vec::new();
+            for suffix in 1_u64..=4_096 {
+                let mut child = root.clone();
+                let mut event_id = [0_u8; 32];
+                event_id[..8].copy_from_slice(&suffix.to_be_bytes());
+                child.event_id = EventId::from_bytes(event_id);
+                child.parent = ancestry.last_event_id();
+                child.content.sequence = 1;
+                let branch = ancestry.push_checked(child);
+                assert!(branch.is_ok());
+                let Ok(branch) = branch else { return };
+                assert!(branch.parent_shares_tail_with(&ancestry));
+                branches.push(branch);
+            }
+            drop(ancestry);
+            drop(branches);
+        });
+        assert!(
+            worker.is_ok(),
+            "construct constrained-stack worker: {worker:?}"
+        );
+        let Ok(worker) = worker else { return };
+        assert!(
+            worker.join().is_ok(),
+            "wide shared ancestry fork must not recurse through the shared parent"
+        );
+    }
+
+    #[test]
+    #[ignore = "open remediation v11 finding"]
+    fn deep_unique_control_ancestry_teardown_is_bounded_stack() {
+        const TEST_NAME: &str =
+            "control::ancestry::tests::deep_unique_control_ancestry_teardown_is_bounded_stack";
+        const CHILD_ENV: &str = "NOSTR_AUTOMERGE_CONTROL_ANCESTRY_TEARDOWN_CHILD";
+        if std::env::var_os(CHILD_ENV).is_some() {
+            let child = std::thread::Builder::new().stack_size(64 * 1024).spawn(|| {
+                let root = genesis();
+                let ancestry = ControlAncestry::from_ordered([root.clone()]);
+                assert!(ancestry.is_ok());
+                let Ok(mut ancestry) = ancestry else { return };
+                for sequence in 1_u64..=20_000 {
+                    let mut envelope = root.clone();
+                    let mut event_id = [0_u8; 32];
+                    event_id[..8].copy_from_slice(&sequence.to_be_bytes());
+                    envelope.event_id = EventId::from_bytes(event_id);
+                    envelope.parent = ancestry.last_event_id();
+                    envelope.content.sequence = sequence;
+                    let next = ancestry.push_checked(envelope);
+                    assert!(next.is_ok());
+                    let Ok(next) = next else { return };
+                    ancestry = next;
+                }
+                drop(ancestry);
+            });
+            assert!(
+                child.is_ok(),
+                "construct constrained-stack thread: {child:?}"
+            );
+            let Ok(handle) = child else { return };
+            assert!(handle.join().is_ok());
+            return;
+        }
+
+        let executable = std::env::current_exe();
+        assert!(
+            executable.is_ok(),
+            "resolve test executable: {executable:?}"
+        );
+        let Ok(executable) = executable else { return };
+        let output = Command::new(executable)
+            .args(["--ignored", "--exact", TEST_NAME])
+            .env(CHILD_ENV, "1")
+            .output();
+        assert!(
+            output.is_ok(),
+            "execute ancestry teardown reproduction: {output:?}"
+        );
+        let Ok(output) = output else { return };
+        assert!(
+            output.status.success(),
+            "deep uniquely owned control ancestry exceeded the constrained stack"
+        );
     }
 
     #[test]

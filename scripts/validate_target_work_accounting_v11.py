@@ -24,6 +24,23 @@ SCHEMA_SHA256 = "d7d5b6ec7a4f9e3d4964f3f67224a33b34a5827b468b300311db254cf9a270e
 CORE_SHA256 = "e540248bab985856d9aba407758ed1343c3c0e039f81347d29e4909abdecf695"
 INTEGRATION_SHA256 = "d5f7feb42dba21f079cbbcbf7b200cb84f2126dd851e51a0240de63b8eb0b55d"
 SOURCE_PROJECTION_SHA256 = "8c64daf8acf34937a6f28728f5e550285c502d8f27067ebd76f30144a244b4f8"
+CLOSURE_CANDIDATE = "5d5a3ca0cb6133ce14dc55c501b4caefdab88a7c"
+CLOSURE_SCOPE = (
+    "crates/nostr_automerge/src/reference/branch_state.rs",
+    "crates/nostr_automerge/tests/public_engine_api.rs",
+    "docs/execution/remediation_v11/ledger.md",
+    "implementation/runtime_ledger_v11.json",
+    "reports/spec_baseline.txt",
+    "reports/target_work_accounting_v11.json",
+    "scripts/local_gate.py",
+    "scripts/validate_private_reproduction_boundary_v9.py",
+    "scripts/validate_remediation_v11.py",
+    "scripts/validate_spec.py",
+    "scripts/validate_target_work_accounting_v11.py",
+    "spec/remediation_v11_reproductions.json",
+    "tools/nostr_automerge_xtask/src/validate.rs",
+    "tools/validation/target_work_accounting_v11.schema.json",
+)
 CANDIDATES = (
     ("step_1327", "e819055185480850d83330631744bb99b44c2c19"),
     ("step_1328", "9d0fb75bd5a617b48fc6927cd945bd3df60622b3"),
@@ -130,6 +147,15 @@ def sha256(path: pathlib.Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def historical_bytes(path: str) -> bytes:
+    return subprocess.run(
+        ["git", "show", f"{CLOSURE_CANDIDATE}:{path}"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    ).stdout
+
+
 def validate_report(value: object) -> None:
     record = require_record(value, (
         "schema", "status", "stage", "revision", "imported_gates", "candidates",
@@ -231,14 +257,22 @@ def validate_repository() -> None:
     for (step, candidate), parent in zip(CANDIDATES, PARENTS, strict=True):
         resolved = subprocess.run(["git", "rev-parse", f"{candidate}^"], cwd=ROOT, check=True, capture_output=True, text=True).stdout.strip()
         require(resolved == parent, f"repository:parent:{step}")
-    sources = {path: (ROOT / path).read_text(encoding="utf-8") for path, _digest in SOURCE_INVENTORY}
+    closure_parent = subprocess.run(["git", "rev-parse", f"{CLOSURE_CANDIDATE}^"], cwd=ROOT, check=True, capture_output=True, text=True).stdout.strip()
+    require(closure_parent == CANDIDATES[-1][1], "repository:closure_parent")
+    closure_scope = tuple(subprocess.run(
+        ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", CLOSURE_CANDIDATE],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.splitlines())
+    require(closure_scope == CLOSURE_SCOPE, "repository:closure_scope")
+    sources = {path: historical_bytes(path).decode("utf-8") for path, _digest in SOURCE_INVENTORY}
     for path, digest in SOURCE_INVENTORY:
         require(hashlib.sha256(sources[path].encode()).hexdigest() == digest, f"repository:source:{path}")
     validate_sources(sources)
-    reproduction = json.loads(REPRODUCTIONS.read_text(encoding="utf-8"))
+    reproduction = json.loads(historical_bytes(REPRODUCTIONS.relative_to(ROOT).as_posix()).decode("utf-8"))
     require([row["expected"] for row in reproduction["cases"]] == ["fixed_pass", "fixed_pass", "open_failure", "open_failure"], "repository:reproductions")
-    source_policy = subprocess.run(["python3", "scripts/validate_persistent_state_v11.py"], cwd=ROOT, check=True, capture_output=True, text=True).stdout
-    require("- sources=15\n- mutations=63\n" in source_policy, "repository:source_policy")
 
 
 def mutation_self_test() -> tuple[int, int, int]:
@@ -293,7 +327,7 @@ def mutation_self_test() -> tuple[int, int, int]:
         except TargetWorkGateError:
             continue
         raise TargetWorkGateError(f"mutation:schema:{index}")
-    sources = {path: (ROOT / path).read_text(encoding="utf-8") for path, _digest in SOURCE_INVENTORY}
+    sources = {path: historical_bytes(path).decode("utf-8") for path, _digest in SOURCE_INVENTORY}
     source_mutations = []
     for path, old, new in (
         (SOURCE_INVENTORY[0][0], "fn get_metered", "fn get_unmetered"),

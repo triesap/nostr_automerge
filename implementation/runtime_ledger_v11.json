@@ -3,12 +3,12 @@
   "status": "authority_and_reproduction_correction_required",
   "authority": "spec/remediation_v11_authority.json",
   "cursor": {
-    "active_rcld": 103,
-    "active_step": "step_1334",
-    "next_step": "step_1335",
+    "active_rcld": 104,
+    "active_step": "step_1335",
+    "next_step": "step_1336",
     "last_planned_step": "step_1363",
-    "remaining_checkpoint_count": 30,
-    "remaining_rcld_count": 7
+    "remaining_checkpoint_count": 29,
+    "remaining_rcld_count": 6
   },
   "findings": {
     "open": [
@@ -28,20 +28,13 @@
     "NCRDT-OWNERSHIP-001"
   ],
   "active_checkpoint_scope": [
+    "crates/nostr_automerge/src/control/ancestry.rs",
     "crates/nostr_automerge/src/reference/branch_state.rs",
-    "crates/nostr_automerge/tests/public_engine_api.rs",
     "docs/execution/remediation_v11/ledger.md",
     "implementation/runtime_ledger_v11.json",
     "reports/spec_baseline.txt",
-    "reports/target_work_accounting_v11.json",
-    "scripts/local_gate.py",
-    "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v11.py",
-    "scripts/validate_spec.py",
-    "scripts/validate_target_work_accounting_v11.py",
-    "spec/remediation_v11_reproductions.json",
-    "tools/nostr_automerge_xtask/src/validate.rs",
-    "tools/validation/target_work_accounting_v11.schema.json"
+    "scripts/validate_target_work_accounting_v11.py"
   ],
   "predecessors": [
     {
@@ -197,6 +190,12 @@
     {
       "step": "step_1333",
       "candidate": "cdd1218a7eb10e453f47bea980f0d7efbacf995e",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1334",
+      "candidate": "5d5a3ca0cb6133ce14dc55c501b4caefdab88a7c",
       "owner_class": "public",
       "result": "pass"
     }

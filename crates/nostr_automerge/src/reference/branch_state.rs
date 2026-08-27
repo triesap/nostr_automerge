@@ -478,6 +478,30 @@ mod tests {
     }
 
     #[test]
+    fn constrained_stack_wide_delta_fork_preserves_shared_parent_teardown() {
+        let worker = std::thread::Builder::new().stack_size(64 * 1024).spawn(|| {
+            let root = PersistentDeltaMap::from_local(BTreeMap::from([(0_u32, 0_u32)]));
+            let mut branches = Vec::new();
+            for value in 1_u32..=10_000 {
+                let branch = root.extend_local(BTreeMap::from([(value, value)]));
+                assert!(branch.shares_parent_with(&root));
+                branches.push(branch);
+            }
+            drop(root);
+            drop(branches);
+        });
+        assert!(
+            worker.is_ok(),
+            "construct constrained-stack worker: {worker:?}"
+        );
+        let Ok(worker) = worker else { return };
+        assert!(
+            worker.join().is_ok(),
+            "wide shared delta fork must not recurse through the shared parent"
+        );
+    }
+
+    #[test]
     #[ignore = "open remediation v11 finding"]
     fn finding_099_deep_persistent_chain_teardown_is_bounded_stack() {
         const TEST_NAME: &str = "reference::branch_state::tests::finding_099_deep_persistent_chain_teardown_is_bounded_stack";
