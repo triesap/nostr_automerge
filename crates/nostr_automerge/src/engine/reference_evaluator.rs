@@ -3666,6 +3666,40 @@ fn changes_for_control(
     Ok(changes)
 }
 
+fn collect_change_dependencies_metered<E>(
+    mut dependencies: impl Iterator<Item = ChangeHash>,
+    mut visit: impl FnMut(WorkCounter) -> Result<(), E>,
+) -> Result<Vec<ChangeHash>, E> {
+    let mut collected = Vec::new();
+    loop {
+        visit(WorkCounter::GraphEdge)?;
+        let Some(dependency) = dependencies.next() else {
+            break;
+        };
+        visit(WorkCounter::GraphEdge)?;
+        collected.push(dependency);
+    }
+    Ok(collected)
+}
+
+fn any_control_member_metered<T, E>(
+    members: &[T],
+    mut predicate: impl FnMut(&T) -> bool,
+    mut visit: impl FnMut(WorkCounter) -> Result<(), E>,
+) -> Result<bool, E> {
+    let mut members = members.iter();
+    loop {
+        visit(WorkCounter::Control)?;
+        let Some(member) = members.next() else {
+            return Ok(false);
+        };
+        visit(WorkCounter::Control)?;
+        if predicate(member) {
+            return Ok(true);
+        }
+    }
+}
+
 fn change_for_hash(
     view: &DocumentEvidenceView<'_>,
     control: &crate::carrier::control::ValidatedControlCarrier,
@@ -3687,13 +3721,10 @@ fn change_for_hash(
             && change.control_id() == control.event_id()
             && change.coordinate() == view.coordinate()
         {
-            let dependency_count = u64::try_from(change.dependencies().count()).unwrap_or(u64::MAX);
-            charge_evaluation_work(
-                budget,
-                cancellation,
-                WorkCounter::GraphEdge,
-                dependency_count,
-            )?;
+            let dependencies =
+                collect_change_dependencies_metered(change.dependencies(), |counter| {
+                    charge_evaluation_work(budget, cancellation, counter, 1)
+                })?;
             carriers.push(CandidateCarrier {
                 event_id: change.event_id(),
                 change_hash: change.change_hash(),
@@ -3701,7 +3732,7 @@ fn change_for_hash(
                 sequence: change.sequence(),
                 start_op: change.start_op(),
                 operation_count: change.operation_count(),
-                dependencies: change.dependencies().collect(),
+                dependencies,
                 control_id: change.control_id(),
                 author: change.author_device(),
             });
@@ -3719,17 +3750,15 @@ fn change_for_hash(
             u64::try_from(bytes.len()).unwrap_or(u64::MAX)
         }),
     )?;
-    charge_evaluation_work(
-        budget,
-        cancellation,
-        WorkCounter::Control,
-        u64::try_from(control.members().len()).unwrap_or(u64::MAX),
+    let authorized = any_control_member_metered(
+        control.members(),
+        |member| {
+            member.actor == candidate.actor
+                && member.device == candidate.author
+                && member.roles.contains(&Role::Write)
+        },
+        |counter| charge_evaluation_work(budget, cancellation, counter, 1),
     )?;
-    let authorized = control.members().iter().any(|member| {
-        member.actor == candidate.actor
-            && member.device == candidate.author
-            && member.roles.contains(&Role::Write)
-    });
     Ok(Some(BatchChange {
         candidate,
         legacy_eligible: authorized && !control.terminal(),
@@ -3763,10 +3792,11 @@ mod tests {
         FinalizationPermitState, FinalizationReservationUnit, FixedFallbackLedger,
         FixedFallbackPass, PreparedCheckpointInputs, REEVALUATION_STAGE_OBSERVATIONS,
         REPORT_INVARIANT_ITEMS, ReferenceEvaluator, ReportFinalizationPermit,
-        ReportFinalizationPlan, aggregate_change_contribution, assembly_status,
-        canonical_ancestor_hashes, carrier_control_is_historical, change_carrier_disposition,
-        charge_checkpoint_work, checkpoint_control_refusal, checkpoint_historical_control_ancestry,
-        checkpoint_preflight_refusal, join_status, noncanonical_branch_claim_reason,
+        ReportFinalizationPlan, aggregate_change_contribution, any_control_member_metered,
+        assembly_status, canonical_ancestor_hashes, carrier_control_is_historical,
+        change_carrier_disposition, charge_checkpoint_work, checkpoint_control_refusal,
+        checkpoint_historical_control_ancestry, checkpoint_preflight_refusal,
+        collect_change_dependencies_metered, join_status, noncanonical_branch_claim_reason,
         project_selected_prior_knowledge_metered, reduce_aggregate_change_outcome,
         reduce_change_dispositions, scoped_dynamic_event_disposition_records,
         verify_prepared_checkpoints,
@@ -3797,6 +3827,125 @@ mod tests {
         ProtocolDisposition, ResolvedManifestAvailability, SnapshotHash, WorkBudget, WorkCounter,
     };
     use sha2::{Digest, Sha256};
+
+    #[test]
+    fn member_and_dependency_preparation_interleaves_every_owned_operation() {
+        let dependencies = [
+            ChangeHash::from_bytes([0x11; 32]),
+            ChangeHash::from_bytes([0x12; 32]),
+            ChangeHash::from_bytes([0x13; 32]),
+        ];
+        let dependency_work = dependencies.len().saturating_mul(2).saturating_add(1);
+        for capacity in [dependency_work - 1, dependency_work, dependency_work + 1] {
+            let mut budget = WorkBudget::new(0, u64::try_from(capacity).unwrap_or(u64::MAX));
+            let result = collect_change_dependencies_metered(dependencies.into_iter(), |counter| {
+                assert_eq!(counter, WorkCounter::GraphEdge);
+                budget
+                    .charge(counter, 1)
+                    .map_err(|_| crate::Completion::BudgetExhausted)
+            });
+            if capacity < dependency_work {
+                assert_eq!(result, Err(crate::Completion::BudgetExhausted));
+            } else {
+                assert_eq!(result, Ok(dependencies.to_vec()));
+            }
+            assert_eq!(
+                budget.consumed().get(WorkCounter::GraphEdge),
+                u64::try_from(capacity.min(dependency_work)).unwrap_or(u64::MAX)
+            );
+        }
+        for cancel_at in 0..dependency_work {
+            let charges = std::cell::Cell::new(0_usize);
+            let reads = std::cell::Cell::new(0_usize);
+            let mut index = 0_usize;
+            let source = std::iter::from_fn(|| {
+                reads.set(reads.get().saturating_add(1));
+                let value = dependencies.get(index).copied();
+                index = index.saturating_add(1);
+                value
+            });
+            let result = collect_change_dependencies_metered(source, |counter| {
+                assert_eq!(counter, WorkCounter::GraphEdge);
+                if charges.get() == cancel_at {
+                    return Err(crate::Completion::Cancelled);
+                }
+                charges.set(charges.get().saturating_add(1));
+                Ok(())
+            });
+            assert_eq!(result, Err(crate::Completion::Cancelled));
+            assert_eq!(charges.get(), cancel_at);
+            assert_eq!(reads.get(), cancel_at.saturating_add(1) / 2);
+        }
+
+        let members = [1_u8, 2, 3];
+        let member_work = members.len().saturating_mul(2).saturating_add(1);
+        for capacity in [member_work - 1, member_work, member_work + 1] {
+            let comparisons = std::cell::Cell::new(0_usize);
+            let mut budget = WorkBudget::new(0, u64::try_from(capacity).unwrap_or(u64::MAX));
+            let result = any_control_member_metered(
+                &members,
+                |_: &u8| {
+                    comparisons.set(comparisons.get().saturating_add(1));
+                    false
+                },
+                |counter| {
+                    assert_eq!(counter, WorkCounter::Control);
+                    budget
+                        .charge(counter, 1)
+                        .map_err(|_| crate::Completion::BudgetExhausted)
+                },
+            );
+            if capacity < member_work {
+                assert_eq!(result, Err(crate::Completion::BudgetExhausted));
+                assert_eq!(comparisons.get(), capacity / 2);
+            } else {
+                assert_eq!(result, Ok(false));
+                assert_eq!(comparisons.get(), members.len());
+            }
+        }
+        for cancel_at in 0..member_work {
+            let charges = std::cell::Cell::new(0_usize);
+            let comparisons = std::cell::Cell::new(0_usize);
+            let result = any_control_member_metered(
+                &members,
+                |_: &u8| {
+                    comparisons.set(comparisons.get().saturating_add(1));
+                    false
+                },
+                |counter| {
+                    assert_eq!(counter, WorkCounter::Control);
+                    if charges.get() == cancel_at {
+                        return Err(crate::Completion::Cancelled);
+                    }
+                    charges.set(charges.get().saturating_add(1));
+                    Ok(())
+                },
+            );
+            assert_eq!(result, Err(crate::Completion::Cancelled));
+            assert_eq!(charges.get(), cancel_at);
+            assert_eq!(comparisons.get(), cancel_at / 2);
+        }
+
+        let comparisons = std::cell::Cell::new(0_usize);
+        let charges = std::cell::Cell::new(0_usize);
+        assert_eq!(
+            any_control_member_metered(
+                &members,
+                |member| {
+                    comparisons.set(comparisons.get().saturating_add(1));
+                    *member == 2
+                },
+                |counter| {
+                    assert_eq!(counter, WorkCounter::Control);
+                    charges.set(charges.get().saturating_add(1));
+                    Ok::<(), ()>(())
+                },
+            ),
+            Ok(true)
+        );
+        assert_eq!(charges.get(), 4);
+        assert_eq!(comparisons.get(), 2);
+    }
 
     #[test]
     fn additional_prior_projection_charges_before_every_read_and_insert() {

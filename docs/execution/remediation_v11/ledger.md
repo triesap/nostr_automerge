@@ -118,3 +118,10 @@ candidate lookup, dependency edge, dependency-set insertion, membership test,
 and head insertion is charged immediately before the operation. Deep chains,
 forked dependencies, duplicate dependency references, and empty histories pass
 the exact N-1/N/N+1 and cancellation matrix without changing complete reports.
+
+At `step_1332`, change preparation no longer counts dependency or member
+collections and then charges them in bulk. Dependency reads and vector
+insertions now alternate with `GraphEdge` charges, while member reads and
+authorization comparisons alternate with `Control` charges. Exact prefix,
+N-1/N/N+1, early-match, and cancellation tests prove that a failed charge
+prevents its owned read, insertion, or comparison.

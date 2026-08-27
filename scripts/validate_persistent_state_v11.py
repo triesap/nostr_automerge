@@ -554,6 +554,42 @@ def validate_sources(sources: dict[str, str]) -> None:
         "evaluator:control_disposition_ownership",
     )
     require("control_disposition_map.extend" not in evaluator, "evaluator:control_disposition_bulk_extend")
+    collection_preparation = section(
+        evaluator,
+        "fn collect_change_dependencies_metered<E>(",
+        "\n}\n\nfn change_for_hash(",
+        "evaluator:collection_preparation",
+    )
+    require(
+        "change.dependencies().count()" not in evaluator,
+        "evaluator:dependency_bulk_precharge",
+    )
+    require(
+        "u64::try_from(control.members().len())" not in evaluator,
+        "evaluator:member_bulk_precharge",
+    )
+    require_order(
+        collection_preparation,
+        (
+            "visit(WorkCounter::GraphEdge)?;",
+            "dependencies.next()",
+            "visit(WorkCounter::GraphEdge)?;",
+            "collected.push(dependency);",
+            "visit(WorkCounter::Control)?;",
+            "members.next()",
+            "visit(WorkCounter::Control)?;",
+            "predicate(member)",
+        ),
+        "evaluator:collection_preparation",
+    )
+    require(
+        "collect_change_dependencies_metered(change.dependencies()" in evaluator,
+        "evaluator:dependency_production_route",
+    )
+    require(
+        "let authorized = any_control_member_metered(" in evaluator,
+        "evaluator:member_production_route",
+    )
 
     document = sources[SOURCES[8]]
     materialize = section(
@@ -625,6 +661,42 @@ def mutation_self_test(sources: dict[str, str]) -> int:
         replaced(sources, evaluator, "dispositions.contains_key_metered(&carrier.change_hash", "dispositions.contains_key(&carrier.change_hash"),
         replaced(sources, evaluator, "charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;\n        projected.insert(selected.event_id, knowledge);", "projected.insert(selected.event_id, knowledge);"),
         replaced(sources, evaluator, "&additional_prior,\n            preliminary_control_dispositions,", "&additional_prior,\n            BTreeMap::new(),"),
+        replaced(
+            sources,
+            evaluator,
+            "visit(WorkCounter::GraphEdge)?;\n        let Some(dependency) = dependencies.next()",
+            "let Some(dependency) = dependencies.next()",
+        ),
+        replaced(
+            sources,
+            evaluator,
+            "visit(WorkCounter::GraphEdge)?;\n        collected.push(dependency);",
+            "collected.push(dependency);",
+        ),
+        replaced(
+            sources,
+            evaluator,
+            "visit(WorkCounter::Control)?;\n        let Some(member) = members.next()",
+            "let Some(member) = members.next()",
+        ),
+        replaced(
+            sources,
+            evaluator,
+            "visit(WorkCounter::Control)?;\n        if predicate(member)",
+            "if predicate(member)",
+        ),
+        replaced(
+            sources,
+            evaluator,
+            "collect_change_dependencies_metered(change.dependencies(), |counter|",
+            "Ok::<_, Completion>(change.dependencies().collect()).and_then(|_| |counter|",
+        ),
+        replaced(
+            sources,
+            evaluator,
+            "let authorized = any_control_member_metered(",
+            "let authorized = false.then_some(any_control_member_metered(",
+        ),
         replaced(sources, evaluate, "accepted_items.next()", "accepted_items.last()"),
         replaced(sources, evaluate, "candidates.push(candidate.clone());", "candidates.clear();"),
         replaced(sources, evaluate, "memo.raw_changes.get(hash)", "None::<&Arc<[u8]>>"),
