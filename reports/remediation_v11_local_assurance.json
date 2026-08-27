@@ -1,0 +1,25 @@
+{
+  "schema": "nostr_automerge.remediation_v11_local_assurance.v1",
+  "status": "pass",
+  "checkpoint": "step_1361",
+  "revision": "draft_2026_08",
+  "candidates": {"public": "9a70e5e9880e01e7d56198f52f9131359823506e", "opaque_private": "5d833e0235efe64f970b9c6a5a7c4e748a031b52"},
+  "imports": [
+    {"category": "proof_catalog", "sha256": "0127e7e475e1548d183ea8ab2488ebc5ae89475be2f003c6d7da9f3e3bdef2c0"},
+    {"category": "adversarial_qualification", "sha256": "a1e4a3657214ac21f750173abb2d737f3ecbcc974fa081c38217c8a05c7487c3"},
+    {"category": "distribution_parity", "sha256": "900f90b55b16f75f1e86bb066767449989b2fea67504002de9a62baf8008a145"}
+  ],
+  "public": {
+    "standard": {"core_tests": 325, "public_api_tests": 121, "conformance_tests": 29, "xtask_tests": 4, "result": "pass"},
+    "conformance": {"scenarios": 198, "delivery_permutations": 8, "processes": 2, "canonical_output_sha256": "ac1d326a2fe6fbc3ba495ecd7635250efd72179ac50985392757c1784cf59372", "serialized_output_sha256": "27e2febf15d800a81a9b87066ec9a4989d861fa8b8938b73c7a4fc3e87881932", "process_evidence_sha256": "f59652fd05787de65cb6836da21c09379e41c582db6b2106ff9a60af37371924", "result": "pass"},
+    "coverage": {"line_percent": "77.99", "function_percent": "80.64", "branch_percent": "66.41", "summary_sha256": "de4a706bf59c59e69ce836529b1df4d1cbcbfb653583ba85c686067f49899ec8", "result": "pass"},
+    "supply_chain": {"advisories": "pass", "bans": "pass", "licenses": "pass", "sources": "pass", "result": "pass"},
+    "local_gate_sha256": "1cffc5b4c91557457ca85f19e7169982563cde22c3bfe800df741d72b65287b5"
+  },
+  "opaque_private": {"tests": 387, "passed": 372, "skipped": 15, "failed": 0, "requirements": 139, "distribution_scenarios": 198, "delivery_permutations": 8, "processes": 2, "result": "pass"},
+  "handoff_package": {"checks": 736, "steps": 56, "rclds": 9, "requirements_added": 4, "fixtures_added": 5, "checksum_inventory_sha256": "29da6c6a06a0e6a5aa09646a2dffc79f58461b48b6bf9bdd9ee4a184641cd46a", "result": "pass"},
+  "repository": {"policy": "pass", "leak_scan": "pass", "artifact_scan": "pass", "diff_check": "pass", "tracked_workflows_added": 0, "remote_actions": 0, "result": "pass"},
+  "holds": ["external_assurance", "event_kind_allocation", "nip_submission", "production_qualification", "publication", "release", "remote_mutation"],
+  "result": "pass",
+  "result_identity_sha256": "b8bbfa96b52af7b019607c3b50bfd0dba9b0b33e09668000434fad9ad9ba1739"
+}

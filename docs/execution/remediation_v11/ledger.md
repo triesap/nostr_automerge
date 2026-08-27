@@ -308,3 +308,13 @@ opaque private lane independently retains 276 mutation probes, 21 fixed and two
 open historical reproductions, and the byte-identical 198-scenario, eight-order,
 two-process distribution result. No private source or external action enters
 the public record.
+
+At `step_1361`, final local assurance runs every repository-owned lane required
+for closure. The public standard gate, 198-scenario eight-order two-process
+distribution, coverage, supply-chain checks, private compatibility suite, and
+the complete handoff-package validator all pass. The local conformance gate now
+uses the authoritative v12 manifest and records the exact 198-scenario output,
+instead of replaying the superseded 193-scenario v11 manifest. The assurance
+record binds those local results, the proof catalog, adversarial qualification,
+distribution parity, and all seven external holds without performing any
+workflow, remote, release, or publication action.

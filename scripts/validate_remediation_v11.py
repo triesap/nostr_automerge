@@ -73,6 +73,7 @@ STEP_1356 = "de716296d88b9908e350ec2eb7bc9406573a2a5d"
 STEP_1357 = "5d833e0235efe64f970b9c6a5a7c4e748a031b52"
 STEP_1358 = "c65f3ee3294642aa437ea830353ea5847c9295ec"
 STEP_1359 = "9e075bba3636efcd6bc6925e134398ad18db202a"
+STEP_1360 = "9a70e5e9880e01e7d56198f52f9131359823506e"
 PLAN_SHA256 = "02348e20f719c0ffceda9a2d8afb9cfbeaafc579a4b9b23ba36cf719b948dc42"
 HARNESS_SHA256 = "ec6c7b73217b454c2b03b843cbcf124792e4bd026da507a437cf309e5f6a40d3"
 REPRODUCTIONS_SHA256 = "a782519eb39fa33b2b2c7b40c0558140c99298b3e2004f9bb5a689235ead7039"
@@ -104,14 +105,15 @@ HISTORICAL_EVIDENCE = (
 SCOPE = (
     "docs/execution/remediation_v11/ledger.md",
     "implementation/runtime_ledger_v11.json",
-    "reports/remediation_v11_adversarial_qualification.json",
+    "reports/remediation_v11_local_assurance.json",
     "reports/spec_baseline.txt",
+    "scripts/local_gate.py",
     "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v11.py",
-    "scripts/validate_remediation_v11_adversarial_qualification.py",
+    "scripts/validate_remediation_v11_local_assurance.py",
     "scripts/validate_spec.py",
     "tools/nostr_automerge_xtask/src/validate.rs",
-    "tools/validation/remediation_v11_adversarial_qualification.schema.json",
+    "tools/validation/remediation_v11_local_assurance.schema.json",
 )
 
 
@@ -257,7 +259,7 @@ def validate_ledger(value: object) -> None:
         raise ValidationError("ledger:identity")
     if record["authority"] != "spec/remediation_v11_authority.json":
         raise ValidationError("ledger:authority")
-    if record["cursor"] != {"active_rcld": 108, "active_step": "step_1360", "next_step": "step_1361", "last_planned_step": "step_1363", "remaining_checkpoint_count": 3, "remaining_rcld_count": 1}:
+    if record["cursor"] != {"active_rcld": 108, "active_step": "step_1361", "next_step": "step_1362", "last_planned_step": "step_1363", "remaining_checkpoint_count": 2, "remaining_rcld_count": 1}:
         raise ValidationError("ledger:cursor")
     if record["findings"] != {"open": list(FINDING_IDS[:4]), "held": ["FINDING_080"]}:
         raise ValidationError("ledger:findings")
@@ -318,6 +320,7 @@ def validate_ledger(value: object) -> None:
         {"step": "step_1357", "candidate": STEP_1357, "owner_class": "opaque_private", "result": "pass"},
         {"step": "step_1358", "candidate": STEP_1358, "owner_class": "public", "result": "pass"},
         {"step": "step_1359", "candidate": STEP_1359, "owner_class": "public", "result": "pass"},
+        {"step": "step_1360", "candidate": STEP_1360, "owner_class": "public", "result": "pass"},
     ]:
         raise ValidationError("ledger:predecessors")
     if tuple(record["holds"]) != HOLDS:
