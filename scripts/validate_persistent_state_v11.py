@@ -550,8 +550,14 @@ def validate_sources(sources: dict[str, str]) -> None:
         "transfer_control_dispositions_metered" not in evaluator,
         "evaluator:late_control_disposition_transfer",
     )
-    require_order(
+    evaluator_entry = section(
         evaluator,
+        "    pub fn evaluate(\n",
+        "\n    /// Replays the complete retained corpus",
+        "evaluator:entry",
+    )
+    require_order(
+        evaluator_entry,
         (
             "let (controls, preliminary_control_dispositions) = prepared_controls.into_parts();",
             "evaluate_batch_with_prior_and_control_dispositions(",

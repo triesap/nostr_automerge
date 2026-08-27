@@ -247,3 +247,13 @@ requires the witness order to stop canonically at N−1, proves N and N+1 produc
 the same complete bytes in every order, and independently binds the exact
 cancellation boundary. The staged manifest is now 196/198; all 193 v11 fixture
 identities remain unchanged.
+
+At `step_1354`, the transition advances to `stop_fixtures_added` with the
+fourth planned signed scenario. Its exact 687-item budget ends on the final
+branch-evaluation operation. An internal proof independently reconstructs the
+evaluator prelude, derives that boundary from consumed typed counters, and
+requires the public evaluation to return canonical no-progress with identical
+counters, proving that no charged target work follows the stop. Generation
+also requires byte-identical no-progress reports across all eight delivery
+orders. The staged manifest is now 197/198; the unsupported Event-only fixture
+remains assigned to `step_1355`.

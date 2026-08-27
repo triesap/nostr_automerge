@@ -3800,11 +3800,12 @@ mod tests {
         FinalizationPermitState, FinalizationReservationUnit, FixedFallbackLedger,
         FixedFallbackPass, PreparedCheckpointInputs, REEVALUATION_STAGE_OBSERVATIONS,
         REPORT_INVARIANT_ITEMS, ReferenceEvaluator, ReportFinalizationPermit,
-        ReportFinalizationPlan, aggregate_change_contribution, any_control_member_metered,
-        assembly_status, canonical_ancestor_hashes, carrier_control_is_historical,
-        change_carrier_disposition, charge_checkpoint_work, checkpoint_control_refusal,
-        checkpoint_historical_control_ancestry, checkpoint_preflight_refusal,
-        collect_change_dependencies_metered, join_status, noncanonical_branch_claim_reason,
+        ReportFinalizationPlan, additional_prior_knowledge, aggregate_change_contribution,
+        any_control_member_metered, assembly_status, canonical_ancestor_hashes,
+        carrier_control_is_historical, change_carrier_disposition, charge_checkpoint_work,
+        charge_ingress, checkpoint_control_refusal, checkpoint_historical_control_ancestry,
+        checkpoint_preflight_refusal, collect_change_dependencies_metered, join_status,
+        noncanonical_branch_claim_reason, prepare_controls,
         project_selected_prior_knowledge_metered, reduce_aggregate_change_outcome,
         reduce_change_dispositions, scoped_dynamic_event_disposition_records,
         verify_prepared_checkpoints,
@@ -3828,6 +3829,7 @@ mod tests {
         derive_trusted_indexes,
     };
     use crate::reference::epoch_engine::AcceptedAtControl;
+    use crate::reference::evaluate::evaluate_batch_with_prior_and_control_dispositions;
     use crate::types::role::Role;
     use crate::{
         ActorId, ChangeHash, CheckpointVerificationResult, ChunkHash, Completion,
@@ -3835,6 +3837,127 @@ mod tests {
         ProtocolDisposition, ResolvedManifestAvailability, SnapshotHash, WorkBudget, WorkCounter,
     };
     use sha2::{Digest, Sha256};
+
+    #[test]
+    fn v12_post_branch_fixture_stops_at_exact_internal_boundary() {
+        let fixture: Result<serde_json::Value, _> = serde_json::from_str(include_str!(
+            "../../../../fixtures/v12/scenarios/resource_followup/post_branch_stop_has_no_target_work.input.json"
+        ));
+        assert!(fixture.is_ok());
+        let Ok(fixture) = fixture else { return };
+        let coordinate = fixture["coordinate"]
+            .as_str()
+            .and_then(|value| value.parse::<DocumentCoordinate>().ok());
+        assert!(coordinate.is_some());
+        let Some(coordinate) = coordinate else { return };
+        let fixture_items = fixture["budget"]["max_items"].as_u64();
+        assert!(fixture_items.is_some());
+        let Some(fixture_items) = fixture_items else {
+            return;
+        };
+        let raw_events = fixture["raw_events"].as_array();
+        assert!(raw_events.is_some());
+        let Some(raw_events) = raw_events else {
+            return;
+        };
+        let mut builder = crate::CorpusBuilder::new();
+        for event in raw_events {
+            let data = event["data"].as_str();
+            assert!(data.is_some());
+            let Some(data) = data else { return };
+            assert!(matches!(
+                builder.ingest_bytes(data.as_bytes()),
+                crate::IngestOutcome::Accepted { .. }
+            ));
+        }
+        let corpus = builder.finish();
+        let view = DocumentEvidenceView::derive(&corpus, coordinate);
+        let plan = ReportFinalizationPlan::from_view(&view);
+        assert!(plan.is_ok());
+        let Ok(plan) = plan else { return };
+        const AMPLE_ITEMS: u64 = 1_000_000;
+        let mut prelude_budget = WorkBudget::new(1_000_000, AMPLE_ITEMS);
+        let permit = ReportFinalizationPermit::reserve(plan, &mut prelude_budget);
+        assert!(permit.is_ok());
+        let Ok(_permit) = permit else { return };
+        let charged = charge_ingress(&view, &mut prelude_budget, &crate::NeverCancelled);
+        assert!(charged.is_ok());
+        let prepared = prepare_controls(&view, &mut prelude_budget, &crate::NeverCancelled);
+        assert!(prepared.is_ok());
+        let Ok(prepared) = prepared else { return };
+        let (controls, preliminary_control_dispositions) = prepared.into_parts();
+        let additional_prior = additional_prior_knowledge(
+            &view,
+            &controls,
+            &mut prelude_budget,
+            &crate::NeverCancelled,
+        );
+        assert!(additional_prior.is_ok());
+        let Ok(additional_prior) = additional_prior else {
+            return;
+        };
+        let batch = evaluate_batch_with_prior_and_control_dispositions(
+            controls,
+            &additional_prior,
+            preliminary_control_dispositions,
+            &mut prelude_budget,
+            &crate::NeverCancelled,
+        );
+        assert_eq!(batch.completion, Completion::Complete);
+        assert_eq!(batch.failure, None);
+
+        let branch_stop_items = AMPLE_ITEMS.checked_sub(prelude_budget.remaining().1);
+        assert!(branch_stop_items.is_some());
+        let Some(branch_stop_items) = branch_stop_items else {
+            return;
+        };
+        assert_eq!(fixture_items, branch_stop_items);
+
+        let evaluator = ReferenceEvaluator::new(crate::ProtocolRevision::draft_v1());
+        let mut stopped_budget = WorkBudget::new(1_000_000, branch_stop_items);
+        let stopped = evaluator.evaluate(
+            &corpus,
+            coordinate,
+            &mut stopped_budget,
+            &crate::NeverCancelled,
+        );
+        assert!(stopped.is_ok());
+        let Ok(stopped) = stopped else { return };
+        assert_eq!(stopped.completion(), Completion::BudgetExhausted);
+        assert_eq!(
+            stopped.failure(),
+            Some(crate::EvaluationFailure::BudgetExhausted)
+        );
+        assert!(stopped.canonical_controls().is_empty());
+        assert!(stopped.disposition_records().is_empty());
+        assert!(stopped.control_dispositions().is_empty());
+        assert!(stopped.dispositions().is_empty());
+        assert!(stopped.accepted_changes().is_empty());
+        assert!(stopped.pending_changes().is_empty());
+        assert!(stopped.excluded_changes().is_empty());
+        assert!(stopped.invalid_changes().is_empty());
+        assert!(stopped.heads().is_empty());
+        assert!(stopped.evidence().is_empty());
+        assert!(stopped.checkpoints().is_empty());
+        assert!(stopped.integrity_alerts().is_empty());
+        assert_eq!(stopped.manifest(), &ResolvedManifestAvailability::Missing);
+        assert!(stopped.document().is_none());
+        assert_eq!(stopped_budget.consumed(), prelude_budget.consumed());
+
+        let mut complete_budget = WorkBudget::new(1_000_000, AMPLE_ITEMS);
+        let complete = evaluator.evaluate(
+            &corpus,
+            coordinate,
+            &mut complete_budget,
+            &crate::NeverCancelled,
+        );
+        assert!(complete.is_ok());
+        let Ok(complete) = complete else { return };
+        assert_eq!(complete.completion(), Completion::Complete);
+        assert_eq!(complete.failure(), None);
+        assert!(!complete.canonical_controls().is_empty());
+        assert!(!complete.accepted_changes().is_empty());
+    }
 
     #[test]
     fn member_and_dependency_preparation_interleaves_every_owned_operation() {

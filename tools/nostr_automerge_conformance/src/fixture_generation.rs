@@ -75,6 +75,7 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
 
 fn generate_resource_followup_v12() -> Result<(), String> {
     const DEPTH: u64 = 8;
+    const POST_BRANCH_STOP_ITEMS: u64 = 687;
 
     let root = repository_root().join("fixtures/v12/scenarios/resource_followup");
     std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
@@ -183,6 +184,149 @@ fn generate_resource_followup_v12() -> Result<(), String> {
         )?;
     }
 
+    let controller = Signer::from_byte(226)?;
+    let writer = Signer::from_byte(227)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "f3".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid v12 post-branch coordinate".to_owned())?;
+    let members = || vec![(&writer, None, &["write"][..])];
+    let genesis = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let genesis_id = event_id(&genesis)?;
+    let actor = ActorId::derive(coordinate, writer.public_key);
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+        .map_err(|error| format!("v12 post-branch document: {error:?}"))?;
+    let first = document
+        .author_change(&[Operation::PutString {
+            key: "parent".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .map_err(|error| format!("v12 post-branch first change: {error:?}"))?;
+    let first_event = sign_change(
+        &writer,
+        2,
+        coordinate,
+        genesis_id,
+        first.change_hash(),
+        first.raw(),
+    )?;
+    let child = sign_control(
+        &controller,
+        3,
+        coordinate,
+        Some(genesis_id),
+        control_content_with_links(1, members(), &[first.change_hash()], None, None),
+    )?;
+    let child_id = event_id(&child)?;
+    let second = document
+        .author_change(&[Operation::PutString {
+            key: "child".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .map_err(|error| format!("v12 post-branch second change: {error:?}"))?;
+    let second_event = sign_change(
+        &writer,
+        4,
+        coordinate,
+        child_id,
+        second.change_hash(),
+        second.raw(),
+    )?;
+    let events = vec![genesis, first_event, child, second_event];
+    assert_post_branch_stop_boundaries(coordinate, &events, POST_BRANCH_STOP_ITEMS)?;
+    write_fixture_with_execution(
+        &root,
+        "post_branch_stop_has_no_target_work",
+        coordinate,
+        events,
+        &["NCRDT-COMPLETION-001", "NCRDT-RESOURCE-016"],
+        "resource_followup_v12",
+        Vec::new(),
+        ScenarioBudget {
+            max_bytes: 1_000_000,
+            max_items: POST_BRANCH_STOP_ITEMS,
+        },
+        None,
+    )?;
+
+    Ok(())
+}
+
+fn assert_post_branch_stop_boundaries(
+    coordinate: DocumentCoordinate,
+    events: &[RawEventBytes],
+    max_items: u64,
+) -> Result<(), String> {
+    let kind = |event: &RawEventBytes| {
+        serde_json::from_str::<Value>(event.as_str())
+            .ok()?
+            .get("kind")?
+            .as_u64()
+    };
+    let permutations = crate::permutations::required_delivery_permutations(
+        events,
+        |event| kind(event) == Some(1_624),
+        |event| kind(event) == Some(1_625),
+        |_| false,
+    );
+    if permutations.len() != 8 {
+        return Err("post-branch fixture requires eight delivery orders".to_owned());
+    }
+    let mut expected = None;
+    for permutation in permutations {
+        let report = generic_report(
+            "post_branch_stop_has_no_target_work",
+            ScenarioInput {
+                scenario_schema: "nostr_automerge.scenario.v1".to_owned(),
+                coordinate: coordinate.to_address(),
+                raw_events: permutation
+                    .events
+                    .iter()
+                    .map(|event| RawScenarioEvent::Utf8(event.as_str().to_owned()))
+                    .collect(),
+                budget: ScenarioBudget {
+                    max_bytes: 1_000_000,
+                    max_items,
+                },
+                cancel_after: None,
+            },
+            StateAssertionPolicy::None,
+        )
+        .map_err(|error| error.message().to_owned())?;
+        if report.completion != "budget_exhausted"
+            || !report.canonical_controls.is_empty()
+            || !report.disposition_records.is_empty()
+            || !report.accepted_changes.is_empty()
+            || !report.pending_changes.is_empty()
+            || !report.excluded_changes.is_empty()
+            || !report.invalid_changes.is_empty()
+            || !report.heads.is_empty()
+            || !report.checkpoints.is_empty()
+            || !report.state_assertions.is_empty()
+        {
+            return Err(format!(
+                "post-branch delivery order {} was not canonical no-progress",
+                permutation.name
+            ));
+        }
+        let bytes = write_canonical_report(&report).map_err(|error| format!("{error:?}"))?;
+        if expected.as_ref().is_some_and(|expected| expected != &bytes) {
+            return Err(format!(
+                "post-branch delivery order {} changed output",
+                permutation.name
+            ));
+        }
+        expected = Some(bytes);
+    }
     Ok(())
 }
 

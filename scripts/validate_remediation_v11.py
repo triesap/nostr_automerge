@@ -66,6 +66,7 @@ STEP_1349 = "ef3e944c40c1c69c8b1c70ae4353835279219327"
 STEP_1350 = "b2e380c007d9abe58c79b392d05cb2f490ac0fd0"
 STEP_1351 = "8250cfae174ab619808cfde1a076299ec6b60923"
 STEP_1352 = "892939f83901109b2acc85e7346168d123b32fff"
+STEP_1353 = "561e99287479b7831fb7e9912b1442880f1dcc51"
 PLAN_SHA256 = "02348e20f719c0ffceda9a2d8afb9cfbeaafc579a4b9b23ba36cf719b948dc42"
 HARNESS_SHA256 = "ec6c7b73217b454c2b03b843cbcf124792e4bd026da507a437cf309e5f6a40d3"
 REPRODUCTIONS_SHA256 = "a782519eb39fa33b2b2c7b40c0558140c99298b3e2004f9bb5a689235ead7039"
@@ -95,19 +96,15 @@ HISTORICAL_EVIDENCE = (
     ("reports/resource_followup_final_decision_v10.json", "43d28679234b7c11878f615faf57fc65f298fa99505cdcc70f2d86022b40dd9c"),
 )
 SCOPE = (
+    "crates/nostr_automerge/src/engine/reference_evaluator.rs",
     "docs/execution/remediation_v11/ledger.md",
     "fixtures/distribution/manifest_v12.json",
-    "fixtures/v12/scenarios/resource_followup/deep_delta_absent_lookup_exact_budget.expected.json",
-    "fixtures/v12/scenarios/resource_followup/deep_delta_absent_lookup_exact_budget.fixture.json",
-    "fixtures/v12/scenarios/resource_followup/deep_delta_absent_lookup_exact_budget.input.json",
-    "fixtures/v12/scenarios/resource_followup/deep_delta_extend_exact_budget.expected.json",
-    "fixtures/v12/scenarios/resource_followup/deep_delta_extend_exact_budget.fixture.json",
-    "fixtures/v12/scenarios/resource_followup/deep_delta_extend_exact_budget.input.json",
-    "fixtures/v12/scenarios/resource_followup/deep_delta_root_lookup_exact_budget.expected.json",
-    "fixtures/v12/scenarios/resource_followup/deep_delta_root_lookup_exact_budget.fixture.json",
-    "fixtures/v12/scenarios/resource_followup/deep_delta_root_lookup_exact_budget.input.json",
+    "fixtures/v12/scenarios/resource_followup/post_branch_stop_has_no_target_work.expected.json",
+    "fixtures/v12/scenarios/resource_followup/post_branch_stop_has_no_target_work.fixture.json",
+    "fixtures/v12/scenarios/resource_followup/post_branch_stop_has_no_target_work.input.json",
     "implementation/runtime_ledger_v11.json",
     "reports/spec_baseline.txt",
+    "scripts/validate_persistent_state_v11.py",
     "scripts/validate_remediation_v11.py",
     "spec/distribution_v12_transition.json",
     "tools/nostr_automerge_conformance/src/fixture_generation.rs",
@@ -256,7 +253,7 @@ def validate_ledger(value: object) -> None:
         raise ValidationError("ledger:identity")
     if record["authority"] != "spec/remediation_v11_authority.json":
         raise ValidationError("ledger:authority")
-    if record["cursor"] != {"active_rcld": 107, "active_step": "step_1353", "next_step": "step_1354", "last_planned_step": "step_1363", "remaining_checkpoint_count": 11, "remaining_rcld_count": 2}:
+    if record["cursor"] != {"active_rcld": 107, "active_step": "step_1354", "next_step": "step_1355", "last_planned_step": "step_1363", "remaining_checkpoint_count": 10, "remaining_rcld_count": 2}:
         raise ValidationError("ledger:cursor")
     if record["findings"] != {"open": list(FINDING_IDS[:4]), "held": ["FINDING_080"]}:
         raise ValidationError("ledger:findings")
@@ -310,6 +307,7 @@ def validate_ledger(value: object) -> None:
         {"step": "step_1350", "candidate": STEP_1350, "owner_class": "opaque_private", "result": "pass"},
         {"step": "step_1351", "candidate": STEP_1351, "owner_class": "opaque_private", "result": "pass"},
         {"step": "step_1352", "candidate": STEP_1352, "owner_class": "public", "result": "pass"},
+        {"step": "step_1353", "candidate": STEP_1353, "owner_class": "public", "result": "pass"},
     ]:
         raise ValidationError("ledger:predecessors")
     if tuple(record["holds"]) != HOLDS:
@@ -383,8 +381,8 @@ def mutation_self_test() -> int:
         mutations.append(("reproductions", candidate))
     mutations.append(("plan", PLAN.read_text().replace("`step_1315`–`step_1320`", "`step_1315`–`step_1321`", 1)))
     for mutate in (
-        lambda value: value["cursor"].update(active_step="step_1354"),
-        lambda value: value["cursor"].update(remaining_checkpoint_count=10),
+        lambda value: value["cursor"].update(active_step="step_1355"),
+        lambda value: value["cursor"].update(remaining_checkpoint_count=9),
         lambda value: value["findings"]["open"].reverse(),
         lambda value: value["active_checkpoint_scope"].reverse(),
         lambda value: value["predecessors"][0].update(candidate="0" * 40),
