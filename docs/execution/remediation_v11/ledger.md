@@ -201,3 +201,11 @@ approved applicability, normative source clauses, 152-row schema branch, and
 eight append-only mutations are closed together. Historical 139- and 148-row
 schema branches remain valid as immutable transition shapes; the live registry
 admits no count or ordering other than the exact 152-row authority.
+
+At `step_1343`, the live NIP, companion, report, architecture, requirement, and
+authority-transition identities are rebound to the corrected v11 authority.
+The completed v10 and v11 distribution manifests and their downstream evidence
+remain byte-identical to their owning historical candidates; their generators
+and validators now distinguish that immutable evidence from the live 152-row
+authority instead of rewriting history. Coordinated source rehash, row reorder,
+missing or extra authority, and stale-candidate mutations remain fail closed.

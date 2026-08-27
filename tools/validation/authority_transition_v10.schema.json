@@ -143,12 +143,12 @@
           "const": 139
         },
         "target_requirement_count": {
-          "const": 148
+          "const": 152
         },
         "appended_ids": {
           "type": "array",
           "minItems": 9,
-          "maxItems": 9,
+          "maxItems": 13,
           "uniqueItems": true,
           "items": {
             "$ref": "#/$defs/id"

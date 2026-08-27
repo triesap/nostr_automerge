@@ -5,7 +5,7 @@
   "protocol_revision": "draft_2026_08",
   "nip_authority": {
     "path": "spec/NIP_DRAFT.md",
-    "sha256": "3558a4b53e19735518f66761544d537128037a45b20d675cf36ca1f973a8fac7",
+    "sha256": "8262bf32cb70b7c0e46210441120652e52504fb73839641ac19dddfed840acf8",
     "status": "controlling_normative_authority_reconciled"
   },
   "documents": [
@@ -37,7 +37,7 @@
     {
       "path": "spec/REPORT_CONTRACT.md",
       "baseline_sha256": null,
-      "live_sha256": "9f3c13e14e12b3a8767e1de1055067856489d1a709e1f6373e1c0286b7112521"
+      "live_sha256": "636bd1ff32673a00dc0f41440bde61f2b0f8d86f853a7feaaf119de1ff2ce189"
     }
   ],
   "held_claims": [

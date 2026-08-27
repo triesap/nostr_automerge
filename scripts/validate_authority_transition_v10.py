@@ -19,6 +19,8 @@ DISTRIBUTION_SCHEMA_PATH = "fixtures/schema/distribution.schema.v10.json"
 BASE_MANIFEST_PATH = "fixtures/distribution/manifest_v9.json"
 BASE_MANIFEST_CANDIDATE = "50bd3e4bef99a29e0d536b3fe8efd072835ce8fc"
 V10_MANIFEST_PATH = "fixtures/distribution/manifest_v10.json"
+V10_MANIFEST_CANDIDATE = "20b786c5c3ff143786aaaca56ad19bd26739b67b"
+V10_MANIFEST_SHA256 = "86ec32f34dd99ef0c1e5ea3531360a1f78bf07d62818375096e0bdf0f209b8e5"
 
 STAGES = (
     "transition_installed",
@@ -54,6 +56,10 @@ APPENDED_REQUIREMENTS = (
     "NCRDT-VERSION-002",
     "NCRDT-CONF-010",
     "NCRDT-EVIDENCE-006",
+    "NCRDT-RESOURCE-015",
+    "NCRDT-RESOURCE-016",
+    "NCRDT-VERSION-003",
+    "NCRDT-OWNERSHIP-001",
 )
 APPENDED_REQUIREMENT_ROWS = (
     {
@@ -105,10 +111,34 @@ APPENDED_REQUIREMENT_ROWS = (
         "source": "spec/CONFORMANCE.md",
     },
     {
-        "id": "NCRDT-EVIDENCE-006",
+      "id": "NCRDT-EVIDENCE-006",
         "section": "Semantically exact proof catalog",
         "text": "Every passing requirement row MUST bind to a semantically matching exact signed fixture or named assertion through a validated proof catalog. Broad command-only proof, unrelated assertion categories, stale expectations, and missing opaque TypeScript evidence identifiers MUST be rejected.",
         "source": "spec/CONFORMANCE.md",
+    },
+    {
+        "id": "NCRDT-RESOURCE-015",
+        "section": "Metered persistent-state operations",
+        "text": "Every runtime lookup, membership test, extension, or materialization over persistent branch state MUST charge and check cancellation before each visited persistent node and each inserted target item, or use a separately metered flattened representation.",
+        "source": "spec/REPORT_CONTRACT.md",
+    },
+    {
+        "id": "NCRDT-RESOURCE-016",
+        "section": "No target-sized work after a stop",
+        "text": "After a work-budget charge fails or cancellation is observed, evaluation MUST perform no further target-sized traversal, allocation, copy, comparison, serialization, or invariant construction and MUST return the constant-size no-progress result.",
+        "source": "spec/REPORT_CONTRACT.md",
+    },
+    {
+        "id": "NCRDT-VERSION-003",
+        "section": "Unsupported change-shaped evidence has Event-only identity",
+        "text": "An unsupported change-shaped event for which canonical Change bytes and a computed ChangeHash were not verified receives only an Event unsupported_revision outcome and MUST NOT create or influence a semantic ChangeHash disposition in draft v1.",
+        "source": "spec/NIP_DRAFT.md",
+    },
+    {
+        "id": "NCRDT-OWNERSHIP-001",
+        "section": "Bounded destruction of persistent histories",
+        "text": "Persistent control-ancestry and branch-state ownership used by the reference implementation MUST be destructible with bounded stack usage at qualified history depth; recursive teardown proportional to retained history is not permitted.",
+        "source": "spec/ARCHITECTURE.md",
     },
 )
 APPENDED_APPLICABILITY = (
@@ -121,6 +151,10 @@ APPENDED_APPLICABILITY = (
     "rust-and-typescript",
     "rust-and-typescript",
     "rust-only-evidence-with-opaque-typescript-overlay",
+    "rust-and-typescript",
+    "rust-and-typescript",
+    "rust-and-typescript",
+    "rust-only",
 )
 APPLICABILITY_VALUES = {
     "rust-and-typescript",
@@ -319,6 +353,7 @@ BASELINE = {
     "ordered_fixture_ids_sha256": "06f35baa3f56013232ab0c708bccaabe09348865038374d28c629d1689139082",
     "signed_events_sha256": "329c6946e3c56f94da3159c3e3d38b685f818da9c632f02fd868b0ccf05d401b",
 }
+CURRENT_NIP_SHA256 = "8262bf32cb70b7c0e46210441120652e52504fb73839641ac19dddfed840acf8"
 MANIFEST_KEYS = {
     "distribution_schema",
     "distribution_id",
@@ -422,6 +457,43 @@ def load_baseline_candidate_object(relative: str) -> dict[str, Any]:
 
 def baseline_candidate_digest(relative: str) -> str:
     return hashlib.sha256(baseline_candidate_bytes(relative)).hexdigest()
+
+
+def v10_manifest_bytes() -> bytes:
+    """Return the immutable completed v10 manifest from its owning checkpoint."""
+
+    result = subprocess.run(
+        ("git", "show", f"{V10_MANIFEST_CANDIDATE}:{V10_MANIFEST_PATH}"),
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+    )
+    require(result.returncode == 0 and result.stderr == b"", "v10_manifest_git")
+    require(
+        hashlib.sha256(result.stdout).hexdigest() == V10_MANIFEST_SHA256,
+        "v10_manifest_candidate_hash",
+    )
+    return result.stdout
+
+
+def validate_historical_v10_manifest() -> None:
+    """Keep completed v10 evidence byte-stable after later authority appends."""
+
+    expected = v10_manifest_bytes()
+    actual = (ROOT / V10_MANIFEST_PATH).read_bytes()
+    require(actual == expected, "v10_manifest_historical_bytes")
+    require(hashlib.sha256(actual).hexdigest() == V10_MANIFEST_SHA256, "v10_manifest_hash")
+    try:
+        manifest = json.loads(actual)
+    except json.JSONDecodeError as error:
+        raise TransitionError("v10_manifest_json") from error
+    require(isinstance(manifest, dict) and set(manifest) == MANIFEST_KEYS, "v10_manifest_keys")
+    require(
+        manifest.get("transition_stage") == "distribution_complete"
+        and manifest.get("complete") is True
+        and manifest.get("fixture_count") == 192,
+        "v10_manifest_completed_identity",
+    )
 
 
 def load_baseline_manifest() -> dict[str, Any]:
@@ -829,7 +901,14 @@ def validate_requirement_projection(
         source = source_documents.get(row["source"])
         require(isinstance(source, str), f"requirement_anchor_source:{row['id']}")
         require(
-            source.count(f"## {row['section']}\n") == 1,
+            len(
+                re.findall(
+                    rf"^#{{2,6}} {re.escape(row['section'])}$",
+                    source,
+                    flags=re.MULTILINE,
+                )
+            )
+            == 1,
             f"requirement_anchor_heading:{row['id']}",
         )
         require(
@@ -883,8 +962,8 @@ def requirement_projection_self_test(
     mutations.append(("coordinated_order", candidate, classes, sources))
     candidate, classes, sources = copies()
     candidate["requirements"].pop()
-    candidate["requirement_count"] = 147
-    classes["classifications"].pop("NCRDT-EVIDENCE-006")
+    candidate["requirement_count"] = 151
+    classes["classifications"].pop("NCRDT-OWNERSHIP-001")
     mutations.append(("coordinated_count", candidate, classes, sources))
     candidate, classes, sources = copies()
     old = candidate["requirements"][141]["text"]
@@ -908,7 +987,7 @@ def requirement_projection_self_test(
                 classes,
                 baseline_rows,
                 sources,
-                148,
+                152,
             )
         except TransitionError:
             caught += 1
@@ -937,8 +1016,8 @@ def validate_requirements(state: dict[str, Any], stage: str) -> None:
     require(set(authority) == expected_keys, "authority_keys")
     require(authority.get("schema_path") == AUTHORITY_SCHEMA_PATH, "authority_schema_path")
     require(authority.get("schema_sha256") == digest(AUTHORITY_SCHEMA_PATH), "authority_schema_hash")
-    require(authority.get("nip_sha256") == BASELINE["nip_sha256"], "nip_binding")
-    require(digest("spec/NIP_DRAFT.md") == BASELINE["nip_sha256"], "nip_changed")
+    require(authority.get("nip_sha256") == CURRENT_NIP_SHA256, "nip_binding")
+    require(digest("spec/NIP_DRAFT.md") == CURRENT_NIP_SHA256, "nip_changed")
     require(
         authority.get("baseline_companion_sha256") == BASELINE["companion_sha256"],
         "baseline_companion",
@@ -962,12 +1041,12 @@ def validate_requirements(state: dict[str, Any], stage: str) -> None:
         == 139,
         "baseline_requirement_count",
     )
-    require(authority.get("target_requirement_count") == 148, "target_requirement_count")
+    require(authority.get("target_requirement_count") == 152, "target_requirement_count")
     require(authority.get("appended_ids") == list(APPENDED_REQUIREMENTS), "appended_ids")
 
     registry = load_object("spec/requirements.json")
     applicability = load_object("spec/requirements_applicability.json")
-    expected_count = STAGE_COUNTS[stage][0]
+    expected_count = 152 if stage == "distribution_complete" else STAGE_COUNTS[stage][0]
     baseline_rows = load_object("reports/requirements_coverage_v9.json").get("rows")
     require(isinstance(baseline_rows, list), "baseline_evidence_rows")
     source_documents = {
@@ -1534,7 +1613,7 @@ def validate_distribution(state: dict[str, Any], stage: str) -> None:
     if STAGES.index(stage) < STAGES.index("distribution_locked"):
         require(not v10_manifest_path.exists(), "early_v10_manifest")
     else:
-        validate_v10_manifest(stage, load_object(V10_MANIFEST_PATH), discovered)
+        validate_historical_v10_manifest()
 
 
 def normalized_plan_projection(plan: str) -> str:
@@ -2881,7 +2960,8 @@ def main() -> int:
     validate_public_boundary()
     mutations = mutation_self_test(state)
     stage = str(state["current_stage"])
-    requirement_count, fixture_count, _, _ = STAGE_COUNTS[stage]
+    _, fixture_count, _, _ = STAGE_COUNTS[stage]
+    requirement_count = len(load_object("spec/requirements.json")["requirements"])
     print(f"PASS: authority transition v10 {stage}")
     print(f"- requirements={requirement_count}")
     print(f"- signed_fixtures={fixture_count}")

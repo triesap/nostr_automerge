@@ -26,7 +26,7 @@ STAGES = (
     "distribution_complete",
 )
 COMPANION_STAGE = STAGES.index("companion_authority_installed")
-NIP_SHA256 = "3558a4b53e19735518f66761544d537128037a45b20d675cf36ca1f973a8fac7"
+NIP_SHA256 = "8262bf32cb70b7c0e46210441120652e52504fb73839641ac19dddfed840acf8"
 
 REQUIRED = (
     "ACCEPTANCE_CRITERIA.md",
@@ -80,7 +80,11 @@ INSTALLED_LIVE_HASHES = {
     "spec/CONFORMANCE.md": "d8439031d76caaeb2dd8a2af8ba2d2eed7843fb1634f90f74e5f5c6d85d8d32e",
     "spec/CHECKPOINT_PROFILE.md": "85bac3c3aea268fa0bfc559b93280a36c571ee6a79c2d588a30755a6a2588886",
     "spec/draft_limits.md": "c482c9906b0714e0b2f359703aa3b46a6ea5aea7f583adf67886a99b2cc135d9",
-    "spec/REPORT_CONTRACT.md": "9f3c13e14e12b3a8767e1de1055067856489d1a709e1f6373e1c0286b7112521",
+    "spec/REPORT_CONTRACT.md": "636bd1ff32673a00dc0f41440bde61f2b0f8d86f853a7feaaf119de1ff2ce189",
+}
+V11_LIVE_HASHES = {
+    "spec/ARCHITECTURE.md": "5c01f373a939ed3b9f4d11a5b19988cec1abd65a61f61313bc37160acf41f878",
+    "spec/SECURITY.md": "3010e3a8bd4597141f2926e3c16d64fb0623e6e5d6ea517ad9815ab7639ce056",
 }
 HEADING_BINDINGS = {
     "spec/CHECKPOINT_PROFILE.md": (
@@ -462,6 +466,8 @@ def main() -> int:
         expected = (
             NIP_SHA256
             if relative == "spec/NIP_DRAFT.md" and post_import
+            else V11_LIVE_HASHES[relative]
+            if relative in V11_LIVE_HASHES and post_import
             else authorized[relative]["live_sha256"]
             if relative in authorized
             else original

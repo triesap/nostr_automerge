@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
 
 import validate_authority_transition_v10 as authority
@@ -15,35 +14,8 @@ OUTPUT = ROOT / authority.V10_MANIFEST_PATH
 
 
 def canonical_bytes() -> bytes:
-    state = authority.load_object(authority.STATE_PATH)
-    stage = state.get("current_stage")
-    authority.require(
-        isinstance(stage, str) and stage in authority.STAGES,
-        "generator_stage",
-    )
-    authority.require(
-        authority.STAGES.index(stage)
-        >= authority.STAGES.index("distribution_locked"),
-        "generator_stage_unlocked",
-    )
-    manifest = authority.expected_v10_manifest(
-        stage,
-        authority.discover_fixture_metadata(),
-    )
-    authority.validate_v10_manifest(
-        stage,
-        manifest,
-        authority.discover_fixture_metadata(),
-    )
-    return (
-        json.dumps(
-            manifest,
-            ensure_ascii=False,
-            sort_keys=True,
-            separators=(",", ":"),
-        )
-        + "\n"
-    ).encode("utf-8")
+    authority.validate_historical_v10_manifest()
+    return authority.v10_manifest_bytes()
 
 
 def main() -> int:

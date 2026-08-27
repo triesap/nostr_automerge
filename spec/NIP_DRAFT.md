@@ -593,6 +593,13 @@ One sufficient valid carrier dominates invalid, pending, unsupported, or
 noncanonical carriers for aggregate acceptance without hiding their individual
 Event outcomes. A semantic change MUST be applied at most once.
 
+### Unsupported change-shaped evidence has Event-only identity
+
+`NCRDT-VERSION-003`: An unsupported change-shaped event for which canonical
+Change bytes and a computed ChangeHash were not verified receives only an Event
+unsupported_revision outcome and MUST NOT create or influence a semantic
+ChangeHash disposition in draft v1.
+
 ### Device equivocation
 
 Two distinct otherwise-valid changes under the same canonical control that contain the same ActorId and sequence number are device equivocation.

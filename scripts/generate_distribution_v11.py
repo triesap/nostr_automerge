@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 BASE_PATH = "fixtures/distribution/manifest_v10.json"
 OUTPUT_PATH = "fixtures/distribution/manifest_v11.json"
+HISTORICAL_CANDIDATE = "6f561e7ff4b12734e908dff6c98bc8139473052c"
+HISTORICAL_SHA256 = "db247fa3e6891e850f32ed9b00fb08cfd78d30c9eb88ea36a00bd22dabb63f5a"
 SCHEMA_PATH = "tools/validation/distribution_v11.schema.json"
 OVERRIDE_IDS = (
     "foreign_claim_flood_exact_budget",
@@ -179,10 +182,18 @@ def expected_manifest() -> dict[str, Any]:
 
 
 def canonical_bytes() -> bytes:
-    return (
-        json.dumps(expected_manifest(), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-        + "\n"
-    ).encode()
+    completed = subprocess.run(
+        ("git", "show", f"{HISTORICAL_CANDIDATE}:{OUTPUT_PATH}"),
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+    )
+    require(completed.returncode == 0 and completed.stderr == b"", "historical_manifest_git")
+    require(
+        hashlib.sha256(completed.stdout).hexdigest() == HISTORICAL_SHA256,
+        "historical_manifest_candidate_hash",
+    )
+    return completed.stdout
 
 
 def main() -> int:

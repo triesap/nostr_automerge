@@ -35,15 +35,15 @@
   },
   "authority": {
     "schema_path": "tools/validation/authority_transition_v10.schema.json",
-    "schema_sha256": "026ed41dfe6efafb0f4045bf936115946ca4481fb9ba7d5801b48fcf489a235e",
-    "nip_sha256": "0dfa683aa0f4a1c7d3df010ec95901bf4ba4094ed3adaacc26e85d95aaa4ded1",
+    "schema_sha256": "60c55f9501ef1c9f36815049c6261fe5a6d1d4e1a83c19933feb5a770b65dcff",
+    "nip_sha256": "8262bf32cb70b7c0e46210441120652e52504fb73839641ac19dddfed840acf8",
     "baseline_companion_sha256": "58177c31eb06086d76297bbb0fc15343a8e34c15499d6e03636c63df7604bb10",
     "baseline_requirements_sha256": "a97103be86946c15d81b3fc585efa36f4884da09f91cb51a8c5adfa27b7fe8f0",
     "baseline_applicability_sha256": "7cda8e59da0d8caf1f9a9985ba27c9367018c572824f092106fe5e5a8d823793",
     "baseline_ordered_requirement_ids_sha256": "1763ff189bde8a7cb2743a13450105b40faa7575eb9b4fb2730aa49a0836d071",
     "baseline_requirement_count": 139,
     "preserved_prefix_count": 139,
-    "target_requirement_count": 148,
+    "target_requirement_count": 152,
     "appended_ids": [
       "NCRDT-CPAUTH-001",
       "NCRDT-CPAUTH-002",
@@ -53,11 +53,15 @@
       "NCRDT-RESOURCE-014",
       "NCRDT-VERSION-002",
       "NCRDT-CONF-010",
-      "NCRDT-EVIDENCE-006"
+      "NCRDT-EVIDENCE-006",
+      "NCRDT-RESOURCE-015",
+      "NCRDT-RESOURCE-016",
+      "NCRDT-VERSION-003",
+      "NCRDT-OWNERSHIP-001"
     ],
     "live": {
-      "requirements_sha256": "f6e6070de7a5fc707f8488ced3a031f7dfc36d11c7477d800c3d3c33d532e6ba",
-      "applicability_sha256": "c5380b7fe4e16f7a750ee0b48b64bc7e4c29fd5851f34125980e4413f7d55712",
+      "requirements_sha256": "840822a1acf171c887b9a9aba79ddf159ffcd9c5d7a74bd74d7e0bac5c6161f4",
+      "applicability_sha256": "e473e8484ad0ccfb7d917485a0d7ab0d5bd2b98aa120ecaec588e7bacd19de28",
       "companion_sha256": "a81ad7f3e5cc7e386a9313f6d5355afc1ec95757a5c9a4051ea94b79eafeceb0"
     }
   },

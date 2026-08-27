@@ -10,6 +10,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_NIP_SHA256 = "67019c8ea680714052c65226f620a8e1a60b9b10a8f158603063a835a7bbc7a3"
+IMPORTED_TARGET_NIP_SHA256 = "0dfa683aa0f4a1c7d3df010ec95901bf4ba4094ed3adaacc26e85d95aaa4ded1"
+CURRENT_NIP_SHA256 = "8262bf32cb70b7c0e46210441120652e52504fb73839641ac19dddfed840acf8"
 REQUIREMENT_ID_SHA256 = "16caaa50b4c0b5e1039f365b5fc996a385a149958834a3e4bd821d5b074af8ca"
 
 
@@ -29,10 +31,19 @@ def main() -> int:
         for item in adaptation["imported_files"]
         if item["path"] == "spec/NIP_DRAFT.md"
     )
+    authority = json.loads((ROOT / "spec/companion_authority_v10.json").read_text())
+    nip_authority = authority.get("nip_authority")
     if (
         nip_import.get("source_sha256") != SOURCE_NIP_SHA256
-        or nip_import.get("target_sha256") != nip_sha256
+        or nip_import.get("target_sha256") != IMPORTED_TARGET_NIP_SHA256
         or nip_import.get("adapted") is not True
+        or nip_sha256 != CURRENT_NIP_SHA256
+        or nip_authority
+        != {
+            "path": "spec/NIP_DRAFT.md",
+            "sha256": CURRENT_NIP_SHA256,
+            "status": "controlling_normative_authority_reconciled",
+        }
     ):
         raise AssertionError("local NIP reconciliation provenance is invalid")
 

@@ -25,6 +25,7 @@ EXPECTED_MANIFEST = "db247fa3e6891e850f32ed9b00fb08cfd78d30c9eb88ea36a00bd22dabb
 EXPECTED_BASE = "86ec32f34dd99ef0c1e5ea3531360a1f78bf07d62818375096e0bdf0f209b8e5"
 EXPECTED_CANONICAL = "5d50a1656f5723975df9b668c949abc8a0e06619e70aa989d3b52d193dfa2d10"
 EXPECTED_SERIALIZED = "1f811f77dfe6ca91e2aec2045c6c17e2496d5b9407e25f4b7f07af1c2ae64563"
+HISTORICAL_CANDIDATE = "6f561e7ff4b12734e908dff6c98bc8139473052c"
 FOLLOWUP = "fixtures/v11/scenarios/resource_followup"
 OVERRIDES = (
     "foreign_claim_flood_exact_budget",
@@ -54,6 +55,17 @@ def require(condition: bool, code: str) -> None:
 
 def digest(relative: str) -> str:
     return hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()
+
+
+def historical_digest(relative: str) -> str:
+    completed = subprocess.run(
+        ("git", "show", f"{HISTORICAL_CANDIDATE}:{relative}"),
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+    )
+    require(completed.returncode == 0 and completed.stderr == b"", f"historical:file:{relative}")
+    return hashlib.sha256(completed.stdout).hexdigest()
 
 
 def canonical(value: Any) -> bytes:
@@ -147,7 +159,11 @@ def validate_distribution() -> None:
     require(checkpoints[0].get("status") == "unauthorized", "sibling:status")
     require(checkpoints[0].get("historical_carriers") == [], "sibling:history")
     for row in current["files"]:
-        require(tuple(row) == ("path", "sha256") and digest(row["path"]) == row["sha256"], f"manifest:file:{row.get('path')}")
+        require(
+            tuple(row) == ("path", "sha256")
+            and historical_digest(row["path"]) == row["sha256"],
+            f"manifest:file:{row.get('path')}",
+        )
 
 
 def mutation_self_test(original: dict[str, Any]) -> int:

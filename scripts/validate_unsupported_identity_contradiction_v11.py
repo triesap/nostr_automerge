@@ -13,7 +13,7 @@ sys.dont_write_bytecode = True
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 AUTHORITIES = (
-    ("nip", "spec/NIP_DRAFT.md", "3558a4b53e19735518f66761544d537128037a45b20d675cf36ca1f973a8fac7"),
+    ("nip", "spec/NIP_DRAFT.md", "8262bf32cb70b7c0e46210441120652e52504fb73839641ac19dddfed840acf8"),
     ("companion", "spec/NOSTR_AUTOMERGE_V1_SPEC.md", "a81ad7f3e5cc7e386a9313f6d5355afc1ec95757a5c9a4051ea94b79eafeceb0"),
     ("api", "spec/API_CONTRACTS.md", "ce7f2992292b2f5159ff25dc555b29265fea0ec475d39fc65fc60344b76ca37a"),
     ("adr", "docs/adr/adr_0074_unsupported_event_only_identity.md", "eacd506ed130d39b3c72ac61a0ea29b328209abc886b3c8d848723449398140c"),

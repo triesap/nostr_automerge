@@ -33,6 +33,7 @@ AUTHORIZED_POST_IMPORT_COMPANION_DELTAS = {
     "spec/API_CONTRACTS.md",
     "spec/CHECKPOINT_PROFILE.md",
     "spec/CONFORMANCE.md",
+    "spec/NIP_DRAFT.md",
     "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
 }
 FORBIDDEN_PUBLIC_TEXT = (
@@ -207,13 +208,24 @@ def validate_adaptation() -> list[str]:
         imported_target = item.get("target_sha256")
         if actual != imported_target:
             if post_import and relative in AUTHORIZED_POST_IMPORT_COMPANION_DELTAS:
-                binding = authority_documents.get(relative)
-                if (
-                    not isinstance(binding, dict)
-                    or binding.get("baseline_sha256") != imported_target
-                    or binding.get("live_sha256") != actual
-                ):
-                    fail(f"unbound post-import companion delta: {relative}")
+                if relative == "spec/NIP_DRAFT.md":
+                    binding = authority.get("nip_authority")
+                    if (
+                        not isinstance(binding, dict)
+                        or binding.get("path") != relative
+                        or binding.get("sha256") != actual
+                        or binding.get("status")
+                        != "controlling_normative_authority_reconciled"
+                    ):
+                        fail(f"unbound post-import companion delta: {relative}")
+                else:
+                    binding = authority_documents.get(relative)
+                    if (
+                        not isinstance(binding, dict)
+                        or binding.get("baseline_sha256") != imported_target
+                        or binding.get("live_sha256") != actual
+                    ):
+                        fail(f"unbound post-import companion delta: {relative}")
             elif requirements_appended and relative == "spec/requirements.json":
                 validate_post_import_requirements_delta(
                     stage,
