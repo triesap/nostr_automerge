@@ -246,6 +246,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "fixtures/distribution/manifest_v10.json",
         "fixtures/distribution/manifest_v11.json",
         "fixtures/distribution/manifest_v12.json",
+        "fixtures/v12/scenarios/resource_followup",
         "fixtures/README.md",
         "fixtures/examples",
         "fixtures/schema",

@@ -16,6 +16,7 @@ STATE_PATH = "spec/distribution_v12_transition.json"
 BASE_PATH = "fixtures/distribution/manifest_v11.json"
 OUTPUT_PATH = "fixtures/distribution/manifest_v12.json"
 SCHEMA_PATH = "tools/validation/distribution_v12.schema.json"
+COMPANION_ROOT = ROOT / "fixtures/v12/scenarios/resource_followup"
 BASE_CANDIDATE = "6f561e7ff4b12734e908dff6c98bc8139473052c"
 BASE_SHA256 = "db247fa3e6891e850f32ed9b00fb08cfd78d30c9eb88ea36a00bd22dabb63f5a"
 PLAN = (
@@ -32,7 +33,7 @@ PLAN = (
 STAGE_COUNTS = {
     "authority_defined": 0,
     "inventory_installed": 0,
-    "lookup_fixtures_added": 2,
+    "lookup_fixtures_added": 3,
     "stop_fixtures_added": 4,
     "distribution_complete": 5,
 }
@@ -161,6 +162,26 @@ def fixture_entry(identifier: str, requirements: tuple[str, ...], profile: str) 
     }
 
 
+def planned_companion_paths(count: int) -> tuple[str, ...]:
+    paths = []
+    for identifier, _, _ in PLAN[:count]:
+        root = f"fixtures/v12/scenarios/resource_followup/{identifier}"
+        paths.extend((f"{root}.expected.json", f"{root}.fixture.json", f"{root}.input.json"))
+    return tuple(sorted(paths, key=str.encode))
+
+
+def validate_companion_inventory(count: int, actual: tuple[str, ...] | None = None) -> None:
+    expected = planned_companion_paths(count)
+    if actual is None:
+        actual = tuple(
+            sorted(
+                (path.relative_to(ROOT).as_posix() for path in COMPANION_ROOT.glob("*.json")),
+                key=str.encode,
+            )
+        )
+    require(actual == expected, "companion_inventory")
+
+
 def validate_state(state: dict[str, Any]) -> tuple[str, int]:
     keys = (
         "schema",
@@ -192,6 +213,15 @@ def expected_manifest(state: dict[str, Any] | None = None) -> dict[str, Any]:
     stage, count = validate_state(state)
     base = base_manifest()
     rebound_files = validate_base_files(base)
+    validate_companion_inventory(count)
+    target_identifiers = sorted(
+        [*(row["fixture_id"] for row in base["fixtures"]), *(row[0] for row in PLAN)],
+        key=str.encode,
+    )
+    require(
+        len(target_identifiers) == 198 and len(set(target_identifiers)) == 198,
+        "target_inventory",
+    )
     appended = [fixture_entry(*row) for row in PLAN[:count]]
     fixtures = [*base["fixtures"], *appended]
     fixtures.sort(key=lambda row: row["fixture_id"].encode())

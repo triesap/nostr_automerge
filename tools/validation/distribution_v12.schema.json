@@ -34,7 +34,7 @@
     "transition_stage": {"enum": ["authority_defined", "inventory_installed", "lookup_fixtures_added", "stop_fixtures_added", "distribution_complete"]},
     "status": {"enum": ["locked_transition", "canonical_signed_neutral_corpus"]},
     "target_fixture_count": {"const": 198},
-    "fixture_count": {"enum": [193, 195, 197, 198]},
+    "fixture_count": {"enum": [193, 196, 197, 198]},
     "complete": {"type": "boolean"},
     "base_manifest_sha256": {"$ref": "#/$defs/sha256"},
     "preserved_v11_fixture_count": {"const": 193},

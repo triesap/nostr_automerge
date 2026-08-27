@@ -40,7 +40,7 @@ def validate_schema(schema: dict[str, Any]) -> None:
     properties = schema["properties"]
     require(type(required) is list and set(required) == set(properties), "schema_required")
     require(properties["target_fixture_count"] == {"const": 198}, "schema_target")
-    require(properties["fixture_count"] == {"enum": [193, 195, 197, 198]}, "schema_counts")
+    require(properties["fixture_count"] == {"enum": [193, 196, 197, 198]}, "schema_counts")
     require(properties["preserved_v11_fixture_count"] == {"const": 193}, "schema_preserved")
     require(properties["authorized_v11_source_rebindings"]["minItems"] == 2, "schema_rebindings")
     require(set(schema["$defs"]) == {"sha256", "identifiers", "rebinding", "fixture", "file"}, "schema_defs")
@@ -56,6 +56,21 @@ def validate_manifest(manifest: dict[str, Any], state: dict[str, Any]) -> None:
     require(manifest["fixture_count"] == 193 + count, "manifest_count")
     require(manifest["complete"] is (count == 5), "manifest_complete")
     require(len(manifest["files"]) == 623 + 3 * count, "manifest_file_count")
+    target_identifiers = sorted(
+        [
+            *(row["fixture_id"] for row in distribution.base_manifest()["fixtures"]),
+            *planned,
+        ],
+        key=str.encode,
+    )
+    require(
+        len(target_identifiers) == 198 and len(set(target_identifiers)) == 198,
+        "target_inventory",
+    )
+    require(
+        manifest["appended_v12_fixtures"] + manifest["missing_v12_fixtures"] == planned,
+        "planned_partition",
+    )
 
 
 def mutation_self_test(
@@ -113,7 +128,30 @@ def mutation_self_test(
         except distribution.DistributionError:
             continue
         raise distribution.DistributionError("mutation:schema")
-    return len(state_mutations) + len(manifest_mutations) + len(schema_mutations)
+    companion_mutations = (
+        (0, ("fixtures/v12/scenarios/resource_followup/unapproved.fixture.json",)),
+        (1, ()),
+        (1, tuple(reversed(distribution.planned_companion_paths(1)))),
+        (
+            1,
+            tuple(
+                path.replace(".expected.json", ".stale.json")
+                for path in distribution.planned_companion_paths(1)
+            ),
+        ),
+    )
+    for count, paths in companion_mutations:
+        try:
+            distribution.validate_companion_inventory(count, paths)
+        except distribution.DistributionError:
+            continue
+        raise distribution.DistributionError("mutation:companions")
+    return (
+        len(state_mutations)
+        + len(manifest_mutations)
+        + len(schema_mutations)
+        + len(companion_mutations)
+    )
 
 
 def main() -> int:

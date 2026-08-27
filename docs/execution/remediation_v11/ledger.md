@@ -225,3 +225,15 @@ candidate, authority, count, evidence, hold, release, remote-action, and
 coordinated identity drift. Public specification authority is green; private
 resource parity and distribution-v12 execution remain assigned to RCLDs 106
 and 107.
+
+The independently committed private RCLD 106 chain is recorded opaquely at
+`step_1346` through `step_1351`; its closed report binds immutable shared state,
+owned ingress/index/evaluator work, every stop prefix, and unsupported
+Event-only identity without disclosing private source. At `step_1352`, the
+distribution-v12 transition advances to `inventory_installed`. The immutable
+193-scenario base plus the exact five planned identifiers form one ordered,
+unique 198-scenario inventory, while the staged companion-file inventory is
+empty. Extra, missing, reordered, or stale companion paths fail closed before
+any fixture bytes are appended. The installed stage counts are `0/3/4/5`, so
+the three persistent-state fixtures land together before the post-stop and
+unsupported Event-only checkpoints.
