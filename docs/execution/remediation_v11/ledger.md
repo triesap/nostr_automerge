@@ -102,3 +102,12 @@ boundary; the checked input-order fixture bytes stay unchanged while its
 permutation maximum records the newly visible work. The remaining open resource
 reproduction is anchored only to candidate, raw-change, and head projections
 assigned to the following checkpoints.
+
+At `step_1330`, accepted candidate and raw-change projections consume the
+canonical accepted-hash view through a closed metered boundary. Candidate/raw
+memoization is performed while initial controls are already owned, eliminating
+the late control rescans, and Automerge history materialization charges closure
+membership, decode/application, head collection, and final serialization at
+their actual operations. Exact candidate/raw stop tests preserve the first
+typed cause; fixture bytes remain unchanged while the checked permutation
+budgets record only the newly visible work.

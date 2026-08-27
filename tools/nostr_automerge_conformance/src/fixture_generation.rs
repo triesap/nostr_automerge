@@ -18,7 +18,9 @@ use sha2::{Digest, Sha256};
 
 use crate::expected::StateAssertion;
 use crate::report_json::write_canonical_report;
-use crate::runner::{StateAssertionPolicy, generic_report, state_assertion_policy};
+use crate::runner::{
+    StateAssertionPolicy, evaluate_scenario, generic_report, state_assertion_policy,
+};
 use crate::scenario::{RawScenarioEvent, ScenarioBudget, ScenarioInput};
 
 pub(crate) fn generate(profile: &str) -> Result<(), String> {
@@ -1690,29 +1692,34 @@ fn minimum_complete_item_budget_for_events(
     coordinate: DocumentCoordinate,
     events: &[RawEventBytes],
 ) -> Result<u64, String> {
+    minimum_complete_item_budget_for_scenario(ScenarioInput {
+        scenario_schema: "nostr_automerge.scenario.v1".to_owned(),
+        coordinate: coordinate.to_address(),
+        raw_events: events
+            .iter()
+            .map(|event| RawScenarioEvent::Utf8(event.as_str().to_owned()))
+            .collect(),
+        budget: ScenarioBudget {
+            max_bytes: 1_000_000,
+            max_items: 1_000_000,
+        },
+        cancel_after: None,
+    })
+}
+
+fn minimum_complete_item_budget_for_scenario(mut scenario: ScenarioInput) -> Result<u64, String> {
     let mut lower = 0_u64;
     let mut upper = 1_000_000_u64;
     while lower < upper {
         let middle = lower + (upper - lower) / 2;
-        let report = generic_report(
-            "minimum_complete_item_budget",
-            ScenarioInput {
-                scenario_schema: "nostr_automerge.scenario.v1".to_owned(),
-                coordinate: coordinate.to_address(),
-                raw_events: events
-                    .iter()
-                    .map(|event| RawScenarioEvent::Utf8(event.as_str().to_owned()))
-                    .collect(),
-                budget: ScenarioBudget {
-                    max_bytes: 1_000_000,
-                    max_items: middle,
-                },
-                cancel_after: None,
-            },
-            StateAssertionPolicy::None,
-        )
-        .map_err(|error| error.message().to_owned())?;
-        if report.completion == "complete" {
+        scenario.budget.max_bytes = 1_000_000;
+        scenario.budget.max_items = middle;
+        let report =
+            evaluate_scenario(scenario.clone()).map_err(|error| error.message().to_owned())?;
+        if report.completion() == nostr_automerge::Completion::Complete
+            && report.failure().is_none()
+            && !report.canonical_controls().is_empty()
+        {
             upper = middle;
         } else {
             lower = middle.saturating_add(1);
@@ -6432,7 +6439,9 @@ fn sha256(bytes: &[u8]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{minimum_complete_item_budget, repository_root};
+    use super::{
+        minimum_complete_item_budget, minimum_complete_item_budget_for_scenario, repository_root,
+    };
     use crate::expected::ExpectedReport;
     use crate::report_json::write_canonical_report;
     use crate::runner::{StateAssertionPolicy, generic_report};
@@ -6483,8 +6492,11 @@ mod tests {
                     .expect("bounded signed resource Event")
                 })
                 .collect::<Vec<_>>();
-            let exact = minimum_complete_item_budget(coordinate, &events)
-                .expect("measured exact resource budget");
+            let permutations = minimum_complete_item_budget(coordinate, &events)
+                .expect("measured permutation resource budget");
+            let input = minimum_complete_item_budget_for_scenario(signed.clone().into_scenario())
+                .expect("measured input resource budget");
+            let exact = permutations.max(input);
             assert_eq!(exact, current_exact_budget, "{fixture_id}");
             assert!(signed.budget.max_items < exact, "{fixture_id}");
 

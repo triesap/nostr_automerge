@@ -195,15 +195,47 @@ fn charge_apply_work(
         .map_err(|_| ExactApplyError::Budget)
 }
 
-pub(crate) fn materialize_history(
+pub(crate) fn materialize_history_metered(
     raw_changes: &BTreeMap<ChangeHash, Arc<[u8]>>,
     ordered: &[ChangeHash],
+    budget: &mut crate::WorkBudget,
+    cancellation: &impl crate::CancellationCheck,
 ) -> Result<AppliedDocument, ExactApplyError> {
-    if ordered.iter().copied().collect::<BTreeSet<_>>() != raw_changes.keys().copied().collect() {
+    if ordered.len() != raw_changes.len() {
         return Err(ExactApplyError::ClosureMismatch);
     }
+    if ordered.is_empty() {
+        let document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+        charge_apply_work(crate::WorkCounter::ApplyChange, 1, budget, cancellation)?;
+        return Ok(AppliedDocument {
+            heads: BTreeSet::new(),
+            canonical_bytes: document.save_nocompress(),
+        });
+    }
+    let mut ordered_items = ordered.iter();
+    let mut seen = BTreeSet::new();
+    for _ in 0..ordered.len() {
+        charge_apply_work(crate::WorkCounter::GraphNode, 1, budget, cancellation)?;
+        let Some(hash) = ordered_items.next() else {
+            return Err(ExactApplyError::ClosureMismatch);
+        };
+        charge_apply_work(crate::WorkCounter::GraphNode, 1, budget, cancellation)?;
+        if !raw_changes.contains_key(hash) {
+            return Err(ExactApplyError::ClosureMismatch);
+        }
+        charge_apply_work(crate::WorkCounter::GraphNode, 1, budget, cancellation)?;
+        if !seen.insert(*hash) {
+            return Err(ExactApplyError::ClosureMismatch);
+        }
+    }
     let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
-    for hash in ordered {
+    let mut ordered_items = ordered.iter();
+    for _ in 0..ordered.len() {
+        charge_apply_work(crate::WorkCounter::GraphNode, 1, budget, cancellation)?;
+        let Some(hash) = ordered_items.next() else {
+            return Err(ExactApplyError::ClosureMismatch);
+        };
+        charge_apply_work(crate::WorkCounter::ApplyChange, 1, budget, cancellation)?;
         let raw = raw_changes
             .get(hash)
             .ok_or(ExactApplyError::ClosureMismatch)?;
@@ -215,8 +247,10 @@ pub(crate) fn materialize_history(
             .apply_changes([change])
             .map_err(|_| ExactApplyError::Application)?;
     }
+    let heads = heads_metered(&document, budget, cancellation)?;
+    charge_apply_work(crate::WorkCounter::ApplyChange, 1, budget, cancellation)?;
     Ok(AppliedDocument {
-        heads: heads(&document)?,
+        heads,
         canonical_bytes: document.save_nocompress(),
     })
 }

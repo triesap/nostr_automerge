@@ -1,7 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-use crate::automerge_adapter::document::{AppliedDocument, materialize_history};
+use crate::automerge_adapter::document::{
+    AppliedDocument, ExactApplyError, materialize_history_metered,
+};
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 use crate::control::ancestry::ControlAncestry;
 use crate::control::candidate::{CandidateResult, evaluate_child_metered};
@@ -51,6 +53,7 @@ struct InitialBatchMaps {
     children_by_parent: BTreeMap<EventId, BTreeSet<EventId>>,
     control_dispositions: BTreeMap<EventId, ProtocolDisposition>,
     change_dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
+    change_memo: BatchChangeMemo,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -162,14 +165,18 @@ pub(crate) fn evaluate_batch_with_prior_and_control_dispositions(
         children_by_parent: by_parent,
         control_dispositions,
         change_dispositions: mut dispositions,
+        change_memo,
     } = initial;
     let mut table = match evaluate_branch_table(
-        &controls,
-        &root_controls,
-        &by_parent,
-        additional_prior,
-        &dispositions,
+        BranchTableInputs {
+            controls: &controls,
+            root_controls: &root_controls,
+            children_by_parent: &by_parent,
+            additional_prior,
+            preliminary_change_dispositions: &dispositions,
+        },
         control_dispositions,
+        change_memo,
         budget,
         cancellation,
     ) {
@@ -200,6 +207,7 @@ pub(crate) fn evaluate_batch_with_prior_and_control_dispositions(
         accepted_at_control,
         statefully_valid_controls,
         branch_change_dispositions,
+        change_memo,
     } = table;
     let CanonicalBranchEvaluation {
         controls: canonical_controls,
@@ -209,13 +217,24 @@ pub(crate) fn evaluate_batch_with_prior_and_control_dispositions(
     } = canonical;
     dispositions = change_dispositions;
 
-    let candidates = controls
-        .values()
-        .flat_map(|control| control.changes.iter())
-        .filter(|change| accepted_changes.contains(&change.candidate.change_hash))
-        .map(|change| change.candidate.clone())
-        .collect::<Vec<_>>();
-    let ordered = match schedule_candidates(candidates, BTreeSet::new(), budget, cancellation) {
+    let accepted_projection =
+        match project_accepted_candidate_maps_metered(&accepted_changes, &change_memo, |counter| {
+            charge_prior_knowledge_item(counter, budget, cancellation)
+        }) {
+            Ok(projection) => projection,
+            Err(AcceptedCandidateProjectionError::Work(stop)) => {
+                return no_progress_batch_report(stop);
+            }
+            Err(AcceptedCandidateProjectionError::Invariant) => {
+                return failed_batch_report(EvaluationFailure::InvariantViolation);
+            }
+        };
+    let ordered = match schedule_candidates(
+        accepted_projection.candidates,
+        BTreeSet::new(),
+        budget,
+        cancellation,
+    ) {
         Ok(schedule) => schedule.ordered,
         Err(error) => {
             let completion = match error {
@@ -225,30 +244,17 @@ pub(crate) fn evaluate_batch_with_prior_and_control_dispositions(
             return no_progress_batch_report(completion);
         }
     };
-    let raw_changes = controls
-        .values()
-        .flat_map(|control| control.changes.iter())
-        .filter_map(|change| {
-            accepted_changes
-                .contains(&change.candidate.change_hash)
-                .then(|| {
-                    change
-                        .raw_change
-                        .clone()
-                        .map(|raw| (change.candidate.change_hash, raw))
-                })
-                .flatten()
-        })
-        .collect::<BTreeMap<_, _>>();
+    let raw_changes = accepted_projection.raw_changes;
     let can_materialize = raw_changes.len() == accepted_changes.len();
-    if can_materialize
-        && let Err(completion) = charge_application_work(&ordered, budget, cancellation)
-    {
-        return no_progress_batch_report(completion);
-    }
     let materialized = if can_materialize {
-        match materialize_history(&raw_changes, &ordered) {
+        match materialize_history_metered(&raw_changes, &ordered, budget, cancellation) {
             Ok(document) => Some(document),
+            Err(ExactApplyError::Budget) => {
+                return no_progress_batch_report(Completion::BudgetExhausted);
+            }
+            Err(ExactApplyError::Cancelled) => {
+                return no_progress_batch_report(Completion::Cancelled);
+            }
             Err(_) => {
                 return failed_batch_report(EvaluationFailure::Apply);
             }
@@ -291,12 +297,16 @@ fn prepare_initial_maps_metered<E>(
 ) -> Result<InitialBatchMaps, InitialMapBuildError<E>> {
     let control_count = collected.len();
     let mut controls = BTreeMap::new();
+    let mut change_dispositions = BTreeMap::new();
+    let mut change_memo = BatchChangeMemo::default();
     let mut collected_items = collected.into_iter();
     for _ in 0..control_count {
         visit(WorkCounter::Control).map_err(InitialMapBuildError::Work)?;
         let Some(control) = collected_items.next() else {
             return Err(InitialMapBuildError::Invariant);
         };
+        change_memo.record_control_metered(&control, &mut change_dispositions, &mut visit)?;
+        visit(WorkCounter::Control).map_err(InitialMapBuildError::Work)?;
         controls.insert(control.event_id, control);
     }
 
@@ -327,29 +337,13 @@ fn prepare_initial_maps_metered<E>(
         control_dispositions.insert(*event_id, ProtocolDisposition::Excluded);
     }
 
-    let mut change_dispositions = BTreeMap::new();
-    let mut control_items = controls.values();
-    for _ in 0..controls.len() {
-        visit(WorkCounter::Control).map_err(InitialMapBuildError::Work)?;
-        let Some(control) = control_items.next() else {
-            return Err(InitialMapBuildError::Invariant);
-        };
-        let mut changes = control.changes.iter();
-        for _ in 0..control.changes.len() {
-            visit(WorkCounter::GraphNode).map_err(InitialMapBuildError::Work)?;
-            let Some(change) = changes.next() else {
-                return Err(InitialMapBuildError::Invariant);
-            };
-            change_dispositions.insert(change.candidate.change_hash, ProtocolDisposition::Excluded);
-        }
-    }
-
     Ok(InitialBatchMaps {
         controls,
         root_controls,
         children_by_parent,
         control_dispositions,
         change_dispositions,
+        change_memo,
     })
 }
 
@@ -387,6 +381,7 @@ struct BranchTableEvaluation {
     statefully_valid_controls: BTreeSet<EventId>,
     branch_change_dispositions:
         BTreeMap<EventId, PersistentDeltaMap<ChangeHash, ProtocolDisposition>>,
+    change_memo: BatchChangeMemo,
 }
 
 struct CanonicalBranchEvaluation {
@@ -394,6 +389,17 @@ struct CanonicalBranchEvaluation {
     change_dispositions: BTreeMap<ChangeHash, ProtocolDisposition>,
     accepted_changes: BTreeSet<ChangeHash>,
     integrity_alerts: Vec<IntegrityAlert>,
+}
+
+struct AcceptedCandidateProjection {
+    candidates: Vec<ChangeCandidate>,
+    raw_changes: BTreeMap<ChangeHash, Arc<[u8]>>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum AcceptedCandidateProjectionError<E> {
+    Work(E),
+    Invariant,
 }
 
 #[derive(Default)]
@@ -404,44 +410,105 @@ struct BatchChangeMemo {
     controls_by_hash: BTreeMap<ChangeHash, BTreeSet<EventId>>,
 }
 
+fn project_accepted_candidate_maps_metered<E>(
+    accepted: &BTreeSet<ChangeHash>,
+    memo: &BatchChangeMemo,
+    mut visit: impl FnMut(WorkCounter) -> Result<(), E>,
+) -> Result<AcceptedCandidateProjection, AcceptedCandidateProjectionError<E>> {
+    let mut candidates = Vec::new();
+    let mut raw_changes = BTreeMap::new();
+    let mut accepted_items = accepted.iter();
+    for _ in 0..accepted.len() {
+        visit(WorkCounter::GraphNode).map_err(AcceptedCandidateProjectionError::Work)?;
+        let Some(hash) = accepted_items.next() else {
+            return Err(AcceptedCandidateProjectionError::Invariant);
+        };
+        visit(WorkCounter::GraphNode).map_err(AcceptedCandidateProjectionError::Work)?;
+        let Some(candidate) = memo.candidates.get(hash) else {
+            return Err(AcceptedCandidateProjectionError::Invariant);
+        };
+        visit(WorkCounter::GraphNode).map_err(AcceptedCandidateProjectionError::Work)?;
+        candidates.push(candidate.clone());
+        visit(WorkCounter::GraphNode).map_err(AcceptedCandidateProjectionError::Work)?;
+        if let Some(raw) = memo.raw_changes.get(hash) {
+            visit(WorkCounter::GraphNode).map_err(AcceptedCandidateProjectionError::Work)?;
+            if raw_changes.insert(*hash, Arc::clone(raw)).is_some() {
+                return Err(AcceptedCandidateProjectionError::Invariant);
+            }
+        }
+    }
+    Ok(AcceptedCandidateProjection {
+        candidates,
+        raw_changes,
+    })
+}
+
 impl BatchChangeMemo {
+    fn record_control_metered<E>(
+        &mut self,
+        control: &BatchControl,
+        change_dispositions: &mut BTreeMap<ChangeHash, ProtocolDisposition>,
+        mut visit: impl FnMut(WorkCounter) -> Result<(), E>,
+    ) -> Result<(), InitialMapBuildError<E>> {
+        let mut change_items = control.changes.iter();
+        for _ in 0..control.changes.len() {
+            visit(WorkCounter::GraphNode).map_err(InitialMapBuildError::Work)?;
+            let Some(change) = change_items.next() else {
+                return Err(InitialMapBuildError::Invariant);
+            };
+            let mut dependencies = change.candidate.dependencies.iter();
+            for _ in 0..change.candidate.dependencies.len() {
+                visit(WorkCounter::GraphEdge).map_err(InitialMapBuildError::Work)?;
+                if dependencies.next().is_none() {
+                    return Err(InitialMapBuildError::Invariant);
+                }
+            }
+            let hash = change.candidate.change_hash;
+            visit(WorkCounter::GraphNode).map_err(InitialMapBuildError::Work)?;
+            self.candidates
+                .entry(hash)
+                .or_insert_with(|| change.candidate.clone());
+            if let Some(raw) = &change.raw_change {
+                visit(WorkCounter::GraphNode).map_err(InitialMapBuildError::Work)?;
+                self.raw_changes
+                    .entry(hash)
+                    .or_insert_with(|| Arc::clone(raw));
+            }
+            visit(WorkCounter::GraphNode).map_err(InitialMapBuildError::Work)?;
+            let hashes = self.hashes_by_control.entry(control.event_id).or_default();
+            visit(WorkCounter::GraphNode).map_err(InitialMapBuildError::Work)?;
+            hashes.insert(hash);
+            visit(WorkCounter::GraphNode).map_err(InitialMapBuildError::Work)?;
+            let controls = self.controls_by_hash.entry(hash).or_default();
+            visit(WorkCounter::GraphNode).map_err(InitialMapBuildError::Work)?;
+            controls.insert(control.event_id);
+            visit(WorkCounter::GraphNode).map_err(InitialMapBuildError::Work)?;
+            change_dispositions.insert(hash, ProtocolDisposition::Excluded);
+        }
+        Ok(())
+    }
+
     fn derive(
         controls: &BTreeMap<EventId, BatchControl>,
         budget: &mut WorkBudget,
         cancellation: &impl CancellationCheck,
     ) -> Result<Self, Completion> {
         let mut memo = Self::default();
-        for (control_id, control) in controls {
-            for change in &control.changes {
-                if cancellation.is_cancelled() {
-                    return Err(Completion::Cancelled);
-                }
-                budget
-                    .charge(WorkCounter::GraphNode, 1)
-                    .map_err(|_| Completion::BudgetExhausted)?;
-                let mut dependencies = change.candidate.dependencies.iter();
-                for _ in 0..change.candidate.dependencies.len() {
-                    charge_prior_knowledge_item(WorkCounter::GraphEdge, budget, cancellation)?;
-                    if dependencies.next().is_none() {
-                        return Err(Completion::BudgetExhausted);
-                    }
-                }
-                let hash = change.candidate.change_hash;
-                memo.candidates
-                    .entry(hash)
-                    .or_insert_with(|| change.candidate.clone());
-                if let Some(raw) = &change.raw_change {
-                    memo.raw_changes.entry(hash).or_insert_with(|| raw.clone());
-                }
-                memo.hashes_by_control
-                    .entry(*control_id)
-                    .or_default()
-                    .insert(hash);
-                memo.controls_by_hash
-                    .entry(hash)
-                    .or_default()
-                    .insert(*control_id);
-            }
+        let mut control_items = controls.iter();
+        for _ in 0..controls.len() {
+            charge_prior_knowledge_item(WorkCounter::Control, budget, cancellation)?;
+            let Some((control_id, control)) = control_items.next() else {
+                return Err(Completion::BudgetExhausted);
+            };
+            debug_assert_eq!(*control_id, control.event_id);
+            let mut dispositions = BTreeMap::new();
+            memo.record_control_metered(control, &mut dispositions, |counter| {
+                charge_prior_knowledge_item(counter, budget, cancellation)
+            })
+            .map_err(|error| match error {
+                InitialMapBuildError::Work(stop) => stop,
+                InitialMapBuildError::Invariant => Completion::BudgetExhausted,
+            })?;
         }
         Ok(memo)
     }
@@ -766,21 +833,33 @@ fn insert_valid_branch_metered<E>(
     Ok(())
 }
 
+struct BranchTableInputs<'a> {
+    controls: &'a BTreeMap<EventId, BatchControl>,
+    root_controls: &'a BTreeSet<EventId>,
+    children_by_parent: &'a BTreeMap<EventId, BTreeSet<EventId>>,
+    additional_prior: &'a BTreeMap<EventId, BTreeMap<ChangeHash, PriorChangeKnowledge>>,
+    preliminary_change_dispositions: &'a BTreeMap<ChangeHash, ProtocolDisposition>,
+}
+
 fn evaluate_branch_table(
-    controls: &BTreeMap<EventId, BatchControl>,
-    root_controls: &BTreeSet<EventId>,
-    children_by_parent: &BTreeMap<EventId, BTreeSet<EventId>>,
-    additional_prior: &BTreeMap<EventId, BTreeMap<ChangeHash, PriorChangeKnowledge>>,
-    preliminary_change_dispositions: &BTreeMap<ChangeHash, ProtocolDisposition>,
+    inputs: BranchTableInputs<'_>,
     control_dispositions: BTreeMap<EventId, ProtocolDisposition>,
+    change_memo: BatchChangeMemo,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<BranchTableEvaluation, BranchTableError> {
+    let BranchTableInputs {
+        controls,
+        root_controls,
+        children_by_parent,
+        additional_prior,
+        preliminary_change_dispositions,
+    } = inputs;
     let mut table = BranchTableEvaluation {
         control_dispositions,
+        change_memo,
         ..BranchTableEvaluation::default()
     };
-    let change_memo = BatchChangeMemo::derive(controls, budget, cancellation)?;
     let mut accepted_state_cache = BTreeMap::new();
     let mut ready = BTreeSet::new();
     let mut root_items = root_controls.iter();
@@ -927,7 +1006,7 @@ fn evaluate_branch_table(
             let parent_epoch = parent_branch.map(|branch| &branch.epoch);
             let Some(accepted_base) = accepted_state_for_closure(
                 &validated_base,
-                &change_memo.candidates,
+                &table.change_memo.candidates,
                 parent_epoch,
                 &mut accepted_state_cache,
                 budget,
@@ -956,7 +1035,7 @@ fn evaluate_branch_table(
                 &validated_base,
                 preliminary_change_dispositions,
                 event_id,
-                &change_memo,
+                &table.change_memo,
                 budget,
                 cancellation,
             )?;
@@ -1002,7 +1081,7 @@ fn evaluate_branch_table(
                 accepted_base,
                 knowledge,
                 parent_ancestry,
-                &change_memo.raw_changes,
+                &table.change_memo.raw_changes,
                 budget,
                 cancellation,
             ) {
@@ -1526,27 +1605,6 @@ fn applied_heads_agree(
     derived_heads == applied_heads
 }
 
-fn charge_application_work(
-    ordered: &[ChangeHash],
-    budget: &mut WorkBudget,
-    cancellation: &impl CancellationCheck,
-) -> Result<(), Completion> {
-    for _ in ordered {
-        if cancellation.is_cancelled() {
-            return Err(Completion::Cancelled);
-        }
-        budget
-            .charge(WorkCounter::ApplyChange, 1)
-            .map_err(|_| Completion::BudgetExhausted)?;
-    }
-    if cancellation.is_cancelled() {
-        return Err(Completion::Cancelled);
-    }
-    budget
-        .charge(WorkCounter::ApplyChange, 1)
-        .map_err(|_| Completion::BudgetExhausted)
-}
-
 impl BatchEvaluationReport {
     pub(crate) fn referenced_branch_change_disposition_metered<E>(
         &self,
@@ -1623,7 +1681,8 @@ mod tests {
         derive_canonical_branch, empty_batch_report, evaluate_batch,
         extend_branch_dispositions_metered, extend_prior_knowledge_metered,
         insert_branch_state_metered, insert_valid_branch_metered, prepare_initial_maps_metered,
-        prior_change_knowledge, propagate_control_parent_dispositions,
+        prior_change_knowledge, project_accepted_candidate_maps_metered,
+        propagate_control_parent_dispositions,
     };
 
     fn empty_valid_branch() -> ValidBranchEvaluation {
@@ -2078,18 +2137,13 @@ mod tests {
                 (retained, ProtocolDisposition::Invalid),
             ])
         };
-        let expected = [
-            WorkCounter::Control,
-            WorkCounter::Control,
-            WorkCounter::Control,
-            WorkCounter::Control,
-            WorkCounter::Control,
-            WorkCounter::Control,
-            WorkCounter::Control,
-            WorkCounter::GraphNode,
-            WorkCounter::Control,
-            WorkCounter::GraphNode,
-        ];
+        let mut expected = Vec::new();
+        for _ in 0..2 {
+            expected.push(WorkCounter::Control);
+            expected.extend([WorkCounter::GraphNode; 7]);
+            expected.push(WorkCounter::Control);
+        }
+        expected.extend([WorkCounter::Control; 4]);
 
         for stop in [Completion::BudgetExhausted, Completion::Cancelled] {
             for capacity in 0..=expected.len() + 1 {
@@ -2561,7 +2615,7 @@ mod tests {
         basic.candidate.start_op = decoded.start_op;
         basic.candidate.operation_count = u64::try_from(decoded.operations.len()).unwrap_or(0);
         basic.raw_change = Some(raw.into());
-        let mut basic_budget = WorkBudget::new(0, 200);
+        let mut basic_budget = WorkBudget::new(10_000, 1_000);
         let basic_report = evaluate_batch(
             [control(1, None, vec![basic.clone()])],
             &mut basic_budget,
@@ -2594,10 +2648,10 @@ mod tests {
             Some(&basic_report.accepted_changes),
         );
         assert!(basic_report.materialized_document.is_some());
-        let consumed_items = 200 - basic_budget.remaining().1;
+        let consumed_items = 1_000 - basic_budget.remaining().1;
         let final_schedule_exhausted = evaluate_batch(
             [control(1, None, vec![basic.clone()])],
-            &mut WorkBudget::new(0, consumed_items - 1),
+            &mut WorkBudget::new(10_000, consumed_items - 1),
             &NeverCancelled,
         );
         assert_no_progress_batch(&final_schedule_exhausted, Completion::BudgetExhausted);
@@ -2606,7 +2660,7 @@ mod tests {
         malformed.raw_change = Some(vec![0xff].into());
         let materialization_failed = evaluate_batch(
             [control(1, None, vec![malformed])],
-            &mut WorkBudget::new(0, 200),
+            &mut WorkBudget::new(10_000, 1_000),
             &NeverCancelled,
         );
         assert_eq!(materialization_failed.completion, Completion::Complete);
@@ -2712,7 +2766,7 @@ mod tests {
             .and_then(|control| control.changes.first())
             .and_then(|change| change.raw_change.as_ref());
         assert!(original.is_some());
-        let mut budget = WorkBudget::new(64, 64);
+        let mut budget = WorkBudget::new(64, 1_000);
         let retained = BatchChangeMemo::derive(&controls, &mut budget, &NeverCancelled)
             .ok()
             .and_then(|memo| memo.raw_changes.values().next().cloned());
@@ -2772,7 +2826,7 @@ mod tests {
         };
 
         let (insufficient_controls, insufficient_payload) = controls();
-        let mut insufficient = WorkBudget::new(0, 64);
+        let mut insufficient = WorkBudget::new(0, 71);
         assert_eq!(
             BatchChangeMemo::derive(&insufficient_controls, &mut insufficient, &NeverCancelled,)
                 .map(|_| ()),
@@ -2780,25 +2834,63 @@ mod tests {
         );
         assert_eq!(Arc::strong_count(&insufficient_payload), 2);
 
-        for limit in [65_u64, 66] {
+        for limit in [72_u64, 73] {
             let (exact_controls, exact_payload) = controls();
             let mut budget = WorkBudget::new(0, limit);
             let memo = BatchChangeMemo::derive(&exact_controls, &mut budget, &NeverCancelled);
             assert!(memo.is_ok(), "limit:{limit}");
             let memo = memo.ok();
             assert_eq!(Arc::strong_count(&exact_payload), 3, "limit:{limit}");
-            assert_eq!(budget.remaining().1, limit - 65, "limit:{limit}");
+            assert_eq!(budget.remaining().1, limit - 72, "limit:{limit}");
             drop(memo);
         }
 
         let (cancelled_controls, cancelled_payload) = controls();
-        let mut cancelled = WorkBudget::new(0, 65);
+        let mut cancelled = WorkBudget::new(0, 72);
         assert_eq!(
             BatchChangeMemo::derive(&cancelled_controls, &mut cancelled, &|| true).map(|_| ()),
             Err(Completion::Cancelled)
         );
         assert_eq!(Arc::strong_count(&cancelled_payload), 2);
         assert_eq!(cancelled.consumed().get(WorkCounter::GraphNode), 0);
+    }
+
+    #[test]
+    fn accepted_candidate_and_raw_projection_charges_each_owned_operation() {
+        let value = change(7, 7, 1);
+        let hash = value.candidate.change_hash;
+        let raw: Arc<[u8]> = vec![0x5a; 64].into();
+        let memo = BatchChangeMemo {
+            candidates: BTreeMap::from([(hash, value.candidate)]),
+            raw_changes: BTreeMap::from([(hash, Arc::clone(&raw))]),
+            hashes_by_control: BTreeMap::new(),
+            controls_by_hash: BTreeMap::new(),
+        };
+        let accepted = BTreeSet::from([hash]);
+
+        for stop_at in 0..5 {
+            let visits = Cell::new(0_usize);
+            let result = project_accepted_candidate_maps_metered(&accepted, &memo, |_| {
+                let current = visits.get();
+                if current == stop_at {
+                    return Err(());
+                }
+                visits.set(current + 1);
+                Ok(())
+            });
+            assert!(result.is_err(), "stop_at:{stop_at}");
+            assert_eq!(visits.get(), stop_at, "stop_at:{stop_at}");
+        }
+
+        let visits = Cell::new(0_usize);
+        let projection = project_accepted_candidate_maps_metered(&accepted, &memo, |_| {
+            visits.set(visits.get() + 1);
+            Ok::<(), ()>(())
+        })
+        .unwrap_or_else(|_| unreachable!("complete projection is valid"));
+        assert_eq!(visits.get(), 5);
+        assert_eq!(projection.candidates.len(), 1);
+        assert_eq!(projection.raw_changes.get(&hash), Some(&raw));
     }
 
     #[test]

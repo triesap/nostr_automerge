@@ -20,6 +20,7 @@ SOURCES = (
     "crates/nostr_automerge/src/reference/epoch_engine.rs",
     "crates/nostr_automerge/src/reference/evaluate.rs",
     "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+    "crates/nostr_automerge/src/automerge_adapter/document.rs",
 )
 
 
@@ -232,6 +233,8 @@ def validate_sources(sources: dict[str, str]) -> None:
             "let mut collected_items = collected.into_iter();",
             "visit(WorkCounter::Control).map_err(InitialMapBuildError::Work)?;",
             "collected_items.next()",
+            "change_memo.record_control_metered(",
+            "visit(WorkCounter::Control).map_err(InitialMapBuildError::Work)?;",
             "controls.insert(control.event_id, control);",
             "let mut parent_items = controls.values();",
             "parent_items.next()",
@@ -240,10 +243,7 @@ def validate_sources(sources: dict[str, str]) -> None:
             "let mut control_ids = controls.keys();",
             "control_ids.next()",
             "control_dispositions.insert(*event_id, ProtocolDisposition::Excluded);",
-            "let mut control_items = controls.values();",
-            "control_items.next()",
-            "changes.next()",
-            "change_dispositions.insert(",
+            "change_memo,",
         ),
         "evaluate:initial_maps",
     )
@@ -354,7 +354,7 @@ def validate_sources(sources: dict[str, str]) -> None:
             "initial_control_dispositions: BTreeMap<EventId, ProtocolDisposition>",
             "prepare_initial_maps_metered(collected, initial_control_dispositions",
             "let mut table = match evaluate_branch_table(",
-            "&dispositions,\n        control_dispositions,",
+            "preliminary_change_dispositions: &dispositions,\n        },\n        control_dispositions,",
             "let BranchTableEvaluation {",
             "control_dispositions,",
             "branch_change_dispositions,",
@@ -411,6 +411,43 @@ def validate_sources(sources: dict[str, str]) -> None:
     require(branch_table.count("insert_valid_branch_metered(") == 1, "evaluate:valid_branch_route")
     require("table.states.insert" not in branch_table, "evaluate:branch_state_bypass")
     require("table.valid.insert" not in branch_table, "evaluate:valid_branch_bypass")
+    accepted_candidates = section(
+        evaluate,
+        "fn project_accepted_candidate_maps_metered<E>(",
+        "\n}\n\nimpl BatchChangeMemo",
+        "evaluate:accepted_candidate_projection",
+    )
+    require_order(
+        accepted_candidates,
+        (
+            "visit(WorkCounter::GraphNode).map_err(AcceptedCandidateProjectionError::Work)?;",
+            "accepted_items.next()",
+            "memo.candidates.get(hash)",
+            "candidates.push(candidate.clone());",
+            "memo.raw_changes.get(hash)",
+            "raw_changes.insert(*hash, Arc::clone(raw))",
+        ),
+        "evaluate:accepted_candidate_projection",
+    )
+    candidate_memo = section(
+        evaluate,
+        "fn record_control_metered<E>(",
+        "\n    fn derive(",
+        "evaluate:candidate_memo",
+    )
+    require_order(
+        candidate_memo,
+        (
+            "visit(WorkCounter::GraphNode).map_err(InitialMapBuildError::Work)?;",
+            "change_items.next()",
+            "self.candidates",
+            "self.raw_changes",
+            "self.hashes_by_control",
+            "self.controls_by_hash",
+            "change_dispositions.insert(hash, ProtocolDisposition::Excluded);",
+        ),
+        "evaluate:candidate_memo",
+    )
     referenced = section(
         evaluate,
         "pub(crate) fn referenced_branch_change_disposition_metered<E>(",
@@ -477,6 +514,35 @@ def validate_sources(sources: dict[str, str]) -> None:
     )
     require("control_disposition_map.extend" not in evaluator, "evaluator:control_disposition_bulk_extend")
 
+    document = sources[SOURCES[8]]
+    materialize = section(
+        document,
+        "pub(crate) fn materialize_history_metered(",
+        "\n}\n\nfn heads(",
+        "document:materialize_history",
+    )
+    require("pub(crate) fn materialize_history(" not in document, "document:unmetered_history")
+    require_order(
+        materialize,
+        (
+            "if ordered.is_empty()",
+            "let mut ordered_items = ordered.iter();",
+            "charge_apply_work(crate::WorkCounter::GraphNode, 1, budget, cancellation)?;",
+            "ordered_items.next()",
+            "raw_changes.contains_key(hash)",
+            "seen.insert(*hash)",
+            "let mut ordered_items = ordered.iter();",
+            "ordered_items.next()",
+            "charge_apply_work(crate::WorkCounter::ApplyChange, 1, budget, cancellation)?;",
+            "raw_changes\n            .get(hash)",
+            "Change::try_from(raw.as_ref())",
+            "document\n            .apply_changes([change])",
+            "heads_metered(&document, budget, cancellation)?",
+            "document.save_nocompress()",
+        ),
+        "document:materialize_history",
+    )
+
 
 def replaced(sources: dict[str, str], relative: str, old: str, new: str) -> dict[str, str]:
     candidate = copy.deepcopy(sources)
@@ -486,7 +552,7 @@ def replaced(sources: dict[str, str], relative: str, old: str, new: str) -> dict
 
 
 def mutation_self_test(sources: dict[str, str]) -> int:
-    branch, frontier, parent, transition, candidate, epoch, evaluate, evaluator = SOURCES
+    branch, frontier, parent, transition, candidate, epoch, evaluate, evaluator, document = SOURCES
     mutations = [
         replaced(sources, branch, "#[cfg(test)]\n    pub(crate) fn get(", "    pub(crate) fn get("),
         replaced(sources, branch, "#[cfg(test)]\n    pub(crate) fn contains_key(", "    pub(crate) fn contains_key("),
@@ -518,6 +584,32 @@ def mutation_self_test(sources: dict[str, str]) -> int:
         replaced(sources, evaluator, "dispositions.contains_key_metered(&carrier.change_hash", "dispositions.contains_key(&carrier.change_hash"),
         replaced(sources, evaluator, "charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;\n        projected.insert(selected.event_id, knowledge);", "projected.insert(selected.event_id, knowledge);"),
         replaced(sources, evaluator, "&additional_prior,\n            preliminary_control_dispositions,", "&additional_prior,\n            BTreeMap::new(),"),
+        replaced(sources, evaluate, "accepted_items.next()", "accepted_items.last()"),
+        replaced(sources, evaluate, "candidates.push(candidate.clone());", "candidates.clear();"),
+        replaced(sources, evaluate, "memo.raw_changes.get(hash)", "None::<&Arc<[u8]>>"),
+        replaced(sources, evaluate, "change_memo.record_control_metered(", "BatchChangeMemo::default().record_control_metered("),
+        replaced(sources, document, "pub(crate) fn materialize_history_metered(", "pub(crate) fn materialize_history("),
+        replaced(
+            sources,
+            document,
+            """    let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+    let mut ordered_items = ordered.iter();
+    for _ in 0..ordered.len() {
+        charge_apply_work(crate::WorkCounter::GraphNode, 1, budget, cancellation)?;
+        let Some(hash) = ordered_items.next() else {
+            return Err(ExactApplyError::ClosureMismatch);
+        };
+        charge_apply_work(crate::WorkCounter::ApplyChange, 1, budget, cancellation)?;
+        let raw""",
+            """    let mut document = Automerge::new_with_encoding(TextEncoding::Utf16CodeUnit);
+    let mut ordered_items = ordered.iter();
+    for _ in 0..ordered.len() {
+        charge_apply_work(crate::WorkCounter::GraphNode, 1, budget, cancellation)?;
+        let Some(hash) = ordered_items.next() else {
+            return Err(ExactApplyError::ClosureMismatch);
+        };
+        let raw""",
+        ),
     ]
     missing = copy.deepcopy(sources)
     missing.pop(evaluator)

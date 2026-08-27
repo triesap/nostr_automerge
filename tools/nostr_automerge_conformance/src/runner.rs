@@ -306,7 +306,7 @@ pub(crate) fn generic_report(
     Ok(output)
 }
 
-fn evaluate_scenario(scenario: ScenarioInput) -> Result<EvaluationReport, RunError> {
+pub(crate) fn evaluate_scenario(scenario: ScenarioInput) -> Result<EvaluationReport, RunError> {
     let coordinate = scenario.coordinate.parse().map_err(|_| RunError::Input)?;
     let mut builder = CorpusBuilder::new();
     for raw in scenario.raw_events {
