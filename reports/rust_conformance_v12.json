@@ -1,0 +1,26 @@
+{
+  "schema": "nostr_automerge.rust_conformance.v12.v1",
+  "status": "pass",
+  "source_candidate": "69a9e10050c8674a462a712f0c8215351f4657a7",
+  "manifest_sha256": "29d1304aae027d33ff66b39b2cc499cca0e40fb24e5d4f5d749e33bf7dafd7c0",
+  "distribution_schema_sha256": "2c2f1272559bd05f216107bc387870d7204f2cb7afd8bcc76c42bd5ea0a29e9d",
+  "generator_sha256": "42e8e8173fb3cbe96722ed2fdec994c854c6ca8cf0f4e1f1b8002589b2a9b569",
+  "runner_sha256": "0db1d0c80dd524d4f6f4ef7fb5554db5b49bd83f8c83b204bd43fda4c6486a1c",
+  "cargo_lock_sha256": "6d1b886ff74637ba6682d349ab81424b0792f2cbc61cf0f213dfcf16af4f6744",
+  "rust_toolchain_sha256": "5d959dfcc98b53886ee772ba216c4f9a1b31f093b46b5b263c0d084af54e821d",
+  "scenario_count": 198,
+  "process_count": 2,
+  "delivery_order_count": 8,
+  "canonical_process_bytes": "identical",
+  "canonical_output_sha256": "ac1d326a2fe6fbc3ba495ecd7635250efd72179ac50985392757c1784cf59372",
+  "serialized_run_sha256": "27e2febf15d800a81a9b87066ec9a4989d861fa8b8938b73c7a4fc3e87881932",
+  "deliberate_expectation_mismatch": "rejected",
+  "compatibility_rebinding": {
+    "fixture_id": "canonical_derivation_exact_budget",
+    "prior_max_items": 335,
+    "required_max_items": 371,
+    "prior_bytes_preserved": true,
+    "delivery_orders_identical": true
+  },
+  "result_identity_sha256": "e9ab4602f209a03a9366ec9ac2953fcd4d41b9aaab55f94ca6b1e3d5a3158967"
+}

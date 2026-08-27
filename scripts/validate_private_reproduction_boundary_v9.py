@@ -80,6 +80,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/persistent_ownership_v11.schema.json",
     "reports/remediation_v11_authority_gate.json",
     "tools/validation/remediation_v11_authority_gate.schema.json",
+    "reports/rust_conformance_v12.json",
+    "tools/validation/rust_conformance_v12.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -90,6 +92,7 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://nostr-automerge.example/schema/target_work_accounting_v11.schema.json",
         b"https://nostr-automerge.example/schema/persistent_ownership_v11.schema.json",
         b"https://nostr-automerge.example/schema/remediation_v11_authority_gate.schema.json",
+        b"https://github.com/triesap/nostr_automerge/tools/validation/rust_conformance_v12.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -156,6 +159,7 @@ PYTHON_SURFACES = (
     "scripts/validate_persistent_ownership_v11.py",
     "scripts/validate_unsupported_identity_contradiction_v11.py",
     "scripts/validate_remediation_v11_authority_gate.py",
+    "scripts/validate_rust_conformance_v12.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -243,6 +247,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_kind_control.fixture.json",
         "fixtures/v1_draft/scenarios/checkpoint/checkpoint_descriptor_references_wrong_kind_control.input.json",
         "fixtures/v1_draft",
+        "fixtures/v1_draft/scenarios/resource",
         "fixtures/distribution/manifest_v10.json",
         "fixtures/distribution/manifest_v11.json",
         "fixtures/distribution/manifest_v12.json",
@@ -289,6 +294,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/resource_followup_final_decision_v10.json",
         "reports/evidence_transition_v11.json",
         "reports/remediation_v11_authority_gate.json",
+        "reports/rust_conformance_v12.json",
         "reports/external_holds_v8.json",
         "reports/spec_baseline.txt",
         "scripts/validate_adrs.py",
@@ -329,6 +335,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_repository_policy.py",
         "scripts/validate_rust_conformance_v9.py",
         "scripts/validate_rust_conformance_v10.py",
+        "scripts/validate_rust_conformance_v12.py",
         "scripts/validate_opaque_conformance_v10.py",
         "scripts/validate_signed_conformance_gate_v10.py",
         "scripts/validate_semantic_proof_catalog_v10.py",
@@ -428,6 +435,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/validation/rust_finalization_gate_v9.schema.json",
         "tools/validation/rust_resource_gate_v9.schema.json",
         "tools/validation/rust_conformance_v10.schema.json",
+        "tools/validation/rust_conformance_v12.schema.json",
         "tools/validation/opaque_conformance_v10.schema.json",
         "tools/validation/signed_conformance_gate_v10.schema.json",
         "tools/validation/semantic_proof_catalog_v10.schema.json",
@@ -742,6 +750,10 @@ def validate_source_surfaces() -> None:
                     or (
                         value in {"cargo", "git"}
                         and relative == "scripts/validate_rust_conformance_v10.py"
+                    )
+                    or (
+                        value in {"cargo", "git"}
+                        and relative == "scripts/validate_rust_conformance_v12.py"
                     )
                     or (
                         value in {"cargo", "git"}

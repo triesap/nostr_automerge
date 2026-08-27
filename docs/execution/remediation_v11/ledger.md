@@ -265,3 +265,13 @@ tag but produces exactly one Event `unsupported_revision` record with the
 controls, state assertions, and materialized change effects remain empty, and
 all eight delivery orders produce identical report bytes. The append-only v12
 manifest is now complete at 198/198 while preserving every v11 fixture byte.
+
+At `step_1356`, the Rust runner admits only the closed, complete 198-row v12
+authority and executes every scenario under all eight required delivery
+orders in two independent processes. The first real run exposed one inherited
+exact-budget scenario whose duplicate-heavy order now truthfully needs 371
+items after duplicate-evidence work became metered. Distribution v12 rebinds
+that fixture ID to a v12-only budget correction while retaining every v11
+file byte; all other scenario data and the expected report are identical.
+Both full process outputs are byte-identical, and a deliberate valid expected
+report mutation is rejected by the runner comparator.

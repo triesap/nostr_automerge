@@ -137,6 +137,10 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
     ),
     ("distribution_v12", "scripts/validate_distribution_v12.py"),
     (
+        "rust_conformance_v12",
+        "scripts/validate_rust_conformance_v12.py",
+    ),
+    (
         "remediation_v11_authority_gate",
         "scripts/validate_remediation_v11_authority_gate.py",
     ),
@@ -292,6 +296,7 @@ mod tests {
         assert!(names.contains(&"runtime_ledger_v10"));
         assert!(names.contains(&"resource_operation_inventory_v10"));
         assert!(names.contains(&"appended_conformance_v11"));
+        assert!(names.contains(&"rust_conformance_v12"));
         assert!(names.contains(&"resource_ancestry_gate_v10"));
         assert!(names.contains(&"resource_followup_assurance_v10"));
         assert!(names.contains(&"resource_followup_final_decision_v10"));

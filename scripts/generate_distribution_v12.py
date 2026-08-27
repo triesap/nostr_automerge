@@ -17,6 +17,10 @@ BASE_PATH = "fixtures/distribution/manifest_v11.json"
 OUTPUT_PATH = "fixtures/distribution/manifest_v12.json"
 SCHEMA_PATH = "tools/validation/distribution_v12.schema.json"
 COMPANION_ROOT = ROOT / "fixtures/v12/scenarios/resource_followup"
+COMPATIBILITY_REBINDING = "canonical_derivation_exact_budget"
+COMPATIBILITY_SOURCE_ROOT = "fixtures/v1_draft/scenarios/resource"
+COMPATIBILITY_TARGET_ROOT = "fixtures/v12/scenarios/resource_followup"
+COMPATIBILITY_MAX_ITEMS = 371
 BASE_CANDIDATE = "6f561e7ff4b12734e908dff6c98bc8139473052c"
 BASE_SHA256 = "db247fa3e6891e850f32ed9b00fb08cfd78d30c9eb88ea36a00bd22dabb63f5a"
 PLAN = (
@@ -138,8 +142,13 @@ def validate_base_files(base: dict[str, Any]) -> list[dict[str, str]]:
     return result
 
 
-def fixture_entry(identifier: str, requirements: tuple[str, ...], profile: str) -> dict[str, Any]:
-    root = f"fixtures/v12/scenarios/resource_followup/{identifier}"
+def fixture_entry(
+    identifier: str,
+    requirements: tuple[str, ...],
+    profile: str,
+    root: str | None = None,
+) -> dict[str, Any]:
+    root = root or f"fixtures/v12/scenarios/resource_followup/{identifier}"
     metadata_path = f"{root}.fixture.json"
     metadata = load(metadata_path)
     require(metadata.get("fixture_id") == identifier, f"metadata_id:{identifier}")
@@ -148,8 +157,9 @@ def fixture_entry(identifier: str, requirements: tuple[str, ...], profile: str) 
     expected = metadata.get("expected")
     require(type(inputs) is list and len(inputs) == 1 and type(inputs[0]) is dict, f"metadata_input:{identifier}")
     require(type(expected) is dict, f"metadata_expected:{identifier}")
-    input_path = f"fixtures/v12/scenarios/resource_followup/{inputs[0].get('path')}"
-    expected_path = f"fixtures/v12/scenarios/resource_followup/{expected.get('report_path')}"
+    directory = root.rsplit("/", 1)[0]
+    input_path = f"{directory}/{inputs[0].get('path')}"
+    expected_path = f"{directory}/{expected.get('report_path')}"
     require(digest(input_path) == inputs[0].get("sha256"), f"input_hash:{identifier}")
     require(digest(expected_path) == expected.get("sha256"), f"expected_hash:{identifier}")
     return {
@@ -163,11 +173,68 @@ def fixture_entry(identifier: str, requirements: tuple[str, ...], profile: str) 
 
 
 def planned_companion_paths(count: int) -> tuple[str, ...]:
-    paths = []
+    compatibility_root = f"{COMPATIBILITY_TARGET_ROOT}/{COMPATIBILITY_REBINDING}"
+    paths = [
+        f"{compatibility_root}.expected.json",
+        f"{compatibility_root}.fixture.json",
+        f"{compatibility_root}.input.json",
+    ]
     for identifier, _, _ in PLAN[:count]:
         root = f"fixtures/v12/scenarios/resource_followup/{identifier}"
         paths.extend((f"{root}.expected.json", f"{root}.fixture.json", f"{root}.input.json"))
     return tuple(sorted(paths, key=str.encode))
+
+
+def canonical_json(value: Any) -> bytes:
+    return (
+        json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        + "\n"
+    ).encode()
+
+
+def compatibility_companions() -> dict[str, bytes]:
+    identifier = COMPATIBILITY_REBINDING
+    source_root = f"{COMPATIBILITY_SOURCE_ROOT}/{identifier}"
+    target_root = f"{COMPATIBILITY_TARGET_ROOT}/{identifier}"
+    expected = historical_bytes(f"{source_root}.expected.json")
+    require(
+        (ROOT / f"{source_root}.expected.json").read_bytes() == expected,
+        "compatibility_expected_drift",
+    )
+    scenario = load(f"{source_root}.input.json")
+    require(
+        scenario.get("budget") == {"max_bytes": 1_000_000, "max_items": 335},
+        "compatibility_source_budget",
+    )
+    scenario["budget"] = {
+        "max_bytes": 1_000_000,
+        "max_items": COMPATIBILITY_MAX_ITEMS,
+    }
+    input_bytes = canonical_json(scenario)
+    metadata = load(f"{source_root}.fixture.json")
+    require(metadata.get("fixture_id") == identifier, "compatibility_metadata")
+    metadata["inputs"][0]["sha256"] = hashlib.sha256(input_bytes).hexdigest()
+    metadata["expected"]["sha256"] = hashlib.sha256(expected).hexdigest()
+    metadata["provenance"] = {
+        "created_at": "2026-08-10",
+        "generator": "nostr_automerge_conformance distribution_v12 compatibility rebinding",
+        "generator_revision": "signed_scenario_v2",
+        "source_versions": {"nostr_automerge": "0.1.0-alpha.0"},
+    }
+    return {
+        f"{target_root}.expected.json": expected,
+        f"{target_root}.fixture.json": canonical_json(metadata),
+        f"{target_root}.input.json": input_bytes,
+    }
+
+
+def validate_compatibility_companions(write: bool) -> None:
+    for relative, expected in compatibility_companions().items():
+        path = ROOT / relative
+        if write:
+            path.write_bytes(expected)
+        else:
+            require(path.is_file() and path.read_bytes() == expected, f"compatibility:{relative}")
 
 
 def validate_companion_inventory(count: int, actual: tuple[str, ...] | None = None) -> None:
@@ -223,7 +290,18 @@ def expected_manifest(state: dict[str, Any] | None = None) -> dict[str, Any]:
         "target_inventory",
     )
     appended = [fixture_entry(*row) for row in PLAN[:count]]
-    fixtures = [*base["fixtures"], *appended]
+    replacement_root = f"{COMPATIBILITY_TARGET_ROOT}/{COMPATIBILITY_REBINDING}"
+    replacement = fixture_entry(
+        COMPATIBILITY_REBINDING,
+        ("NCRDT-CONF-010", "NCRDT-RESOURCE-014"),
+        "resource",
+        replacement_root,
+    )
+    fixtures = [
+        *(row for row in base["fixtures"] if row["fixture_id"] != COMPATIBILITY_REBINDING),
+        replacement,
+        *appended,
+    ]
     fixtures.sort(key=lambda row: row["fixture_id"].encode())
     identifiers = [row["fixture_id"] for row in fixtures]
     require(identifiers == sorted(set(identifiers), key=str.encode), "fixture_order")
@@ -234,7 +312,7 @@ def expected_manifest(state: dict[str, Any] | None = None) -> dict[str, Any]:
         values.sort(key=str.encode)
     file_paths = {row["path"]: row["sha256"] for row in rebound_files}
     file_paths[SCHEMA_PATH] = digest(SCHEMA_PATH)
-    for entry in appended:
+    for entry in [replacement, *appended]:
         for path in (entry["metadata_path"], entry["expected_path"], *entry["input_paths"]):
             file_paths[path] = digest(path)
     files = [{"path": path, "sha256": file_paths[path]} for path in sorted(file_paths, key=str.encode)]
@@ -279,6 +357,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--write", action="store_true")
     args = parser.parse_args()
+    validate_compatibility_companions(args.write)
     expected = canonical_bytes()
     output = ROOT / OUTPUT_PATH
     if args.write:

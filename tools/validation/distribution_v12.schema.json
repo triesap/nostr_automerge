@@ -64,7 +64,7 @@
       }
     },
     "fixtures": {"type": "array", "minItems": 193, "maxItems": 198, "items": {"$ref": "#/$defs/fixture"}},
-    "files": {"type": "array", "minItems": 623, "items": {"$ref": "#/$defs/file"}}
+    "files": {"type": "array", "minItems": 626, "items": {"$ref": "#/$defs/file"}}
   },
   "$defs": {
     "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},

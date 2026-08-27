@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/tools/validation/rust_conformance_v12.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "source_candidate", "manifest_sha256", "distribution_schema_sha256", "generator_sha256", "runner_sha256", "cargo_lock_sha256", "rust_toolchain_sha256", "scenario_count", "process_count", "delivery_order_count", "canonical_process_bytes", "canonical_output_sha256", "serialized_run_sha256", "deliberate_expectation_mismatch", "compatibility_rebinding", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.rust_conformance.v12.v1"},
+    "status": {"const": "pass"},
+    "source_candidate": {"$ref": "#/$defs/commit"},
+    "manifest_sha256": {"$ref": "#/$defs/sha256"},
+    "distribution_schema_sha256": {"$ref": "#/$defs/sha256"},
+    "generator_sha256": {"$ref": "#/$defs/sha256"},
+    "runner_sha256": {"$ref": "#/$defs/sha256"},
+    "cargo_lock_sha256": {"$ref": "#/$defs/sha256"},
+    "rust_toolchain_sha256": {"$ref": "#/$defs/sha256"},
+    "scenario_count": {"const": 198},
+    "process_count": {"const": 2},
+    "delivery_order_count": {"const": 8},
+    "canonical_process_bytes": {"const": "identical"},
+    "canonical_output_sha256": {"$ref": "#/$defs/sha256"},
+    "serialized_run_sha256": {"$ref": "#/$defs/sha256"},
+    "deliberate_expectation_mismatch": {"const": "rejected"},
+    "compatibility_rebinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fixture_id", "prior_max_items", "required_max_items", "prior_bytes_preserved", "delivery_orders_identical"],
+      "properties": {
+        "fixture_id": {"const": "canonical_derivation_exact_budget"},
+        "prior_max_items": {"const": 335},
+        "required_max_items": {"const": 371},
+        "prior_bytes_preserved": {"const": true},
+        "delivery_orders_identical": {"const": true}
+      }
+    },
+    "result_identity_sha256": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

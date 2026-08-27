@@ -43,6 +43,7 @@ def validate_schema(schema: dict[str, Any]) -> None:
     require(properties["fixture_count"] == {"enum": [193, 196, 197, 198]}, "schema_counts")
     require(properties["preserved_v11_fixture_count"] == {"const": 193}, "schema_preserved")
     require(properties["authorized_v11_source_rebindings"]["minItems"] == 2, "schema_rebindings")
+    require(properties["files"]["minItems"] == 626, "schema_files")
     require(set(schema["$defs"]) == {"sha256", "identifiers", "rebinding", "fixture", "file"}, "schema_defs")
 
 
@@ -55,7 +56,17 @@ def validate_manifest(manifest: dict[str, Any], state: dict[str, Any]) -> None:
     require(manifest["missing_v12_fixtures"] == planned[count:], "manifest_suffix")
     require(manifest["fixture_count"] == 193 + count, "manifest_count")
     require(manifest["complete"] is (count == 5), "manifest_complete")
-    require(len(manifest["files"]) == 623 + 3 * count, "manifest_file_count")
+    require(len(manifest["files"]) == 626 + 3 * count, "manifest_file_count")
+    rebound = next(
+        row
+        for row in manifest["fixtures"]
+        if row["fixture_id"] == distribution.COMPATIBILITY_REBINDING
+    )
+    require(
+        rebound["metadata_path"]
+        == "fixtures/v12/scenarios/resource_followup/canonical_derivation_exact_budget.fixture.json",
+        "compatibility_rebinding",
+    )
     target_identifiers = sorted(
         [
             *(row["fixture_id"] for row in distribution.base_manifest()["fixtures"]),
@@ -95,6 +106,11 @@ def mutation_self_test(
         lambda value: value["planned_v12_fixtures"].reverse(),
         lambda value: value.update(base_manifest_sha256="0" * 64),
         lambda value: value["authorized_v11_source_rebindings"].reverse(),
+        lambda value: next(
+            row
+            for row in value["fixtures"]
+            if row["fixture_id"] == distribution.COMPATIBILITY_REBINDING
+        ).update(metadata_path="fixtures/v1_draft/scenarios/resource/canonical_derivation_exact_budget.fixture.json"),
         lambda value: value.update(
             fixture_count=197 if value["fixture_count"] == 198 else 198
         ),
