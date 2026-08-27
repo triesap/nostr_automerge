@@ -167,6 +167,25 @@ impl DeviceEquivocationAlert {
         })
     }
 
+    /// Constructs an alert from engine-owned canonical set projections.
+    ///
+    /// This crate-private boundary performs no collection traversal. The
+    /// quarantine engine validates the nonzero sequence and derives both
+    /// vectors from ordered sets under immediately preceding work charges.
+    pub(crate) fn from_validated_parts(
+        actor_id: ActorId,
+        first_sequence: u64,
+        conflicting_changes: Vec<ChangeHash>,
+        affected_descendants: Vec<ChangeHash>,
+    ) -> Self {
+        Self {
+            actor_id,
+            first_sequence,
+            conflicting_changes,
+            affected_descendants,
+        }
+    }
+
     /// Returns the equivocated actor.
     #[must_use]
     pub const fn actor_id(&self) -> ActorId {

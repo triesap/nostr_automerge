@@ -251,21 +251,23 @@ impl ReferenceEvaluator {
                     ));
                 }
             };
-        if let Err(completion) =
-            charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)
-        {
-            return reserved_interrupted_report(
-                self.revision,
-                coordinate,
-                completion,
-                &mut finalization,
-            );
-        }
-        let manifest = resolve_selected_manifest(
+        let manifest = match resolve_selected_manifest(
             &view,
             &batch.control_dispositions,
             &batch.statefully_valid_controls,
-        );
+            budget,
+            cancellation,
+        ) {
+            Ok(manifest) => manifest,
+            Err(completion) => {
+                return reserved_interrupted_report(
+                    self.revision,
+                    coordinate,
+                    completion,
+                    &mut finalization,
+                );
+            }
+        };
         let control_dispositions = complete_pass!(finalization.consume_before(
             [FinalizationReservationUnit::new(
                 CompleteReportPass::ControlRecords,
@@ -1193,23 +1195,29 @@ fn resolve_selected_manifest(
     view: &DocumentEvidenceView<'_>,
     control_dispositions: &std::collections::BTreeMap<crate::EventId, ProtocolDisposition>,
     statefully_valid_controls: &std::collections::BTreeSet<crate::EventId>,
-) -> ResolvedManifestAvailability {
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+) -> Result<ResolvedManifestAvailability, Completion> {
     let corpus = view.corpus();
     let coordinate = view.coordinate();
-    let Some(selection) = view.selected_manifest() else {
-        return ResolvedManifestAvailability::Missing;
+    let Some(selection) = view.selected_manifest_metered(|| {
+        charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)
+    })?
+    else {
+        return Ok(ResolvedManifestAvailability::Missing);
     };
     let hints = match selection.state {
         ManifestSelectionState::Available(hints) => hints,
         ManifestSelectionState::Unavailable(diagnostic) => {
-            return ResolvedManifestAvailability::Unavailable {
+            return Ok(ResolvedManifestAvailability::Unavailable {
                 event_id: selection.event_id,
                 control: None,
                 diagnostic,
-            };
+            });
         }
     };
     let control_id = hints.control();
+    charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;
     let state = resolve_referenced_control(
         corpus,
         control_id,
@@ -1217,7 +1225,7 @@ fn resolve_selected_manifest(
         control_dispositions,
         statefully_valid_controls,
     );
-    match state {
+    Ok(match state {
         ReferencedControlState::Canonical(_) => ResolvedManifestAvailability::Available {
             hints,
             control_status: ManifestControlStatus::Canonical,
@@ -1239,7 +1247,7 @@ fn resolve_selected_manifest(
             control: Some(control_id),
             diagnostic: state.diagnostic(),
         },
-    }
+    })
 }
 
 fn project_document(

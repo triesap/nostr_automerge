@@ -77,6 +77,29 @@ impl ValidatedManifest {
             self.relays.clone(),
         )
     }
+
+    pub(crate) fn acquisition_hints_metered<E>(
+        &self,
+        mut visit: impl FnMut() -> Result<(), E>,
+    ) -> Result<crate::ManifestHints, E> {
+        let mut relays = Vec::new();
+        let mut relay_items = self.relays.iter();
+        loop {
+            visit()?;
+            let Some(relay) = relay_items.next() else {
+                break;
+            };
+            visit()?;
+            relays.push(relay.clone());
+        }
+        Ok(crate::ManifestHints::new(
+            self.event_id,
+            self.coordinate,
+            self.control,
+            self.checkpoint,
+            relays,
+        ))
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

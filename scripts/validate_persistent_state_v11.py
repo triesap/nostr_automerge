@@ -21,6 +21,12 @@ SOURCES = (
     "crates/nostr_automerge/src/reference/evaluate.rs",
     "crates/nostr_automerge/src/engine/reference_evaluator.rs",
     "crates/nostr_automerge/src/automerge_adapter/document.rs",
+    "crates/nostr_automerge/src/carrier/manifest.rs",
+    "crates/nostr_automerge/src/evidence/corpus_builder.rs",
+    "crates/nostr_automerge/src/evidence/document_view.rs",
+    "crates/nostr_automerge/src/graph/equivocation.rs",
+    "crates/nostr_automerge/src/integrity.rs",
+    "crates/nostr_automerge/src/engine/evaluation_report.rs",
 )
 
 
@@ -590,6 +596,161 @@ def validate_sources(sources: dict[str, str]) -> None:
         "let authorized = any_control_member_metered(" in evaluator,
         "evaluator:member_production_route",
     )
+    manifest_resolution = section(
+        evaluator,
+        "fn resolve_selected_manifest(",
+        "\n}\n\nfn project_document(",
+        "evaluator:manifest_resolution",
+    )
+    require_order(
+        manifest_resolution,
+        (
+            "view.selected_manifest_metered(||",
+            "charge_evaluation_work(budget, cancellation, WorkCounter::Carrier, 1)",
+            "charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;",
+            "resolve_referenced_control(",
+        ),
+        "evaluator:manifest_resolution",
+    )
+    require("view.selected_manifest()" not in evaluator, "evaluator:manifest_unmetered_route")
+
+    manifest = sources[SOURCES[9]]
+    manifest_hints = section(
+        manifest,
+        "pub(crate) fn acquisition_hints_metered<E>(",
+        "\n    }\n}",
+        "manifest:hints_metered",
+    )
+    require_order(
+        manifest_hints,
+        (
+            "visit()?;",
+            "relay_items.next()",
+            "visit()?;",
+            "relays.push(relay.clone());",
+        ),
+        "manifest:hints_metered",
+    )
+
+    corpus = sources[SOURCES[10]]
+    manifest_selection = section(
+        corpus,
+        "fn selected_manifest_in_metered<E>(",
+        "\n}\n\npub(crate) fn manifest_coordinate(",
+        "corpus:manifest_selection",
+    )
+    require_order(
+        manifest_selection,
+        (
+            "visit()?;",
+            "ids.next()",
+            "visit()?;",
+            "events.get(event_id)",
+            "manifest.acquisition_hints_metered(&mut visit)?",
+            "visit()?;",
+            "let replace =",
+            "visit()?;",
+            "selected = Some(candidate);",
+        ),
+        "corpus:manifest_selection",
+    )
+    require(
+        "pub(crate) fn selected_manifest_selection_in_reserved(" in corpus,
+        "corpus:manifest_reserved_boundary",
+    )
+
+    evidence_view = sources[SOURCES[11]]
+    require(
+        evidence_view.count("pub(crate) fn selected_manifest_reserved(") == 1,
+        "document_view:manifest_reserved",
+    )
+    require(
+        evidence_view.count("pub(crate) fn selected_manifest_metered<E>(") == 1,
+        "document_view:manifest_metered",
+    )
+    require_order(
+        evidence_view,
+        (
+            "pub(crate) fn selected_manifest_metered<E>(",
+            "visit()?;",
+            ".manifests\n            .get(&self.coordinate)",
+            ".selected_manifest_selection_in_metered(self.coordinate, event_ids, visit)",
+        ),
+        "document_view:manifest_metered",
+    )
+
+    quarantine = sources[SOURCES[12]]
+    quarantine_work = section(
+        quarantine,
+        "pub(crate) fn detect_equivocations<I>(",
+        "\nfn charge_quarantine_work(",
+        "quarantine:work",
+    )
+    for banned in (
+        "charge_quarantine_amount",
+        ".extend(",
+        ".collect(",
+        "Vec::with_capacity",
+    ):
+        require(banned not in quarantine_work, f"quarantine:bulk:{banned}")
+    require_order(
+        quarantine_work,
+        (
+            "charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;",
+            "candidate_items.next()",
+            "groups\n            .entry((candidate.actor, candidate.sequence))",
+            "charge_quarantine_work(budget, cancellation, WorkCounter::GraphEdge)?;",
+            "carriers.next()",
+            "carrier_group.insert(*event_id);",
+            "let groups = detect_equivocations(",
+            "charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;",
+            "queue.pop()",
+            "graph.dependants.get(&hash)",
+            "DeviceEquivocationAlert::from_validated_parts(",
+        ),
+        "quarantine:work",
+    )
+    for owned_operation in (
+        "charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;\n        let Some(candidate) = candidate_items.next()",
+        "charge_quarantine_work(budget, cancellation, WorkCounter::GraphEdge)?;\n            let Some(event_id) = carriers.next()",
+        "charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;\n            let Some(hash) = affected_items.next()",
+    ):
+        require(owned_operation in quarantine_work, "quarantine:immediate_ownership")
+    descendant_projection = section(
+        quarantine_work,
+        "let mut descendants = Vec::new();",
+        "let mut conflicting_changes = Vec::new();",
+        "quarantine:descendant_projection",
+    )
+    require(
+        "charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;\n            let Some(hash) = affected_items.next()"
+        in descendant_projection,
+        "quarantine:descendant_read",
+    )
+
+    integrity = sources[SOURCES[13]]
+    trusted_equivocation = section(
+        integrity,
+        "pub(crate) fn from_validated_parts(\n        actor_id: ActorId,",
+        "\n    }\n\n    /// Returns the equivocated actor.",
+        "integrity:equivocation_trusted_constructor",
+    )
+    for banned in ("canonical(", ".iter()", ".windows(", ".cmp("):
+        require(banned not in trusted_equivocation, f"integrity:equivocation_traversal:{banned}")
+    require(
+        quarantine_work.count("DeviceEquivocationAlert::from_validated_parts(") == 1,
+        "integrity:equivocation_trusted_route",
+    )
+
+    report = sources[SOURCES[14]]
+    require(
+        report.count(".selected_manifest_reserved()") == 1,
+        "report:manifest_reserved_route",
+    )
+    require(
+        "CompleteReportPass::ReportInvariants,\n                    plan.report_invariants," in evaluator,
+        "report:invariant_reservation",
+    )
 
     document = sources[SOURCES[8]]
     materialize = section(
@@ -629,7 +790,7 @@ def replaced(sources: dict[str, str], relative: str, old: str, new: str) -> dict
 
 
 def mutation_self_test(sources: dict[str, str]) -> int:
-    branch, frontier, parent, transition, candidate, epoch, evaluate, evaluator, document = SOURCES
+    branch, frontier, parent, transition, candidate, epoch, evaluate, evaluator, document, *_ = SOURCES
     mutations = [
         replaced(sources, branch, "#[cfg(test)]\n    pub(crate) fn get(", "    pub(crate) fn get("),
         replaced(sources, branch, "#[cfg(test)]\n    pub(crate) fn contains_key(", "    pub(crate) fn contains_key("),
@@ -696,6 +857,78 @@ def mutation_self_test(sources: dict[str, str]) -> int:
             evaluator,
             "let authorized = any_control_member_metered(",
             "let authorized = false.then_some(any_control_member_metered(",
+        ),
+        replaced(
+            sources,
+            evaluator,
+            "view.selected_manifest_metered(||",
+            "Ok(view.selected_manifest_reserved()).and_then(|_|",
+        ),
+        replaced(
+            sources,
+            evaluator,
+            "charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)?;\n    let state = resolve_referenced_control(",
+            "let state = resolve_referenced_control(",
+        ),
+        replaced(
+            sources,
+            SOURCES[9],
+            "visit()?;\n            let Some(relay) = relay_items.next()",
+            "let Some(relay) = relay_items.next()",
+        ),
+        replaced(
+            sources,
+            SOURCES[9],
+            "visit()?;\n            relays.push(relay.clone());",
+            "relays.push(relay.clone());",
+        ),
+        replaced(
+            sources,
+            SOURCES[10],
+            "visit()?;\n        let Some(event_id) = ids.next()",
+            "let Some(event_id) = ids.next()",
+        ),
+        replaced(
+            sources,
+            SOURCES[10],
+            "visit()?;\n            selected = Some(candidate);",
+            "selected = Some(candidate);",
+        ),
+        replaced(
+            sources,
+            SOURCES[12],
+            "charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;\n        let Some(candidate) = candidate_items.next()",
+            "let Some(candidate) = candidate_items.next()",
+        ),
+        replaced(
+            sources,
+            SOURCES[12],
+            "charge_quarantine_work(budget, cancellation, WorkCounter::GraphEdge)?;\n            let Some(event_id) = carriers.next()",
+            "let Some(event_id) = carriers.next()",
+        ),
+        replaced(
+            sources,
+            SOURCES[12],
+            "let mut descendants = Vec::new();\n        let mut affected_items = affected.iter();\n        for _ in 0..affected.len() {\n            charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;\n            let Some(hash) = affected_items.next()",
+            "let mut descendants = Vec::new();\n        let mut affected_items = affected.iter();\n        for _ in 0..affected.len() {\n            let Some(hash) = affected_items.next()",
+        ),
+        replaced(
+            sources,
+            SOURCES[12],
+            "DeviceEquivocationAlert::from_validated_parts(",
+            "DeviceEquivocationAlert::new(",
+        ),
+        replaced(
+            sources,
+            SOURCES[14],
+            ".selected_manifest_reserved()",
+            ".selected_manifest_metered(|| Ok::<(), ()>(())).ok().flatten()",
+        ),
+        replaced(
+            sources,
+            evaluator,
+            "CompleteReportPass::ReportInvariants,\n                    plan.report_invariants,",
+            "CompleteReportPass::FixedOverhead,\n                    plan.report_invariants,",
         ),
         replaced(sources, evaluate, "accepted_items.next()", "accepted_items.last()"),
         replaced(sources, evaluate, "candidates.push(candidate.clone());", "candidates.clear();"),

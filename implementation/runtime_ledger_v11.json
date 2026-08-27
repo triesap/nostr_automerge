@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v11_authority.json",
   "cursor": {
     "active_rcld": 103,
-    "active_step": "step_1332",
-    "next_step": "step_1333",
+    "active_step": "step_1333",
+    "next_step": "step_1334",
     "last_planned_step": "step_1363",
-    "remaining_checkpoint_count": 32,
+    "remaining_checkpoint_count": 31,
     "remaining_rcld_count": 7
   },
   "findings": {
@@ -28,7 +28,13 @@
     "NCRDT-OWNERSHIP-001"
   ],
   "active_checkpoint_scope": [
+    "crates/nostr_automerge/src/carrier/manifest.rs",
+    "crates/nostr_automerge/src/engine/evaluation_report.rs",
     "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+    "crates/nostr_automerge/src/evidence/corpus_builder.rs",
+    "crates/nostr_automerge/src/evidence/document_view.rs",
+    "crates/nostr_automerge/src/graph/equivocation.rs",
+    "crates/nostr_automerge/src/integrity.rs",
     "docs/execution/remediation_v11/ledger.md",
     "implementation/runtime_ledger_v11.json",
     "reports/spec_baseline.txt",
@@ -177,6 +183,12 @@
     {
       "step": "step_1331",
       "candidate": "045a4317436915fed12fcfb8fa8552655bf14a5c",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1332",
+      "candidate": "61776aea62b838e467b23451b5db766079caf128",
       "owner_class": "public",
       "result": "pass"
     }

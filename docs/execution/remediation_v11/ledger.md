@@ -125,3 +125,11 @@ insertions now alternate with `GraphEdge` charges, while member reads and
 authorization comparisons alternate with `Control` charges. Exact prefix,
 N-1/N/N+1, early-match, and cancellation tests prove that a failed charge
 prevents its owned read, insertion, or comparison.
+
+At `step_1333`, selected-manifest replacement selection owns every candidate
+read, relay clone, comparison, replacement, and referenced-control lookup.
+Equivocation quarantine likewise replaces length-derived precharges and hidden
+collection adapters with charged pulls, comparisons, insertions, and pushes.
+The only remaining unmetered manifest selection is explicitly named as part of
+the sealed `ReportInvariants` finalization reservation; the complete-report
+reservation arithmetic and pass ordering remain exact and unchanged.

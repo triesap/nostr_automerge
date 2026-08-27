@@ -32,120 +32,165 @@ impl From<AlertError> for QuarantineError {
     }
 }
 
-pub(crate) fn detect_equivocations(
-    candidates: impl IntoIterator<Item = ChangeCandidate>,
+pub(crate) fn detect_equivocations<I>(
+    candidates: I,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
-) -> Result<Vec<EquivocationGroup>, QuarantineError> {
+) -> Result<Vec<EquivocationGroup>, QuarantineError>
+where
+    I: IntoIterator<Item = ChangeCandidate>,
+    I::IntoIter: ExactSizeIterator,
+{
     let mut groups = BTreeMap::<(ActorId, u64), BTreeMap<ChangeHash, BTreeSet<EventId>>>::new();
-    for candidate in candidates {
+    let mut candidate_items = candidates.into_iter();
+    for _ in 0..candidate_items.len() {
         charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
-        let carrier_count = u64::try_from(candidate.valid_carriers.len())
-            .map_err(|_| QuarantineError::BudgetExhausted)?;
-        charge_quarantine_amount(budget, cancellation, WorkCounter::GraphEdge, carrier_count)?;
-        groups
+        let Some(candidate) = candidate_items.next() else {
+            return Err(QuarantineError::BudgetExhausted);
+        };
+        let sequence_group = groups
             .entry((candidate.actor, candidate.sequence))
-            .or_default()
-            .entry(candidate.change_hash)
-            .or_default()
-            .extend(candidate.valid_carriers.iter().copied());
+            .or_default();
+        let carrier_group = sequence_group.entry(candidate.change_hash).or_default();
+        let mut carriers = candidate.valid_carriers.iter();
+        for _ in 0..candidate.valid_carriers.len() {
+            charge_quarantine_work(budget, cancellation, WorkCounter::GraphEdge)?;
+            let Some(event_id) = carriers.next() else {
+                return Err(QuarantineError::BudgetExhausted);
+            };
+            carrier_group.insert(*event_id);
+        }
     }
     let mut first_by_actor = BTreeMap::<ActorId, EquivocationGroup>::new();
-    for ((actor, sequence), changes) in groups {
+    let mut group_items = groups.into_iter();
+    for _ in 0..group_items.len() {
         charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
-        if changes.len() < 2 || first_by_actor.contains_key(&actor) {
+        let Some(((actor, sequence), changes)) = group_items.next() else {
+            return Err(QuarantineError::BudgetExhausted);
+        };
+        if changes.len() < 2 {
             continue;
         }
-        let conflicting_count =
-            u64::try_from(changes.len()).map_err(|_| QuarantineError::BudgetExhausted)?;
-        let carrier_count = changes.values().try_fold(0_u64, |total, carriers| {
-            u64::try_from(carriers.len())
-                .ok()
-                .and_then(|count| total.checked_add(count))
-        });
-        let carrier_count = carrier_count.ok_or(QuarantineError::BudgetExhausted)?;
-        charge_quarantine_amount(
-            budget,
-            cancellation,
-            WorkCounter::GraphNode,
-            conflicting_count,
-        )?;
-        charge_quarantine_amount(budget, cancellation, WorkCounter::GraphEdge, carrier_count)?;
+        charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
+        if first_by_actor.contains_key(&actor) {
+            continue;
+        }
+        let mut conflicting_changes = BTreeSet::new();
+        let mut carrier_event_ids = BTreeSet::new();
+        let mut changes_items = changes.iter();
+        for _ in 0..changes.len() {
+            charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
+            let Some((hash, carriers)) = changes_items.next() else {
+                return Err(QuarantineError::BudgetExhausted);
+            };
+            conflicting_changes.insert(*hash);
+            let mut carrier_items = carriers.iter();
+            for _ in 0..carriers.len() {
+                charge_quarantine_work(budget, cancellation, WorkCounter::GraphEdge)?;
+                let Some(event_id) = carrier_items.next() else {
+                    return Err(QuarantineError::BudgetExhausted);
+                };
+                carrier_event_ids.insert(*event_id);
+            }
+        }
+        charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
         first_by_actor.insert(
             actor,
             EquivocationGroup {
                 actor,
                 first_sequence: sequence,
-                conflicting_changes: changes.keys().copied().collect(),
-                carrier_event_ids: changes.into_values().flatten().collect(),
+                conflicting_changes,
+                carrier_event_ids,
             },
         );
     }
-    let count =
-        u64::try_from(first_by_actor.len()).map_err(|_| QuarantineError::BudgetExhausted)?;
-    charge_quarantine_amount(budget, cancellation, WorkCounter::GraphNode, count)?;
-    Ok(first_by_actor.into_values().collect())
+    let mut detected = Vec::new();
+    let mut actor_items = first_by_actor.into_values();
+    for _ in 0..actor_items.len() {
+        charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
+        let Some(group) = actor_items.next() else {
+            return Err(QuarantineError::BudgetExhausted);
+        };
+        detected.push(group);
+    }
+    Ok(detected)
 }
 
-pub(crate) fn quarantine_equivocation_descendants(
-    inputs: impl IntoIterator<Item = ChangeCandidate>,
+pub(crate) fn quarantine_equivocation_descendants<I>(
+    inputs: I,
     graph: &DependencyGraph,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
-) -> Result<QuarantineResult, QuarantineError> {
+) -> Result<QuarantineResult, QuarantineError>
+where
+    I: IntoIterator<Item = ChangeCandidate>,
+    I::IntoIter: ExactSizeIterator,
+{
     let mut candidates = BTreeMap::new();
     let mut candidates_by_actor = BTreeMap::<ActorId, Vec<(u64, ChangeHash)>>::new();
-    for candidate in inputs {
-        if cancellation.is_cancelled() {
-            return Err(QuarantineError::Cancelled);
-        }
-        budget
-            .charge(WorkCounter::GraphNode, 1)
-            .map_err(|_| QuarantineError::BudgetExhausted)?;
-        candidates_by_actor
-            .entry(candidate.actor)
-            .or_default()
-            .push((candidate.sequence, candidate.change_hash));
+    let mut input_items = inputs.into_iter();
+    for _ in 0..input_items.len() {
+        charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
+        let Some(candidate) = input_items.next() else {
+            return Err(QuarantineError::BudgetExhausted);
+        };
+        let actor_candidates = candidates_by_actor.entry(candidate.actor).or_default();
+        actor_candidates.push((candidate.sequence, candidate.change_hash));
         candidates.insert(candidate.change_hash, candidate);
     }
     let groups = detect_equivocations(candidates.values().cloned(), budget, cancellation)?;
     let mut quarantined = BTreeSet::new();
-    let mut alerts = Vec::with_capacity(groups.len());
+    let mut alerts = Vec::new();
 
-    for group in groups {
+    let mut group_items = groups.into_iter();
+    for _ in 0..group_items.len() {
+        charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
+        let Some(group) = group_items.next() else {
+            return Err(QuarantineError::BudgetExhausted);
+        };
         let mut affected = BTreeSet::new();
-        for hash in &group.conflicting_changes {
+        let mut conflicting_items = group.conflicting_changes.iter();
+        for _ in 0..group.conflicting_changes.len() {
             charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
+            let Some(hash) = conflicting_items.next() else {
+                return Err(QuarantineError::BudgetExhausted);
+            };
             affected.insert(*hash);
         }
+        charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
         if let Some(actor_candidates) = candidates_by_actor.get(&group.actor) {
-            for (sequence, hash) in actor_candidates {
+            let mut actor_items = actor_candidates.iter();
+            for _ in 0..actor_candidates.len() {
                 charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
+                let Some((sequence, hash)) = actor_items.next() else {
+                    return Err(QuarantineError::BudgetExhausted);
+                };
                 if *sequence > group.first_sequence {
                     affected.insert(*hash);
                 }
             }
         }
-        let mut queue = Vec::with_capacity(affected.len());
-        for hash in &affected {
+        let mut queue = Vec::new();
+        let mut affected_items = affected.iter();
+        for _ in 0..affected.len() {
             charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
+            let Some(hash) = affected_items.next() else {
+                return Err(QuarantineError::BudgetExhausted);
+            };
             queue.push(*hash);
         }
-        while let Some(hash) = queue.pop() {
-            if cancellation.is_cancelled() {
-                return Err(QuarantineError::Cancelled);
-            }
-            budget
-                .charge(WorkCounter::GraphNode, 1)
-                .map_err(|_| QuarantineError::BudgetExhausted)?;
+        while !queue.is_empty() {
+            charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
+            let Some(hash) = queue.pop() else {
+                return Err(QuarantineError::BudgetExhausted);
+            };
             if let Some(dependants) = graph.dependants.get(&hash) {
-                for dependant in dependants.iter().rev() {
-                    if cancellation.is_cancelled() {
-                        return Err(QuarantineError::Cancelled);
-                    }
-                    budget
-                        .charge(WorkCounter::GraphEdge, 1)
-                        .map_err(|_| QuarantineError::BudgetExhausted)?;
+                let mut dependant_items = dependants.iter().rev();
+                for _ in 0..dependants.len() {
+                    charge_quarantine_work(budget, cancellation, WorkCounter::GraphEdge)?;
+                    let Some(dependant) = dependant_items.next() else {
+                        return Err(QuarantineError::BudgetExhausted);
+                    };
                     if affected.insert(*dependant) {
                         queue.push(*dependant);
                     }
@@ -153,25 +198,42 @@ pub(crate) fn quarantine_equivocation_descendants(
             }
         }
         let mut descendants = Vec::new();
-        for hash in affected.difference(&group.conflicting_changes) {
+        let mut affected_items = affected.iter();
+        for _ in 0..affected.len() {
             charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
-            descendants.push(*hash);
+            let Some(hash) = affected_items.next() else {
+                return Err(QuarantineError::BudgetExhausted);
+            };
+            if !group.conflicting_changes.contains(hash) {
+                descendants.push(*hash);
+            }
         }
-        let mut conflicting_changes = Vec::with_capacity(group.conflicting_changes.len());
-        for hash in &group.conflicting_changes {
+        let mut conflicting_changes = Vec::new();
+        let mut conflicting_items = group.conflicting_changes.iter();
+        for _ in 0..group.conflicting_changes.len() {
             charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
+            let Some(hash) = conflicting_items.next() else {
+                return Err(QuarantineError::BudgetExhausted);
+            };
             conflicting_changes.push(*hash);
         }
+        if group.first_sequence == 0 {
+            return Err(QuarantineError::Alert(AlertError));
+        }
         alerts.push(IntegrityAlert::DeviceEquivocation(
-            DeviceEquivocationAlert::new(
+            DeviceEquivocationAlert::from_validated_parts(
                 group.actor,
                 group.first_sequence,
                 conflicting_changes,
                 descendants,
-            )?,
+            ),
         ));
-        for hash in affected {
+        let mut affected_items = affected.into_iter();
+        for _ in 0..affected_items.len() {
             charge_quarantine_work(budget, cancellation, WorkCounter::GraphNode)?;
+            let Some(hash) = affected_items.next() else {
+                return Err(QuarantineError::BudgetExhausted);
+            };
             quarantined.insert(hash);
         }
     }
@@ -187,20 +249,11 @@ fn charge_quarantine_work(
     cancellation: &impl CancellationCheck,
     counter: WorkCounter,
 ) -> Result<(), QuarantineError> {
-    charge_quarantine_amount(budget, cancellation, counter, 1)
-}
-
-fn charge_quarantine_amount(
-    budget: &mut WorkBudget,
-    cancellation: &impl CancellationCheck,
-    counter: WorkCounter,
-    amount: u64,
-) -> Result<(), QuarantineError> {
     if cancellation.is_cancelled() {
         return Err(QuarantineError::Cancelled);
     }
     budget
-        .charge(counter, amount)
+        .charge(counter, 1)
         .map_err(|_| QuarantineError::BudgetExhausted)
 }
 
@@ -220,7 +273,7 @@ mod tests {
     fn detect_device_equivocation_groups() {
         let first = candidate(1, 1, 1, 1);
         let detect = |candidates| {
-            detect_equivocations(candidates, &mut WorkBudget::new(0, 100), &NeverCancelled)
+            detect_equivocations(candidates, &mut WorkBudget::new(0, 1_000), &NeverCancelled)
                 .unwrap_or_default()
         };
         assert!(detect(vec![first.clone()]).is_empty());
@@ -256,7 +309,7 @@ mod tests {
         later_conflict.change_hash = ChangeHash::from_bytes([4; 32]);
         let groups = detect_equivocations(
             [later_conflict, first_conflict.clone(), later, first.clone()],
-            &mut WorkBudget::new(0, 100),
+            &mut WorkBudget::new(0, 1_000),
             &NeverCancelled,
         )
         .unwrap_or_default();
@@ -291,7 +344,7 @@ mod tests {
         let graph = build_graph(input.clone(), BTreeSet::new());
         assert!(graph.is_ok());
         let Ok(graph) = graph else { return };
-        let mut budget = WorkBudget::new(0, 100);
+        let mut budget = WorkBudget::new(0, 1_000);
         let result = quarantine_descendants(input.clone(), &graph, &mut budget, &NeverCancelled);
         assert!(result.is_ok());
         let Ok(result) = result else { return };
@@ -327,7 +380,7 @@ mod tests {
             quarantine_descendants(
                 reversed,
                 &graph,
-                &mut WorkBudget::new(0, 100),
+                &mut WorkBudget::new(0, 1_000),
                 &NeverCancelled,
             ),
             Ok(result)
@@ -344,7 +397,7 @@ mod tests {
         let extended_result = quarantine_descendants(
             extended.clone(),
             &graph,
-            &mut WorkBudget::new(0, 100),
+            &mut WorkBudget::new(0, 1_000),
             &NeverCancelled,
         );
         assert!(
@@ -362,7 +415,7 @@ mod tests {
             Err(super::QuarantineError::BudgetExhausted)
         ));
         assert!(matches!(
-            quarantine_descendants(extended, &graph, &mut WorkBudget::new(0, 100), &|| true,),
+            quarantine_descendants(extended, &graph, &mut WorkBudget::new(0, 1_000), &|| true,),
             Err(super::QuarantineError::Cancelled)
         ));
     }
@@ -389,7 +442,7 @@ mod tests {
         let result = quarantine_descendants(
             inputs,
             &graph,
-            &mut WorkBudget::new(0, 100),
+            &mut WorkBudget::new(0, 1_000),
             &NeverCancelled,
         );
         assert!(result.is_ok_and(|result| {
@@ -402,5 +455,69 @@ mod tests {
             .iter()
             .all(|hash| result.quarantined.contains(hash))
         }));
+    }
+
+    #[test]
+    fn quarantine_traversal_has_exact_prefix_and_cancellation_boundaries() {
+        let first = candidate(1, 1, 1, 1);
+        let mut conflict = first.clone();
+        conflict.change_hash = ChangeHash::from_bytes([2; 32]);
+        let mut dependent = candidate(1, 2, 2, 1);
+        dependent.change_hash = ChangeHash::from_bytes([3; 32]);
+        dependent.dependencies = vec![first.change_hash].into();
+        let input = vec![dependent, conflict, first];
+        let graph = build_graph(input.clone(), BTreeSet::new());
+        assert!(graph.is_ok());
+        let Ok(graph) = graph else { return };
+
+        let mut ample = WorkBudget::new(0, 10_000);
+        let expected = quarantine_descendants(input.clone(), &graph, &mut ample, &NeverCancelled);
+        assert!(expected.is_ok());
+        let expected_items = ample
+            .consumed()
+            .get(WorkCounter::GraphNode)
+            .checked_add(ample.consumed().get(WorkCounter::GraphEdge));
+        assert!(expected_items.is_some_and(|count| count > 0));
+        let Some(expected_items) = expected_items else {
+            return;
+        };
+
+        for capacity in [expected_items - 1, expected_items, expected_items + 1] {
+            let mut budget = WorkBudget::new(0, capacity);
+            let result =
+                quarantine_descendants(input.clone(), &graph, &mut budget, &NeverCancelled);
+            if capacity < expected_items {
+                assert_eq!(result, Err(super::QuarantineError::BudgetExhausted));
+            } else {
+                assert_eq!(result, expected);
+            }
+            assert_eq!(
+                budget
+                    .consumed()
+                    .get(WorkCounter::GraphNode)
+                    .checked_add(budget.consumed().get(WorkCounter::GraphEdge)),
+                Some(capacity.min(expected_items))
+            );
+        }
+
+        for cancel_at in 0..expected_items {
+            let observations = std::cell::Cell::new(0_u64);
+            let cancellation = || {
+                if observations.get() == cancel_at {
+                    true
+                } else {
+                    observations.set(observations.get().saturating_add(1));
+                    false
+                }
+            };
+            let result = quarantine_descendants(
+                input.clone(),
+                &graph,
+                &mut WorkBudget::new(0, expected_items + 1),
+                &cancellation,
+            );
+            assert_eq!(result, Err(super::QuarantineError::Cancelled));
+            assert_eq!(observations.get(), cancel_at);
+        }
     }
 }

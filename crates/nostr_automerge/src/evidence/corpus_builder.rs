@@ -464,12 +464,26 @@ impl EvidenceCorpus {
         selected_manifests(&self.events).remove(&coordinate)
     }
 
-    pub(crate) fn selected_manifest_selection_in(
+    /// Resolves selection for the complete-report invariant pass.
+    ///
+    /// This unmetered traversal is only callable through the named sealed
+    /// `ReportInvariants` reservation. Live evaluator selection uses
+    /// [`Self::selected_manifest_selection_in_metered`].
+    pub(crate) fn selected_manifest_selection_in_reserved(
         &self,
         coordinate: crate::DocumentCoordinate,
         event_ids: &std::collections::BTreeSet<EventId>,
     ) -> Option<ManifestSelection> {
         selected_manifest_in(&self.events, event_ids, coordinate)
+    }
+
+    pub(crate) fn selected_manifest_selection_in_metered<E>(
+        &self,
+        coordinate: crate::DocumentCoordinate,
+        event_ids: &std::collections::BTreeSet<EventId>,
+        visit: impl FnMut() -> Result<(), E>,
+    ) -> Result<Option<ManifestSelection>, E> {
+        selected_manifest_in_metered(&self.events, event_ids, coordinate, visit)
     }
 
     pub(crate) fn record_for_event(&self, event_id: &EventId) -> Option<EvidenceRecord> {
@@ -846,6 +860,66 @@ fn selected_manifest_in(
     selected
 }
 
+fn selected_manifest_in_metered<E>(
+    events: &BTreeMap<EventId, EventEvidence>,
+    event_ids: &std::collections::BTreeSet<EventId>,
+    coordinate: crate::DocumentCoordinate,
+    mut visit: impl FnMut() -> Result<(), E>,
+) -> Result<Option<ManifestSelection>, E> {
+    let mut selected = None;
+    let mut ids = event_ids.iter();
+    loop {
+        visit()?;
+        let Some(event_id) = ids.next() else {
+            break;
+        };
+        visit()?;
+        let Some(evidence) = events.get(event_id) else {
+            continue;
+        };
+        let candidate = match evidence {
+            EventEvidence::VerifiedCarrier {
+                carrier: VerifiedCarrier::Manifest(manifest),
+                ..
+            } if manifest.coordinate() == coordinate => {
+                let hints = manifest.acquisition_hints_metered(&mut visit)?;
+                Some(ManifestSelection {
+                    created_at: manifest.created_at(),
+                    event_id: manifest.event_id,
+                    state: ManifestSelectionState::Available(hints),
+                })
+            }
+            EventEvidence::InvalidCarrier {
+                event, diagnostic, ..
+            }
+            | EventEvidence::UnsupportedRevision {
+                carrier: VerifiedCarrier::UnsupportedRevision { event, .. },
+                diagnostic,
+                ..
+            } if event.kind() == 31_624 => Some(ManifestSelection {
+                created_at: event.created_at(),
+                event_id: event.event_id(),
+                state: ManifestSelectionState::Unavailable(*diagnostic),
+            }),
+            _ => None,
+        };
+        let Some(candidate) = candidate else {
+            continue;
+        };
+        visit()?;
+        let replace = selected.as_ref().is_none_or(|current: &ManifestSelection| {
+            candidate.created_at > current.created_at
+                || candidate.created_at == current.created_at
+                    && candidate.event_id < current.event_id
+        });
+        if replace {
+            visit()?;
+            selected = Some(candidate);
+        }
+    }
+    Ok(selected)
+}
+
 pub(crate) fn manifest_coordinate(event: &VerifiedNip01Event) -> Option<crate::DocumentCoordinate> {
     if event.kind() != 31_624 {
         return None;
@@ -959,8 +1033,16 @@ const fn verification_diagnostic(error: Nip01VerificationError) -> DiagnosticCod
 
 #[cfg(test)]
 mod tests {
-    use super::{CorpusBuilder, IngestOutcome};
-    use crate::{ProtocolRevision, RawEventBytes};
+    use std::collections::{BTreeMap, BTreeSet};
+
+    use super::{CorpusBuilder, IngestOutcome, selected_manifest_in_metered};
+    use crate::carrier::VerifiedCarrier;
+    use crate::carrier::manifest::{ManifestStatus, ValidatedManifest};
+    use crate::evidence::event::{EventEvidence, RawChecksum};
+    use crate::{
+        ControllerPublicKey, DocumentCoordinate, DocumentId, EventId, ProtocolRevision,
+        RawEventBytes,
+    };
 
     fn raw(value: &[u8]) -> Option<RawEventBytes> {
         RawEventBytes::new(value, ProtocolRevision::draft_v1()).ok()
@@ -1006,5 +1088,75 @@ mod tests {
         second.ingest(second_invalid);
         second.ingest(valid);
         assert_eq!(first, second.finish());
+    }
+
+    #[test]
+    fn selected_manifest_metering_owns_every_read_clone_comparison_and_replacement() {
+        let coordinate = DocumentCoordinate::new(
+            ControllerPublicKey::from_bytes([0x21; 32]),
+            DocumentId::from_bytes([0x22; 32]),
+        );
+        let control = EventId::from_bytes([0x23; 32]);
+        let mut events = BTreeMap::new();
+        let mut event_ids = BTreeSet::new();
+        for (index, created_at) in [(0x31_u8, 1_u64), (0x32, 2)] {
+            let event_id = EventId::from_bytes([index; 32]);
+            event_ids.insert(event_id);
+            events.insert(
+                event_id,
+                EventEvidence::VerifiedCarrier {
+                    carrier: VerifiedCarrier::Manifest(Box::new(ValidatedManifest {
+                        event_id,
+                        created_at,
+                        coordinate,
+                        application: None,
+                        checkpoint: None,
+                        control,
+                        description: None,
+                        name: None,
+                        relays: vec![
+                            format!("wss://relay-{index}-a.example"),
+                            format!("wss://relay-{index}-b.example"),
+                        ],
+                        status: ManifestStatus::Active,
+                        successor: None,
+                    })),
+                    raw_checksum: RawChecksum::test_only([index; 32]),
+                },
+            );
+        }
+        let exact = 19_usize;
+        for capacity in [exact - 1, exact, exact + 1] {
+            let visits = std::cell::Cell::new(0_usize);
+            let result = selected_manifest_in_metered(&events, &event_ids, coordinate, || {
+                if visits.get() == capacity {
+                    return Err(());
+                }
+                visits.set(visits.get().saturating_add(1));
+                Ok(())
+            });
+            if capacity < exact {
+                assert!(matches!(result, Err(())));
+            } else {
+                assert!(result.is_ok_and(|selected| {
+                    selected.is_some_and(|selected| {
+                        selected.event_id == EventId::from_bytes([0x32; 32])
+                    })
+                }));
+            }
+            assert_eq!(visits.get(), capacity.min(exact));
+        }
+        for cancel_at in 0..exact {
+            let visits = std::cell::Cell::new(0_usize);
+            let result = selected_manifest_in_metered(&events, &event_ids, coordinate, || {
+                if visits.get() == cancel_at {
+                    return Err(());
+                }
+                visits.set(visits.get().saturating_add(1));
+                Ok(())
+            });
+            assert!(matches!(result, Err(())));
+            assert_eq!(visits.get(), cancel_at);
+        }
     }
 }

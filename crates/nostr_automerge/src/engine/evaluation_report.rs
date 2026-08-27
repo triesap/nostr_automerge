@@ -320,7 +320,9 @@ impl CompleteReportSourceAuthority<'_> {
                             .copied())
                     })
                     && resolved_manifest_event_id(&parts.manifest)
-                        == view.selected_manifest().map(|selection| selection.event_id)
+                        == view
+                            .selected_manifest_reserved()
+                            .map(|selection| selection.event_id)
             }
             #[cfg(test)]
             Self::TestEvidence(evidence) => parts.evidence == evidence,

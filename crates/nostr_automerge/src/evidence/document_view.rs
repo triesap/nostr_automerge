@@ -251,7 +251,8 @@ impl<'a> DocumentEvidenceView<'a> {
         self.work.map_or(Some(0), |work| work.decode_work_bytes)
     }
 
-    pub(crate) fn selected_manifest(&self) -> Option<ManifestSelection> {
+    /// Resolves selection only inside the sealed complete-report invariant pass.
+    pub(crate) fn selected_manifest_reserved(&self) -> Option<ManifestSelection> {
         self.corpus
             .indexes
             .coordinates
@@ -259,8 +260,26 @@ impl<'a> DocumentEvidenceView<'a> {
             .get(&self.coordinate)
             .and_then(|event_ids| {
                 self.corpus
-                    .selected_manifest_selection_in(self.coordinate, event_ids)
+                    .selected_manifest_selection_in_reserved(self.coordinate, event_ids)
             })
+    }
+
+    pub(crate) fn selected_manifest_metered<E>(
+        &self,
+        mut visit: impl FnMut() -> Result<(), E>,
+    ) -> Result<Option<ManifestSelection>, E> {
+        visit()?;
+        let Some(event_ids) = self
+            .corpus
+            .indexes
+            .coordinates
+            .manifests
+            .get(&self.coordinate)
+        else {
+            return Ok(None);
+        };
+        self.corpus
+            .selected_manifest_selection_in_metered(self.coordinate, event_ids, visit)
     }
 
     pub(crate) fn records(&self) -> impl Iterator<Item = EvidenceRecord> + '_ {
