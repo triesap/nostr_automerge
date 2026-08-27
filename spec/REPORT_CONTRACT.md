@@ -113,6 +113,16 @@ real byte copy is charged by bytes. Reportable state and charged target work
 come from coordinate-qualified membership, so unrelated evidence cannot
 change output, completion, allocations, copies, or work counters.
 
+`NCRDT-RESOURCE-015`: Every runtime lookup, membership test, extension, or
+materialization over persistent branch state MUST charge and check cancellation
+before each visited persistent node and each inserted target item, or use a
+separately metered flattened representation.
+
+`NCRDT-RESOURCE-016`: After a work-budget charge fails or cancellation is
+observed, evaluation MUST perform no further target-sized traversal,
+allocation, copy, comparison, serialization, or invariant construction and
+MUST return the constant-size no-progress result.
+
 ## Unsupported change identity
 
 `NCRDT-VERSION-002`: An unsupported change carrier whose canonical Change

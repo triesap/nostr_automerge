@@ -28,6 +28,7 @@ Trusted only by role:
 - framing gate before Automerge;
 - checked arithmetic and conversions;
 - bounded iterative graph algorithms;
+- bounded-stack destruction for persistent control and branch histories;
 - deterministic budgets;
 - no decompression of forbidden changes;
 - no silent data repair;

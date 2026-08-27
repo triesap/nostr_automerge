@@ -8,11 +8,11 @@
   "properties": {
     "schema": {"const": "nostr_automerge.requirements.v6"},
     "project": {"const": "nostr_automerge_v1_spec"},
-    "requirement_count": {"enum": [139, 148]},
+    "requirement_count": {"enum": [139, 148, 152]},
     "requirements": {
       "type": "array",
       "minItems": 139,
-      "maxItems": 148,
+      "maxItems": 152,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -37,6 +37,12 @@
       "properties": {
         "requirement_count": {"const": 148},
         "requirements": {"minItems": 148, "maxItems": 148}
+      }
+    },
+    {
+      "properties": {
+        "requirement_count": {"const": 152},
+        "requirements": {"minItems": 152, "maxItems": 152}
       }
     }
   ]

@@ -88,6 +88,11 @@ Owns:
 
 No other module directly calls Automerge.
 
+Persistent control-ancestry and branch-state ownership used by the reference
+implementation MUST be destructible with bounded stack usage at qualified
+history depth; recursive teardown proportional to retained history is not
+permitted (`NCRDT-OWNERSHIP-001`).
+
 ### carrier layer
 
 Owns typed, verified:

@@ -193,3 +193,11 @@ a semantic ChangeHash disposition. The six-authority validator now proves zero
 mismatches, the signed unsupported-carrier regression remains green, and
 Finding 098's exact reproduction is fixed without changing any wire value or
 event kind.
+
+At `step_1342`, the requirements registry appends exactly
+`NCRDT-RESOURCE-015`, `NCRDT-RESOURCE-016`, `NCRDT-VERSION-003`, and the
+Rust-only `NCRDT-OWNERSHIP-001` after the immutable 148-row prefix. Their
+approved applicability, normative source clauses, 152-row schema branch, and
+eight append-only mutations are closed together. Historical 139- and 148-row
+schema branches remain valid as immutable transition shapes; the live registry
+admits no count or ordering other than the exact 152-row authority.

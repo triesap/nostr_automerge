@@ -1,7 +1,7 @@
 {
   "schema": "nostr_automerge.requirements.v6",
   "project": "nostr_automerge_v1_spec",
-  "requirement_count": 148,
+  "requirement_count": 152,
   "requirements": [
     {
       "id": "NCRDT-SCOPE-001",
@@ -890,6 +890,30 @@
       "section": "Semantically exact proof catalog",
       "text": "Every passing requirement row MUST bind to a semantically matching exact signed fixture or named assertion through a validated proof catalog. Broad command-only proof, unrelated assertion categories, stale expectations, and missing opaque TypeScript evidence identifiers MUST be rejected.",
       "source": "spec/CONFORMANCE.md"
+    },
+    {
+      "id": "NCRDT-RESOURCE-015",
+      "section": "Metered persistent-state operations",
+      "text": "Every runtime lookup, membership test, extension, or materialization over persistent branch state MUST charge and check cancellation before each visited persistent node and each inserted target item, or use a separately metered flattened representation.",
+      "source": "spec/REPORT_CONTRACT.md"
+    },
+    {
+      "id": "NCRDT-RESOURCE-016",
+      "section": "No target-sized work after a stop",
+      "text": "After a work-budget charge fails or cancellation is observed, evaluation MUST perform no further target-sized traversal, allocation, copy, comparison, serialization, or invariant construction and MUST return the constant-size no-progress result.",
+      "source": "spec/REPORT_CONTRACT.md"
+    },
+    {
+      "id": "NCRDT-VERSION-003",
+      "section": "Unsupported change-shaped evidence has Event-only identity",
+      "text": "An unsupported change-shaped event for which canonical Change bytes and a computed ChangeHash were not verified receives only an Event unsupported_revision outcome and MUST NOT create or influence a semantic ChangeHash disposition in draft v1.",
+      "source": "spec/NIP_DRAFT.md"
+    },
+    {
+      "id": "NCRDT-OWNERSHIP-001",
+      "section": "Bounded destruction of persistent histories",
+      "text": "Persistent control-ancestry and branch-state ownership used by the reference implementation MUST be destructible with bounded stack usage at qualified history depth; recursive teardown proportional to retained history is not permitted.",
+      "source": "spec/ARCHITECTURE.md"
     }
   ]
 }

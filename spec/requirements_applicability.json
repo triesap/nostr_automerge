@@ -149,6 +149,10 @@
     "NCRDT-RESOURCE-014": "rust-and-typescript",
     "NCRDT-VERSION-002": "rust-and-typescript",
     "NCRDT-CONF-010": "rust-and-typescript",
-    "NCRDT-EVIDENCE-006": "rust-only-evidence-with-opaque-typescript-overlay"
+    "NCRDT-EVIDENCE-006": "rust-only-evidence-with-opaque-typescript-overlay",
+    "NCRDT-RESOURCE-015": "rust-and-typescript",
+    "NCRDT-RESOURCE-016": "rust-and-typescript",
+    "NCRDT-VERSION-003": "rust-and-typescript",
+    "NCRDT-OWNERSHIP-001": "rust-only"
   }
 }
