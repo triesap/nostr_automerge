@@ -299,3 +299,12 @@ rather than being rewritten. Missing, generic, stale, ignored, duplicate,
 misclassified, or wrong-candidate proof rows fail closed. Findings 096 through
 099 now have complete local proof inventories, but remain open until the
 adversarial qualification, final assurance, and finding-closure checkpoints.
+
+At `step_1360`, adversarial qualification executes the selected persistent
+depth, every-prefix cancellation, no-post-stop, deep-scaling, overflow,
+bounded-stack teardown, and public-boundary proofs. Sixteen enabled public
+tests pass with zero mutation, stack, provenance, or resource regressions. The
+opaque private lane independently retains 276 mutation probes, 21 fixed and two
+open historical reproductions, and the byte-identical 198-scenario, eight-order,
+two-process distribution result. No private source or external action enters
+the public record.

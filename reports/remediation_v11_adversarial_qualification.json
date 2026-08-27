@@ -1,0 +1,47 @@
+{
+  "schema": "nostr_automerge.remediation_v11_adversarial_qualification.v1",
+  "status": "pass",
+  "checkpoint": "step_1360",
+  "revision": "draft_2026_08",
+  "candidates": {
+    "public": "9e075bba3636efcd6bc6925e134398ad18db202a",
+    "opaque_private": "5d833e0235efe64f970b9c6a5a7c4e748a031b52"
+  },
+  "imports": [
+    {"category": "proof_catalog", "path": "reports/remediation_v11_proof_catalog.json", "sha256": "0127e7e475e1548d183ea8ab2488ebc5ae89475be2f003c6d7da9f3e3bdef2c0"},
+    {"category": "resource", "path": "reports/target_work_accounting_v11.json", "sha256": "e15dca3958e9c9cf98da585c5a60135e4b3c9d8b59ddec9c0e3ef068615948ae"},
+    {"category": "ownership", "path": "reports/persistent_ownership_v11.json", "sha256": "10235d1eac0b09a2b22ba70959a47a06478a08f595b31c9f843bb9fb41dcc67f"},
+    {"category": "parity", "path": "reports/opaque_distribution_parity_v12.json", "sha256": "900f90b55b16f75f1e86bb066767449989b2fea67504002de9a62baf8008a145"}
+  ],
+  "public_lanes": [
+    {"lane": "persistent_depth", "tests": ["reference::branch_state::tests::finding_096_deep_persistent_lookup_is_internally_metered", "reference::branch_state::tests::deep_persistent_boundaries_are_exact_and_cancellable"], "result": "pass"},
+    {"lane": "every_prefix_cancellation", "tests": ["reference::evaluate::tests::initial_evaluator_maps_charge_before_every_item", "engine::reference_evaluator::tests::member_and_dependency_preparation_interleaves_every_owned_operation", "evidence::corpus_builder::tests::selected_manifest_metering_owns_every_read_clone_comparison_and_replacement", "graph::equivocation::tests::quarantine_traversal_has_exact_prefix_and_cancellation_boundaries"], "result": "pass"},
+    {"lane": "no_post_stop", "tests": ["engine::reference_evaluator::tests::every_interrupted_prefix_uses_only_fallback_and_never_refunds", "engine::reference_evaluator::tests::v12_post_branch_fixture_stops_at_exact_internal_boundary"], "result": "pass"},
+    {"lane": "deep_scaling_and_overflow", "tests": ["graph::scaling::expanded_control_actor_conflict_and_projection_models_are_bounded", "engine::reference_evaluator::tests::complete_report_plan_is_exact_named_and_overflow_checked"], "result": "pass"},
+    {"lane": "bounded_teardown", "tests": ["reference::branch_state::tests::deep_unique_delta_teardown_is_bounded_stack", "reference::branch_state::tests::constrained_stack_wide_delta_fork_preserves_shared_parent_teardown", "control::ancestry::tests::deep_unique_control_ancestry_teardown_is_bounded_stack", "control::ancestry::tests::constrained_stack_wide_ancestry_fork_preserves_shared_parent_teardown"], "result": "pass"},
+    {"lane": "public_boundary", "tests": ["cancellation_is_safe_at_every_evaluator_boundary", "complete_report_resource_boundaries_are_exact_and_deterministic"], "result": "pass"}
+  ],
+  "opaque_private_lanes": {
+    "self_test_mutations": 276,
+    "fixed_reproductions": 21,
+    "open_reproductions": 2,
+    "distribution_scenarios": 198,
+    "delivery_permutations": 8,
+    "processes": 2,
+    "canonical_output_sha256": "ac1d326a2fe6fbc3ba495ecd7635250efd72179ac50985392757c1784cf59372",
+    "result": "pass"
+  },
+  "qualification": {
+    "public_test_count": 16,
+    "public_lane_count": 6,
+    "selected_mutation_survivors": 0,
+    "stack_regressions": 0,
+    "provenance_regressions": 0,
+    "resource_regressions": 0,
+    "private_source_disclosed": false,
+    "result": "pass"
+  },
+  "holds": ["external_assurance", "event_kind_allocation", "nip_submission", "production_qualification", "publication", "release", "remote_mutation"],
+  "result": "pass",
+  "result_identity_sha256": "26b4ac781413a8bc73af69564b9add0a555790b2967fa93498dafd1caf8b0e1e"
+}

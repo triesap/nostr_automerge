@@ -1,0 +1,20 @@
+{
+  "title": "nostr_automerge remediation v11 adversarial qualification",
+  "type": "object",
+  "required": ["schema", "status", "checkpoint", "revision", "candidates", "imports", "public_lanes", "opaque_private_lanes", "qualification", "holds", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.remediation_v11_adversarial_qualification.v1"},
+    "status": {"const": "pass"},
+    "checkpoint": {"const": "step_1360"},
+    "revision": {"const": "draft_2026_08"},
+    "candidates": {"type": "object", "required": ["public", "opaque_private"], "properties": {"public": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "opaque_private": {"type": "string", "pattern": "^[0-9a-f]{40}$"}}, "additionalProperties": false},
+    "imports": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"type": "object", "required": ["category", "path", "sha256"], "properties": {"category": {"enum": ["proof_catalog", "resource", "ownership", "parity"]}, "path": {"type": "string"}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}, "additionalProperties": false}},
+    "public_lanes": {"type": "array", "minItems": 6, "maxItems": 6, "items": {"type": "object", "required": ["lane", "tests", "result"], "properties": {"lane": {"type": "string"}, "tests": {"type": "array", "minItems": 2, "uniqueItems": true, "items": {"type": "string"}}, "result": {"const": "pass"}}, "additionalProperties": false}},
+    "opaque_private_lanes": {"type": "object", "required": ["self_test_mutations", "fixed_reproductions", "open_reproductions", "distribution_scenarios", "delivery_permutations", "processes", "canonical_output_sha256", "result"], "properties": {"self_test_mutations": {"const": 276}, "fixed_reproductions": {"const": 21}, "open_reproductions": {"const": 2}, "distribution_scenarios": {"const": 198}, "delivery_permutations": {"const": 8}, "processes": {"const": 2}, "canonical_output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "result": {"const": "pass"}}, "additionalProperties": false},
+    "qualification": {"type": "object", "required": ["public_test_count", "public_lane_count", "selected_mutation_survivors", "stack_regressions", "provenance_regressions", "resource_regressions", "private_source_disclosed", "result"], "properties": {"public_test_count": {"const": 16}, "public_lane_count": {"const": 6}, "selected_mutation_survivors": {"const": 0}, "stack_regressions": {"const": 0}, "provenance_regressions": {"const": 0}, "resource_regressions": {"const": 0}, "private_source_disclosed": {"const": false}, "result": {"const": "pass"}}, "additionalProperties": false},
+    "holds": {"type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true, "items": {"type": "string"}},
+    "result": {"const": "pass"},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}
