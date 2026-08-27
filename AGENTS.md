@@ -9,15 +9,15 @@ Read and follow, in order:
 1. `spec/NIP_DRAFT.md`;
 2. `spec/NOSTR_AUTOMERGE_V1_SPEC.md` and focused contracts under `spec/`;
 3. `spec/requirements.json`, approved ADRs, and fixture expectations;
-4. `docs/execution/rcl/nostr_automerge_v1_multi_rcld_v10.md`;
+4. `docs/execution/rcl/nostr_automerge_v1_multi_rcld_v12.md`;
 5. the active RCLD and checkpoint in that governing document;
 6. `implementation/COMMIT_SEQUENCE.md`.
 
-For the active resource-accounting and checkpoint-ancestry follow-up, also
-read `spec/resource_followup_authority_v10.json`,
-`implementation/runtime_ledger_v10.json`, and
-`docs/execution/remediation_v10/ledger.md`. RCLD 95 through RCLD 99 append to
-the completed RCLD 81 through RCLD 94 history and supersede its terminal
+For the active epoch-semantic resource-accounting follow-up, also read
+`spec/remediation_v12_authority.json`,
+`implementation/runtime_ledger_v12.json`, and
+`docs/execution/remediation_v12/baseline.md`. RCLD 109 through RCLD 115 append
+to the completed RCLD 100 through RCLD 108 history and supersede its terminal
 decision only for current implementation status. Historical evidence remains
 immutable.
 
@@ -40,7 +40,7 @@ all affected authority and implementations.
 - Cross-repository checkpoints preserve independent histories. Commit an
   authorized TypeScript source slice in its own repository before committing
   the corresponding Rust coordination or attestation slice.
-- Do not edit the NIP document during RCLDs 95 through 99.
+- Do not edit the NIP document during RCLDs 109 through 115.
 
 ## Naming
 

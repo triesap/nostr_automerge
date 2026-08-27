@@ -1,0 +1,50 @@
+{
+  "schema": "nostr_automerge.runtime_ledger.v12.v1",
+  "status": "implementation_in_progress",
+  "authority": "spec/remediation_v12_authority.json",
+  "cursor": {
+    "active_rcld": 109,
+    "active_step": "step_1364",
+    "next_step": "step_1365",
+    "last_planned_step": "step_1419",
+    "remaining_checkpoint_count": 55,
+    "remaining_rcld_count": 7
+  },
+  "findings": {
+    "open": [
+      "FINDING_100",
+      "FINDING_101",
+      "FINDING_102",
+      "FINDING_103"
+    ],
+    "held": [
+      "FINDING_080"
+    ]
+  },
+  "requirements": [],
+  "active_checkpoint_scope": [
+    "AGENTS.md",
+    "docs/execution/remediation_v12/baseline.md",
+    "implementation/runtime_ledger_v12.json",
+    "reports/spec_baseline.txt",
+    "scripts/validate_remediation_v12.py",
+    "scripts/validate_spec.py",
+    "spec/remediation_v12_authority.json",
+    "tools/nostr_automerge_xtask/src/validate.rs",
+    "tools/validation/runtime_ledger_v12.schema.json"
+  ],
+  "predecessors": [
+    {
+      "step": "step_1363",
+      "candidate": "9e99af892764ccb165a12b8bb186935bd599d561",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "plan_v12",
+      "candidate": "d1b9202be6bf9deb643ca7d81f89c5c3281eb523",
+      "owner_class": "public",
+      "result": "pass"
+    }
+  ]
+}

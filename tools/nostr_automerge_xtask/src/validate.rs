@@ -193,6 +193,7 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "unsupported_identity_contradiction_v11",
         "scripts/validate_unsupported_identity_contradiction_v11.py",
     ),
+    ("remediation_v12", "scripts/validate_remediation_v12.py"),
     ("complete_specification", "scripts/validate_spec.py"),
     (
         "fixture_schema_checksum_snake_case",
@@ -215,8 +216,12 @@ pub(crate) fn validate_repository(root: &Path) -> Result<ValidationReport, Strin
     let followup_active = root
         .join("spec/resource_followup_authority_v10.json")
         .is_file();
+    let v12_active = root.join("spec/remediation_v12_authority.json").is_file();
     for (name, script) in PYTHON_VALIDATORS {
         if followup_active && followup_historical_validator(name) {
+            continue;
+        }
+        if v12_active && v12_historical_validator(name) {
             continue;
         }
         let output = Command::new("python3")
@@ -250,6 +255,35 @@ pub(crate) fn validate_repository(root: &Path) -> Result<ValidationReport, Strin
         covered_requirements: coverage.covered.len(),
         deferred_checkpoint_requirements: coverage.deferred_checkpoint.len(),
     })
+}
+
+fn v12_historical_validator(name: &str) -> bool {
+    matches!(
+        name,
+        "resource_followup_authority_v10"
+            | "runtime_ledger_v10"
+            | "resource_operation_inventory_v10"
+            | "appended_conformance_v11"
+            | "resource_ancestry_gate_v10"
+            | "resource_followup_assurance_v10"
+            | "resource_followup_final_decision_v10"
+            | "distribution_v12"
+            | "rust_conformance_v12"
+            | "opaque_distribution_parity_v12"
+            | "remediation_v11_authority_gate"
+            | "remediation_v11_proof_catalog"
+            | "remediation_v11_adversarial_qualification"
+            | "remediation_v11_local_assurance"
+            | "remediation_v11_finding_closure"
+            | "remediation_v11_final_decision"
+            | "remediation_v11"
+            | "persistent_state_v11"
+            | "persistent_state_core_gate_v11"
+            | "persistent_state_integration_gate_v11"
+            | "target_work_accounting_v11"
+            | "persistent_ownership_v11"
+            | "unsupported_identity_contradiction_v11"
+    )
 }
 
 fn followup_historical_validator(name: &str) -> bool {
@@ -325,6 +359,7 @@ mod tests {
         assert!(names.contains(&"resource_followup_assurance_v10"));
         assert!(names.contains(&"resource_followup_final_decision_v10"));
         assert!(names.contains(&"remediation_v11"));
+        assert!(names.contains(&"remediation_v12"));
         assert!(names.contains(&"complete_specification"));
         assert!(names.contains(&"sealed_constants"));
         assert!(names.contains(&"automerge_boundary"));

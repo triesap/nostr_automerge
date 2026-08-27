@@ -79,6 +79,7 @@ VALIDATORS = [
     "validate_remediation_v11_local_assurance.py",
     "validate_remediation_v11_finding_closure.py",
     "validate_remediation_v11_final_decision.py",
+    "validate_remediation_v12.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",
@@ -131,6 +132,30 @@ FOLLOWUP_HISTORICAL_VALIDATORS = {
     "validate_private_reproduction_boundary_v9.py",
     "validate_runtime_ledger_v10.py",
 }
+V12_HISTORICAL_VALIDATORS = {
+    "generate_distribution_v11.py",
+    "validate_appended_conformance_v11.py",
+    "validate_resource_ancestry_gate_v10.py",
+    "validate_resource_followup_assurance_v10.py",
+    "validate_resource_followup_final_decision_v10.py",
+    "validate_remediation_v11.py",
+    "validate_persistent_state_v11.py",
+    "validate_persistent_state_core_gate_v11.py",
+    "validate_persistent_state_integration_gate_v11.py",
+    "validate_target_work_accounting_v11.py",
+    "validate_persistent_ownership_v11.py",
+    "validate_unsupported_identity_contradiction_v11.py",
+    "generate_distribution_v12.py",
+    "validate_distribution_v12.py",
+    "validate_rust_conformance_v12.py",
+    "validate_opaque_distribution_parity_v12.py",
+    "validate_remediation_v11_authority_gate.py",
+    "validate_remediation_v11_proof_catalog.py",
+    "validate_remediation_v11_adversarial_qualification.py",
+    "validate_remediation_v11_local_assurance.py",
+    "validate_remediation_v11_finding_closure.py",
+    "validate_remediation_v11_final_decision.py",
+}
 
 
 def transition_stage() -> str:
@@ -143,12 +168,14 @@ def transition_stage() -> str:
 
 
 def active_validators(stage: str) -> list[str]:
+    v12_active = (ROOT / "spec/remediation_v12_authority.json").is_file()
     if (ROOT / "spec/resource_followup_authority_v10.json").is_file():
         return [
             validator
             for validator in VALIDATORS
             if validator not in HISTORICAL_VALIDATORS
             and validator not in FOLLOWUP_HISTORICAL_VALIDATORS
+            and (not v12_active or validator not in V12_HISTORICAL_VALIDATORS)
         ]
     if stage == "transition_installed":
         return VALIDATORS
@@ -168,11 +195,14 @@ def controlled_files() -> list[pathlib.Path]:
             "docs/execution/remediation_v9/ledger.md",
             "docs/execution/remediation_v10/ledger.md",
             "docs/execution/remediation_v11/ledger.md",
+            "docs/execution/remediation_v12/baseline.md",
             "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v11.md",
+            "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v12.md",
             "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v10.md",
             "implementation/runtime_ledger_v9.json",
             "implementation/runtime_ledger_v10.json",
             "implementation/runtime_ledger_v11.json",
+            "implementation/runtime_ledger_v12.json",
             "reports/carrier_gate_v9.json",
             "reports/checkpoint_parity_v9.json",
             "reports/opaque_carrier_v9.json",
@@ -216,6 +246,7 @@ def controlled_files() -> list[pathlib.Path]:
             "tools/validation/target_work_accounting_v11.schema.json",
             "reports/persistent_ownership_v11.json",
             "tools/validation/persistent_ownership_v11.schema.json",
+            "tools/validation/runtime_ledger_v12.schema.json",
             "scripts/generate_semantic_proof_catalog_final_v10.py",
             "scripts/reproduce_remediation_v11.py",
             "reports/opaque_boundary_gate_v9.json",

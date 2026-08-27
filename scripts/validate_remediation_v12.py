@@ -1,0 +1,196 @@
+#!/usr/bin/env python3
+"""Validate the active remediation-v12 authority and runtime cursor."""
+
+from __future__ import annotations
+
+import copy
+import hashlib
+import json
+import pathlib
+import subprocess
+
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+AUTHORITY_PATH = ROOT / "spec/remediation_v12_authority.json"
+LEDGER_PATH = ROOT / "implementation/runtime_ledger_v12.json"
+
+REVIEWED_CANDIDATE = "9e99af892764ccb165a12b8bb186935bd599d561"
+REVIEWED_TREE = "4b684dc123f371ded75c1469505b130c36359f93"
+PLAN_CANDIDATE = "d1b9202be6bf9deb643ca7d81f89c5c3281eb523"
+PLAN_TREE = "739068407a059b071655cc63bcf1b570285fbaf7"
+PLAN_PATH = "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v12.md"
+PLAN_SHA256 = "aa8ea9bc6801175dd247dd283521a4ad8f0735eafcd280151a842c37418e5585"
+HOLDS = [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "remote_mutation",
+]
+ACTIVE_SCOPE = [
+    "AGENTS.md",
+    "docs/execution/remediation_v12/baseline.md",
+    "implementation/runtime_ledger_v12.json",
+    "reports/spec_baseline.txt",
+    "scripts/validate_remediation_v12.py",
+    "scripts/validate_spec.py",
+    "spec/remediation_v12_authority.json",
+    "tools/nostr_automerge_xtask/src/validate.rs",
+    "tools/validation/runtime_ledger_v12.schema.json",
+]
+
+
+class EvidenceError(RuntimeError):
+    pass
+
+
+def require_keys(value: object, keys: list[str], label: str) -> dict[str, object]:
+    if not isinstance(value, dict) or list(value) != keys:
+        raise EvidenceError(f"{label}:shape")
+    return value
+
+
+def require_equal(actual: object, expected: object, label: str) -> None:
+    if actual != expected:
+        raise EvidenceError(label)
+
+
+def sha256(path: pathlib.Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def git(*args: str) -> str:
+    result = subprocess.run(
+        ["git", *args], cwd=ROOT, capture_output=True, text=True, check=False
+    )
+    if result.returncode:
+        raise EvidenceError("git:" + ":".join(args))
+    return result.stdout.strip()
+
+
+def validate_authority(authority: object) -> None:
+    record = require_keys(
+        authority,
+        [
+            "schema",
+            "status",
+            "reviewed_public",
+            "governing_plan",
+            "historical_v11",
+            "active_sequence",
+            "counts",
+            "frozen_sha256",
+            "holds",
+            "result",
+        ],
+        "authority",
+    )
+    require_equal(record["schema"], "nostr_automerge.remediation_v12_authority.v1", "authority:schema")
+    require_equal(record["status"], "authority_and_reproduction_correction_required", "authority:status")
+    reviewed = require_keys(record["reviewed_public"], ["candidate", "tree"], "authority:reviewed")
+    require_equal(reviewed, {"candidate": REVIEWED_CANDIDATE, "tree": REVIEWED_TREE}, "authority:reviewed")
+    plan = require_keys(record["governing_plan"], ["candidate", "tree", "path", "sha256"], "authority:plan")
+    require_equal(plan, {"candidate": PLAN_CANDIDATE, "tree": PLAN_TREE, "path": PLAN_PATH, "sha256": PLAN_SHA256}, "authority:plan")
+    historical = require_keys(record["historical_v11"], ["final_decision_sha256", "runtime_ledger_sha256", "authority_sha256", "status"], "authority:historical")
+    require_equal(historical["status"], "immutable_history", "authority:historical_status")
+    sequence = require_keys(record["active_sequence"], ["rcld_first", "rcld_last", "step_first", "step_last", "step_count"], "authority:sequence")
+    require_equal(sequence, {"rcld_first": 109, "rcld_last": 115, "step_first": "step_1364", "step_last": "step_1419", "step_count": 56}, "authority:sequence")
+    counts = require_keys(record["counts"], ["requirements_current", "requirements_target", "scenarios_current", "scenarios_target"], "authority:counts")
+    require_equal(counts, {"requirements_current": 152, "requirements_target": 156, "scenarios_current": 198, "scenarios_target": 204}, "authority:counts")
+    frozen = require_keys(record["frozen_sha256"], ["nip", "requirements", "report_contract"], "authority:frozen")
+    require_equal(frozen, {
+        "nip": "8262bf32cb70b7c0e46210441120652e52504fb73839641ac19dddfed840acf8",
+        "requirements": "840822a1acf171c887b9a9aba79ddf159ffcd9c5d7a74bd74d7e0bac5c6161f4",
+        "report_contract": "636bd1ff32673a00dc0f41440bde61f2b0f8d86f853a7feaaf119de1ff2ce189",
+    }, "authority:frozen")
+    require_equal(record["holds"], HOLDS, "authority:holds")
+    require_equal(record["result"], "pass", "authority:result")
+
+
+def validate_ledger(ledger: object) -> None:
+    record = require_keys(ledger, ["schema", "status", "authority", "cursor", "findings", "requirements", "active_checkpoint_scope", "predecessors"], "ledger")
+    require_equal(record["schema"], "nostr_automerge.runtime_ledger.v12.v1", "ledger:schema")
+    require_equal(record["status"], "implementation_in_progress", "ledger:status")
+    require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
+    cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 109, "active_step": "step_1364", "next_step": "step_1365", "last_planned_step": "step_1419", "remaining_checkpoint_count": 55, "remaining_rcld_count": 7}, "ledger:cursor")
+    findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
+    require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
+    require_equal(record["requirements"], [], "ledger:requirements")
+    require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
+    predecessors = record["predecessors"]
+    if not isinstance(predecessors, list) or len(predecessors) != 2:
+        raise EvidenceError("ledger:predecessors")
+    require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
+    require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
+
+
+def validate_files() -> None:
+    require_equal(git("rev-parse", f"{REVIEWED_CANDIDATE}^{{tree}}"), REVIEWED_TREE, "git:reviewed_tree")
+    require_equal(git("rev-parse", f"{PLAN_CANDIDATE}^{{tree}}"), PLAN_TREE, "git:plan_tree")
+    require_equal(sha256(ROOT / PLAN_PATH), PLAN_SHA256, "file:plan")
+    require_equal(sha256(ROOT / "spec/NIP_DRAFT.md"), "8262bf32cb70b7c0e46210441120652e52504fb73839641ac19dddfed840acf8", "file:nip")
+    require_equal(sha256(ROOT / "spec/requirements.json"), "840822a1acf171c887b9a9aba79ddf159ffcd9c5d7a74bd74d7e0bac5c6161f4", "file:requirements")
+    require_equal(sha256(ROOT / "spec/REPORT_CONTRACT.md"), "636bd1ff32673a00dc0f41440bde61f2b0f8d86f853a7feaaf119de1ff2ce189", "file:report_contract")
+    instructions = (ROOT / "AGENTS.md").read_text()
+    if "nostr_automerge_v1_multi_rcld_v12.md" not in instructions or "RCLDs 109 through 115" not in instructions:
+        raise EvidenceError("file:instructions")
+
+
+def mutation_self_test(authority: object, ledger: object) -> int:
+    mutations: list[tuple[str, object, object]] = []
+    for label, path, value in (
+        ("reviewed", ("reviewed_public", "candidate"), "0" * 40),
+        ("plan", ("governing_plan", "sha256"), "0" * 64),
+        ("count", ("counts", "scenarios_target"), 205),
+        ("hold", ("holds",), HOLDS[:-1]),
+    ):
+        changed = copy.deepcopy(authority)
+        target = changed
+        for key in path[:-1]:
+            target = target[key]
+        target[path[-1]] = value
+        mutations.append((label, changed, ledger))
+    extra = copy.deepcopy(authority)
+    extra["unapproved"] = False
+    mutations.append(("authority_extra", extra, ledger))
+    reordered = copy.deepcopy(authority)
+    reordered["schema"] = reordered.pop("schema")
+    mutations.append(("authority_order", reordered, ledger))
+    for label, field, value in (
+        ("cursor", "next_step", "step_1366"),
+        ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
+        ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
+    ):
+        changed = copy.deepcopy(ledger)
+        if field == "next_step":
+            changed["cursor"][field] = value
+        else:
+            changed[field] = value
+        mutations.append((label, authority, changed))
+    for label, changed_authority, changed_ledger in mutations:
+        try:
+            validate_authority(changed_authority)
+            validate_ledger(changed_ledger)
+        except EvidenceError:
+            continue
+        raise EvidenceError("mutation_survived:" + label)
+    return len(mutations)
+
+
+def main() -> None:
+    authority = json.loads(AUTHORITY_PATH.read_text())
+    ledger = json.loads(LEDGER_PATH.read_text())
+    validate_authority(authority)
+    validate_ledger(ledger)
+    validate_files()
+    mutation_count = mutation_self_test(authority, ledger)
+    print("PASS: remediation v12 authority")
+    print(f"- mutations={mutation_count}")
+    print("- active=RCLD109/step_1364")
+
+
+if __name__ == "__main__":
+    main()
