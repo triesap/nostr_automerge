@@ -248,6 +248,7 @@ def controlled_files() -> list[pathlib.Path]:
             "reports/persistent_ownership_v11.json",
             "tools/validation/persistent_ownership_v11.schema.json",
             "tools/validation/runtime_ledger_v12.schema.json",
+            "tools/validation/remediation_v12_evidence_policy.schema.json",
             "scripts/generate_semantic_proof_catalog_final_v10.py",
             "scripts/reproduce_remediation_v11.py",
             "scripts/reproduce_remediation_v12.py",

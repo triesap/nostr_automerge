@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/nostr_automerge/remediation_v12_evidence_policy.schema.json",
+  "title": "nostr_automerge remediation v12 evidence policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "status",
+    "authority",
+    "policy",
+    "decisions",
+    "requirements",
+    "owner_modes",
+    "required_row_fields",
+    "approved_roots",
+    "opaque_allowed_fields",
+    "opaque_prohibited_fields",
+    "holds",
+    "result"
+  ],
+  "properties": {
+    "schema": { "const": "nostr_automerge.remediation_v12_evidence_policy.v1" },
+    "status": { "const": "approved_staged" },
+    "authority": { "const": "spec/remediation_v12_authority.json" },
+    "policy": { "$ref": "#/$defs/path_hash" },
+    "decisions": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "$ref": "#/$defs/decision" }
+    },
+    "requirements": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": { "type": "string" }
+    },
+    "owner_modes": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "enum": ["item_metered", "exact_reserved", "sealed_constant_time"] },
+      "uniqueItems": true
+    },
+    "required_row_fields": {
+      "type": "array",
+      "minItems": 11,
+      "maxItems": 11,
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "approved_roots": { "$ref": "#/$defs/nonempty_unique_strings" },
+    "opaque_allowed_fields": { "$ref": "#/$defs/nonempty_unique_strings" },
+    "opaque_prohibited_fields": { "$ref": "#/$defs/nonempty_unique_strings" },
+    "holds": { "$ref": "#/$defs/nonempty_unique_strings" },
+    "result": { "const": "pass" }
+  },
+  "$defs": {
+    "path_hash": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "sha256"],
+      "properties": {
+        "id": { "enum": ["ADR-0076", "ADR-0077"] },
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "nonempty_unique_strings": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    }
+  }
+}

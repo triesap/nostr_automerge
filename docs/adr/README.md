@@ -23,6 +23,11 @@ ADRs 0072 through 0075 are the approved staged decisions for remediation v11.
 They become effective only through their ordered implementation and evidence
 gates. They do not override unchanged NIP text or authorize publication.
 
+ADRs 0076 and 0077 are the approved staged decisions for remediation v12. They
+become effective only through the ordered epoch-semantic implementation and
+runtime-operation evidence gates. They do not override unchanged NIP text or
+authorize any held external action.
+
 | ADR | Status | Primary requirements |
 | --- | --- | --- |
 | [0001](adr_0001_standalone_repository.md) | Approved | `NCRDT-REPO-001`, `NCRDT-CORE-001` |
@@ -100,3 +105,5 @@ gates. They do not override unchanged NIP text or authorize publication.
 | [0073](adr_0073_no_post_stop_target_work.md) | Approved staged | `NCRDT-RESOURCE-016` |
 | [0074](adr_0074_unsupported_event_only_identity.md) | Approved staged | `NCRDT-VERSION-003` |
 | [0075](adr_0075_bounded_persistent_teardown.md) | Approved staged | `NCRDT-OWNERSHIP-001` |
+| [0076](adr_0076_authoritative_epoch_semantic_work.md) | Approved staged | `NCRDT-RESOURCE-017`, `NCRDT-RESOURCE-018`, `NCRDT-RESOURCE-019` |
+| [0077](adr_0077_complete_runtime_operation_inventory.md) | Approved staged | `NCRDT-EVIDENCE-007` |

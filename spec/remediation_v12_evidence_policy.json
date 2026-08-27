@@ -1,0 +1,82 @@
+{
+  "schema": "nostr_automerge.remediation_v12_evidence_policy.v1",
+  "status": "approved_staged",
+  "authority": "spec/remediation_v12_authority.json",
+  "policy": {
+    "path": "spec/EVIDENCE_POLICY.md",
+    "sha256": "43f99e4151b037682f2135d1f80e4e254fcc59d4097fc2032b7a8be519bd51fc"
+  },
+  "decisions": [
+    {
+      "id": "ADR-0076",
+      "path": "docs/adr/adr_0076_authoritative_epoch_semantic_work.md",
+      "sha256": "35876ef2f7d8c189d535c104bbd4baa57bd2e94d432f7b04147373f976f3463a"
+    },
+    {
+      "id": "ADR-0077",
+      "path": "docs/adr/adr_0077_complete_runtime_operation_inventory.md",
+      "sha256": "8f4f4d51c763272e84f1a16d93fe2428461d3658c8377e975f318875881bb6db"
+    }
+  ],
+  "requirements": [
+    "NCRDT-RESOURCE-017",
+    "NCRDT-RESOURCE-018",
+    "NCRDT-RESOURCE-019",
+    "NCRDT-EVIDENCE-007"
+  ],
+  "owner_modes": [
+    "item_metered",
+    "exact_reserved",
+    "sealed_constant_time"
+  ],
+  "required_row_fields": [
+    "id",
+    "family",
+    "source_path",
+    "source_symbol",
+    "owner_mode",
+    "requirements",
+    "test",
+    "command",
+    "candidate",
+    "artifact_sha256",
+    "mutation"
+  ],
+  "approved_roots": [
+    "docs/adr",
+    "docs/execution/remediation_v12",
+    "fixtures",
+    "implementation",
+    "reports",
+    "scripts",
+    "spec",
+    "tests",
+    "tools/validation"
+  ],
+  "opaque_allowed_fields": [
+    "artifact_sha256",
+    "candidate",
+    "counts",
+    "identity_sha256",
+    "result_classes"
+  ],
+  "opaque_prohibited_fields": [
+    "commands",
+    "credentials",
+    "logs",
+    "package_layout",
+    "paths",
+    "source",
+    "urls"
+  ],
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "remote_mutation"
+  ],
+  "result": "pass"
+}

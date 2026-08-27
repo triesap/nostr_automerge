@@ -42,3 +42,9 @@ preparation, schedule readiness and pop preparation, candidate/result
 publication, selected and fallback quarantine overlays, and target-sized
 preparation before the first failed charge. Each case first proves the current
 semantic result or stop identity and then identifies only its hidden work.
+
+`step_1370` adopts ADR 0076 for authoritative epoch-semantic work and ADR 0077
+for the complete runtime-operation inventory. The new staged evidence policy
+closes owner modes, row fields, public evidence roots, opaque compatibility
+fields, prohibited private details, and every held external action before the
+four v12 requirements may reference it.
