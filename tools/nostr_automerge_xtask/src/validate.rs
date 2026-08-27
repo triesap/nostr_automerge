@@ -156,6 +156,10 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "persistent_ownership_v11",
         "scripts/validate_persistent_ownership_v11.py",
     ),
+    (
+        "unsupported_identity_contradiction_v11",
+        "scripts/validate_unsupported_identity_contradiction_v11.py",
+    ),
     ("complete_specification", "scripts/validate_spec.py"),
     (
         "fixture_schema_checksum_snake_case",

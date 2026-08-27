@@ -149,6 +149,7 @@ PYTHON_SURFACES = (
     "scripts/validate_persistent_state_integration_gate_v11.py",
     "scripts/validate_target_work_accounting_v11.py",
     "scripts/validate_persistent_ownership_v11.py",
+    "scripts/validate_unsupported_identity_contradiction_v11.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -209,6 +210,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v10.md",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v11.md",
         "docs/execution/remediation_v9/ledger.md",
+        "docs/adr/adr_0074_unsupported_event_only_identity.md",
         "docs/execution/remediation_v10/ledger.md",
         "docs/execution/remediation_v11/ledger.md",
         "docs/execution/remediation_v9/reproductions.md",
@@ -346,6 +348,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_persistent_ownership_v11.py",
         "reports/persistent_ownership_v11.json",
         "tools/validation/persistent_ownership_v11.schema.json",
+        "scripts/validate_unsupported_identity_contradiction_v11.py",
         "scripts/validate_opaque_boundary_gate_v9.py",
         "scripts/validate_opaque_resource_gate_v9.py",
         "tools/validation/opaque_semantic_proofs_v10.schema.json",

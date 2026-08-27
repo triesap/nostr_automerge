@@ -177,3 +177,10 @@ recursive/shared-parent regressions, ignored proofs, source drift, reordered
 evidence, and coordinated report/schema changes. `NCRDT-OWNERSHIP-001` now has
 named local Rust evidence; formal requirement installation and Finding closure
 remain in their later authority and assurance checkpoints.
+
+RCLD 105 begins at `step_1340` with a closed contradiction validator over six
+authorities. The current NIP contains exactly one unsupported-only semantic
+ChangeHash rule, while the companion, public API contract, staged ADR, Rust
+proof, and opaque private result all require Event-only identity. Fifteen
+mutations prove that removing, duplicating, broadening, reordering, or
+coordinating those anchors cannot make the reviewed mismatch disappear.

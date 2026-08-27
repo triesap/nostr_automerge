@@ -68,6 +68,7 @@ VALIDATORS = [
     "validate_persistent_state_integration_gate_v11.py",
     "validate_target_work_accounting_v11.py",
     "validate_persistent_ownership_v11.py",
+    "validate_unsupported_identity_contradiction_v11.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",
