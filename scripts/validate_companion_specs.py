@@ -26,7 +26,7 @@ STAGES = (
     "distribution_complete",
 )
 COMPANION_STAGE = STAGES.index("companion_authority_installed")
-NIP_SHA256 = "0dfa683aa0f4a1c7d3df010ec95901bf4ba4094ed3adaacc26e85d95aaa4ded1"
+NIP_SHA256 = "3558a4b53e19735518f66761544d537128037a45b20d675cf36ca1f973a8fac7"
 
 REQUIRED = (
     "ACCEPTANCE_CRITERIA.md",
@@ -246,7 +246,7 @@ def validate_post_import_authority(
         == {
             "path": "spec/NIP_DRAFT.md",
             "sha256": NIP_SHA256,
-            "status": "controlling_normative_authority_unchanged",
+            "status": "controlling_normative_authority_reconciled",
         },
         "nip_authority",
     )
@@ -459,7 +459,13 @@ def main() -> int:
         require(isinstance(source_digest, str), f"source_manifest:{name}")
         original = adapted_hashes.get(name) if name in ORIGINAL_ADAPTED else source_digest
         relative = f"spec/{name}"
-        expected = authorized[relative]["live_sha256"] if relative in authorized else original
+        expected = (
+            NIP_SHA256
+            if relative == "spec/NIP_DRAFT.md" and post_import
+            else authorized[relative]["live_sha256"]
+            if relative in authorized
+            else original
+        )
         require(sha256(path) == expected, f"companion_spec_digest:{name}")
 
     documents = {

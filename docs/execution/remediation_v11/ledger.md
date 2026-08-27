@@ -184,3 +184,12 @@ ChangeHash rule, while the companion, public API contract, staged ADR, Rust
 proof, and opaque private result all require Event-only identity. Fifteen
 mutations prove that removing, duplicating, broadening, reordering, or
 coordinating those anchors cannot make the reviewed mismatch disappear.
+
+At `step_1341`, the NIP removes that unsupported-only semantic-hash rule. An
+unsupported change-shaped Event whose canonical Change bytes and computed
+`ChangeHash` were not verified now remains Event-only evidence with the
+`unsupported_revision` outcome; its unverified `x` tag cannot create or affect
+a semantic ChangeHash disposition. The six-authority validator now proves zero
+mismatches, the signed unsupported-carrier regression remains green, and
+Finding 098's exact reproduction is fixed without changing any wire value or
+event kind.

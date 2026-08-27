@@ -5,8 +5,8 @@
   "protocol_revision": "draft_2026_08",
   "nip_authority": {
     "path": "spec/NIP_DRAFT.md",
-    "sha256": "0dfa683aa0f4a1c7d3df010ec95901bf4ba4094ed3adaacc26e85d95aaa4ded1",
-    "status": "controlling_normative_authority_unchanged"
+    "sha256": "3558a4b53e19735518f66761544d537128037a45b20d675cf36ca1f973a8fac7",
+    "status": "controlling_normative_authority_reconciled"
   },
   "documents": [
     {

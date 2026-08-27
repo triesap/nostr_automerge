@@ -583,8 +583,10 @@ lineage:
 - otherwise, an unresolved claim makes the hash `pending`;
 - otherwise, an authorized statefully valid noncanonical claim or a current
   authorized excluded claim makes the hash `excluded`;
-- otherwise, a hash with only unsupported carriers is
-  `unsupported_revision`; and
+- otherwise, an unsupported change-shaped event for which canonical Change
+  bytes and a computed `ChangeHash` were not verified receives only an Event
+  `unsupported_revision` outcome; its unverified `x` tag does not create or
+  influence a semantic `ChangeHash` disposition in draft v1; and
 - every remaining conclusive failure is `invalid`.
 
 One sufficient valid carrier dominates invalid, pending, unsupported, or

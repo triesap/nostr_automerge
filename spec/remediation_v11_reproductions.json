@@ -23,7 +23,7 @@
       "path": "spec/NIP_DRAFT.md",
       "test": "source::finding_098_unsupported_identity_contradiction",
       "diagnostic": "FINDING_098 reproduced: NIP still creates an unsupported-only semantic ChangeHash outcome",
-      "expected": "open_failure"
+      "expected": "fixed_pass"
     },
     {
       "finding": "FINDING_099",

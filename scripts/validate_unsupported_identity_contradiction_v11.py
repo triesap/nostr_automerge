@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bind the one reviewed unsupported-identity authority contradiction."""
+"""Bind the reviewed unsupported-identity authority reconciliation."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ sys.dont_write_bytecode = True
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 AUTHORITIES = (
-    ("nip", "spec/NIP_DRAFT.md", "0dfa683aa0f4a1c7d3df010ec95901bf4ba4094ed3adaacc26e85d95aaa4ded1"),
+    ("nip", "spec/NIP_DRAFT.md", "3558a4b53e19735518f66761544d537128037a45b20d675cf36ca1f973a8fac7"),
     ("companion", "spec/NOSTR_AUTOMERGE_V1_SPEC.md", "a81ad7f3e5cc7e386a9313f6d5355afc1ec95757a5c9a4051ea94b79eafeceb0"),
     ("api", "spec/API_CONTRACTS.md", "ce7f2992292b2f5159ff25dc555b29265fea0ec475d39fc65fc60344b76ca37a"),
     ("adr", "docs/adr/adr_0074_unsupported_event_only_identity.md", "eacd506ed130d39b3c72ac61a0ea29b328209abc886b3c8d848723449398140c"),
@@ -23,6 +23,12 @@ AUTHORITIES = (
 NIP_CONTRADICTION = (
     "- otherwise, a hash with only unsupported carriers is\n"
     "  `unsupported_revision`; and"
+)
+NIP_RECONCILIATION = (
+    "- otherwise, an unsupported change-shaped event for which canonical Change\n"
+    "  bytes and a computed `ChangeHash` were not verified receives only an Event\n"
+    "  `unsupported_revision` outcome; its unverified `x` tag does not create or\n"
+    "  influence a semantic `ChangeHash` disposition in draft v1; and"
 )
 SAFE_ANCHORS = {
     "companion": (
@@ -52,7 +58,7 @@ SAFE_ANCHORS = {
     ),
 }
 OPAQUE_CLASS = {"class": "unsupported_event_only_identity", "result": "pass"}
-EXPECTED_MISMATCHES = ("nip_unsupported_only_changehash",)
+EXPECTED_MISMATCHES: tuple[str, ...] = ()
 
 
 class ContradictionError(RuntimeError):
@@ -94,14 +100,14 @@ def validate_authorities(texts: dict[str, str], opaque: object) -> tuple[str, ..
 
     mismatches = []
     nip = texts["nip"]
-    require(nip.count(NIP_CONTRADICTION) == 1, "authority:nip:contradiction")
+    require(nip.count(NIP_CONTRADICTION) == 0, "authority:nip:contradiction")
+    require(nip.count(NIP_RECONCILIATION) == 1, "authority:nip:reconciliation")
     safe_in_every_other_authority = all(
         all(source.count(anchor) == 1 for anchor in SAFE_ANCHORS[name])
         for name, source in texts.items()
         if name != "nip"
     ) and classes.count(OPAQUE_CLASS) == 1
-    if safe_in_every_other_authority:
-        mismatches.append("nip_unsupported_only_changehash")
+    require(safe_in_every_other_authority, "authority:safe")
     require(tuple(mismatches) == EXPECTED_MISMATCHES, "authority:mismatches")
     return tuple(mismatches)
 
@@ -125,7 +131,7 @@ def mutation_self_test() -> int:
     opaque = json.loads((ROOT / AUTHORITIES[-1][1]).read_text())
     mutations: list[tuple[dict[str, str], object]] = []
     for name, anchor in (
-        ("nip", NIP_CONTRADICTION),
+        ("nip", NIP_RECONCILIATION),
         ("companion", SAFE_ANCHORS["companion"][0]),
         ("companion", SAFE_ANCHORS["companion"][1]),
         ("api", SAFE_ANCHORS["api"][0]),
@@ -141,6 +147,9 @@ def mutation_self_test() -> int:
         require(anchor in candidate[name], f"mutation:anchor:{name}")
         candidate[name] = candidate[name].replace(anchor, "removed", 1)
         mutations.append((candidate, copy.deepcopy(opaque)))
+    candidate = dict(texts)
+    candidate["nip"] = candidate["nip"].replace(NIP_RECONCILIATION, NIP_CONTRADICTION, 1)
+    mutations.append((candidate, copy.deepcopy(opaque)))
     for mutate in (
         lambda value: value["result_classes"].remove(OPAQUE_CLASS),
         lambda value: value["result_classes"].append(dict(OPAQUE_CLASS)),
@@ -164,9 +173,9 @@ def mutation_self_test() -> int:
 def main() -> None:
     validate_repository()
     mutations = mutation_self_test()
-    print("PASS: unsupported identity authority contradiction v11")
-    print("- mismatch=nip_unsupported_only_changehash")
-    print("- mismatch_count=1")
+    print("PASS: unsupported identity authority reconciliation v11")
+    print("- mismatch=none")
+    print("- mismatch_count=0")
     print(f"- authorities={len(AUTHORITIES)}")
     print(f"- mutations={mutations}")
 
