@@ -234,6 +234,54 @@ mod tests {
     }
 
     #[test]
+    fn constrained_stack_ancestry_drop_stops_at_a_retained_shared_prefix() {
+        let worker = std::thread::Builder::new().stack_size(64 * 1024).spawn(|| {
+            let root = genesis();
+            let ancestry = ControlAncestry::from_ordered([root.clone()]);
+            assert!(ancestry.is_ok());
+            let Ok(mut ancestry) = ancestry else { return };
+            for sequence in 1_u64..=5_000 {
+                let mut envelope = root.clone();
+                let mut event_id = [0_u8; 32];
+                event_id[..8].copy_from_slice(&sequence.to_be_bytes());
+                envelope.event_id = EventId::from_bytes(event_id);
+                envelope.parent = ancestry.last_event_id();
+                envelope.content.sequence = sequence;
+                let next = ancestry.push_checked(envelope);
+                assert!(next.is_ok());
+                let Ok(next) = next else { return };
+                ancestry = next;
+            }
+            let retained = ancestry.clone();
+            let retained_tip = retained.last_event_id();
+            for sequence in 5_001_u64..=10_000 {
+                let mut envelope = root.clone();
+                let mut event_id = [0_u8; 32];
+                event_id[..8].copy_from_slice(&sequence.to_be_bytes());
+                envelope.event_id = EventId::from_bytes(event_id);
+                envelope.parent = ancestry.last_event_id();
+                envelope.content.sequence = sequence;
+                let next = ancestry.push_checked(envelope);
+                assert!(next.is_ok());
+                let Ok(next) = next else { return };
+                ancestry = next;
+            }
+            drop(ancestry);
+            assert_eq!(retained.last_event_id(), retained_tip);
+            drop(retained);
+        });
+        assert!(
+            worker.is_ok(),
+            "construct constrained-stack worker: {worker:?}"
+        );
+        let Ok(worker) = worker else { return };
+        assert!(
+            worker.join().is_ok(),
+            "shared ancestry prefix teardown must stay bounded"
+        );
+    }
+
+    #[test]
     fn deep_unique_control_ancestry_teardown_is_bounded_stack() {
         const TEST_NAME: &str =
             "control::ancestry::tests::deep_unique_control_ancestry_teardown_is_bounded_stack";

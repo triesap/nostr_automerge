@@ -161,3 +161,11 @@ deep unique chain is detached node by node, while a shared parent is left for
 its retaining owner. Both 64 KiB unique-chain probes and both wide-fork probes
 now pass, so Finding 099 has a passing behavior reproduction. Clone/drop,
 panic, and stopped-state qualification remains assigned to `step_1338`.
+
+At `step_1338`, ownership qualification proves that clone/drop permutations
+release every delta value exactly once, a deep unique suffix stops at a
+retained shared prefix in both structures, and typed-stop or unexpected-panic
+unwind releases unpublished delta values without touching the retained
+source. The observed work trace ends at the injected boundary, and the exact
+panic payload is preserved. No post-stop callback or semantic traversal is
+introduced by teardown.

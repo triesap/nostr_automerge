@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v11_authority.json",
   "cursor": {
     "active_rcld": 104,
-    "active_step": "step_1337",
-    "next_step": "step_1338",
+    "active_step": "step_1338",
+    "next_step": "step_1339",
     "last_planned_step": "step_1363",
-    "remaining_checkpoint_count": 27,
+    "remaining_checkpoint_count": 26,
     "remaining_rcld_count": 6
   },
   "findings": {
@@ -29,6 +29,7 @@
   ],
   "active_checkpoint_scope": [
     "crates/nostr_automerge/src/control/ancestry.rs",
+    "crates/nostr_automerge/src/reference/branch_state.rs",
     "docs/execution/remediation_v11/ledger.md",
     "implementation/runtime_ledger_v11.json",
     "reports/spec_baseline.txt",
@@ -207,6 +208,12 @@
     {
       "step": "step_1336",
       "candidate": "cf7150e820ec1625dd0027a160fe3cb362b5b629",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1337",
+      "candidate": "cce9236d7d791c8caafb91fb3f4e0b3f4c5b4b5a",
       "owner_class": "public",
       "result": "pass"
     }

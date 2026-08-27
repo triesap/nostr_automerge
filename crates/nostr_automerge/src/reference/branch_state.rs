@@ -220,6 +220,26 @@ mod tests {
 
     use super::{PersistentDeltaMap, PersistentDeltaWork};
 
+    #[derive(Debug)]
+    struct DropProbe {
+        identity: u8,
+        drops: Rc<Cell<usize>>,
+    }
+
+    impl Drop for DropProbe {
+        fn drop(&mut self) {
+            self.drops.set(self.drops.get() + 1);
+        }
+    }
+
+    impl PartialEq for DropProbe {
+        fn eq(&self, other: &Self) -> bool {
+            self.identity == other.identity
+        }
+    }
+
+    impl Eq for DropProbe {}
+
     #[test]
     fn delta_chain_shares_parent_and_materializes_in_override_order() {
         let parent = PersistentDeltaMap::from_local(BTreeMap::from([(1_u8, 10_u8), (2, 20)]));
@@ -513,6 +533,144 @@ mod tests {
         assert!(
             worker.join().is_ok(),
             "wide shared delta fork must not recurse through the shared parent"
+        );
+    }
+
+    #[test]
+    fn clone_drop_permutations_release_each_delta_value_once() {
+        let root_drops = Rc::new(Cell::new(0));
+        let child_drops = Rc::new(Cell::new(0));
+        let root = PersistentDeltaMap::from_local(BTreeMap::from([(
+            0_u8,
+            DropProbe {
+                identity: 0,
+                drops: Rc::clone(&root_drops),
+            },
+        )]));
+        let child = root.extend_local(BTreeMap::from([(
+            1,
+            DropProbe {
+                identity: 1,
+                drops: Rc::clone(&child_drops),
+            },
+        )]));
+        let first = child.clone();
+        let second = child.clone();
+
+        drop(root);
+        drop(second);
+        assert_eq!((root_drops.get(), child_drops.get()), (0, 0));
+        drop(child);
+        assert_eq!((root_drops.get(), child_drops.get()), (0, 0));
+        drop(first);
+        assert_eq!((root_drops.get(), child_drops.get()), (1, 1));
+    }
+
+    #[test]
+    fn stopped_and_panicking_delta_construction_releases_unpublished_values_once() {
+        let expected = [
+            PersistentDeltaWork::PreparedItem,
+            PersistentDeltaWork::LookupNode,
+            PersistentDeltaWork::AcceptedInsert,
+        ];
+        for stop_at in 0..expected.len() {
+            let root_drops = Rc::new(Cell::new(0));
+            let prepared_drops = Rc::new(Cell::new(0));
+            let root = PersistentDeltaMap::from_local(BTreeMap::from([(
+                0_u8,
+                DropProbe {
+                    identity: 0,
+                    drops: Rc::clone(&root_drops),
+                },
+            )]));
+            let prepared = BTreeMap::from([(
+                1,
+                DropProbe {
+                    identity: 1,
+                    drops: Rc::clone(&prepared_drops),
+                },
+            )]);
+            let observed = std::cell::RefCell::new(Vec::new());
+            let injected = Rc::new("typed stop");
+            let stopped = root.extend_prepared_metered(prepared, |stage| {
+                observed.borrow_mut().push(stage);
+                if observed.borrow().len() == stop_at + 1 {
+                    return Err(Rc::clone(&injected));
+                }
+                Ok(())
+            });
+            assert!(stopped.is_err());
+            let Err(returned) = stopped else { continue };
+            assert!(Rc::ptr_eq(&returned, &injected));
+            assert_eq!(&*observed.borrow(), &expected[..=stop_at]);
+            assert_eq!(prepared_drops.get(), 1);
+            assert_eq!(root_drops.get(), 0);
+            assert_eq!(root.get(&0).map(|value| value.identity), Some(0));
+            drop(root);
+            assert_eq!((root_drops.get(), prepared_drops.get()), (1, 1));
+        }
+
+        let root_drops = Rc::new(Cell::new(0));
+        let prepared_drops = Rc::new(Cell::new(0));
+        let root = PersistentDeltaMap::from_local(BTreeMap::from([(
+            0_u8,
+            DropProbe {
+                identity: 0,
+                drops: Rc::clone(&root_drops),
+            },
+        )]));
+        let prepared = BTreeMap::from([(
+            1,
+            DropProbe {
+                identity: 1,
+                drops: Rc::clone(&prepared_drops),
+            },
+        )]);
+        let observed = std::cell::RefCell::new(Vec::new());
+        let injected = std::sync::Arc::new("unexpected panic");
+        let panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _ = root.extend_prepared_metered(prepared, |stage| {
+                observed.borrow_mut().push(stage);
+                if observed.borrow().len() == 2 {
+                    std::panic::resume_unwind(Box::new(std::sync::Arc::clone(&injected)));
+                }
+                Ok::<(), Rc<&'static str>>(())
+            });
+        }));
+        assert!(panic.is_err());
+        let Err(payload) = panic else { return };
+        let returned = payload.downcast_ref::<std::sync::Arc<&'static str>>();
+        assert!(returned.is_some_and(|value| std::sync::Arc::ptr_eq(value, &injected)));
+        assert_eq!(&*observed.borrow(), &expected[..2]);
+        assert_eq!(prepared_drops.get(), 1);
+        assert_eq!(root_drops.get(), 0);
+        drop(root);
+        assert_eq!((root_drops.get(), prepared_drops.get()), (1, 1));
+    }
+
+    #[test]
+    fn constrained_stack_delta_drop_stops_at_a_retained_shared_prefix() {
+        let worker = std::thread::Builder::new().stack_size(64 * 1024).spawn(|| {
+            let mut state = PersistentDeltaMap::from_local(BTreeMap::from([(0_u8, 0_u32)]));
+            for value in 1_u32..=5_000 {
+                state = state.extend_local(BTreeMap::from([(0, value)]));
+            }
+            let retained = state.clone();
+            for value in 5_001_u32..=10_000 {
+                state = state.extend_local(BTreeMap::from([(0, value)]));
+            }
+            drop(state);
+            assert_eq!(retained.get(&0), Some(&5_000));
+            drop(retained);
+        });
+        assert!(
+            worker.is_ok(),
+            "construct constrained-stack worker: {worker:?}"
+        );
+        let Ok(worker) = worker else { return };
+        assert!(
+            worker.join().is_ok(),
+            "shared delta prefix teardown must stay bounded"
         );
     }
 
