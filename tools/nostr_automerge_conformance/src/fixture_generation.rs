@@ -258,6 +258,36 @@ fn generate_resource_followup_v12() -> Result<(), String> {
         None,
     )?;
 
+    let unsupported_signer = Signer::from_byte(228)?;
+    let unsupported_coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        unsupported_signer.public_key.to_hex(),
+        "f4".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid v12 unsupported coordinate".to_owned())?;
+    let unsupported = sign_raw_event(
+        &unsupported_signer,
+        1,
+        1_625,
+        vec![
+            vec!["a".to_owned(), unsupported_coordinate.to_address()],
+            vec!["x".to_owned(), "a5".repeat(32)],
+        ],
+        r#"{"base_heads":[],"format":"automerge-change-v1","members":[],"policy":"controller-acl-v1","predecessor":null,"seq":0,"successor":null,"text_encoding":"utf16","v":2}"#
+            .to_owned(),
+    )?;
+    let unsupported_events = vec![unsupported];
+    let _ = assert_unsupported_event_only_boundaries(unsupported_coordinate, &unsupported_events)?;
+    write_fixture_with_requirements(
+        &root,
+        "unsupported_change_event_has_no_semantic_hash",
+        unsupported_coordinate,
+        unsupported_events,
+        &["NCRDT-VERSION-003"],
+        "resource_followup_v12",
+    )?;
+
     Ok(())
 }
 
@@ -328,6 +358,86 @@ fn assert_post_branch_stop_boundaries(
         expected = Some(bytes);
     }
     Ok(())
+}
+
+fn assert_unsupported_event_only_boundaries(
+    coordinate: DocumentCoordinate,
+    events: &[RawEventBytes],
+) -> Result<Vec<u8>, String> {
+    if events.len() != 1 {
+        return Err("unsupported Event-only fixture requires one Event".to_owned());
+    }
+    let unsupported_id = event_id(&events[0])?.to_hex();
+    let kind = |event: &RawEventBytes| {
+        serde_json::from_str::<Value>(event.as_str())
+            .ok()?
+            .get("kind")?
+            .as_u64()
+    };
+    let permutations = crate::permutations::required_delivery_permutations(
+        events,
+        |_| false,
+        |event| kind(event) == Some(1_625),
+        |_| false,
+    );
+    if permutations.len() != 8 {
+        return Err("unsupported Event-only fixture requires eight delivery orders".to_owned());
+    }
+    let mut expected = None;
+    for permutation in permutations {
+        let report = generic_report(
+            "unsupported_change_event_has_no_semantic_hash",
+            ScenarioInput {
+                scenario_schema: "nostr_automerge.scenario.v1".to_owned(),
+                coordinate: coordinate.to_address(),
+                raw_events: permutation
+                    .events
+                    .iter()
+                    .map(|event| RawScenarioEvent::Utf8(event.as_str().to_owned()))
+                    .collect(),
+                budget: ScenarioBudget {
+                    max_bytes: 1_000_000,
+                    max_items: 1_000_000,
+                },
+                cancel_after: None,
+            },
+            StateAssertionPolicy::None,
+        )
+        .map_err(|error| error.message().to_owned())?;
+        let event_only = report.disposition_records.len() == 1
+            && report.disposition_records[0].namespace == "event"
+            && report.disposition_records[0].identifier == unsupported_id
+            && report.disposition_records[0].disposition == "unsupported_revision"
+            && report.disposition_records[0].diagnostic.as_deref() == Some("carrier.revision");
+        if report.completion != "complete"
+            || !event_only
+            || !report.canonical_controls.is_empty()
+            || !report.accepted_changes.is_empty()
+            || !report.pending_changes.is_empty()
+            || !report.excluded_changes.is_empty()
+            || !report.invalid_changes.is_empty()
+            || !report.invalid_events.is_empty()
+            || report.unsupported_events != [unsupported_id.clone()]
+            || !report.heads.is_empty()
+            || !report.integrity_alerts.is_empty()
+            || !report.checkpoints.is_empty()
+            || !report.state_assertions.is_empty()
+        {
+            return Err(format!(
+                "unsupported delivery order {} created non-Event identity",
+                permutation.name
+            ));
+        }
+        let bytes = write_canonical_report(&report).map_err(|error| format!("{error:?}"))?;
+        if expected.as_ref().is_some_and(|expected| expected != &bytes) {
+            return Err(format!(
+                "unsupported delivery order {} changed output",
+                permutation.name
+            ));
+        }
+        expected = Some(bytes);
+    }
+    expected.ok_or_else(|| "unsupported Event-only fixture had no delivery orders".to_owned())
 }
 
 fn assert_resource_followup_v12_boundaries(
@@ -6832,8 +6942,8 @@ fn sha256(bytes: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        assert_resource_followup_v12_boundaries, minimum_complete_item_budget,
-        minimum_complete_item_budget_for_scenario, repository_root,
+        assert_resource_followup_v12_boundaries, assert_unsupported_event_only_boundaries,
+        minimum_complete_item_budget, minimum_complete_item_budget_for_scenario, repository_root,
     };
     use crate::expected::ExpectedReport;
     use crate::report_json::write_canonical_report;
@@ -6908,6 +7018,46 @@ mod tests {
                 "{fixture_id}"
             );
         }
+    }
+
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn v12_unsupported_fixture_is_event_only_across_eight_orders() {
+        let fixture_id = "unsupported_change_event_has_no_semantic_hash";
+        let root = repository_root().join("fixtures/v12/scenarios/resource_followup");
+        let signed = SignedScenarioInput::parse(
+            &std::fs::read(root.join(format!("{fixture_id}.input.json")))
+                .expect("checked-in v12 unsupported input"),
+        )
+        .expect("closed v12 unsupported input");
+        assert_eq!(signed.fixture_id, fixture_id);
+        assert_eq!(signed.requirements, ["NCRDT-VERSION-003"]);
+        assert_eq!(signed.cancel_after, None);
+        assert_eq!(signed.budget.max_bytes, 1_000_000);
+        assert_eq!(signed.budget.max_items, 1_000_000);
+        let coordinate = signed
+            .coordinate
+            .parse::<DocumentCoordinate>()
+            .expect("v12 unsupported coordinate");
+        let events = signed
+            .raw_events
+            .iter()
+            .map(|event| {
+                RawEventBytes::new(
+                    &event.decoded().expect("v12 unsupported Event bytes"),
+                    ProtocolRevision::draft_v1(),
+                )
+                .expect("bounded v12 unsupported Event")
+            })
+            .collect::<Vec<_>>();
+        let actual = assert_unsupported_event_only_boundaries(coordinate, &events)
+            .expect("v12 unsupported Event-only boundary");
+        let expected = serde_json::from_value::<ExpectedReport>(signed.expected_report)
+            .expect("v12 unsupported expected report");
+        assert_eq!(
+            actual,
+            write_canonical_report(&expected).expect("v12 unsupported canonical report")
+        );
     }
 
     #[test]

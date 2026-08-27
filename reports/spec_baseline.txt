@@ -6,5 +6,5 @@ requirements: 152
 transition_stage: distribution_complete
 historical_v9_validation: immutable_wrapper
 validators: 36
-aggregate_sha256: 11f38c6bb238f7b62fd4d14f32406b7b20d2758329ac558662f561690a51d086
+aggregate_sha256: b82d6c07fce2a00614fbd067e4e15c2f5a7afd39089e22337326746fd96582e5
 result: pass

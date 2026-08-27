@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v11_authority.json",
   "cursor": {
     "active_rcld": 107,
-    "active_step": "step_1354",
-    "next_step": "step_1355",
+    "active_step": "step_1355",
+    "next_step": "step_1356",
     "last_planned_step": "step_1363",
-    "remaining_checkpoint_count": 10,
+    "remaining_checkpoint_count": 9,
     "remaining_rcld_count": 2
   },
   "findings": {
@@ -28,15 +28,14 @@
     "NCRDT-OWNERSHIP-001"
   ],
   "active_checkpoint_scope": [
-    "crates/nostr_automerge/src/engine/reference_evaluator.rs",
     "docs/execution/remediation_v11/ledger.md",
     "fixtures/distribution/manifest_v12.json",
-    "fixtures/v12/scenarios/resource_followup/post_branch_stop_has_no_target_work.expected.json",
-    "fixtures/v12/scenarios/resource_followup/post_branch_stop_has_no_target_work.fixture.json",
-    "fixtures/v12/scenarios/resource_followup/post_branch_stop_has_no_target_work.input.json",
+    "fixtures/v12/scenarios/resource_followup/unsupported_change_event_has_no_semantic_hash.expected.json",
+    "fixtures/v12/scenarios/resource_followup/unsupported_change_event_has_no_semantic_hash.fixture.json",
+    "fixtures/v12/scenarios/resource_followup/unsupported_change_event_has_no_semantic_hash.input.json",
     "implementation/runtime_ledger_v11.json",
     "reports/spec_baseline.txt",
-    "scripts/validate_persistent_state_v11.py",
+    "scripts/validate_distribution_v12.py",
     "scripts/validate_remediation_v11.py",
     "spec/distribution_v12_transition.json",
     "tools/nostr_automerge_conformance/src/fixture_generation.rs"
@@ -315,6 +314,12 @@
     {
       "step": "step_1353",
       "candidate": "561e99287479b7831fb7e9912b1442880f1dcc51",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1354",
+      "candidate": "983e3ae7cbdd59ba0c0a8aa7bb86e4a6e2da04b6",
       "owner_class": "public",
       "result": "pass"
     }

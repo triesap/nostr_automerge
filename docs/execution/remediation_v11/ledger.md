@@ -257,3 +257,11 @@ counters, proving that no charged target work follows the stop. Generation
 also requires byte-identical no-progress reports across all eight delivery
 orders. The staged manifest is now 197/198; the unsupported Event-only fixture
 remains assigned to `step_1355`.
+
+At `step_1355`, the transition reaches `distribution_complete` with the fifth
+planned signed scenario. The unsupported-revision Event carries a forged `x`
+tag but produces exactly one Event `unsupported_revision` record with the
+`carrier.revision` diagnostic. All ChangeHash partitions, heads, canonical
+controls, state assertions, and materialized change effects remain empty, and
+all eight delivery orders produce identical report bytes. The append-only v12
+manifest is now complete at 198/198 while preserving every v11 fixture byte.

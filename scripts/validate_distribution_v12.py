@@ -95,7 +95,9 @@ def mutation_self_test(
         lambda value: value["planned_v12_fixtures"].reverse(),
         lambda value: value.update(base_manifest_sha256="0" * 64),
         lambda value: value["authorized_v11_source_rebindings"].reverse(),
-        lambda value: value.update(fixture_count=198),
+        lambda value: value.update(
+            fixture_count=197 if value["fixture_count"] == 198 else 198
+        ),
     ):
         candidate = copy.deepcopy(manifest)
         mutate(candidate)
