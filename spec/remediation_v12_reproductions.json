@@ -9,6 +9,24 @@
       "test": "graph::actor_state::tests::finding_100_actor_predecessor_scan_reproduction",
       "diagnostic": "unmetered actor predecessor collection remains",
       "expected": "open_failure"
+    },
+    {
+      "finding": "FINDING_100",
+      "family": "causal_next_op",
+      "kind": "rust_failure",
+      "path": "crates/nostr_automerge/src/graph/actor_state.rs",
+      "test": "graph::actor_state::tests::finding_100_causal_next_op_scan_reproduction",
+      "diagnostic": "unmetered causal next-op scan remains",
+      "expected": "open_failure"
+    },
+    {
+      "finding": "FINDING_100",
+      "family": "empty_frontier",
+      "kind": "rust_failure",
+      "path": "crates/nostr_automerge/src/graph/actor_state.rs",
+      "test": "graph::actor_state::tests::finding_100_empty_frontier_work_reproduction",
+      "diagnostic": "unmetered empty-frontier allocation remains",
+      "expected": "open_failure"
     }
   ],
   "result": "pass"

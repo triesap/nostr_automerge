@@ -38,7 +38,6 @@ ACTIVE_SCOPE = [
     "reports/spec_baseline.txt",
     "scripts/reproduce_remediation_v12.py",
     "scripts/validate_remediation_v12.py",
-    "scripts/validate_spec.py",
     "spec/remediation_v12_reproductions.json",
 ]
 
@@ -116,36 +115,43 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 109, "active_step": "step_1366", "next_step": "step_1367", "last_planned_step": "step_1419", "remaining_checkpoint_count": 53, "remaining_rcld_count": 7}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 109, "active_step": "step_1367", "next_step": "step_1368", "last_planned_step": "step_1419", "remaining_checkpoint_count": 52, "remaining_rcld_count": 7}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], [], "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 4:
+    if not isinstance(predecessors, list) or len(predecessors) != 5:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
     require_equal(predecessors[2], {"step": "step_1364", "candidate": "22cb8f0c77637647ce485e4d6f206316113e429a", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1364")
     require_equal(predecessors[3], {"step": "step_1365", "candidate": "4e6b9e2c189d407b29a478c5445405b922789aa0", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1365")
+    require_equal(predecessors[4], {"step": "step_1366", "candidate": "00fca7681ba079e98ebf8d116bc7fa12926d1a87", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1366")
 
 
 def validate_reproductions(reproductions: object) -> None:
     record = require_keys(reproductions, ["schema", "cases", "result"], "reproductions")
     require_equal(record["schema"], "nostr_automerge.remediation_v12_reproductions.v1", "reproductions:schema")
     rows = record["cases"]
-    if not isinstance(rows, list) or len(rows) != 1:
+    if not isinstance(rows, list) or len(rows) != 3:
         raise EvidenceError("reproductions:rows")
-    row = require_keys(rows[0], ["finding", "family", "kind", "path", "test", "diagnostic", "expected"], "reproductions:row")
-    require_equal(row, {
-        "finding": "FINDING_100",
-        "family": "actor_predecessor",
-        "kind": "rust_failure",
-        "path": "crates/nostr_automerge/src/graph/actor_state.rs",
-        "test": "graph::actor_state::tests::finding_100_actor_predecessor_scan_reproduction",
-        "diagnostic": "unmetered actor predecessor collection remains",
-        "expected": "open_failure",
-    }, "reproductions:actor_predecessor")
+    expected = [
+        ("actor_predecessor", "graph::actor_state::tests::finding_100_actor_predecessor_scan_reproduction", "unmetered actor predecessor collection remains"),
+        ("causal_next_op", "graph::actor_state::tests::finding_100_causal_next_op_scan_reproduction", "unmetered causal next-op scan remains"),
+        ("empty_frontier", "graph::actor_state::tests::finding_100_empty_frontier_work_reproduction", "unmetered empty-frontier allocation remains"),
+    ]
+    for index, (family, test, diagnostic) in enumerate(expected):
+        row = require_keys(rows[index], ["finding", "family", "kind", "path", "test", "diagnostic", "expected"], f"reproductions:row:{index}")
+        require_equal(row, {
+            "finding": "FINDING_100",
+            "family": family,
+            "kind": "rust_failure",
+            "path": "crates/nostr_automerge/src/graph/actor_state.rs",
+            "test": test,
+            "diagnostic": diagnostic,
+            "expected": "open_failure",
+        }, f"reproductions:{family}")
     require_equal(record["result"], "pass", "reproductions:result")
 
 
@@ -204,7 +210,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1368"),
+        ("cursor", "next_step", "step_1369"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
     ):
@@ -269,7 +275,7 @@ def main() -> None:
     mutation_count = mutation_self_test(authority, ledger, findings, reproductions)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
-    print("- active=RCLD109/step_1366")
+    print("- active=RCLD109/step_1367")
 
 
 if __name__ == "__main__":

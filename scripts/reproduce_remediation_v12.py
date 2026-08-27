@@ -12,6 +12,35 @@ import subprocess
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 INVENTORY = ROOT / "spec/remediation_v12_reproductions.json"
+EXPECTED_CASES = [
+    {
+        "finding": "FINDING_100",
+        "family": "actor_predecessor",
+        "kind": "rust_failure",
+        "path": "crates/nostr_automerge/src/graph/actor_state.rs",
+        "test": "graph::actor_state::tests::finding_100_actor_predecessor_scan_reproduction",
+        "diagnostic": "unmetered actor predecessor collection remains",
+        "expected": "open_failure",
+    },
+    {
+        "finding": "FINDING_100",
+        "family": "causal_next_op",
+        "kind": "rust_failure",
+        "path": "crates/nostr_automerge/src/graph/actor_state.rs",
+        "test": "graph::actor_state::tests::finding_100_causal_next_op_scan_reproduction",
+        "diagnostic": "unmetered causal next-op scan remains",
+        "expected": "open_failure",
+    },
+    {
+        "finding": "FINDING_100",
+        "family": "empty_frontier",
+        "kind": "rust_failure",
+        "path": "crates/nostr_automerge/src/graph/actor_state.rs",
+        "test": "graph::actor_state::tests::finding_100_empty_frontier_work_reproduction",
+        "diagnostic": "unmetered empty-frontier allocation remains",
+        "expected": "open_failure",
+    },
+]
 
 
 class ReproductionError(AssertionError):
@@ -27,20 +56,12 @@ def validate_inventory(value: object) -> list[dict[str, str]]:
     require(isinstance(value, dict) and tuple(value) == ("schema", "cases", "result"), "inventory:keys")
     require(value["schema"] == "nostr_automerge.remediation_v12_reproductions.v1" and value["result"] == "pass", "inventory:identity")
     rows = value["cases"]
-    require(isinstance(rows, list) and len(rows) == 1, "inventory:count")
+    require(isinstance(rows, list) and len(rows) == len(EXPECTED_CASES), "inventory:count")
     required = ("finding", "family", "kind", "path", "test", "diagnostic", "expected")
-    row = rows[0]
-    require(isinstance(row, dict) and tuple(row) == required, "case:keys")
-    require(row == {
-        "finding": "FINDING_100",
-        "family": "actor_predecessor",
-        "kind": "rust_failure",
-        "path": "crates/nostr_automerge/src/graph/actor_state.rs",
-        "test": "graph::actor_state::tests::finding_100_actor_predecessor_scan_reproduction",
-        "diagnostic": "unmetered actor predecessor collection remains",
-        "expected": "open_failure",
-    }, "case:identity")
-    require((ROOT / row["path"]).is_file(), "case:path")
+    for index, row in enumerate(rows):
+        require(isinstance(row, dict) and tuple(row) == required, f"case:{index}:keys")
+        require(row == EXPECTED_CASES[index], f"case:{index}:identity")
+        require((ROOT / row["path"]).is_file(), f"case:{index}:path")
     return rows
 
 

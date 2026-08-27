@@ -795,4 +795,50 @@ pub(crate) mod tests {
             "unmetered actor predecessor collection remains"
         );
     }
+
+    #[test]
+    #[ignore = "open remediation-v12 resource-accounting reproduction"]
+    fn finding_100_causal_next_op_scan_reproduction() {
+        let mut states = BTreeMap::new();
+        for actor in 1..=64 {
+            states.insert(
+                ActorId::from_bytes([actor; 32]),
+                EpochActorState {
+                    last_sequence: 1,
+                    next_op: u64::from(actor) + 1,
+                    highest_change: ChangeHash::from_bytes([actor; 32]),
+                },
+            );
+        }
+        let next = candidate(100, 1, 65, 1);
+        assert_eq!(apply_nonempty_counter(&mut states, &next), Ok(()));
+
+        let source = include_str!("actor_state.rs");
+        assert!(
+            !source.contains("fn causal_next_op(states: &BTreeMap<ActorId, EpochActorState>)"),
+            "unmetered causal next-op scan remains"
+        );
+    }
+
+    #[test]
+    #[ignore = "open remediation-v12 resource-accounting reproduction"]
+    fn finding_100_empty_frontier_work_reproduction() {
+        let current_heads = BTreeSet::from([
+            ChangeHash::from_bytes([10; 32]),
+            ChangeHash::from_bytes([20; 32]),
+            ChangeHash::from_bytes([30; 32]),
+        ]);
+        let mut empty = candidate(1, 1, 1, 0);
+        empty.dependencies = current_heads.iter().copied().collect::<Vec<_>>().into();
+        assert_eq!(
+            apply_empty_counter(&mut BTreeMap::new(), &empty, &current_heads),
+            Ok(())
+        );
+
+        let source = include_str!("actor_state.rs");
+        assert!(
+            !source.contains(".collect::<std::collections::BTreeSet<_>>()"),
+            "unmetered empty-frontier allocation remains"
+        );
+    }
 }

@@ -23,3 +23,8 @@ same-actor history proves that the immediate predecessor may be present only
 transitively in accepted closure. The current helper still collects and scans
 that full closure without a work observation, so the exact ignored test remains
 an expected failure until the projected actor-sequence boundary replaces it.
+
+`step_1367` binds two additional open reproductions. A 64-actor state exposes
+the repeated closure-wide causal next-operation scan, and an exact three-head
+empty merge exposes the unmetered dependency-set allocation. Both semantic
+inputs are valid; only their hidden work ownership is the expected failure.
