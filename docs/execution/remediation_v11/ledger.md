@@ -169,3 +169,11 @@ unwind releases unpublished delta values without touching the retained
 source. The observed work trace ends at the injected boundary, and the exact
 panic payload is preserved. No post-stop callback or semantic traversal is
 introduced by teardown.
+
+`step_1339` closes RCLD 104 with a source-bound ownership report covering the
+four checkpoint candidates, both persistent structures, eight enabled proofs,
+and the exact constrained-stack depths and fork widths. The validator rejects
+recursive/shared-parent regressions, ignored proofs, source drift, reordered
+evidence, and coordinated report/schema changes. `NCRDT-OWNERSHIP-001` now has
+named local Rust evidence; formal requirement installation and Finding closure
+remain in their later authority and assurance checkpoints.

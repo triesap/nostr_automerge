@@ -76,6 +76,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/persistent_state_integration_v11.schema.json",
     "reports/target_work_accounting_v11.json",
     "tools/validation/target_work_accounting_v11.schema.json",
+    "reports/persistent_ownership_v11.json",
+    "tools/validation/persistent_ownership_v11.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -84,6 +86,7 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://nostr-automerge.example/schema/persistent_state_core_v11.schema.json",
         b"https://nostr-automerge.example/schema/persistent_state_integration_v11.schema.json",
         b"https://nostr-automerge.example/schema/target_work_accounting_v11.schema.json",
+        b"https://nostr-automerge.example/schema/persistent_ownership_v11.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -145,6 +148,7 @@ PYTHON_SURFACES = (
     "scripts/validate_persistent_state_core_gate_v11.py",
     "scripts/validate_persistent_state_integration_gate_v11.py",
     "scripts/validate_target_work_accounting_v11.py",
+    "scripts/validate_persistent_ownership_v11.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -172,6 +176,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "crates/nostr_automerge/src/conformance/history_digest.rs",
         "crates/nostr_automerge/src/control/candidate.rs",
         "crates/nostr_automerge/src/control/frontier.rs",
+        "crates/nostr_automerge/src/control/ancestry.rs",
         "crates/nostr_automerge/src/control/parent_view.rs",
         "crates/nostr_automerge/src/control/transition.rs",
         "crates/nostr_automerge/src/automerge_adapter/materialized_view.rs",
@@ -338,6 +343,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_target_work_accounting_v11.py",
         "reports/target_work_accounting_v11.json",
         "tools/validation/target_work_accounting_v11.schema.json",
+        "scripts/validate_persistent_ownership_v11.py",
+        "reports/persistent_ownership_v11.json",
+        "tools/validation/persistent_ownership_v11.schema.json",
         "scripts/validate_opaque_boundary_gate_v9.py",
         "scripts/validate_opaque_resource_gate_v9.py",
         "tools/validation/opaque_semantic_proofs_v10.schema.json",
@@ -717,6 +725,10 @@ def validate_source_surfaces() -> None:
                     or (
                         value in {"cargo", "git", "python3"}
                         and relative == "scripts/validate_target_work_accounting_v11.py"
+                    )
+                    or (
+                        value in {"cargo", "git"}
+                        and relative == "scripts/validate_persistent_ownership_v11.py"
                     )
                     or (
                         value in {"cargo", "git", "python3"}

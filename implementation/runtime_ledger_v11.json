@@ -4,11 +4,11 @@
   "authority": "spec/remediation_v11_authority.json",
   "cursor": {
     "active_rcld": 104,
-    "active_step": "step_1338",
-    "next_step": "step_1339",
+    "active_step": "step_1339",
+    "next_step": "step_1340",
     "last_planned_step": "step_1363",
-    "remaining_checkpoint_count": 26,
-    "remaining_rcld_count": 6
+    "remaining_checkpoint_count": 25,
+    "remaining_rcld_count": 5
   },
   "findings": {
     "open": [
@@ -28,13 +28,17 @@
     "NCRDT-OWNERSHIP-001"
   ],
   "active_checkpoint_scope": [
-    "crates/nostr_automerge/src/control/ancestry.rs",
-    "crates/nostr_automerge/src/reference/branch_state.rs",
     "docs/execution/remediation_v11/ledger.md",
     "implementation/runtime_ledger_v11.json",
+    "reports/persistent_ownership_v11.json",
     "reports/spec_baseline.txt",
+    "scripts/local_gate.py",
+    "scripts/validate_persistent_ownership_v11.py",
+    "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v11.py",
-    "spec/remediation_v11_reproductions.json"
+    "scripts/validate_spec.py",
+    "tools/nostr_automerge_xtask/src/validate.rs",
+    "tools/validation/persistent_ownership_v11.schema.json"
   ],
   "predecessors": [
     {
@@ -214,6 +218,12 @@
     {
       "step": "step_1337",
       "candidate": "cce9236d7d791c8caafb91fb3f4e0b3f4c5b4b5a",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1338",
+      "candidate": "605d322415ba77ce3e671be28d52ee0f9db57d41",
       "owner_class": "public",
       "result": "pass"
     }

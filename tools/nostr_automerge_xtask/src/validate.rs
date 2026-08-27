@@ -152,6 +152,10 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "target_work_accounting_v11",
         "scripts/validate_target_work_accounting_v11.py",
     ),
+    (
+        "persistent_ownership_v11",
+        "scripts/validate_persistent_ownership_v11.py",
+    ),
     ("complete_specification", "scripts/validate_spec.py"),
     (
         "fixture_schema_checksum_snake_case",

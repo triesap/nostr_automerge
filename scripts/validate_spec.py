@@ -67,6 +67,7 @@ VALIDATORS = [
     "validate_persistent_state_core_gate_v11.py",
     "validate_persistent_state_integration_gate_v11.py",
     "validate_target_work_accounting_v11.py",
+    "validate_persistent_ownership_v11.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",
@@ -193,6 +194,8 @@ def controlled_files() -> list[pathlib.Path]:
             "tools/validation/persistent_state_integration_v11.schema.json",
             "reports/target_work_accounting_v11.json",
             "tools/validation/target_work_accounting_v11.schema.json",
+            "reports/persistent_ownership_v11.json",
+            "tools/validation/persistent_ownership_v11.schema.json",
             "scripts/generate_semantic_proof_catalog_final_v10.py",
             "scripts/reproduce_remediation_v11.py",
             "reports/opaque_boundary_gate_v9.json",

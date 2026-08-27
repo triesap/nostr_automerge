@@ -1,0 +1,78 @@
+{
+  "schema": "nostr_automerge.persistent_ownership.v11.v1",
+  "status": "pass",
+  "stage": "rust_bounded_persistent_teardown",
+  "revision": "draft_2026_08",
+  "requirement": "NCRDT-OWNERSHIP-001",
+  "candidates": [
+    {
+      "step": "step_1335",
+      "candidate": "ca9870f1ac0a4c70b7df5b9a4c437c06dde61fcd"
+    },
+    {
+      "step": "step_1336",
+      "candidate": "cf7150e820ec1625dd0027a160fe3cb362b5b629"
+    },
+    {
+      "step": "step_1337",
+      "candidate": "cce9236d7d791c8caafb91fb3f4e0b3f4c5b4b5a"
+    },
+    {
+      "step": "step_1338",
+      "candidate": "605d322415ba77ce3e671be28d52ee0f9db57d41"
+    }
+  ],
+  "structures": [
+    {
+      "name": "persistent_delta_map",
+      "unique_teardown": "iterative_arc_try_unwrap",
+      "shared_teardown": "stop_at_first_shared_parent"
+    },
+    {
+      "name": "control_ancestry",
+      "unique_teardown": "iterative_arc_try_unwrap",
+      "shared_teardown": "stop_at_first_shared_parent"
+    }
+  ],
+  "source_inventory": [
+    {
+      "path": "crates/nostr_automerge/src/reference/branch_state.rs",
+      "sha256": "54a26f01c1f732ac4199682c4b40696e833c5e3f0797160d8a8d3f621d3f8917"
+    },
+    {
+      "path": "crates/nostr_automerge/src/control/ancestry.rs",
+      "sha256": "ef78b7bce8455ccfec0d2222b5491f35a8b28c786df6d3e7c69227ecc61ba910"
+    }
+  ],
+  "source_projection_sha256": "32bd97824e00ced98e549b9cd91f732f6fa8db86fd226cbe53d0413d573019b2",
+  "tests": [
+    "reference::branch_state::tests::deep_unique_delta_teardown_is_bounded_stack",
+    "reference::branch_state::tests::constrained_stack_wide_delta_fork_preserves_shared_parent_teardown",
+    "reference::branch_state::tests::constrained_stack_delta_drop_stops_at_a_retained_shared_prefix",
+    "reference::branch_state::tests::clone_drop_permutations_release_each_delta_value_once",
+    "reference::branch_state::tests::stopped_and_panicking_delta_construction_releases_unpublished_values_once",
+    "control::ancestry::tests::deep_unique_control_ancestry_teardown_is_bounded_stack",
+    "control::ancestry::tests::constrained_stack_wide_ancestry_fork_preserves_shared_parent_teardown",
+    "control::ancestry::tests::constrained_stack_ancestry_drop_stops_at_a_retained_shared_prefix"
+  ],
+  "counts": {
+    "structure_count": 2,
+    "source_file_count": 2,
+    "enabled_test_count": 8,
+    "constrained_stack_bytes": 65536,
+    "delta_unique_depth": 100000,
+    "ancestry_unique_depth": 20000,
+    "delta_wide_forks": 10000,
+    "ancestry_wide_forks": 4096
+  },
+  "properties": {
+    "unique_chain_stack_bounded": true,
+    "shared_parent_mutated": false,
+    "shared_parent_recursive_drop": false,
+    "value_double_drop": false,
+    "unpublished_value_leak": false,
+    "post_stop_semantic_traversal": false,
+    "unexpected_panic_masked": false
+  },
+  "result": "pass"
+}
