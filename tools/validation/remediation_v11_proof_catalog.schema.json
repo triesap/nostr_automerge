@@ -1,0 +1,118 @@
+{
+  "title": "nostr_automerge remediation v11 proof catalog",
+  "type": "object",
+  "required": ["schema", "status", "checkpoint", "revision", "historical_v10", "artifacts", "operations", "proofs", "finding_proofs", "counts", "holds", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.remediation_v11_proof_catalog.v1"},
+    "status": {"const": "pass"},
+    "checkpoint": {"const": "step_1359"},
+    "revision": {"const": "draft_2026_08"},
+    "historical_v10": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256", "status"],
+        "properties": {
+          "path": {"type": "string"},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "status": {"const": "immutable_superseded_for_v11_scope"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["category", "path", "sha256", "candidate", "result"],
+        "properties": {
+          "category": {"enum": ["resource", "teardown", "authority", "parity"]},
+          "path": {"type": "string"},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "result": {"const": "pass"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 15,
+      "maxItems": 15,
+      "items": {
+        "type": "object",
+        "required": ["family", "mode", "owner", "boundary", "proof_id"],
+        "properties": {
+          "family": {"type": "string"},
+          "mode": {"enum": ["item_metered", "exact_reservation", "constant_time"]},
+          "owner": {"type": "string"},
+          "boundary": {"type": "string"},
+          "proof_id": {"type": "string", "pattern": "^V11-(RESOURCE|STOP)-[0-9]{3}$"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "proofs": {
+      "type": "array",
+      "minItems": 24,
+      "maxItems": 24,
+      "items": {
+        "type": "object",
+        "required": ["proof_id", "category", "finding", "requirements", "source_path", "test_target", "test_name", "artifact_category", "candidate", "status"],
+        "properties": {
+          "proof_id": {"type": "string", "pattern": "^V11-(RESOURCE|STOP|TEARDOWN|AUTHORITY|PARITY)-[0-9]{3}$"},
+          "category": {"enum": ["resource", "stop", "teardown", "authority", "parity"]},
+          "finding": {"type": ["string", "null"]},
+          "requirements": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+          "source_path": {"type": "string"},
+          "test_target": {"enum": ["nostr_automerge", "public_engine_api", "nostr_automerge_conformance"]},
+          "test_name": {"type": "string"},
+          "artifact_category": {"enum": ["resource", "teardown", "authority", "parity"]},
+          "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "status": {"const": "enabled_pass"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "finding_proofs": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["finding", "proof_ids", "status"],
+        "properties": {
+          "finding": {"enum": ["FINDING_096", "FINDING_097", "FINDING_098", "FINDING_099"]},
+          "proof_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+          "status": {"const": "proof_complete_closure_pending"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "counts": {
+      "type": "object",
+      "required": ["historical_artifacts", "artifacts", "operation_families", "proofs", "resource_proofs", "stop_proofs", "teardown_proofs", "authority_proofs", "parity_proofs", "findings_with_proofs"],
+      "properties": {
+        "historical_artifacts": {"const": 4},
+        "artifacts": {"const": 4},
+        "operation_families": {"const": 15},
+        "proofs": {"const": 24},
+        "resource_proofs": {"const": 14},
+        "stop_proofs": {"const": 2},
+        "teardown_proofs": {"const": 4},
+        "authority_proofs": {"const": 2},
+        "parity_proofs": {"const": 2},
+        "findings_with_proofs": {"const": 4}
+      },
+      "additionalProperties": false
+    },
+    "holds": {"type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true, "items": {"type": "string"}},
+    "result": {"const": "pass"},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

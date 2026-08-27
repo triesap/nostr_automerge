@@ -290,3 +290,12 @@ the common canonical aggregate. Coordinated candidate/result drift, manifest
 drift, schema opening, byte mismatch, and removal of the publication hold all
 fail closed. Distribution-v12 parity is green; the superseding proof inventory
 and final assurance remain assigned to RCLD 108.
+
+At `step_1359`, the superseding v11 proof catalog binds every live resource,
+typed-stop, bounded-teardown, authority, and distribution-parity claim to one
+exact enabled Rust test and the immutable candidate that produced its evidence.
+The four v10 semantic-proof artifacts remain byte-bound historical evidence
+rather than being rewritten. Missing, generic, stale, ignored, duplicate,
+misclassified, or wrong-candidate proof rows fail closed. Findings 096 through
+099 now have complete local proof inventories, but remain open until the
+adversarial qualification, final assurance, and finding-closure checkpoints.

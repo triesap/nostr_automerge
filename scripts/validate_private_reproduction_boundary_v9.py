@@ -84,6 +84,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/remediation_v11_authority_gate.schema.json",
     "reports/rust_conformance_v12.json",
     "tools/validation/rust_conformance_v12.schema.json",
+    "reports/remediation_v11_proof_catalog.json",
+    "tools/validation/remediation_v11_proof_catalog.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -163,6 +165,7 @@ PYTHON_SURFACES = (
     "scripts/validate_remediation_v11_authority_gate.py",
     "scripts/validate_rust_conformance_v12.py",
     "scripts/validate_opaque_distribution_parity_v12.py",
+    "scripts/validate_remediation_v11_proof_catalog.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -299,6 +302,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/remediation_v11_authority_gate.json",
         "reports/rust_conformance_v12.json",
         "reports/opaque_distribution_parity_v12.json",
+        "reports/remediation_v11_proof_catalog.json",
         "reports/external_holds_v8.json",
         "reports/spec_baseline.txt",
         "scripts/validate_adrs.py",
@@ -341,6 +345,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_rust_conformance_v10.py",
         "scripts/validate_rust_conformance_v12.py",
         "scripts/validate_opaque_distribution_parity_v12.py",
+        "scripts/validate_remediation_v11_proof_catalog.py",
         "scripts/validate_opaque_conformance_v10.py",
         "scripts/validate_signed_conformance_gate_v10.py",
         "scripts/validate_semantic_proof_catalog_v10.py",
@@ -442,6 +447,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/validation/rust_conformance_v10.schema.json",
         "tools/validation/rust_conformance_v12.schema.json",
         "tools/validation/opaque_distribution_parity_v12.schema.json",
+        "tools/validation/remediation_v11_proof_catalog.schema.json",
         "tools/validation/opaque_conformance_v10.schema.json",
         "tools/validation/signed_conformance_gate_v10.schema.json",
         "tools/validation/semantic_proof_catalog_v10.schema.json",
