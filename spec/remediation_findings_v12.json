@@ -1,0 +1,92 @@
+{
+  "schema": "nostr_automerge.remediation_findings.v12.v1",
+  "status": "implementation_in_progress",
+  "findings": [
+    {
+      "id": "FINDING_100",
+      "severity": "high",
+      "class": "resource_accounting",
+      "title": "Epoch semantic work has unmetered scans, allocations, and publications",
+      "requirements": [
+        "NCRDT-RESOURCE-001",
+        "NCRDT-RESOURCE-014",
+        "NCRDT-RESOURCE-017",
+        "NCRDT-RESOURCE-018",
+        "NCRDT-RESOURCE-019",
+        "NCRDT-COMPLETION-001"
+      ],
+      "source_paths": [
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/graph/closure.rs",
+        "crates/nostr_automerge/src/graph/epoch.rs",
+        "crates/nostr_automerge/src/graph/schedule.rs",
+        "crates/nostr_automerge/src/reference/epoch.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs",
+        "crates/nostr_automerge/src/reference/evaluate.rs"
+      ],
+      "closure": "Project actor and epoch state once, charge immediately before every proportional operation, remove all production scan and allocation bypasses, and prove zero target work after the first typed stop.",
+      "status": "open"
+    },
+    {
+      "id": "FINDING_101",
+      "severity": "high",
+      "class": "evidence_completeness",
+      "title": "Runtime operation evidence omits epoch semantic work families",
+      "requirements": [
+        "NCRDT-EVIDENCE-006",
+        "NCRDT-EVIDENCE-007"
+      ],
+      "source_paths": [
+        "reports/target_work_accounting_v11.json",
+        "scripts/validate_target_work_accounting_v11.py",
+        "spec/resource_operation_inventory_v10.json"
+      ],
+      "closure": "Publish a complete source-bound operation inventory and exact enabled proof catalog covering actor state, epoch evaluation, dependency closure, scheduling, publication, quarantine, and stop behavior.",
+      "status": "open"
+    },
+    {
+      "id": "FINDING_102",
+      "severity": "high",
+      "class": "compatibility_parity",
+      "title": "Independent compatibility semantics, exports, and accounting diverge",
+      "requirements": [
+        "NCRDT-RESOURCE-017",
+        "NCRDT-RESOURCE-018",
+        "NCRDT-RESOURCE-019",
+        "NCRDT-EVIDENCE-007"
+      ],
+      "source_paths": [
+        "spec/API_CONTRACTS.md",
+        "spec/REPORT_CONTRACT.md"
+      ],
+      "closure": "Require transitive actor-predecessor semantics, exact frontier and ancestry decisions, complete charged work, a narrowed public package surface, 204-scenario parity, and approved opaque evidence without disclosing independent source details.",
+      "status": "open"
+    },
+    {
+      "id": "FINDING_103",
+      "severity": "high",
+      "class": "execution_evidence_integrity",
+      "title": "The proposed execution sequence and evidence package are fail-open",
+      "requirements": [
+        "NCRDT-EVIDENCE-007"
+      ],
+      "source_paths": [
+        "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v12.md",
+        "scripts/validate_remediation_v12.py"
+      ],
+      "closure": "Keep requirements atomic, create validators before their consumers, validate exact ordered checkpoint and source inventories, run repository-owned gates with required arguments, and reject coordinated evidence drift.",
+      "status": "open"
+    },
+    {
+      "id": "FINDING_080",
+      "severity": "hold",
+      "class": "external_assurance",
+      "title": "External assurance and publication authority remain held",
+      "requirements": [],
+      "source_paths": [],
+      "closure": "Preserve the hold; it cannot be closed by this local sequence.",
+      "status": "held"
+    }
+  ],
+  "result": "pass"
+}

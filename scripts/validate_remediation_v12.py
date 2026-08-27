@@ -13,6 +13,7 @@ import subprocess
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 AUTHORITY_PATH = ROOT / "spec/remediation_v12_authority.json"
 LEDGER_PATH = ROOT / "implementation/runtime_ledger_v12.json"
+FINDINGS_PATH = ROOT / "spec/remediation_findings_v12.json"
 
 REVIEWED_CANDIDATE = "9e99af892764ccb165a12b8bb186935bd599d561"
 REVIEWED_TREE = "4b684dc123f371ded75c1469505b130c36359f93"
@@ -30,15 +31,12 @@ HOLDS = [
     "remote_mutation",
 ]
 ACTIVE_SCOPE = [
-    "AGENTS.md",
-    "docs/execution/remediation_v12/baseline.md",
+    "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
     "reports/spec_baseline.txt",
     "scripts/validate_remediation_v12.py",
     "scripts/validate_spec.py",
-    "spec/remediation_v12_authority.json",
-    "tools/nostr_automerge_xtask/src/validate.rs",
-    "tools/validation/runtime_ledger_v12.schema.json",
+    "spec/remediation_findings_v12.json",
 ]
 
 
@@ -115,16 +113,39 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 109, "active_step": "step_1364", "next_step": "step_1365", "last_planned_step": "step_1419", "remaining_checkpoint_count": 55, "remaining_rcld_count": 7}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 109, "active_step": "step_1365", "next_step": "step_1366", "last_planned_step": "step_1419", "remaining_checkpoint_count": 54, "remaining_rcld_count": 7}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], [], "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 2:
+    if not isinstance(predecessors, list) or len(predecessors) != 3:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
+    require_equal(predecessors[2], {"step": "step_1364", "candidate": "22cb8f0c77637647ce485e4d6f206316113e429a", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1364")
+
+
+def validate_findings(findings: object) -> None:
+    record = require_keys(findings, ["schema", "status", "findings", "result"], "findings")
+    require_equal(record["schema"], "nostr_automerge.remediation_findings.v12.v1", "findings:schema")
+    require_equal(record["status"], "implementation_in_progress", "findings:status")
+    rows = record["findings"]
+    if not isinstance(rows, list) or len(rows) != 5:
+        raise EvidenceError("findings:rows")
+    expected_ids = ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103", "FINDING_080"]
+    require_equal([row.get("id") if isinstance(row, dict) else None for row in rows], expected_ids, "findings:ids")
+    for row in rows:
+        require_keys(row, ["id", "severity", "class", "title", "requirements", "source_paths", "closure", "status"], "findings:row")
+        if not isinstance(row["title"], str) or not row["title"]:
+            raise EvidenceError("findings:title")
+        if not isinstance(row["closure"], str) or not row["closure"]:
+            raise EvidenceError("findings:closure")
+        if not isinstance(row["requirements"], list) or not isinstance(row["source_paths"], list):
+            raise EvidenceError("findings:vectors")
+    require_equal([row["status"] for row in rows], ["open", "open", "open", "open", "held"], "findings:statuses")
+    require_equal(rows[-1]["severity"], "hold", "findings:held_severity")
+    require_equal(record["result"], "pass", "findings:result")
 
 
 def validate_files() -> None:
@@ -139,7 +160,7 @@ def validate_files() -> None:
         raise EvidenceError("file:instructions")
 
 
-def mutation_self_test(authority: object, ledger: object) -> int:
+def mutation_self_test(authority: object, ledger: object, findings: object) -> int:
     mutations: list[tuple[str, object, object]] = []
     for label, path, value in (
         ("reviewed", ("reviewed_public", "candidate"), "0" * 40),
@@ -160,7 +181,7 @@ def mutation_self_test(authority: object, ledger: object) -> int:
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1366"),
+        ("cursor", "next_step", "step_1367"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
     ):
@@ -177,19 +198,40 @@ def mutation_self_test(authority: object, ledger: object) -> int:
         except EvidenceError:
             continue
         raise EvidenceError("mutation_survived:" + label)
-    return len(mutations)
+    finding_mutations = []
+    missing = copy.deepcopy(findings)
+    missing["findings"].pop(1)
+    finding_mutations.append(("finding_missing", missing))
+    closed = copy.deepcopy(findings)
+    closed["findings"][0]["status"] = "closed"
+    finding_mutations.append(("finding_closed", closed))
+    unheld = copy.deepcopy(findings)
+    unheld["findings"][-1]["status"] = "open"
+    finding_mutations.append(("finding_unheld", unheld))
+    extra_finding_key = copy.deepcopy(findings)
+    extra_finding_key["findings"][0]["unapproved"] = False
+    finding_mutations.append(("finding_extra", extra_finding_key))
+    for label, changed in finding_mutations:
+        try:
+            validate_findings(changed)
+        except EvidenceError:
+            continue
+        raise EvidenceError("mutation_survived:" + label)
+    return len(mutations) + len(finding_mutations)
 
 
 def main() -> None:
     authority = json.loads(AUTHORITY_PATH.read_text())
     ledger = json.loads(LEDGER_PATH.read_text())
+    findings = json.loads(FINDINGS_PATH.read_text())
     validate_authority(authority)
     validate_ledger(ledger)
+    validate_findings(findings)
     validate_files()
-    mutation_count = mutation_self_test(authority, ledger)
+    mutation_count = mutation_self_test(authority, ledger, findings)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
-    print("- active=RCLD109/step_1364")
+    print("- active=RCLD109/step_1365")
 
 
 if __name__ == "__main__":

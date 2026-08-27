@@ -196,6 +196,7 @@ def controlled_files() -> list[pathlib.Path]:
             "docs/execution/remediation_v10/ledger.md",
             "docs/execution/remediation_v11/ledger.md",
             "docs/execution/remediation_v12/baseline.md",
+            "docs/execution/remediation_v12/ledger.md",
             "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v11.md",
             "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v12.md",
             "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v10.md",
