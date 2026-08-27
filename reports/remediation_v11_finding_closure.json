@@ -1,0 +1,31 @@
+{
+  "schema": "nostr_automerge.remediation_v11_finding_closure.v1",
+  "status": "code_complete_publication_held",
+  "checkpoint": "step_1362",
+  "revision": "draft_2026_08",
+  "candidates": {
+    "public": "35b5636356d5323dd4347162b2c51f3cd98636cc",
+    "opaque_private": "5d833e0235efe64f970b9c6a5a7c4e748a031b52"
+  },
+  "imports": [
+    {"category": "proof_catalog", "sha256": "0127e7e475e1548d183ea8ab2488ebc5ae89475be2f003c6d7da9f3e3bdef2c0"},
+    {"category": "adversarial_qualification", "sha256": "a1e4a3657214ac21f750173abb2d737f3ecbcc974fa081c38217c8a05c7487c3"},
+    {"category": "local_assurance", "sha256": "3c5fdfdea771aaa7a85ea2ffaa0720313175f3900082cedaa8e9efd1e8ec4982"},
+    {"category": "distribution_parity", "sha256": "900f90b55b16f75f1e86bb066767449989b2fea67504002de9a62baf8008a145"}
+  ],
+  "finding_registry_sha256": "d271df77b822072591eff4bf46e96ead41027821197b769d74d8565ada6883cc",
+  "reproduction_catalog_sha256": "a782519eb39fa33b2b2c7b40c0558140c99298b3e2004f9bb5a689235ead7039",
+  "findings": [
+    {"id": "FINDING_096", "status": "closed", "evidence": ["proof_catalog", "adversarial_qualification", "local_assurance"]},
+    {"id": "FINDING_097", "status": "closed", "evidence": ["proof_catalog", "adversarial_qualification", "local_assurance"]},
+    {"id": "FINDING_098", "status": "closed", "evidence": ["proof_catalog", "distribution_parity", "local_assurance"]},
+    {"id": "FINDING_099", "status": "closed", "evidence": ["proof_catalog", "adversarial_qualification", "local_assurance"]},
+    {"id": "FINDING_080", "status": "held", "evidence": ["local_assurance"]}
+  ],
+  "counts": {"findings": 5, "closed": 4, "held": 1, "open": 0},
+  "holds": ["external_assurance", "event_kind_allocation", "nip_submission", "production_qualification", "publication", "release", "remote_mutation"],
+  "release_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "35febb4d250db5c9bf761ed3f01c550cec0d2515e9c257010088c6bf713fb65f"
+}

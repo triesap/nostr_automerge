@@ -90,6 +90,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/remediation_v11_adversarial_qualification.schema.json",
     "reports/remediation_v11_local_assurance.json",
     "tools/validation/remediation_v11_local_assurance.schema.json",
+    "reports/remediation_v11_finding_closure.json",
+    "tools/validation/remediation_v11_finding_closure.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -172,6 +174,7 @@ PYTHON_SURFACES = (
     "scripts/validate_remediation_v11_proof_catalog.py",
     "scripts/validate_remediation_v11_adversarial_qualification.py",
     "scripts/validate_remediation_v11_local_assurance.py",
+    "scripts/validate_remediation_v11_finding_closure.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -314,6 +317,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/remediation_v11_proof_catalog.json",
         "reports/remediation_v11_adversarial_qualification.json",
         "reports/remediation_v11_local_assurance.json",
+        "reports/remediation_v11_finding_closure.json",
         "reports/external_holds_v8.json",
         "reports/spec_baseline.txt",
         "scripts/validate_adrs.py",
@@ -359,6 +363,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_remediation_v11_proof_catalog.py",
         "scripts/validate_remediation_v11_adversarial_qualification.py",
         "scripts/validate_remediation_v11_local_assurance.py",
+        "scripts/validate_remediation_v11_finding_closure.py",
         "scripts/validate_opaque_conformance_v10.py",
         "scripts/validate_signed_conformance_gate_v10.py",
         "scripts/validate_semantic_proof_catalog_v10.py",
@@ -463,6 +468,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/validation/remediation_v11_proof_catalog.schema.json",
         "tools/validation/remediation_v11_adversarial_qualification.schema.json",
         "tools/validation/remediation_v11_local_assurance.schema.json",
+        "tools/validation/remediation_v11_finding_closure.schema.json",
         "tools/validation/opaque_conformance_v10.schema.json",
         "tools/validation/signed_conformance_gate_v10.schema.json",
         "tools/validation/semantic_proof_catalog_v10.schema.json",

@@ -77,6 +77,7 @@ VALIDATORS = [
     "validate_remediation_v11_proof_catalog.py",
     "validate_remediation_v11_adversarial_qualification.py",
     "validate_remediation_v11_local_assurance.py",
+    "validate_remediation_v11_finding_closure.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",
@@ -202,6 +203,7 @@ def controlled_files() -> list[pathlib.Path]:
             "reports/remediation_v11_proof_catalog.json",
             "reports/remediation_v11_adversarial_qualification.json",
             "reports/remediation_v11_local_assurance.json",
+            "reports/remediation_v11_finding_closure.json",
             "fixtures/distribution/manifest_v12.json",
             "reports/evidence_transition_v11.json",
             "reports/persistent_state_core_v11.json",
@@ -254,6 +256,7 @@ def controlled_files() -> list[pathlib.Path]:
             "tools/validation/remediation_v11_proof_catalog.schema.json",
             "tools/validation/remediation_v11_adversarial_qualification.schema.json",
             "tools/validation/remediation_v11_local_assurance.schema.json",
+            "tools/validation/remediation_v11_finding_closure.schema.json",
             "tools/validation/resource_ancestry_gate_v10.schema.json",
             "tools/validation/resource_ancestry_proof_catalog_v10.schema.json",
             "tools/validation/resource_followup_assurance_v10.schema.json",

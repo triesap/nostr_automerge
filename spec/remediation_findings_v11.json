@@ -1,6 +1,6 @@
 {
   "schema": "nostr_automerge.remediation_findings.v11.v1",
-  "status": "implementation_remediation_required",
+  "status": "code_complete_publication_held",
   "findings": [
     {
       "id": "FINDING_096",
@@ -20,7 +20,7 @@
         "crates/nostr_automerge/src/engine/reference_evaluator.rs"
       ],
       "closure": "Meter every visited persistent node, stop before work after a failed charge, prove deep present/absent/extension boundaries, and reject runtime unmetered bypasses.",
-      "status": "open"
+      "status": "closed"
     },
     {
       "id": "FINDING_097",
@@ -39,7 +39,7 @@
         "crates/nostr_automerge/src/engine/reference_evaluator.rs"
       ],
       "closure": "Give every target-sized traversal, allocation, copy, comparison, insertion, and head derivation one exact owner and prove zero work after the first stop.",
-      "status": "open"
+      "status": "closed"
     },
     {
       "id": "FINDING_098",
@@ -57,7 +57,7 @@
         "crates/nostr_automerge/src/engine/reference_evaluator.rs"
       ],
       "closure": "Make unverified unsupported change-shaped evidence Event-only in every authority and implementation, then regenerate the affected identities.",
-      "status": "open"
+      "status": "closed"
     },
     {
       "id": "FINDING_099",
@@ -73,7 +73,7 @@
         "crates/nostr_automerge/src/control/ancestry.rs"
       ],
       "closure": "Prove bounded-stack destruction for deep unique chains and wide shared forks without changing protocol output.",
-      "status": "open"
+      "status": "closed"
     },
     {
       "id": "FINDING_080",

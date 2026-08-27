@@ -4,19 +4,14 @@
   "authority": "spec/remediation_v11_authority.json",
   "cursor": {
     "active_rcld": 108,
-    "active_step": "step_1361",
-    "next_step": "step_1362",
+    "active_step": "step_1362",
+    "next_step": "step_1363",
     "last_planned_step": "step_1363",
-    "remaining_checkpoint_count": 2,
+    "remaining_checkpoint_count": 1,
     "remaining_rcld_count": 1
   },
   "findings": {
-    "open": [
-      "FINDING_096",
-      "FINDING_097",
-      "FINDING_098",
-      "FINDING_099"
-    ],
+    "open": [],
     "held": [
       "FINDING_080"
     ]
@@ -30,15 +25,15 @@
   "active_checkpoint_scope": [
     "docs/execution/remediation_v11/ledger.md",
     "implementation/runtime_ledger_v11.json",
-    "reports/remediation_v11_local_assurance.json",
+    "reports/remediation_v11_finding_closure.json",
     "reports/spec_baseline.txt",
-    "scripts/local_gate.py",
     "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v11.py",
-    "scripts/validate_remediation_v11_local_assurance.py",
+    "scripts/validate_remediation_v11_finding_closure.py",
     "scripts/validate_spec.py",
+    "spec/remediation_findings_v11.json",
     "tools/nostr_automerge_xtask/src/validate.rs",
-    "tools/validation/remediation_v11_local_assurance.schema.json"
+    "tools/validation/remediation_v11_finding_closure.schema.json"
   ],
   "predecessors": [
     {
@@ -356,6 +351,12 @@
     {
       "step": "step_1360",
       "candidate": "9a70e5e9880e01e7d56198f52f9131359823506e",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1361",
+      "candidate": "35b5636356d5323dd4347162b2c51f3cd98636cc",
       "owner_class": "public",
       "result": "pass"
     }

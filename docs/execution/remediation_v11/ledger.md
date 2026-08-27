@@ -318,3 +318,10 @@ instead of replaying the superseded 193-scenario v11 manifest. The assurance
 record binds those local results, the proof catalog, adversarial qualification,
 distribution parity, and all seven external holds without performing any
 workflow, remote, release, or publication action.
+
+At `step_1362`, findings 096 through 099 close against their exact proof,
+adversarial-qualification, parity, reproduction, and local-assurance evidence.
+The finding registry and closure record agree on four closed findings and zero
+open findings. Finding 080 remains held because external assurance and
+publication authority cannot be satisfied locally; the seven release and
+publication holds remain unchanged, and no remote action is claimed.
