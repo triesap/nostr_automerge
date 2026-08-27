@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v11_authority.json",
   "cursor": {
     "active_rcld": 107,
-    "active_step": "step_1352",
-    "next_step": "step_1353",
+    "active_step": "step_1353",
+    "next_step": "step_1354",
     "last_planned_step": "step_1363",
-    "remaining_checkpoint_count": 12,
+    "remaining_checkpoint_count": 11,
     "remaining_rcld_count": 2
   },
   "findings": {
@@ -30,14 +30,20 @@
   "active_checkpoint_scope": [
     "docs/execution/remediation_v11/ledger.md",
     "fixtures/distribution/manifest_v12.json",
+    "fixtures/v12/scenarios/resource_followup/deep_delta_absent_lookup_exact_budget.expected.json",
+    "fixtures/v12/scenarios/resource_followup/deep_delta_absent_lookup_exact_budget.fixture.json",
+    "fixtures/v12/scenarios/resource_followup/deep_delta_absent_lookup_exact_budget.input.json",
+    "fixtures/v12/scenarios/resource_followup/deep_delta_extend_exact_budget.expected.json",
+    "fixtures/v12/scenarios/resource_followup/deep_delta_extend_exact_budget.fixture.json",
+    "fixtures/v12/scenarios/resource_followup/deep_delta_extend_exact_budget.input.json",
+    "fixtures/v12/scenarios/resource_followup/deep_delta_root_lookup_exact_budget.expected.json",
+    "fixtures/v12/scenarios/resource_followup/deep_delta_root_lookup_exact_budget.fixture.json",
+    "fixtures/v12/scenarios/resource_followup/deep_delta_root_lookup_exact_budget.input.json",
     "implementation/runtime_ledger_v11.json",
     "reports/spec_baseline.txt",
-    "scripts/generate_distribution_v12.py",
-    "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v11.py",
-    "scripts/validate_distribution_v12.py",
     "spec/distribution_v12_transition.json",
-    "tools/validation/distribution_v12.schema.json"
+    "tools/nostr_automerge_conformance/src/fixture_generation.rs"
   ],
   "predecessors": [
     {
@@ -302,6 +308,12 @@
       "step": "step_1351",
       "candidate": "8250cfae174ab619808cfde1a076299ec6b60923",
       "owner_class": "opaque_private",
+      "result": "pass"
+    },
+    {
+      "step": "step_1352",
+      "candidate": "892939f83901109b2acc85e7346168d123b32fff",
+      "owner_class": "public",
       "result": "pass"
     }
   ],

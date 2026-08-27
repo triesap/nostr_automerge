@@ -68,8 +68,256 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "remediation_v10_interruptions" => generate_remediation_v10_interruptions(),
         "remediation_v10_target_work" => generate_remediation_v10_target_work(),
         "resource_followup_v11" => generate_resource_followup_v11(),
+        "resource_followup_v12" => generate_resource_followup_v12(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
+}
+
+fn generate_resource_followup_v12() -> Result<(), String> {
+    const DEPTH: u64 = 8;
+
+    let root = repository_root().join("fixtures/v12/scenarios/resource_followup");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+
+    for (case_index, fixture_id) in [
+        "deep_delta_root_lookup_exact_budget",
+        "deep_delta_absent_lookup_exact_budget",
+        "deep_delta_extend_exact_budget",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let case_index = u8::try_from(case_index).map_err(|_| "v12 case index overflow")?;
+        let controller = Signer::from_byte(220 + case_index * 2)?;
+        let writer = Signer::from_byte(221 + case_index * 2)?;
+        let coordinate: DocumentCoordinate = format!(
+            "31624:{}:{}",
+            controller.public_key.to_hex(),
+            format!("{:02x}", 0xf0 + case_index).repeat(32)
+        )
+        .parse()
+        .map_err(|_| format!("invalid v12 resource coordinate for {fixture_id}"))?;
+        let actor = ActorId::derive(coordinate, writer.public_key);
+        let mut document = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+            .map_err(|error| format!("v12 resource document for {fixture_id}: {error:?}"))?;
+        let members = || vec![(&writer, None, &["write"][..])];
+        let mut events = Vec::new();
+        let mut parent = None;
+        let mut heads = Vec::new();
+        let mut change_hashes = Vec::new();
+
+        for sequence in 0..DEPTH {
+            let control = sign_control(
+                &controller,
+                sequence.saturating_mul(2).saturating_add(1),
+                coordinate,
+                parent,
+                if sequence == 0 {
+                    control_content_full(0, members(), "automerge-change-v1")
+                } else {
+                    control_content_with_links(sequence, members(), &heads, None, None)
+                },
+            )?;
+            let control_id = event_id(&control)?;
+            let change = document
+                .author_change(&[Operation::PutString {
+                    key: format!("layer-{sequence}"),
+                    value: fixture_id.to_owned(),
+                }])
+                .map_err(|error| format!("v12 resource change for {fixture_id}: {error:?}"))?;
+            let change_event = sign_change(
+                &writer,
+                sequence.saturating_mul(2).saturating_add(2),
+                coordinate,
+                control_id,
+                change.change_hash(),
+                change.raw(),
+            )?;
+            heads.clear();
+            heads.push(change.change_hash());
+            change_hashes.push(change.change_hash());
+            parent = Some(control_id);
+            events.extend([control, change_event]);
+        }
+
+        if fixture_id != "deep_delta_absent_lookup_exact_budget" {
+            let extends_with_override = fixture_id == "deep_delta_extend_exact_budget";
+            let base_heads = if extends_with_override {
+                vec![
+                    *change_hashes
+                        .first()
+                        .ok_or_else(|| "missing v12 root change hash".to_owned())?,
+                ]
+            } else {
+                heads.clone()
+            };
+            let terminal_members = if extends_with_override {
+                vec![(&controller, None, &["write"][..])]
+            } else {
+                members()
+            };
+            let terminal = sign_control(
+                &controller,
+                DEPTH.saturating_mul(2).saturating_add(1),
+                coordinate,
+                parent,
+                control_content_with_links(DEPTH, terminal_members, &base_heads, None, None),
+            )?;
+            events.push(terminal);
+        }
+
+        let exact_items = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)?;
+        write_fixture_with_execution(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            &["NCRDT-RESOURCE-015"],
+            "resource_followup_v12",
+            Vec::new(),
+            ScenarioBudget {
+                max_bytes: 1_000_000,
+                max_items: exact_items,
+            },
+            None,
+        )?;
+    }
+
+    Ok(())
+}
+
+fn assert_resource_followup_v12_boundaries(
+    fixture_id: &str,
+    coordinate: DocumentCoordinate,
+    events: &[RawEventBytes],
+) -> Result<u64, String> {
+    let scenario = |scenario_events: &[RawEventBytes], max_items, cancel_after| ScenarioInput {
+        scenario_schema: "nostr_automerge.scenario.v1".to_owned(),
+        coordinate: coordinate.to_address(),
+        raw_events: scenario_events
+            .iter()
+            .map(|event| RawScenarioEvent::Utf8(event.as_str().to_owned()))
+            .collect(),
+        budget: ScenarioBudget {
+            max_bytes: 1_000_000,
+            max_items,
+        },
+        cancel_after,
+    };
+    let kind = |event: &RawEventBytes| {
+        serde_json::from_str::<Value>(event.as_str())
+            .ok()?
+            .get("kind")?
+            .as_u64()
+    };
+    let permutations = crate::permutations::required_delivery_permutations(
+        events,
+        |event| kind(event) == Some(1_624),
+        |event| kind(event) == Some(1_625),
+        |_| false,
+    );
+    if permutations.len() != 8 {
+        return Err(format!("{fixture_id}: expected eight delivery orders"));
+    }
+    let mut exact = 0_u64;
+    let mut witness = events.to_vec();
+    for permutation in &permutations {
+        let required = minimum_complete_item_budget_for_events(coordinate, &permutation.events)?;
+        if required > exact {
+            exact = required;
+            witness = permutation.events.clone();
+        }
+    }
+    let ample = generic_report(
+        fixture_id,
+        scenario(events, 1_000_000, None),
+        StateAssertionPolicy::None,
+    )
+    .map_err(|error| error.message().to_owned())?;
+    if ample.completion != "complete" {
+        return Err(format!("{fixture_id}: ample evaluation did not complete"));
+    }
+    let ample_bytes = write_canonical_report(&ample).map_err(|error| format!("{error:?}"))?;
+    if exact == 0 {
+        return Err(format!("{fixture_id}: exact item budget must be positive"));
+    }
+    let short = generic_report(
+        fixture_id,
+        scenario(&witness, exact - 1, None),
+        StateAssertionPolicy::None,
+    )
+    .map_err(|error| error.message().to_owned())?;
+    if short.completion != "budget_exhausted"
+        || !short.canonical_controls.is_empty()
+        || !short.disposition_records.is_empty()
+    {
+        return Err(format!(
+            "{fixture_id}: N-1 did not return canonical no-progress"
+        ));
+    }
+
+    let mut cancel_lower = 0_u64;
+    let mut cancel_upper = 1_000_000_u64;
+    while cancel_lower < cancel_upper {
+        let middle = cancel_lower + (cancel_upper - cancel_lower) / 2;
+        let report = generic_report(
+            fixture_id,
+            scenario(&witness, exact, Some(middle)),
+            StateAssertionPolicy::None,
+        )
+        .map_err(|error| error.message().to_owned())?;
+        if report.completion == "complete" {
+            cancel_upper = middle;
+        } else {
+            cancel_lower = middle.saturating_add(1);
+        }
+    }
+    if cancel_lower == 0 {
+        return Err(format!(
+            "{fixture_id}: cancellation boundary must be positive"
+        ));
+    }
+    let cancelled = generic_report(
+        fixture_id,
+        scenario(&witness, exact, Some(cancel_lower - 1)),
+        StateAssertionPolicy::None,
+    )
+    .map_err(|error| error.message().to_owned())?;
+    if cancelled.completion != "cancelled"
+        || !cancelled.canonical_controls.is_empty()
+        || !cancelled.disposition_records.is_empty()
+    {
+        return Err(format!(
+            "{fixture_id}: cancellation boundary did not return canonical no-progress"
+        ));
+    }
+    let completed = generic_report(
+        fixture_id,
+        scenario(&witness, exact, Some(cancel_lower)),
+        StateAssertionPolicy::None,
+    )
+    .map_err(|error| error.message().to_owned())?;
+    if write_canonical_report(&completed).map_err(|error| format!("{error:?}"))? != ample_bytes {
+        return Err(format!(
+            "{fixture_id}: cancellation boundary changed complete output"
+        ));
+    }
+
+    for permutation in permutations {
+        for item_budget in [exact, exact.saturating_add(1)] {
+            let permuted = scenario(&permutation.events, item_budget, None);
+            let report = generic_report(fixture_id, permuted, StateAssertionPolicy::None)
+                .map_err(|error| error.message().to_owned())?;
+            if write_canonical_report(&report).map_err(|error| format!("{error:?}"))? != ample_bytes
+            {
+                return Err(format!(
+                    "{fixture_id}: delivery order {} changed output at {item_budget}",
+                    permutation.name
+                ));
+            }
+        }
+    }
+    Ok(exact)
 }
 
 fn generate_resource_followup_v11() -> Result<(), String> {
@@ -6440,13 +6688,83 @@ fn sha256(bytes: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        minimum_complete_item_budget, minimum_complete_item_budget_for_scenario, repository_root,
+        assert_resource_followup_v12_boundaries, minimum_complete_item_budget,
+        minimum_complete_item_budget_for_scenario, repository_root,
     };
     use crate::expected::ExpectedReport;
     use crate::report_json::write_canonical_report;
     use crate::runner::{StateAssertionPolicy, generic_report};
     use crate::scenario::{ScenarioBudget, SignedScenarioInput};
     use nostr_automerge::{DocumentCoordinate, ProtocolRevision, RawEventBytes};
+
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn v12_persistent_fixtures_bind_selected_boundaries_and_eight_orders() {
+        for (fixture_id, event_count, control_count, accepted_count, excluded_count) in [
+            ("deep_delta_root_lookup_exact_budget", 17, 9, 8, 0),
+            ("deep_delta_absent_lookup_exact_budget", 16, 8, 8, 0),
+            ("deep_delta_extend_exact_budget", 17, 9, 1, 7),
+        ] {
+            let root = repository_root().join("fixtures/v12/scenarios/resource_followup");
+            let signed = SignedScenarioInput::parse(
+                &std::fs::read(root.join(format!("{fixture_id}.input.json")))
+                    .expect("checked-in v12 persistent input"),
+            )
+            .expect("closed v12 persistent input");
+            assert_eq!(signed.fixture_id, fixture_id);
+            assert_eq!(signed.requirements, ["NCRDT-RESOURCE-015"]);
+            assert_eq!(signed.cancel_after, None);
+            assert_eq!(signed.budget.max_bytes, 1_000_000);
+            let coordinate = signed
+                .coordinate
+                .parse::<DocumentCoordinate>()
+                .expect("v12 persistent coordinate");
+            let events = signed
+                .raw_events
+                .iter()
+                .map(|event| {
+                    RawEventBytes::new(
+                        &event.decoded().expect("v12 persistent Event bytes"),
+                        ProtocolRevision::draft_v1(),
+                    )
+                    .expect("bounded v12 persistent Event")
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(events.len(), event_count, "{fixture_id}");
+            let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)
+                .expect("v12 persistent exact boundary");
+            assert_eq!(signed.budget.max_items, exact, "{fixture_id}");
+
+            let actual = generic_report(
+                fixture_id,
+                signed.clone().into_scenario(),
+                StateAssertionPolicy::None,
+            )
+            .expect("v12 persistent evaluator report");
+            let expected = serde_json::from_value::<ExpectedReport>(signed.expected_report)
+                .expect("v12 persistent expected report");
+            assert_eq!(
+                expected.canonical_controls.len(),
+                control_count,
+                "{fixture_id}"
+            );
+            assert_eq!(
+                expected.accepted_changes.len(),
+                accepted_count,
+                "{fixture_id}"
+            );
+            assert_eq!(
+                expected.excluded_changes.len(),
+                excluded_count,
+                "{fixture_id}"
+            );
+            assert_eq!(
+                write_canonical_report(&actual).expect("v12 actual canonical report"),
+                write_canonical_report(&expected).expect("v12 expected canonical report"),
+                "{fixture_id}"
+            );
+        }
+    }
 
     #[test]
     #[allow(clippy::expect_used)]

@@ -237,3 +237,13 @@ empty. Extra, missing, reordered, or stale companion paths fail closed before
 any fixture bytes are appended. The installed stage counts are `0/3/4/5`, so
 the three persistent-state fixtures land together before the post-stop and
 unsupported Event-only checkpoints.
+
+At `step_1353`, the transition advances to `lookup_fixtures_added` with exactly
+the first three planned signed scenarios. A retained eight-control state chain
+separately exercises a root-hash lookup, an absent leaf-hash lookup, and a
+terminal extension that overrides inherited dispositions. Generation derives
+the maximum exact item budget across all eight required delivery orders,
+requires the witness order to stop canonically at N−1, proves N and N+1 produce
+the same complete bytes in every order, and independently binds the exact
+cancellation boundary. The staged manifest is now 196/198; all 193 v11 fixture
+identities remain unchanged.
