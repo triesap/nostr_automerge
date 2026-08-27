@@ -1,0 +1,24 @@
+{
+  "schema": "nostr_automerge.distribution_v12_transition.v1",
+  "current_stage": "authority_defined",
+  "stage_order": [
+    "authority_defined",
+    "inventory_installed",
+    "lookup_fixtures_added",
+    "stop_fixtures_added",
+    "distribution_complete"
+  ],
+  "base_manifest": "fixtures/distribution/manifest_v11.json",
+  "base_manifest_sha256": "db247fa3e6891e850f32ed9b00fb08cfd78d30c9eb88ea36a00bd22dabb63f5a",
+  "preserved_fixture_count": 193,
+  "target_fixture_count": 198,
+  "planned_v12_fixtures": [
+    "deep_delta_root_lookup_exact_budget",
+    "deep_delta_absent_lookup_exact_budget",
+    "deep_delta_extend_exact_budget",
+    "post_branch_stop_has_no_target_work",
+    "unsupported_change_event_has_no_semantic_hash"
+  ],
+  "requirements_sha256": "840822a1acf171c887b9a9aba79ddf159ffcd9c5d7a74bd74d7e0bac5c6161f4",
+  "result": "pass"
+}

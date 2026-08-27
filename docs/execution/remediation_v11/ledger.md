@@ -209,3 +209,10 @@ remain byte-identical to their owning historical candidates; their generators
 and validators now distinguish that immutable evidence from the live 152-row
 authority instead of rewriting history. Coordinated source rehash, row reorder,
 missing or extra authority, and stale-candidate mutations remain fail closed.
+
+At `step_1344`, distribution v12 is defined as a closed append-only transition
+from the immutable 193-scenario v11 manifest to exactly 198 scenarios. The five
+approved scenario IDs advance only as ordered 0/2/4/5 prefixes, while all v11
+fixture bytes remain exact and the two live source rebindings are explicit.
+The staged manifest is deterministic at 193/198 and rejects base drift, extra,
+missing, reordered, stale-source, and coordinated manifest mutations.

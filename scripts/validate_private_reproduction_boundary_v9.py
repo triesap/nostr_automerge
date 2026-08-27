@@ -104,7 +104,9 @@ LEGITIMATE_PUBLIC_COMMANDS = frozenset(
 PYTHON_SURFACES = (
     "scripts/generate_distribution_v10.py",
     "scripts/generate_distribution_v11.py",
+    "scripts/generate_distribution_v12.py",
     "scripts/validate_appended_conformance_v11.py",
+    "scripts/validate_distribution_v12.py",
     "scripts/validate_resource_ancestry_gate_v10.py",
     "scripts/validate_resource_followup_assurance_v10.py",
     "scripts/validate_resource_followup_final_decision_v10.py",
@@ -235,6 +237,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "fixtures/v1_draft",
         "fixtures/distribution/manifest_v10.json",
         "fixtures/distribution/manifest_v11.json",
+        "fixtures/distribution/manifest_v12.json",
         "fixtures/README.md",
         "fixtures/examples",
         "fixtures/schema",
@@ -278,6 +281,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/evidence_transition_v11.json",
         "reports/external_holds_v8.json",
         "reports/spec_baseline.txt",
+        "scripts/validate_adrs.py",
         "scripts/validate_architecture.py",
         "scripts/reproduce_remediation_v11.py",
         "scripts/local_gate.py",
@@ -285,7 +289,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_automerge_qualification.py",
         "scripts/generate_distribution_v10.py",
         "scripts/generate_distribution_v11.py",
+        "scripts/generate_distribution_v12.py",
         "scripts/validate_appended_conformance_v11.py",
+        "scripts/validate_distribution_v12.py",
         "scripts/validate_resource_ancestry_gate_v10.py",
         "scripts/validate_resource_followup_assurance_v10.py",
         "scripts/validate_resource_followup_final_decision_v10.py",
@@ -296,7 +302,10 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_companion_specs.py",
         "scripts/validate_diagnostics.py",
         "scripts/validate_fixtures.py",
+        "scripts/validate_import.py",
+        "scripts/validate_normative_clarifications_v3.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
+        "scripts/validate_remediation_v11.py",
         "scripts/validate_requirement_matrix_v9.py",
         "scripts/validate_report_contract_v9.py",
         "scripts/validate_rust_report_gate_v9.py",
@@ -367,10 +376,17 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "spec/resource_ancestry_proof_catalog_v10.json",
         "spec/resource_operation_inventory_v10.json",
         "tools/validation/distribution_v11.schema.json",
+        "tools/validation/distribution_v12.schema.json",
+        "tools/validation/authority_transition_v10.schema.json",
+        "spec/distribution_v12_transition.json",
         "spec/authority_transition_v10.json",
         "spec/resource_followup_authority_v10.json",
         "spec/API_CONTRACTS.md",
+        "spec/ARCHITECTURE.md",
         "spec/NIP_DRAFT.md",
+        "spec/NIP_DRAFT.sha256",
+        "spec/REPORT_CONTRACT.md",
+        "spec/SECURITY.md",
         "spec/remediation_v11_reproductions.json",
         "spec/remediation_v11_authority.json",
         "spec/remediation_findings_v11.json",
@@ -505,6 +521,7 @@ def is_public_route(value: str) -> bool:
         or value.startswith("fixtures/v1_draft/scenarios/interrupted/")
         or value.startswith("fixtures/v1_draft/scenarios/resource/")
         or value.startswith("fixtures/v11/scenarios/resource_followup/")
+        or value.startswith("fixtures/v12/scenarios/resource_followup/")
         or value.startswith("fixtures/v1_draft/scenarios/scope/")
         or value.startswith("fixtures/v1_draft/checkpoints/")
         or value in {row["value"] for row in APPROVED_WIRE_DOMAINS}
@@ -722,8 +739,16 @@ def validate_source_surfaces() -> None:
                         and relative == "scripts/validate_signed_conformance_gate_v10.py"
                     )
                     or (
-                        value in {"cargo", "python3"}
+                        value in {"cargo", "git", "python3"}
                         and relative == "scripts/validate_appended_conformance_v11.py"
+                    )
+                    or (
+                        value == "git"
+                        and relative
+                        in {
+                            "scripts/generate_distribution_v11.py",
+                            "scripts/generate_distribution_v12.py",
+                        }
                     )
                     or (
                         value in {"cargo", "git", "python3"}
