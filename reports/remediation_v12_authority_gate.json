@@ -1,0 +1,86 @@
+{
+  "schema": "nostr_automerge.remediation_v12_authority_gate.v1",
+  "status": "rcld_109_complete",
+  "rcld": 109,
+  "candidate_chain": [
+    {
+      "step": "plan_v12",
+      "candidate": "d1b9202be6bf9deb643ca7d81f89c5c3281eb523"
+    },
+    {
+      "step": "step_1364",
+      "candidate": "22cb8f0c77637647ce485e4d6f206316113e429a"
+    },
+    {
+      "step": "step_1365",
+      "candidate": "4e6b9e2c189d407b29a478c5445405b922789aa0"
+    },
+    {
+      "step": "step_1366",
+      "candidate": "00fca7681ba079e98ebf8d116bc7fa12926d1a87"
+    },
+    {
+      "step": "step_1367",
+      "candidate": "1de9769b36b5fa610483c3f0ffcd0e7e6ee2768c"
+    },
+    {
+      "step": "step_1368",
+      "candidate": "bb8b8fd4560eaf141ff599ed440edeb68c30a33f"
+    },
+    {
+      "step": "step_1369",
+      "candidate": "4819b9ae58650f8b5decfb19e0f8d895dc47c7d2"
+    },
+    {
+      "step": "step_1370",
+      "candidate": "670e300c4cb029ce8b67468c6009b756ea703002"
+    }
+  ],
+  "counts": {
+    "authority_mutations": 22,
+    "adr_mutations": 15,
+    "reproduction_cases": 10,
+    "reproduction_mutations": 15,
+    "fixed_reproductions": 0,
+    "open_reproductions": 10
+  },
+  "findings": {
+    "open": [
+      "FINDING_100",
+      "FINDING_101",
+      "FINDING_102",
+      "FINDING_103"
+    ],
+    "held": [
+      "FINDING_080"
+    ]
+  },
+  "artifacts": [
+    {
+      "path": "spec/remediation_v12_reproductions.json",
+      "sha256": "d61707db33ffefdf30ee5293bc6a5e994a67ece2a397613afc7e39cdf4def8c1"
+    },
+    {
+      "path": "spec/remediation_v12_evidence_policy.json",
+      "sha256": "159d25262833f4acb062bce1366aa741465c088e03cbb689b69d6fb681ab0492"
+    },
+    {
+      "path": "docs/adr/README.md",
+      "sha256": "5e2fea1a448da14bfcdd177e65f72a7f790bc7692ed6291f17caa74d5f07b7e1"
+    },
+    {
+      "path": "scripts/reproduce_remediation_v12.py",
+      "sha256": "76ccd7244006da4595f152d31f9e59787cc39647e6e2be03ce727fa5ba02c29e"
+    }
+  ],
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "remote_mutation"
+  ],
+  "result": "pass"
+}

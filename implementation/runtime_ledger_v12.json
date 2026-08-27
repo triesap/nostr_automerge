@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v12_authority.json",
   "cursor": {
     "active_rcld": 109,
-    "active_step": "step_1370",
-    "next_step": "step_1371",
+    "active_step": "step_1371",
+    "next_step": "step_1372",
     "last_planned_step": "step_1419",
-    "remaining_checkpoint_count": 49,
+    "remaining_checkpoint_count": 48,
     "remaining_rcld_count": 7
   },
   "findings": {
@@ -23,18 +23,13 @@
   },
   "requirements": [],
   "active_checkpoint_scope": [
-    "docs/adr/README.md",
-    "docs/adr/adr_0076_authoritative_epoch_semantic_work.md",
-    "docs/adr/adr_0077_complete_runtime_operation_inventory.md",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
+    "reports/remediation_v12_authority_gate.json",
     "reports/spec_baseline.txt",
-    "scripts/validate_adrs.py",
     "scripts/validate_remediation_v12.py",
     "scripts/validate_spec.py",
-    "spec/EVIDENCE_POLICY.md",
-    "spec/remediation_v12_evidence_policy.json",
-    "tools/validation/remediation_v12_evidence_policy.schema.json"
+    "tools/validation/remediation_v12_authority_gate.schema.json"
   ],
   "predecessors": [
     {
@@ -82,6 +77,12 @@
     {
       "step": "step_1369",
       "candidate": "4819b9ae58650f8b5decfb19e0f8d895dc47c7d2",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1370",
+      "candidate": "670e300c4cb029ce8b67468c6009b756ea703002",
       "owner_class": "public",
       "result": "pass"
     }

@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/nostr_automerge/remediation_v12_authority_gate.schema.json",
+  "title": "nostr_automerge remediation v12 authority gate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "status",
+    "rcld",
+    "candidate_chain",
+    "counts",
+    "findings",
+    "artifacts",
+    "holds",
+    "result"
+  ],
+  "properties": {
+    "schema": { "const": "nostr_automerge.remediation_v12_authority_gate.v1" },
+    "status": { "const": "rcld_109_complete" },
+    "rcld": { "const": 109 },
+    "candidate_chain": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": { "$ref": "#/$defs/candidate" }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority_mutations", "adr_mutations", "reproduction_cases", "reproduction_mutations", "fixed_reproductions", "open_reproductions"],
+      "properties": {
+        "authority_mutations": { "const": 22 },
+        "adr_mutations": { "const": 15 },
+        "reproduction_cases": { "const": 10 },
+        "reproduction_mutations": { "const": 15 },
+        "fixed_reproductions": { "const": 0 },
+        "open_reproductions": { "const": 10 }
+      }
+    },
+    "findings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["open", "held"],
+      "properties": {
+        "open": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "string" }, "uniqueItems": true },
+        "held": { "type": "array", "minItems": 1, "maxItems": 1, "items": { "const": "FINDING_080" } }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": { "$ref": "#/$defs/artifact" }
+    },
+    "holds": { "type": "array", "minItems": 7, "maxItems": 7, "items": { "type": "string" }, "uniqueItems": true },
+    "result": { "const": "pass" }
+  },
+  "$defs": {
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step", "candidate"],
+      "properties": {
+        "step": { "type": "string", "minLength": 1 },
+        "candidate": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    }
+  }
+}

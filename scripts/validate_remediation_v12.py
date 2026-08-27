@@ -16,6 +16,7 @@ LEDGER_PATH = ROOT / "implementation/runtime_ledger_v12.json"
 FINDINGS_PATH = ROOT / "spec/remediation_findings_v12.json"
 REPRODUCTIONS_PATH = ROOT / "spec/remediation_v12_reproductions.json"
 EVIDENCE_POLICY_PATH = ROOT / "spec/remediation_v12_evidence_policy.json"
+AUTHORITY_GATE_PATH = ROOT / "reports/remediation_v12_authority_gate.json"
 
 REVIEWED_CANDIDATE = "9e99af892764ccb165a12b8bb186935bd599d561"
 REVIEWED_TREE = "4b684dc123f371ded75c1469505b130c36359f93"
@@ -33,18 +34,13 @@ HOLDS = [
     "remote_mutation",
 ]
 ACTIVE_SCOPE = [
-    "docs/adr/README.md",
-    "docs/adr/adr_0076_authoritative_epoch_semantic_work.md",
-    "docs/adr/adr_0077_complete_runtime_operation_inventory.md",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
+    "reports/remediation_v12_authority_gate.json",
     "reports/spec_baseline.txt",
-    "scripts/validate_adrs.py",
     "scripts/validate_remediation_v12.py",
     "scripts/validate_spec.py",
-    "spec/EVIDENCE_POLICY.md",
-    "spec/remediation_v12_evidence_policy.json",
-    "tools/validation/remediation_v12_evidence_policy.schema.json",
+    "tools/validation/remediation_v12_authority_gate.schema.json",
 ]
 
 EVIDENCE_REQUIREMENTS = [
@@ -68,6 +64,22 @@ OPAQUE_ALLOWED = [
 ]
 OPAQUE_PROHIBITED = [
     "commands", "credentials", "logs", "package_layout", "paths", "source", "urls",
+]
+GATE_CHAIN = [
+    ("plan_v12", "d1b9202be6bf9deb643ca7d81f89c5c3281eb523"),
+    ("step_1364", "22cb8f0c77637647ce485e4d6f206316113e429a"),
+    ("step_1365", "4e6b9e2c189d407b29a478c5445405b922789aa0"),
+    ("step_1366", "00fca7681ba079e98ebf8d116bc7fa12926d1a87"),
+    ("step_1367", "1de9769b36b5fa610483c3f0ffcd0e7e6ee2768c"),
+    ("step_1368", "bb8b8fd4560eaf141ff599ed440edeb68c30a33f"),
+    ("step_1369", "4819b9ae58650f8b5decfb19e0f8d895dc47c7d2"),
+    ("step_1370", "670e300c4cb029ce8b67468c6009b756ea703002"),
+]
+GATE_ARTIFACTS = [
+    ("spec/remediation_v12_reproductions.json", "d61707db33ffefdf30ee5293bc6a5e994a67ece2a397613afc7e39cdf4def8c1"),
+    ("spec/remediation_v12_evidence_policy.json", "159d25262833f4acb062bce1366aa741465c088e03cbb689b69d6fb681ab0492"),
+    ("docs/adr/README.md", "5e2fea1a448da14bfcdd177e65f72a7f790bc7692ed6291f17caa74d5f07b7e1"),
+    ("scripts/reproduce_remediation_v12.py", "76ccd7244006da4595f152d31f9e59787cc39647e6e2be03ce727fa5ba02c29e"),
 ]
 
 
@@ -97,6 +109,18 @@ def git(*args: str) -> str:
     if result.returncode:
         raise EvidenceError("git:" + ":".join(args))
     return result.stdout.strip()
+
+
+def git_file_sha(candidate: str, path: str) -> str:
+    result = subprocess.run(
+        ["git", "show", f"{candidate}:{path}"],
+        cwd=ROOT,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode:
+        raise EvidenceError("git:file:" + path)
+    return hashlib.sha256(result.stdout).hexdigest()
 
 
 def validate_authority(authority: object) -> None:
@@ -144,13 +168,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 109, "active_step": "step_1370", "next_step": "step_1371", "last_planned_step": "step_1419", "remaining_checkpoint_count": 49, "remaining_rcld_count": 7}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 109, "active_step": "step_1371", "next_step": "step_1372", "last_planned_step": "step_1419", "remaining_checkpoint_count": 48, "remaining_rcld_count": 7}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], [], "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 8:
+    if not isinstance(predecessors, list) or len(predecessors) != 9:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -160,6 +184,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[5], {"step": "step_1367", "candidate": "1de9769b36b5fa610483c3f0ffcd0e7e6ee2768c", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1367")
     require_equal(predecessors[6], {"step": "step_1368", "candidate": "bb8b8fd4560eaf141ff599ed440edeb68c30a33f", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1368")
     require_equal(predecessors[7], {"step": "step_1369", "candidate": "4819b9ae58650f8b5decfb19e0f8d895dc47c7d2", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1369")
+    require_equal(predecessors[8], {"step": "step_1370", "candidate": "670e300c4cb029ce8b67468c6009b756ea703002", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1370")
 
 
 def validate_reproductions(reproductions: object) -> None:
@@ -254,6 +279,42 @@ def validate_evidence_policy(policy: object) -> None:
     require_equal(record["result"], "pass", "evidence_policy:result")
 
 
+def validate_authority_gate(gate: object) -> None:
+    record = require_keys(gate, [
+        "schema", "status", "rcld", "candidate_chain", "counts", "findings",
+        "artifacts", "holds", "result",
+    ], "authority_gate")
+    require_equal(record["schema"], "nostr_automerge.remediation_v12_authority_gate.v1", "authority_gate:schema")
+    require_equal(record["status"], "rcld_109_complete", "authority_gate:status")
+    require_equal(record["rcld"], 109, "authority_gate:rcld")
+    expected_chain = [{"step": step, "candidate": candidate} for step, candidate in GATE_CHAIN]
+    require_equal(record["candidate_chain"], expected_chain, "authority_gate:chain")
+    for index, row in enumerate(record["candidate_chain"]):
+        require_keys(row, ["step", "candidate"], f"authority_gate:chain:{index}")
+        require_equal(git("rev-parse", f"{row['candidate']}^{{commit}}"), row["candidate"], f"authority_gate:candidate:{index}")
+    counts = require_keys(record["counts"], [
+        "authority_mutations", "adr_mutations", "reproduction_cases",
+        "reproduction_mutations", "fixed_reproductions", "open_reproductions",
+    ], "authority_gate:counts")
+    require_equal(counts, {
+        "authority_mutations": 22, "adr_mutations": 15,
+        "reproduction_cases": 10, "reproduction_mutations": 15,
+        "fixed_reproductions": 0, "open_reproductions": 10,
+    }, "authority_gate:counts")
+    require_equal(require_keys(record["findings"], ["open", "held"], "authority_gate:findings"), {
+        "open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"],
+        "held": ["FINDING_080"],
+    }, "authority_gate:findings")
+    expected_artifacts = [{"path": path, "sha256": digest} for path, digest in GATE_ARTIFACTS]
+    require_equal(record["artifacts"], expected_artifacts, "authority_gate:artifacts")
+    source_candidate = GATE_CHAIN[-1][1]
+    for index, row in enumerate(record["artifacts"]):
+        require_keys(row, ["path", "sha256"], f"authority_gate:artifact:{index}")
+        require_equal(git_file_sha(source_candidate, row["path"]), row["sha256"], f"authority_gate:artifact_hash:{index}")
+    require_equal(record["holds"], HOLDS, "authority_gate:holds")
+    require_equal(record["result"], "pass", "authority_gate:result")
+
+
 def validate_files() -> None:
     require_equal(git("rev-parse", f"{REVIEWED_CANDIDATE}^{{tree}}"), REVIEWED_TREE, "git:reviewed_tree")
     require_equal(git("rev-parse", f"{PLAN_CANDIDATE}^{{tree}}"), PLAN_TREE, "git:plan_tree")
@@ -268,9 +329,10 @@ def validate_files() -> None:
     require_equal(sha256(ROOT / "docs/adr/adr_0076_authoritative_epoch_semantic_work.md"), "35876ef2f7d8c189d535c104bbd4baa57bd2e94d432f7b04147373f976f3463a", "file:adr_0076")
     require_equal(sha256(ROOT / "docs/adr/adr_0077_complete_runtime_operation_inventory.md"), "8f4f4d51c763272e84f1a16d93fe2428461d3658c8377e975f318875881bb6db", "file:adr_0077")
     require_equal(sha256(ROOT / "tools/validation/remediation_v12_evidence_policy.schema.json"), "f4be03d9d38af88277182d951a8e67ff2a34f7090b9c413e66a7a373b50ba669", "file:evidence_policy_schema")
+    require_equal(sha256(ROOT / "tools/validation/remediation_v12_authority_gate.schema.json"), "3c7c30205feff1347c9b2bb68ab308c4cc81d4d6e71bc72f010f16c507a6f6bd", "file:authority_gate_schema")
 
 
-def mutation_self_test(authority: object, ledger: object, findings: object, reproductions: object, evidence_policy: object) -> int:
+def mutation_self_test(authority: object, ledger: object, findings: object, reproductions: object, evidence_policy: object, authority_gate: object) -> int:
     mutations: list[tuple[str, object, object]] = []
     for label, path, value in (
         ("reviewed", ("reviewed_public", "candidate"), "0" * 40),
@@ -291,7 +353,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1372"),
+        ("cursor", "next_step", "step_1373"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
     ):
@@ -366,7 +428,32 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
         except EvidenceError:
             continue
         raise EvidenceError("mutation_survived:" + label)
-    return len(mutations) + len(finding_mutations) + len(reproduction_mutations) + len(policy_mutations)
+    gate_mutations = []
+    missing_candidate = copy.deepcopy(authority_gate)
+    missing_candidate["candidate_chain"].pop()
+    gate_mutations.append(("gate_candidate", missing_candidate))
+    wrong_count = copy.deepcopy(authority_gate)
+    wrong_count["counts"]["open_reproductions"] = 9
+    gate_mutations.append(("gate_count", wrong_count))
+    closed_finding = copy.deepcopy(authority_gate)
+    closed_finding["findings"]["open"].pop()
+    gate_mutations.append(("gate_finding", closed_finding))
+    wrong_artifact = copy.deepcopy(authority_gate)
+    wrong_artifact["artifacts"][0]["sha256"] = "0" * 64
+    gate_mutations.append(("gate_artifact", wrong_artifact))
+    extra_gate = copy.deepcopy(authority_gate)
+    extra_gate["unapproved"] = False
+    gate_mutations.append(("gate_extra", extra_gate))
+    reordered_gate = copy.deepcopy(authority_gate)
+    reordered_gate["schema"] = reordered_gate.pop("schema")
+    gate_mutations.append(("gate_order", reordered_gate))
+    for label, changed in gate_mutations:
+        try:
+            validate_authority_gate(changed)
+        except EvidenceError:
+            continue
+        raise EvidenceError("mutation_survived:" + label)
+    return len(mutations) + len(finding_mutations) + len(reproduction_mutations) + len(policy_mutations) + len(gate_mutations)
 
 
 def main() -> None:
@@ -375,16 +462,18 @@ def main() -> None:
     findings = json.loads(FINDINGS_PATH.read_text())
     reproductions = json.loads(REPRODUCTIONS_PATH.read_text())
     evidence_policy = json.loads(EVIDENCE_POLICY_PATH.read_text())
+    authority_gate = json.loads(AUTHORITY_GATE_PATH.read_text())
     validate_authority(authority)
     validate_ledger(ledger)
     validate_findings(findings)
     validate_reproductions(reproductions)
     validate_evidence_policy(evidence_policy)
+    validate_authority_gate(authority_gate)
     validate_files()
-    mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy)
+    mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
-    print("- active=RCLD109/step_1370")
+    print("- active=RCLD109/step_1371")
 
 
 if __name__ == "__main__":

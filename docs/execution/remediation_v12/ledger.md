@@ -48,3 +48,9 @@ for the complete runtime-operation inventory. The new staged evidence policy
 closes owner modes, row fields, public evidence roots, opaque compatibility
 fields, prohibited private details, and every held external action before the
 four v12 requirements may reference it.
+
+`step_1371` closes RCLD 109 without closing a behavior finding. The authority
+gate binds the exact eight-candidate plan and checkpoint chain, ten open
+reproductions, 22 authority/policy mutations, 15 ADR mutations, 15
+reproduction-harness mutations, frozen evidence-policy identities, and all
+external holds. RCLD 110 begins at `step_1372`.
