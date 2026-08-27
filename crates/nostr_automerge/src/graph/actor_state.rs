@@ -765,4 +765,34 @@ pub(crate) mod tests {
             Err(ActorStateError::DependencyFrontier)
         );
     }
+
+    #[test]
+    #[ignore = "open remediation-v12 resource-accounting reproduction"]
+    fn finding_100_actor_predecessor_scan_reproduction() {
+        let mut accepted = BTreeMap::new();
+        let mut closure = BTreeSet::new();
+        for sequence in 1..=64 {
+            let change = candidate(1, sequence, sequence, 1);
+            closure.insert(change.change_hash);
+            accepted.insert(change.change_hash, change);
+        }
+        let mut unrelated = candidate(2, 1, 1, 1);
+        unrelated.change_hash = ChangeHash::from_bytes([200; 32]);
+        closure.insert(unrelated.change_hash);
+        accepted.insert(unrelated.change_hash, unrelated.clone());
+        let mut next = candidate(1, 65, 65, 1);
+        next.dependencies = vec![unrelated.change_hash].into();
+
+        assert_eq!(
+            validate_actor_predecessor(&next, &closure, &accepted),
+            Ok(()),
+            "the actor predecessor is accepted transitively and need not be a direct dependency"
+        );
+
+        let source = include_str!("actor_state.rs");
+        assert!(
+            !source.contains(".collect::<Vec<_>>()"),
+            "unmetered actor predecessor collection remains"
+        );
+    }
 }

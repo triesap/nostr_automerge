@@ -1,0 +1,15 @@
+{
+  "schema": "nostr_automerge.remediation_v12_reproductions.v1",
+  "cases": [
+    {
+      "finding": "FINDING_100",
+      "family": "actor_predecessor",
+      "kind": "rust_failure",
+      "path": "crates/nostr_automerge/src/graph/actor_state.rs",
+      "test": "graph::actor_state::tests::finding_100_actor_predecessor_scan_reproduction",
+      "diagnostic": "unmetered actor predecessor collection remains",
+      "expected": "open_failure"
+    }
+  ],
+  "result": "pass"
+}

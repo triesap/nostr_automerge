@@ -250,6 +250,7 @@ def controlled_files() -> list[pathlib.Path]:
             "tools/validation/runtime_ledger_v12.schema.json",
             "scripts/generate_semantic_proof_catalog_final_v10.py",
             "scripts/reproduce_remediation_v11.py",
+            "scripts/reproduce_remediation_v12.py",
             "reports/opaque_boundary_gate_v9.json",
             "reports/opaque_resource_gate_v9.json",
             "reports/opaque_finalization_v9.json",

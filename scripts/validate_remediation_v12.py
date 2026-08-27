@@ -14,6 +14,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 AUTHORITY_PATH = ROOT / "spec/remediation_v12_authority.json"
 LEDGER_PATH = ROOT / "implementation/runtime_ledger_v12.json"
 FINDINGS_PATH = ROOT / "spec/remediation_findings_v12.json"
+REPRODUCTIONS_PATH = ROOT / "spec/remediation_v12_reproductions.json"
 
 REVIEWED_CANDIDATE = "9e99af892764ccb165a12b8bb186935bd599d561"
 REVIEWED_TREE = "4b684dc123f371ded75c1469505b130c36359f93"
@@ -31,12 +32,14 @@ HOLDS = [
     "remote_mutation",
 ]
 ACTIVE_SCOPE = [
+    "crates/nostr_automerge/src/graph/actor_state.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
     "reports/spec_baseline.txt",
+    "scripts/reproduce_remediation_v12.py",
     "scripts/validate_remediation_v12.py",
     "scripts/validate_spec.py",
-    "spec/remediation_findings_v12.json",
+    "spec/remediation_v12_reproductions.json",
 ]
 
 
@@ -113,17 +116,37 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 109, "active_step": "step_1365", "next_step": "step_1366", "last_planned_step": "step_1419", "remaining_checkpoint_count": 54, "remaining_rcld_count": 7}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 109, "active_step": "step_1366", "next_step": "step_1367", "last_planned_step": "step_1419", "remaining_checkpoint_count": 53, "remaining_rcld_count": 7}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], [], "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 3:
+    if not isinstance(predecessors, list) or len(predecessors) != 4:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
     require_equal(predecessors[2], {"step": "step_1364", "candidate": "22cb8f0c77637647ce485e4d6f206316113e429a", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1364")
+    require_equal(predecessors[3], {"step": "step_1365", "candidate": "4e6b9e2c189d407b29a478c5445405b922789aa0", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1365")
+
+
+def validate_reproductions(reproductions: object) -> None:
+    record = require_keys(reproductions, ["schema", "cases", "result"], "reproductions")
+    require_equal(record["schema"], "nostr_automerge.remediation_v12_reproductions.v1", "reproductions:schema")
+    rows = record["cases"]
+    if not isinstance(rows, list) or len(rows) != 1:
+        raise EvidenceError("reproductions:rows")
+    row = require_keys(rows[0], ["finding", "family", "kind", "path", "test", "diagnostic", "expected"], "reproductions:row")
+    require_equal(row, {
+        "finding": "FINDING_100",
+        "family": "actor_predecessor",
+        "kind": "rust_failure",
+        "path": "crates/nostr_automerge/src/graph/actor_state.rs",
+        "test": "graph::actor_state::tests::finding_100_actor_predecessor_scan_reproduction",
+        "diagnostic": "unmetered actor predecessor collection remains",
+        "expected": "open_failure",
+    }, "reproductions:actor_predecessor")
+    require_equal(record["result"], "pass", "reproductions:result")
 
 
 def validate_findings(findings: object) -> None:
@@ -160,7 +183,7 @@ def validate_files() -> None:
         raise EvidenceError("file:instructions")
 
 
-def mutation_self_test(authority: object, ledger: object, findings: object) -> int:
+def mutation_self_test(authority: object, ledger: object, findings: object, reproductions: object) -> int:
     mutations: list[tuple[str, object, object]] = []
     for label, path, value in (
         ("reviewed", ("reviewed_public", "candidate"), "0" * 40),
@@ -181,7 +204,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object) -> i
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1367"),
+        ("cursor", "next_step", "step_1368"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
     ):
@@ -217,21 +240,36 @@ def mutation_self_test(authority: object, ledger: object, findings: object) -> i
         except EvidenceError:
             continue
         raise EvidenceError("mutation_survived:" + label)
-    return len(mutations) + len(finding_mutations)
+    reproduction_mutations = []
+    missing_reproduction = copy.deepcopy(reproductions)
+    missing_reproduction["cases"].clear()
+    reproduction_mutations.append(("reproduction_missing", missing_reproduction))
+    fixed_early = copy.deepcopy(reproductions)
+    fixed_early["cases"][0]["expected"] = "fixed_pass"
+    reproduction_mutations.append(("reproduction_premature", fixed_early))
+    for label, changed in reproduction_mutations:
+        try:
+            validate_reproductions(changed)
+        except EvidenceError:
+            continue
+        raise EvidenceError("mutation_survived:" + label)
+    return len(mutations) + len(finding_mutations) + len(reproduction_mutations)
 
 
 def main() -> None:
     authority = json.loads(AUTHORITY_PATH.read_text())
     ledger = json.loads(LEDGER_PATH.read_text())
     findings = json.loads(FINDINGS_PATH.read_text())
+    reproductions = json.loads(REPRODUCTIONS_PATH.read_text())
     validate_authority(authority)
     validate_ledger(ledger)
     validate_findings(findings)
+    validate_reproductions(reproductions)
     validate_files()
-    mutation_count = mutation_self_test(authority, ledger, findings)
+    mutation_count = mutation_self_test(authority, ledger, findings, reproductions)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
-    print("- active=RCLD109/step_1365")
+    print("- active=RCLD109/step_1366")
 
 
 if __name__ == "__main__":

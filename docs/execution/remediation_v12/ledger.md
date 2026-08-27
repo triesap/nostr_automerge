@@ -17,3 +17,9 @@ No runtime behavior changes in this checkpoint. The four new v12 requirements
 remain staged for their atomic authority checkpoint. Publication, release,
 deployment, remote mutation, NIP submission, event-kind allocation,
 production qualification, and external assurance remain held.
+
+`step_1366` binds the deep actor-predecessor reproduction. A 64-change
+same-actor history proves that the immediate predecessor may be present only
+transitively in accepted closure. The current helper still collects and scans
+that full closure without a work observation, so the exact ignored test remains
+an expected failure until the projected actor-sequence boundary replaces it.
