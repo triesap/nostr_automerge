@@ -78,6 +78,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/target_work_accounting_v11.schema.json",
     "reports/persistent_ownership_v11.json",
     "tools/validation/persistent_ownership_v11.schema.json",
+    "reports/remediation_v11_authority_gate.json",
+    "tools/validation/remediation_v11_authority_gate.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -87,6 +89,7 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://nostr-automerge.example/schema/persistent_state_integration_v11.schema.json",
         b"https://nostr-automerge.example/schema/target_work_accounting_v11.schema.json",
         b"https://nostr-automerge.example/schema/persistent_ownership_v11.schema.json",
+        b"https://nostr-automerge.example/schema/remediation_v11_authority_gate.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -152,6 +155,7 @@ PYTHON_SURFACES = (
     "scripts/validate_target_work_accounting_v11.py",
     "scripts/validate_persistent_ownership_v11.py",
     "scripts/validate_unsupported_identity_contradiction_v11.py",
+    "scripts/validate_remediation_v11_authority_gate.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -174,6 +178,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "crates/nostr_automerge/src/carrier/manifest.rs",
         "crates/nostr_automerge/src/wire/base64.rs",
         "crates/nostr_automerge/tests/base64_contract.rs",
+        "crates/nostr_automerge/tests/hardening.rs",
         "crates/nostr_automerge/src/automerge_adapter/document.rs",
         "crates/nostr_automerge/src/conformance/dispositions_digest.rs",
         "crates/nostr_automerge/src/conformance/history_digest.rs",
@@ -213,6 +218,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v11.md",
         "docs/execution/remediation_v9/ledger.md",
         "docs/adr/adr_0074_unsupported_event_only_identity.md",
+        "docs/adr/adr_0072_metered_persistent_state.md",
+        "docs/adr/adr_0073_no_post_stop_target_work.md",
+        "docs/adr/adr_0075_bounded_persistent_teardown.md",
         "docs/execution/remediation_v10/ledger.md",
         "docs/execution/remediation_v11/ledger.md",
         "docs/execution/remediation_v9/reproductions.md",
@@ -279,6 +287,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/resource_followup_finding_closure_v10.json",
         "reports/resource_followup_final_decision_v10.json",
         "reports/evidence_transition_v11.json",
+        "reports/remediation_v11_authority_gate.json",
         "reports/external_holds_v8.json",
         "reports/spec_baseline.txt",
         "scripts/validate_adrs.py",
@@ -306,6 +315,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_normative_clarifications_v3.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_remediation_v11.py",
+        "scripts/validate_remediation_v11_authority_gate.py",
         "scripts/validate_requirement_matrix_v9.py",
         "scripts/validate_report_contract_v9.py",
         "scripts/validate_rust_report_gate_v9.py",
@@ -378,6 +388,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/validation/distribution_v11.schema.json",
         "tools/validation/distribution_v12.schema.json",
         "tools/validation/authority_transition_v10.schema.json",
+        "tools/validation/remediation_v11_authority_gate.schema.json",
         "spec/distribution_v12_transition.json",
         "spec/authority_transition_v10.json",
         "spec/resource_followup_authority_v10.json",
@@ -686,6 +697,7 @@ def validate_source_surfaces() -> None:
                             "scripts/validate_remediation_v11.py",
                             "scripts/validate_persistent_state_core_gate_v11.py",
                             "scripts/validate_persistent_state_integration_gate_v11.py",
+                            "scripts/validate_remediation_v11_authority_gate.py",
                             "scripts/validate_runtime_ledger_v9.py",
                         }
                     )

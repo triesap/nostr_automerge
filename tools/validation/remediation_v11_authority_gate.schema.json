@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nostr-automerge.example/schema/remediation_v11_authority_gate.schema.json",
+  "title": "nostr_automerge remediation v11 public authority gate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "checkpoint", "revision", "candidates", "authority", "requirements", "distribution", "evidence", "holds", "release_claimed", "remote_actions_performed", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.remediation_v11_authority_gate.v1"},
+    "status": {"const": "pass"},
+    "checkpoint": {"const": "step_1345"},
+    "revision": {"const": "draft_2026_08"},
+    "candidates": {"type": "array", "minItems": 5, "maxItems": 5, "items": {"$ref": "#/$defs/candidate"}},
+    "authority": {"type": "array", "minItems": 10, "maxItems": 10, "items": {"$ref": "#/$defs/source"}},
+    "requirements": {"type": "object", "additionalProperties": false, "required": ["count", "appended"], "properties": {"count": {"const": 152}, "appended": {"type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true, "items": {"type": "string"}}}},
+    "distribution": {"type": "object", "additionalProperties": false, "required": ["base_manifest_sha256", "transition_sha256", "schema_sha256", "manifest_sha256", "current_fixture_count", "target_fixture_count", "planned_fixture_count", "complete"], "properties": {"base_manifest_sha256": {"$ref": "#/$defs/sha256"}, "transition_sha256": {"$ref": "#/$defs/sha256"}, "schema_sha256": {"$ref": "#/$defs/sha256"}, "manifest_sha256": {"$ref": "#/$defs/sha256"}, "current_fixture_count": {"const": 193}, "target_fixture_count": {"const": 198}, "planned_fixture_count": {"const": 5}, "complete": {"const": false}}},
+    "evidence": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"$ref": "#/$defs/evidence"}},
+    "holds": {"type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true, "items": {"type": "string"}},
+    "release_claimed": {"const": false},
+    "remote_actions_performed": {"const": false},
+    "result": {"const": "pass"},
+    "result_identity_sha256": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "candidate": {"type": "object", "additionalProperties": false, "required": ["step", "candidate"], "properties": {"step": {"type": "string"}, "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"}}},
+    "source": {"type": "object", "additionalProperties": false, "required": ["path", "sha256"], "properties": {"path": {"type": "string"}, "sha256": {"$ref": "#/$defs/sha256"}}},
+    "evidence": {"type": "object", "additionalProperties": false, "required": ["class", "sha256"], "properties": {"class": {"type": "string"}, "sha256": {"$ref": "#/$defs/sha256"}}}
+  }
+}

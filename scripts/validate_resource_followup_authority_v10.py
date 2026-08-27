@@ -53,6 +53,15 @@ def sha256(path: pathlib.Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def candidate_bytes(relative: str) -> bytes:
+    return subprocess.run(
+        ["git", "show", f"{AUTHORITY_CANDIDATE}:{relative}"],
+        cwd=ROOT,
+        capture_output=True,
+        check=True,
+    ).stdout
+
+
 def require_keys(value: object, keys: tuple[str, ...], label: str) -> dict[str, object]:
     if not isinstance(value, dict) or tuple(value) != keys:
         raise AuthorityError(f"{label}:keys")
@@ -155,7 +164,7 @@ def validate_repository() -> None:
     if hashlib.sha256(plan).hexdigest() != PLAN_SHA256:
         raise AuthorityError("plan:sha256")
     for relative, expected in FROZEN_FILES.items():
-        if sha256(ROOT / relative) != expected:
+        if hashlib.sha256(candidate_bytes(relative)).hexdigest() != expected:
             raise AuthorityError(f"frozen:{relative}")
     actual_tree = subprocess.run(
         ["git", "rev-parse", f"{PUBLIC_PREDECESSOR}^{{tree}}"],

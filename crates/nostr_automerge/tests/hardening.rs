@@ -99,7 +99,7 @@ fn implementation_owned_normative_clarifications_are_explicit() {
     }
     assert_eq!(
         nip_checksum,
-        "0dfa683aa0f4a1c7d3df010ec95901bf4ba4094ed3adaacc26e85d95aaa4ded1  NIP_DRAFT.md\n"
+        "8262bf32cb70b7c0e46210441120652e52504fb73839641ac19dddfed840acf8  NIP_DRAFT.md\n"
     );
 }
 

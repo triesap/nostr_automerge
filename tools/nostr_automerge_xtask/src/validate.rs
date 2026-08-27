@@ -136,6 +136,10 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "scripts/validate_resource_followup_final_decision_v10.py",
     ),
     ("distribution_v12", "scripts/validate_distribution_v12.py"),
+    (
+        "remediation_v11_authority_gate",
+        "scripts/validate_remediation_v11_authority_gate.py",
+    ),
     ("remediation_v11", "scripts/validate_remediation_v11.py"),
     (
         "persistent_state_v11",

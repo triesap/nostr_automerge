@@ -71,6 +71,7 @@ VALIDATORS = [
     "validate_unsupported_identity_contradiction_v11.py",
     "generate_distribution_v12.py",
     "validate_distribution_v12.py",
+    "validate_remediation_v11_authority_gate.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",
@@ -190,6 +191,7 @@ def controlled_files() -> list[pathlib.Path]:
             "reports/resource_followup_assurance_v10.json",
             "reports/resource_followup_finding_closure_v10.json",
             "reports/resource_followup_final_decision_v10.json",
+            "reports/remediation_v11_authority_gate.json",
             "fixtures/distribution/manifest_v12.json",
             "reports/evidence_transition_v11.json",
             "reports/persistent_state_core_v11.json",
@@ -236,6 +238,7 @@ def controlled_files() -> list[pathlib.Path]:
             "tools/validation/appended_conformance_v11.schema.json",
             "tools/validation/distribution_v11.schema.json",
             "tools/validation/distribution_v12.schema.json",
+            "tools/validation/remediation_v11_authority_gate.schema.json",
             "tools/validation/resource_ancestry_gate_v10.schema.json",
             "tools/validation/resource_ancestry_proof_catalog_v10.schema.json",
             "tools/validation/resource_followup_assurance_v10.schema.json",

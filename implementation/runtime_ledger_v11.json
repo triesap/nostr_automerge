@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v11_authority.json",
   "cursor": {
     "active_rcld": 105,
-    "active_step": "step_1344",
-    "next_step": "step_1345",
+    "active_step": "step_1345",
+    "next_step": "step_1346",
     "last_planned_step": "step_1363",
-    "remaining_checkpoint_count": 20,
+    "remaining_checkpoint_count": 19,
     "remaining_rcld_count": 5
   },
   "findings": {
@@ -28,18 +28,18 @@
     "NCRDT-OWNERSHIP-001"
   ],
   "active_checkpoint_scope": [
+    "crates/nostr_automerge/tests/hardening.rs",
     "docs/execution/remediation_v11/ledger.md",
-    "fixtures/distribution/manifest_v12.json",
     "implementation/runtime_ledger_v11.json",
+    "reports/remediation_v11_authority_gate.json",
     "reports/spec_baseline.txt",
-    "scripts/generate_distribution_v12.py",
-    "scripts/validate_distribution_v12.py",
     "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v11.py",
+    "scripts/validate_remediation_v11_authority_gate.py",
+    "scripts/validate_resource_followup_authority_v10.py",
     "scripts/validate_spec.py",
-    "spec/distribution_v12_transition.json",
     "tools/nostr_automerge_xtask/src/validate.rs",
-    "tools/validation/distribution_v12.schema.json"
+    "tools/validation/remediation_v11_authority_gate.schema.json"
   ],
   "predecessors": [
     {
@@ -255,6 +255,12 @@
     {
       "step": "step_1343",
       "candidate": "188e0ee2be355f62024e9cdb709ddece30424445",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1344",
+      "candidate": "18d2555d81a3d3c656c3fd81cfdbd1b213826914",
       "owner_class": "public",
       "result": "pass"
     }

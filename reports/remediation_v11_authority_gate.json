@@ -1,0 +1,50 @@
+{
+  "schema": "nostr_automerge.remediation_v11_authority_gate.v1",
+  "status": "pass",
+  "checkpoint": "step_1345",
+  "revision": "draft_2026_08",
+  "candidates": [
+    {"step": "step_1340", "candidate": "83682d9c4e54c8ec7f98f7a1894b77bddbebde91"},
+    {"step": "step_1341", "candidate": "3b0aed3d218cbc0fcec67676532b0860a06b3b13"},
+    {"step": "step_1342", "candidate": "65acc5b80eb7264385be28bac62d8f94cf59f81a"},
+    {"step": "step_1343", "candidate": "188e0ee2be355f62024e9cdb709ddece30424445"},
+    {"step": "step_1344", "candidate": "18d2555d81a3d3c656c3fd81cfdbd1b213826914"}
+  ],
+  "authority": [
+    {"path": "spec/NIP_DRAFT.md", "sha256": "8262bf32cb70b7c0e46210441120652e52504fb73839641ac19dddfed840acf8"},
+    {"path": "spec/companion_authority_v10.json", "sha256": "0e30fe422176b69b3cf7e3e68500e60bc4038823a84ba8757336ddc286788c94"},
+    {"path": "spec/API_CONTRACTS.md", "sha256": "ce7f2992292b2f5159ff25dc555b29265fea0ec475d39fc65fc60344b76ca37a"},
+    {"path": "spec/requirements.json", "sha256": "840822a1acf171c887b9a9aba79ddf159ffcd9c5d7a74bd74d7e0bac5c6161f4"},
+    {"path": "spec/requirements_applicability.json", "sha256": "e473e8484ad0ccfb7d917485a0d7ab0d5bd2b98aa120ecaec588e7bacd19de28"},
+    {"path": "spec/authority_transition_v10.json", "sha256": "fafee33c8d796ee8a9731cd507980dce937de23b9d1fe9d5cde6416fbc20af35"},
+    {"path": "docs/adr/adr_0072_metered_persistent_state.md", "sha256": "7cbe4b80c950ac756147047d0c414f90eb8099779c225bbb3f46704b6b9f50ec"},
+    {"path": "docs/adr/adr_0073_no_post_stop_target_work.md", "sha256": "a1e529d20f75254313e8c49bb5b5b4e575c118d4f878f3cf89aff3a5b3e8ec20"},
+    {"path": "docs/adr/adr_0074_unsupported_event_only_identity.md", "sha256": "eacd506ed130d39b3c72ac61a0ea29b328209abc886b3c8d848723449398140c"},
+    {"path": "docs/adr/adr_0075_bounded_persistent_teardown.md", "sha256": "7c4ae5365a3459f5d38574f1e9ebbe38c56b2d3b3b496f5d71b6c0d8cf1c2542"}
+  ],
+  "requirements": {
+    "count": 152,
+    "appended": ["NCRDT-RESOURCE-015", "NCRDT-RESOURCE-016", "NCRDT-VERSION-003", "NCRDT-OWNERSHIP-001"]
+  },
+  "distribution": {
+    "base_manifest_sha256": "db247fa3e6891e850f32ed9b00fb08cfd78d30c9eb88ea36a00bd22dabb63f5a",
+    "transition_sha256": "88026826cb34db3c0f68376cd29239243f407e2dee01b664d733bdce9165e705",
+    "schema_sha256": "5e6d924ffd3cb1980e60698696d9c832d70523bf43934c857cd07054546cf37c",
+    "manifest_sha256": "4f19b95fa3a3fc3a1606391eba4636734d8537d9fcdc78531868420b21e7bca5",
+    "current_fixture_count": 193,
+    "target_fixture_count": 198,
+    "planned_fixture_count": 5,
+    "complete": false
+  },
+  "evidence": [
+    {"class": "persistent_state_core", "sha256": "e540248bab985856d9aba407758ed1343c3c0e039f81347d29e4909abdecf695"},
+    {"class": "persistent_state_integration", "sha256": "d5f7feb42dba21f079cbbcbf7b200cb84f2126dd851e51a0240de63b8eb0b55d"},
+    {"class": "target_work_accounting", "sha256": "e15dca3958e9c9cf98da585c5a60135e4b3c9d8b59ddec9c0e3ef068615948ae"},
+    {"class": "persistent_ownership", "sha256": "10235d1eac0b09a2b22ba70959a47a06478a08f595b31c9f843bb9fb41dcc67f"}
+  ],
+  "holds": ["external_assurance", "event_kind_allocation", "nip_submission", "production_qualification", "publication", "release", "remote_mutation"],
+  "release_claimed": false,
+  "remote_actions_performed": false,
+  "result": "pass",
+  "result_identity_sha256": "b72dc33803f50cc0e7db89a595652cba1fdd79f6bb17a13e739278cf6ee99f14"
+}

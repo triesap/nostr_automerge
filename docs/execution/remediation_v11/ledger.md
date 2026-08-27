@@ -216,3 +216,12 @@ approved scenario IDs advance only as ordered 0/2/4/5 prefixes, while all v11
 fixture bytes remain exact and the two live source rebindings are explicit.
 The staged manifest is deterministic at 193/198 and rejects base drift, extra,
 missing, reordered, stale-source, and coordinated manifest mutations.
+
+`step_1345` closes RCLD 105 with a public authority gate over the exact
+step-1340-through-step-1344 chain, ten normative source identities, the four
+new requirements, the staged 193-to-198 distribution, four Rust evidence
+records, and every held external action. The report and closed schema reject
+candidate, authority, count, evidence, hold, release, remote-action, and
+coordinated identity drift. Public specification authority is green; private
+resource parity and distribution-v12 execution remain assigned to RCLDs 106
+and 107.
