@@ -7,6 +7,7 @@ import copy
 import hashlib
 import json
 import re
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -15,7 +16,9 @@ ROOT = Path(__file__).resolve().parents[1]
 ADR_ROOT = ROOT / "docs/adr"
 BASE_ADR_COUNT = 71
 BASELINE_REQUIREMENT_COUNT = 139
-TARGET_REQUIREMENT_COUNT = 152
+V10_TARGET_REQUIREMENT_COUNT = 152
+TARGET_REQUIREMENT_COUNT = 156
+V12_BASELINE_CANDIDATE = "4a5abe6f0bff2dbe147d9805f4cd3de844874ab6"
 STAGED_REQUIREMENTS = (
     "NCRDT-CPAUTH-001",
     "NCRDT-CPAUTH-002",
@@ -225,6 +228,19 @@ def ordered_digest(identifiers: tuple[str, ...]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def git_file_digest(candidate: str, path: str) -> str:
+    """Hash an immutable historical file without trusting the current tree."""
+
+    result = subprocess.run(
+        ["git", "show", f"{candidate}:{path}"],
+        cwd=ROOT,
+        capture_output=True,
+        check=False,
+    )
+    require(result.returncode == 0, f"historical file missing: {path}")
+    return hashlib.sha256(result.stdout).hexdigest()
+
+
 def validate_registry_projection(
     identifiers: tuple[str, ...],
     declared_count: int,
@@ -246,13 +262,14 @@ def validate_registry_projection(
     if before_requirements_appended:
         require(len(identifiers) == BASELINE_REQUIREMENT_COUNT, "early requirement projection count")
         require(
-            set(identifiers).isdisjoint(STAGED_REQUIREMENTS),
+            set(identifiers).isdisjoint(STAGED_REQUIREMENTS + V12_STAGED_REQUIREMENTS),
             "staged requirements are prematurely live",
         )
     else:
         require(len(identifiers) == TARGET_REQUIREMENT_COUNT, "appended requirement projection count")
         require(
-            identifiers[BASELINE_REQUIREMENT_COUNT:] == STAGED_REQUIREMENTS,
+            identifiers[BASELINE_REQUIREMENT_COUNT:]
+            == STAGED_REQUIREMENTS + V12_STAGED_REQUIREMENTS,
             "appended requirement projection tail",
         )
 
@@ -288,7 +305,7 @@ def requirement_authority() -> AuthorityContext:
     require(
         authority.get("baseline_requirement_count") == BASELINE_REQUIREMENT_COUNT
         and authority.get("preserved_prefix_count") == BASELINE_REQUIREMENT_COUNT
-        and authority.get("target_requirement_count") == TARGET_REQUIREMENT_COUNT,
+        and authority.get("target_requirement_count") == V10_TARGET_REQUIREMENT_COUNT,
         "v10 transition requirement counts changed",
     )
     appended = authority.get("appended_ids")
@@ -306,8 +323,9 @@ def requirement_authority() -> AuthorityContext:
     live = authority.get("live")
     require(isinstance(live, dict), "v10 live authority is missing")
     require(
-        live.get("requirements_sha256") == file_digest("spec/requirements.json"),
-        "v10 live requirement hash mismatch",
+        live.get("requirements_sha256")
+        == git_file_digest(V12_BASELINE_CANDIDATE, "spec/requirements.json"),
+        "v10 historical live requirement hash mismatch",
     )
     if before_live:
         require(
@@ -669,13 +687,18 @@ def mutation_self_test(
             continue
         raise AssertionError(f"ADR mutation survived: {name}")
 
-    future = authority.live_identifiers[:BASELINE_REQUIREMENT_COUNT] + STAGED_REQUIREMENTS
+    future = (
+        authority.live_identifiers[:BASELINE_REQUIREMENT_COUNT]
+        + STAGED_REQUIREMENTS
+        + V12_STAGED_REQUIREMENTS
+    )
     registry_mutations = (
         (
             "future_reordered_registry",
-            future[:BASELINE_REQUIREMENT_COUNT] + tuple(reversed(STAGED_REQUIREMENTS)),
+            future[:BASELINE_REQUIREMENT_COUNT]
+            + tuple(reversed(STAGED_REQUIREMENTS + V12_STAGED_REQUIREMENTS)),
         ),
-        ("future_149_registry", future + ("NCRDT-UNREVIEWED-001",)),
+        ("future_157_registry", future + ("NCRDT-UNREVIEWED-001",)),
     )
     for name, identifiers in registry_mutations:
         try:

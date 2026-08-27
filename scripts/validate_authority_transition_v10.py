@@ -21,6 +21,7 @@ BASE_MANIFEST_CANDIDATE = "50bd3e4bef99a29e0d536b3fe8efd072835ce8fc"
 V10_MANIFEST_PATH = "fixtures/distribution/manifest_v10.json"
 V10_MANIFEST_CANDIDATE = "20b786c5c3ff143786aaaca56ad19bd26739b67b"
 V10_MANIFEST_SHA256 = "86ec32f34dd99ef0c1e5ea3531360a1f78bf07d62818375096e0bdf0f209b8e5"
+V12_REQUIREMENTS_BASELINE_CANDIDATE = "4a5abe6f0bff2dbe147d9805f4cd3de844874ab6"
 
 STAGES = (
     "transition_installed",
@@ -457,6 +458,30 @@ def load_baseline_candidate_object(relative: str) -> dict[str, Any]:
 
 def baseline_candidate_digest(relative: str) -> str:
     return hashlib.sha256(baseline_candidate_bytes(relative)).hexdigest()
+
+
+def candidate_bytes(candidate: str, relative: str) -> bytes:
+    """Read one immutable historical public file."""
+
+    result = subprocess.run(
+        ("git", "show", f"{candidate}:{relative}"),
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+    )
+    require(result.returncode == 0 and result.stderr == b"", f"candidate_git:{relative}")
+    return result.stdout
+
+
+def candidate_object(candidate: str, relative: str) -> dict[str, Any]:
+    """Decode one immutable historical JSON object."""
+
+    try:
+        value = json.loads(candidate_bytes(candidate, relative))
+    except json.JSONDecodeError as error:
+        raise TransitionError(f"candidate_json:{relative}") from error
+    require(isinstance(value, dict), f"candidate_object:{relative}")
+    return value
 
 
 def v10_manifest_bytes() -> bytes:
@@ -1044,8 +1069,11 @@ def validate_requirements(state: dict[str, Any], stage: str) -> None:
     require(authority.get("target_requirement_count") == 152, "target_requirement_count")
     require(authority.get("appended_ids") == list(APPENDED_REQUIREMENTS), "appended_ids")
 
-    registry = load_object("spec/requirements.json")
-    applicability = load_object("spec/requirements_applicability.json")
+    registry = candidate_object(V12_REQUIREMENTS_BASELINE_CANDIDATE, "spec/requirements.json")
+    applicability = candidate_object(
+        V12_REQUIREMENTS_BASELINE_CANDIDATE,
+        "spec/requirements_applicability.json",
+    )
     expected_count = 152 if stage == "distribution_complete" else STAGE_COUNTS[stage][0]
     baseline_rows = load_object("reports/requirements_coverage_v9.json").get("rows")
     require(isinstance(baseline_rows, list), "baseline_evidence_rows")
@@ -1081,9 +1109,21 @@ def validate_requirements(state: dict[str, Any], stage: str) -> None:
         set(live) == {"requirements_sha256", "applicability_sha256", "companion_sha256"},
         "live_authority_keys",
     )
-    require(live.get("requirements_sha256") == digest("spec/requirements.json"), "live_requirements_hash")
     require(
-        live.get("applicability_sha256") == digest("spec/requirements_applicability.json"),
+        live.get("requirements_sha256")
+        == hashlib.sha256(
+            candidate_bytes(V12_REQUIREMENTS_BASELINE_CANDIDATE, "spec/requirements.json")
+        ).hexdigest(),
+        "live_requirements_hash",
+    )
+    require(
+        live.get("applicability_sha256")
+        == hashlib.sha256(
+            candidate_bytes(
+                V12_REQUIREMENTS_BASELINE_CANDIDATE,
+                "spec/requirements_applicability.json",
+            )
+        ).hexdigest(),
         "live_applicability_hash",
     )
     require(live.get("companion_sha256") == digest("spec/NOSTR_AUTOMERGE_V1_SPEC.md"), "live_companion_hash")
@@ -2718,8 +2758,11 @@ def mutation_self_test(state: dict[str, Any]) -> int:
     current_index = STAGES.index(current_stage)
     caught = 0
     if current_index >= STAGES.index("requirements_appended"):
-        registry = load_object("spec/requirements.json")
-        applicability = load_object("spec/requirements_applicability.json")
+        registry = candidate_object(V12_REQUIREMENTS_BASELINE_CANDIDATE, "spec/requirements.json")
+        applicability = candidate_object(
+            V12_REQUIREMENTS_BASELINE_CANDIDATE,
+            "spec/requirements_applicability.json",
+        )
         baseline_rows = load_object("reports/requirements_coverage_v9.json").get("rows")
         require(isinstance(baseline_rows, list), "mutation_baseline_evidence_rows")
         source_documents = {

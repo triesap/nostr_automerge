@@ -60,6 +60,39 @@ APPENDED_APPLICABILITY = (
     ("NCRDT-VERSION-003", "rust-and-typescript"),
     ("NCRDT-OWNERSHIP-001", "rust-only"),
 )
+V12_REQUIREMENTS = (
+    {
+        "id": "NCRDT-RESOURCE-017",
+        "section": "Metered authoritative epoch semantics",
+        "text": "Every authoritative epoch semantic check, including writer authorization, actor sequence validation, empty-change frontier validation, and candidate semantic projection, MUST charge and check cancellation immediately before each target-proportional read, comparison, allocation, insertion, or retained-history visit, or reuse an equivalent fully metered projection.",
+        "source": "spec/REPORT_CONTRACT.md",
+    },
+    {
+        "id": "NCRDT-RESOURCE-018",
+        "section": "Causal counter projection without rescans",
+        "text": "The accepted dependency-closure projection MUST expose the candidate actor expected sequence and the causal next-operation value without an unmetered rescan of the closure or actor-state map. Repeated history-sized scans during candidate validation are prohibited.",
+        "source": "spec/REPORT_CONTRACT.md",
+    },
+    {
+        "id": "NCRDT-RESOURCE-019",
+        "section": "Nonallocating metered epoch ancestry classification",
+        "text": "Ordinary epoch ancestry classification MUST be nonallocating or explicitly metered and cancellable. When only valid, pending, or invalid is needed, the runtime path MUST NOT construct diagnostic vectors proportional to missing or omitted history.",
+        "source": "spec/REPORT_CONTRACT.md",
+    },
+    {
+        "id": "NCRDT-EVIDENCE-007",
+        "section": "Complete runtime operation inventory",
+        "text": "A local code-complete claim MUST be backed by a closed runtime operation inventory that enumerates every target-sized helper reachable from the public evaluator and binds each family to exact source, a named executable proof, mutation coverage, candidate identity, command, and passing artifact. An omitted helper invalidates closure.",
+        "source": "spec/EVIDENCE_POLICY.md",
+    },
+)
+V12_APPLICABILITY = tuple(
+    (row["id"], "rust-and-typescript") for row in V12_REQUIREMENTS
+)
+V12_SOURCE_SHA256 = {
+    "spec/REPORT_CONTRACT.md": "636bd1ff32673a00dc0f41440bde61f2b0f8d86f853a7feaaf119de1ff2ce189",
+    "spec/EVIDENCE_POLICY.md": "43f99e4151b037682f2135d1f80e4e254fcc59d4097fc2032b7a8be519bd51fc",
+}
 
 
 class RegistryError(Exception):
@@ -86,20 +119,46 @@ def projection_sha256(value: object) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def validate_v11_append(
+def validate_append_chain(
     requirements: list[object], classifications: dict[str, object]
 ) -> None:
-    """Require the immutable 148-row prefix and four exact v11 additions."""
+    """Require immutable prefixes and the exact v11 and v12 additions."""
 
     if projection_sha256(requirements[:148]) != PRIOR_REQUIREMENTS_PREFIX_SHA256:
         raise AssertionError("requirements append-only prefix")
-    if tuple(requirements[148:]) != APPENDED_REQUIREMENTS:
+    if tuple(requirements[148:152]) != APPENDED_REQUIREMENTS:
         raise AssertionError("requirements exact v11 additions")
+    if tuple(requirements[152:]) != V12_REQUIREMENTS:
+        raise AssertionError("requirements exact v12 additions")
     items = list(classifications.items())
     if projection_sha256(items[:148]) != PRIOR_APPLICABILITY_PREFIX_SHA256:
         raise AssertionError("applicability append-only prefix")
-    if tuple(items[148:]) != APPENDED_APPLICABILITY:
+    if tuple(items[148:152]) != APPENDED_APPLICABILITY:
         raise AssertionError("applicability exact v11 additions")
+    if tuple(items[152:]) != V12_APPLICABILITY:
+        raise AssertionError("applicability exact v12 additions")
+
+
+def validate_v12_policy(policy: dict[str, Any]) -> None:
+    """Require the exact approved v12 evidence-policy requirement link."""
+
+    if policy.get("requirements") != [row["id"] for row in V12_REQUIREMENTS]:
+        raise AssertionError("v12 evidence policy requirements")
+
+
+def validate_v12_prose() -> None:
+    """Bind each v12 row to its normative prose and approved evidence policy."""
+
+    normative = (ROOT / "spec/NORMATIVE_REQUIREMENTS.md").read_text(encoding="utf-8")
+    for row in V12_REQUIREMENTS:
+        identifier = row["id"]
+        text = row["text"]
+        if normative.count(f"**{identifier}**") != 1 or text not in normative:
+            raise AssertionError(f"v12 normative prose:{identifier}")
+    for path, expected in V12_SOURCE_SHA256.items():
+        if hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != expected:
+            raise AssertionError(f"v12 source authority:{path}")
+    validate_v12_policy(load_json(ROOT / "spec/remediation_v12_evidence_policy.json"))
 
 
 def validate(
@@ -164,9 +223,9 @@ def main() -> int:
     if (
         properties.get("schema", {}).get("const")
         != "nostr_automerge.requirements.v6"
-        or properties.get("requirement_count", {}).get("enum") != [139, 148, 152]
+        or properties.get("requirement_count", {}).get("enum") != [139, 148, 152, 156]
         or properties.get("requirements", {}).get("minItems") != 139
-        or properties.get("requirements", {}).get("maxItems") != 152
+        or properties.get("requirements", {}).get("maxItems") != 156
     ):
         raise AssertionError("requirements schema transition counts")
     branches = schema.get("oneOf")
@@ -177,7 +236,12 @@ def main() -> int:
             count = branch_properties.get("requirement_count", {}).get("const")
             limits = branch_properties.get("requirements", {})
             branch_counts.append((count, limits.get("minItems"), limits.get("maxItems")))
-    if branch_counts != [(139, 139, 139), (148, 148, 148), (152, 152, 152)]:
+    if branch_counts != [
+        (139, 139, 139),
+        (148, 148, 148),
+        (152, 152, 152),
+        (156, 156, 156),
+    ]:
         raise AssertionError("requirements schema exact branches")
 
     transition = load_json(ROOT / "spec/authority_transition_v10.json")
@@ -185,7 +249,7 @@ def main() -> int:
     current_stage = transition.get("current_stage")
     if stages != list(TRANSITION_STAGES) or current_stage not in TRANSITION_STAGES:
         raise AssertionError("requirements transition stage")
-    expected_count = 152
+    expected_count = 156
 
     registry = load_json(ROOT / "spec/requirements.json")
     validate(registry, resolve_sources=True, expected_count=expected_count)
@@ -209,22 +273,27 @@ def main() -> int:
     classifications = applicability.get("classifications")
     if not isinstance(classifications, dict):
         raise AssertionError("applicability classifications")
-    validate_v11_append(requirements, classifications)
+    if applicability.get("reviewed") != "2026-08-27":
+        raise AssertionError("v12 applicability review date")
+    validate_append_chain(requirements, classifications)
+    validate_v12_prose()
 
     append_mutations: list[tuple[list[object], dict[str, object]]] = []
     for mutate in (
         lambda rows: rows.pop(),
-        lambda rows: rows.__setitem__(slice(148, None), reversed(rows[148:])),
-        lambda rows: rows[148].update(text="changed"),
-        lambda rows: rows.__setitem__(149, copy.deepcopy(rows[148])),
+        lambda rows: rows.append(copy.deepcopy(rows[-1]) | {"id": "NCRDT-UNREVIEWED-001"}),
+        lambda rows: rows.__setitem__(slice(152, None), reversed(rows[152:])),
+        lambda rows: rows[152].update(text="changed"),
+        lambda rows: rows[152].update(source="spec/EVIDENCE_POLICY.md"),
+        lambda rows: rows.__setitem__(153, copy.deepcopy(rows[152])),
         lambda rows: rows[0].update(section="changed"),
     ):
         candidate = copy.deepcopy(requirements)
         mutate(candidate)
         append_mutations.append((candidate, dict(classifications)))
     for mutate in (
-        lambda values: values.pop("NCRDT-OWNERSHIP-001"),
-        lambda values: values.update({"NCRDT-OWNERSHIP-001": "rust-and-typescript"}),
+        lambda values: values.pop("NCRDT-EVIDENCE-007"),
+        lambda values: values.update({"NCRDT-EVIDENCE-007": "rust-only"}),
         lambda values: values.__setitem__("NCRDT-SCOPE-001", "rust-only"),
     ):
         candidate = dict(classifications)
@@ -232,10 +301,43 @@ def main() -> int:
         append_mutations.append((copy.deepcopy(requirements), candidate))
     for candidate_requirements, candidate_classifications in append_mutations:
         try:
-            validate_v11_append(candidate_requirements, candidate_classifications)
+            validate_append_chain(candidate_requirements, candidate_classifications)
         except AssertionError:
             continue
-        raise AssertionError("v11 append mutation unexpectedly passed")
+        raise AssertionError("v12 append mutation unexpectedly passed")
+
+    count_mutations = []
+    wrong_declared = copy.deepcopy(registry)
+    wrong_declared["requirement_count"] = 155
+    count_mutations.append(wrong_declared)
+    missing_with_stale_count = copy.deepcopy(registry)
+    missing_with_stale_count["requirements"].pop()
+    count_mutations.append(missing_with_stale_count)
+    for candidate in count_mutations:
+        try:
+            validate(candidate, resolve_sources=True, expected_count=156)
+        except RegistryError as error:
+            if error.code == "requirement_count_mismatch":
+                continue
+            raise AssertionError("v12 count mutation wrong diagnostic") from error
+        raise AssertionError("v12 count mutation unexpectedly passed")
+
+    policy = load_json(ROOT / "spec/remediation_v12_evidence_policy.json")
+    policy_mutations = []
+    for requirements in (
+        policy["requirements"][:-1],
+        list(reversed(policy["requirements"])),
+        [*policy["requirements"], "NCRDT-UNREVIEWED-001"],
+    ):
+        candidate = copy.deepcopy(policy)
+        candidate["requirements"] = requirements
+        policy_mutations.append(candidate)
+    for candidate in policy_mutations:
+        try:
+            validate_v12_policy(candidate)
+        except AssertionError:
+            continue
+        raise AssertionError("v12 evidence-policy mutation unexpectedly passed")
 
     fixtures = sorted((ROOT / "tools/validation/fixtures").glob("requirements_*.json"))
     for path in fixtures:
@@ -257,7 +359,10 @@ def main() -> int:
     print("PASS: normative requirements registry")
     print(f"- requirements={registry['requirement_count']}")
     print(f"- negative_fixtures={len(fixtures)}")
-    print(f"- append_negative_mutations={len(append_mutations)}")
+    print(
+        "- append_negative_mutations="
+        f"{len(append_mutations) + len(count_mutations) + len(policy_mutations)}"
+    )
     print("- source_references=pass")
     return 0
 

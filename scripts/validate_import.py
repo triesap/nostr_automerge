@@ -29,6 +29,9 @@ TRANSITION_STAGES = (
 )
 POST_IMPORT_STAGE = TRANSITION_STAGES.index("companion_authority_installed")
 REQUIREMENTS_STAGE = TRANSITION_STAGES.index("requirements_appended")
+V10_REQUIREMENTS_SHA256 = "840822a1acf171c887b9a9aba79ddf159ffcd9c5d7a74bd74d7e0bac5c6161f4"
+V12_REQUIREMENTS_SHA256 = "a8926ae4610b4855294f769871e87a14dee73d05ed201419de35711a8a781974"
+V12_NORMATIVE_REQUIREMENTS_SHA256 = "09f4aa58af12b03335d14cd27bd65346f6ce8f6bc8283ab45bd9b684640ebcc0"
 AUTHORIZED_POST_IMPORT_COMPANION_DELTAS = {
     "spec/API_CONTRACTS.md",
     "spec/CHECKPOINT_PROFILE.md",
@@ -88,7 +91,9 @@ def validate_post_import_requirements_delta(
         or transition_authority.get("baseline_requirements_sha256")
         != imported_target_sha256
         or not isinstance(transition_authority.get("live"), dict)
-        or transition_authority["live"].get("requirements_sha256") != actual_sha256
+        or transition_authority["live"].get("requirements_sha256")
+        != V10_REQUIREMENTS_SHA256
+        or actual_sha256 != V12_REQUIREMENTS_SHA256
     ):
         fail("unbound post-import requirements delta")
 
@@ -233,6 +238,12 @@ def validate_adaptation() -> list[str]:
                     imported_target,
                     actual,
                 )
+            elif (
+                requirements_appended
+                and relative == "spec/NORMATIVE_REQUIREMENTS.md"
+                and actual == V12_NORMATIVE_REQUIREMENTS_SHA256
+            ):
+                pass
             else:
                 fail(f"target digest mismatch: {relative}")
             permitted_deltas.add(relative)

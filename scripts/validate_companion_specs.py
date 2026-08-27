@@ -86,6 +86,9 @@ V11_LIVE_HASHES = {
     "spec/ARCHITECTURE.md": "5c01f373a939ed3b9f4d11a5b19988cec1abd65a61f61313bc37160acf41f878",
     "spec/SECURITY.md": "3010e3a8bd4597141f2926e3c16d64fb0623e6e5d6ea517ad9815ab7639ce056",
 }
+V12_LIVE_HASHES = {
+    "spec/NORMATIVE_REQUIREMENTS.md": "09f4aa58af12b03335d14cd27bd65346f6ce8f6bc8283ab45bd9b684640ebcc0",
+}
 HEADING_BINDINGS = {
     "spec/CHECKPOINT_PROFILE.md": (
         "Checkpoint control resolution precedence",
@@ -466,6 +469,8 @@ def main() -> int:
         expected = (
             NIP_SHA256
             if relative == "spec/NIP_DRAFT.md" and post_import
+            else V12_LIVE_HASHES[relative]
+            if relative in V12_LIVE_HASHES and post_import
             else V11_LIVE_HASHES[relative]
             if relative in V11_LIVE_HASHES and post_import
             else authorized[relative]["live_sha256"]

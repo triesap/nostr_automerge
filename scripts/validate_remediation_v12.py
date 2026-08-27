@@ -24,6 +24,7 @@ PLAN_CANDIDATE = "d1b9202be6bf9deb643ca7d81f89c5c3281eb523"
 PLAN_TREE = "739068407a059b071655cc63bcf1b570285fbaf7"
 PLAN_PATH = "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v12.md"
 PLAN_SHA256 = "aa8ea9bc6801175dd247dd283521a4ad8f0735eafcd280151a842c37418e5585"
+REQUIREMENTS_BASELINE_CANDIDATE = "4a5abe6f0bff2dbe147d9805f4cd3de844874ab6"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -36,11 +37,17 @@ HOLDS = [
 ACTIVE_SCOPE = [
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
-    "reports/remediation_v12_authority_gate.json",
     "reports/spec_baseline.txt",
+    "scripts/validate_adrs.py",
+    "scripts/validate_authority_transition_v10.py",
+    "scripts/validate_companion_specs.py",
+    "scripts/validate_import.py",
     "scripts/validate_remediation_v12.py",
-    "scripts/validate_spec.py",
-    "tools/validation/remediation_v12_authority_gate.schema.json",
+    "scripts/validate_requirements.py",
+    "spec/NORMATIVE_REQUIREMENTS.md",
+    "spec/requirements.json",
+    "spec/requirements_applicability.json",
+    "tools/validation/requirements_schema.json",
 ]
 
 EVIDENCE_REQUIREMENTS = [
@@ -168,13 +175,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 109, "active_step": "step_1371", "next_step": "step_1372", "last_planned_step": "step_1419", "remaining_checkpoint_count": 48, "remaining_rcld_count": 7}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 110, "active_step": "step_1372", "next_step": "step_1373", "last_planned_step": "step_1419", "remaining_checkpoint_count": 47, "remaining_rcld_count": 6}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
-    require_equal(record["requirements"], [], "ledger:requirements")
+    require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 9:
+    if not isinstance(predecessors, list) or len(predecessors) != 10:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -185,6 +192,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[6], {"step": "step_1368", "candidate": "bb8b8fd4560eaf141ff599ed440edeb68c30a33f", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1368")
     require_equal(predecessors[7], {"step": "step_1369", "candidate": "4819b9ae58650f8b5decfb19e0f8d895dc47c7d2", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1369")
     require_equal(predecessors[8], {"step": "step_1370", "candidate": "670e300c4cb029ce8b67468c6009b756ea703002", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1370")
+    require_equal(predecessors[9], {"step": "step_1371", "candidate": REQUIREMENTS_BASELINE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1371")
 
 
 def validate_reproductions(reproductions: object) -> None:
@@ -320,7 +328,7 @@ def validate_files() -> None:
     require_equal(git("rev-parse", f"{PLAN_CANDIDATE}^{{tree}}"), PLAN_TREE, "git:plan_tree")
     require_equal(sha256(ROOT / PLAN_PATH), PLAN_SHA256, "file:plan")
     require_equal(sha256(ROOT / "spec/NIP_DRAFT.md"), "8262bf32cb70b7c0e46210441120652e52504fb73839641ac19dddfed840acf8", "file:nip")
-    require_equal(sha256(ROOT / "spec/requirements.json"), "840822a1acf171c887b9a9aba79ddf159ffcd9c5d7a74bd74d7e0bac5c6161f4", "file:requirements")
+    require_equal(git_file_sha(REQUIREMENTS_BASELINE_CANDIDATE, "spec/requirements.json"), "840822a1acf171c887b9a9aba79ddf159ffcd9c5d7a74bd74d7e0bac5c6161f4", "file:historical_requirements")
     require_equal(sha256(ROOT / "spec/REPORT_CONTRACT.md"), "636bd1ff32673a00dc0f41440bde61f2b0f8d86f853a7feaaf119de1ff2ce189", "file:report_contract")
     instructions = (ROOT / "AGENTS.md").read_text()
     if "nostr_automerge_v1_multi_rcld_v12.md" not in instructions or "RCLDs 109 through 115" not in instructions:
@@ -353,9 +361,10 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1373"),
+        ("cursor", "next_step", "step_1374"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
+        ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
     ):
         changed = copy.deepcopy(ledger)
         if field == "next_step":
@@ -473,7 +482,7 @@ def main() -> None:
     mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
-    print("- active=RCLD109/step_1371")
+    print("- active=RCLD110/step_1372")
 
 
 if __name__ == "__main__":

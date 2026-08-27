@@ -1,7 +1,7 @@
 {
   "schema": "nostr_automerge.requirements.v6",
   "project": "nostr_automerge_v1_spec",
-  "requirement_count": 152,
+  "requirement_count": 156,
   "requirements": [
     {
       "id": "NCRDT-SCOPE-001",
@@ -914,6 +914,30 @@
       "section": "Bounded destruction of persistent histories",
       "text": "Persistent control-ancestry and branch-state ownership used by the reference implementation MUST be destructible with bounded stack usage at qualified history depth; recursive teardown proportional to retained history is not permitted.",
       "source": "spec/ARCHITECTURE.md"
+    },
+    {
+      "id": "NCRDT-RESOURCE-017",
+      "section": "Metered authoritative epoch semantics",
+      "text": "Every authoritative epoch semantic check, including writer authorization, actor sequence validation, empty-change frontier validation, and candidate semantic projection, MUST charge and check cancellation immediately before each target-proportional read, comparison, allocation, insertion, or retained-history visit, or reuse an equivalent fully metered projection.",
+      "source": "spec/REPORT_CONTRACT.md"
+    },
+    {
+      "id": "NCRDT-RESOURCE-018",
+      "section": "Causal counter projection without rescans",
+      "text": "The accepted dependency-closure projection MUST expose the candidate actor expected sequence and the causal next-operation value without an unmetered rescan of the closure or actor-state map. Repeated history-sized scans during candidate validation are prohibited.",
+      "source": "spec/REPORT_CONTRACT.md"
+    },
+    {
+      "id": "NCRDT-RESOURCE-019",
+      "section": "Nonallocating metered epoch ancestry classification",
+      "text": "Ordinary epoch ancestry classification MUST be nonallocating or explicitly metered and cancellable. When only valid, pending, or invalid is needed, the runtime path MUST NOT construct diagnostic vectors proportional to missing or omitted history.",
+      "source": "spec/REPORT_CONTRACT.md"
+    },
+    {
+      "id": "NCRDT-EVIDENCE-007",
+      "section": "Complete runtime operation inventory",
+      "text": "A local code-complete claim MUST be backed by a closed runtime operation inventory that enumerates every target-sized helper reachable from the public evaluator and binds each family to exact source, a named executable proof, mutation coverage, candidate identity, command, and passing artifact. An omitted helper invalidates closure.",
+      "source": "spec/EVIDENCE_POLICY.md"
     }
   ]
 }

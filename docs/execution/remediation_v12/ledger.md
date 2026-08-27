@@ -54,3 +54,11 @@ gate binds the exact eight-candidate plan and checkpoint chain, ten open
 reproductions, 22 authority/policy mutations, 15 ADR mutations, 15
 reproduction-harness mutations, frozen evidence-policy identities, and all
 external holds. RCLD 110 begins at `step_1372`.
+
+`step_1372` atomically appends `NCRDT-RESOURCE-017`,
+`NCRDT-RESOURCE-018`, `NCRDT-RESOURCE-019`, and `NCRDT-EVIDENCE-007` as
+requirements 153 through 156. Their exact prose, source authority,
+applicability, evidence-policy linkage, schema cardinality, order, and
+append-only history are fail-closed. The v10 152-row authority remains an
+immutable historical projection rather than being silently rebound to the
+current registry.
