@@ -375,3 +375,10 @@ laws. Every operation names one enabled exact test or validator, while missing,
 extra, duplicate, reordered, stale-identity, fixture, stop-law, and open-schema
 mutations fail closed. The exact proof lane executes thirty-six named tests and
 validators without accepting a broad command as substitute evidence.
+
+`step_1414` applies twelve selected source mutations across actor, counter,
+frontier, ancestry, authorization, dependency closure, scheduling, quarantine,
+publication, report, validator, and evidence boundaries. Every mutation is
+bound to the exact source hash and removes its reviewed semantic anchor; all
+twelve are caught, zero survive, and twelve deliberate harness mutations also
+fail closed.

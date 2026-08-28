@@ -90,6 +90,7 @@ VALIDATORS = [
     "validate_distribution_v13_parity.py",
     "validate_remediation_v12_operation_inventory.py",
     "validate_remediation_v12_proof_catalog.py",
+    "validate_remediation_v12_mutation_qualification.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",
@@ -257,6 +258,7 @@ def controlled_files() -> list[pathlib.Path]:
             "reports/opaque_compatibility_v13.json",
             "reports/remediation_v12_operation_inventory.json",
             "reports/remediation_v12_proof_catalog.json",
+            "reports/remediation_v12_mutation_qualification.json",
             "fixtures/distribution/manifest_v12.json",
             "fixtures/distribution/manifest_v13.json",
             "fixtures/distribution/manifest_v13.lock.json",
@@ -284,6 +286,7 @@ def controlled_files() -> list[pathlib.Path]:
             "tools/validation/distribution_v13_parity.schema.json",
             "tools/validation/remediation_v12_operation_inventory.schema.json",
             "tools/validation/remediation_v12_proof_catalog.schema.json",
+            "tools/validation/remediation_v12_mutation_qualification.schema.json",
             "scripts/generate_semantic_proof_catalog_final_v10.py",
             "scripts/reproduce_remediation_v11.py",
             "scripts/reproduce_remediation_v12.py",

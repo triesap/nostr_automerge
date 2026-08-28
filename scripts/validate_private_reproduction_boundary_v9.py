@@ -115,6 +115,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/remediation_v12_operation_inventory.schema.json",
     "reports/remediation_v12_proof_catalog.json",
     "tools/validation/remediation_v12_proof_catalog.schema.json",
+    "reports/remediation_v12_mutation_qualification.json",
+    "tools/validation/remediation_v12_mutation_qualification.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -217,6 +219,7 @@ PYTHON_SURFACES = (
     "scripts/validate_distribution_v13_parity.py",
     "scripts/validate_remediation_v12_operation_inventory.py",
     "scripts/validate_remediation_v12_proof_catalog.py",
+    "scripts/validate_remediation_v12_mutation_qualification.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -372,6 +375,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/opaque_compatibility_v13.json",
         "reports/remediation_v12_operation_inventory.json",
         "reports/remediation_v12_proof_catalog.json",
+        "reports/remediation_v12_mutation_qualification.json",
         "fixtures/distribution/manifest_v13.json",
         "fixtures/distribution/manifest_v13.lock.json",
         "fixtures/v13/scenarios/epoch_semantics",
@@ -449,6 +453,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_distribution_v13_parity.py",
         "scripts/validate_remediation_v12_operation_inventory.py",
         "scripts/validate_remediation_v12_proof_catalog.py",
+        "scripts/validate_remediation_v12_mutation_qualification.py",
         "scripts/validate_opaque_conformance_v10.py",
         "scripts/validate_signed_conformance_gate_v10.py",
         "scripts/validate_semantic_proof_catalog_v10.py",
@@ -574,6 +579,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/validation/distribution_v13_parity.schema.json",
         "tools/validation/remediation_v12_operation_inventory.schema.json",
         "tools/validation/remediation_v12_proof_catalog.schema.json",
+        "tools/validation/remediation_v12_mutation_qualification.schema.json",
         "tools/validation/opaque_conformance_v10.schema.json",
         "tools/validation/signed_conformance_gate_v10.schema.json",
         "tools/validation/semantic_proof_catalog_v10.schema.json",

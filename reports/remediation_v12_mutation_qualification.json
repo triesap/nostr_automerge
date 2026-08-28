@@ -1,0 +1,21 @@
+{
+  "schema":"nostr_automerge.remediation_v12_mutation_qualification.v1",
+  "status":"pass",
+  "candidate":"07549bdbf8c7df7dfd2d824fc7e8005600c3c438",
+  "mutations":[
+    {"id":"actor","path":"crates/nostr_automerge/src/graph/actor_state.rs","anchor":"initialize_actor_states_metered","source_sha256":"b33733c9c84a7b7a6247967172a562c2c3f0da68a64514a50b27b715127c8290","survived":false},
+    {"id":"counter","path":"crates/nostr_automerge/src/graph/actor_state.rs","anchor":"candidate_semantics_decision_metered_observed","source_sha256":"b33733c9c84a7b7a6247967172a562c2c3f0da68a64514a50b27b715127c8290","survived":false},
+    {"id":"frontier","path":"crates/nostr_automerge/src/graph/actor_state.rs","anchor":"empty_frontier_decision_metered_observed","source_sha256":"b33733c9c84a7b7a6247967172a562c2c3f0da68a64514a50b27b715127c8290","survived":false},
+    {"id":"ancestry","path":"crates/nostr_automerge/src/graph/epoch.rs","anchor":"classify_epoch_ancestry_metered","source_sha256":"10d9b2a5869f6f1fde91ae090c4ad1295137b95f13d316237b2f7d2a4085fb6b","survived":false},
+    {"id":"authorization","path":"crates/nostr_automerge/src/control/authorize.rs","anchor":"any_control_member_metered","source_sha256":"9da039016ab9305e2aa2784cf847d942c21dfa2664af3671941af77788d13e9d","survived":false},
+    {"id":"closure","path":"crates/nostr_automerge/src/graph/closure.rs","anchor":"candidate_dependency_closure","source_sha256":"d185e6636179304142bd0119ce413cea74d3e87ae79c6ad919216a897d868320","survived":false},
+    {"id":"scheduler","path":"crates/nostr_automerge/src/graph/schedule.rs","anchor":"schedule_candidates","source_sha256":"0f06063ecd2cb62371784054ca035cb9b0a9ca0f6402a975deb3851c95dc8a62","survived":false},
+    {"id":"quarantine","path":"crates/nostr_automerge/src/graph/equivocation.rs","anchor":"quarantine_equivocation_descendants","source_sha256":"38a4a9c0ab867531a36df7be5ee0d296bf5e0fab5d5c7d4eb04219b4fd04fd7b","survived":false},
+    {"id":"publication","path":"crates/nostr_automerge/src/reference/epoch_engine.rs","anchor":"publish_epoch_result_metered","source_sha256":"31ae4b474737015d4734977bd01880d1258d149e6735b1a43341849932ca07d1","survived":false},
+    {"id":"report","path":"crates/nostr_automerge/src/engine/evaluation_report.rs","anchor":"from_complete_parts","source_sha256":"d54dff4dce0be14442784aa70c90fe07f2315d072e102275ceb44156050b8dcc","survived":false},
+    {"id":"validator","path":"scripts/validate_remediation_v12_proof_catalog.py","anchor":"def validate(","source_sha256":"6a3363fe711487a28773e367e3a07a2eab19a09eade5001c2eef193decc99758","survived":false},
+    {"id":"evidence","path":"scripts/validate_distribution_v13_parity.py","anchor":"def validate(","source_sha256":"7932357f6afc71bfb730c6d5b5824ade27ab24c80705c4fd5e148bea8d527443","survived":false}
+  ],
+  "counts":{"selected":12,"caught":12,"survivors":0,"harness_self_mutations":12},
+  "result":"pass"
+}
