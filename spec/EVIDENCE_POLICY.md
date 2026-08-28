@@ -2,7 +2,7 @@
 
 ## Status
 
-Approved staged policy for remediation v12. This policy governs local evidence
+Approved active policy for the causal-projection remediation. This policy governs local evidence
 claims only and does not authorize release, publication, NIP submission,
 event-kind allocation, deployment, remote mutation, production qualification,
 or external assurance.
@@ -15,7 +15,7 @@ ordered requirements, 204 ordered signed scenarios, two independent executions
 per implementation, and eight delivery orders. Canonical report bytes must be
 identical and deliberate mismatch detection must pass.
 
-Findings 100 and 101 require exact proof IDs and a complete runtime-operation
+Findings 104 through 112 require exact proof IDs and a complete runtime-operation
 inventory. Every operation row must contain, in order, `id`, `family`,
 `source_path`, `source_symbol`, `owner_mode`, `requirements`, `test`, `command`,
 `candidate`, `artifact_sha256`, and `mutation`. Owner mode is exactly one of
@@ -30,7 +30,7 @@ stale, coordinated-rehashed, or unapproved rows fail closed.
 ## Approved roots
 
 Public evidence may be committed only under `docs/adr`,
-`docs/execution/remediation_v12`, `implementation`, `reports`, `scripts`,
+`docs/execution/remediation_v13`, `implementation`, `reports`, `scripts`,
 `spec`, `tests`, and `tools/validation`. Signed scenario inputs and expected
 reports remain under the repository-owned `fixtures` tree. Opaque compatibility
 records may carry hashes, counts, generic result classes, and candidate

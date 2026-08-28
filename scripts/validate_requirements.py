@@ -90,8 +90,8 @@ V12_APPLICABILITY = tuple(
     (row["id"], "rust-and-typescript") for row in V12_REQUIREMENTS
 )
 V12_SOURCE_SHA256 = {
-    "spec/REPORT_CONTRACT.md": "636bd1ff32673a00dc0f41440bde61f2b0f8d86f853a7feaaf119de1ff2ce189",
-    "spec/EVIDENCE_POLICY.md": "43f99e4151b037682f2135d1f80e4e254fcc59d4097fc2032b7a8be519bd51fc",
+    "spec/REPORT_CONTRACT.md": "0135f6a484388e95ac4f6fe6f8ff4ea7690c58deadcee5818257e9483c9335cf",
+    "spec/EVIDENCE_POLICY.md": "e85d423580f1959a7bbe54f6222dd8dd552300f99223f2b138c600902385d545",
 }
 
 
@@ -158,7 +158,7 @@ def validate_v12_prose() -> None:
     for path, expected in V12_SOURCE_SHA256.items():
         if hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != expected:
             raise AssertionError(f"v12 source authority:{path}")
-    validate_v12_policy(load_json(ROOT / "spec/remediation_v12_evidence_policy.json"))
+    validate_v12_policy(load_json(ROOT / "spec/remediation_v13_evidence_policy.json"))
 
 
 def validate(

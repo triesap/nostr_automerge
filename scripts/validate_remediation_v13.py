@@ -14,9 +14,12 @@ FINDINGS = ROOT / "spec/remediation_findings_v13.json"
 LEDGER = ROOT / "implementation/runtime_ledger_v13.json"
 SCHEMA = ROOT / "tools/validation/runtime_ledger_v13.schema.json"
 PLAN = ROOT / "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v13.md"
+EVIDENCE_POLICY = ROOT / "spec/remediation_v13_evidence_policy.json"
+EVIDENCE_SCHEMA = ROOT / "tools/validation/remediation_v13_evidence_policy.schema.json"
 HOLDS = ["external_assurance","event_kind_allocation","nip_submission","production_qualification","publication","release","remote_mutation"]
 OPEN = [f"FINDING_{value:03d}" for value in range(104, 113)]
-SCOPE = ["AGENTS.md","docs/execution/rcl/nostr_automerge_v1_multi_rcld_v13.md","docs/execution/remediation_v13/baseline.md","docs/execution/remediation_v13/ledger.md","implementation/runtime_ledger_v13.json","reports/spec_baseline.txt","scripts/validate_remediation_v13.py","scripts/validate_spec.py","spec/remediation_findings_v13.json","spec/remediation_v13_authority.json","tools/nostr_automerge_xtask/src/validate.rs","tools/validation/runtime_ledger_v13.schema.json"]
+SCOPE = ["docs/execution/remediation_v13/ledger.md","implementation/runtime_ledger_v13.json","reports/spec_baseline.txt","scripts/validate_companion_specs.py","scripts/validate_remediation_v13.py","scripts/validate_requirements.py","scripts/validate_spec.py","spec/EVIDENCE_POLICY.md","spec/REPORT_CONTRACT.md","spec/companion_authority_v10.json","spec/remediation_v13_authority.json","spec/remediation_v13_evidence_policy.json","tools/validation/remediation_v13_evidence_policy.schema.json"]
+ROW_FIELDS = ["id","family","source_path","source_symbol","owner_mode","requirements","test","command","candidate","artifact_sha256","mutation"]
 
 class EvidenceError(RuntimeError):
     pass
@@ -32,7 +35,7 @@ def keys(value: object, expected: list[str], label: str) -> dict[str, object]:
 def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
-def validate(authority: object, findings: object, ledger: object, schema: object) -> None:
+def validate(authority: object, findings: object, ledger: object, schema: object, evidence: object, evidence_schema: object) -> None:
     a = keys(authority,["schema","status","reviewed_public","governing_plan","historical_v12","active_sequence","frozen_sha256","holds","result"],"authority")
     require(a["schema"] == "nostr_automerge.remediation_v13_authority.v1" and a["status"] == "approved_active" and a["result"] == "pass", "authority:state")
     require(a["reviewed_public"] == {"candidate":"00ef954ff2dece37119ad235638046ffaa7305d4","tree":"c248fd7415447900cf76f3d26977317b86816bca"}, "authority:reviewed")
@@ -43,7 +46,7 @@ def validate(authority: object, findings: object, ledger: object, schema: object
     require(a["holds"] == HOLDS, "authority:holds")
     require(sha(ROOT / "spec/NIP_DRAFT.md") == a["frozen_sha256"]["nip"], "authority:nip")
     require(sha(ROOT / "spec/requirements.json") == a["frozen_sha256"]["requirements"], "authority:requirements")
-    require(sha(ROOT / "spec/REPORT_CONTRACT.md") == a["frozen_sha256"]["report_contract"], "authority:report_contract")
+    require(sha(ROOT / "spec/REPORT_CONTRACT.md") == a["frozen_sha256"]["report_contract"] == "0135f6a484388e95ac4f6fe6f8ff4ea7690c58deadcee5818257e9483c9335cf", "authority:report_contract")
     f = keys(findings,["schema","status","findings","result"],"findings")
     require(f["schema"] == "nostr_automerge.remediation_findings.v13.v1" and f["status"] == "correction_active" and f["result"] == "pass", "findings:state")
     require(type(f["findings"]) is list and [row["id"] for row in f["findings"]] == OPEN + ["FINDING_080"], "findings:order")
@@ -51,14 +54,28 @@ def validate(authority: object, findings: object, ledger: object, schema: object
     l = keys(ledger,["schema","status","authority","cursor","findings","active_checkpoint_scope","predecessors"],"ledger")
     require(l["schema"] == "nostr_automerge.runtime_ledger.v13.v1" and l["status"] == "correction_active", "ledger:state")
     require(l["authority"] == "spec/remediation_v13_authority.json", "ledger:authority")
-    require(l["cursor"] == {"active_rcld":116,"active_step":"step_1420","next_step":"step_1421","last_planned_step":"step_1452","remaining_checkpoint_count":33,"remaining_rcld_count":5}, "ledger:cursor")
+    require(l["cursor"] == {"active_rcld":116,"active_step":"step_1421","next_step":"step_1422","last_planned_step":"step_1452","remaining_checkpoint_count":32,"remaining_rcld_count":5}, "ledger:cursor")
     require(l["findings"] == {"open":OPEN,"held":["FINDING_080"]}, "ledger:findings")
     require(l["active_checkpoint_scope"] == SCOPE, "ledger:scope")
-    require(l["predecessors"] == [{"step":"step_1419","candidate":"00ef954ff2dece37119ad235638046ffaa7305d4","owner_class":"public","result":"pass"}], "ledger:predecessor")
+    require(l["predecessors"] == [{"step":"step_1419","candidate":"00ef954ff2dece37119ad235638046ffaa7305d4","owner_class":"public","result":"pass"},{"step":"step_1420","candidate":"6bbc29b5fa1a0e88cf5f61d9b751181f913c928b","owner_class":"public","result":"pass"}], "ledger:predecessor")
     require(type(schema) is dict and schema.get("additionalProperties") is False and schema.get("required") == ["schema","status","authority","cursor","findings","active_checkpoint_scope","predecessors"], "schema")
     require("nostr_automerge_v1_multi_rcld_v13.md" in (ROOT / "AGENTS.md").read_text(), "instructions:plan")
+    e = keys(evidence,["schema","status","authority","policy","requirements","owner_modes","required_row_fields","approved_roots","opaque_allowed_fields","opaque_prohibited_fields","result"],"evidence")
+    require(e["schema"] == "nostr_automerge.remediation_v13_evidence_policy.v1" and e["status"] == "approved_active" and e["result"] == "pass", "evidence:state")
+    require(e["policy"] == {"path":"spec/EVIDENCE_POLICY.md","sha256":"e85d423580f1959a7bbe54f6222dd8dd552300f99223f2b138c600902385d545"} and sha(ROOT / e["policy"]["path"]) == e["policy"]["sha256"], "evidence:policy")
+    require(e["requirements"] == ["NCRDT-RESOURCE-017","NCRDT-RESOURCE-018","NCRDT-RESOURCE-019","NCRDT-EVIDENCE-007"], "evidence:requirements")
+    require(e["owner_modes"] == ["item_metered","exact_reserved","sealed_constant_time"] and e["required_row_fields"] == ROW_FIELDS, "evidence:rows")
+    require(type(evidence_schema) is dict and evidence_schema.get("additionalProperties") is False and evidence_schema.get("required") == ["schema","status","authority","policy","requirements","owner_modes","required_row_fields","approved_roots","opaque_allowed_fields","opaque_prohibited_fields","result"], "evidence:schema")
+    requirements = json.loads((ROOT / "spec/requirements.json").read_text())["requirements"]
+    normative = (ROOT / "spec/NORMATIVE_REQUIREMENTS.md").read_text()
+    report = (ROOT / "spec/REPORT_CONTRACT.md").read_text()
+    applicability = json.loads((ROOT / "spec/requirements_applicability.json").read_text())["classifications"]
+    for requirement in e["requirements"][:3]:
+        row = next((item for item in requirements if item["id"] == requirement), None)
+        require(row is not None and row["source"] == "spec/REPORT_CONTRACT.md", "provenance:registry:" + requirement)
+        require(requirement in normative and requirement in report and applicability[requirement] == "rust-and-typescript", "provenance:surfaces:" + requirement)
 
-def self_test(authority: dict, findings: dict, ledger: dict, schema: dict) -> int:
+def self_test(authority: dict, findings: dict, ledger: dict, schema: dict, evidence: dict, evidence_schema: dict) -> int:
     cases = []
     for label, target, mutate in [
         ("wrong_candidate","authority",lambda value: value["reviewed_public"].update(candidate="0"*40)),
@@ -67,17 +84,21 @@ def self_test(authority: dict, findings: dict, ledger: dict, schema: dict) -> in
         ("sequence","authority",lambda value: value["active_sequence"].update(step_count=32)),
         ("finding_order","findings",lambda value: value["findings"].reverse()),
         ("premature_close","findings",lambda value: value["findings"][0].update(status="closed")),
-        ("cursor","ledger",lambda value: value["cursor"].update(active_step="step_1421")),
+        ("cursor","ledger",lambda value: value["cursor"].update(active_step="step_1420")),
         ("scope","ledger",lambda value: value["active_checkpoint_scope"].pop()),
         ("predecessor","ledger",lambda value: value["predecessors"][0].update(candidate="0"*40)),
         ("open_schema","schema",lambda value: value.update(additionalProperties=True)),
+        ("row_order","evidence",lambda value: value["required_row_fields"].reverse()),
+        ("row_missing","evidence",lambda value: value["required_row_fields"].pop()),
+        ("policy_hash","evidence",lambda value: value["policy"].update(sha256="0"*64)),
+        ("evidence_open_schema","evidence_schema",lambda value: value.update(additionalProperties=True)),
     ]:
-        copies = {"authority":copy.deepcopy(authority),"findings":copy.deepcopy(findings),"ledger":copy.deepcopy(ledger),"schema":copy.deepcopy(schema)}
+        copies = {"authority":copy.deepcopy(authority),"findings":copy.deepcopy(findings),"ledger":copy.deepcopy(ledger),"schema":copy.deepcopy(schema),"evidence":copy.deepcopy(evidence),"evidence_schema":copy.deepcopy(evidence_schema)}
         mutate(copies[target])
         cases.append((label,copies))
     for label, values in cases:
         try:
-            validate(values["authority"],values["findings"],values["ledger"],values["schema"])
+            validate(values["authority"],values["findings"],values["ledger"],values["schema"],values["evidence"],values["evidence_schema"])
         except EvidenceError:
             continue
         raise EvidenceError("mutation_survived:" + label)
@@ -88,9 +109,11 @@ def main() -> int:
     findings = json.loads(FINDINGS.read_text())
     ledger = json.loads(LEDGER.read_text())
     schema = json.loads(SCHEMA.read_text())
-    validate(authority, findings, ledger, schema)
-    mutations = self_test(authority, findings, ledger, schema)
-    print(f"PASS: remediation-v13 authority active=step_1420 findings=9 mutations={mutations}")
+    evidence = json.loads(EVIDENCE_POLICY.read_text())
+    evidence_schema = json.loads(EVIDENCE_SCHEMA.read_text())
+    validate(authority, findings, ledger, schema, evidence, evidence_schema)
+    mutations = self_test(authority, findings, ledger, schema, evidence, evidence_schema)
+    print(f"PASS: remediation-v13 authority active=step_1421 findings=9 mutations={mutations}")
     return 0
 
 if __name__ == "__main__":

@@ -24,7 +24,7 @@
   "frozen_sha256": {
     "nip": "8262bf32cb70b7c0e46210441120652e52504fb73839641ac19dddfed840acf8",
     "requirements": "a8926ae4610b4855294f769871e87a14dee73d05ed201419de35711a8a781974",
-    "report_contract": "636bd1ff32673a00dc0f41440bde61f2b0f8d86f853a7feaaf119de1ff2ce189"
+    "report_contract": "0135f6a484388e95ac4f6fe6f8ff4ea7690c58deadcee5818257e9483c9335cf"
   },
   "holds": [
     "external_assurance",

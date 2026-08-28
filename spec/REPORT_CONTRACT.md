@@ -127,6 +127,29 @@ observed, evaluation MUST perform no further target-sized traversal,
 allocation, copy, comparison, serialization, or invariant construction and
 MUST return the constant-size no-progress result.
 
+### Metered authoritative epoch semantics
+
+`NCRDT-RESOURCE-017`: Every authoritative epoch semantic check, including
+writer authorization, actor sequence validation, empty-change frontier
+validation, and candidate semantic projection, MUST charge and check
+cancellation immediately before each target-proportional read, comparison,
+allocation, insertion, or retained-history visit, or reuse an equivalent fully
+metered projection.
+
+### Causal counter projection without rescans
+
+`NCRDT-RESOURCE-018`: The accepted dependency-closure projection MUST expose
+the candidate actor expected sequence and the causal next-operation value
+without an unmetered rescan of the closure or actor-state map. Repeated
+history-sized scans during candidate validation are prohibited.
+
+### Nonallocating metered epoch ancestry classification
+
+`NCRDT-RESOURCE-019`: Ordinary epoch ancestry classification MUST be
+nonallocating or explicitly metered and cancellable. When only valid, pending,
+or invalid is needed, the runtime path MUST NOT construct diagnostic vectors
+proportional to missing or omitted history.
+
 ## Unsupported change identity
 
 `NCRDT-VERSION-002`: An unsupported change carrier whose canonical Change

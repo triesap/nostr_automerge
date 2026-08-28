@@ -1,0 +1,16 @@
+{
+  "schema": "nostr_automerge.remediation_v13_evidence_policy.v1",
+  "status": "approved_active",
+  "authority": "spec/remediation_v13_authority.json",
+  "policy": {
+    "path": "spec/EVIDENCE_POLICY.md",
+    "sha256": "e85d423580f1959a7bbe54f6222dd8dd552300f99223f2b138c600902385d545"
+  },
+  "requirements": ["NCRDT-RESOURCE-017","NCRDT-RESOURCE-018","NCRDT-RESOURCE-019","NCRDT-EVIDENCE-007"],
+  "owner_modes": ["item_metered","exact_reserved","sealed_constant_time"],
+  "required_row_fields": ["id","family","source_path","source_symbol","owner_mode","requirements","test","command","candidate","artifact_sha256","mutation"],
+  "approved_roots": ["docs/adr","docs/execution/remediation_v13","fixtures","implementation","reports","scripts","spec","tests","tools/validation"],
+  "opaque_allowed_fields": ["artifact_sha256","candidate","counts","identity_sha256","result_classes"],
+  "opaque_prohibited_fields": ["commands","credentials","logs","package_layout","paths","source","urls"],
+  "result": "pass"
+}
