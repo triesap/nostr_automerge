@@ -422,41 +422,6 @@ pub(crate) fn apply_nonempty_counter(
     Ok(())
 }
 
-pub(crate) fn validate_actor_predecessor(
-    candidate: &ChangeCandidate,
-    closure: &std::collections::BTreeSet<ChangeHash>,
-    accepted: &BTreeMap<ChangeHash, ChangeCandidate>,
-) -> Result<(), ActorStateError> {
-    let same_actor = closure
-        .iter()
-        .filter_map(|hash| accepted.get(hash))
-        .filter(|change| change.actor == candidate.actor)
-        .collect::<Vec<_>>();
-    if same_actor
-        .iter()
-        .any(|change| change.sequence >= candidate.sequence)
-    {
-        return Err(ActorStateError::SequenceRollback);
-    }
-    if candidate.sequence == 1 {
-        return if same_actor.is_empty() {
-            Ok(())
-        } else {
-            Err(ActorStateError::SequenceRollback)
-        };
-    }
-    let expected = candidate.sequence - 1;
-    let predecessors = same_actor
-        .iter()
-        .filter(|change| change.sequence == expected)
-        .count();
-    match predecessors {
-        1 => Ok(()),
-        0 => Err(ActorStateError::MissingPredecessor),
-        _ => Err(ActorStateError::ParallelPredecessor),
-    }
-}
-
 fn causal_next_op(states: &BTreeMap<ActorId, EpochActorState>) -> u64 {
     // Automerge operation counters are causal Lamport counters. Actor sequence
     // remains actor-local, while a new change starts after the greatest
@@ -825,7 +790,7 @@ pub(crate) mod tests {
         MeteredActorStateError, ProjectionLookupOperation, ProjectionPublicationOperation,
         TrustedEpochProjection, TrustedEpochView, apply_empty_counter, apply_nonempty_counter,
         build_trusted_epoch_projection, build_trusted_epoch_projection_observed,
-        initialize_actor_states, initialize_actor_states_metered, validate_actor_predecessor,
+        initialize_actor_states, initialize_actor_states_metered,
     };
     use crate::graph::change_candidate::ChangeCandidate;
     use crate::{ActorId, ChangeHash, Completion, DevicePublicKey, EventId, WorkCounter};
@@ -2205,40 +2170,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn validate_actor_predecessor_sequence() {
-        let first = candidate(1, 1, 1, 1);
-        let mut second = candidate(1, 2, 2, 1);
-        second.change_hash = ChangeHash::from_bytes([2; 32]);
-        let accepted = BTreeMap::from([(first.change_hash, first.clone())]);
-        assert_eq!(
-            validate_actor_predecessor(&second, &BTreeSet::from([first.change_hash]), &accepted),
-            Ok(())
-        );
-        assert_eq!(
-            validate_actor_predecessor(&second, &BTreeSet::new(), &accepted),
-            Err(ActorStateError::MissingPredecessor)
-        );
-        let mut conflict = first.clone();
-        conflict.change_hash = ChangeHash::from_bytes([8; 32]);
-        let conflicts = BTreeMap::from([
-            (first.change_hash, first.clone()),
-            (conflict.change_hash, conflict),
-        ]);
-        assert_eq!(
-            validate_actor_predecessor(
-                &second,
-                &BTreeSet::from([first.change_hash, ChangeHash::from_bytes([8; 32])]),
-                &conflicts,
-            ),
-            Err(ActorStateError::ParallelPredecessor)
-        );
-        assert_eq!(
-            validate_actor_predecessor(&first, &BTreeSet::from([first.change_hash]), &accepted),
-            Err(ActorStateError::SequenceRollback)
-        );
-    }
-
-    #[test]
     fn validate_next_op_for_nonempty_changes() {
         let actor = ActorId::from_bytes([1; 32]);
         let mut states = BTreeMap::new();
@@ -2455,31 +2386,53 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[ignore = "open remediation-v12 resource-accounting reproduction"]
     fn finding_100_actor_predecessor_scan_reproduction() {
         let mut accepted = BTreeMap::new();
         let mut closure = BTreeSet::new();
+        let mut previous = None;
         for sequence in 1..=64 {
-            let change = candidate(1, sequence, sequence, 1);
+            let mut change = candidate(1, sequence, sequence, 1);
+            change.dependencies = previous.into_iter().collect::<Vec<_>>().into();
             closure.insert(change.change_hash);
+            previous = Some(change.change_hash);
             accepted.insert(change.change_hash, change);
         }
-        let mut unrelated = candidate(2, 1, 1, 1);
+        let mut unrelated = candidate(2, 1, 65, 1);
         unrelated.change_hash = ChangeHash::from_bytes([200; 32]);
+        unrelated.dependencies = previous.into_iter().collect::<Vec<_>>().into();
         closure.insert(unrelated.change_hash);
         accepted.insert(unrelated.change_hash, unrelated.clone());
         let mut next = candidate(1, 65, 65, 1);
+        next.start_op = 66;
         next.dependencies = vec![unrelated.change_hash].into();
 
-        assert_eq!(
-            validate_actor_predecessor(&next, &closure, &accepted),
-            Ok(()),
+        let projection = initialize_actor_states_metered(&closure, &accepted, |_| Ok::<_, ()>(()));
+        assert!(projection.is_ok(), "{:?}", projection.as_ref().err());
+        let Some(projection) = projection.ok() else {
+            return;
+        };
+        assert!(
+            projection
+                .actor_sequence_decision_metered(&next, |_| Ok::<_, ()>(()))
+                .is_ok(),
             "the actor predecessor is accepted transitively and need not be a direct dependency"
         );
 
         let source = include_str!("actor_state.rs");
+        let production = source
+            .split_once("#[cfg(test)]\npub(crate) mod tests")
+            .map_or(source, |item| item.0);
+        let engine = include_str!("../reference/epoch_engine.rs");
+        let engine_production = engine
+            .split_once("#[cfg(test)]\nmod tests")
+            .map_or(engine, |item| item.0);
         assert!(
-            !source.contains(".collect::<Vec<_>>()"),
+            !production.contains("fn validate_actor_predecessor(")
+                && !engine_production.contains("validate_actor_predecessor")
+                && engine_production
+                    .matches(".actor_sequence_decision_metered(")
+                    .count()
+                    == 1,
             "unmetered actor predecessor collection remains"
         );
     }

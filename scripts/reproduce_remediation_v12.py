@@ -20,7 +20,7 @@ EXPECTED_CASES = [
         "path": "crates/nostr_automerge/src/graph/actor_state.rs",
         "test": "graph::actor_state::tests::finding_100_actor_predecessor_scan_reproduction",
         "diagnostic": "unmetered actor predecessor collection remains",
-        "expected": "open_failure",
+        "expected": "fixed_pass",
     },
     {
         "finding": "FINDING_100",
@@ -138,7 +138,10 @@ def validate_failure_transcript(row: dict[str, str], result: subprocess.Complete
 
 def validate_pass_transcript(row: dict[str, str], result: subprocess.CompletedProcess[str]) -> None:
     require(result.returncode == 0, "transcript:pass_returncode")
-    require(f"test {row['test']} ... ok" in result.stdout, "transcript:pass_test")
+    require(
+        result.stdout.count(f"test {row['test']} ... ok") == 1,
+        "transcript:pass_test",
+    )
     require("test result: ok. 1 passed; 0 failed; 0 ignored;" in result.stdout, "transcript:pass_summary")
 
 
@@ -195,7 +198,8 @@ def mutation_self_test(value: object) -> int:
             caught += 1
             continue
         raise ReproductionError("inventory mutation survived")
-    row = validate_inventory(value)[0]
+    rows = validate_inventory(value)
+    row = rows[1]
     stdout = (
         f"running 1 test\ntest {row['test']} ... FAILED\n\n"
         f"{row['diagnostic']}\n\nfailures:\n    {row['test']}\n\n"
@@ -216,6 +220,26 @@ def mutation_self_test(value: object) -> int:
             caught += 1
             continue
         raise ReproductionError("transcript mutation survived")
+    fixed_row = rows[0]
+    pass_stdout = (
+        f"running 1 test\ntest {fixed_row['test']} ... ok\n\n"
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;\n"
+    )
+    pass_base = subprocess.CompletedProcess([], 0, pass_stdout, "")
+    validate_pass_transcript(fixed_row, pass_base)
+    for changed in (
+        subprocess.CompletedProcess([], 101, pass_stdout, ""),
+        subprocess.CompletedProcess([], 0, pass_stdout.replace(fixed_row["test"], "other"), ""),
+        subprocess.CompletedProcess([], 0, pass_stdout.replace(" ... ok", " ... ignored"), ""),
+        subprocess.CompletedProcess([], 0, pass_stdout.replace("1 passed", "0 passed"), ""),
+        subprocess.CompletedProcess([], 0, pass_stdout + f"test {fixed_row['test']} ... ok\n", ""),
+    ):
+        try:
+            validate_pass_transcript(fixed_row, changed)
+        except ReproductionError:
+            caught += 1
+            continue
+        raise ReproductionError("pass transcript mutation survived")
     return caught
 
 

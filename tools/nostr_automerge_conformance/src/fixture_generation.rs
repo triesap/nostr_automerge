@@ -6990,7 +6990,7 @@ mod tests {
             // The v12 inputs remain immutable predecessor evidence. Distribution v13
             // will bind replacement budgets after the full metering refactor lands.
             assert_eq!(
-                signed.budget.max_items.checked_add(902),
+                signed.budget.max_items.checked_add(971),
                 Some(exact),
                 "{fixture_id}"
             );

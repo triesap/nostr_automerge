@@ -9,7 +9,6 @@ use crate::control::epoch_state::{AcceptedEpochState, MeteredAcceptedEpochStateE
 use crate::control::validate::ControlEnvelope;
 use crate::graph::actor_state::{
     EpochActorState, MeteredActorStateError, initialize_actor_states_metered,
-    validate_actor_predecessor,
 };
 use crate::graph::change_candidate::ChangeCandidate;
 use crate::graph::closure::{CandidateClosureError, candidate_dependency_closure};
@@ -417,26 +416,34 @@ pub(crate) fn evaluate_epoch(
             candidate_dependency_closure(&candidate, &all_candidates, budget, cancellation)
                 .map_err(|error| EpochEvaluationError::Schedule(closure_schedule_error(error)))?;
         let complete_closure = closure.missing.is_empty().then_some(&closure.known);
-        let actor_sequence_valid = complete_closure.is_none_or(|known| {
-            validate_actor_predecessor(&candidate, known, &all_candidates).is_ok()
-        });
-        let actor_counter_valid = if let Some(known) = complete_closure {
-            let projection =
-                match initialize_actor_states_metered(known, &all_candidates, |counter| {
-                    charge_epoch_item(counter, budget, cancellation)
-                }) {
-                    Ok(projection) => Some(projection),
-                    Err(MeteredActorStateError::Work(error)) => {
-                        return Err(EpochEvaluationError::Schedule(error));
-                    }
-                    Err(MeteredActorStateError::State(_)) => None,
-                };
-            projection.is_some_and(|projection| {
-                projection
-                    .legacy_counter_is_valid(&candidate, input.accepted_base().frontier_heads())
-            })
+        let (actor_sequence_valid, actor_counter_valid) = if let Some(known) = complete_closure {
+            match initialize_actor_states_metered(known, &all_candidates, |counter| {
+                charge_epoch_item(counter, budget, cancellation)
+            }) {
+                Ok(projection) => {
+                    let actor_sequence_valid = match projection
+                        .actor_sequence_decision_metered(&candidate, |counter| {
+                            charge_epoch_item(counter, budget, cancellation)
+                        }) {
+                        Ok(()) => true,
+                        Err(MeteredActorStateError::Work(error)) => {
+                            return Err(EpochEvaluationError::Schedule(error));
+                        }
+                        Err(MeteredActorStateError::State(_)) => false,
+                    };
+                    let actor_counter_valid = projection.legacy_counter_is_valid(
+                        &candidate,
+                        input.accepted_base().frontier_heads(),
+                    );
+                    (actor_sequence_valid, actor_counter_valid)
+                }
+                Err(MeteredActorStateError::Work(error)) => {
+                    return Err(EpochEvaluationError::Schedule(error));
+                }
+                Err(MeteredActorStateError::State(_)) => (false, false),
+            }
         } else {
-            true
+            (true, true)
         };
         let ancestry_valid = !matches!(
             validate_epoch_ancestry(

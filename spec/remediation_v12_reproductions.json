@@ -8,7 +8,7 @@
       "path": "crates/nostr_automerge/src/graph/actor_state.rs",
       "test": "graph::actor_state::tests::finding_100_actor_predecessor_scan_reproduction",
       "diagnostic": "unmetered actor predecessor collection remains",
-      "expected": "open_failure"
+      "expected": "fixed_pass"
     },
     {
       "finding": "FINDING_100",

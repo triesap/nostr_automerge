@@ -128,3 +128,12 @@ predecessor to be a direct edge. Gap, rollback, duplicate sequence, actor
 mismatch, and checked-sequence overflow fail closed. Every one of the nine
 underlying lookup charges has exact N-1, N, N+1, budget, and cancellation
 coverage, and no caller-owned state is mutated.
+
+`step_1381` routes production epoch evaluation through that projected
+actor-sequence decision and deletes the closure-wide predecessor collector and
+all of its call sites. The exact deep transitive predecessor reproduction is
+now enabled and passing, while the remaining nine Finding 100 work families
+stay open. The immutable v12 fixture budget is not rewritten; the active
+post-branch boundary records the current sixty-five-operation delta until v13
+replaces the resource fixtures. The three persistent deep-delta cases likewise
+bind the current 971-operation delta without changing their signed inputs.
