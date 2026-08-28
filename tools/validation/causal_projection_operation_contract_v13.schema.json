@@ -6,10 +6,10 @@
   "required":["schema","status","requirements","charge_rule","families","source_boundaries","prohibited_patterns","final_operation_count","result"],
   "properties":{
     "schema":{"const":"nostr_automerge.causal_projection_operation_contract.v13.v1"},
-    "status":{"enum":["approved_discovery_complete","implementation_complete"]},
+    "status":{"enum":["approved_discovery_complete","authority_frozen","implementation_complete"]},
     "requirements":{"type":"array","minItems":5,"maxItems":5,"uniqueItems":true},
     "charge_rule":{"const":"charge_then_operation_then_observation"},
-    "families":{"type":"array","minItems":14,"maxItems":14},
+    "families":{"type":"array","minItems":14,"maxItems":14,"items":{"type":"object","additionalProperties":false,"required":["id","counter","target_scaled","proof_step"],"properties":{"id":{"type":"string"},"counter":{"enum":["graph_node","graph_edge","graph_node_or_edge"]},"target_scaled":{"type":"boolean"},"proof_step":{"pattern":"^step_[0-9]{4}$"}}}},
     "source_boundaries":{"type":"array","minItems":3,"maxItems":3,"uniqueItems":true},
     "prohibited_patterns":{"type":"array","minItems":5,"maxItems":5,"uniqueItems":true},
     "final_operation_count":{"type":["integer","null"],"minimum":1},

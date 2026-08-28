@@ -1,0 +1,22 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://nostr-automerge.example/schema/causal-projection-authority-gate-v13.json",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema","status","rcld","candidates","operation_families","expected_failure_reproductions","lexical_source_mutations","isolated_source_mutations","isolated_runner_mutations","behavior_findings_closed","next_step","holds","result"],
+  "properties":{
+    "schema":{"const":"nostr_automerge.causal_projection_authority_gate.v13.v1"},
+    "status":{"const":"authority_proof_complete"},
+    "rcld":{"const":116},
+    "candidates":{"type":"array","minItems":5,"maxItems":5,"items":{"type":"object","additionalProperties":false,"required":["step","candidate"],"properties":{"step":{"pattern":"^step_[0-9]{4}$"},"candidate":{"pattern":"^[0-9a-f]{40}$"}}}},
+    "operation_families":{"const":14},
+    "expected_failure_reproductions":{"const":2},
+    "lexical_source_mutations":{"const":10},
+    "isolated_source_mutations":{"const":1},
+    "isolated_runner_mutations":{"const":9},
+    "behavior_findings_closed":{"const":0},
+    "next_step":{"const":"step_1426"},
+    "holds":{"type":"array","minItems":7,"maxItems":7,"uniqueItems":true},
+    "result":{"const":"pass"}
+  }
+}

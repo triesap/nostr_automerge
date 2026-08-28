@@ -30,3 +30,9 @@ lexical function-body audit. It also executes the reviewed projection maximum
 to minimum mutation in an isolated Git worktree and requires the exact owning
 semantic test to fail without compilation, ignored-test, or unrelated-test
 substitution. The next checkpoint is `step_1425`.
+
+`step_1425` freezes the fourteen logical operation families and assigns every
+family to its exact RCLD-117 proof checkpoint. The closed RCLD-116 authority
+gate binds all five predecessor commits, both open reproductions, the lexical
+source audit, the isolated behavioral mutation, and every external hold. No
+behavior finding is closed. The next checkpoint is `step_1426`.

@@ -99,6 +99,7 @@ VALIDATORS = [
     "validate_causal_projection_operations_v13.py",
     "validate_causal_projection_source_v13.py",
     "run_causal_projection_mutations_v13.py",
+    "validate_causal_projection_authority_gate_v13.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",

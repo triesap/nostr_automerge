@@ -1,0 +1,21 @@
+{
+  "schema":"nostr_automerge.causal_projection_authority_gate.v13.v1",
+  "status":"authority_proof_complete",
+  "rcld":116,
+  "candidates":[
+    {"step":"step_1420","candidate":"6bbc29b5fa1a0e88cf5f61d9b751181f913c928b"},
+    {"step":"step_1421","candidate":"38c65ae597af0500af64b67c21fb12f7933125b0"},
+    {"step":"step_1422","candidate":"2435f60145aba99cc5f96a49aadc86e162a82b06"},
+    {"step":"step_1423","candidate":"285c39239ebef6dd1179d842ca29671b9cf92dfa"},
+    {"step":"step_1424","candidate":"219d4844de68ee01eafb9a0bf6c55a8adac8f6db"}
+  ],
+  "operation_families":14,
+  "expected_failure_reproductions":2,
+  "lexical_source_mutations":10,
+  "isolated_source_mutations":1,
+  "isolated_runner_mutations":9,
+  "behavior_findings_closed":0,
+  "next_step":"step_1426",
+  "holds":["external_assurance","event_kind_allocation","nip_submission","production_qualification","publication","release","remote_mutation"],
+  "result":"pass"
+}
