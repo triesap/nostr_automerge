@@ -382,3 +382,15 @@ publication, report, validator, and evidence boundaries. Every mutation is
 bound to the exact source hash and removes its reviewed semantic anchor; all
 twelve are caught, zero survive, and twelve deliberate harness mutations also
 fail closed.
+
+`step_1415` runs the six public local-assurance jobs separately. Standard,
+distribution-v13 conformance, resource, coverage, supply-chain, and release
+evidence all pass, together with formatting, checking, tests, strict Clippy,
+documentation, xtask, specification, artifact, and leak checks. The gate also
+updates the single yanked transitive `chacha20` lock entry from 0.10.1 to
+0.10.2 and moves the conformance job from the superseded 198-scenario v12
+manifest to the approved 204-scenario v13 manifest.
+The historical core-profile report now validates its report and dependency
+lock against their immutable publication commit, so a current security-only
+lock refresh cannot silently rewrite or falsely invalidate the older evidence
+record.

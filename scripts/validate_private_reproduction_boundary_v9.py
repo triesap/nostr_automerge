@@ -117,6 +117,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/remediation_v12_proof_catalog.schema.json",
     "reports/remediation_v12_mutation_qualification.json",
     "tools/validation/remediation_v12_mutation_qualification.schema.json",
+    "reports/remediation_v12_public_assurance.json",
+    "tools/validation/remediation_v12_public_assurance.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -220,6 +222,7 @@ PYTHON_SURFACES = (
     "scripts/validate_remediation_v12_operation_inventory.py",
     "scripts/validate_remediation_v12_proof_catalog.py",
     "scripts/validate_remediation_v12_mutation_qualification.py",
+    "scripts/validate_remediation_v12_public_assurance.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -376,6 +379,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/remediation_v12_operation_inventory.json",
         "reports/remediation_v12_proof_catalog.json",
         "reports/remediation_v12_mutation_qualification.json",
+        "reports/remediation_v12_public_assurance.json",
         "fixtures/distribution/manifest_v13.json",
         "fixtures/distribution/manifest_v13.lock.json",
         "fixtures/v13/scenarios/epoch_semantics",
@@ -454,6 +458,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_remediation_v12_operation_inventory.py",
         "scripts/validate_remediation_v12_proof_catalog.py",
         "scripts/validate_remediation_v12_mutation_qualification.py",
+        "scripts/validate_remediation_v12_public_assurance.py",
         "scripts/validate_opaque_conformance_v10.py",
         "scripts/validate_signed_conformance_gate_v10.py",
         "scripts/validate_semantic_proof_catalog_v10.py",
@@ -580,6 +585,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/validation/remediation_v12_operation_inventory.schema.json",
         "tools/validation/remediation_v12_proof_catalog.schema.json",
         "tools/validation/remediation_v12_mutation_qualification.schema.json",
+        "tools/validation/remediation_v12_public_assurance.schema.json",
         "tools/validation/opaque_conformance_v10.schema.json",
         "tools/validation/signed_conformance_gate_v10.schema.json",
         "tools/validation/semantic_proof_catalog_v10.schema.json",

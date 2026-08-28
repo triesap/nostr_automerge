@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v12_authority.json",
   "cursor": {
     "active_rcld": 115,
-    "active_step": "step_1414",
-    "next_step": "step_1415",
+    "active_step": "step_1415",
+    "next_step": "step_1416",
     "last_planned_step": "step_1419",
-    "remaining_checkpoint_count": 5,
+    "remaining_checkpoint_count": 4,
     "remaining_rcld_count": 1
   },
   "findings": {
@@ -26,16 +26,20 @@
     "NCRDT-EVIDENCE-007"
   ],
   "active_checkpoint_scope": [
+    "Cargo.lock",
+    "crates/nostr_automerge/tests/core_profile_report.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
-    "reports/remediation_v12_mutation_qualification.json",
+    "reports/remediation_v12_public_assurance.json",
     "reports/spec_baseline.txt",
+    "scripts/local_gate.py",
     "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v12.py",
-    "scripts/validate_remediation_v12_mutation_qualification.py",
+    "scripts/validate_remediation_v12_public_assurance.py",
+    "scripts/validate_rust_conformance_v13.py",
     "scripts/validate_spec.py",
     "tools/nostr_automerge_xtask/src/validate.rs",
-    "tools/validation/remediation_v12_mutation_qualification.schema.json"
+    "tools/validation/remediation_v12_public_assurance.schema.json"
   ],
   "predecessors": [
     {
@@ -323,6 +327,12 @@
     {
       "step": "step_1413",
       "candidate": "07549bdbf8c7df7dfd2d824fc7e8005600c3c438",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1414",
+      "candidate": "10eddd38028e21d11cf38c96e89fc167d6931d4f",
       "owner_class": "public",
       "result": "pass"
     }

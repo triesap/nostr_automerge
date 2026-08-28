@@ -1,0 +1,18 @@
+{
+  "schema":"nostr_automerge.remediation_v12_public_assurance.v1",
+  "status":"pass",
+  "candidate":"10eddd38028e21d11cf38c96e89fc167d6931d4f",
+  "local_gate_sha256":"1e3c5bf84df41129dc8fac0c0debb1fad8b40ce2694ef97deb9684f052d49eed",
+  "lock_sha256":"9dd7897a8b729fb687c6f9001bfdeb09e441db69a36f8f86ab4260a30d75ca19",
+  "jobs":[
+    {"name":"standard","status":"pass","evidence":"355_core_122_api_36_conformance_4_xtask"},
+    {"name":"conformance","status":"pass","evidence":"000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344"},
+    {"name":"resource","status":"pass","evidence":"exact_operation_and_boundary_proofs"},
+    {"name":"coverage","status":"pass","evidence":"677773a5bbd8a96fddde8f12319d44d9d170d09cce9d9ef45b05305c6018173c"},
+    {"name":"supply_chain","status":"pass","evidence":"chacha20_0.10.2_not_yanked"},
+    {"name":"release_evidence","status":"pass","evidence":"68607256084a99ccf4785fefbd777f8376e87f2dd35b28f0575b60574580348d"}
+  ],
+  "checks":{"fmt":true,"check":true,"test":true,"clippy":true,"doc":true,"xtask":true,"spec":true,"artifact_scan":true,"leak_scan":true},
+  "holds":["external_assurance","event_kind_allocation","nip_submission","production_qualification","publication","release","remote_mutation"],
+  "result":"pass"
+}

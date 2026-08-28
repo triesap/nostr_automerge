@@ -2,6 +2,7 @@
 
 use std::fs;
 use std::path::Path;
+use std::process::Command;
 
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -16,6 +17,8 @@ fn sha256(bytes: &[u8]) -> String {
     }
     encoded
 }
+
+const EVIDENCE_CANDIDATE: &str = "cd4226c0afa9481f0050faec43f54f075316078b";
 
 #[test]
 fn publish_the_rust_core_profile_conformance_report() {
@@ -66,11 +69,37 @@ fn publish_the_rust_core_profile_conformance_report() {
         let Ok(bytes) = bytes else { return };
         assert_eq!(Some(sha256(&bytes).as_str()), fixture[field].as_str());
     }
-    let lock = fs::read(root.join("Cargo.lock"));
-    assert!(lock.is_ok());
-    let Ok(lock) = lock else { return };
+    let published_report = Command::new("git")
+        .args([
+            "show",
+            &format!("{EVIDENCE_CANDIDATE}:reports/core_profile_conformance.json"),
+        ])
+        .current_dir(&root)
+        .output();
+    assert!(
+        published_report
+            .as_ref()
+            .is_ok_and(|output| output.status.success())
+    );
+    let Ok(published_report) = published_report else {
+        return;
+    };
+    assert_eq!(published_report.stdout, report_bytes);
+
+    let published_lock = Command::new("git")
+        .args(["show", &format!("{EVIDENCE_CANDIDATE}:Cargo.lock")])
+        .current_dir(&root)
+        .output();
+    assert!(
+        published_lock
+            .as_ref()
+            .is_ok_and(|output| output.status.success())
+    );
+    let Ok(published_lock) = published_lock else {
+        return;
+    };
     assert_eq!(
-        Some(sha256(&lock).as_str()),
+        Some(sha256(&published_lock.stdout).as_str()),
         report["dependencies"]["cargo_lock_sha256"].as_str()
     );
 }

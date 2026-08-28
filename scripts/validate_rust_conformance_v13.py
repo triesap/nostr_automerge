@@ -65,6 +65,15 @@ def digest(relative: str) -> str:
     return hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()
 
 
+def candidate_digest(candidate: str, relative: str) -> str:
+    result = subprocess.run(
+        ("git", "show", candidate + ":" + relative),
+        cwd=ROOT, check=False, capture_output=True,
+    )
+    require(result.returncode == 0, "source:candidate_file:" + relative)
+    return hashlib.sha256(result.stdout).hexdigest()
+
+
 def canonical(value: Any) -> bytes:
     return (json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode()
 
@@ -97,10 +106,10 @@ def validate_sources() -> None:
         ("scripts/generate_distribution_v13.py", "generator_sha256"),
         ("tools/nostr_automerge_conformance/src/fixture_generation.rs", "fixture_generator_sha256"),
         ("tools/nostr_automerge_conformance/src/runner.rs", "runner_sha256"),
-        ("Cargo.lock", "cargo_lock_sha256"),
         ("rust-toolchain.toml", "rust_toolchain_sha256"),
     ):
         require(digest(relative) == EXPECTED[field], "source:" + field)
+    require(candidate_digest(SOURCE_CANDIDATE, "Cargo.lock") == EXPECTED["cargo_lock_sha256"], "source:cargo_lock_sha256")
     candidate = subprocess.run(
         ("git", "rev-parse", SOURCE_CANDIDATE + "^{commit}"),
         cwd=ROOT, check=False, capture_output=True, text=True,
