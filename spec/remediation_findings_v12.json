@@ -60,7 +60,7 @@
         "spec/REPORT_CONTRACT.md"
       ],
       "closure": "Require transitive actor-predecessor semantics, exact frontier and ancestry decisions, complete charged work, a narrowed public package surface, 204-scenario parity, and approved opaque evidence without disclosing independent source details.",
-      "status": "open"
+      "status": "closed"
     },
     {
       "id": "FINDING_103",

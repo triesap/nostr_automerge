@@ -1,0 +1,18 @@
+{
+  "candidate": "f7e4b783c66588c5e7d60531a55f484015632002",
+  "predecessor": "7592f6bb827dd0e75b7acabfc90f38d5499c2468",
+  "result_identity_sha256": "8c891d91150ccec9c4d18a1630843996ad1fc3dc907a2f0a9e4e36379477ba14",
+  "execution_identity_sha256": "3884df90fac170a33bf5aae3090bf8981583fe9a8ef62c031993323ef8a1dea6",
+  "signed_input_projection_sha256": "3133a31e1ef98e7974f600f97a5f461bb2f7143071509469c451cf3b207939e8",
+  "report_projection_sha256": "0eca38a0df0edd9da7e574e1c6ed5ecec252e56b812a54c61722fd9594a4b087",
+  "work_contract_identity_sha256": "9cc544eadc2a6031351b5acc7fcf603056131bc04820a88367e5fdcd4d3a33bc",
+  "scenario_count": 204,
+  "signed_event_count": 771,
+  "delivery_permutations": 8,
+  "process_count": 2,
+  "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+  "serialized_run_sha256": "bbc4f6a5e858f62fc2c34bc973eadd6d38e7acfb79af930c31b39f9af1af34a9",
+  "byte_mismatch_count": 0,
+  "deliberate_expectation_mismatch": "rejected",
+  "result": "pass"
+}

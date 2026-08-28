@@ -1,0 +1,30 @@
+{
+  "schema": "nostr_automerge.distribution_v13_parity.v1",
+  "status": "pass",
+  "contract_sha256": "e43324b6893a60d59b2fb84f759ae77607d94f32a3eddc3c6bfecae5614ded2d",
+  "opaque_record_sha256": "8fcedef517036392343066206916a9439f73161ffbacc4a33d37e623a12b859b",
+  "rust_result_identity_sha256": "67d21245aaddbf5fe487a8e763063e428f7f71ec2ef0ac9b0ed3d682ede76007",
+  "typescript_result_identity_sha256": "8c891d91150ccec9c4d18a1630843996ad1fc3dc907a2f0a9e4e36379477ba14",
+  "signed_input_projection_sha256": "3133a31e1ef98e7974f600f97a5f461bb2f7143071509469c451cf3b207939e8",
+  "report_projection_sha256": "0eca38a0df0edd9da7e574e1c6ed5ecec252e56b812a54c61722fd9594a4b087",
+  "work_contract_identity_sha256": "9cc544eadc2a6031351b5acc7fcf603056131bc04820a88367e5fdcd4d3a33bc",
+  "scenario_count": 204,
+  "signed_event_count": 771,
+  "delivery_orders": 8,
+  "process_count": 2,
+  "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+  "byte_mismatch_count": 0,
+  "finding": "FINDING_102",
+  "finding_status": "closed",
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "remote_mutation"
+  ],
+  "result": "pass",
+  "result_identity_sha256": "ce65e43dc24bef17fccc1ec932792aebb829a842aa954307a70b55eec9ce13b2"
+}

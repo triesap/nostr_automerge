@@ -4,16 +4,15 @@
   "authority": "spec/remediation_v12_authority.json",
   "cursor": {
     "active_rcld": 114,
-    "active_step": "step_1406",
-    "next_step": "step_1407",
+    "active_step": "step_1411",
+    "next_step": "step_1412",
     "last_planned_step": "step_1419",
-    "remaining_checkpoint_count": 13,
-    "remaining_rcld_count": 2
+    "remaining_checkpoint_count": 8,
+    "remaining_rcld_count": 1
   },
   "findings": {
     "open": [
       "FINDING_101",
-      "FINDING_102",
       "FINDING_103"
     ],
     "held": [
@@ -29,14 +28,16 @@
   "active_checkpoint_scope": [
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
+    "reports/distribution_v13_parity.json",
+    "reports/opaque_compatibility_v13.json",
     "reports/spec_baseline.txt",
-    "scripts/validate_distribution_v13_compatibility_contract.py",
+    "scripts/validate_distribution_v13_parity.py",
     "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v12.py",
     "scripts/validate_spec.py",
-    "spec/distribution_v13_compatibility_contract.json",
+    "spec/remediation_findings_v12.json",
     "tools/nostr_automerge_xtask/src/validate.rs",
-    "tools/validation/distribution_v13_compatibility_contract.schema.json"
+    "tools/validation/distribution_v13_parity.schema.json"
   ],
   "predecessors": [
     {
@@ -300,6 +301,12 @@
     {
       "step": "step_1405",
       "candidate": "73ce3be33ddd1beba6528fb9f61a533e5d571cc6",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1406",
+      "candidate": "24b80835cd3bcd71f9d2de366ab533d2ba72ed95",
       "owner_class": "public",
       "result": "pass"
     }

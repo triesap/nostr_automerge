@@ -353,3 +353,11 @@ package layout, paths, source details, URLs, and workflows are prohibited;
 all external holds remain unchanged. Missing, extra, reordered, private-path,
 source, log, command, workflow, authority, count, and coordinated-hash
 mutations fail closed. Private compatibility execution begins at `step_1407`.
+
+`step_1411` closes RCLD 114 after importing the approved sixteen-field opaque
+TypeScript record. The independent implementation executes all 204 scenarios,
+771 signed Events, eight delivery orders, and two processes with the same
+canonical output as Rust. The signed-input, expected-report, and work-contract
+projections agree exactly; no private path, source, command, log, workflow, or
+package-layout detail crosses the public boundary. Finding 102 is closed, while
+Findings 101 and 103 and the external Finding 080 hold remain open.

@@ -1,0 +1,28 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "contract_sha256", "opaque_record_sha256", "rust_result_identity_sha256", "typescript_result_identity_sha256", "signed_input_projection_sha256", "report_projection_sha256", "work_contract_identity_sha256", "scenario_count", "signed_event_count", "delivery_orders", "process_count", "canonical_output_sha256", "byte_mismatch_count", "finding", "finding_status", "holds", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": { "const": "nostr_automerge.distribution_v13_parity.v1" },
+    "status": { "const": "pass" },
+    "contract_sha256": { "$ref": "#/$defs/hash" },
+    "opaque_record_sha256": { "$ref": "#/$defs/hash" },
+    "rust_result_identity_sha256": { "$ref": "#/$defs/hash" },
+    "typescript_result_identity_sha256": { "$ref": "#/$defs/hash" },
+    "signed_input_projection_sha256": { "$ref": "#/$defs/hash" },
+    "report_projection_sha256": { "$ref": "#/$defs/hash" },
+    "work_contract_identity_sha256": { "$ref": "#/$defs/hash" },
+    "scenario_count": { "const": 204 },
+    "signed_event_count": { "const": 771 },
+    "delivery_orders": { "const": 8 },
+    "process_count": { "const": 2 },
+    "canonical_output_sha256": { "$ref": "#/$defs/hash" },
+    "byte_mismatch_count": { "const": 0 },
+    "finding": { "const": "FINDING_102" },
+    "finding_status": { "const": "closed" },
+    "holds": { "type": "array", "minItems": 7, "maxItems": 7, "items": { "type": "string" } },
+    "result": { "const": "pass" },
+    "result_identity_sha256": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": { "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" } }
+}
