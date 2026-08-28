@@ -223,6 +223,10 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "distribution_v13_parity",
         "scripts/validate_distribution_v13_parity.py",
     ),
+    (
+        "remediation_v12_operation_inventory",
+        "scripts/validate_remediation_v12_operation_inventory.py",
+    ),
     ("complete_specification", "scripts/validate_spec.py"),
     (
         "fixture_schema_checksum_snake_case",

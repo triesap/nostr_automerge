@@ -1,0 +1,14 @@
+{
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema","status","candidate","requirements","operations","counts","result"],
+  "properties":{
+    "schema":{"const":"nostr_automerge.remediation_v12_operation_inventory.v1"},
+    "status":{"const":"pass"},
+    "candidate":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "requirements":{"type":"array","minItems":4,"maxItems":4,"uniqueItems":true},
+    "operations":{"type":"array","minItems":15,"maxItems":15},
+    "counts":{"type":"object","additionalProperties":false,"required":["operations","item_metered","exact_reserved","sealed_constant_time","unowned"]},
+    "result":{"const":"pass"}
+  }
+}
