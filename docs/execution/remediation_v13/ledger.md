@@ -106,3 +106,11 @@ N+1, and the matching cancellation boundary; a failed charge admits no owned
 operation, while N and N+1 expose the exact expected prefix. Existing injected
 error and panic identity proofs remain green. The next checkpoint is
 `step_1434`.
+
+`step_1434` closes the Rust semantic construction matrix with a single
+table-driven oracle. Empty, singleton, empty-change, sixteen-actor, deep-chain,
+fork, maximum-counter, and accepted/nonaccepted-mixture constructions match
+exact expected projections and predecessor actor-state bytes across three
+insertion orders. Overflow, missing, duplicate, and noncanonical dependencies
+fail with the exact typed state errors across reversed delivery. The next
+checkpoint is `step_1435`.

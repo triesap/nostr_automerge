@@ -2184,6 +2184,266 @@ pub(crate) mod tests {
         assert_eq!(wide_projection.writer_contributions().count(), 8);
     }
 
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    struct ProjectionSemanticSnapshot {
+        accepted: Vec<ChangeHash>,
+        dependencies: Vec<(ChangeHash, Vec<ChangeHash>)>,
+        states: Vec<(ActorId, u64, u64, ChangeHash)>,
+        writers: Vec<(ActorId, ChangeHash)>,
+        frontier: Vec<ChangeHash>,
+        causal_next_op: u64,
+    }
+
+    fn projection_semantic_snapshot(
+        projection: TrustedEpochProjection<'_>,
+    ) -> ProjectionSemanticSnapshot {
+        let frontier = projection.frontier_heads().collect::<Vec<_>>();
+        let causal_next_op = projection.causal_next_op;
+        let (accepted, dependencies, states, writers) = projection.into_accepted_state_parts();
+        ProjectionSemanticSnapshot {
+            accepted: accepted.into_iter().collect(),
+            dependencies: dependencies
+                .into_iter()
+                .map(|(hash, values)| (hash, values.into_iter().collect()))
+                .collect(),
+            states: states
+                .into_iter()
+                .map(|(actor, state)| {
+                    (
+                        actor,
+                        state.last_sequence,
+                        state.next_op,
+                        state.highest_change,
+                    )
+                })
+                .collect(),
+            writers: writers.into_iter().collect(),
+            frontier,
+            causal_next_op,
+        }
+    }
+
+    #[test]
+    fn projection_complete_construction_matrix_matches_the_semantic_oracle() {
+        let mut singleton = candidate(1, 1, 1, 1);
+        singleton.change_hash = ChangeHash::from_bytes([1; 32]);
+
+        let mut empty_change = candidate(1, 1, 1, 0);
+        empty_change.change_hash = ChangeHash::from_bytes([10; 32]);
+
+        let many_actors = (1_u8..=16)
+            .map(|actor| {
+                let mut value = candidate(actor, 1, 1, 1);
+                value.change_hash = ChangeHash::from_bytes([actor; 32]);
+                value
+            })
+            .collect::<Vec<_>>();
+
+        let mut deep_first = candidate(1, 1, 1, 1);
+        deep_first.change_hash = ChangeHash::from_bytes([21; 32]);
+        let mut deep_second = candidate(2, 1, 2, 1);
+        deep_second.change_hash = ChangeHash::from_bytes([22; 32]);
+        deep_second.dependencies = vec![deep_first.change_hash].into();
+        let mut deep_third = candidate(1, 2, 3, 1);
+        deep_third.change_hash = ChangeHash::from_bytes([23; 32]);
+        deep_third.dependencies = vec![deep_second.change_hash].into();
+        let mut deep_fourth = candidate(3, 1, 4, 1);
+        deep_fourth.change_hash = ChangeHash::from_bytes([24; 32]);
+        deep_fourth.dependencies = vec![deep_third.change_hash].into();
+        let deep_chain = vec![
+            deep_first.clone(),
+            deep_second,
+            deep_third,
+            deep_fourth.clone(),
+        ];
+
+        let mut fork_root = candidate(1, 1, 1, 1);
+        fork_root.change_hash = ChangeHash::from_bytes([31; 32]);
+        let mut fork_left = candidate(2, 1, 2, 1);
+        fork_left.change_hash = ChangeHash::from_bytes([32; 32]);
+        fork_left.dependencies = vec![fork_root.change_hash].into();
+        let mut fork_right = candidate(3, 1, 2, 1);
+        fork_right.change_hash = ChangeHash::from_bytes([33; 32]);
+        fork_right.dependencies = vec![fork_root.change_hash].into();
+        let fork = vec![fork_root, fork_left.clone(), fork_right.clone()];
+
+        let mut maximum = candidate(1, 1, 1, u64::MAX - 1);
+        maximum.change_hash = ChangeHash::from_bytes([40; 32]);
+
+        let mut accepted = candidate(1, 1, 1, 1);
+        accepted.change_hash = ChangeHash::from_bytes([50; 32]);
+        let mut nonaccepted = candidate(1, 99, 99, 1);
+        nonaccepted.change_hash = ChangeHash::from_bytes([51; 32]);
+
+        let cases = [
+            ("empty_history", Vec::new(), Vec::new(), 1_u64, Vec::new()),
+            (
+                "singleton",
+                vec![singleton.clone()],
+                vec![singleton.change_hash],
+                2,
+                vec![singleton.change_hash],
+            ),
+            (
+                "empty_change",
+                vec![empty_change.clone()],
+                vec![empty_change.change_hash],
+                1,
+                vec![empty_change.change_hash],
+            ),
+            (
+                "many_actors",
+                many_actors.clone(),
+                many_actors.iter().map(|value| value.change_hash).collect(),
+                2,
+                many_actors.iter().map(|value| value.change_hash).collect(),
+            ),
+            (
+                "deep_chain",
+                deep_chain.clone(),
+                deep_chain.iter().map(|value| value.change_hash).collect(),
+                5,
+                vec![deep_fourth.change_hash],
+            ),
+            (
+                "fork",
+                fork.clone(),
+                fork.iter().map(|value| value.change_hash).collect(),
+                3,
+                vec![fork_left.change_hash, fork_right.change_hash],
+            ),
+            (
+                "maximum_counter",
+                vec![maximum.clone()],
+                vec![maximum.change_hash],
+                u64::MAX,
+                vec![maximum.change_hash],
+            ),
+            (
+                "accepted_nonaccepted_mixture",
+                vec![accepted.clone(), nonaccepted],
+                vec![accepted.change_hash],
+                2,
+                vec![accepted.change_hash],
+            ),
+        ];
+
+        for (name, candidates, accepted_hashes, expected_next, expected_frontier) in cases {
+            let accepted_closure = accepted_hashes.into_iter().collect::<BTreeSet<_>>();
+            let mut snapshots = Vec::new();
+            for order in [
+                candidates.clone(),
+                candidates.iter().cloned().rev().collect(),
+                {
+                    let mut rotated = candidates.clone();
+                    if !rotated.is_empty() {
+                        rotated.rotate_left(1);
+                    }
+                    rotated
+                },
+            ] {
+                let changes = order
+                    .iter()
+                    .cloned()
+                    .map(|value| (value.change_hash, value))
+                    .collect::<BTreeMap<_, _>>();
+                let projection =
+                    initialize_actor_states_metered(&accepted_closure, &changes, |_| {
+                        Ok::<_, ()>(())
+                    });
+                assert!(projection.is_ok(), "{name}");
+                let Ok(projection) = projection else { continue };
+                let metered_states = projection.actor_states.clone();
+                let snapshot = projection_semantic_snapshot(projection);
+                assert_eq!(snapshot.causal_next_op, expected_next, "{name}");
+                assert_eq!(snapshot.frontier, expected_frontier, "{name}");
+                let predecessor = initialize_actor_states(
+                    order
+                        .into_iter()
+                        .filter(|value| accepted_closure.contains(&value.change_hash)),
+                );
+                assert!(predecessor.is_ok(), "{name}");
+                let Ok(predecessor) = predecessor else {
+                    continue;
+                };
+                assert_eq!(
+                    actor_state_bytes(&metered_states),
+                    actor_state_bytes(&predecessor),
+                    "{name}"
+                );
+                snapshots.push(snapshot);
+            }
+            assert!(
+                snapshots.windows(2).all(|pair| pair[0] == pair[1]),
+                "{name}"
+            );
+        }
+
+        let mut overflow = candidate(1, 1, 1, u64::MAX);
+        overflow.change_hash = ChangeHash::from_bytes([60; 32]);
+
+        let mut missing = candidate(1, 1, 1, 1);
+        missing.change_hash = ChangeHash::from_bytes([61; 32]);
+        missing.dependencies = vec![ChangeHash::from_bytes([62; 32])].into();
+
+        let mut duplicate_root = candidate(1, 1, 1, 1);
+        duplicate_root.change_hash = ChangeHash::from_bytes([63; 32]);
+        let mut duplicate = candidate(2, 1, 2, 1);
+        duplicate.change_hash = ChangeHash::from_bytes([64; 32]);
+        duplicate.dependencies =
+            vec![duplicate_root.change_hash, duplicate_root.change_hash].into();
+
+        let mut low = candidate(1, 1, 1, 1);
+        low.change_hash = ChangeHash::from_bytes([65; 32]);
+        let mut high = candidate(2, 1, 1, 1);
+        high.change_hash = ChangeHash::from_bytes([66; 32]);
+        let mut noncanonical = candidate(3, 1, 2, 1);
+        noncanonical.change_hash = ChangeHash::from_bytes([67; 32]);
+        noncanonical.dependencies = vec![high.change_hash, low.change_hash].into();
+
+        for (name, candidates, accepted_hashes, expected) in [
+            (
+                "overflow",
+                vec![overflow.clone()],
+                vec![overflow.change_hash],
+                ActorStateError::OperationCounter,
+            ),
+            (
+                "missing_dependency",
+                vec![missing.clone()],
+                vec![missing.change_hash],
+                ActorStateError::MissingDependency,
+            ),
+            (
+                "duplicate_dependency",
+                vec![duplicate_root.clone(), duplicate.clone()],
+                vec![duplicate_root.change_hash, duplicate.change_hash],
+                ActorStateError::NoncanonicalInput,
+            ),
+            (
+                "noncanonical_dependency",
+                vec![low.clone(), high.clone(), noncanonical.clone()],
+                vec![low.change_hash, high.change_hash, noncanonical.change_hash],
+                ActorStateError::NoncanonicalInput,
+            ),
+        ] {
+            let closure = accepted_hashes.into_iter().collect::<BTreeSet<_>>();
+            for order in [candidates.clone(), candidates.into_iter().rev().collect()] {
+                let changes = order
+                    .into_iter()
+                    .map(|value| (value.change_hash, value))
+                    .collect::<BTreeMap<_, _>>();
+                assert!(
+                    matches!(
+                        initialize_actor_states_metered(&closure, &changes, |_| Ok::<_, ()>(())),
+                        Err(MeteredActorStateError::State(actual)) if actual == expected
+                    ),
+                    "{name}"
+                );
+            }
+        }
+    }
+
     #[test]
     fn projected_actor_sequence_decision_is_nonmutating_and_complete() {
         let genesis = candidate(1, 1, 1, 1);
