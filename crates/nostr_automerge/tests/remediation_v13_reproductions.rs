@@ -10,7 +10,6 @@ fn projection_builder_source() -> Option<&'static str> {
 }
 
 #[test]
-#[ignore = "FINDING_104 remains open until step_1430"]
 fn finding_104_projection_causal_maximum_has_no_final_state_scan() {
     let source = projection_builder_source();
     assert!(source.is_some(), "reviewed projection source boundary");

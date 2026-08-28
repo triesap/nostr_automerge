@@ -16,12 +16,14 @@ sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = "crates/nostr_automerge/src/graph/actor_state.rs"
 TEST = "graph::actor_state::tests::projection_semantic_matrix_is_complete_and_order_invariant"
-BEFORE = """let causal_next_op = states
-        .values()
-        .map(|state| state.next_op)
-        .max()
-        .unwrap_or(1);"""
-AFTER = BEFORE.replace(".max()", ".min()")
+BEFORE = """causal_next_op = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::CausalMaximumCompare,
+            &mut charge,
+            &mut built,
+            || causal_next_op.max(advanced),
+        )?;"""
+AFTER = BEFORE.replace(".max(advanced)", ".min(advanced)")
 
 
 class MutationError(RuntimeError):

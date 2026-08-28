@@ -65,3 +65,14 @@ while immutable fixture inputs are represented only by temporary active-delta
 assertions pending distribution v14. The sole raw charge left in projection
 construction belongs to the staged final result publication. The next
 checkpoint is `step_1430`.
+
+`step_1430` initializes the closure-wide causal operation counter to one and
+updates it through one charged maximum comparison for each accepted change.
+The completed actor-state map scan is gone, and empty, singleton, chained,
+wide, dense, and signed-fixture proofs bind the corresponding work changes
+without modifying immutable fixture inputs. Finding 104's reproduction is now
+enabled and fixed, while Finding 108 remains open on the separate raw final
+publication charge. This checkpoint also repairs three stale abbreviated
+predecessor identities in the runtime and closed RCLD-116 evidence, and both
+validators now require each full candidate to resolve and form the exact
+direct-parent chain. The next checkpoint is `step_1431`.

@@ -1055,6 +1055,7 @@ fn build_trusted_epoch_projection_observed<'a, E>(
     let mut frontier_heads = BTreeSet::new();
     let mut writer_contributions = BTreeMap::new();
     let mut causal_next_by_change = BTreeMap::<ChangeHash, u64>::new();
+    let mut causal_next_op = 1_u64;
     let mut processed = 0usize;
     loop {
         let has_ready = perform_projection_build_operation(
@@ -1179,6 +1180,13 @@ fn build_trusted_epoch_projection_observed<'a, E>(
                 ActorStateError::OperationCounter,
             ))?
         };
+        causal_next_op = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::CausalMaximumCompare,
+            &mut charge,
+            &mut built,
+            || causal_next_op.max(advanced),
+        )?;
         perform_projection_build_operation(
             WorkCounter::GraphNode,
             ProjectionBuildOperation::MapInsertion,
@@ -1325,11 +1333,6 @@ fn build_trusted_epoch_projection_observed<'a, E>(
             ActorStateError::DependencyCycle,
         ));
     }
-    let causal_next_op = states
-        .values()
-        .map(|state| state.next_op)
-        .max()
-        .unwrap_or(1);
     charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
     published(ProjectionPublicationOperation::Projection);
     Ok(TrustedEpochProjection {
@@ -1693,7 +1696,7 @@ pub(crate) mod tests {
                 .iter()
                 .filter(|counter| **counter == WorkCounter::GraphNode)
                 .count(),
-            23
+            24
         );
         assert_eq!(
             charges
@@ -2991,8 +2994,8 @@ pub(crate) mod tests {
         query.change_hash = ChangeHash::from_bytes([3; 32]);
         query.dependencies = vec![second.change_hash].into();
 
-        const TOTAL_CHARGES: usize = 69;
-        const GRAPH_NODES: usize = 53;
+        const TOTAL_CHARGES: usize = 71;
+        const GRAPH_NODES: usize = 55;
         const GRAPH_EDGES: usize = 16;
         let (ample, trace) = projection_work_contract_run(
             &closure,
@@ -3197,12 +3200,13 @@ pub(crate) mod tests {
                     | ProjectionBuildOperation::ReadinessTransition
                     | ProjectionBuildOperation::CheckedArithmetic
                     | ProjectionBuildOperation::MapInsertion
-                    | ProjectionBuildOperation::SetInsertion),
+                    | ProjectionBuildOperation::SetInsertion
+                    | ProjectionBuildOperation::CausalMaximumCompare),
                 ) => Some(*operation),
                 _ => None,
             })
             .collect::<Vec<_>>();
-        assert_eq!(owned.len(), 59);
+        assert_eq!(owned.len(), 61);
         assert_eq!(
             owned
                 .iter()
@@ -3258,6 +3262,15 @@ pub(crate) mod tests {
                 .count(),
             4
         );
+        assert_eq!(
+            owned
+                .iter()
+                .filter(|operation| {
+                    **operation == ProjectionBuildOperation::CausalMaximumCompare
+                })
+                .count(),
+            2
+        );
 
         let boundaries = full_trace
             .iter()
@@ -3303,6 +3316,55 @@ pub(crate) mod tests {
                     operation_boundary - 1
                 );
             }
+        }
+    }
+
+    #[test]
+    fn projection_causal_maximum_is_charged_once_per_accepted_change() {
+        for (mut candidates, expected_next) in [
+            (Vec::new(), 1_u64),
+            (vec![candidate(1, 1, 1, 2)], 3_u64),
+            (
+                (1_u8..=4)
+                    .map(|actor| {
+                        let mut value = candidate(actor, 1, 1, u64::from(actor));
+                        value.change_hash = ChangeHash::from_bytes([actor; 32]);
+                        value
+                    })
+                    .collect::<Vec<_>>(),
+                5_u64,
+            ),
+        ] {
+            candidates.sort_by_key(|candidate| candidate.change_hash);
+            let accepted = candidates
+                .iter()
+                .map(|candidate| candidate.change_hash)
+                .collect::<BTreeSet<_>>();
+            let changes = candidates
+                .into_iter()
+                .map(|candidate| (candidate.change_hash, candidate))
+                .collect::<BTreeMap<_, _>>();
+            let (result, trace) = observed_projection_build_operations(
+                &accepted,
+                &changes,
+                usize::MAX,
+                Completion::BudgetExhausted,
+            );
+            assert!(result.is_ok());
+            let Ok(projection) = result else { return };
+            assert_eq!(projection.causal_next_op, expected_next);
+            assert_eq!(
+                trace
+                    .iter()
+                    .filter(|entry| {
+                        matches!(
+                            entry,
+                            BuildTrace::Operation(ProjectionBuildOperation::CausalMaximumCompare)
+                        )
+                    })
+                    .count(),
+                accepted.len()
+            );
         }
     }
 
