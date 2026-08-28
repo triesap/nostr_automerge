@@ -1,0 +1,18 @@
+{
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema","status","candidate","operation_inventory_sha256","report_suite_identity_sha256","requirements","findings","fixture_families","stop_laws","counts","result"],
+  "properties":{
+    "schema":{"const":"nostr_automerge.remediation_v12_proof_catalog.v1"},
+    "status":{"const":"pass"},
+    "candidate":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "operation_inventory_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "report_suite_identity_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "requirements":{"type":"array","minItems":4,"maxItems":4,"uniqueItems":true},
+    "findings":{"type":"array","minItems":4,"maxItems":4},
+    "fixture_families":{"type":"array","minItems":7,"maxItems":7,"uniqueItems":true},
+    "stop_laws":{"type":"array","minItems":4,"maxItems":4,"uniqueItems":true},
+    "counts":{"type":"object","additionalProperties":false},
+    "result":{"const":"pass"}
+  }
+}

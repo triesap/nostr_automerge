@@ -368,3 +368,10 @@ closure, scheduling, quarantine, reference publication, report finalization,
 and opaque compatibility evidence to exact owners, source hashes, source
 symbols, and named proofs. Missing, extra, duplicate, reordered, stale-anchor,
 unowned, and schema-open mutations fail closed.
+
+`step_1413` closes the proof catalog over all fifteen operation rows, twenty-one
+report-contract clauses, four findings, seven fixture families, and four stop
+laws. Every operation names one enabled exact test or validator, while missing,
+extra, duplicate, reordered, stale-identity, fixture, stop-law, and open-schema
+mutations fail closed. The exact proof lane executes thirty-six named tests and
+validators without accepting a broad command as substitute evidence.

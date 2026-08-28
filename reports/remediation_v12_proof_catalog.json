@@ -1,0 +1,18 @@
+{
+  "schema":"nostr_automerge.remediation_v12_proof_catalog.v1",
+  "status":"pass",
+  "candidate":"7d518f3e2c057e4c265b4a66416c0eb3de25dad4",
+  "operation_inventory_sha256":"9f57e966d2f3ff94bb15bf01071f839f628b30771c2f6797a9bae98d4aea7687",
+  "report_suite_identity_sha256":"f911bcb863106be48017734dce12d398fa66794c73d3ca7d1d692d897d42b7ca",
+  "requirements":["NCRDT-RESOURCE-017","NCRDT-RESOURCE-018","NCRDT-RESOURCE-019","NCRDT-EVIDENCE-007"],
+  "findings":[
+    {"id":"FINDING_100","proof":"remediation_v12_operation_inventory","status":"closed"},
+    {"id":"FINDING_101","proof":"report_contract_v9","status":"open"},
+    {"id":"FINDING_102","proof":"distribution_v13_parity","status":"closed"},
+    {"id":"FINDING_103","proof":"distribution_v13_parity","status":"open"}
+  ],
+  "fixture_families":["deep_actor_predecessor","empty_frontier","many_actor_causal_next","post_epoch_stop","wide_epoch_ancestry","writer_authorization","distribution_v13"],
+  "stop_laws":["charge_before_work","first_stop_preserved","n_minus_one_stops","zero_post_stop_work"],
+  "counts":{"operation_proofs":15,"report_contract_proofs":21,"finding_proofs":4,"fixture_families":7,"stop_laws":4},
+  "result":"pass"
+}

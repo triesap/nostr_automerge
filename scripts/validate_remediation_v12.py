@@ -65,6 +65,7 @@ POST_STOP_FIXTURE_CANDIDATE = "378f15e7af474e34884b9b25a19960d37b0c02f6"
 DISTRIBUTION_GATE_CANDIDATE = "73ce3be33ddd1beba6528fb9f61a533e5d571cc6"
 COMPATIBILITY_CONTRACT_CANDIDATE = "24b80835cd3bcd71f9d2de366ab533d2ba72ed95"
 PARITY_CANDIDATE = "81f7ad6f2e803760e3562051eac9b62f1401db46"
+OPERATION_INVENTORY_CANDIDATE = "7d518f3e2c057e4c265b4a66416c0eb3de25dad4"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -77,14 +78,14 @@ HOLDS = [
 ACTIVE_SCOPE = [
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
-    "reports/remediation_v12_operation_inventory.json",
+    "reports/remediation_v12_proof_catalog.json",
     "reports/spec_baseline.txt",
     "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v12.py",
-    "scripts/validate_remediation_v12_operation_inventory.py",
+    "scripts/validate_remediation_v12_proof_catalog.py",
     "scripts/validate_spec.py",
     "tools/nostr_automerge_xtask/src/validate.rs",
-    "tools/validation/remediation_v12_operation_inventory.schema.json",
+    "tools/validation/remediation_v12_proof_catalog.schema.json",
 ]
 
 EVIDENCE_REQUIREMENTS = [
@@ -212,13 +213,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 115, "active_step": "step_1412", "next_step": "step_1413", "last_planned_step": "step_1419", "remaining_checkpoint_count": 7, "remaining_rcld_count": 1}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 115, "active_step": "step_1413", "next_step": "step_1414", "last_planned_step": "step_1419", "remaining_checkpoint_count": 6, "remaining_rcld_count": 1}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_101", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 46:
+    if not isinstance(predecessors, list) or len(predecessors) != 47:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -266,6 +267,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[43], {"step": "step_1405", "candidate": DISTRIBUTION_GATE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1405")
     require_equal(predecessors[44], {"step": "step_1406", "candidate": COMPATIBILITY_CONTRACT_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1406")
     require_equal(predecessors[45], {"step": "step_1411", "candidate": PARITY_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1411")
+    require_equal(predecessors[46], {"step": "step_1412", "candidate": OPERATION_INVENTORY_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1412")
 
 
 def validate_trusted_projection() -> None:
@@ -2547,7 +2549,7 @@ def main() -> None:
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
     print(f"- source_mutations={source_mutations}")
-    print("- active=RCLD115/step_1412")
+    print("- active=RCLD115/step_1413")
 
 
 if __name__ == "__main__":
