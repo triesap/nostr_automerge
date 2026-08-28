@@ -235,3 +235,12 @@ work, while checkpoint refusal precedence and diagnostics remain unchanged.
 The production entry preserves exact budget and cancellation causes at every
 authorization pull or predicate, and the epoch-writer reproduction is now
 enabled, leaving five Finding 100 work families open.
+
+`step_1393` replaces eager dependency-closure preparation with an explicit
+charged operation boundary. Result and container construction, every source
+pull, pending-stack push and pop, lookup, comparison, insertion, mutation, and
+final publication now occur only after their own successful graph charge.
+Deep, wide, cyclic, and missing graphs preserve the canonical closure result;
+the exhaustive prefix matrix proves budget and cancellation stop before the
+target operation. The dependency-closure reproduction is enabled, leaving
+four Finding 100 work families open.

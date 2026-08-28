@@ -47,6 +47,7 @@ COMPACT_ANCESTRY_CANDIDATE = "43884403ee71c5a0b6fbf7a9b91b4617dd53b43c"
 METERED_ANCESTRY_CANDIDATE = "89009e315cfe8596f3a639a0af9e359a7c0a40d7"
 ANCESTRY_ROUTE_CANDIDATE = "4f4d43c3aca9d4d959edb2464039d50a983e70a0"
 AUTHORIZATION_HELPER_CANDIDATE = "d3b1d462ee4691741821067fb51d33d6d8eb24d6"
+AUTHORIZATION_ROUTE_CANDIDATE = "b7a72c9c0be884fa821cd4224fe523fa02e03426"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -58,7 +59,7 @@ HOLDS = [
 ]
 ACTIVE_SCOPE = [
     "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-    "crates/nostr_automerge/src/reference/epoch_engine.rs",
+    "crates/nostr_automerge/src/graph/closure.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
     "reports/spec_baseline.txt",
@@ -193,13 +194,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 112, "active_step": "step_1392", "next_step": "step_1393", "last_planned_step": "step_1419", "remaining_checkpoint_count": 27, "remaining_rcld_count": 4}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 112, "active_step": "step_1393", "next_step": "step_1394", "last_planned_step": "step_1419", "remaining_checkpoint_count": 26, "remaining_rcld_count": 4}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 30:
+    if not isinstance(predecessors, list) or len(predecessors) != 31:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -231,6 +232,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[27], {"step": "step_1389", "candidate": METERED_ANCESTRY_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1389")
     require_equal(predecessors[28], {"step": "step_1390", "candidate": ANCESTRY_ROUTE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1390")
     require_equal(predecessors[29], {"step": "step_1391", "candidate": AUTHORIZATION_HELPER_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1391")
+    require_equal(predecessors[30], {"step": "step_1392", "candidate": AUTHORIZATION_ROUTE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1392")
 
 
 def validate_trusted_projection() -> None:
@@ -1502,6 +1504,116 @@ def authorization_production_source_mutation_self_test() -> int:
     return caught
 
 
+def validate_metered_candidate_dependency_closure(source: str | None = None) -> None:
+    source = source or (ROOT / "crates/nostr_automerge/src/graph/closure.rs").read_text()
+    production, tests = source.split("#[cfg(test)]\nmod tests", 1)
+    implementation = production.split("fn candidate_dependency_closure_observed", 1)[1].split(
+        "fn charge_closure_work", 1
+    )[0]
+    wrapper = production.split("pub(crate) fn candidate_dependency_closure(", 1)[1].split(
+        "fn candidate_dependency_closure_observed", 1
+    )[0]
+    if wrapper.count("candidate_dependency_closure_observed(") != 1:
+        raise EvidenceError("closure:production_route")
+    helper = implementation.split("fn closure_operation", 1)[1]
+    ordered = ["charge(counter)?;", "let value = target();", "observed(operation);", "Ok(value)"]
+    positions = [helper.find(token) for token in ordered]
+    if any(position < 0 for position in positions) or positions != sorted(positions):
+        raise EvidenceError("closure:charge_target_order")
+    required_operations = [
+        "ResultConstruction", "PendingStackConstruction", "DependencyPull", "PendingPush",
+        "PendingPull", "KnownLookup", "KnownInsert", "CandidateLookup", "KnownRemove",
+        "MissingInsert", "IndegreeMapConstruction", "KnownPull", "IndegreeInsert",
+        "DependencyKnownComparison", "IndegreeLookup", "IndegreeIncrement",
+        "DependantMapConstruction", "DependantLookup", "DependantBucketInsert",
+        "DependantInsert", "ReadySetConstruction", "IndegreePull", "ReadinessComparison",
+        "ReadyInsert", "ReadyPull", "OrderedPush", "DependantChildrenLookup",
+        "DependantPull", "IndegreeDecrement", "OrderedSetConstruction", "OrderedPull",
+        "OrderedInsert", "OrderedMembershipComparison", "CyclicInsert", "ResultPublication",
+    ]
+    for operation in required_operations:
+        if production.count(f"CandidateClosureOperation::{operation}") < 1:
+            raise EvidenceError("closure:operation:" + operation)
+    prohibited = [
+        "Vec::with_capacity(candidate.dependencies.len())",
+        ".collect::<Result<BTreeMap<_, _>, _>>()",
+        ".collect::<Result<Vec<_>, _>>()?",
+        "while let Some(hash) = pending.pop()",
+        "result.known.difference(&ordered)",
+    ]
+    if any(token in implementation for token in prohibited):
+        raise EvidenceError("closure:unmetered_preparation")
+    for test_name in (
+        "candidate_dependency_closure_charges_immediately_before_every_target_operation",
+        "candidate_dependency_closure_scales_across_deep_wide_cycle_and_missing_graphs",
+        "finding_100_dependency_closure_work_reproduction",
+    ):
+        if tests.count(f"fn {test_name}()") != 1:
+            raise EvidenceError("closure:test_inventory")
+        attributes = tests.split(f"fn {test_name}()", 1)[0].rsplit("#[test]", 1)[-1]
+        if "#[ignore" in attributes:
+            raise EvidenceError("closure:test_ignored")
+    trace_test = tests.split(
+        "fn candidate_dependency_closure_charges_immediately_before_every_target_operation()", 1
+    )[1].split("\n    #[test]", 1)[0]
+    for token in (
+        "Trace::Charge(counter)",
+        "Trace::Operation(operation)",
+        "for allowance in 0..operations.len()",
+        "Err(Stop::BudgetExhausted)",
+        "Err(Stop::Cancelled)",
+        "operations[..allowance]",
+    ):
+        if token not in trace_test:
+            raise EvidenceError("closure:boundary_matrix")
+
+
+def candidate_dependency_closure_source_mutation_self_test() -> int:
+    source = (ROOT / "crates/nostr_automerge/src/graph/closure.rs").read_text()
+    mutations = (
+        source.replace("charge(counter)?;", "let _ = counter;", 1),
+        source.replace(
+            "charge(counter)?;\n    let value = target();",
+            "let value = target();\n    charge(counter)?;",
+            1,
+        ),
+        source.replace(
+            "CandidateClosureOperation::PendingStackConstruction",
+            "CandidateClosureOperation::ResultConstruction",
+            1,
+        ),
+        source.replace(
+            "CandidateClosureOperation::DependantMapConstruction",
+            "CandidateClosureOperation::ResultConstruction",
+            1,
+        ),
+        source.replace(
+            "#[test]\n    fn candidate_dependency_closure_charges",
+            "#[test]\n    #[ignore]\n    fn candidate_dependency_closure_charges",
+            1,
+        ),
+        source.replace(
+            "fn candidate_dependency_closure_scales_across_deep_wide_cycle_and_missing_graphs()",
+            "fn removed_graph_shape_matrix()",
+            1,
+        ),
+        source.replace(
+            "CandidateClosureOperation::ResultPublication",
+            "CandidateClosureOperation::ResultConstruction",
+            1,
+        ),
+    )
+    caught = 0
+    for changed in mutations:
+        try:
+            validate_metered_candidate_dependency_closure(changed)
+        except EvidenceError:
+            caught += 1
+            continue
+        raise EvidenceError("closure:source_mutation_survived")
+    return caught
+
+
 def validate_active_causal_budget_deltas(
     evaluator_source: str | None = None,
     fixture_source: str | None = None,
@@ -1512,9 +1624,9 @@ def validate_active_causal_budget_deltas(
     fixture_source = fixture_source or (
         ROOT / "tools/nostr_automerge_conformance/src/fixture_generation.rs"
     ).read_text()
-    if "fixture_items.checked_add(86)" not in evaluator_source:
+    if "fixture_items.checked_add(117)" not in evaluator_source:
         raise EvidenceError("causal_next:post_branch_delta")
-    if "signed.budget.max_items.checked_add(1072)" not in fixture_source:
+    if "signed.budget.max_items.checked_add(1718)" not in fixture_source:
         raise EvidenceError("causal_next:persistent_delta")
 
 
@@ -1526,8 +1638,8 @@ def causal_budget_source_mutation_self_test() -> int:
         ROOT / "tools/nostr_automerge_conformance/src/fixture_generation.rs"
     ).read_text()
     mutations = (
-        (evaluator_source.replace("checked_add(86)", "checked_add(85)", 1), fixture_source),
-        (evaluator_source, fixture_source.replace("checked_add(1072)", "checked_add(1071)", 1)),
+        (evaluator_source.replace("checked_add(117)", "checked_add(116)", 1), fixture_source),
+        (evaluator_source, fixture_source.replace("checked_add(1718)", "checked_add(1717)", 1)),
     )
     caught = 0
     for changed_evaluator, changed_fixture in mutations:
@@ -1567,7 +1679,7 @@ def validate_reproductions(reproductions: object) -> None:
             "path": path,
             "test": test,
             "diagnostic": diagnostic,
-            "expected": "fixed_pass" if index <= 4 else "open_failure",
+            "expected": "fixed_pass" if index <= 5 else "open_failure",
         }, f"reproductions:{family}")
     require_equal(record["result"], "pass", "reproductions:result")
 
@@ -1782,7 +1894,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1394"),
+        ("cursor", "next_step", "step_1395"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -1952,13 +2064,15 @@ def main() -> None:
     source_mutations += shared_control_member_authorization_source_mutation_self_test()
     validate_authorization_production_routes()
     source_mutations += authorization_production_source_mutation_self_test()
+    validate_metered_candidate_dependency_closure()
+    source_mutations += candidate_dependency_closure_source_mutation_self_test()
     validate_active_causal_budget_deltas()
     source_mutations += causal_budget_source_mutation_self_test()
     mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate, actor_gate)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
     print(f"- source_mutations={source_mutations}")
-    print("- active=RCLD112/step_1392")
+    print("- active=RCLD112/step_1393")
 
 
 if __name__ == "__main__":

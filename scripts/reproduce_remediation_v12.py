@@ -65,7 +65,7 @@ EXPECTED_CASES = [
         "path": "crates/nostr_automerge/src/graph/closure.rs",
         "test": "graph::closure::tests::finding_100_dependency_closure_work_reproduction",
         "diagnostic": "unmetered dependency-closure preparation remains",
-        "expected": "open_failure",
+        "expected": "fixed_pass",
     },
     {
         "finding": "FINDING_100",
