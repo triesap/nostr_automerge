@@ -58,6 +58,7 @@ DISTRIBUTION_V13_TRANSITION_CANDIDATE = "48bba61ae08068d021a79cc50e4eb640b45c982
 DEEP_ACTOR_FIXTURE_CANDIDATE = "a592b6a9d828f2a367e153536b159ebc05df3ea0"
 MANY_ACTOR_FIXTURE_CANDIDATE = "e2d6cebe24318be65229dabbe43c90bb402ad2a1"
 EMPTY_FRONTIER_FIXTURE_CANDIDATE = "364755aa60dd0298b0959329529366ee3d806ce8"
+WIDE_ANCESTRY_FIXTURE_CANDIDATE = "bac152eeb1d48c4e60d47277296386f6d1e624c4"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -71,9 +72,9 @@ ACTIVE_SCOPE = [
     "tools/nostr_automerge_conformance/src/fixture_generation.rs",
     "docs/execution/remediation_v12/ledger.md",
     "fixtures/distribution/manifest_v13.json",
-    "fixtures/v13/scenarios/epoch_semantics/wide_epoch_ancestry_exact_budget.expected.json",
-    "fixtures/v13/scenarios/epoch_semantics/wide_epoch_ancestry_exact_budget.fixture.json",
-    "fixtures/v13/scenarios/epoch_semantics/wide_epoch_ancestry_exact_budget.input.json",
+    "fixtures/v13/scenarios/epoch_semantics/epoch_writer_authorization_exact_budget.expected.json",
+    "fixtures/v13/scenarios/epoch_semantics/epoch_writer_authorization_exact_budget.fixture.json",
+    "fixtures/v13/scenarios/epoch_semantics/epoch_writer_authorization_exact_budget.input.json",
     "implementation/runtime_ledger_v12.json",
     "reports/spec_baseline.txt",
     "scripts/validate_remediation_v12.py",
@@ -205,13 +206,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 113, "active_step": "step_1402", "next_step": "step_1403", "last_planned_step": "step_1419", "remaining_checkpoint_count": 17, "remaining_rcld_count": 3}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 113, "active_step": "step_1403", "next_step": "step_1404", "last_planned_step": "step_1419", "remaining_checkpoint_count": 16, "remaining_rcld_count": 3}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 40:
+    if not isinstance(predecessors, list) or len(predecessors) != 41:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -253,6 +254,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[37], {"step": "step_1399", "candidate": DEEP_ACTOR_FIXTURE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1399")
     require_equal(predecessors[38], {"step": "step_1400", "candidate": MANY_ACTOR_FIXTURE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1400")
     require_equal(predecessors[39], {"step": "step_1401", "candidate": EMPTY_FRONTIER_FIXTURE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1401")
+    require_equal(predecessors[40], {"step": "step_1402", "candidate": WIDE_ANCESTRY_FIXTURE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1402")
 
 
 def validate_trusted_projection() -> None:
@@ -2330,7 +2332,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1402"),
+        ("cursor", "next_step", "step_1403"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -2532,7 +2534,7 @@ def main() -> None:
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
     print(f"- source_mutations={source_mutations}")
-    print("- active=RCLD113/step_1402")
+    print("- active=RCLD113/step_1403")
 
 
 if __name__ == "__main__":

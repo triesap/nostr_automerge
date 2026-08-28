@@ -319,3 +319,10 @@ complete closure omitting one base head. The compact classifier preserves the
 accepted, pending, and invalid outcomes at exact budget and cancellation
 boundaries across eight delivery orders. The staged manifest now contains 202
 of 204 scenarios.
+
+`step_1403` adds the epoch-writer authorization scenario. A stable 64-member
+control chain accepts changes from the first and final writers in canonical
+member order, then rejects an absent writer before its deliberately missing
+dependency can affect disposition. Exact budget and cancellation boundaries
+and eight delivery orders preserve two accepted and one invalid change. The
+staged manifest now contains 203 of 204 scenarios.

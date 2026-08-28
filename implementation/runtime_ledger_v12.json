@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v12_authority.json",
   "cursor": {
     "active_rcld": 113,
-    "active_step": "step_1402",
-    "next_step": "step_1403",
+    "active_step": "step_1403",
+    "next_step": "step_1404",
     "last_planned_step": "step_1419",
-    "remaining_checkpoint_count": 17,
+    "remaining_checkpoint_count": 16,
     "remaining_rcld_count": 3
   },
   "findings": {
@@ -30,9 +30,9 @@
     "tools/nostr_automerge_conformance/src/fixture_generation.rs",
     "docs/execution/remediation_v12/ledger.md",
     "fixtures/distribution/manifest_v13.json",
-    "fixtures/v13/scenarios/epoch_semantics/wide_epoch_ancestry_exact_budget.expected.json",
-    "fixtures/v13/scenarios/epoch_semantics/wide_epoch_ancestry_exact_budget.fixture.json",
-    "fixtures/v13/scenarios/epoch_semantics/wide_epoch_ancestry_exact_budget.input.json",
+    "fixtures/v13/scenarios/epoch_semantics/epoch_writer_authorization_exact_budget.expected.json",
+    "fixtures/v13/scenarios/epoch_semantics/epoch_writer_authorization_exact_budget.fixture.json",
+    "fixtures/v13/scenarios/epoch_semantics/epoch_writer_authorization_exact_budget.input.json",
     "implementation/runtime_ledger_v12.json",
     "reports/spec_baseline.txt",
     "scripts/validate_remediation_v12.py",
@@ -276,6 +276,12 @@
     {
       "step": "step_1401",
       "candidate": "364755aa60dd0298b0959329529366ee3d806ce8",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1402",
+      "candidate": "bac152eeb1d48c4e60d47277296386f6d1e624c4",
       "owner_class": "public",
       "result": "pass"
     }

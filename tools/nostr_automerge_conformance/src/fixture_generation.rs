@@ -80,7 +80,8 @@ fn generate_epoch_semantics_v13() -> Result<(), String> {
     generate_deep_actor_predecessor_v13(&root)?;
     generate_many_actor_causal_next_v13(&root)?;
     generate_empty_merge_frontier_v13(&root)?;
-    generate_wide_epoch_ancestry_v13(&root)
+    generate_wide_epoch_ancestry_v13(&root)?;
+    generate_epoch_writer_authorization_v13(&root)
 }
 
 fn generate_deep_actor_predecessor_v13(root: &Path) -> Result<(), String> {
@@ -516,6 +517,113 @@ fn generate_wide_epoch_ancestry_v13(root: &Path) -> Result<(), String> {
         coordinate,
         events,
         &["NCRDT-RESOURCE-019"],
+        "epoch_semantics_v13",
+        Vec::new(),
+        ScenarioBudget {
+            max_bytes: 1_000_000,
+            max_items: exact,
+        },
+        None,
+    )
+}
+
+fn generate_epoch_writer_authorization_v13(root: &Path) -> Result<(), String> {
+    let fixture_id = "epoch_writer_authorization_exact_budget";
+    let controller = Signer::from_byte(129)?;
+    let writers = (1..=64)
+        .map(Signer::from_byte)
+        .collect::<Result<Vec<_>, _>>()?;
+    let outsider = Signer::from_byte(128)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "f1".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid v13 writer authorization coordinate".to_owned())?;
+    let members = || {
+        writers
+            .iter()
+            .map(|writer| (writer, None, &["write"][..]))
+            .collect()
+    };
+    let early_writer = writers
+        .iter()
+        .min_by_key(|writer| writer.public_key)
+        .ok_or_else(|| "missing v13 early writer".to_owned())?;
+    let final_writer = writers
+        .iter()
+        .max_by_key(|writer| writer.public_key)
+        .ok_or_else(|| "missing v13 final writer".to_owned())?;
+    let control = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let control_id = event_id(&control)?;
+    let (early_raw, early_hash) = author_root_change(coordinate, early_writer, "early-writer")?;
+    let early_event = sign_change(
+        early_writer,
+        2,
+        coordinate,
+        control_id,
+        early_hash,
+        &early_raw,
+    )?;
+    let child = sign_control(
+        &controller,
+        3,
+        coordinate,
+        Some(control_id),
+        control_content_with_links(1, members(), &[early_hash], None, None),
+    )?;
+    let child_id = event_id(&child)?;
+    let (final_seed, _) = author_root_change(coordinate, final_writer, "final-writer")?;
+    let (final_raw, final_hash) = with_change_dependencies(&final_seed, &[early_hash], 2)?;
+    let final_event = sign_change(
+        final_writer,
+        4,
+        coordinate,
+        child_id,
+        final_hash,
+        &final_raw,
+    )?;
+    let grandchild = sign_control(
+        &controller,
+        5,
+        coordinate,
+        Some(child_id),
+        control_content_with_links(2, members(), &[final_hash], None, None),
+    )?;
+    let grandchild_id = event_id(&grandchild)?;
+    let (denied_seed, _) = author_root_change(coordinate, &outsider, "denied-writer")?;
+    let (denied_raw, denied_hash) =
+        with_change_dependencies(&denied_seed, &[ChangeHash::from_bytes([0xed; 32])], 3)?;
+    let denied_event = sign_change(
+        &outsider,
+        6,
+        coordinate,
+        grandchild_id,
+        denied_hash,
+        &denied_raw,
+    )?;
+    let events = vec![
+        control,
+        early_event,
+        child,
+        final_event,
+        grandchild,
+        denied_event,
+    ];
+    let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)?;
+    write_fixture_with_execution(
+        root,
+        fixture_id,
+        coordinate,
+        events,
+        &["NCRDT-RESOURCE-017"],
         "epoch_semantics_v13",
         Vec::new(),
         ScenarioBudget {
@@ -7590,6 +7698,55 @@ mod tests {
         assert_eq!(
             write_canonical_report(&actual).expect("v13 wide ancestry actual bytes"),
             write_canonical_report(&expected).expect("v13 wide ancestry expected bytes")
+        );
+    }
+
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn epoch_writer_authorization_exact_budget() {
+        let fixture_id = "epoch_writer_authorization_exact_budget";
+        let root = repository_root().join("fixtures/v13/scenarios/epoch_semantics");
+        let signed = SignedScenarioInput::parse(
+            &std::fs::read(root.join(format!("{fixture_id}.input.json")))
+                .expect("checked-in v13 writer authorization input"),
+        )
+        .expect("closed v13 writer authorization input");
+        assert_eq!(signed.requirements, ["NCRDT-RESOURCE-017"]);
+        let coordinate = signed
+            .coordinate
+            .parse()
+            .expect("v13 writer authorization coordinate");
+        let events = signed
+            .raw_events
+            .iter()
+            .map(|event| {
+                RawEventBytes::new(
+                    &event
+                        .decoded()
+                        .expect("v13 writer authorization Event bytes"),
+                    ProtocolRevision::draft_v1(),
+                )
+                .expect("bounded v13 writer authorization Event")
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(events.len(), 6);
+        let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)
+            .expect("v13 writer authorization exact boundary");
+        assert_eq!(signed.budget.max_items, exact);
+        let actual = generic_report(
+            fixture_id,
+            signed.clone().into_scenario(),
+            StateAssertionPolicy::None,
+        )
+        .expect("v13 writer authorization report");
+        let expected = serde_json::from_value::<ExpectedReport>(signed.expected_report)
+            .expect("v13 writer authorization expected report");
+        assert_eq!(expected.accepted_changes.len(), 2);
+        assert_eq!(expected.invalid_changes.len(), 1);
+        assert!(expected.pending_changes.is_empty());
+        assert_eq!(
+            write_canonical_report(&actual).expect("v13 writer authorization actual bytes"),
+            write_canonical_report(&expected).expect("v13 writer authorization expected bytes")
         );
     }
 
