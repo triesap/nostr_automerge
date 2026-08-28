@@ -1,0 +1,29 @@
+{
+  "expected": {
+    "report_path": "wide_epoch_ancestry_exact_budget.expected.json",
+    "sha256": "31422a3ad1a70b31a47160dddde910faa2f5bb5bf42363a2a06c169f045331de"
+  },
+  "fixture_id": "wide_epoch_ancestry_exact_budget",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "wide_epoch_ancestry_exact_budget.input.json",
+      "sha256": "de519f1c75b36193bbf7d9dc808db4ea6175876a81d536ed3f42d48e7d20ca4d"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile epoch_semantics_v13",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-RESOURCE-019"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}

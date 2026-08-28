@@ -311,3 +311,11 @@ omitted-frontier and extra-ancestor variants that remain invalid. The fixture
 binds exact N-1/N and cancellation boundaries, all eight delivery orders, and
 byte-identical accepted and invalid partitions. The staged manifest now
 contains 201 of 204 scenarios.
+
+`step_1402` adds the wide epoch-ancestry scenario. Sixteen independently
+signed empty changes form the accepted parent frontier; the child epoch then
+contains an exact valid closure, a closure with one missing dependency, and a
+complete closure omitting one base head. The compact classifier preserves the
+accepted, pending, and invalid outcomes at exact budget and cancellation
+boundaries across eight delivery orders. The staged manifest now contains 202
+of 204 scenarios.

@@ -79,7 +79,8 @@ fn generate_epoch_semantics_v13() -> Result<(), String> {
     std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
     generate_deep_actor_predecessor_v13(&root)?;
     generate_many_actor_causal_next_v13(&root)?;
-    generate_empty_merge_frontier_v13(&root)
+    generate_empty_merge_frontier_v13(&root)?;
+    generate_wide_epoch_ancestry_v13(&root)
 }
 
 fn generate_deep_actor_predecessor_v13(root: &Path) -> Result<(), String> {
@@ -398,6 +399,123 @@ fn generate_empty_merge_frontier_v13(root: &Path) -> Result<(), String> {
         coordinate,
         events,
         &["NCRDT-RESOURCE-017", "NCRDT-RESOURCE-018"],
+        "epoch_semantics_v13",
+        Vec::new(),
+        ScenarioBudget {
+            max_bytes: 1_000_000,
+            max_items: exact,
+        },
+        None,
+    )
+}
+
+fn generate_wide_epoch_ancestry_v13(root: &Path) -> Result<(), String> {
+    let fixture_id = "wide_epoch_ancestry_exact_budget";
+    let controller = Signer::from_byte(130)?;
+    let base_writers = (131..=146)
+        .map(Signer::from_byte)
+        .collect::<Result<Vec<_>, _>>()?;
+    let valid_writer = Signer::from_byte(147)?;
+    let pending_writer = Signer::from_byte(148)?;
+    let invalid_writer = Signer::from_byte(149)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "f2".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid v13 wide ancestry coordinate".to_owned())?;
+    let members = || {
+        base_writers
+            .iter()
+            .chain([&valid_writer, &pending_writer, &invalid_writer])
+            .map(|writer| (writer, None, &["write"][..]))
+            .collect()
+    };
+    let control = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let control_id = event_id(&control)?;
+    let mut base_heads = Vec::new();
+    let mut base_events = Vec::new();
+    for (index, writer) in base_writers.iter().enumerate() {
+        let actor = ActorId::derive(coordinate, writer.public_key);
+        let mut document = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit)
+            .with_actor(automerge::ActorId::from(actor.as_bytes().to_vec()));
+        let hash = document.empty_change(CommitOptions::default());
+        let raw = document
+            .get_change_by_hash(&hash)
+            .map(|change| change.raw_bytes().to_vec())
+            .ok_or_else(|| "missing v13 wide ancestry empty change".to_owned())?;
+        let hash = ChangeHash::from_bytes(hash.0);
+        base_events.push(sign_change(
+            writer,
+            index as u64 + 2,
+            coordinate,
+            control_id,
+            hash,
+            &raw,
+        )?);
+        base_heads.push(hash);
+    }
+    base_heads.sort_unstable();
+    let child = sign_control(
+        &controller,
+        20,
+        coordinate,
+        Some(control_id),
+        control_content_with_links(1, members(), &base_heads, None, None),
+    )?;
+    let child_id = event_id(&child)?;
+    let (valid_seed, _) = author_root_change(coordinate, &valid_writer, "valid-ancestry")?;
+    let (valid_raw, valid_hash) = with_change_dependencies(&valid_seed, &base_heads, 1)?;
+    let valid_event = sign_change(
+        &valid_writer,
+        21,
+        coordinate,
+        child_id,
+        valid_hash,
+        &valid_raw,
+    )?;
+    let (pending_seed, _) = author_root_change(coordinate, &pending_writer, "pending-ancestry")?;
+    let mut pending_dependencies = base_heads.clone();
+    pending_dependencies.push(ChangeHash::from_bytes([0xef; 32]));
+    let (pending_raw, pending_hash) =
+        with_change_dependencies(&pending_seed, &pending_dependencies, 1)?;
+    let pending_event = sign_change(
+        &pending_writer,
+        22,
+        coordinate,
+        child_id,
+        pending_hash,
+        &pending_raw,
+    )?;
+    let (invalid_seed, _) = author_root_change(coordinate, &invalid_writer, "invalid-ancestry")?;
+    let omitted_dependencies = &base_heads[..base_heads.len() - 1];
+    let (invalid_raw, invalid_hash) =
+        with_change_dependencies(&invalid_seed, omitted_dependencies, 1)?;
+    let invalid_event = sign_change(
+        &invalid_writer,
+        23,
+        coordinate,
+        child_id,
+        invalid_hash,
+        &invalid_raw,
+    )?;
+    let mut events = vec![control];
+    events.extend(base_events);
+    events.extend([child, valid_event, pending_event, invalid_event]);
+    let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)?;
+    write_fixture_with_execution(
+        root,
+        fixture_id,
+        coordinate,
+        events,
+        &["NCRDT-RESOURCE-019"],
         "epoch_semantics_v13",
         Vec::new(),
         ScenarioBudget {
@@ -7425,6 +7543,53 @@ mod tests {
         assert_eq!(
             write_canonical_report(&actual).expect("v13 empty frontier actual bytes"),
             write_canonical_report(&expected).expect("v13 empty frontier expected bytes")
+        );
+    }
+
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn wide_epoch_ancestry_exact_budget() {
+        let fixture_id = "wide_epoch_ancestry_exact_budget";
+        let root = repository_root().join("fixtures/v13/scenarios/epoch_semantics");
+        let signed = SignedScenarioInput::parse(
+            &std::fs::read(root.join(format!("{fixture_id}.input.json")))
+                .expect("checked-in v13 wide ancestry input"),
+        )
+        .expect("closed v13 wide ancestry input");
+        assert_eq!(signed.requirements, ["NCRDT-RESOURCE-019"]);
+        let coordinate = signed
+            .coordinate
+            .parse()
+            .expect("v13 wide ancestry coordinate");
+        let events = signed
+            .raw_events
+            .iter()
+            .map(|event| {
+                RawEventBytes::new(
+                    &event.decoded().expect("v13 wide ancestry Event bytes"),
+                    ProtocolRevision::draft_v1(),
+                )
+                .expect("bounded v13 wide ancestry Event")
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(events.len(), 21);
+        let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)
+            .expect("v13 wide ancestry exact boundary");
+        assert_eq!(signed.budget.max_items, exact);
+        let actual = generic_report(
+            fixture_id,
+            signed.clone().into_scenario(),
+            StateAssertionPolicy::None,
+        )
+        .expect("v13 wide ancestry report");
+        let expected = serde_json::from_value::<ExpectedReport>(signed.expected_report)
+            .expect("v13 wide ancestry expected report");
+        assert_eq!(expected.accepted_changes.len(), 17);
+        assert_eq!(expected.pending_changes.len(), 1);
+        assert_eq!(expected.invalid_changes.len(), 1);
+        assert_eq!(
+            write_canonical_report(&actual).expect("v13 wide ancestry actual bytes"),
+            write_canonical_report(&expected).expect("v13 wide ancestry expected bytes")
         );
     }
 
