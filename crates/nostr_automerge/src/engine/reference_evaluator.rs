@@ -1019,18 +1019,16 @@ fn control_authorizes_change(
     if control.terminal() {
         return Ok(false);
     }
-    let mut members = control.members().iter();
-    for _ in 0..control.members().len() {
-        charge_evaluation_work(budget, cancellation, WorkCounter::Control, 1)
-            .map_err(ChangeReductionError::Stopped)?;
-        let Some(member) = members.next() else {
-            return Err(ChangeReductionError::Invariant);
-        };
-        if member.actor == actor && member.device == author && member.roles.contains(&Role::Write) {
-            return Ok(true);
-        }
-    }
-    Ok(false)
+    any_control_member_metered(
+        control.members(),
+        |member| {
+            member.actor == actor && member.device == author && member.roles.contains(&Role::Write)
+        },
+        |counter| {
+            charge_evaluation_work(budget, cancellation, counter, 1)
+                .map_err(ChangeReductionError::Stopped)
+        },
+    )
 }
 
 fn reduce_change_dispositions(
@@ -3896,12 +3894,12 @@ mod tests {
             return;
         };
         // The v12 fixture remains an immutable predecessor input. The active
-        // v12 remediation exposes eighty-two previously hidden projection,
-        // actor-sequence, and ancestry operations before
+        // v12 remediation exposes eighty-six previously hidden projection,
+        // actor-sequence, ancestry, and authorization operations before
         // the same post-branch boundary;
         // distribution v13 will bind the replacement exact budget after the
         // work closure.
-        assert_eq!(fixture_items.checked_add(82), Some(branch_stop_items));
+        assert_eq!(fixture_items.checked_add(86), Some(branch_stop_items));
 
         let evaluator = ReferenceEvaluator::new(crate::ProtocolRevision::draft_v1());
         let mut stopped_budget = WorkBudget::new(1_000_000, branch_stop_items);

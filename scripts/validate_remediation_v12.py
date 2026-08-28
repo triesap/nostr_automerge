@@ -46,6 +46,7 @@ ACTOR_GATE_CANDIDATE = "e98ec40d582c5e8d5e54b856681b260dce716183"
 COMPACT_ANCESTRY_CANDIDATE = "43884403ee71c5a0b6fbf7a9b91b4617dd53b43c"
 METERED_ANCESTRY_CANDIDATE = "89009e315cfe8596f3a639a0af9e359a7c0a40d7"
 ANCESTRY_ROUTE_CANDIDATE = "4f4d43c3aca9d4d959edb2464039d50a983e70a0"
+AUTHORIZATION_HELPER_CANDIDATE = "d3b1d462ee4691741821067fb51d33d6d8eb24d6"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -56,15 +57,14 @@ HOLDS = [
     "remote_mutation",
 ]
 ACTIVE_SCOPE = [
-    "crates/nostr_automerge/src/control/authorize.rs",
-    "crates/nostr_automerge/src/control/mod.rs",
-    "crates/nostr_automerge/src/checkpoint/authorize.rs",
     "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+    "crates/nostr_automerge/src/reference/epoch_engine.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
     "reports/spec_baseline.txt",
-    "scripts/validate_resource_operation_inventory_v10.py",
+    "scripts/reproduce_remediation_v12.py",
     "scripts/validate_remediation_v12.py",
+    "spec/remediation_v12_reproductions.json",
     "tools/nostr_automerge_conformance/src/fixture_generation.rs",
 ]
 
@@ -193,13 +193,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 112, "active_step": "step_1391", "next_step": "step_1392", "last_planned_step": "step_1419", "remaining_checkpoint_count": 28, "remaining_rcld_count": 4}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 112, "active_step": "step_1392", "next_step": "step_1393", "last_planned_step": "step_1419", "remaining_checkpoint_count": 27, "remaining_rcld_count": 4}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 29:
+    if not isinstance(predecessors, list) or len(predecessors) != 30:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -230,6 +230,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[26], {"step": "step_1388", "candidate": COMPACT_ANCESTRY_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1388")
     require_equal(predecessors[27], {"step": "step_1389", "candidate": METERED_ANCESTRY_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1389")
     require_equal(predecessors[28], {"step": "step_1390", "candidate": ANCESTRY_ROUTE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1390")
+    require_equal(predecessors[29], {"step": "step_1391", "candidate": AUTHORIZATION_HELPER_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1391")
 
 
 def validate_trusted_projection() -> None:
@@ -1289,7 +1290,7 @@ def validate_shared_control_member_authorization(
     evaluator_production = evaluator_source.split("#[cfg(test)]\nmod tests", 1)[0]
     if checkpoint_production.count("any_control_member_metered") != 2:
         raise EvidenceError("authorization:checkpoint_route")
-    if evaluator_production.count("any_control_member_metered") != 2:
+    if evaluator_production.count("any_control_member_metered") != 3:
         raise EvidenceError("authorization:evaluator_route")
     if "fn any_control_member_metered" in checkpoint_production or "fn any_control_member_metered" in evaluator_production:
         raise EvidenceError("authorization:duplicate_helper")
@@ -1381,6 +1382,126 @@ def shared_control_member_authorization_source_mutation_self_test() -> int:
     return caught
 
 
+def validate_authorization_production_routes(
+    epoch_source: str | None = None,
+    evaluator_source: str | None = None,
+    checkpoint_source: str | None = None,
+    public_source: str | None = None,
+) -> None:
+    epoch_source = epoch_source or (
+        ROOT / "crates/nostr_automerge/src/reference/epoch_engine.rs"
+    ).read_text()
+    evaluator_source = evaluator_source or (
+        ROOT / "crates/nostr_automerge/src/engine/reference_evaluator.rs"
+    ).read_text()
+    checkpoint_source = checkpoint_source or (
+        ROOT / "crates/nostr_automerge/src/checkpoint/authorize.rs"
+    ).read_text()
+    public_source = public_source or (
+        ROOT / "crates/nostr_automerge/tests/public_engine_api.rs"
+    ).read_text()
+    epoch_production, epoch_tests = epoch_source.split("#[cfg(test)]\nmod tests", 1)
+    evaluator_production = evaluator_source.split("#[cfg(test)]\nmod tests", 1)[0]
+    checkpoint_production = checkpoint_source.split("#[cfg(test)]\nmod tests", 1)[0]
+    if epoch_production.count("any_control_member_metered") != 2:
+        raise EvidenceError("authorization:epoch_route")
+    if evaluator_production.count("any_control_member_metered") != 3:
+        raise EvidenceError("authorization:change_routes")
+    if checkpoint_production.count("any_control_member_metered") != 2:
+        raise EvidenceError("authorization:checkpoint_route_current")
+    route = epoch_production.split("pub(crate) fn evaluate_epoch(", 1)[1].split(
+        "let mut dispositions = resolve_epoch", 1
+    )[0]
+    ordered = [
+        "if terminal {",
+        "let authorized = any_control_member_metered(",
+        "if !authorized {",
+        "candidate_dependency_closure(",
+    ]
+    positions = [route.find(token) for token in ordered]
+    if any(position < 0 for position in positions) or positions != sorted(positions):
+        raise EvidenceError("authorization:epoch_precedence")
+    if route.count("continue;") < 2:
+        raise EvidenceError("authorization:epoch_refusal_exit")
+    change_route = evaluator_production.split("fn control_authorizes_change(", 1)[1].split(
+        "fn reduce_change_dispositions", 1
+    )[0]
+    if change_route.find("if control.terminal()") > change_route.find("any_control_member_metered("):
+        raise EvidenceError("authorization:terminal_precedence")
+    for prohibited in (
+        "selected.content().members.iter().any",
+        "let mut members = control.members().iter()",
+        "for _ in 0..control.members().len()",
+    ):
+        if prohibited in epoch_production or prohibited in evaluator_production:
+            raise EvidenceError("authorization:production_bypass")
+    for test_name in (
+        "finding_100_epoch_writer_authorization_work_reproduction",
+        "epoch_writer_refusal_precedes_dependency_work_and_preserves_typed_stops",
+    ):
+        if epoch_tests.count(f"fn {test_name}()") != 1:
+            raise EvidenceError("authorization:epoch_test_inventory")
+        attributes = epoch_tests.split(f"fn {test_name}()", 1)[0].rsplit("#[test]", 1)[-1]
+        if "#[ignore" in attributes:
+            raise EvidenceError("authorization:epoch_test_ignored")
+    refusal = epoch_tests.split(
+        "fn epoch_writer_refusal_precedes_dependency_work_and_preserves_typed_stops()", 1
+    )[1].split("\n    #[test]", 1)[0]
+    for token in (
+        "WorkCounter::Control), 3",
+        "WorkCounter::ApplyChange), 0",
+        "ScheduleError::BudgetExhausted",
+        "ScheduleError::Cancelled",
+        "[(2, 0), (3, 1), (4, 2)]",
+    ):
+        if token not in refusal:
+            raise EvidenceError("authorization:epoch_refusal_matrix")
+    for test_name in (
+        "signed_checkpoint_role_gate_is_exact_and_delivery_order_independent",
+        "noncanonical_authorization_is_enforced_before_exclusion",
+        "signed_causal_change_matrix",
+    ):
+        if public_source.count(f"fn {test_name}()") != 1:
+            raise EvidenceError("authorization:signed_inventory")
+        attributes = public_source.split(f"fn {test_name}()", 1)[0].rsplit("#[test]", 1)[-1]
+        if "#[ignore" in attributes:
+            raise EvidenceError("authorization:signed_ignored")
+
+
+def authorization_production_source_mutation_self_test() -> int:
+    epoch_source = (
+        ROOT / "crates/nostr_automerge/src/reference/epoch_engine.rs"
+    ).read_text()
+    evaluator_source = (
+        ROOT / "crates/nostr_automerge/src/engine/reference_evaluator.rs"
+    ).read_text()
+    checkpoint_source = (
+        ROOT / "crates/nostr_automerge/src/checkpoint/authorize.rs"
+    ).read_text()
+    public_source = (
+        ROOT / "crates/nostr_automerge/tests/public_engine_api.rs"
+    ).read_text()
+    mutations = (
+        (epoch_source.replace("any_control_member_metered(", "legacy_member_scan(", 1), evaluator_source, checkpoint_source, public_source),
+        (epoch_source.replace("if !authorized {", "if authorized {", 1), evaluator_source, checkpoint_source, public_source),
+        (epoch_source.replace("candidate_dependency_closure(", "legacy_candidate_closure(", 1), evaluator_source, checkpoint_source, public_source),
+        (epoch_source, evaluator_source.replace("any_control_member_metered(", "legacy_member_scan(", 1), checkpoint_source, public_source),
+        (epoch_source, evaluator_source, checkpoint_source.replace("any_control_member_metered(", "legacy_member_scan(", 1), public_source),
+        (epoch_source.replace("#[test]\n    fn epoch_writer_refusal", "#[test]\n    #[ignore]\n    fn epoch_writer_refusal", 1), evaluator_source, checkpoint_source, public_source),
+    )
+    caught = 0
+    for changed_epoch, changed_evaluator, changed_checkpoint, changed_public in mutations:
+        try:
+            validate_authorization_production_routes(
+                changed_epoch, changed_evaluator, changed_checkpoint, changed_public
+            )
+        except EvidenceError:
+            caught += 1
+            continue
+        raise EvidenceError("authorization:production_source_mutation_survived")
+    return caught
+
+
 def validate_active_causal_budget_deltas(
     evaluator_source: str | None = None,
     fixture_source: str | None = None,
@@ -1391,9 +1512,9 @@ def validate_active_causal_budget_deltas(
     fixture_source = fixture_source or (
         ROOT / "tools/nostr_automerge_conformance/src/fixture_generation.rs"
     ).read_text()
-    if "fixture_items.checked_add(82)" not in evaluator_source:
+    if "fixture_items.checked_add(86)" not in evaluator_source:
         raise EvidenceError("causal_next:post_branch_delta")
-    if "signed.budget.max_items.checked_add(1048)" not in fixture_source:
+    if "signed.budget.max_items.checked_add(1072)" not in fixture_source:
         raise EvidenceError("causal_next:persistent_delta")
 
 
@@ -1405,8 +1526,8 @@ def causal_budget_source_mutation_self_test() -> int:
         ROOT / "tools/nostr_automerge_conformance/src/fixture_generation.rs"
     ).read_text()
     mutations = (
-        (evaluator_source.replace("checked_add(82)", "checked_add(81)", 1), fixture_source),
-        (evaluator_source, fixture_source.replace("checked_add(1048)", "checked_add(1047)", 1)),
+        (evaluator_source.replace("checked_add(86)", "checked_add(85)", 1), fixture_source),
+        (evaluator_source, fixture_source.replace("checked_add(1072)", "checked_add(1071)", 1)),
     )
     caught = 0
     for changed_evaluator, changed_fixture in mutations:
@@ -1446,7 +1567,7 @@ def validate_reproductions(reproductions: object) -> None:
             "path": path,
             "test": test,
             "diagnostic": diagnostic,
-            "expected": "fixed_pass" if index <= 3 else "open_failure",
+            "expected": "fixed_pass" if index <= 4 else "open_failure",
         }, f"reproductions:{family}")
     require_equal(record["result"], "pass", "reproductions:result")
 
@@ -1661,7 +1782,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1393"),
+        ("cursor", "next_step", "step_1394"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -1829,13 +1950,15 @@ def main() -> None:
     source_mutations += epoch_ancestry_route_source_mutation_self_test()
     validate_shared_control_member_authorization()
     source_mutations += shared_control_member_authorization_source_mutation_self_test()
+    validate_authorization_production_routes()
+    source_mutations += authorization_production_source_mutation_self_test()
     validate_active_causal_budget_deltas()
     source_mutations += causal_budget_source_mutation_self_test()
     mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate, actor_gate)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
     print(f"- source_mutations={source_mutations}")
-    print("- active=RCLD112/step_1391")
+    print("- active=RCLD112/step_1392")
 
 
 if __name__ == "__main__":

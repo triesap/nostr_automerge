@@ -5,6 +5,7 @@ use std::sync::Arc;
 use crate::ChangeHash;
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 use crate::control::ancestry::ControlAncestry;
+use crate::control::authorize::any_control_member_metered;
 use crate::control::epoch_state::{AcceptedEpochState, MeteredAcceptedEpochStateError};
 use crate::control::validate::ControlEnvelope;
 use crate::graph::actor_state::{
@@ -407,11 +408,32 @@ pub(crate) fn evaluate_epoch(
                 crate::control::epoch_state::AcceptedEpochStateError::ClosureMismatch,
             ));
         };
-        let authorized = selected.content().members.iter().any(|member| {
-            member.actor == candidate.actor
-                && member.device == candidate.author
-                && member.roles.contains(&Role::Write)
-        });
+        if terminal {
+            epoch_candidates.push(EpochCandidate {
+                candidate,
+                semantically_valid: false,
+                canonical_control: false,
+            });
+            continue;
+        }
+        let authorized = any_control_member_metered(
+            &selected.content().members,
+            |member| {
+                member.actor == candidate.actor
+                    && member.device == candidate.author
+                    && member.roles.contains(&Role::Write)
+            },
+            |counter| charge_epoch_item(counter, budget, cancellation),
+        )
+        .map_err(EpochEvaluationError::Schedule)?;
+        if !authorized {
+            epoch_candidates.push(EpochCandidate {
+                candidate,
+                semantically_valid: false,
+                canonical_control: true,
+            });
+            continue;
+        }
         let closure =
             candidate_dependency_closure(&candidate, &all_candidates, budget, cancellation)
                 .map_err(|error| EpochEvaluationError::Schedule(closure_schedule_error(error)))?;
@@ -458,10 +480,8 @@ pub(crate) fn evaluate_epoch(
                     .map_err(EpochEvaluationError::Schedule)
             },
         )?;
-        let prior_semantics_valid = authorized
-            && actor_counter_frontier_valid
-            && ancestry_valid
-            && prior_dependencies_valid;
+        let prior_semantics_valid =
+            actor_counter_frontier_valid && ancestry_valid && prior_dependencies_valid;
         let application_valid = if !prior_semantics_valid {
             false
         } else if !closure.missing.is_empty() {
@@ -515,7 +535,7 @@ pub(crate) fn evaluate_epoch(
         epoch_candidates.push(EpochCandidate {
             candidate,
             semantically_valid,
-            canonical_control: !terminal,
+            canonical_control: true,
         });
     }
     let mut dispositions = resolve_epoch(
@@ -795,6 +815,14 @@ mod tests {
     }
 
     fn control(base_heads: Vec<ChangeHash>) -> ControlEnvelope {
+        control_with_members(base_heads, Vec::new(), true)
+    }
+
+    fn control_with_members(
+        base_heads: Vec<ChangeHash>,
+        members: Vec<DeviceGrant>,
+        terminal: bool,
+    ) -> ControlEnvelope {
         let controller = ControllerPublicKey::from_bytes([1; 32]);
         let coordinate = DocumentCoordinate::new(controller, DocumentId::from_bytes([2; 32]));
         ControlEnvelope::from_validated(ValidatedControlCarrier::for_test(
@@ -804,11 +832,11 @@ mod tests {
             None,
             ValidatedControlContent {
                 base_heads,
-                members: Vec::new(),
+                members,
                 predecessor: None,
                 sequence: 0,
                 successor: None,
-                terminal: true,
+                terminal,
             },
         ))
     }
@@ -871,7 +899,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "remediation v12 expected failure: unmetered writer authorization scan"]
     fn finding_100_epoch_writer_authorization_work_reproduction() {
         let coordinate = DocumentCoordinate::new(
             ControllerPublicKey::from_bytes([1; 32]),
@@ -910,10 +937,101 @@ mod tests {
         assert!(matches(&final_match));
 
         let source = include_str!("epoch_engine.rs");
+        let production = source
+            .split("#[cfg(test)]\nmod tests")
+            .next()
+            .unwrap_or(source);
         assert!(
-            !source.contains("selected.content().members.iter().any"),
+            !production.contains("selected.content().members.iter().any"),
             "unmetered epoch writer authorization scan remains"
         );
+        assert!(production.contains("any_control_member_metered("));
+    }
+
+    #[test]
+    fn epoch_writer_refusal_precedes_dependency_work_and_preserves_typed_stops() {
+        let author = DevicePublicKey::from_bytes([7; 32]);
+        let coordinate = DocumentCoordinate::new(
+            ControllerPublicKey::from_bytes([1; 32]),
+            DocumentId::from_bytes([2; 32]),
+        );
+        let denied_device = DevicePublicKey::from_bytes([8; 32]);
+        let denied_control = control_with_members(
+            Vec::new(),
+            vec![DeviceGrant {
+                account: None,
+                actor: ActorId::derive(coordinate, denied_device),
+                device: denied_device,
+                roles: vec![crate::types::role::Role::Checkpoint],
+            }],
+            false,
+        );
+        let candidate = ChangeCandidate {
+            change_hash: ChangeHash::from_bytes([5; 32]),
+            actor: ActorId::from_bytes([6; 32]),
+            sequence: 1,
+            start_op: 1,
+            operation_count: 1,
+            dependencies: vec![ChangeHash::from_bytes([9; 32])].into(),
+            control_id: EventId::from_bytes([3; 32]),
+            author,
+            valid_carriers: Arc::from([]),
+        };
+        let input = EpochEvaluationInput::new(
+            denied_control,
+            empty_state(),
+            [candidate.clone()],
+            Vec::new(),
+        );
+        assert!(input.is_ok());
+        let Ok(input) = input else { return };
+
+        let mut ample = WorkBudget::new(1_000, 1_000);
+        let result = evaluate_epoch(&input, &mut ample, &NeverCancelled);
+        assert!(result.is_ok_and(|result| {
+            result.dispositions().get(&candidate.change_hash) == Some(&ProtocolDisposition::Invalid)
+        }));
+        assert_eq!(ample.consumed().get(WorkCounter::Control), 3);
+        assert_eq!(ample.consumed().get(WorkCounter::GraphEdge), 1);
+        assert_eq!(ample.consumed().get(WorkCounter::ApplyChange), 0);
+
+        for (capacity, expected_control) in [(2, 0), (3, 1), (4, 2)] {
+            let mut budget = WorkBudget::new(1_000, capacity);
+            let result = evaluate_epoch(&input, &mut budget, &NeverCancelled);
+            assert!(matches!(
+                result,
+                Err(super::EpochEvaluationError::Schedule(
+                    crate::graph::schedule::ScheduleError::BudgetExhausted
+                ))
+            ));
+            assert_eq!(
+                budget.consumed().get(WorkCounter::Control),
+                expected_control
+            );
+            assert_eq!(budget.consumed().get(WorkCounter::GraphEdge), 0);
+        }
+
+        for (cancel_at, expected_control) in [(2, 0), (3, 1), (4, 2)] {
+            let calls = std::cell::Cell::new(0_u64);
+            let cancellation = || {
+                let current = calls.get();
+                calls.set(current.saturating_add(1));
+                current == cancel_at
+            };
+            let mut budget = WorkBudget::new(1_000, 1_000);
+            let result = evaluate_epoch(&input, &mut budget, &cancellation);
+            assert!(matches!(
+                result,
+                Err(super::EpochEvaluationError::Schedule(
+                    crate::graph::schedule::ScheduleError::Cancelled
+                ))
+            ));
+            assert_eq!(
+                budget.consumed().get(WorkCounter::Control),
+                expected_control
+            );
+            assert_eq!(budget.consumed().get(WorkCounter::GraphEdge), 0);
+        }
     }
 
     #[test]

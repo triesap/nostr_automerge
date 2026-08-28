@@ -44,7 +44,7 @@
       "path": "crates/nostr_automerge/src/reference/epoch_engine.rs",
       "test": "reference::epoch_engine::tests::finding_100_epoch_writer_authorization_work_reproduction",
       "diagnostic": "unmetered epoch writer authorization scan remains",
-      "expected": "open_failure"
+      "expected": "fixed_pass"
     },
     {
       "finding": "FINDING_100",

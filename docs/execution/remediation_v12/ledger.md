@@ -227,3 +227,11 @@ absent pull, and every role or identity predicate is observed before work;
 empty, denied, and first, middle, or final matches have exact callback counts,
 budget boundaries, and cancellation prefixes. Epoch-writer and remaining
 change-disposition authorization adoption stays reserved for `step_1392`.
+
+`step_1392` routes epoch-writer and final change-carrier authorization through
+that shared boundary. Terminal controls and denied writers become invalid
+before candidate dependency, ancestry, actor, counter, frontier, or Automerge
+work, while checkpoint refusal precedence and diagnostics remain unchanged.
+The production entry preserves exact budget and cancellation causes at every
+authorization pull or predicate, and the epoch-writer reproduction is now
+enabled, leaving five Finding 100 work families open.
