@@ -3403,6 +3403,115 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn projection_operation_families_have_exact_n_minus_one_n_and_n_plus_one_stops() {
+        let first = candidate(1, 1, 1, 1);
+        let mut second = candidate(1, 2, 2, 1);
+        second.change_hash = ChangeHash::from_bytes([2; 32]);
+        second.dependencies = vec![first.change_hash].into();
+        let accepted = BTreeSet::from([first.change_hash, second.change_hash]);
+        let changes = BTreeMap::from([(first.change_hash, first), (second.change_hash, second)]);
+        let (complete, trace) = observed_projection_build_operations(
+            &accepted,
+            &changes,
+            usize::MAX,
+            Completion::BudgetExhausted,
+        );
+        assert!(complete.is_ok());
+        let operations = trace
+            .iter()
+            .filter_map(|entry| match entry {
+                BuildTrace::Operation(operation) => Some(*operation),
+                BuildTrace::Charge(_) => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(operations.len(), 63);
+        let families = [
+            (ProjectionBuildOperation::CanonicalSourcePull, 4),
+            (ProjectionBuildOperation::CanonicalOrderCompare, 7),
+            (ProjectionBuildOperation::MembershipLookup, 3),
+            (ProjectionBuildOperation::CandidateLookup, 4),
+            (ProjectionBuildOperation::DependencyLookup, 2),
+            (ProjectionBuildOperation::StateLookup, 11),
+            (ProjectionBuildOperation::ReadinessTransition, 6),
+            (ProjectionBuildOperation::CheckedArithmetic, 6),
+            (ProjectionBuildOperation::MapInsertion, 12),
+            (ProjectionBuildOperation::SetInsertion, 4),
+            (ProjectionBuildOperation::SharedReferenceClone, 0),
+            (ProjectionBuildOperation::CausalMaximumCompare, 2),
+            (ProjectionBuildOperation::ResultPublication, 1),
+            (ProjectionBuildOperation::ConstantCandidateValidation, 1),
+        ];
+        for (family, expected) in families {
+            assert_eq!(
+                operations
+                    .iter()
+                    .filter(|operation| **operation == family)
+                    .count(),
+                expected
+            );
+        }
+
+        let mut operation_ordinal = 0_usize;
+        let mut successful_charges = 0_usize;
+        for entry in &trace {
+            match entry {
+                BuildTrace::Charge(_) => successful_charges += 1,
+                BuildTrace::Operation(expected) => {
+                    operation_ordinal += 1;
+                    assert!(successful_charges > 0);
+                    let blocked_limit = successful_charges - 1;
+                    for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
+                        let (blocked, blocked_trace) = observed_projection_build_operations(
+                            &accepted,
+                            &changes,
+                            blocked_limit,
+                            stopped,
+                        );
+                        assert!(matches!(
+                            blocked,
+                            Err(MeteredActorStateError::Work(value)) if value == stopped
+                        ));
+                        assert_eq!(
+                            blocked_trace
+                                .iter()
+                                .filter(|entry| matches!(entry, BuildTrace::Operation(_)))
+                                .count(),
+                            operation_ordinal - 1
+                        );
+
+                        for allowance in [successful_charges, successful_charges + 1] {
+                            let (admitted, admitted_trace) = observed_projection_build_operations(
+                                &accepted, &changes, allowance, stopped,
+                            );
+                            let admitted_operations = admitted_trace
+                                .iter()
+                                .filter_map(|entry| match entry {
+                                    BuildTrace::Operation(operation) => Some(*operation),
+                                    BuildTrace::Charge(_) => None,
+                                })
+                                .collect::<Vec<_>>();
+                            assert_eq!(
+                                admitted_operations.get(operation_ordinal - 1),
+                                Some(expected)
+                            );
+                            if allowance < 63 {
+                                assert!(matches!(
+                                    admitted,
+                                    Err(MeteredActorStateError::Work(value)) if value == stopped
+                                ));
+                            } else {
+                                assert!(admitted.is_ok());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        assert_eq!(successful_charges, 63);
+        assert_eq!(operation_ordinal, 63);
+    }
+
+    #[test]
     fn charged_projection_traversal_stops_before_every_source_read() {
         let first = candidate(1, 1, 1, 1);
         let mut second = candidate(1, 2, 2, 1);

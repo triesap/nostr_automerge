@@ -97,3 +97,12 @@ and eight enabled proofs. Thirty closed-record mutations and direct source,
 validator, schema, ancestry, and fixture bindings fail closed. All findings
 remain open pending the proof, distribution, and cross-language RCLDs. The
 next checkpoint is `step_1433` in RCLD 118.
+
+`step_1433` adds an independent exact operation-trace oracle over the completed
+builder. The two-change dependency construction contains 63 operations across
+all fourteen closed families, including an explicit zero count for the absent
+shared-reference clone. Every operation occurrence is attacked at N-1, N,
+N+1, and the matching cancellation boundary; a failed charge admits no owned
+operation, while N and N+1 expose the exact expected prefix. Existing injected
+error and panic identity proofs remain green. The next checkpoint is
+`step_1434`.
