@@ -304,3 +304,10 @@ global next-operation decision must advance across actor boundaries instead of
 reusing a per-actor counter. The fixture binds its exact complete budget,
 canonical no-progress at N-1, typed cancellation, eight delivery orders, and
 byte-identical output. The staged manifest now contains 200 of 204 scenarios.
+
+`step_1401` adds the empty-merge frontier scenario. One epoch contains a
+canonical empty merge over the exact projected frontier together with signed
+omitted-frontier and extra-ancestor variants that remain invalid. The fixture
+binds exact N-1/N and cancellation boundaries, all eight delivery orders, and
+byte-identical accepted and invalid partitions. The staged manifest now
+contains 201 of 204 scenarios.

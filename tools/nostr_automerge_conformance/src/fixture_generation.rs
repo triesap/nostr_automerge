@@ -78,7 +78,8 @@ fn generate_epoch_semantics_v13() -> Result<(), String> {
     let root = repository_root().join("fixtures/v13/scenarios/epoch_semantics");
     std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
     generate_deep_actor_predecessor_v13(&root)?;
-    generate_many_actor_causal_next_v13(&root)
+    generate_many_actor_causal_next_v13(&root)?;
+    generate_empty_merge_frontier_v13(&root)
 }
 
 fn generate_deep_actor_predecessor_v13(root: &Path) -> Result<(), String> {
@@ -263,6 +264,140 @@ fn generate_many_actor_causal_next_v13(root: &Path) -> Result<(), String> {
         coordinate,
         events,
         &["NCRDT-RESOURCE-018"],
+        "epoch_semantics_v13",
+        Vec::new(),
+        ScenarioBudget {
+            max_bytes: 1_000_000,
+            max_items: exact,
+        },
+        None,
+    )
+}
+
+fn generate_empty_merge_frontier_v13(root: &Path) -> Result<(), String> {
+    let fixture_id = "empty_merge_frontier_exact_budget";
+    let controller = Signer::from_byte(172)?;
+    let first_writer = Signer::from_byte(173)?;
+    let second_writer = Signer::from_byte(174)?;
+    let valid_writer = Signer::from_byte(175)?;
+    let omitted_writer = Signer::from_byte(176)?;
+    let extra_writer = Signer::from_byte(177)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "f3".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid v13 empty frontier coordinate".to_owned())?;
+    let control = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(
+            0,
+            vec![
+                (&first_writer, None, &["write"][..]),
+                (&second_writer, None, &["write"][..]),
+                (&valid_writer, None, &["write"][..]),
+                (&omitted_writer, None, &["write"][..]),
+                (&extra_writer, None, &["write"][..]),
+            ],
+            "automerge-change-v1",
+        ),
+    )?;
+    let control_id = event_id(&control)?;
+    let authored_operation = |writer: &Signer,
+                              key: &str|
+     -> Result<(Vec<u8>, ChangeHash), String> {
+        let actor = ActorId::derive(coordinate, writer.public_key);
+        let mut document = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+            .map_err(|error| format!("v13 empty frontier operation document: {error:?}"))?;
+        let authored = document
+            .author_change(&[Operation::PutString {
+                key: key.to_owned(),
+                value: "accepted".to_owned(),
+            }])
+            .map_err(|error| format!("v13 empty frontier operation: {error:?}"))?;
+        Ok((authored.raw().to_vec(), authored.change_hash()))
+    };
+    let authored_empty = |writer: &Signer| -> Result<Vec<u8>, String> {
+        let actor = ActorId::derive(coordinate, writer.public_key);
+        let mut document = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit)
+            .with_actor(automerge::ActorId::from(actor.as_bytes().to_vec()));
+        let hash = document.empty_change(CommitOptions::default());
+        document
+            .get_change_by_hash(&hash)
+            .map(|change| change.raw_bytes().to_vec())
+            .ok_or_else(|| "missing v13 authored empty change".to_owned())
+    };
+    let (first_raw, first_hash) = authored_operation(&first_writer, "first")?;
+    let first_event = sign_change(
+        &first_writer,
+        2,
+        coordinate,
+        control_id,
+        first_hash,
+        &first_raw,
+    )?;
+    let (second_seed, _) = authored_operation(&second_writer, "second")?;
+    let (second_raw, second_hash) = with_change_dependencies(&second_seed, &[first_hash], 2)?;
+    let second_event = sign_change(
+        &second_writer,
+        3,
+        coordinate,
+        control_id,
+        second_hash,
+        &second_raw,
+    )?;
+    let (valid_raw, valid_hash) =
+        with_change_dependencies(&authored_empty(&valid_writer)?, &[second_hash], 3)?;
+    let valid_event = sign_change(
+        &valid_writer,
+        4,
+        coordinate,
+        control_id,
+        valid_hash,
+        &valid_raw,
+    )?;
+    let (omitted_raw, omitted_hash) =
+        with_change_dependencies(&authored_empty(&omitted_writer)?, &[], 3)?;
+    let omitted_event = sign_change(
+        &omitted_writer,
+        5,
+        coordinate,
+        control_id,
+        omitted_hash,
+        &omitted_raw,
+    )?;
+    let (extra_raw, extra_hash) = with_change_dependencies(
+        &authored_empty(&extra_writer)?,
+        &[first_hash, second_hash],
+        3,
+    )?;
+    let extra_event = sign_change(
+        &extra_writer,
+        6,
+        coordinate,
+        control_id,
+        extra_hash,
+        &extra_raw,
+    )?;
+    let events = vec![
+        control,
+        first_event,
+        second_event,
+        valid_event,
+        omitted_event,
+        extra_event,
+    ];
+    let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)?;
+    write_fixture_with_execution(
+        root,
+        fixture_id,
+        coordinate,
+        events,
+        &["NCRDT-RESOURCE-017", "NCRDT-RESOURCE-018"],
         "epoch_semantics_v13",
         Vec::new(),
         ScenarioBudget {
@@ -7241,6 +7376,55 @@ mod tests {
         assert_eq!(
             write_canonical_report(&actual).expect("v13 many actor actual bytes"),
             write_canonical_report(&expected).expect("v13 many actor expected bytes")
+        );
+    }
+
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn empty_merge_frontier_exact_budget() {
+        let fixture_id = "empty_merge_frontier_exact_budget";
+        let root = repository_root().join("fixtures/v13/scenarios/epoch_semantics");
+        let signed = SignedScenarioInput::parse(
+            &std::fs::read(root.join(format!("{fixture_id}.input.json")))
+                .expect("checked-in v13 empty frontier input"),
+        )
+        .expect("closed v13 empty frontier input");
+        assert_eq!(
+            signed.requirements,
+            ["NCRDT-RESOURCE-017", "NCRDT-RESOURCE-018"]
+        );
+        let coordinate = signed
+            .coordinate
+            .parse()
+            .expect("v13 empty frontier coordinate");
+        let events = signed
+            .raw_events
+            .iter()
+            .map(|event| {
+                RawEventBytes::new(
+                    &event.decoded().expect("v13 empty frontier Event bytes"),
+                    ProtocolRevision::draft_v1(),
+                )
+                .expect("bounded v13 empty frontier Event")
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(events.len(), 6);
+        let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)
+            .expect("v13 empty frontier exact boundary");
+        assert_eq!(signed.budget.max_items, exact);
+        let actual = generic_report(
+            fixture_id,
+            signed.clone().into_scenario(),
+            StateAssertionPolicy::None,
+        )
+        .expect("v13 empty frontier report");
+        let expected = serde_json::from_value::<ExpectedReport>(signed.expected_report)
+            .expect("v13 empty frontier expected report");
+        assert_eq!(expected.accepted_changes.len(), 3);
+        assert_eq!(expected.invalid_changes.len(), 2);
+        assert_eq!(
+            write_canonical_report(&actual).expect("v13 empty frontier actual bytes"),
+            write_canonical_report(&expected).expect("v13 empty frontier expected bytes")
         );
     }
 

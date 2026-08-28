@@ -1,0 +1,30 @@
+{
+  "expected": {
+    "report_path": "empty_merge_frontier_exact_budget.expected.json",
+    "sha256": "3ee1c0b2c2add074bc082a484bfb0964f2389d22651df41ce786258b7b1ab574"
+  },
+  "fixture_id": "empty_merge_frontier_exact_budget",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "empty_merge_frontier_exact_budget.input.json",
+      "sha256": "9366e5f5a4a8fbe3296f1b0778edb32549d6356689884118f3218eeb4e7e8e9c"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile epoch_semantics_v13",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-RESOURCE-017",
+    "NCRDT-RESOURCE-018"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}
