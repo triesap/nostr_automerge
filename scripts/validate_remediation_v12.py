@@ -42,6 +42,7 @@ CAUSAL_DECISION_CANDIDATE = "287b0967751f7575faf3a8ee38c15c65aa428290"
 CAUSAL_ROUTE_CANDIDATE = "5377b9d276b4deabd0fd3c6f6dac1734d213e74d"
 FRONTIER_CANDIDATE = "502c5701d73c4452906ef92f0a324908b9d039a8"
 COMBINED_CANDIDATE = "6a190cefa11f84e069ece47644b66992dc82e8f3"
+ACTOR_GATE_CANDIDATE = "e98ec40d582c5e8d5e54b856681b260dce716183"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -52,16 +53,12 @@ HOLDS = [
     "remote_mutation",
 ]
 ACTIVE_SCOPE = [
+    "crates/nostr_automerge/src/graph/epoch.rs",
+    "crates/nostr_automerge/src/reference/epoch_engine.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
-    "reports/remediation_v12_actor_gate.json",
     "reports/spec_baseline.txt",
-    "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v12.py",
-    "scripts/validate_remediation_v12_actor_gate.py",
-    "scripts/validate_spec.py",
-    "tools/nostr_automerge_xtask/src/validate.rs",
-    "tools/validation/remediation_v12_actor_gate.schema.json",
 ]
 
 EVIDENCE_REQUIREMENTS = [
@@ -189,13 +186,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 111, "active_step": "step_1387", "next_step": "step_1388", "last_planned_step": "step_1419", "remaining_checkpoint_count": 32, "remaining_rcld_count": 5}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 112, "active_step": "step_1388", "next_step": "step_1389", "last_planned_step": "step_1419", "remaining_checkpoint_count": 31, "remaining_rcld_count": 4}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 25:
+    if not isinstance(predecessors, list) or len(predecessors) != 26:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -222,6 +219,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[22], {"step": "step_1384", "candidate": CAUSAL_ROUTE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1384")
     require_equal(predecessors[23], {"step": "step_1385", "candidate": FRONTIER_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1385")
     require_equal(predecessors[24], {"step": "step_1386", "candidate": COMBINED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1386")
+    require_equal(predecessors[25], {"step": "step_1387", "candidate": ACTOR_GATE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1387")
 
 
 def validate_trusted_projection() -> None:
@@ -959,6 +957,74 @@ def combined_candidate_source_mutation_self_test() -> int:
     return caught
 
 
+def validate_compact_epoch_ancestry(source: str | None = None) -> None:
+    source = source or (ROOT / "crates/nostr_automerge/src/graph/epoch.rs").read_text()
+    production, tests = source.split("#[cfg(test)]\nmod tests", 1)
+    required = [
+        "pub(crate) enum EpochAncestry {\n    Valid,\n    PendingMissing,\n    InvalidOmission,\n}",
+        "enum EpochAncestryObservation {\n    Missing,\n    Complete { omits_base_head: bool },\n}",
+        "const fn from_observation(observation: EpochAncestryObservation) -> Self",
+        "EpochAncestryObservation::Missing => Self::PendingMissing",
+        "omits_base_head: false,\n            } => Self::Valid",
+        "omits_base_head: true,\n            } => Self::InvalidOmission",
+    ]
+    if any(token not in production for token in required):
+        raise EvidenceError("ancestry:compact_shape")
+    for prohibited in (
+        "PendingMissing(Vec<ChangeHash>)",
+        "InvalidOmission(Vec<ChangeHash>)",
+        "pub enum EpochAncestry",
+        "pub(crate) enum EpochAncestryObservation",
+    ):
+        if prohibited in production:
+            raise EvidenceError("ancestry:compact_boundary")
+    test_name = "compact_epoch_ancestry_outcomes_are_closed_and_unambiguous"
+    if tests.count(f"fn {test_name}()") != 1:
+        raise EvidenceError("ancestry:compact_test_inventory")
+    prefix, body = tests.split(f"fn {test_name}()", 1)
+    if "#[ignore" in prefix.rsplit("#[test]", 1)[-1]:
+        raise EvidenceError("ancestry:compact_test_ignored")
+    body = body.split("\n    #[test]", 1)[0]
+    for token in (
+        "size_of::<EpochAncestry>()",
+        "EpochAncestryObservation::Missing",
+        "omits_base_head: false",
+        "omits_base_head: true",
+        "EpochAncestry::PendingMissing",
+        "EpochAncestry::InvalidOmission",
+        "EpochAncestry::Valid",
+    ):
+        if token not in body:
+            raise EvidenceError("ancestry:compact_test_matrix")
+
+
+def compact_epoch_ancestry_source_mutation_self_test() -> int:
+    source = (ROOT / "crates/nostr_automerge/src/graph/epoch.rs").read_text()
+    mutations = (
+        source.replace("    PendingMissing,", "    PendingMissing(Vec<ChangeHash>),", 1),
+        source.replace("    InvalidOmission,", "    InvalidOmission(Vec<ChangeHash>),", 1),
+        source.replace(
+            "    Missing,\n    Complete { omits_base_head: bool },",
+            "    Missing { omits_base_head: bool },\n    Complete { omits_base_head: bool },",
+            1,
+        ),
+        source.replace(
+            "pub(crate) enum EpochAncestry {",
+            "pub enum EpochAncestry {",
+            1,
+        ),
+    )
+    caught = 0
+    for changed in mutations:
+        try:
+            validate_compact_epoch_ancestry(changed)
+        except EvidenceError:
+            caught += 1
+            continue
+        raise EvidenceError("ancestry:compact_source_mutation_survived")
+    return caught
+
+
 def validate_active_causal_budget_deltas(
     evaluator_source: str | None = None,
     fixture_source: str | None = None,
@@ -1239,7 +1305,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1389"),
+        ("cursor", "next_step", "step_1390"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -1399,13 +1465,15 @@ def main() -> None:
     source_mutations += streaming_frontier_source_mutation_self_test()
     validate_combined_candidate_semantics()
     source_mutations += combined_candidate_source_mutation_self_test()
+    validate_compact_epoch_ancestry()
+    source_mutations += compact_epoch_ancestry_source_mutation_self_test()
     validate_active_causal_budget_deltas()
     source_mutations += causal_budget_source_mutation_self_test()
     mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate, actor_gate)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
     print(f"- source_mutations={source_mutations}")
-    print("- active=RCLD111/step_1387")
+    print("- active=RCLD112/step_1388")
 
 
 if __name__ == "__main__":

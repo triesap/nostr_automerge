@@ -193,3 +193,11 @@ actor-predecessor, causal-next-operation, and empty-frontier families are
 fixed; Finding 100 remains open with seven families assigned to RCLD 112.
 The runtime cursor advances to `step_1388` and RCLD 112 without changing any
 protocol, requirement, fixture, or conformance output.
+
+`step_1388` replaces the ancestry decision's missing- and omitted-hash vectors
+with a closed one-byte `valid`, `pending_missing`, or `invalid_omission`
+outcome. A typed observation distinguishes missing evidence from a complete
+comparison, so an ambiguous missing-plus-omission state cannot be constructed.
+The legacy traversal now short-circuits without allocating a diagnostic
+vector, while its unmetered source walk remains explicitly open for
+`step_1389` and production routing remains assigned to `step_1390`.

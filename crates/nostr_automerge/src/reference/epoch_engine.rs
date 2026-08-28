@@ -445,7 +445,7 @@ pub(crate) fn evaluate_epoch(
                 &closure.known,
                 &closure.missing,
             ),
-            EpochAncestry::InvalidOmission(_)
+            EpochAncestry::InvalidOmission
         );
         let prior_dependencies_valid = prior_dependencies_valid_metered(
             input.prior_change_knowledge(),
