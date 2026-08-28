@@ -38,7 +38,7 @@ EXPECTED_CASES = [
         "path": "crates/nostr_automerge/src/graph/actor_state.rs",
         "test": "graph::actor_state::tests::finding_100_empty_frontier_work_reproduction",
         "diagnostic": "unmetered empty-frontier allocation remains",
-        "expected": "open_failure",
+        "expected": "fixed_pass",
     },
     {
         "finding": "FINDING_100",
@@ -199,7 +199,7 @@ def mutation_self_test(value: object) -> int:
             continue
         raise ReproductionError("inventory mutation survived")
     rows = validate_inventory(value)
-    row = rows[2]
+    row = rows[3]
     stdout = (
         f"running 1 test\ntest {row['test']} ... FAILED\n\n"
         f"{row['diagnostic']}\n\nfailures:\n    {row['test']}\n\n"

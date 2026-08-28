@@ -26,7 +26,7 @@
       "path": "crates/nostr_automerge/src/graph/actor_state.rs",
       "test": "graph::actor_state::tests::finding_100_empty_frontier_work_reproduction",
       "diagnostic": "unmetered empty-frontier allocation remains",
-      "expected": "open_failure"
+      "expected": "fixed_pass"
     },
     {
       "finding": "FINDING_100",

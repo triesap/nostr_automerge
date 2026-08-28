@@ -38,6 +38,7 @@ ACTOR_DECISION_CANDIDATE = "629747ab2537593ddf0a4f689a3e14ea6e576039"
 ACTOR_ROUTE_CANDIDATE = "3ced1446a04a422f5760d00d9786dd18ace76930"
 ACTOR_SIGNED_CANDIDATE = "63661f2f1df8394d7526ec2f5d2fa2be60e65efe"
 CAUSAL_DECISION_CANDIDATE = "287b0967751f7575faf3a8ee38c15c65aa428290"
+CAUSAL_ROUTE_CANDIDATE = "5377b9d276b4deabd0fd3c6f6dac1734d213e74d"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -185,13 +186,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 111, "active_step": "step_1384", "next_step": "step_1385", "last_planned_step": "step_1419", "remaining_checkpoint_count": 35, "remaining_rcld_count": 5}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 111, "active_step": "step_1385", "next_step": "step_1386", "last_planned_step": "step_1419", "remaining_checkpoint_count": 34, "remaining_rcld_count": 5}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 22:
+    if not isinstance(predecessors, list) or len(predecessors) != 23:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -215,6 +216,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[19], {"step": "step_1381", "candidate": ACTOR_ROUTE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1381")
     require_equal(predecessors[20], {"step": "step_1382", "candidate": ACTOR_SIGNED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1382")
     require_equal(predecessors[21], {"step": "step_1383", "candidate": CAUSAL_DECISION_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1383")
+    require_equal(predecessors[22], {"step": "step_1384", "candidate": CAUSAL_ROUTE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1384")
 
 
 def validate_trusted_projection() -> None:
@@ -628,7 +630,7 @@ def validate_projected_causal_next_production_path(
     )[0]
     if "initialize_actor_states_metered(known, &all_candidates" not in route[-1000:]:
         raise EvidenceError("causal_next:projection_route")
-    if engine_production.count(".legacy_empty_frontier_is_valid(") != 1:
+    if engine_production.count(".empty_frontier_decision_metered(") != 1:
         raise EvidenceError("causal_next:frontier_isolation")
     tests = actor_source.split("#[cfg(test)]\npub(crate) mod tests", 1)[1]
     name = "finding_100_causal_next_op_scan_reproduction"
@@ -677,6 +679,109 @@ def causal_next_route_source_mutation_self_test() -> int:
     return caught
 
 
+def validate_streaming_empty_frontier(
+    actor_source: str | None = None,
+    engine_source: str | None = None,
+) -> None:
+    actor_source = actor_source or (
+        ROOT / "crates/nostr_automerge/src/graph/actor_state.rs"
+    ).read_text()
+    engine_source = engine_source or (
+        ROOT / "crates/nostr_automerge/src/reference/epoch_engine.rs"
+    ).read_text()
+    production, tests = actor_source.split(
+        "#[cfg(test)]\npub(crate) mod tests", 1
+    )
+    if production.count("pub(crate) fn empty_frontier_decision_metered<E>(") != 1:
+        raise EvidenceError("frontier:decision_inventory")
+    method = production.split(
+        "fn empty_frontier_decision_metered_observed", 1
+    )[1].split("pub(crate) fn into_accepted_state_parts", 1)[0]
+    required = [
+        "FrontierComparisonOperation::CandidateKindComparison",
+        "FrontierComparisonOperation::CandidateCount",
+        "FrontierComparisonOperation::ProjectionCount",
+        "FrontierComparisonOperation::BaseCount",
+        "FrontierComparisonOperation::CandidatePull",
+        "FrontierComparisonOperation::CandidateOrderComparison",
+        "FrontierComparisonOperation::ProjectionPull",
+        "FrontierComparisonOperation::BasePull",
+        "FrontierComparisonOperation::BaseAcceptedLookup",
+        "FrontierComparisonOperation::ExpectedSourceComparison",
+        "FrontierComparisonOperation::FrontierEqualityComparison",
+    ]
+    if any(token not in method for token in required):
+        raise EvidenceError("frontier:operation_inventory")
+    for prohibited in (".collect::<", ".clone()", ".sort", ".dedup", "with_capacity"):
+        if prohibited in method:
+            raise EvidenceError("frontier:allocation_or_repair")
+    helper = production.split("fn metered_frontier_operation", 1)[1].split(
+        "#[cfg(test)]", 1
+    )[0]
+    if (
+        "charge(counter).map_err(MeteredActorStateError::Work)?;\n"
+        "    let result = target();\n"
+        "    observed(operation);"
+    ) not in helper:
+        raise EvidenceError("frontier:charge_order")
+    engine_production = engine_source.split("#[cfg(test)]\nmod tests", 1)[0]
+    if engine_production.count(".empty_frontier_decision_metered(") != 1:
+        raise EvidenceError("frontier:production_route")
+    for name in (
+        "empty_frontier_comparison_is_streaming_exact_and_immediately_metered",
+        "finding_100_empty_frontier_work_reproduction",
+    ):
+        if tests.count(f"fn {name}()") != 1:
+            raise EvidenceError("frontier:test_inventory")
+        prefix = tests.split(f"fn {name}()", 1)[0].rsplit("#[test]", 1)[-1]
+        if "#[ignore" in prefix:
+            raise EvidenceError("frontier:test_ignored")
+
+
+def streaming_frontier_source_mutation_self_test() -> int:
+    actor_source = (
+        ROOT / "crates/nostr_automerge/src/graph/actor_state.rs"
+    ).read_text()
+    engine_source = (
+        ROOT / "crates/nostr_automerge/src/reference/epoch_engine.rs"
+    ).read_text()
+    mutations = (
+        (
+            actor_source.replace(
+                "charge(counter).map_err(MeteredActorStateError::Work)?;\n    let result = target();",
+                "let result = target();\n    charge(counter).map_err(MeteredActorStateError::Work)?;",
+                1,
+            ),
+            engine_source,
+        ),
+        (
+            actor_source.replace(
+                "let dependency_count = metered_frontier_operation(",
+                "let _hidden = candidate.dependencies.iter().copied().collect::<BTreeSet<_>>();\n        let dependency_count = metered_frontier_operation(",
+                1,
+            ),
+            engine_source,
+        ),
+        (
+            actor_source,
+            engine_source.replace(
+                ".empty_frontier_decision_metered(",
+                ".legacy_empty_frontier_is_valid(",
+                1,
+            ),
+        ),
+    )
+    caught = 0
+    for changed_actor, changed_engine in mutations:
+        try:
+            validate_streaming_empty_frontier(changed_actor, changed_engine)
+        except EvidenceError:
+            caught += 1
+            continue
+        raise EvidenceError("frontier:source_mutation_survived")
+    return caught
+
+
 def validate_active_causal_budget_deltas(
     evaluator_source: str | None = None,
     fixture_source: str | None = None,
@@ -687,9 +792,9 @@ def validate_active_causal_budget_deltas(
     fixture_source = fixture_source or (
         ROOT / "tools/nostr_automerge_conformance/src/fixture_generation.rs"
     ).read_text()
-    if "fixture_items.checked_add(71)" not in evaluator_source:
+    if "fixture_items.checked_add(73)" not in evaluator_source:
         raise EvidenceError("causal_next:post_branch_delta")
-    if "signed.budget.max_items.checked_add(995)" not in fixture_source:
+    if "signed.budget.max_items.checked_add(1003)" not in fixture_source:
         raise EvidenceError("causal_next:persistent_delta")
 
 
@@ -701,8 +806,8 @@ def causal_budget_source_mutation_self_test() -> int:
         ROOT / "tools/nostr_automerge_conformance/src/fixture_generation.rs"
     ).read_text()
     mutations = (
-        (evaluator_source.replace("checked_add(71)", "checked_add(70)", 1), fixture_source),
-        (evaluator_source, fixture_source.replace("checked_add(995)", "checked_add(994)", 1)),
+        (evaluator_source.replace("checked_add(73)", "checked_add(72)", 1), fixture_source),
+        (evaluator_source, fixture_source.replace("checked_add(1003)", "checked_add(1002)", 1)),
     )
     caught = 0
     for changed_evaluator, changed_fixture in mutations:
@@ -742,7 +847,7 @@ def validate_reproductions(reproductions: object) -> None:
             "path": path,
             "test": test,
             "diagnostic": diagnostic,
-            "expected": "fixed_pass" if index <= 1 else "open_failure",
+            "expected": "fixed_pass" if index <= 2 else "open_failure",
         }, f"reproductions:{family}")
     require_equal(record["result"], "pass", "reproductions:result")
 
@@ -883,7 +988,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1386"),
+        ("cursor", "next_step", "step_1387"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -1015,13 +1120,15 @@ def main() -> None:
     source_mutations += causal_next_source_mutation_self_test()
     validate_projected_causal_next_production_path()
     source_mutations += causal_next_route_source_mutation_self_test()
+    validate_streaming_empty_frontier()
+    source_mutations += streaming_frontier_source_mutation_self_test()
     validate_active_causal_budget_deltas()
     source_mutations += causal_budget_source_mutation_self_test()
     mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
     print(f"- source_mutations={source_mutations}")
-    print("- active=RCLD111/step_1384")
+    print("- active=RCLD111/step_1385")
 
 
 if __name__ == "__main__":

@@ -440,10 +440,19 @@ pub(crate) fn evaluate_epoch(
                             return Err(EpochEvaluationError::Schedule(error));
                         }
                         Err(MeteredActorStateError::State(_)) => false,
-                    } && projection.legacy_empty_frontier_is_valid(
-                        &candidate,
-                        input.accepted_base().frontier_heads(),
-                    );
+                    };
+                    let actor_counter_valid = actor_counter_valid
+                        && match projection.empty_frontier_decision_metered(
+                            &candidate,
+                            input.accepted_base().frontier_heads(),
+                            |counter| charge_epoch_item(counter, budget, cancellation),
+                        ) {
+                            Ok(()) => true,
+                            Err(MeteredActorStateError::Work(error)) => {
+                                return Err(EpochEvaluationError::Schedule(error));
+                            }
+                            Err(MeteredActorStateError::State(_)) => false,
+                        };
                     (actor_sequence_valid, actor_counter_valid)
                 }
                 Err(MeteredActorStateError::Work(error)) => {

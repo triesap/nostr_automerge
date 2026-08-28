@@ -163,3 +163,15 @@ the unmetered empty-frontier comparison remains explicitly isolated for
 remaining open families. Immutable v12 fixture budgets remain unchanged; the
 active post-branch delta is seventy-one operations and the three persistent
 resource cases bind the current cumulative 995-operation delta until v13.
+
+`step_1385` replaces the empty-change frontier clone, difference, and set
+construction with an exact streaming merge of canonical dependencies,
+projected heads, and base-only heads. Counts, pulls, accepted-membership
+lookups, source ordering, dependency ordering, and equality checks each run
+only after their own successful charge. Empty, equal, missing, extra,
+duplicate, and descending inputs plus every budget/cancellation boundary are
+covered without allocation, sorting, deduplication, or repair. The Finding
+100 harness now reports three fixed families and seven remaining open. The
+immutable fixture budgets remain frozen; the current post-branch delta is
+seventy-three operations and the persistent cases bind the cumulative
+1,003-operation delta until v13.

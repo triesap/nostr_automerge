@@ -134,6 +134,21 @@ enum CausalNextOperation {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum FrontierComparisonOperation {
+    CandidateKindComparison,
+    CandidateCount,
+    ProjectionCount,
+    BaseCount,
+    CandidatePull,
+    CandidateOrderComparison,
+    ProjectionPull,
+    BasePull,
+    BaseAcceptedLookup,
+    ExpectedSourceComparison,
+    FrontierEqualityComparison,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ProjectionPublicationOperation {
     CandidateDependency,
     DependedOn,
@@ -364,22 +379,190 @@ impl TrustedEpochProjection<'_> {
             .map(|(actor, hash)| (*actor, *hash))
     }
 
-    pub(crate) fn legacy_empty_frontier_is_valid(
+    pub(crate) fn empty_frontier_decision_metered<E>(
         &self,
         candidate: &ChangeCandidate,
         base_frontier: &BTreeSet<ChangeHash>,
-    ) -> bool {
-        if candidate.operation_count != 0 {
-            return true;
+        charge: impl FnMut(WorkCounter) -> Result<(), E>,
+    ) -> Result<(), MeteredActorStateError<E>> {
+        self.empty_frontier_decision_metered_observed(candidate, base_frontier, charge, |_| {})
+    }
+
+    fn empty_frontier_decision_metered_observed<E>(
+        &self,
+        candidate: &ChangeCandidate,
+        base_frontier: &BTreeSet<ChangeHash>,
+        mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
+        mut observed: impl FnMut(FrontierComparisonOperation),
+    ) -> Result<(), MeteredActorStateError<E>> {
+        let nonempty = metered_frontier_operation(
+            &mut charge,
+            &mut observed,
+            WorkCounter::GraphNode,
+            FrontierComparisonOperation::CandidateKindComparison,
+            || candidate.operation_count != 0,
+        )?;
+        if nonempty {
+            return Ok(());
         }
-        let mut current_heads = self.frontier_heads.clone();
-        current_heads.extend(base_frontier.difference(self.accepted_closure).copied());
-        candidate
-            .dependencies
-            .iter()
-            .copied()
-            .collect::<BTreeSet<_>>()
-            == current_heads
+
+        let dependency_count = metered_frontier_operation(
+            &mut charge,
+            &mut observed,
+            WorkCounter::GraphNode,
+            FrontierComparisonOperation::CandidateCount,
+            || candidate.dependencies.len(),
+        )?;
+        let projection_count = metered_frontier_operation(
+            &mut charge,
+            &mut observed,
+            WorkCounter::GraphNode,
+            FrontierComparisonOperation::ProjectionCount,
+            || self.frontier_heads.len(),
+        )?;
+        let base_count = metered_frontier_operation(
+            &mut charge,
+            &mut observed,
+            WorkCounter::GraphNode,
+            FrontierComparisonOperation::BaseCount,
+            || base_frontier.len(),
+        )?;
+
+        let mut dependency_index = 0_usize;
+        let mut dependency = None;
+        let mut previous_dependency = None;
+        let mut projection_remaining = projection_count;
+        let mut projection_iter = self.frontier_heads.iter();
+        let mut projection = None;
+        let mut base_remaining = base_count;
+        let mut base_iter = base_frontier.iter();
+        let mut base = None;
+
+        loop {
+            if dependency.is_none() && dependency_index < dependency_count {
+                let pulled = metered_frontier_operation(
+                    &mut charge,
+                    &mut observed,
+                    WorkCounter::GraphEdge,
+                    FrontierComparisonOperation::CandidatePull,
+                    || candidate.dependencies.get(dependency_index).copied(),
+                )?
+                .ok_or(MeteredActorStateError::State(
+                    ActorStateError::DependencyFrontier,
+                ))?;
+                dependency_index = dependency_index.saturating_add(1);
+                if let Some(previous) = previous_dependency {
+                    let ordered = metered_frontier_operation(
+                        &mut charge,
+                        &mut observed,
+                        WorkCounter::GraphEdge,
+                        FrontierComparisonOperation::CandidateOrderComparison,
+                        || previous < pulled,
+                    )?;
+                    if !ordered {
+                        return Err(MeteredActorStateError::State(
+                            ActorStateError::DependencyFrontier,
+                        ));
+                    }
+                }
+                previous_dependency = Some(pulled);
+                dependency = Some(pulled);
+            }
+
+            if projection.is_none() && projection_remaining > 0 {
+                projection = Some(
+                    metered_frontier_operation(
+                        &mut charge,
+                        &mut observed,
+                        WorkCounter::GraphNode,
+                        FrontierComparisonOperation::ProjectionPull,
+                        || projection_iter.next().copied(),
+                    )?
+                    .ok_or(MeteredActorStateError::State(
+                        ActorStateError::DependencyFrontier,
+                    ))?,
+                );
+                projection_remaining = projection_remaining.saturating_sub(1);
+            }
+
+            while base.is_none() && base_remaining > 0 {
+                let pulled = metered_frontier_operation(
+                    &mut charge,
+                    &mut observed,
+                    WorkCounter::GraphNode,
+                    FrontierComparisonOperation::BasePull,
+                    || base_iter.next().copied(),
+                )?
+                .ok_or(MeteredActorStateError::State(
+                    ActorStateError::DependencyFrontier,
+                ))?;
+                base_remaining = base_remaining.saturating_sub(1);
+                let accepted = metered_frontier_operation(
+                    &mut charge,
+                    &mut observed,
+                    WorkCounter::GraphNode,
+                    FrontierComparisonOperation::BaseAcceptedLookup,
+                    || self.accepted_closure.contains(&pulled),
+                )?;
+                if !accepted {
+                    base = Some(pulled);
+                }
+            }
+
+            let (expected, consume_projection, consume_base) = match (projection, base) {
+                (Some(projected), Some(base_head)) => {
+                    let ordering = metered_frontier_operation(
+                        &mut charge,
+                        &mut observed,
+                        WorkCounter::GraphNode,
+                        FrontierComparisonOperation::ExpectedSourceComparison,
+                        || projected.cmp(&base_head),
+                    )?;
+                    match ordering {
+                        core::cmp::Ordering::Less => (Some(projected), true, false),
+                        core::cmp::Ordering::Greater => (Some(base_head), false, true),
+                        core::cmp::Ordering::Equal => {
+                            return Err(MeteredActorStateError::State(
+                                ActorStateError::DependencyFrontier,
+                            ));
+                        }
+                    }
+                }
+                (Some(projected), None) => (Some(projected), true, false),
+                (None, Some(base_head)) => (Some(base_head), false, true),
+                (None, None) => (None, false, false),
+            };
+
+            match (dependency, expected) {
+                (None, None) => return Ok(()),
+                (Some(actual), Some(expected)) => {
+                    let equal = metered_frontier_operation(
+                        &mut charge,
+                        &mut observed,
+                        WorkCounter::GraphEdge,
+                        FrontierComparisonOperation::FrontierEqualityComparison,
+                        || actual == expected,
+                    )?;
+                    if !equal {
+                        return Err(MeteredActorStateError::State(
+                            ActorStateError::DependencyFrontier,
+                        ));
+                    }
+                    dependency = None;
+                    if consume_projection {
+                        projection = None;
+                    }
+                    if consume_base {
+                        base = None;
+                    }
+                }
+                _ => {
+                    return Err(MeteredActorStateError::State(
+                        ActorStateError::DependencyFrontier,
+                    ));
+                }
+            }
+        }
     }
 
     pub(crate) fn into_accepted_state_parts(self) -> AcceptedEpochStateParts {
@@ -390,6 +573,19 @@ impl TrustedEpochProjection<'_> {
             self.writer_contributions,
         )
     }
+}
+
+fn metered_frontier_operation<E, T>(
+    charge: &mut impl FnMut(WorkCounter) -> Result<(), E>,
+    observed: &mut impl FnMut(FrontierComparisonOperation),
+    counter: WorkCounter,
+    operation: FrontierComparisonOperation,
+    target: impl FnOnce() -> T,
+) -> Result<T, MeteredActorStateError<E>> {
+    charge(counter).map_err(MeteredActorStateError::Work)?;
+    let result = target();
+    observed(operation);
+    Ok(result)
 }
 
 #[cfg(test)]
@@ -837,9 +1033,9 @@ pub(crate) mod tests {
 
     use super::{
         ActorStateError, CanonicalEpochProjectionSource, CausalNextOperation, EpochActorState,
-        EpochProjectionSource, MeteredActorStateError, ProjectionLookupOperation,
-        ProjectionPublicationOperation, TrustedEpochProjection, TrustedEpochView,
-        build_trusted_epoch_projection, build_trusted_epoch_projection_observed,
+        EpochProjectionSource, FrontierComparisonOperation, MeteredActorStateError,
+        ProjectionLookupOperation, ProjectionPublicationOperation, TrustedEpochProjection,
+        TrustedEpochView, build_trusted_epoch_projection, build_trusted_epoch_projection_observed,
         initialize_actor_states, initialize_actor_states_metered, reference_apply_empty_counter,
         reference_apply_nonempty_counter,
     };
@@ -871,6 +1067,12 @@ pub(crate) mod tests {
     enum CausalNextTrace {
         Charge(WorkCounter),
         Operation(CausalNextOperation),
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum FrontierTrace {
+        Charge(WorkCounter),
+        Operation(FrontierComparisonOperation),
     }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1144,6 +1346,35 @@ pub(crate) mod tests {
                 trace
                     .borrow_mut()
                     .push(CausalNextTrace::Operation(operation));
+            },
+        );
+        let observed = trace.borrow().clone();
+        (result, observed)
+    }
+
+    fn observed_empty_frontier<E: Copy>(
+        projection: &TrustedEpochProjection<'_>,
+        candidate: &ChangeCandidate,
+        base_frontier: &BTreeSet<ChangeHash>,
+        successful_limit: usize,
+        stopped: E,
+    ) -> (Result<(), MeteredActorStateError<E>>, Vec<FrontierTrace>) {
+        let trace = Rc::new(RefCell::new(Vec::new()));
+        let successful = Cell::new(0_usize);
+        let result = projection.empty_frontier_decision_metered_observed(
+            candidate,
+            base_frontier,
+            |counter| {
+                trace.borrow_mut().push(FrontierTrace::Charge(counter));
+                if successful.get() == successful_limit {
+                    Err(stopped)
+                } else {
+                    successful.set(successful.get().saturating_add(1));
+                    Ok(())
+                }
+            },
+            |operation| {
+                trace.borrow_mut().push(FrontierTrace::Operation(operation));
             },
         );
         let observed = trace.borrow().clone();
@@ -1835,6 +2066,163 @@ pub(crate) mod tests {
             assert_eq!(result, Ok(66));
             assert_eq!(trace, expected_trace);
         }
+    }
+
+    #[test]
+    fn empty_frontier_comparison_is_streaming_exact_and_immediately_metered() {
+        let projected_first = ChangeHash::from_bytes([10; 32]);
+        let base_only = ChangeHash::from_bytes([20; 32]);
+        let projected_last = ChangeHash::from_bytes([30; 32]);
+        let branch = BTreeMap::new();
+        let accepted = BTreeSet::from([projected_first, projected_last]);
+        let projection = TrustedEpochProjection {
+            branch_membership: &branch,
+            accepted_closure: &accepted,
+            dependencies: BTreeMap::new(),
+            frontier_heads: BTreeSet::from([projected_first, projected_last]),
+            actor_states: BTreeMap::new(),
+            writer_contributions: BTreeMap::new(),
+            causal_next_op: 1,
+        };
+        let base_frontier = BTreeSet::from([projected_first, base_only]);
+        let mut exact = candidate(1, 1, 1, 0);
+        exact.dependencies = vec![projected_first, base_only, projected_last].into();
+        assert!(
+            projection
+                .empty_frontier_decision_metered(&exact, &base_frontier, |_| Ok::<_, ()>(()))
+                .is_ok()
+        );
+
+        let empty_branch = BTreeMap::new();
+        let empty_accepted = BTreeSet::new();
+        let empty_projection = TrustedEpochProjection {
+            branch_membership: &empty_branch,
+            accepted_closure: &empty_accepted,
+            dependencies: BTreeMap::new(),
+            frontier_heads: BTreeSet::new(),
+            actor_states: BTreeMap::new(),
+            writer_contributions: BTreeMap::new(),
+            causal_next_op: 1,
+        };
+        let empty_base = BTreeSet::new();
+        let empty = candidate(1, 1, 1, 0);
+        assert!(
+            empty_projection
+                .empty_frontier_decision_metered(&empty, &empty_base, |_| Ok::<_, ()>(()))
+                .is_ok()
+        );
+
+        let mut nonempty = exact.clone();
+        nonempty.operation_count = 1;
+        nonempty.dependencies = vec![ChangeHash::from_bytes([99; 32])].into();
+        let (nonempty_result, nonempty_trace) = observed_empty_frontier(
+            &projection,
+            &nonempty,
+            &base_frontier,
+            usize::MAX,
+            Completion::BudgetExhausted,
+        );
+        assert_eq!(nonempty_result, Ok(()));
+        assert_eq!(
+            nonempty_trace,
+            vec![
+                FrontierTrace::Charge(WorkCounter::GraphNode),
+                FrontierTrace::Operation(FrontierComparisonOperation::CandidateKindComparison),
+            ]
+        );
+
+        for dependencies in [
+            vec![projected_first, base_only],
+            vec![
+                projected_first,
+                base_only,
+                ChangeHash::from_bytes([25; 32]),
+                projected_last,
+            ],
+            vec![projected_first, base_only, base_only, projected_last],
+            vec![projected_first, projected_last, base_only],
+        ] {
+            let mut malformed = exact.clone();
+            malformed.dependencies = dependencies.into();
+            assert_eq!(
+                projection.empty_frontier_decision_metered(&malformed, &base_frontier, |_| Ok::<
+                    _,
+                    (),
+                >(
+                    ()
+                )),
+                Err(MeteredActorStateError::State(
+                    ActorStateError::DependencyFrontier
+                ))
+            );
+        }
+
+        let (ample, trace) = observed_empty_frontier(
+            &projection,
+            &exact,
+            &base_frontier,
+            usize::MAX,
+            Completion::BudgetExhausted,
+        );
+        assert_eq!(ample, Ok(()));
+        assert!(trace.chunks_exact(2).all(|pair| {
+            matches!(pair[0], FrontierTrace::Charge(_))
+                && matches!(pair[1], FrontierTrace::Operation(_))
+        }));
+        let operation_count = trace.len() / 2;
+        assert!(operation_count > 3);
+
+        for successful in 0..operation_count {
+            for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
+                let (result, stopped_trace) = observed_empty_frontier(
+                    &projection,
+                    &exact,
+                    &base_frontier,
+                    successful,
+                    stopped,
+                );
+                assert_eq!(result, Err(MeteredActorStateError::Work(stopped)));
+                assert_eq!(
+                    stopped_trace
+                        .iter()
+                        .filter(|entry| matches!(entry, FrontierTrace::Operation(_)))
+                        .count(),
+                    successful
+                );
+            }
+        }
+        for allowance in [operation_count, operation_count + 1] {
+            let (result, allowed_trace) = observed_empty_frontier(
+                &projection,
+                &exact,
+                &base_frontier,
+                allowance,
+                Completion::BudgetExhausted,
+            );
+            assert_eq!(result, Ok(()));
+            assert_eq!(allowed_trace, trace);
+        }
+
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        struct Injected;
+        let injected = Injected;
+        let result =
+            projection.empty_frontier_decision_metered(&exact, &base_frontier, |_| Err(&injected));
+        assert!(matches!(
+            result,
+            Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
+        ));
+
+        let source = include_str!("actor_state.rs");
+        let method = source
+            .split_once("fn empty_frontier_decision_metered_observed")
+            .map(|item| item.1)
+            .and_then(|body| body.split_once("pub(crate) fn into_accepted_state_parts"))
+            .map_or("", |item| item.0);
+        assert!(!method.contains(".collect::<"));
+        assert!(!method.contains(".clone()"));
+        assert!(!method.contains(".sort"));
+        assert!(!method.contains(".dedup"));
     }
 
     #[test]
@@ -2732,7 +3120,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[ignore = "open remediation-v12 resource-accounting reproduction"]
     fn finding_100_empty_frontier_work_reproduction() {
         let current_heads = BTreeSet::from([
             ChangeHash::from_bytes([10; 32]),
@@ -2741,14 +3128,37 @@ pub(crate) mod tests {
         ]);
         let mut empty = candidate(1, 1, 1, 0);
         empty.dependencies = current_heads.iter().copied().collect::<Vec<_>>().into();
-        assert_eq!(
-            reference_apply_empty_counter(&mut BTreeMap::new(), &empty, &current_heads),
-            Ok(())
+        let branch = BTreeMap::new();
+        let accepted = BTreeSet::new();
+        let projection = TrustedEpochProjection {
+            branch_membership: &branch,
+            accepted_closure: &accepted,
+            dependencies: BTreeMap::new(),
+            frontier_heads: BTreeSet::new(),
+            actor_states: BTreeMap::new(),
+            writer_contributions: BTreeMap::new(),
+            causal_next_op: 1,
+        };
+        assert!(
+            projection
+                .empty_frontier_decision_metered(&empty, &current_heads, |_| Ok::<_, ()>(()))
+                .is_ok()
         );
 
         let source = include_str!("actor_state.rs");
+        let production = source
+            .split_once("#[cfg(test)]\npub(crate) mod tests")
+            .map_or(source, |item| item.0);
+        let method = production
+            .split_once("fn empty_frontier_decision_metered_observed")
+            .map(|item| item.1)
+            .and_then(|body| body.split_once("pub(crate) fn into_accepted_state_parts"))
+            .map_or("", |item| item.0);
         assert!(
-            !source.contains(".collect::<std::collections::BTreeSet<_>>()"),
+            !method.contains(".collect::<")
+                && !method.contains(".clone()")
+                && !method.contains(".sort")
+                && !method.contains(".dedup"),
             "unmetered empty-frontier allocation remains"
         );
     }
