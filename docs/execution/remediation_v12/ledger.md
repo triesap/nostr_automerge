@@ -297,3 +297,10 @@ predecessor remains only in the accepted transitive closure. The fixture binds
 the exact complete budget, canonical no-progress at N-1, typed cancellation,
 eight delivery orders, and byte-identical complete output. The staged manifest
 now contains 199 of 204 scenarios.
+
+`step_1400` adds the many-actor causal-next scenario. Eight independently
+signed writers contribute a single causally ordered change each, so the
+global next-operation decision must advance across actor boundaries instead of
+reusing a per-actor counter. The fixture binds its exact complete budget,
+canonical no-progress at N-1, typed cancellation, eight delivery orders, and
+byte-identical output. The staged manifest now contains 200 of 204 scenarios.
