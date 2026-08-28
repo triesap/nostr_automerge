@@ -860,7 +860,14 @@ fn build_trusted_epoch_projection<'a, E>(
     source: &mut impl EpochProjectionSource<'a>,
     charge: impl FnMut(WorkCounter) -> Result<(), E>,
 ) -> Result<TrustedEpochProjection<'a>, MeteredActorStateError<E>> {
-    build_trusted_epoch_projection_observed(accepted_closure, changes, source, charge, |_| {})
+    build_trusted_epoch_projection_observed(
+        accepted_closure,
+        changes,
+        source,
+        charge,
+        |_| {},
+        |_| {},
+    )
 }
 
 fn build_trusted_epoch_projection_observed<'a, E>(
@@ -868,6 +875,7 @@ fn build_trusted_epoch_projection_observed<'a, E>(
     changes: &'a BTreeMap<ChangeHash, ChangeCandidate>,
     source: &mut impl EpochProjectionSource<'a>,
     mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
+    mut built: impl FnMut(ProjectionBuildOperation),
     mut published: impl FnMut(ProjectionPublicationOperation),
 ) -> Result<TrustedEpochProjection<'a>, MeteredActorStateError<E>> {
     let member_count = source.member_count();
@@ -883,26 +891,53 @@ fn build_trusted_epoch_projection_observed<'a, E>(
     let mut ready = BTreeSet::new();
     let mut previous_hash = None;
     for _ in 0..member_count {
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        let Some(hash) = source.next_member() else {
+        let Some(hash) = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::CanonicalSourcePull,
+            &mut charge,
+            &mut built,
+            || source.next_member(),
+        )?
+        else {
             return Err(MeteredActorStateError::State(
                 ActorStateError::NoncanonicalInput,
             ));
         };
-        if previous_hash.is_some_and(|previous| previous >= hash) {
-            return Err(MeteredActorStateError::State(
-                ActorStateError::NoncanonicalInput,
-            ));
+        if let Some(previous) = previous_hash {
+            let ordered = perform_projection_build_operation(
+                WorkCounter::GraphNode,
+                ProjectionBuildOperation::CanonicalOrderCompare,
+                &mut charge,
+                &mut built,
+                || previous < hash,
+            )?;
+            if !ordered {
+                return Err(MeteredActorStateError::State(
+                    ActorStateError::NoncanonicalInput,
+                ));
+            }
         }
         previous_hash = Some(hash);
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        if !source.accepted_member(&hash) {
+        let accepted_member = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::MembershipLookup,
+            &mut charge,
+            &mut built,
+            || source.accepted_member(&hash),
+        )?;
+        if !accepted_member {
             return Err(MeteredActorStateError::State(
                 ActorStateError::NoncanonicalInput,
             ));
         }
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        let Some(candidate) = source.candidate(&hash) else {
+        let Some(candidate) = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::CandidateLookup,
+            &mut charge,
+            &mut built,
+            || source.candidate(&hash),
+        )?
+        else {
             return Err(MeteredActorStateError::State(
                 ActorStateError::MissingDependency,
             ));
@@ -916,20 +951,41 @@ fn build_trusted_epoch_projection_observed<'a, E>(
         let dependency_count = source.dependency_count(candidate);
         let mut previous_dependency = None;
         for index in 0..dependency_count {
-            charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
-            let Some(dependency) = source.dependency(candidate, index) else {
+            let Some(dependency) = perform_projection_build_operation(
+                WorkCounter::GraphEdge,
+                ProjectionBuildOperation::DependencyLookup,
+                &mut charge,
+                &mut built,
+                || source.dependency(candidate, index),
+            )?
+            else {
                 return Err(MeteredActorStateError::State(
                     ActorStateError::NoncanonicalInput,
                 ));
             };
-            if previous_dependency.is_some_and(|previous| previous >= dependency) {
-                return Err(MeteredActorStateError::State(
-                    ActorStateError::NoncanonicalInput,
-                ));
+            if let Some(previous) = previous_dependency {
+                let ordered = perform_projection_build_operation(
+                    WorkCounter::GraphEdge,
+                    ProjectionBuildOperation::CanonicalOrderCompare,
+                    &mut charge,
+                    &mut built,
+                    || previous < dependency,
+                )?;
+                if !ordered {
+                    return Err(MeteredActorStateError::State(
+                        ActorStateError::NoncanonicalInput,
+                    ));
+                }
             }
             previous_dependency = Some(dependency);
-            charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
-            if !source.accepted_member(&dependency) {
+            let accepted_dependency = perform_projection_build_operation(
+                WorkCounter::GraphEdge,
+                ProjectionBuildOperation::MembershipLookup,
+                &mut charge,
+                &mut built,
+                || source.accepted_member(&dependency),
+            )?;
+            if !accepted_dependency {
                 return Err(MeteredActorStateError::State(
                     ActorStateError::MissingDependency,
                 ));
@@ -966,14 +1022,26 @@ fn build_trusted_epoch_projection_observed<'a, E>(
     let mut causal_next_by_change = BTreeMap::<ChangeHash, u64>::new();
     let mut processed = 0usize;
     while !ready.is_empty() {
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        let Some(hash) = ready.pop_first() else {
+        let Some(hash) = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::CanonicalSourcePull,
+            &mut charge,
+            &mut built,
+            || ready.pop_first(),
+        )?
+        else {
             return Err(MeteredActorStateError::State(
                 ActorStateError::DependencyCycle,
             ));
         };
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        let Some(candidate) = source.candidate(&hash) else {
+        let Some(candidate) = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::CandidateLookup,
+            &mut charge,
+            &mut built,
+            || source.candidate(&hash),
+        )?
+        else {
             return Err(MeteredActorStateError::State(
                 ActorStateError::MissingDependency,
             ));
@@ -1196,6 +1264,12 @@ pub(crate) mod tests {
     enum TraversalTrace {
         Charge(WorkCounter),
         Operation(SourceOperation),
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum BuildTrace {
+        Charge(WorkCounter),
+        Operation(ProjectionBuildOperation),
     }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1547,6 +1621,7 @@ pub(crate) mod tests {
                     Ok(())
                 }
             },
+            |_| {},
             |operation| {
                 trace
                     .borrow_mut()
@@ -2676,6 +2751,7 @@ pub(crate) mod tests {
             changes,
             &mut source,
             &mut charge,
+            |_| {},
             |_| trace.borrow_mut().push(ProjectionWorkTrace::Target),
         );
         let result = match projection {
@@ -2719,8 +2795,8 @@ pub(crate) mod tests {
         query.change_hash = ChangeHash::from_bytes([3; 32]);
         query.dependencies = vec![second.change_hash].into();
 
-        const TOTAL_CHARGES: usize = 41;
-        const GRAPH_NODES: usize = 32;
+        const TOTAL_CHARGES: usize = 42;
+        const GRAPH_NODES: usize = 33;
         const GRAPH_EDGES: usize = 9;
         let (ample, trace) = projection_work_contract_run(
             &closure,
@@ -2866,6 +2942,132 @@ pub(crate) mod tests {
         (result, observed)
     }
 
+    fn observed_projection_build_operations<'a>(
+        accepted_closure: &'a BTreeSet<ChangeHash>,
+        changes: &'a BTreeMap<ChangeHash, ChangeCandidate>,
+        successful_limit: usize,
+        stopped: Completion,
+    ) -> (
+        Result<TrustedEpochProjection<'a>, MeteredActorStateError<Completion>>,
+        Vec<BuildTrace>,
+    ) {
+        let trace = Rc::new(RefCell::new(Vec::new()));
+        let successful = Cell::new(0_usize);
+        let mut source = CanonicalEpochProjectionSource::new(accepted_closure, changes);
+        let result = build_trusted_epoch_projection_observed(
+            accepted_closure,
+            changes,
+            &mut source,
+            |counter| {
+                trace.borrow_mut().push(BuildTrace::Charge(counter));
+                if successful.get() == successful_limit {
+                    Err(stopped)
+                } else {
+                    successful.set(successful.get().saturating_add(1));
+                    Ok(())
+                }
+            },
+            |operation| trace.borrow_mut().push(BuildTrace::Operation(operation)),
+            |_| {},
+        );
+        let observed = trace.borrow().clone();
+        (result, observed)
+    }
+
+    #[test]
+    fn projection_source_operations_use_the_sealed_boundary() {
+        let first = candidate(1, 1, 1, 1);
+        let mut second = candidate(1, 2, 2, 1);
+        second.dependencies = vec![first.change_hash].into();
+        let closure = BTreeSet::from([first.change_hash, second.change_hash]);
+        let changes = BTreeMap::from([(first.change_hash, first), (second.change_hash, second)]);
+        let (ample, full_trace) = observed_projection_build_operations(
+            &closure,
+            &changes,
+            usize::MAX,
+            Completion::BudgetExhausted,
+        );
+        assert!(ample.is_ok());
+        let owned = full_trace
+            .iter()
+            .filter_map(|entry| match entry {
+                BuildTrace::Operation(
+                    operation @ (ProjectionBuildOperation::CanonicalSourcePull
+                    | ProjectionBuildOperation::CanonicalOrderCompare
+                    | ProjectionBuildOperation::MembershipLookup
+                    | ProjectionBuildOperation::CandidateLookup
+                    | ProjectionBuildOperation::DependencyLookup),
+                ) => Some(*operation),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(owned.len(), 13);
+        assert_eq!(
+            owned
+                .iter()
+                .filter(|operation| {
+                    **operation == ProjectionBuildOperation::CanonicalSourcePull
+                })
+                .count(),
+            4
+        );
+        assert_eq!(
+            owned
+                .iter()
+                .filter(|operation| {
+                    **operation == ProjectionBuildOperation::CanonicalOrderCompare
+                })
+                .count(),
+            1
+        );
+
+        let boundaries = full_trace
+            .iter()
+            .enumerate()
+            .filter_map(|(index, entry)| match entry {
+                BuildTrace::Operation(operation) if owned.contains(operation) => {
+                    assert!(matches!(
+                        index.checked_sub(1).and_then(|prior| full_trace.get(prior)),
+                        Some(BuildTrace::Charge(_))
+                    ));
+                    Some((
+                        full_trace[..index]
+                            .iter()
+                            .filter(|prior| matches!(prior, BuildTrace::Charge(_)))
+                            .count(),
+                        full_trace[..=index]
+                            .iter()
+                            .filter(|prior| matches!(prior, BuildTrace::Operation(_)))
+                            .count(),
+                    ))
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(boundaries.len(), owned.len());
+
+        for (charge_boundary, operation_boundary) in boundaries {
+            for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
+                let (result, trace) = observed_projection_build_operations(
+                    &closure,
+                    &changes,
+                    charge_boundary.saturating_sub(1),
+                    stopped,
+                );
+                assert!(
+                    matches!(result, Err(MeteredActorStateError::Work(error)) if error == stopped)
+                );
+                assert_eq!(
+                    trace
+                        .iter()
+                        .filter(|entry| matches!(entry, BuildTrace::Operation(_)))
+                        .count(),
+                    operation_boundary - 1
+                );
+            }
+        }
+    }
+
     #[test]
     fn charged_projection_traversal_stops_before_every_source_read() {
         let first = candidate(1, 1, 1, 1);
@@ -2902,18 +3104,19 @@ pub(crate) mod tests {
                             WorkCounter::GraphEdge
                         }
                         TraversalTrace::Operation(SourceOperation::ReadAcceptedMember(hash)) => {
-                            let counter = match index
-                                .checked_sub(2)
-                                .and_then(|prior| full_trace.get(prior))
-                            {
-                                Some(TraversalTrace::Operation(SourceOperation::PullMember(
-                                    member,
-                                ))) if member == hash => Some(WorkCounter::GraphNode),
-                                Some(TraversalTrace::Operation(
-                                    SourceOperation::PullDependency(_, _, dependency),
-                                )) if dependency == hash => Some(WorkCounter::GraphEdge),
-                                _ => None,
-                            };
+                            let counter =
+                                full_trace[..index]
+                                    .iter()
+                                    .rev()
+                                    .find_map(|prior| match prior {
+                                        TraversalTrace::Operation(SourceOperation::PullMember(
+                                            member,
+                                        )) if member == hash => Some(WorkCounter::GraphNode),
+                                        TraversalTrace::Operation(
+                                            SourceOperation::PullDependency(_, _, dependency),
+                                        ) if dependency == hash => Some(WorkCounter::GraphEdge),
+                                        _ => None,
+                                    });
                             assert!(
                                 counter.is_some(),
                                 "accepted membership lacks its source pull"

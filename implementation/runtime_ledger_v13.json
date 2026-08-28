@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v13_authority.json",
   "cursor": {
     "active_rcld": 117,
-    "active_step": "step_1426",
-    "next_step": "step_1427",
+    "active_step": "step_1427",
+    "next_step": "step_1428",
     "last_planned_step": "step_1452",
-    "remaining_checkpoint_count": 27,
+    "remaining_checkpoint_count": 26,
     "remaining_rcld_count": 4
   },
   "findings": {
@@ -15,14 +15,16 @@
     "held": ["FINDING_080"]
   },
   "active_checkpoint_scope": [
+    "crates/nostr_automerge/src/control/epoch_state.rs",
+    "crates/nostr_automerge/src/engine/reference_evaluator.rs",
     "crates/nostr_automerge/src/graph/actor_state.rs",
     "docs/execution/remediation_v13/ledger.md",
     "implementation/runtime_ledger_v13.json",
     "reports/spec_baseline.txt",
-    "scripts/validate_causal_projection_operations_v13.py",
+    "scripts/validate_causal_projection_source_v13.py",
     "scripts/validate_remediation_v13.py",
-    "spec/causal_projection_operation_contract_v13.json",
-    "tools/validation/causal_projection_operation_contract_v13.schema.json"
+    "scripts/validate_spec.py",
+    "tools/nostr_automerge_xtask/src/validate.rs"
   ],
   "predecessors": [
     {"step":"step_1419","candidate":"00ef954ff2dece37119ad235638046ffaa7305d4","owner_class":"public","result":"pass"},
@@ -31,6 +33,7 @@
     {"step":"step_1422","candidate":"2435f60145aba99cc5f96a49aadc86e162a82b06","owner_class":"public","result":"pass"},
     {"step":"step_1423","candidate":"285c39239ebef6dd1179d842ca29671b9cf92dfa","owner_class":"public","result":"pass"},
     {"step":"step_1424","candidate":"219d4844de68ee01eafb9a0bf6c55a8adac8f6db","owner_class":"public","result":"pass"},
-    {"step":"step_1425","candidate":"fbb3fd36cc91af41c7a91327688b921518958ba3","owner_class":"public","result":"pass"}
+    {"step":"step_1425","candidate":"fbb3fd36cc91af41c7a91327688b921518958ba3","owner_class":"public","result":"pass"},
+    {"step":"step_1426","candidate":"e3e8c0e650f7ce0ab95023b8240ffb96aeb627e9","owner_class":"public","result":"pass"}
   ]
 }

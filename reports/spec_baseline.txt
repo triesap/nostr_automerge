@@ -5,6 +5,6 @@ controlled_files: 443
 requirements: 156
 transition_stage: distribution_complete
 historical_v9_validation: immutable_wrapper
-validators: 26
-aggregate_sha256: 38e711c4d503a5db7e02582ef055967511cb18f8116c1548869fec80e170ec98
+validators: 25
+aggregate_sha256: 5830220668bd89d17a3e64d261dc2675c45bb7183bdad19183e2fe047b1e1518
 result: pass

@@ -42,3 +42,9 @@ boundary and its exhaustive fourteen-variant type. The boundary guarantees
 `charge -> operation -> observation`, preserves an injected typed stop by
 identity, and performs neither the operation nor its observation after a
 failed charge. The next checkpoint is `step_1427`.
+
+`step_1427` routes all canonical member, dependency, membership, candidate,
+ordering, and ready-frontier pulls through the sealed boundary. Seventeen
+owned operations in the two-member dependency construction have exact
+N-1/cancel boundaries, and malformed member/dependency order is still rejected
+without sorting or repair. The next checkpoint is `step_1428`.

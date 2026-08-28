@@ -63,8 +63,8 @@ def validate(source: str) -> None:
     require("while !ready.is_empty()" in body, "open:raw_ready_loop")
     require("states\n        .values()" in body, "open:final_state_scan")
     require(".map(|state| state.next_op)" in body, "open:final_state_projection")
-    require("ProjectionBuildOperation" not in body, "open:premature_operation_boundary")
-    require("perform_projection_build_operation" not in body, "open:premature_dispatch")
+    require("ProjectionBuildOperation" in body, "partial:operation_boundary")
+    require("perform_projection_build_operation" in body, "partial:dispatch")
     require(FINAL_SEQUENCE in body, "open:reviewed_final_sequence")
     scan = body.index("states\n        .values()")
     charge = body.index("charge(WorkCounter::GraphNode)", scan)
@@ -104,7 +104,7 @@ def mutation_self_test(source: str) -> int:
                 "",
             ),
         ),
-        replace_in_function(source, "while !ready.is_empty()", "perform_projection_build_operation()"),
+        source.replace("perform_projection_build_operation", "unsealed_projection_operation"),
     )
     for index, mutation in enumerate(mutations):
         require(mutation != source, f"mutation:{index}:applied")
@@ -122,7 +122,7 @@ def main() -> int:
     mutations = mutation_self_test(source)
     print(
         "PASS: causal-projection lexical source audit "
-        f"function={FUNCTION} mutations={mutations} status=open_exact"
+        f"function={FUNCTION} mutations={mutations} status=partial_refactor"
     )
     return 0
 

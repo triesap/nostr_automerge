@@ -314,17 +314,17 @@ mod tests {
             prior = Some(candidate.change_hash);
             deep.insert(candidate.change_hash, candidate);
         }
-        let (deep_exact, deep_budget, _) = build_with_limit(deep.clone(), 146, None);
+        let (deep_exact, deep_budget, _) = build_with_limit(deep.clone(), 153, None);
         assert!(deep_exact.is_ok());
         assert_eq!(
             deep_budget.consumed().get(crate::WorkCounter::GraphNode),
-            90
+            97
         );
         assert_eq!(
             deep_budget.consumed().get(crate::WorkCounter::GraphEdge),
             56
         );
-        let (deep_short, deep_short_budget, _) = build_with_limit(deep, 145, None);
+        let (deep_short, deep_short_budget, _) = build_with_limit(deep, 152, None);
         assert!(matches!(
             deep_short,
             Err(MeteredAcceptedEpochStateError::Work(
@@ -338,7 +338,7 @@ mod tests {
                 + deep_short_budget
                     .consumed()
                     .get(crate::WorkCounter::GraphEdge),
-            145
+            152
         );
 
         let wide = (1_u8..=8)
@@ -347,11 +347,11 @@ mod tests {
                 (candidate.change_hash, candidate)
             })
             .collect::<BTreeMap<_, _>>();
-        let (wide_exact, wide_budget, _) = build_with_limit(wide, 97, None);
+        let (wide_exact, wide_budget, _) = build_with_limit(wide, 104, None);
         assert!(wide_exact.is_ok());
         assert_eq!(
             wide_budget.consumed().get(crate::WorkCounter::GraphNode),
-            97
+            104
         );
         assert_eq!(wide_budget.consumed().get(crate::WorkCounter::GraphEdge), 0);
 
@@ -362,18 +362,18 @@ mod tests {
             earlier.push(candidate.change_hash);
             dense.insert(candidate.change_hash, candidate);
         }
-        let (dense_exact, dense_budget, _) = build_with_limit(dense.clone(), 314, None);
+        let (dense_exact, dense_budget, _) = build_with_limit(dense.clone(), 342, None);
         assert!(dense_exact.is_ok());
         assert_eq!(
             dense_budget.consumed().get(crate::WorkCounter::GraphNode),
-            90
+            97
         );
         assert_eq!(
             dense_budget.consumed().get(crate::WorkCounter::GraphEdge),
-            224
+            245
         );
         let (dense_cancelled, dense_cancelled_budget, observations) =
-            build_with_limit(dense, 314, Some(50));
+            build_with_limit(dense, 342, Some(50));
         assert!(matches!(
             dense_cancelled,
             Err(MeteredAcceptedEpochStateError::Work(Completion::Cancelled))

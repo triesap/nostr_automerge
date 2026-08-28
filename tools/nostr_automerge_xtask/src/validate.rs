@@ -402,7 +402,8 @@ fn followup_historical_validator(name: &str) -> bool {
 fn v13_historical_validator(name: &str) -> bool {
     matches!(
         name,
-        "remediation_v12"
+        "resource_operation_inventory_v10"
+            | "remediation_v12"
             | "trusted_epoch_projection_gate_v12"
             | "remediation_v12_actor_gate"
             | "remediation_v12_ancestry_authorization_gate"

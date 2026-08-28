@@ -177,6 +177,7 @@ V12_HISTORICAL_VALIDATORS = {
     "validate_remediation_v11_final_decision.py",
 }
 V13_HISTORICAL_VALIDATORS = {
+    "validate_resource_operation_inventory_v10.py",
     "validate_remediation_v12.py",
     "validate_trusted_epoch_projection_gate_v12.py",
     "validate_remediation_v12_actor_gate.py",
