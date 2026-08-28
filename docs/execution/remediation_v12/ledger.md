@@ -111,3 +111,12 @@ the exact actor-state bytes of the predecessor algorithm, while deliberate
 error and panic payloads cross the boundary unchanged. The current contract is
 also source-bound by the resource-operation inventory validator without
 rewriting its immutable historical v10 record.
+
+`step_1379` closes RCLD 110. The closed trusted-projection gate binds the exact
+seven-candidate requirement and implementation chain, the four appended
+requirements, the sealed source identity, six enabled proof tests, eight
+semantic cases, nine lookup operations, 19 publication operations, and the
+41/32/9 work contract. Twenty deliberate gate mutations reject missing,
+extra, reordered, stale, or weakened evidence. Findings 100 through 103 remain
+open, Finding 080 remains held, and the next implementation checkpoint is
+`step_1380` in RCLD 111.

@@ -194,6 +194,10 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "scripts/validate_unsupported_identity_contradiction_v11.py",
     ),
     ("remediation_v12", "scripts/validate_remediation_v12.py"),
+    (
+        "trusted_epoch_projection_gate_v12",
+        "scripts/validate_trusted_epoch_projection_gate_v12.py",
+    ),
     ("complete_specification", "scripts/validate_spec.py"),
     (
         "fixture_schema_checksum_snake_case",
@@ -360,6 +364,7 @@ mod tests {
         assert!(names.contains(&"resource_followup_final_decision_v10"));
         assert!(names.contains(&"remediation_v11"));
         assert!(names.contains(&"remediation_v12"));
+        assert!(names.contains(&"trusted_epoch_projection_gate_v12"));
         assert!(names.contains(&"complete_specification"));
         assert!(names.contains(&"sealed_constants"));
         assert!(names.contains(&"automerge_boundary"));

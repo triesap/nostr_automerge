@@ -17,6 +17,7 @@ FINDINGS_PATH = ROOT / "spec/remediation_findings_v12.json"
 REPRODUCTIONS_PATH = ROOT / "spec/remediation_v12_reproductions.json"
 EVIDENCE_POLICY_PATH = ROOT / "spec/remediation_v12_evidence_policy.json"
 AUTHORITY_GATE_PATH = ROOT / "reports/remediation_v12_authority_gate.json"
+PROJECTION_GATE_PATH = ROOT / "reports/trusted_epoch_projection_gate_v12.json"
 
 REVIEWED_CANDIDATE = "9e99af892764ccb165a12b8bb186935bd599d561"
 REVIEWED_TREE = "4b684dc123f371ded75c1469505b130c36359f93"
@@ -31,6 +32,7 @@ TRAVERSAL_CANDIDATE = "eafa932ff4cfa7a4356827f2b97037a8d35c89f3"
 LOOKUP_CANDIDATE = "6e7d13e735017ce310670ca70d56bd4e5225ac61"
 PUBLICATION_CANDIDATE = "bb2f600aeb08c74dd7c8556c1bfc14baa4568ce6"
 SEMANTIC_MATRIX_CANDIDATE = "41be17ed694f1e9848c47acd99a79f4513dfc2e4"
+WORK_CONTRACT_CANDIDATE = "5b3a386160e3310071e644a7030ade80248640d5"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -41,12 +43,16 @@ HOLDS = [
     "remote_mutation",
 ]
 ACTIVE_SCOPE = [
-    "crates/nostr_automerge/src/graph/actor_state.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
     "reports/spec_baseline.txt",
-    "scripts/validate_resource_operation_inventory_v10.py",
+    "reports/trusted_epoch_projection_gate_v12.json",
+    "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v12.py",
+    "scripts/validate_spec.py",
+    "scripts/validate_trusted_epoch_projection_gate_v12.py",
+    "tools/nostr_automerge_xtask/src/validate.rs",
+    "tools/validation/trusted_epoch_projection_gate_v12.schema.json",
 ]
 
 EVIDENCE_REQUIREMENTS = [
@@ -174,13 +180,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 110, "active_step": "step_1378", "next_step": "step_1379", "last_planned_step": "step_1419", "remaining_checkpoint_count": 41, "remaining_rcld_count": 6}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 110, "active_step": "step_1379", "next_step": "step_1380", "last_planned_step": "step_1419", "remaining_checkpoint_count": 40, "remaining_rcld_count": 5}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 16:
+    if not isinstance(predecessors, list) or len(predecessors) != 17:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -198,6 +204,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[13], {"step": "step_1375", "candidate": LOOKUP_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1375")
     require_equal(predecessors[14], {"step": "step_1376", "candidate": PUBLICATION_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1376")
     require_equal(predecessors[15], {"step": "step_1377", "candidate": SEMANTIC_MATRIX_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1377")
+    require_equal(predecessors[16], {"step": "step_1378", "candidate": WORK_CONTRACT_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1378")
 
 
 def validate_trusted_projection() -> None:
@@ -526,6 +533,8 @@ def validate_files() -> None:
     require_equal(sha256(ROOT / "docs/adr/adr_0077_complete_runtime_operation_inventory.md"), "8f4f4d51c763272e84f1a16d93fe2428461d3658c8377e975f318875881bb6db", "file:adr_0077")
     require_equal(sha256(ROOT / "tools/validation/remediation_v12_evidence_policy.schema.json"), "f4be03d9d38af88277182d951a8e67ff2a34f7090b9c413e66a7a373b50ba669", "file:evidence_policy_schema")
     require_equal(sha256(ROOT / "tools/validation/remediation_v12_authority_gate.schema.json"), "3c7c30205feff1347c9b2bb68ab308c4cc81d4d6e71bc72f010f16c507a6f6bd", "file:authority_gate_schema")
+    require_equal(sha256(PROJECTION_GATE_PATH), "64e1c650a806ce6ef79b6e67009621388f797340d9e3ece0b6361ded2d875bff", "file:projection_gate")
+    require_equal(sha256(ROOT / "tools/validation/trusted_epoch_projection_gate_v12.schema.json"), "8451ac4a647b8f2f12eca0bdbddf37becc1757deac765bf3558dc0f6cbce4577", "file:projection_gate_schema")
 
 
 def mutation_self_test(authority: object, ledger: object, findings: object, reproductions: object, evidence_policy: object, authority_gate: object) -> int:
@@ -549,7 +558,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1380"),
+        ("cursor", "next_step", "step_1381"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -676,7 +685,7 @@ def main() -> None:
     mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
-    print("- active=RCLD110/step_1378")
+    print("- active=RCLD110/step_1379")
 
 
 if __name__ == "__main__":

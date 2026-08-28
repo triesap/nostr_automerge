@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/tools/validation/trusted_epoch_projection_gate_v12.schema.json",
+  "title": "nostr_automerge trusted epoch projection gate v12",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "status",
+    "rcld",
+    "candidate_chain",
+    "requirements",
+    "projection",
+    "work_contract",
+    "validators",
+    "findings",
+    "holds",
+    "result"
+  ],
+  "properties": {
+    "schema": { "const": "nostr_automerge.trusted_epoch_projection_gate.v12.v1" },
+    "status": { "const": "rcld_110_complete" },
+    "rcld": { "const": 110 },
+    "candidate_chain": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": { "$ref": "#/$defs/candidate" }
+    },
+    "requirements": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": { "type": "string" }
+    },
+    "projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "source_sha256", "sealed_constructors", "semantic_cases", "lookup_operations", "publication_operations"],
+      "properties": {
+        "source": { "const": "crates/nostr_automerge/src/graph/actor_state.rs" },
+        "source_sha256": { "$ref": "#/$defs/sha256" },
+        "sealed_constructors": { "const": 1 },
+        "semantic_cases": { "const": 8 },
+        "lookup_operations": { "const": 9 },
+        "publication_operations": { "const": 19 }
+      }
+    },
+    "work_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_charges", "graph_node_charges", "graph_edge_charges", "budget_matrix", "cancellation_matrix", "first_stop_preserved", "zero_post_stop_target_work", "predecessor_output_bytes", "unexpected_identity"],
+      "properties": {
+        "total_charges": { "const": 41 },
+        "graph_node_charges": { "const": 32 },
+        "graph_edge_charges": { "const": 9 },
+        "budget_matrix": { "const": "pass" },
+        "cancellation_matrix": { "const": "pass" },
+        "first_stop_preserved": { "const": true },
+        "zero_post_stop_target_work": { "const": true },
+        "predecessor_output_bytes": { "const": "equal" },
+        "unexpected_identity": { "const": "preserved" }
+      }
+    },
+    "validators": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "$ref": "#/$defs/artifact" }
+    },
+    "findings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["open", "held"],
+      "properties": {
+        "open": { "type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true, "items": { "type": "string" } },
+        "held": { "type": "array", "minItems": 1, "maxItems": 1, "items": { "const": "FINDING_080" } }
+      }
+    },
+    "holds": { "type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true, "items": { "type": "string" } },
+    "result": { "const": "pass" }
+  },
+  "$defs": {
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step", "candidate"],
+      "properties": {
+        "step": { "type": "string", "pattern": "^step_[0-9]{4}$" },
+        "candidate": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

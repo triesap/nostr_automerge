@@ -80,6 +80,7 @@ VALIDATORS = [
     "validate_remediation_v11_finding_closure.py",
     "validate_remediation_v11_final_decision.py",
     "validate_remediation_v12.py",
+    "validate_trusted_epoch_projection_gate_v12.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",
@@ -238,6 +239,7 @@ def controlled_files() -> list[pathlib.Path]:
             "reports/remediation_v11_finding_closure.json",
             "reports/remediation_v11_final_decision.json",
             "reports/remediation_v12_authority_gate.json",
+            "reports/trusted_epoch_projection_gate_v12.json",
             "fixtures/distribution/manifest_v12.json",
             "reports/evidence_transition_v11.json",
             "reports/persistent_state_core_v11.json",
@@ -251,6 +253,7 @@ def controlled_files() -> list[pathlib.Path]:
             "tools/validation/runtime_ledger_v12.schema.json",
             "tools/validation/remediation_v12_evidence_policy.schema.json",
             "tools/validation/remediation_v12_authority_gate.schema.json",
+            "tools/validation/trusted_epoch_projection_gate_v12.schema.json",
             "scripts/generate_semantic_proof_catalog_final_v10.py",
             "scripts/reproduce_remediation_v11.py",
             "scripts/reproduce_remediation_v12.py",

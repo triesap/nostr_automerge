@@ -94,6 +94,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/remediation_v11_finding_closure.schema.json",
     "reports/remediation_v11_final_decision.json",
     "tools/validation/remediation_v11_final_decision.schema.json",
+    "reports/trusted_epoch_projection_gate_v12.json",
+    "tools/validation/trusted_epoch_projection_gate_v12.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -105,6 +107,7 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://nostr-automerge.example/schema/persistent_ownership_v11.schema.json",
         b"https://nostr-automerge.example/schema/remediation_v11_authority_gate.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/rust_conformance_v12.schema.json",
+        b"https://github.com/triesap/nostr_automerge/tools/validation/trusted_epoch_projection_gate_v12.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -178,6 +181,7 @@ PYTHON_SURFACES = (
     "scripts/validate_remediation_v11_local_assurance.py",
     "scripts/validate_remediation_v11_finding_closure.py",
     "scripts/validate_remediation_v11_final_decision.py",
+    "scripts/validate_trusted_epoch_projection_gate_v12.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -208,6 +212,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "crates/nostr_automerge/src/conformance/dispositions_digest.rs",
         "crates/nostr_automerge/src/conformance/history_digest.rs",
         "crates/nostr_automerge/src/control/candidate.rs",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
         "crates/nostr_automerge/src/control/frontier.rs",
         "crates/nostr_automerge/src/control/ancestry.rs",
         "crates/nostr_automerge/src/control/parent_view.rs",
@@ -322,6 +327,8 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/remediation_v11_local_assurance.json",
         "reports/remediation_v11_finding_closure.json",
         "reports/remediation_v11_final_decision.json",
+        "reports/remediation_v12_authority_gate.json",
+        "reports/trusted_epoch_projection_gate_v12.json",
         "reports/external_holds_v8.json",
         "reports/spec_baseline.txt",
         "scripts/validate_adrs.py",
@@ -349,6 +356,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_normative_clarifications_v3.py",
         "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_remediation_v11.py",
+        "scripts/validate_remediation_v12.py",
         "scripts/validate_remediation_v11_authority_gate.py",
         "scripts/validate_requirement_matrix_v9.py",
         "scripts/validate_report_contract_v9.py",
@@ -369,6 +377,8 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_remediation_v11_local_assurance.py",
         "scripts/validate_remediation_v11_finding_closure.py",
         "scripts/validate_remediation_v11_final_decision.py",
+        "scripts/reproduce_remediation_v12.py",
+        "scripts/validate_trusted_epoch_projection_gate_v12.py",
         "scripts/validate_opaque_conformance_v10.py",
         "scripts/validate_signed_conformance_gate_v10.py",
         "scripts/validate_semantic_proof_catalog_v10.py",
@@ -448,10 +458,12 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "spec/CONFORMANCE.md",
         "spec/NIP_DRAFT.md",
         "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
+        "spec/NORMATIVE_REQUIREMENTS.md",
         "spec/REPORT_CONTRACT.md",
         "spec/draft_limits.md",
         "spec/draft_limits.json",
         "spec/remediation_findings_v9.json",
+        "spec/remediation_v12_authority.json",
         "spec/requirements.json",
         "spec/requirements_applicability.json",
         "tests/compile_fail/remediation_v9_report_revision/src/main.rs",
@@ -475,6 +487,14 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/validation/remediation_v11_local_assurance.schema.json",
         "tools/validation/remediation_v11_finding_closure.schema.json",
         "tools/validation/remediation_v11_final_decision.schema.json",
+        "tools/validation/remediation_v12_authority_gate.schema.json",
+        "tools/validation/remediation_v12_evidence_policy.schema.json",
+        "tools/validation/runtime_ledger_v12.schema.json",
+        "docs/execution/remediation_v12/baseline.md",
+        "docs/execution/remediation_v12/ledger.md",
+        "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v12.md",
+        "implementation/runtime_ledger_v12.json",
+        "tools/validation/trusted_epoch_projection_gate_v12.schema.json",
         "tools/validation/opaque_conformance_v10.schema.json",
         "tools/validation/signed_conformance_gate_v10.schema.json",
         "tools/validation/semantic_proof_catalog_v10.schema.json",
@@ -747,6 +767,7 @@ def validate_source_surfaces() -> None:
                             "scripts/validate_persistent_state_integration_gate_v11.py",
                             "scripts/validate_remediation_v11_authority_gate.py",
                             "scripts/validate_opaque_distribution_parity_v12.py",
+                            "scripts/validate_trusted_epoch_projection_gate_v12.py",
                             "scripts/validate_runtime_ledger_v9.py",
                         }
                     )
