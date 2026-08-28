@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/tools/validation/remediation_v12_distribution_gate.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "rcld", "candidate_chain", "corpus", "evidence", "findings", "holds", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.remediation_v12_distribution_gate.v1"},
+    "status": {"const": "rcld_113_complete"},
+    "rcld": {"const": 113},
+    "candidate_chain": {"type": "array", "minItems": 7, "maxItems": 7, "items": {"$ref": "#/$defs/candidate"}},
+    "corpus": {"type": "object", "additionalProperties": false, "required": ["preserved_v12_scenarios", "appended_v13_scenarios", "total_scenarios", "tracked_files", "exact_budget_rebindings", "delivery_orders", "processes"], "properties": {"preserved_v12_scenarios": {"const": 198}, "appended_v13_scenarios": {"const": 6}, "total_scenarios": {"const": 204}, "tracked_files": {"const": 671}, "exact_budget_rebindings": {"const": 4}, "delivery_orders": {"const": 8}, "processes": {"const": 2}}},
+    "evidence": {"type": "object", "additionalProperties": false, "required": ["manifest_sha256", "manifest_lock_sha256", "rust_report_sha256", "canonical_output_sha256", "serialized_run_sha256", "process_bytes", "deliberate_mismatch"], "properties": {"manifest_sha256": {"$ref": "#/$defs/sha256"}, "manifest_lock_sha256": {"$ref": "#/$defs/sha256"}, "rust_report_sha256": {"$ref": "#/$defs/sha256"}, "canonical_output_sha256": {"$ref": "#/$defs/sha256"}, "serialized_run_sha256": {"$ref": "#/$defs/sha256"}, "process_bytes": {"const": "identical"}, "deliberate_mismatch": {"const": "rejected"}}},
+    "findings": {"type": "object", "additionalProperties": false, "required": ["open", "held"], "properties": {"open": {"type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": {"type": "string"}}, "held": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"const": "FINDING_080"}}}},
+    "holds": {"type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true, "items": {"type": "string"}},
+    "result": {"const": "pass"}
+  },
+  "$defs": {
+    "candidate": {"type": "object", "additionalProperties": false, "required": ["step", "candidate"], "properties": {"step": {"type": "string", "pattern": "^step_[0-9]{4}$"}, "candidate": {"$ref": "#/$defs/commit"}}},
+    "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

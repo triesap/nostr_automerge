@@ -334,3 +334,12 @@ shape in all eight delivery orders. The corresponding cancellation boundary
 preserves its typed cause, while ample work completes with both changes. The
 closed distribution validator now binds the final six-fixture generator source,
 and the staged manifest contains all 204 planned scenarios.
+
+`step_1405` closes RCLD 113 with the exact 204-scenario distribution-v13
+manifest and immutable lock. Four preserved exact-budget scenarios are
+explicitly rebound to current metered budgets without changing their signed
+events or expected semantics. Two independent Rust processes produce identical
+204-by-eight output, and a deliberate expected-report mismatch is rejected.
+The distribution gate binds the seven-checkpoint chain, 671 tracked corpus
+files, the manifest and lock, the Rust result identity, and all external holds.
+RCLD 114 begins at `step_1406`.

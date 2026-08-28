@@ -1,6 +1,6 @@
 {
   "schema": "nostr_automerge.distribution_v13_transition.v1",
-  "current_stage": "post_stop_fixture_added",
+  "current_stage": "distribution_complete",
   "stage_order": [
     "authority_defined",
     "inventory_installed",

@@ -1,0 +1,29 @@
+{
+  "expected": {
+    "report_path": "deep_delta_extend_exact_budget.expected.json",
+    "sha256": "945f57e663dd11e80984183c93d4ce3ad97462c78be7e3884dcd74b4c21e5603"
+  },
+  "fixture_id": "deep_delta_extend_exact_budget",
+  "fixture_schema": "nostr_automerge.fixture.v1",
+  "inputs": [
+    {
+      "media_type": "application/json",
+      "name": "signed_scenario",
+      "path": "deep_delta_extend_exact_budget.input.json",
+      "sha256": "93eda4ad44d589e0a810db190af04f827b49a47e03d42448788861a8e4cf4140"
+    }
+  ],
+  "provenance": {
+    "created_at": "2026-08-10",
+    "generator": "nostr_automerge_conformance generate_signed_profile epoch_semantics_v13",
+    "generator_revision": "signed_scenario_v2",
+    "source_versions": {
+      "nostr_automerge": "0.1.0-alpha.0"
+    }
+  },
+  "requirements": [
+    "NCRDT-RESOURCE-015"
+  ],
+  "revision": "draft_2026_08",
+  "seed": null
+}

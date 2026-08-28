@@ -77,12 +77,173 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
 fn generate_epoch_semantics_v13() -> Result<(), String> {
     let root = repository_root().join("fixtures/v13/scenarios/epoch_semantics");
     std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    generate_canonical_derivation_rebinding_v13()?;
+    generate_deep_delta_rebindings_v13()?;
     generate_deep_actor_predecessor_v13(&root)?;
     generate_many_actor_causal_next_v13(&root)?;
     generate_empty_merge_frontier_v13(&root)?;
     generate_wide_epoch_ancestry_v13(&root)?;
     generate_epoch_writer_authorization_v13(&root)?;
     generate_post_epoch_semantic_stop_v13(&root)
+}
+
+fn generate_deep_delta_rebindings_v13() -> Result<(), String> {
+    const DEPTH: u64 = 8;
+    let root = repository_root().join("fixtures/v13/rebindings/resource_followup");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    for (case_index, fixture_id) in [
+        "deep_delta_root_lookup_exact_budget",
+        "deep_delta_absent_lookup_exact_budget",
+        "deep_delta_extend_exact_budget",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let case_index = u8::try_from(case_index).map_err(|_| "v13 rebinding index overflow")?;
+        let controller = Signer::from_byte(220 + case_index * 2)?;
+        let writer = Signer::from_byte(221 + case_index * 2)?;
+        let coordinate: DocumentCoordinate = format!(
+            "31624:{}:{}",
+            controller.public_key.to_hex(),
+            format!("{:02x}", 0xf0 + case_index).repeat(32)
+        )
+        .parse()
+        .map_err(|_| format!("invalid v13 rebinding coordinate for {fixture_id}"))?;
+        let actor = ActorId::derive(coordinate, writer.public_key);
+        let mut document = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+            .map_err(|error| format!("v13 rebinding document for {fixture_id}: {error:?}"))?;
+        let members = || vec![(&writer, None, &["write"][..])];
+        let mut events = Vec::new();
+        let mut parent = None;
+        let mut heads = Vec::new();
+        let mut change_hashes = Vec::new();
+        for sequence in 0..DEPTH {
+            let control = sign_control(
+                &controller,
+                sequence.saturating_mul(2).saturating_add(1),
+                coordinate,
+                parent,
+                if sequence == 0 {
+                    control_content_full(0, members(), "automerge-change-v1")
+                } else {
+                    control_content_with_links(sequence, members(), &heads, None, None)
+                },
+            )?;
+            let control_id = event_id(&control)?;
+            let change = document
+                .author_change(&[Operation::PutString {
+                    key: format!("layer-{sequence}"),
+                    value: fixture_id.to_owned(),
+                }])
+                .map_err(|error| format!("v13 rebinding change for {fixture_id}: {error:?}"))?;
+            let change_event = sign_change(
+                &writer,
+                sequence.saturating_mul(2).saturating_add(2),
+                coordinate,
+                control_id,
+                change.change_hash(),
+                change.raw(),
+            )?;
+            heads.clear();
+            heads.push(change.change_hash());
+            change_hashes.push(change.change_hash());
+            parent = Some(control_id);
+            events.extend([control, change_event]);
+        }
+        if fixture_id != "deep_delta_absent_lookup_exact_budget" {
+            let extends_with_override = fixture_id == "deep_delta_extend_exact_budget";
+            let base_heads = if extends_with_override {
+                vec![
+                    *change_hashes
+                        .first()
+                        .ok_or_else(|| "missing v13 rebinding root hash".to_owned())?,
+                ]
+            } else {
+                heads.clone()
+            };
+            let terminal_members = if extends_with_override {
+                vec![(&controller, None, &["write"][..])]
+            } else {
+                members()
+            };
+            let terminal = sign_control(
+                &controller,
+                DEPTH.saturating_mul(2).saturating_add(1),
+                coordinate,
+                parent,
+                control_content_with_links(DEPTH, terminal_members, &base_heads, None, None),
+            )?;
+            events.push(terminal);
+        }
+        let exact_items = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)?;
+        write_fixture_with_execution(
+            &root,
+            fixture_id,
+            coordinate,
+            events,
+            &["NCRDT-RESOURCE-015"],
+            "epoch_semantics_v13",
+            Vec::new(),
+            ScenarioBudget {
+                max_bytes: 1_000_000,
+                max_items: exact_items,
+            },
+            None,
+        )?;
+    }
+    Ok(())
+}
+
+fn generate_canonical_derivation_rebinding_v13() -> Result<(), String> {
+    let controller = Signer::from_byte(211)?;
+    let writer = Signer::from_byte(212)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "e6".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid v13 canonical-derivation coordinate".to_owned())?;
+    let genesis = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, vec![(&writer, None, &["write"])], "automerge-change-v1"),
+    )?;
+    let genesis_id = event_id(&genesis)?;
+    let left = sign_control(
+        &controller,
+        2,
+        coordinate,
+        Some(genesis_id),
+        control_content_with_links(1, vec![], &[], None, None),
+    )?;
+    let right = sign_control(
+        &controller,
+        3,
+        coordinate,
+        Some(genesis_id),
+        control_content_with_links(1, vec![(&controller, None, &["write"])], &[], None, None),
+    )?;
+    let events = vec![genesis, left, right];
+    let max_items = exact_complete_item_budget(coordinate, &events)?;
+    let root = repository_root().join("fixtures/v13/rebindings/resource_followup");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    write_fixture_with_execution(
+        &root,
+        "canonical_derivation_exact_budget",
+        coordinate,
+        events,
+        &["NCRDT-CONF-010", "NCRDT-RESOURCE-014"],
+        "epoch_semantics_v13",
+        Vec::new(),
+        ScenarioBudget {
+            max_bytes: 1_000_000,
+            max_items,
+        },
+        None,
+    )
 }
 
 fn generate_deep_actor_predecessor_v13(root: &Path) -> Result<(), String> {

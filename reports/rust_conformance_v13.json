@@ -1,0 +1,22 @@
+{
+  "schema": "nostr_automerge.rust_conformance.v13.v1",
+  "status": "pass",
+  "source_candidate": "378f15e7af474e34884b9b25a19960d37b0c02f6",
+  "manifest_sha256": "12aa1b1f806ce810463768d566cc63d2ceba6126014d4da9fe5688df518bef3f",
+  "manifest_lock_sha256": "c8145bbbd84d5d149b7ae7712f2ee4d16e3c8f5f367348c7119b41ccac40333f",
+  "distribution_schema_sha256": "fa5f016bbadb83fe63e613ec0399a44eadd4dbb90d6d63b87f8b0e29f986cc34",
+  "generator_sha256": "5375666085c5c09e3b343ed1cf5eaf350dada9619fb5b13267140c7118d4167c",
+  "fixture_generator_sha256": "afe76f150b03852fd3aa5659b59e480c846de96ccfced42cdc6dbd5cf0606b51",
+  "runner_sha256": "62d0fed49f73b942039728b748ac963aec00a1aa3c073cdec505b1da78020c5f",
+  "cargo_lock_sha256": "6d1b886ff74637ba6682d349ab81424b0792f2cbc61cf0f213dfcf16af4f6744",
+  "rust_toolchain_sha256": "5d959dfcc98b53886ee772ba216c4f9a1b31f093b46b5b263c0d084af54e821d",
+  "scenario_count": 204,
+  "fixture_rebinding_count": 4,
+  "process_count": 2,
+  "delivery_order_count": 8,
+  "canonical_process_bytes": "identical",
+  "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+  "serialized_run_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344",
+  "deliberate_expectation_mismatch": "rejected",
+  "result_identity_sha256": "67d21245aaddbf5fe487a8e763063e428f7f71ec2ef0ac9b0ed3d682ede76007"
+}

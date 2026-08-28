@@ -17,6 +17,7 @@ BASE_PATH = "fixtures/distribution/manifest_v12.json"
 OUTPUT_PATH = "fixtures/distribution/manifest_v13.json"
 SCHEMA_PATH = "tools/validation/distribution_v13.schema.json"
 COMPANION_ROOT = ROOT / "fixtures/v13/scenarios/epoch_semantics"
+REBINDING_ROOT = ROOT / "fixtures/v13/rebindings/resource_followup"
 BASE_CANDIDATE = "de716296d88b9908e350ec2eb7bc9406573a2a5d"
 BASE_SHA256 = "29d1304aae027d33ff66b39b2cc499cca0e40fb24e5d4f5d749e33bf7dafd7c0"
 OLD_REQUIREMENTS_SHA256 = "840822a1acf171c887b9a9aba79ddf159ffcd9c5d7a74bd74d7e0bac5c6161f4"
@@ -150,6 +151,76 @@ def validate_companion_inventory(count: int, actual: tuple[str, ...] | None = No
         require(not candidate.is_absolute() and ".." not in candidate.parts, "companion_traversal")
 
 
+def rebinding_paths() -> tuple[str, ...]:
+    paths: list[str] = []
+    for fixture_id in (
+        "canonical_derivation_exact_budget",
+        "deep_delta_absent_lookup_exact_budget",
+        "deep_delta_extend_exact_budget",
+        "deep_delta_root_lookup_exact_budget",
+    ):
+        root = "fixtures/v13/rebindings/resource_followup/" + fixture_id
+        paths.extend((root + ".expected.json", root + ".fixture.json", root + ".input.json"))
+    return tuple(sorted(paths, key=str.encode))
+
+
+def validate_rebinding_inventory(enabled: bool, actual: tuple[str, ...] | None = None) -> None:
+    expected = tuple(sorted(rebinding_paths(), key=str.encode)) if enabled else ()
+    if actual is None:
+        actual = tuple(sorted((path.relative_to(ROOT).as_posix() for path in REBINDING_ROOT.glob("*.json")), key=str.encode)) if REBINDING_ROOT.exists() else ()
+    require(actual == expected, "rebinding_inventory")
+
+
+def fixture_rebindings() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    entries: list[dict[str, Any]] = []
+    records: list[dict[str, Any]] = []
+    for fixture_id, requirements, prior_items, required_items in (
+        ("canonical_derivation_exact_budget", ("NCRDT-CONF-010", "NCRDT-RESOURCE-014"), 371, 453),
+        ("deep_delta_absent_lookup_exact_budget", ("NCRDT-RESOURCE-015",), 6357, 9081),
+        ("deep_delta_extend_exact_budget", ("NCRDT-RESOURCE-015",), 6705, 9300),
+        ("deep_delta_root_lookup_exact_budget", ("NCRDT-RESOURCE-015",), 7087, 9913),
+    ):
+        prior_root = "fixtures/v12/scenarios/resource_followup/" + fixture_id
+        current_root = "fixtures/v13/rebindings/resource_followup/" + fixture_id
+        prior = load(prior_root + ".input.json")
+        current = load(current_root + ".input.json")
+        require(prior["budget"]["max_items"] == prior_items, "rebinding_prior_budget:" + fixture_id)
+        require(current["budget"]["max_items"] == required_items, "rebinding_current_budget:" + fixture_id)
+        projected = json.loads(json.dumps(prior))
+        projected["budget"]["max_items"] = required_items
+        require(projected == current, "rebinding_budget_only:" + fixture_id)
+        entries.append(fixture_entry_at(current_root, fixture_id, requirements))
+        records.append({
+            "fixture_id": fixture_id,
+            "prior_metadata_path": prior_root + ".fixture.json",
+            "current_metadata_path": current_root + ".fixture.json",
+            "prior_max_items": prior_items,
+            "required_max_items": required_items,
+            "raw_events_preserved": True,
+            "delivery_orders_identical": True,
+        })
+    return entries, records
+
+
+def fixture_entry_at(root: str, identifier: str, requirements: tuple[str, ...]) -> dict[str, Any]:
+    metadata_path = root + ".fixture.json"
+    metadata = load(metadata_path)
+    require(tuple(metadata) == ("expected", "fixture_id", "fixture_schema", "inputs", "provenance", "requirements", "revision", "seed"), "metadata_shape:" + identifier)
+    require(metadata["fixture_id"] == identifier and metadata["requirements"] == list(requirements), "metadata_identity:" + identifier)
+    require(metadata["fixture_schema"] == "nostr_automerge.fixture.v1", "metadata_schema:" + identifier)
+    require(metadata["revision"] == "draft_2026_08" and metadata["seed"] is None, "metadata_revision:" + identifier)
+    inputs = metadata["inputs"]
+    expected = metadata["expected"]
+    require(type(inputs) is list and len(inputs) == 1 and type(inputs[0]) is dict, "metadata_input:" + identifier)
+    require(type(expected) is dict, "metadata_expected:" + identifier)
+    base = root.rsplit("/", 1)[0]
+    input_path = base + "/" + str(inputs[0].get("path"))
+    expected_path = base + "/" + str(expected.get("report_path"))
+    require(digest(input_path) == inputs[0].get("sha256"), "input_hash:" + identifier)
+    require(digest(expected_path) == expected.get("sha256"), "expected_hash:" + identifier)
+    return {"expected_path": expected_path, "fixture_id": identifier, "input_paths": [input_path], "metadata_path": metadata_path, "profile": "resource", "requirements": list(requirements)}
+
+
 def expected_manifest(state: dict[str, Any]) -> dict[str, Any]:
     stage, count = validate_state(state)
     base, _ = historical_base()
@@ -162,12 +233,22 @@ def expected_manifest(state: dict[str, Any]) -> dict[str, Any]:
     requirement_rows[0]["sha256"] = NEW_REQUIREMENTS_SHA256
     require(digest("spec/requirements.json") == NEW_REQUIREMENTS_SHA256, "requirements_current")
     validate_companion_inventory(count)
+    complete = stage == "distribution_complete"
+    validate_rebinding_inventory(complete)
     for identifier, requirements in PLAN[:count]:
         entry = fixture_entry(identifier, requirements)
         fixtures.append(entry)
         profiles["resource"].append(identifier)
         for path in (*entry["input_paths"], entry["expected_path"], entry["metadata_path"]):
             files.append({"path": path, "sha256": digest(path)})
+    fixture_rebinding_records: list[dict[str, Any]] = []
+    if complete:
+        rebound_entries, fixture_rebinding_records = fixture_rebindings()
+        rebound_by_id = {row["fixture_id"]: row for row in rebound_entries}
+        fixtures = [rebound_by_id.get(row["fixture_id"], row) for row in fixtures]
+        for rebound_entry in rebound_entries:
+            for path in (*rebound_entry["input_paths"], rebound_entry["expected_path"], rebound_entry["metadata_path"]):
+                files.append({"path": path, "sha256": digest(path)})
     fixtures.sort(key=lambda row: row["fixture_id"].encode())
     for values in profiles.values():
         values.sort(key=str.encode)
@@ -175,9 +256,10 @@ def expected_manifest(state: dict[str, Any]) -> dict[str, Any]:
     identifiers = [row[0] for row in PLAN]
     return {
         "appended_v13_fixtures": identifiers[:count],
+        "authorized_v12_fixture_rebindings": fixture_rebinding_records,
         "authorized_v12_source_rebindings": [{"path": "spec/requirements.json", "v12_sha256": OLD_REQUIREMENTS_SHA256, "v13_sha256": NEW_REQUIREMENTS_SHA256}],
         "base_manifest_sha256": BASE_SHA256,
-        "complete": stage == "distribution_complete",
+        "complete": complete,
         "distribution_id": "draft_2026_08_signed_neutral_13",
         "distribution_schema": "nostr_automerge.fixture_distribution.v13",
         "files": files,
@@ -191,7 +273,7 @@ def expected_manifest(state: dict[str, Any]) -> dict[str, Any]:
         "profiles": profiles,
         "protocol_revision": "draft_2026_08",
         "requirements_sha256": NEW_REQUIREMENTS_SHA256,
-        "status": "canonical_signed_neutral_corpus" if stage == "distribution_complete" else "locked_transition",
+        "status": "canonical_signed_neutral_corpus" if complete else "locked_transition",
         "supersedes": BASE_PATH,
         "target_fixture_count": 204,
         "transition_stage": stage,

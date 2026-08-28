@@ -695,6 +695,11 @@ fn validate_distribution_authority(manifest: &DistributionManifest) -> Result<()
         {
             198
         }
+        "nostr_automerge.fixture_distribution.v13"
+            if manifest.transition_stage.as_deref() == Some("distribution_complete") =>
+        {
+            204
+        }
         _ => return Err(RunError::Fixture),
     };
     let actual_count = u64::try_from(manifest.fixtures.len()).map_err(|_| RunError::Fixture)?;

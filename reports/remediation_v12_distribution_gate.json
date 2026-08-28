@@ -1,0 +1,38 @@
+{
+  "schema": "nostr_automerge.remediation_v12_distribution_gate.v1",
+  "status": "rcld_113_complete",
+  "rcld": 113,
+  "candidate_chain": [
+    {"step": "step_1398", "candidate": "48bba61ae08068d021a79cc50e4eb640b45c9825"},
+    {"step": "step_1399", "candidate": "a592b6a9d828f2a367e153536b159ebc05df3ea0"},
+    {"step": "step_1400", "candidate": "e2d6cebe24318be65229dabbe43c90bb402ad2a1"},
+    {"step": "step_1401", "candidate": "364755aa60dd0298b0959329529366ee3d806ce8"},
+    {"step": "step_1402", "candidate": "bac152eeb1d48c4e60d47277296386f6d1e624c4"},
+    {"step": "step_1403", "candidate": "02208ffc9fc51244e7858f9ff6ee520b581549fc"},
+    {"step": "step_1404", "candidate": "378f15e7af474e34884b9b25a19960d37b0c02f6"}
+  ],
+  "corpus": {
+    "preserved_v12_scenarios": 198,
+    "appended_v13_scenarios": 6,
+    "total_scenarios": 204,
+    "tracked_files": 671,
+    "exact_budget_rebindings": 4,
+    "delivery_orders": 8,
+    "processes": 2
+  },
+  "evidence": {
+    "manifest_sha256": "12aa1b1f806ce810463768d566cc63d2ceba6126014d4da9fe5688df518bef3f",
+    "manifest_lock_sha256": "c8145bbbd84d5d149b7ae7712f2ee4d16e3c8f5f367348c7119b41ccac40333f",
+    "rust_report_sha256": "d124f8de42d3e14f8144ae68d2901b0ff60765d26679fa7af3c33bfa6cc6a100",
+    "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+    "serialized_run_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344",
+    "process_bytes": "identical",
+    "deliberate_mismatch": "rejected"
+  },
+  "findings": {
+    "open": ["FINDING_101", "FINDING_102", "FINDING_103"],
+    "held": ["FINDING_080"]
+  },
+  "holds": ["external_assurance", "event_kind_allocation", "nip_submission", "production_qualification", "publication", "release", "remote_mutation"],
+  "result": "pass"
+}
