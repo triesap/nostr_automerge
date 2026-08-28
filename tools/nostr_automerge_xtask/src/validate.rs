@@ -251,6 +251,7 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "remediation_v12_final_decision",
         "scripts/validate_remediation_v12_final_decision.py",
     ),
+    ("remediation_v13", "scripts/validate_remediation_v13.py"),
     ("complete_specification", "scripts/validate_spec.py"),
     (
         "fixture_schema_checksum_snake_case",
@@ -274,11 +275,15 @@ pub(crate) fn validate_repository(root: &Path) -> Result<ValidationReport, Strin
         .join("spec/resource_followup_authority_v10.json")
         .is_file();
     let v12_active = root.join("spec/remediation_v12_authority.json").is_file();
+    let v13_active = root.join("spec/remediation_v13_authority.json").is_file();
     for (name, script) in PYTHON_VALIDATORS {
         if followup_active && followup_historical_validator(name) {
             continue;
         }
         if v12_active && v12_historical_validator(name) {
+            continue;
+        }
+        if v13_active && v13_historical_validator(name) {
             continue;
         }
         let output = Command::new("python3")
@@ -378,6 +383,28 @@ fn followup_historical_validator(name: &str) -> bool {
     )
 }
 
+fn v13_historical_validator(name: &str) -> bool {
+    matches!(
+        name,
+        "remediation_v12"
+            | "trusted_epoch_projection_gate_v12"
+            | "remediation_v12_actor_gate"
+            | "remediation_v12_ancestry_authorization_gate"
+            | "distribution_v13"
+            | "rust_conformance_v13"
+            | "remediation_v12_distribution_gate"
+            | "distribution_v13_compatibility_contract"
+            | "distribution_v13_parity"
+            | "remediation_v12_operation_inventory"
+            | "remediation_v12_proof_catalog"
+            | "remediation_v12_mutation_qualification"
+            | "remediation_v12_public_assurance"
+            | "remediation_v12_combined_assurance"
+            | "remediation_v12_finding_closure"
+            | "remediation_v12_final_decision"
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::Path;
@@ -417,6 +444,7 @@ mod tests {
         assert!(names.contains(&"resource_followup_final_decision_v10"));
         assert!(names.contains(&"remediation_v11"));
         assert!(names.contains(&"remediation_v12"));
+        assert!(names.contains(&"remediation_v13"));
         assert!(names.contains(&"trusted_epoch_projection_gate_v12"));
         assert!(names.contains(&"remediation_v12_actor_gate"));
         assert!(names.contains(&"remediation_v12_ancestry_authorization_gate"));
