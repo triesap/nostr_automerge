@@ -76,3 +76,14 @@ publication charge. This checkpoint also repairs three stale abbreviated
 predecessor identities in the runtime and closed RCLD-116 evidence, and both
 validators now require each full candidate to resolve and form the exact
 direct-parent chain. The next checkpoint is `step_1431`.
+
+`step_1431` routes the constant-size input-cardinality validation and final
+trusted-projection publication through the same sealed operation boundary, so
+the builder contains no raw charge. It preserves the exact three-stage
+candidate consumer and compiles the legacy unmetered actor-state,
+accepted-state, and epoch-result constructors only for reference tests. The
+closed source audit binds the sole trusted constructor, every metered
+production caller, the single semantic consumer, and twenty-one lexical and
+call-graph mutations. Finding 108's exact reproduction is now enabled and
+fixed; the finding remains open until the later Rust assurance gate. The next
+checkpoint is `step_1432`.

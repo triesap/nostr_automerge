@@ -7926,7 +7926,7 @@ mod tests {
         assert_eq!(events.len(), 6);
         let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)
             .expect("v13 deep actor exact boundary");
-        assert_eq!(signed.budget.max_items.checked_add(131), Some(exact));
+        assert_eq!(signed.budget.max_items.checked_add(138), Some(exact));
         let mut current = signed.clone();
         current.budget.max_items = exact;
         let actual = generic_report(
@@ -7973,7 +7973,7 @@ mod tests {
         assert_eq!(events.len(), 9);
         let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)
             .expect("v13 many actor exact boundary");
-        assert_eq!(signed.budget.max_items.checked_add(574), Some(exact));
+        assert_eq!(signed.budget.max_items.checked_add(584), Some(exact));
         let mut current = signed.clone();
         current.budget.max_items = exact;
         let actual = generic_report(
@@ -8023,7 +8023,7 @@ mod tests {
         assert_eq!(events.len(), 6);
         let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)
             .expect("v13 empty frontier exact boundary");
-        assert_eq!(signed.budget.max_items.checked_add(118), Some(exact));
+        assert_eq!(signed.budget.max_items.checked_add(125), Some(exact));
         let mut current = signed.clone();
         current.budget.max_items = exact;
         let actual = generic_report(
@@ -8071,7 +8071,7 @@ mod tests {
         assert_eq!(events.len(), 21);
         let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)
             .expect("v13 wide ancestry exact boundary");
-        assert_eq!(signed.budget.max_items.checked_add(832), Some(exact));
+        assert_eq!(signed.budget.max_items.checked_add(853), Some(exact));
         let mut current = signed.clone();
         current.budget.max_items = exact;
         let actual = generic_report(
@@ -8122,7 +8122,7 @@ mod tests {
         assert_eq!(events.len(), 6);
         let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)
             .expect("v13 writer authorization exact boundary");
-        assert_eq!(signed.budget.max_items.checked_add(55), Some(exact));
+        assert_eq!(signed.budget.max_items.checked_add(60), Some(exact));
         let mut current = signed.clone();
         current.budget.max_items = exact;
         let actual = generic_report(
@@ -8207,9 +8207,9 @@ mod tests {
             excluded_count,
             active_delta,
         ) in [
-            ("deep_delta_root_lookup_exact_budget", 17, 9, 8, 0, 3_890),
-            ("deep_delta_absent_lookup_exact_budget", 16, 8, 8, 0, 3_788),
-            ("deep_delta_extend_exact_budget", 17, 9, 1, 7, 3_659),
+            ("deep_delta_root_lookup_exact_budget", 17, 9, 8, 0, 3_907),
+            ("deep_delta_absent_lookup_exact_budget", 16, 8, 8, 0, 3_805),
+            ("deep_delta_extend_exact_budget", 17, 9, 1, 7, 3_676),
         ] {
             let root = repository_root().join("fixtures/v12/scenarios/resource_followup");
             let signed = SignedScenarioInput::parse(
@@ -8329,22 +8329,22 @@ mod tests {
                 "parent_propagation_exact_budget",
                 false,
                 7_262,
-                567,
+                568,
             ),
             (
                 "resource",
                 "unrelated_control_flood_exact_budget",
                 true,
                 124,
-                39,
+                40,
             ),
-            ("scope", "foreign_claim_flood_exact_budget", true, 124, 39),
+            ("scope", "foreign_claim_flood_exact_budget", true, 124, 40),
             (
                 "scope",
                 "unrelated_valid_checkpoints_exact_budget",
                 true,
                 278,
-                40,
+                41,
             ),
         ];
 

@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v13_authority.json",
   "cursor": {
     "active_rcld": 117,
-    "active_step": "step_1430",
-    "next_step": "step_1431",
+    "active_step": "step_1431",
+    "next_step": "step_1432",
     "last_planned_step": "step_1452",
-    "remaining_checkpoint_count": 23,
+    "remaining_checkpoint_count": 22,
     "remaining_rcld_count": 4
   },
   "findings": {
@@ -23,11 +23,8 @@
     "crates/nostr_automerge/tests/remediation_v13_reproductions.rs",
     "docs/execution/remediation_v13/ledger.md",
     "implementation/runtime_ledger_v13.json",
-    "reports/causal_projection_authority_gate_v13.json",
     "reports/spec_baseline.txt",
     "scripts/reproduce_remediation_v13.py",
-    "scripts/run_causal_projection_mutations_v13.py",
-    "scripts/validate_causal_projection_authority_gate_v13.py",
     "scripts/validate_causal_projection_source_v13.py",
     "scripts/validate_remediation_v13.py",
     "spec/remediation_v13_reproductions.json",
@@ -44,6 +41,7 @@
     {"step":"step_1426","candidate":"e3e8c0eca50800a53462fd90ad306f51223f2173","owner_class":"public","result":"pass"},
     {"step":"step_1427","candidate":"5c65022c86f3931d2df16d71b334be17cd8483ad","owner_class":"public","result":"pass"},
     {"step":"step_1428","candidate":"f4efd6b4bfff04a0d2cce19d61c7487421113f06","owner_class":"public","result":"pass"},
-    {"step":"step_1429","candidate":"c875ca6b234a5d97b5427d9382b628000bc1392e","owner_class":"public","result":"pass"}
+    {"step":"step_1429","candidate":"c875ca6b234a5d97b5427d9382b628000bc1392e","owner_class":"public","result":"pass"},
+    {"step":"step_1430","candidate":"2bb7dd7f241db00767aa66402e14a03e2a151b58","owner_class":"public","result":"pass"}
   ]
 }

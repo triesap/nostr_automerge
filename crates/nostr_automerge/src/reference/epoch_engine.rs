@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use crate::ChangeHash;
+#[cfg(test)]
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
 use crate::control::ancestry::ControlAncestry;
 use crate::control::authorize::any_control_member_metered;
@@ -336,6 +337,7 @@ impl AcceptedAtControl {
 }
 
 impl EpochEvaluationResult {
+    #[cfg(test)]
     pub(crate) fn new(
         accepted_closure: BTreeSet<ChangeHash>,
         frontier_heads: BTreeSet<ChangeHash>,
@@ -1506,7 +1508,7 @@ mod tests {
         ));
         assert_eq!(exhausted.consumed().get(WorkCounter::GraphNode), 1);
 
-        let mut exact = WorkBudget::new(0, 25);
+        let mut exact = WorkBudget::new(0, 26);
         let result = crate::graph::actor_state::initialize_actor_states_metered(
             &closure,
             &candidates,
@@ -1517,7 +1519,7 @@ mod tests {
             },
         );
         assert!(result.is_ok());
-        assert_eq!(exact.consumed().get(WorkCounter::GraphNode), 24);
+        assert_eq!(exact.consumed().get(WorkCounter::GraphNode), 25);
         assert_eq!(exact.consumed().get(WorkCounter::GraphEdge), 1);
     }
 

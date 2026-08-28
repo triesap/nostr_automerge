@@ -1,9 +1,9 @@
 {
   "schema":"nostr_automerge.remediation_v13_reproductions.v1",
-  "status":"mixed",
+  "status":"fixed",
   "cases":[
     {"id":"f104_causal_projection_final_scan","finding":"FINDING_104","test":"finding_104_projection_causal_maximum_has_no_final_state_scan","expected":"pass"},
-    {"id":"f108_projection_operation_boundary","finding":"FINDING_108","test":"finding_108_projection_operations_use_one_closed_boundary","expected":"failed_assertion"}
+    {"id":"f108_projection_operation_boundary","finding":"FINDING_108","test":"finding_108_projection_operations_use_one_closed_boundary","expected":"pass"}
   ],
   "result":"pass"
 }

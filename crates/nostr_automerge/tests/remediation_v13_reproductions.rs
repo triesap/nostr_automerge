@@ -19,7 +19,6 @@ fn finding_104_projection_causal_maximum_has_no_final_state_scan() {
 }
 
 #[test]
-#[ignore = "FINDING_108 remains open until RCLD117"]
 fn finding_108_projection_operations_use_one_closed_boundary() {
     let source = projection_builder_source();
     assert!(source.is_some(), "reviewed projection source boundary");

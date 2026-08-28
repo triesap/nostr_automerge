@@ -746,6 +746,7 @@ fn reference_causal_next_op(states: &BTreeMap<ActorId, EpochActorState>) -> u64 
         .unwrap_or(1)
 }
 
+#[cfg(test)]
 pub(crate) fn initialize_actor_states(
     accepted_base: impl IntoIterator<Item = ChangeCandidate>,
 ) -> Result<BTreeMap<ActorId, EpochActorState>, ActorStateError> {
@@ -878,8 +879,17 @@ fn build_trusted_epoch_projection_observed<'a, E>(
     mut built: impl FnMut(ProjectionBuildOperation),
     mut published: impl FnMut(ProjectionPublicationOperation),
 ) -> Result<TrustedEpochProjection<'a>, MeteredActorStateError<E>> {
-    let member_count = source.member_count();
-    if member_count != accepted_closure.len() {
+    let (member_count, input_is_canonical) = perform_projection_build_operation(
+        WorkCounter::GraphNode,
+        ProjectionBuildOperation::ConstantCandidateValidation,
+        &mut charge,
+        &mut built,
+        || {
+            let member_count = source.member_count();
+            (member_count, member_count == accepted_closure.len())
+        },
+    )?;
+    if !input_is_canonical {
         return Err(MeteredActorStateError::State(
             ActorStateError::NoncanonicalInput,
         ));
@@ -1333,17 +1343,23 @@ fn build_trusted_epoch_projection_observed<'a, E>(
             ActorStateError::DependencyCycle,
         ));
     }
-    charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+    let projection = perform_projection_build_operation(
+        WorkCounter::GraphNode,
+        ProjectionBuildOperation::ResultPublication,
+        &mut charge,
+        &mut built,
+        || TrustedEpochProjection {
+            branch_membership: changes,
+            accepted_closure,
+            dependencies,
+            frontier_heads,
+            actor_states: states,
+            writer_contributions,
+            causal_next_op,
+        },
+    )?;
     published(ProjectionPublicationOperation::Projection);
-    Ok(TrustedEpochProjection {
-        branch_membership: changes,
-        accepted_closure,
-        dependencies,
-        frontier_heads,
-        actor_states: states,
-        writer_contributions,
-        causal_next_op,
-    })
+    Ok(projection)
 }
 
 #[cfg(test)]
@@ -1696,7 +1712,7 @@ pub(crate) mod tests {
                 .iter()
                 .filter(|counter| **counter == WorkCounter::GraphNode)
                 .count(),
-            24
+            25
         );
         assert_eq!(
             charges
@@ -2994,8 +3010,8 @@ pub(crate) mod tests {
         query.change_hash = ChangeHash::from_bytes([3; 32]);
         query.dependencies = vec![second.change_hash].into();
 
-        const TOTAL_CHARGES: usize = 71;
-        const GRAPH_NODES: usize = 55;
+        const TOTAL_CHARGES: usize = 72;
+        const GRAPH_NODES: usize = 56;
         const GRAPH_EDGES: usize = 16;
         let (ample, trace) = projection_work_contract_run(
             &closure,
@@ -3201,12 +3217,14 @@ pub(crate) mod tests {
                     | ProjectionBuildOperation::CheckedArithmetic
                     | ProjectionBuildOperation::MapInsertion
                     | ProjectionBuildOperation::SetInsertion
-                    | ProjectionBuildOperation::CausalMaximumCompare),
+                    | ProjectionBuildOperation::CausalMaximumCompare
+                    | ProjectionBuildOperation::ResultPublication
+                    | ProjectionBuildOperation::ConstantCandidateValidation),
                 ) => Some(*operation),
                 _ => None,
             })
             .collect::<Vec<_>>();
-        assert_eq!(owned.len(), 61);
+        assert_eq!(owned.len(), 63);
         assert_eq!(
             owned
                 .iter()
@@ -3270,6 +3288,22 @@ pub(crate) mod tests {
                 })
                 .count(),
             2
+        );
+        assert_eq!(
+            owned
+                .iter()
+                .filter(|operation| {
+                    **operation == ProjectionBuildOperation::ConstantCandidateValidation
+                })
+                .count(),
+            1
+        );
+        assert_eq!(
+            owned
+                .iter()
+                .filter(|operation| { **operation == ProjectionBuildOperation::ResultPublication })
+                .count(),
+            1
         );
 
         let boundaries = full_trace
@@ -3526,7 +3560,7 @@ pub(crate) mod tests {
                     ActorStateError::NoncanonicalInput
                 ))
             ));
-            assert!(trace.is_empty());
+            assert_eq!(trace, [TraversalTrace::Charge(WorkCounter::GraphNode)]);
         }
 
         let mut third = candidate(3, 1, 2, 1);
@@ -3573,7 +3607,13 @@ pub(crate) mod tests {
         let production = source
             .split_once("#[cfg(test)]\npub(crate) mod tests")
             .map_or(source, |item| item.0);
-        assert_eq!(production.matches("Ok(TrustedEpochProjection {").count(), 1);
+        assert_eq!(production.matches("|| TrustedEpochProjection {").count(), 1);
+        assert_eq!(
+            production
+                .matches("#[cfg(test)]\npub(crate) fn initialize_actor_states(")
+                .count(),
+            1
+        );
         assert!(!production.contains("pub struct TrustedEpochProjection"));
         assert!(!production.contains("pub(crate) struct TrustedEpochProjectionParts"));
         assert!(!production.contains("&mut TrustedEpochProjection"));

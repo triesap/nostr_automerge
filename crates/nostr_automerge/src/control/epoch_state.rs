@@ -2,9 +2,10 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use crate::automerge_adapter::materialized_view::MaterializedDocumentView;
+#[cfg(test)]
+use crate::graph::actor_state::initialize_actor_states;
 use crate::graph::actor_state::{
-    ActorStateError, EpochActorState, MeteredActorStateError, initialize_actor_states,
-    initialize_actor_states_metered,
+    ActorStateError, EpochActorState, MeteredActorStateError, initialize_actor_states_metered,
 };
 use crate::graph::change_candidate::ChangeCandidate;
 use crate::{ActorId, ChangeHash, WorkCounter};
@@ -38,6 +39,7 @@ pub(crate) struct AcceptedEpochState {
 }
 
 impl AcceptedEpochState {
+    #[cfg(test)]
     pub(crate) fn new(
         accepted_closure: BTreeSet<ChangeHash>,
         frontier_heads: BTreeSet<ChangeHash>,
@@ -314,17 +316,17 @@ mod tests {
             prior = Some(candidate.change_hash);
             deep.insert(candidate.change_hash, candidate);
         }
-        let (deep_exact, deep_budget, _) = build_with_limit(deep.clone(), 284, None);
+        let (deep_exact, deep_budget, _) = build_with_limit(deep.clone(), 285, None);
         assert!(deep_exact.is_ok());
         assert_eq!(
             deep_budget.consumed().get(crate::WorkCounter::GraphNode),
-            185
+            186
         );
         assert_eq!(
             deep_budget.consumed().get(crate::WorkCounter::GraphEdge),
             99
         );
-        let (deep_short, deep_short_budget, _) = build_with_limit(deep, 283, None);
+        let (deep_short, deep_short_budget, _) = build_with_limit(deep, 284, None);
         assert!(matches!(
             deep_short,
             Err(MeteredAcceptedEpochStateError::Work(
@@ -338,7 +340,7 @@ mod tests {
                 + deep_short_budget
                     .consumed()
                     .get(crate::WorkCounter::GraphEdge),
-            283
+            284
         );
 
         let wide = (1_u8..=8)
@@ -347,11 +349,11 @@ mod tests {
                 (candidate.change_hash, candidate)
             })
             .collect::<BTreeMap<_, _>>();
-        let (wide_exact, wide_budget, _) = build_with_limit(wide, 193, None);
+        let (wide_exact, wide_budget, _) = build_with_limit(wide, 194, None);
         assert!(wide_exact.is_ok());
         assert_eq!(
             wide_budget.consumed().get(crate::WorkCounter::GraphNode),
-            185
+            186
         );
         assert_eq!(wide_budget.consumed().get(crate::WorkCounter::GraphEdge), 8);
 
@@ -362,18 +364,18 @@ mod tests {
             earlier.push(candidate.change_hash);
             dense.insert(candidate.change_hash, candidate);
         }
-        let (dense_exact, dense_budget, _) = build_with_limit(dense.clone(), 571, None);
+        let (dense_exact, dense_budget, _) = build_with_limit(dense.clone(), 572, None);
         assert!(dense_exact.is_ok());
         assert_eq!(
             dense_budget.consumed().get(crate::WorkCounter::GraphNode),
-            178
+            179
         );
         assert_eq!(
             dense_budget.consumed().get(crate::WorkCounter::GraphEdge),
             393
         );
         let (dense_cancelled, dense_cancelled_budget, observations) =
-            build_with_limit(dense, 571, Some(50));
+            build_with_limit(dense, 572, Some(50));
         assert!(matches!(
             dense_cancelled,
             Err(MeteredAcceptedEpochStateError::Work(Completion::Cancelled))
