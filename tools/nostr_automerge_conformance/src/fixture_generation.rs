@@ -6962,9 +6962,9 @@ mod tests {
             excluded_count,
             active_delta,
         ) in [
-            ("deep_delta_root_lookup_exact_budget", 17, 9, 8, 0, 2_160),
-            ("deep_delta_absent_lookup_exact_budget", 16, 8, 8, 0, 2_145),
-            ("deep_delta_extend_exact_budget", 17, 9, 1, 7, 1_999),
+            ("deep_delta_root_lookup_exact_budget", 17, 9, 8, 0, 2_826),
+            ("deep_delta_absent_lookup_exact_budget", 16, 8, 8, 0, 2_724),
+            ("deep_delta_extend_exact_budget", 17, 9, 1, 7, 2_595),
         ] {
             let root = repository_root().join("fixtures/v12/scenarios/resource_followup");
             let signed = SignedScenarioInput::parse(
@@ -7078,24 +7078,34 @@ mod tests {
     #[test]
     #[allow(clippy::expect_used)]
     fn exact_resource_fixtures_bind_budget_isolation_and_output_bytes() {
-        let cases: [(&str, &str, bool, u64); 4] = [
-            ("resource", "parent_propagation_exact_budget", false, 7_262),
+        let cases: [(&str, &str, bool, u64, u64); 4] = [
+            (
+                "resource",
+                "parent_propagation_exact_budget",
+                false,
+                7_262,
+                566,
+            ),
             (
                 "resource",
                 "unrelated_control_flood_exact_budget",
                 true,
                 124,
+                38,
             ),
-            ("scope", "foreign_claim_flood_exact_budget", true, 124),
+            ("scope", "foreign_claim_flood_exact_budget", true, 124, 38),
             (
                 "scope",
                 "unrelated_valid_checkpoints_exact_budget",
                 true,
                 278,
+                39,
             ),
         ];
 
-        for (family, fixture_id, has_unrelated_flood, historical_exact_budget) in cases {
+        for (family, fixture_id, has_unrelated_flood, historical_exact_budget, current_delta) in
+            cases
+        {
             let path = repository_root()
                 .join("fixtures/v1_draft/scenarios")
                 .join(family)
@@ -7124,11 +7134,6 @@ mod tests {
             let input = minimum_complete_item_budget_for_scenario(signed.clone().into_scenario())
                 .expect("measured input resource budget");
             let exact = permutations.max(input);
-            let current_delta = if fixture_id == "unrelated_valid_checkpoints_exact_budget" {
-                2
-            } else {
-                1
-            };
             assert_eq!(
                 historical_exact_budget.checked_add(current_delta),
                 Some(exact),

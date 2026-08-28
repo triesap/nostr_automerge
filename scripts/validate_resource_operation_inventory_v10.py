@@ -158,7 +158,7 @@ METERED_SOURCE_ANCHORS = (
     ),
     (
         "crates/nostr_automerge/src/reference/epoch_engine.rs",
-        "charge_epoch_item(WorkCounter::GraphNode, budget, cancellation)?;\n            let Some((hash, candidate)) = iter.next()",
+        "charge(counter)?;\n    let value = target();\n    observed(operation);",
     ),
     (
         "crates/nostr_automerge/src/reference/evaluate.rs",

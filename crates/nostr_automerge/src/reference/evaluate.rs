@@ -23,7 +23,7 @@ use crate::reference::epoch_engine::{
     AcceptedAtControl, EpochEvaluationError, EpochEvaluationInput, EpochEvaluationResult,
     MeteredEpochEvaluationInputError, PriorChangeKnowledge, PriorKnowledgeState,
     clone_candidate_maps_metered, collect_eligible_candidates_metered, evaluate_epoch,
-    project_accepted_candidates_metered,
+    project_accepted_candidates_metered, publish_epoch_result_metered,
 };
 use crate::{
     CancellationCheck, ChangeHash, Completion, ControllerEquivocationAlert, EvaluationFailure,
@@ -1395,14 +1395,20 @@ fn resolve_authoritative_epoch(
         )
         .map_err(epoch_resolution_stop)?
         {
-            return Ok(EpochEvaluationResult::from_shared_state(
+            return publish_epoch_result_metered(
                 accepted_base,
                 dispositions,
                 quarantine.alerts,
-            ));
+                budget,
+                cancellation,
+            )
+            .map_err(EpochResolutionError::Schedule);
         }
+        charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)
+            .map_err(epoch_resolution_stop)?;
+        let accepted_closure = Arc::new(accepted_closure);
         let accepted_state = AcceptedEpochState::new_metered(
-            Arc::new(accepted_closure),
+            accepted_closure,
             accepted_candidates,
             None,
             |counter| charge_prior_knowledge_item(counter, budget, cancellation),
@@ -1411,11 +1417,17 @@ fn resolve_authoritative_epoch(
             MeteredAcceptedEpochStateError::Work(stop) => epoch_resolution_stop(stop),
             MeteredAcceptedEpochStateError::State(_) => EpochResolutionError::InvalidState,
         })?;
-        return Ok(EpochEvaluationResult::from_shared_state(
-            Arc::new(accepted_state),
+        charge_prior_knowledge_item(WorkCounter::GraphNode, budget, cancellation)
+            .map_err(epoch_resolution_stop)?;
+        let accepted_state = Arc::new(accepted_state);
+        return publish_epoch_result_metered(
+            accepted_state,
             dispositions,
             quarantine.alerts,
-        ));
+            budget,
+            cancellation,
+        )
+        .map_err(EpochResolutionError::Schedule);
     };
     let epoch_changes = collect_control_candidates_metered(
         control,

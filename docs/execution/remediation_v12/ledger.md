@@ -262,3 +262,14 @@ cannot publish the next overlay. The shared route keeps both evaluation paths
 equivalent for conflicting actors, descendants, later actor changes, and
 independent changes. The quarantine-overlay reproduction is enabled, leaving
 only the zero-post-stop Finding 100 work family open.
+
+`step_1396` closes candidate storage and epoch-result publication behind
+charged target operations. Candidate-vector and map construction, entry pulls,
+candidate and raw-byte clones, membership lookups, inserts, pushes, accepted
+closure projection, accepted-state handles, and terminal result construction
+now occur only after their immediately preceding successful charge. The
+36-operation storage trace preserves the exact completed prefix for every
+budget and cancellation stop, while a zero-item public evaluation performs no
+candidate allocation or publication. The last Finding 100 reproduction is
+enabled; all ten work families now pass and remain pending the independent
+operation-inventory closure at `step_1397`.

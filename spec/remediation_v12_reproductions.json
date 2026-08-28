@@ -89,7 +89,7 @@
       "path": "crates/nostr_automerge/src/reference/epoch_engine.rs",
       "test": "reference::epoch_engine::tests::finding_100_zero_post_stop_work_reproduction",
       "diagnostic": "unmetered target preparation remains before the first stop",
-      "expected": "open_failure"
+      "expected": "fixed_pass"
     }
   ],
   "result": "pass"

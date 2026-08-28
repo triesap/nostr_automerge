@@ -50,6 +50,7 @@ AUTHORIZATION_HELPER_CANDIDATE = "d3b1d462ee4691741821067fb51d33d6d8eb24d6"
 AUTHORIZATION_ROUTE_CANDIDATE = "b7a72c9c0be884fa821cd4224fe523fa02e03426"
 DEPENDENCY_CLOSURE_CANDIDATE = "6de8d68c83996009962b315306ada3c339f12844"
 CANDIDATE_SCHEDULE_CANDIDATE = "6659ca2e5186af9447592e296eb375e17b62ae67"
+QUARANTINE_OVERLAY_CANDIDATE = "c59f25b09576aa595e0ce97aadb0d159e33a1a8c"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -60,7 +61,7 @@ HOLDS = [
     "remote_mutation",
 ]
 ACTIVE_SCOPE = [
-    "crates/nostr_automerge/src/graph/equivocation.rs",
+    "crates/nostr_automerge/src/engine/reference_evaluator.rs",
     "crates/nostr_automerge/src/reference/epoch_engine.rs",
     "crates/nostr_automerge/src/reference/evaluate.rs",
     "docs/execution/remediation_v12/ledger.md",
@@ -68,7 +69,9 @@ ACTIVE_SCOPE = [
     "reports/spec_baseline.txt",
     "scripts/reproduce_remediation_v12.py",
     "scripts/validate_remediation_v12.py",
+    "scripts/validate_resource_operation_inventory_v10.py",
     "spec/remediation_v12_reproductions.json",
+    "tools/nostr_automerge_conformance/src/fixture_generation.rs",
 ]
 
 EVIDENCE_REQUIREMENTS = [
@@ -196,13 +199,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 112, "active_step": "step_1395", "next_step": "step_1396", "last_planned_step": "step_1419", "remaining_checkpoint_count": 24, "remaining_rcld_count": 4}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 112, "active_step": "step_1396", "next_step": "step_1397", "last_planned_step": "step_1419", "remaining_checkpoint_count": 23, "remaining_rcld_count": 4}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 33:
+    if not isinstance(predecessors, list) or len(predecessors) != 34:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -237,6 +240,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[30], {"step": "step_1392", "candidate": AUTHORIZATION_ROUTE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1392")
     require_equal(predecessors[31], {"step": "step_1393", "candidate": DEPENDENCY_CLOSURE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1393")
     require_equal(predecessors[32], {"step": "step_1394", "candidate": CANDIDATE_SCHEDULE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1394")
+    require_equal(predecessors[33], {"step": "step_1395", "candidate": QUARANTINE_OVERLAY_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1395")
 
 
 def validate_trusted_projection() -> None:
@@ -1300,11 +1304,10 @@ def validate_shared_control_member_authorization(
         raise EvidenceError("authorization:evaluator_route")
     if "fn any_control_member_metered" in checkpoint_production or "fn any_control_member_metered" in evaluator_production:
         raise EvidenceError("authorization:duplicate_helper")
-    budget_binding = runner_source.split(
-        'let current_delta = if fixture_id == "unrelated_valid_checkpoints_exact_budget"',
-        1,
-    )
-    if len(budget_binding) != 2 or "{\n                2\n            } else {\n                1\n            };" not in budget_binding[1]:
+    if any(token not in runner_source for token in (
+        '("scope", "foreign_claim_flood_exact_budget", true, 124, 38)',
+        '"unrelated_valid_checkpoints_exact_budget",\n                true,\n                278,\n                39,',
+    )):
         raise EvidenceError("authorization:resource_delta")
 
 
@@ -1368,11 +1371,7 @@ def shared_control_member_authorization_source_mutation_self_test() -> int:
             authorization_source,
             checkpoint_source,
             evaluator_source,
-            runner_source.replace(
-                'fixture_id == "unrelated_valid_checkpoints_exact_budget" {\n                2',
-                'fixture_id == "unrelated_valid_checkpoints_exact_budget" {\n                1',
-                1,
-            ),
+            runner_source.replace("                39,", "                38,", 1),
         ),
     )
     caught = 0
@@ -1458,7 +1457,7 @@ def validate_authorization_production_routes(
         "WorkCounter::ApplyChange), 0",
         "ScheduleError::BudgetExhausted",
         "ScheduleError::Cancelled",
-        "[(2, 0), (3, 1), (4, 2)]",
+        "[(7, 0), (8, 1), (9, 2)]",
     ):
         if token not in refusal:
             raise EvidenceError("authorization:epoch_refusal_matrix")
@@ -1851,6 +1850,142 @@ def quarantine_overlay_source_mutation_self_test() -> int:
     return caught
 
 
+def validate_metered_candidate_storage_and_epoch_publication(
+    source: str | None = None,
+    fallback_source: str | None = None,
+    evaluator_source: str | None = None,
+    fixture_source: str | None = None,
+) -> None:
+    source = source or (
+        ROOT / "crates/nostr_automerge/src/reference/epoch_engine.rs"
+    ).read_text()
+    fallback_source = fallback_source or (
+        ROOT / "crates/nostr_automerge/src/reference/evaluate.rs"
+    ).read_text()
+    evaluator_source = evaluator_source or (
+        ROOT / "crates/nostr_automerge/src/engine/reference_evaluator.rs"
+    ).read_text()
+    fixture_source = fixture_source or (
+        ROOT / "tools/nostr_automerge_conformance/src/fixture_generation.rs"
+    ).read_text()
+    production, tests = source.split("#[cfg(test)]\nmod tests", 1)
+    helper = production.split("fn epoch_storage_operation", 1)[1].split(
+        "pub(crate) fn clone_candidate_maps_metered", 1
+    )[0]
+    ordered = ["charge(counter)?;", "let value = target();", "observed(operation);", "Ok(value)"]
+    positions = [helper.find(token) for token in ordered]
+    if any(position < 0 for position in positions) or positions != sorted(positions):
+        raise EvidenceError("epoch_storage:charge_target_order")
+    operations = [
+        "EpochCandidateVectorConstruction", "EpochCandidatePull", "EpochCandidateClone",
+        "EpochCandidatePush", "RawChangeLookup", "RawClosureMapConstruction",
+        "RawClosureHashPull", "RawArcClone", "RawClosureInsert",
+        "RawClosureLengthComparison", "DependencySetConstruction", "DependencyPull",
+        "DependencyInsert", "CandidateMapConstruction", "CandidateEntryPull",
+        "CandidateClone", "CandidateInsert", "EligibleVectorConstruction",
+        "AcceptedBaseLookup", "DispositionLookup", "EligibleCandidateClone", "EligiblePush",
+        "AcceptedClosureConstruction", "AcceptedCandidatesConstruction",
+        "AcceptedClosureInsert", "AcceptedCandidateClone", "AcceptedCandidateInsert",
+    ]
+    for operation in operations:
+        if production.count(f"EpochStorageOperation::{operation}") < 1:
+            raise EvidenceError("epoch_storage:operation:" + operation)
+    selected = production.split("pub(crate) fn evaluate_epoch(", 1)[1].split(
+        "fn prior_dependencies_valid_metered", 1
+    )[0]
+    if "Vec::with_capacity(input.candidate_changes().len())" in selected:
+        raise EvidenceError("epoch_storage:eager_capacity")
+    for route in (
+        "clone_candidate_maps_observed(",
+        "collect_eligible_candidates_observed(",
+        "project_accepted_candidates_observed(",
+    ):
+        definition = "fn " + route.removesuffix("(") + "<E>("
+        if production.count(route) != 1 or production.count(definition) != 1:
+            raise EvidenceError("epoch_storage:route:" + route)
+    publication = production.split("fn publish_epoch_result_observed", 1)[1].split(
+        "pub(crate) fn evaluate_epoch", 1
+    )[0]
+    publication_order = [
+        "charge(WorkCounter::GraphNode)?;",
+        "let result =",
+        "EpochEvaluationResult::from_shared_state(",
+        "observed();",
+        "Ok(result)",
+    ]
+    positions = [publication.find(token) for token in publication_order]
+    if any(position < 0 for position in positions) or positions != sorted(positions):
+        raise EvidenceError("epoch_publication:charge_target_order")
+    fallback = fallback_source.split("fn resolve_authoritative_epoch(", 1)[1].split(
+        "fn prior_change_knowledge", 1
+    )[0]
+    if selected.count("publish_epoch_result_metered(") != 2:
+        raise EvidenceError("epoch_publication:selected_routes")
+    if fallback.count("publish_epoch_result_metered(") != 2:
+        raise EvidenceError("epoch_publication:fallback_routes")
+    if "EpochEvaluationResult::from_shared_state(" in fallback:
+        raise EvidenceError("epoch_publication:fallback_bypass")
+    for test_name in (
+        "candidate_projections_charge_before_each_owned_entry",
+        "epoch_result_publication_is_charged_immediately_before_construction",
+        "finding_100_zero_post_stop_work_reproduction",
+    ):
+        if tests.count(f"fn {test_name}()") != 1:
+            raise EvidenceError("epoch_storage:test_inventory")
+        attributes = tests.split(f"fn {test_name}()", 1)[0].rsplit("#[test]", 1)[-1]
+        if "#[ignore" in attributes:
+            raise EvidenceError("epoch_storage:test_ignored")
+    matrix = tests.split("fn candidate_projections_charge_before_each_owned_entry()", 1)[1].split(
+        "\n    #[test]", 1
+    )[0]
+    for token in (
+        "assert_eq!(operations.len(), 36)", "for allowance in 0..operations.len()",
+        "Stop::BudgetExhausted", "Stop::Cancelled", "observed, operations[..allowance]",
+    ):
+        if token not in matrix:
+            raise EvidenceError("epoch_storage:boundary_matrix")
+    if "fixture_items.checked_add(292)" not in evaluator_source:
+        raise EvidenceError("epoch_storage:public_minimum")
+    for token in (
+        '("deep_delta_root_lookup_exact_budget", 17, 9, 8, 0, 2_826)',
+        '("deep_delta_absent_lookup_exact_budget", 16, 8, 8, 0, 2_724)',
+        '("deep_delta_extend_exact_budget", 17, 9, 1, 7, 2_595)',
+        '"parent_propagation_exact_budget",\n                false,\n                7_262,\n                566,',
+        '("scope", "foreign_claim_flood_exact_budget", true, 124, 38)',
+    ):
+        if token not in fixture_source:
+            raise EvidenceError("epoch_storage:fixture_budget")
+
+
+def candidate_storage_source_mutation_self_test() -> int:
+    source = (ROOT / "crates/nostr_automerge/src/reference/epoch_engine.rs").read_text()
+    fallback = (ROOT / "crates/nostr_automerge/src/reference/evaluate.rs").read_text()
+    evaluator = (ROOT / "crates/nostr_automerge/src/engine/reference_evaluator.rs").read_text()
+    fixture = (ROOT / "tools/nostr_automerge_conformance/src/fixture_generation.rs").read_text()
+    mutations = (
+        (source.replace("charge(counter)?;\n    let value = target();", "let value = target();\n    charge(counter)?;", 1), fallback, evaluator, fixture),
+        (source.replace("EpochStorageOperation::CandidateClone", "EpochStorageOperation::CandidateEntryPull", 1), fallback, evaluator, fixture),
+        (source.replace("let mut epoch_candidates = epoch_storage_operation(", "let mut epoch_candidates = Vec::with_capacity(input.candidate_changes().len());\n    let _ = epoch_storage_operation(", 1), fallback, evaluator, fixture),
+        (source.replace("clone_candidate_maps_observed(", "removed_storage_route(", 1), fallback, evaluator, fixture),
+        (source.replace("return publish_epoch_result_metered(", "return removed_result_route(", 1), fallback, evaluator, fixture),
+        (source, fallback.replace("publish_epoch_result_metered(", "removed_result_route(", 1), evaluator, fixture),
+        (source.replace("fn candidate_projections_charge_before_each_owned_entry()", "fn removed_storage_matrix()", 1), fallback, evaluator, fixture),
+        (source.replace("fn epoch_result_publication_is_charged_immediately_before_construction()", "fn removed_publication_matrix()", 1), fallback, evaluator, fixture),
+        (source.replace("fn finding_100_zero_post_stop_work_reproduction()", "fn removed_zero_stop()", 1), fallback, evaluator, fixture),
+        (source, fallback, evaluator.replace("checked_add(292)", "checked_add(291)", 1), fixture),
+        (source, fallback, evaluator, fixture.replace("2_826)", "2_825)", 1)),
+    )
+    caught = 0
+    for index, changed in enumerate(mutations):
+        try:
+            validate_metered_candidate_storage_and_epoch_publication(*changed)
+        except EvidenceError:
+            caught += 1
+            continue
+        raise EvidenceError(f"epoch_storage:source_mutation_survived:{index}")
+    return caught
+
+
 def validate_active_causal_budget_deltas(
     evaluator_source: str | None = None,
     fixture_source: str | None = None,
@@ -1861,12 +1996,12 @@ def validate_active_causal_budget_deltas(
     fixture_source = fixture_source or (
         ROOT / "tools/nostr_automerge_conformance/src/fixture_generation.rs"
     ).read_text()
-    if "fixture_items.checked_add(226)" not in evaluator_source:
+    if "fixture_items.checked_add(292)" not in evaluator_source:
         raise EvidenceError("causal_next:post_branch_delta")
     if any(token not in fixture_source for token in (
-        '("deep_delta_root_lookup_exact_budget", 17, 9, 8, 0, 2_160)',
-        '("deep_delta_absent_lookup_exact_budget", 16, 8, 8, 0, 2_145)',
-        '("deep_delta_extend_exact_budget", 17, 9, 1, 7, 1_999)',
+        '("deep_delta_root_lookup_exact_budget", 17, 9, 8, 0, 2_826)',
+        '("deep_delta_absent_lookup_exact_budget", 16, 8, 8, 0, 2_724)',
+        '("deep_delta_extend_exact_budget", 17, 9, 1, 7, 2_595)',
         "signed.budget.max_items.checked_add(active_delta)",
     )):
         raise EvidenceError("causal_next:persistent_delta")
@@ -1880,10 +2015,10 @@ def causal_budget_source_mutation_self_test() -> int:
         ROOT / "tools/nostr_automerge_conformance/src/fixture_generation.rs"
     ).read_text()
     mutations = (
-        (evaluator_source.replace("checked_add(226)", "checked_add(225)", 1), fixture_source),
-        (evaluator_source, fixture_source.replace("2_160)", "2_159)", 1)),
-        (evaluator_source, fixture_source.replace("2_145)", "2_144)", 1)),
-        (evaluator_source, fixture_source.replace("1_999)", "1_998)", 1)),
+        (evaluator_source.replace("checked_add(292)", "checked_add(291)", 1), fixture_source),
+        (evaluator_source, fixture_source.replace("2_826)", "2_825)", 1)),
+        (evaluator_source, fixture_source.replace("2_724)", "2_723)", 1)),
+        (evaluator_source, fixture_source.replace("2_595)", "2_594)", 1)),
     )
     caught = 0
     for changed_evaluator, changed_fixture in mutations:
@@ -1923,7 +2058,7 @@ def validate_reproductions(reproductions: object) -> None:
             "path": path,
             "test": test,
             "diagnostic": diagnostic,
-            "expected": "fixed_pass" if index <= 8 else "open_failure",
+            "expected": "fixed_pass",
         }, f"reproductions:{family}")
     require_equal(record["result"], "pass", "reproductions:result")
 
@@ -2138,7 +2273,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1397"),
+        ("cursor", "next_step", "step_1398"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -2314,13 +2449,15 @@ def main() -> None:
     source_mutations += candidate_schedule_source_mutation_self_test()
     validate_metered_quarantine_overlay()
     source_mutations += quarantine_overlay_source_mutation_self_test()
+    validate_metered_candidate_storage_and_epoch_publication()
+    source_mutations += candidate_storage_source_mutation_self_test()
     validate_active_causal_budget_deltas()
     source_mutations += causal_budget_source_mutation_self_test()
     mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate, actor_gate)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
     print(f"- source_mutations={source_mutations}")
-    print("- active=RCLD112/step_1395")
+    print("- active=RCLD112/step_1396")
 
 
 if __name__ == "__main__":
