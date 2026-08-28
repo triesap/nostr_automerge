@@ -290,3 +290,10 @@ The six new scenario identifiers, their order, stage transitions, companion
 inventory, target count of 204, and append-only manifest construction are
 closed. Missing, extra, duplicate, reordered, traversal, checksum, and
 coordinated state/manifest/schema mutations all fail closed.
+
+`step_1399` adds the first v13 signed scenario. Its first writer's second
+change depends directly on a bridge writer while the required same-actor
+predecessor remains only in the accepted transitive closure. The fixture binds
+the exact complete budget, canonical no-progress at N-1, typed cancellation,
+eight delivery orders, and byte-identical complete output. The staged manifest
+now contains 199 of 204 scenarios.

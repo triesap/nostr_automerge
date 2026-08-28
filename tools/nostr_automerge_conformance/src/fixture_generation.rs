@@ -69,8 +69,135 @@ pub(crate) fn generate(profile: &str) -> Result<(), String> {
         "remediation_v10_target_work" => generate_remediation_v10_target_work(),
         "resource_followup_v11" => generate_resource_followup_v11(),
         "resource_followup_v12" => generate_resource_followup_v12(),
+        "epoch_semantics_v13" => generate_epoch_semantics_v13(),
         _ => Err(format!("unsupported signed profile: {profile}")),
     }
+}
+
+fn generate_epoch_semantics_v13() -> Result<(), String> {
+    let root = repository_root().join("fixtures/v13/scenarios/epoch_semantics");
+    std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
+    generate_deep_actor_predecessor_v13(&root)
+}
+
+fn generate_deep_actor_predecessor_v13(root: &Path) -> Result<(), String> {
+    let fixture_id = "deep_actor_predecessor_exact_budget";
+    let controller = Signer::from_byte(230)?;
+    let first_writer = Signer::from_byte(231)?;
+    let bridge_writer = Signer::from_byte(232)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "f5".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid v13 deep actor coordinate".to_owned())?;
+    let members = || {
+        vec![
+            (&first_writer, None, &["write"][..]),
+            (&bridge_writer, None, &["write"][..]),
+        ]
+    };
+    let control = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let control_id = event_id(&control)?;
+    let first_actor = ActorId::derive(coordinate, first_writer.public_key);
+    let mut first_document =
+        AuthoringDocument::empty(ActorState::initial(first_actor, Default::default()))
+            .map_err(|error| format!("v13 first actor document: {error:?}"))?;
+    let first = first_document
+        .author_change(&[Operation::PutString {
+            key: "first".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .map_err(|error| format!("v13 first actor change: {error:?}"))?;
+    let first_event = sign_change(
+        &first_writer,
+        2,
+        coordinate,
+        control_id,
+        first.change_hash(),
+        first.raw(),
+    )?;
+    let bridge_actor = ActorId::derive(coordinate, bridge_writer.public_key);
+    let mut bridge_document =
+        AuthoringDocument::empty(ActorState::initial(bridge_actor, Default::default()))
+            .map_err(|error| format!("v13 bridge actor document: {error:?}"))?;
+    let bridge = bridge_document
+        .author_change(&[Operation::PutString {
+            key: "bridge".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .map_err(|error| format!("v13 bridge change: {error:?}"))?;
+    let (bridge_raw, bridge_hash) =
+        with_change_dependencies(bridge.raw(), &[first.change_hash()], 2)?;
+    let child_control = sign_control(
+        &controller,
+        3,
+        coordinate,
+        Some(control_id),
+        control_content_with_links(1, members(), &[first.change_hash()], None, None),
+    )?;
+    let child_control_id = event_id(&child_control)?;
+    let bridge_event = sign_change(
+        &bridge_writer,
+        4,
+        coordinate,
+        child_control_id,
+        bridge_hash,
+        &bridge_raw,
+    )?;
+    let second = first_document
+        .author_change(&[Operation::PutString {
+            key: "second".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .map_err(|error| format!("v13 second actor change: {error:?}"))?;
+    let (second_raw, second_hash) = with_change_dependencies(second.raw(), &[bridge_hash], 3)?;
+    let grandchild_control = sign_control(
+        &controller,
+        5,
+        coordinate,
+        Some(child_control_id),
+        control_content_with_links(2, members(), &[bridge_hash], None, None),
+    )?;
+    let grandchild_control_id = event_id(&grandchild_control)?;
+    let second_event = sign_change(
+        &first_writer,
+        6,
+        coordinate,
+        grandchild_control_id,
+        second_hash,
+        &second_raw,
+    )?;
+    let events = vec![
+        control,
+        first_event,
+        child_control,
+        bridge_event,
+        grandchild_control,
+        second_event,
+    ];
+    let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)?;
+    write_fixture_with_execution(
+        root,
+        fixture_id,
+        coordinate,
+        events,
+        &["NCRDT-RESOURCE-017", "NCRDT-RESOURCE-018"],
+        "epoch_semantics_v13",
+        Vec::new(),
+        ScenarioBudget {
+            max_bytes: 1_000_000,
+            max_items: exact,
+        },
+        None,
+    )
 }
 
 fn generate_resource_followup_v12() -> Result<(), String> {
@@ -6950,6 +7077,54 @@ mod tests {
     use crate::runner::{StateAssertionPolicy, generic_report};
     use crate::scenario::{ScenarioBudget, SignedScenarioInput};
     use nostr_automerge::{DocumentCoordinate, ProtocolRevision, RawEventBytes};
+
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn deep_actor_predecessor_exact_budget() {
+        let fixture_id = "deep_actor_predecessor_exact_budget";
+        let root = repository_root().join("fixtures/v13/scenarios/epoch_semantics");
+        let signed = SignedScenarioInput::parse(
+            &std::fs::read(root.join(format!("{fixture_id}.input.json")))
+                .expect("checked-in v13 deep actor input"),
+        )
+        .expect("closed v13 deep actor input");
+        assert_eq!(
+            signed.requirements,
+            ["NCRDT-RESOURCE-017", "NCRDT-RESOURCE-018"]
+        );
+        let coordinate = signed
+            .coordinate
+            .parse()
+            .expect("v13 deep actor coordinate");
+        let events = signed
+            .raw_events
+            .iter()
+            .map(|event| {
+                RawEventBytes::new(
+                    &event.decoded().expect("v13 deep actor Event bytes"),
+                    ProtocolRevision::draft_v1(),
+                )
+                .expect("bounded v13 deep actor Event")
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(events.len(), 6);
+        let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)
+            .expect("v13 deep actor exact boundary");
+        assert_eq!(signed.budget.max_items, exact);
+        let actual = generic_report(
+            fixture_id,
+            signed.clone().into_scenario(),
+            StateAssertionPolicy::None,
+        )
+        .expect("v13 deep actor report");
+        let expected = serde_json::from_value::<ExpectedReport>(signed.expected_report)
+            .expect("v13 deep actor expected report");
+        assert_eq!(expected.accepted_changes.len(), 3);
+        assert_eq!(
+            write_canonical_report(&actual).expect("v13 deep actor actual bytes"),
+            write_canonical_report(&expected).expect("v13 deep actor expected bytes")
+        );
+    }
 
     #[test]
     #[allow(clippy::expect_used)]

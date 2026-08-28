@@ -1,6 +1,6 @@
 {
   "schema": "nostr_automerge.distribution_v13_transition.v1",
-  "current_stage": "inventory_installed",
+  "current_stage": "deep_actor_fixture_added",
   "stage_order": [
     "authority_defined",
     "inventory_installed",

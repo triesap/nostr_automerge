@@ -117,9 +117,10 @@ def fixture_entry(identifier: str, requirements: tuple[str, ...]) -> dict[str, A
     root = f"fixtures/v13/scenarios/epoch_semantics/{identifier}"
     metadata_path = root + ".fixture.json"
     metadata = load(metadata_path)
-    require(tuple(metadata) == ("expected", "fixture_id", "inputs", "profile", "provenance", "requirements", "schema"), "metadata_shape:" + identifier)
+    require(tuple(metadata) == ("expected", "fixture_id", "fixture_schema", "inputs", "provenance", "requirements", "revision", "seed"), "metadata_shape:" + identifier)
     require(metadata["fixture_id"] == identifier and metadata["requirements"] == list(requirements), "metadata_identity:" + identifier)
-    require(metadata["profile"] == "resource", "metadata_profile:" + identifier)
+    require(metadata["fixture_schema"] == "nostr_automerge.fixture.v1", "metadata_schema:" + identifier)
+    require(metadata["revision"] == "draft_2026_08" and metadata["seed"] is None, "metadata_revision:" + identifier)
     inputs = metadata["inputs"]
     expected = metadata["expected"]
     require(type(inputs) is list and len(inputs) == 1 and type(inputs[0]) is dict, "metadata_input:" + identifier)
