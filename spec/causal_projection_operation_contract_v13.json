@@ -1,0 +1,36 @@
+{
+  "schema": "nostr_automerge.causal_projection_operation_contract.v13.v1",
+  "status": "approved_discovery_complete",
+  "requirements": ["NCRDT-RESOURCE-016","NCRDT-RESOURCE-017","NCRDT-RESOURCE-018","NCRDT-RESOURCE-019","NCRDT-EVIDENCE-007"],
+  "charge_rule": "charge_then_operation_then_observation",
+  "families": [
+    {"id":"canonical_source_pull","counter":"graph_node_or_edge","target_scaled":true},
+    {"id":"canonical_order_compare","counter":"graph_node_or_edge","target_scaled":true},
+    {"id":"membership_lookup","counter":"graph_node_or_edge","target_scaled":true},
+    {"id":"candidate_lookup","counter":"graph_node","target_scaled":true},
+    {"id":"dependency_lookup","counter":"graph_edge","target_scaled":true},
+    {"id":"state_lookup","counter":"graph_node_or_edge","target_scaled":true},
+    {"id":"readiness_transition","counter":"graph_node","target_scaled":true},
+    {"id":"checked_arithmetic","counter":"graph_node_or_edge","target_scaled":true},
+    {"id":"map_insertion","counter":"graph_node_or_edge","target_scaled":true},
+    {"id":"set_insertion","counter":"graph_node_or_edge","target_scaled":true},
+    {"id":"shared_reference_clone","counter":"graph_node_or_edge","target_scaled":true},
+    {"id":"causal_maximum_compare","counter":"graph_node_or_edge","target_scaled":true},
+    {"id":"result_publication","counter":"graph_node","target_scaled":false},
+    {"id":"constant_candidate_validation","counter":"graph_node","target_scaled":false}
+  ],
+  "source_boundaries": [
+    "build_trusted_epoch_projection_observed",
+    "causal_next_decision_metered_observed",
+    "initialize_actor_states_metered"
+  ],
+  "prohibited_patterns": [
+    "target_work_before_charge",
+    "bulk_retroactive_charge",
+    "post_stop_target_work",
+    "final_actor_state_maximum_scan",
+    "unmetered_production_bypass"
+  ],
+  "final_operation_count": null,
+  "result": "pass"
+}

@@ -11,3 +11,10 @@ external-action holds remain held. The next checkpoint is `step_1421`.
 eleven-field evidence policy. Registry text, normative prose, applicability,
 and policy provenance agree without changing the NIP. The next checkpoint is
 `step_1422`.
+
+`step_1422` installs the closed fourteen-family logical operation contract.
+It distinguishes canonical pulls and comparisons, membership and state
+lookups, readiness, checked arithmetic, insertions, shared-reference clones,
+causal maximum comparisons, result publication, and constant-size candidate
+validation. Final implementation-specific operation counts remain unset until
+the reproduction phase completes. The next checkpoint is `step_1423`.

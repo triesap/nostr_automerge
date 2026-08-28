@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v13_authority.json",
   "cursor": {
     "active_rcld": 116,
-    "active_step": "step_1421",
-    "next_step": "step_1422",
+    "active_step": "step_1422",
+    "next_step": "step_1423",
     "last_planned_step": "step_1452",
-    "remaining_checkpoint_count": 32,
+    "remaining_checkpoint_count": 31,
     "remaining_rcld_count": 5
   },
   "findings": {
@@ -18,19 +18,16 @@
     "docs/execution/remediation_v13/ledger.md",
     "implementation/runtime_ledger_v13.json",
     "reports/spec_baseline.txt",
-    "scripts/validate_companion_specs.py",
+    "scripts/validate_causal_projection_operations_v13.py",
     "scripts/validate_remediation_v13.py",
-    "scripts/validate_requirements.py",
     "scripts/validate_spec.py",
-    "spec/EVIDENCE_POLICY.md",
-    "spec/REPORT_CONTRACT.md",
-    "spec/companion_authority_v10.json",
-    "spec/remediation_v13_authority.json",
-    "spec/remediation_v13_evidence_policy.json",
-    "tools/validation/remediation_v13_evidence_policy.schema.json"
+    "spec/causal_projection_operation_contract_v13.json",
+    "tools/nostr_automerge_xtask/src/validate.rs",
+    "tools/validation/causal_projection_operation_contract_v13.schema.json"
   ],
   "predecessors": [
     {"step":"step_1419","candidate":"00ef954ff2dece37119ad235638046ffaa7305d4","owner_class":"public","result":"pass"},
-    {"step":"step_1420","candidate":"6bbc29b5fa1a0e88cf5f61d9b751181f913c928b","owner_class":"public","result":"pass"}
+    {"step":"step_1420","candidate":"6bbc29b5fa1a0e88cf5f61d9b751181f913c928b","owner_class":"public","result":"pass"},
+    {"step":"step_1421","candidate":"38c65ae597af0500af64b67c21fb12f7933125b0","owner_class":"public","result":"pass"}
   ]
 }
