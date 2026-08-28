@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_assurance_v13.schema.json",
+  "title": "nostr_automerge causal projection assurance v13",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema","status","rcld","checkpoint","candidate_chain","imports","finding_registry_sha256","findings","counts","holds","release_claimed","remote_actions","result","result_identity_sha256"],
+  "properties": {
+    "schema": {"const":"nostr_automerge.causal_projection_assurance.v13.v1"},
+    "status": {"const":"rcld_118_complete"},
+    "rcld": {"const":118},
+    "checkpoint": {"const":"step_1438"},
+    "candidate_chain": {"type":"array","minItems":5,"maxItems":5},
+    "imports": {"type":"array","minItems":6,"maxItems":6},
+    "finding_registry_sha256": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "findings": {"type":"array","minItems":10,"maxItems":10},
+    "counts": {"const":{"findings":10,"closed":8,"open":1,"held":1}},
+    "holds": {"type":"array","minItems":7,"maxItems":7,"uniqueItems":true},
+    "release_claimed": {"const":false},
+    "remote_actions": {"const":0},
+    "result": {"const":"pass"},
+    "result_identity_sha256": {"type":"string","pattern":"^[0-9a-f]{64}$"}
+  }
+}

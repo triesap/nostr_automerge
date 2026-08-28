@@ -140,3 +140,11 @@ scenarios and 698 files. Rust proves each corrected exact N-1/N boundary, two
 independent 204-by-eight distribution processes produce byte-identical output,
 and a deliberately corrupted expectation is rejected. The next checkpoint is
 `step_1438`.
+
+`step_1438` cross-binds the closed logical-operation contract, implementation
+gate, exhaustive traces, compiled mutation execution, immutable distribution
+v14 lock, and two-process Rust conformance evidence. Findings 104 through 110
+and 112 are closed by their exact public evidence; only independent
+TypeScript compatibility finding 111 remains open, while finding 080 and all
+publication or remote-action authority remain held. The next checkpoint is
+`step_1439` in RCLD 119.

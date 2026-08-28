@@ -1,0 +1,40 @@
+{
+  "schema": "nostr_automerge.causal_projection_assurance.v13.v1",
+  "status": "rcld_118_complete",
+  "rcld": 118,
+  "checkpoint": "step_1438",
+  "candidate_chain": [
+    {"step":"step_1433","candidate":"2bf59a8a22aff9acad87c0d5e09f37e2ebc443a6"},
+    {"step":"step_1434","candidate":"4b404afaa1d3ce1775f0dbd91a283f82141f1eca"},
+    {"step":"step_1435","candidate":"19e2ee7de07d02a92e9702540c80963a665d6611"},
+    {"step":"step_1436","candidate":"54537099a48f79150e46a7d6ebbdab55044a4e42"},
+    {"step":"step_1437","candidate":"6d6c507d86f84b25d4fb2a0c46fd48ab0cc14e4b"}
+  ],
+  "imports": [
+    {"category":"operation_contract","path":"spec/causal_projection_operation_contract_v13.json","sha256":"0df7119713f5f59c5bcc1cb9149b734d394acc469f2839468ee32704b23f1d3f"},
+    {"category":"authority_gate","path":"reports/causal_projection_authority_gate_v13.json","sha256":"8d4581eaf266876c3c0dafc5f2cd0c8a662931b4b176f8c4308f1ddd17d25cf0"},
+    {"category":"implementation_gate","path":"reports/causal_projection_implementation_gate_v13.json","sha256":"591df469c965427d98e0d3f56d46d968fef8c23b69c175f9696c196e168f4f44"},
+    {"category":"mutation_execution","path":"reports/causal_projection_mutations_v13.json","sha256":"4769b40515bc9f66e76aeade3ff70cf00a1fa8f070fd0b9705b3812d51793e17"},
+    {"category":"distribution_lock","path":"fixtures/distribution/manifest_v14.lock.json","sha256":"0fc414a0e49b4e87bb0cf1f21bea3cf0cd70af904720b93a95fae00f079e7304"},
+    {"category":"rust_conformance","path":"reports/rust_conformance_v14.json","sha256":"1a3788359da325ddecfa7d9d9f9c0031503b6530ed21f7998854f9c39911f7d3"}
+  ],
+  "finding_registry_sha256": "a04492a584f87d140f15789095b79fe2b2991a987c22a334c99093c24295ad3c",
+  "findings": [
+    {"id":"FINDING_104","status":"closed","evidence":["operation_contract","implementation_gate","mutation_execution"]},
+    {"id":"FINDING_105","status":"closed","evidence":["operation_contract","authority_gate","implementation_gate"]},
+    {"id":"FINDING_106","status":"closed","evidence":["operation_contract","authority_gate"]},
+    {"id":"FINDING_107","status":"closed","evidence":["authority_gate"]},
+    {"id":"FINDING_108","status":"closed","evidence":["implementation_gate","mutation_execution"]},
+    {"id":"FINDING_109","status":"closed","evidence":["implementation_gate","mutation_execution"]},
+    {"id":"FINDING_110","status":"closed","evidence":["mutation_execution"]},
+    {"id":"FINDING_112","status":"closed","evidence":["distribution_lock","rust_conformance"]},
+    {"id":"FINDING_111","status":"open","evidence":[]},
+    {"id":"FINDING_080","status":"held","evidence":[]}
+  ],
+  "counts": {"findings":10,"closed":8,"open":1,"held":1},
+  "holds": ["external_assurance","event_kind_allocation","nip_submission","production_qualification","publication","release","remote_mutation"],
+  "release_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "9f30eab7cacd7d3911c4db28706b77fece0ac5e9b4d79c0fabaa2e1feb534bc1"
+}
