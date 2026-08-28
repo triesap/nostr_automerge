@@ -401,3 +401,9 @@ package layout, source details, URLs, or workflow data. `step_1417` imports that
 record and binds it with the public assurance, distribution parity, fifteen
 owned runtime operations, thirty-six exact proofs, twelve caught selected
 source mutations, coverage, dependency policy, and all seven external holds.
+
+`step_1418` closes Findings 101 and 103 only after the complete operation
+inventory, exact proof catalog, selected source-mutation qualification,
+distribution parity, and combined assurance records all agree. Findings 100
+through 103 are locally closed; Finding 080 and all seven external actions
+remain held, with no release or remote action claimed.

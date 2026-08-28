@@ -93,6 +93,7 @@ VALIDATORS = [
     "validate_remediation_v12_mutation_qualification.py",
     "validate_remediation_v12_public_assurance.py",
     "validate_remediation_v12_combined_assurance.py",
+    "validate_remediation_v12_finding_closure.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",
@@ -264,6 +265,7 @@ def controlled_files() -> list[pathlib.Path]:
             "reports/remediation_v12_public_assurance.json",
             "reports/opaque_private_assurance_v13.json",
             "reports/remediation_v12_combined_assurance.json",
+            "reports/remediation_v12_finding_closure.json",
             "fixtures/distribution/manifest_v12.json",
             "fixtures/distribution/manifest_v13.json",
             "fixtures/distribution/manifest_v13.lock.json",
@@ -294,6 +296,7 @@ def controlled_files() -> list[pathlib.Path]:
             "tools/validation/remediation_v12_mutation_qualification.schema.json",
             "tools/validation/remediation_v12_public_assurance.schema.json",
             "tools/validation/remediation_v12_combined_assurance.schema.json",
+            "tools/validation/remediation_v12_finding_closure.schema.json",
             "scripts/generate_semantic_proof_catalog_final_v10.py",
             "scripts/reproduce_remediation_v11.py",
             "scripts/reproduce_remediation_v12.py",

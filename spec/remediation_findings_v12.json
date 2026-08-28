@@ -1,6 +1,6 @@
 {
   "schema": "nostr_automerge.remediation_findings.v12.v1",
-  "status": "implementation_in_progress",
+  "status": "code_complete_publication_held",
   "findings": [
     {
       "id": "FINDING_100",
@@ -42,7 +42,7 @@
         "spec/resource_operation_inventory_v10.json"
       ],
       "closure": "Publish a complete source-bound operation inventory and exact enabled proof catalog covering actor state, epoch evaluation, dependency closure, scheduling, publication, quarantine, and stop behavior.",
-      "status": "open"
+      "status": "closed"
     },
     {
       "id": "FINDING_102",
@@ -75,7 +75,7 @@
         "scripts/validate_remediation_v12.py"
       ],
       "closure": "Keep requirements atomic, create validators before their consumers, validate exact ordered checkpoint and source inventories, run repository-owned gates with required arguments, and reject coordinated evidence drift.",
-      "status": "open"
+      "status": "closed"
     },
     {
       "id": "FINDING_080",
