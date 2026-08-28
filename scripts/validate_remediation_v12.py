@@ -49,6 +49,7 @@ ANCESTRY_ROUTE_CANDIDATE = "4f4d43c3aca9d4d959edb2464039d50a983e70a0"
 AUTHORIZATION_HELPER_CANDIDATE = "d3b1d462ee4691741821067fb51d33d6d8eb24d6"
 AUTHORIZATION_ROUTE_CANDIDATE = "b7a72c9c0be884fa821cd4224fe523fa02e03426"
 DEPENDENCY_CLOSURE_CANDIDATE = "6de8d68c83996009962b315306ada3c339f12844"
+CANDIDATE_SCHEDULE_CANDIDATE = "6659ca2e5186af9447592e296eb375e17b62ae67"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -59,9 +60,7 @@ HOLDS = [
     "remote_mutation",
 ]
 ACTIVE_SCOPE = [
-    "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-    "crates/nostr_automerge/src/graph/scaling.rs",
-    "crates/nostr_automerge/src/graph/schedule.rs",
+    "crates/nostr_automerge/src/graph/equivocation.rs",
     "crates/nostr_automerge/src/reference/epoch_engine.rs",
     "crates/nostr_automerge/src/reference/evaluate.rs",
     "docs/execution/remediation_v12/ledger.md",
@@ -70,7 +69,6 @@ ACTIVE_SCOPE = [
     "scripts/reproduce_remediation_v12.py",
     "scripts/validate_remediation_v12.py",
     "spec/remediation_v12_reproductions.json",
-    "tools/nostr_automerge_conformance/src/fixture_generation.rs",
 ]
 
 EVIDENCE_REQUIREMENTS = [
@@ -198,13 +196,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 112, "active_step": "step_1394", "next_step": "step_1395", "last_planned_step": "step_1419", "remaining_checkpoint_count": 25, "remaining_rcld_count": 4}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 112, "active_step": "step_1395", "next_step": "step_1396", "last_planned_step": "step_1419", "remaining_checkpoint_count": 24, "remaining_rcld_count": 4}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 32:
+    if not isinstance(predecessors, list) or len(predecessors) != 33:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -238,6 +236,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[29], {"step": "step_1391", "candidate": AUTHORIZATION_HELPER_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1391")
     require_equal(predecessors[30], {"step": "step_1392", "candidate": AUTHORIZATION_ROUTE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1392")
     require_equal(predecessors[31], {"step": "step_1393", "candidate": DEPENDENCY_CLOSURE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1393")
+    require_equal(predecessors[32], {"step": "step_1394", "candidate": CANDIDATE_SCHEDULE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1394")
 
 
 def validate_trusted_projection() -> None:
@@ -1728,6 +1727,130 @@ def candidate_schedule_source_mutation_self_test() -> int:
     return caught
 
 
+def validate_metered_quarantine_overlay(
+    source: str | None = None,
+    selected_source: str | None = None,
+    fallback_source: str | None = None,
+) -> None:
+    source = source or (
+        ROOT / "crates/nostr_automerge/src/graph/equivocation.rs"
+    ).read_text()
+    selected_source = selected_source or (
+        ROOT / "crates/nostr_automerge/src/reference/epoch_engine.rs"
+    ).read_text()
+    fallback_source = fallback_source or (
+        ROOT / "crates/nostr_automerge/src/reference/evaluate.rs"
+    ).read_text()
+    production, tests = source.split("#[cfg(test)]\nmod tests", 1)
+    helper = production.split("fn publish_quarantine_dispositions_observed", 1)[1].split(
+        "pub(crate) fn detect_equivocations", 1
+    )[0]
+    ordered = [
+        "charge(WorkCounter::GraphNode)?;",
+        "let hash = items.next().copied();",
+        "observed(QuarantineOverlayOperation::QuarantinedPull);",
+        "charge(WorkCounter::GraphNode)?;",
+        "dispositions.insert(hash, ProtocolDisposition::Excluded);",
+        "observed(QuarantineOverlayOperation::DispositionInsert);",
+    ]
+    cursor = 0
+    for token in ordered:
+        position = helper.find(token, cursor)
+        if position < 0:
+            raise EvidenceError("quarantine_overlay:charge_target_order")
+        cursor = position + len(token)
+    if helper.count("charge(WorkCounter::GraphNode)?;") != 2:
+        raise EvidenceError("quarantine_overlay:charge_count")
+    if any(token in helper for token in (".any(", ".collect(", ".for_each(", "for hash in")):
+        raise EvidenceError("quarantine_overlay:eager_scan")
+
+    selected_body = selected_source.split("pub(crate) fn evaluate_epoch(", 1)[1].split(
+        "fn prior_dependencies_valid_metered", 1
+    )[0]
+    fallback_body = fallback_source.split("fn resolve_authoritative_epoch(", 1)[1].split(
+        "fn prior_change_knowledge", 1
+    )[0]
+    for label, body in (("selected", selected_body), ("fallback", fallback_body)):
+        if body.count("publish_quarantine_dispositions_metered(") != 1:
+            raise EvidenceError(f"quarantine_overlay:{label}_route")
+        if "for hash in &quarantine.quarantined" in body:
+            raise EvidenceError(f"quarantine_overlay:{label}_direct_loop")
+
+    for test_name in (
+        "quarantine_overlay_charges_each_pull_and_insert_before_work",
+        "quarantine_equivocation_descendants",
+        "quarantine_later_actor_changes",
+        "quarantine_traversal_has_exact_prefix_and_cancellation_boundaries",
+    ):
+        if tests.count(f"fn {test_name}()") != 1:
+            raise EvidenceError("quarantine_overlay:test_inventory")
+        attributes = tests.split(f"fn {test_name}()", 1)[0].rsplit("#[test]", 1)[-1]
+        if "#[ignore" in attributes:
+            raise EvidenceError("quarantine_overlay:test_ignored")
+    matrix = tests.split(
+        "fn quarantine_overlay_charges_each_pull_and_insert_before_work()", 1
+    )[1].split("\n    #[test]", 1)[0]
+    for token in (
+        "QuarantineOverlayOperation::QuarantinedPull",
+        "QuarantineOverlayOperation::DispositionInsert",
+        "for allowance in 0..trace.len()",
+        "Stop::BudgetExhausted",
+        "Stop::Cancelled",
+        "observed, trace[..allowance]",
+        "allowance / 2",
+    ):
+        if token not in matrix:
+            raise EvidenceError("quarantine_overlay:boundary_matrix")
+    reproduction = "fn finding_100_quarantine_overlay_work_reproduction()"
+    if selected_source.count(reproduction) != 1:
+        raise EvidenceError("quarantine_overlay:reproduction_inventory")
+    attributes = selected_source.split(reproduction, 1)[0].rsplit("#[test]", 1)[-1]
+    if "#[ignore" in attributes:
+        raise EvidenceError("quarantine_overlay:reproduction_ignored")
+
+
+def quarantine_overlay_source_mutation_self_test() -> int:
+    source = (ROOT / "crates/nostr_automerge/src/graph/equivocation.rs").read_text()
+    selected = (ROOT / "crates/nostr_automerge/src/reference/epoch_engine.rs").read_text()
+    fallback = (ROOT / "crates/nostr_automerge/src/reference/evaluate.rs").read_text()
+    mutations = (
+        (source.replace("charge(WorkCounter::GraphNode)?;", "let _ = charge;", 1), selected, fallback),
+        (source.replace(
+            "charge(WorkCounter::GraphNode)?;\n        let hash = items.next().copied();",
+            "let hash = items.next().copied();\n        charge(WorkCounter::GraphNode)?;",
+            1,
+        ), selected, fallback),
+        (source.replace(
+            "QuarantineOverlayOperation::DispositionInsert",
+            "QuarantineOverlayOperation::QuarantinedPull",
+            1,
+        ), selected, fallback),
+        (source.replace(
+            "#[test]\n    fn quarantine_overlay_charges",
+            "#[test]\n    #[ignore]\n    fn quarantine_overlay_charges",
+            1,
+        ), selected, fallback),
+        (source, selected.replace("    publish_quarantine_dispositions_metered(", "    removed_overlay_route(", 1), fallback),
+        (source, selected, fallback.replace("        publish_quarantine_dispositions_metered(", "        removed_overlay_route(", 1)),
+        (source, selected.replace(
+            "fn finding_100_quarantine_overlay_work_reproduction()",
+            "fn removed_quarantine_reproduction()",
+            1,
+        ), fallback),
+    )
+    caught = 0
+    for index, (changed_source, changed_selected, changed_fallback) in enumerate(mutations):
+        try:
+            validate_metered_quarantine_overlay(
+                changed_source, changed_selected, changed_fallback
+            )
+        except EvidenceError:
+            caught += 1
+            continue
+        raise EvidenceError(f"quarantine_overlay:source_mutation_survived:{index}")
+    return caught
+
+
 def validate_active_causal_budget_deltas(
     evaluator_source: str | None = None,
     fixture_source: str | None = None,
@@ -1800,7 +1923,7 @@ def validate_reproductions(reproductions: object) -> None:
             "path": path,
             "test": test,
             "diagnostic": diagnostic,
-            "expected": "fixed_pass" if index <= 7 else "open_failure",
+            "expected": "fixed_pass" if index <= 8 else "open_failure",
         }, f"reproductions:{family}")
     require_equal(record["result"], "pass", "reproductions:result")
 
@@ -2015,7 +2138,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1396"),
+        ("cursor", "next_step", "step_1397"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -2189,13 +2312,15 @@ def main() -> None:
     source_mutations += candidate_dependency_closure_source_mutation_self_test()
     validate_metered_candidate_schedule()
     source_mutations += candidate_schedule_source_mutation_self_test()
+    validate_metered_quarantine_overlay()
+    source_mutations += quarantine_overlay_source_mutation_self_test()
     validate_active_causal_budget_deltas()
     source_mutations += causal_budget_source_mutation_self_test()
     mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate, actor_gate)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
     print(f"- source_mutations={source_mutations}")
-    print("- active=RCLD112/step_1394")
+    print("- active=RCLD112/step_1395")
 
 
 if __name__ == "__main__":

@@ -13,7 +13,9 @@ use crate::control::validate::ControlEnvelope;
 use crate::graph::change_candidate::ChangeCandidate;
 use crate::graph::dependency_graph::{MeteredGraphBuildError, build_graph_metered};
 use crate::graph::equivocation::QuarantineError;
-use crate::graph::equivocation::quarantine_equivocation_descendants;
+use crate::graph::equivocation::{
+    publish_quarantine_dispositions_metered, quarantine_equivocation_descendants,
+};
 use crate::graph::schedule::{ScheduleError, schedule_candidates};
 use crate::reference::branch_state::PersistentDeltaMap;
 use crate::reference::epoch::{EpochCandidate, resolve_epoch};
@@ -1363,9 +1365,20 @@ fn resolve_authoritative_epoch(
                     QuarantineError::Alert(_) => EpochResolutionError::InvalidState,
                 },
             )?;
-        for hash in &quarantine.quarantined {
-            dispositions.insert(*hash, ProtocolDisposition::Excluded);
-        }
+        publish_quarantine_dispositions_metered(
+            &quarantine.quarantined,
+            &mut dispositions,
+            |counter| {
+                charge_prior_knowledge_item(counter, budget, cancellation).map_err(
+                    |stop| match stop {
+                        Completion::BudgetExhausted => ScheduleError::BudgetExhausted,
+                        Completion::Cancelled => ScheduleError::Cancelled,
+                        Completion::Complete => ScheduleError::BudgetExhausted,
+                    },
+                )
+            },
+        )
+        .map_err(EpochResolutionError::Schedule)?;
         let (accepted_closure, accepted_candidates) = project_accepted_candidates_metered(
             &all_candidates,
             accepted_base.accepted_closure(),

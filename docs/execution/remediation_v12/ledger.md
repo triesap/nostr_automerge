@@ -253,3 +253,12 @@ and final result publication each occur only after their own successful
 charge. Equal-ready, fan-out, fan-in, missing, pending, and cyclic graphs are
 order invariant across every budget and cancellation prefix. Both scheduler
 reproductions are enabled, leaving two Finding 100 work families open.
+
+`step_1395` routes selected and fallback quarantine disposition publication
+through one closed charged overlay boundary. Every quarantined hash pull and
+every disposition insertion occurs only after its own successful graph charge;
+budget exhaustion and cancellation preserve the exact completed prefix and
+cannot publish the next overlay. The shared route keeps both evaluation paths
+equivalent for conflicting actors, descendants, later actor changes, and
+independent changes. The quarantine-overlay reproduction is enabled, leaving
+only the zero-post-stop Finding 100 work family open.

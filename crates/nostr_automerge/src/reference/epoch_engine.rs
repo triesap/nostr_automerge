@@ -17,7 +17,9 @@ use crate::graph::dependency_graph::{
     GraphBuildError, MeteredGraphBuildError, build_graph_metered,
 };
 use crate::graph::epoch::{EpochAncestry, classify_epoch_ancestry_metered};
-use crate::graph::equivocation::{QuarantineError, quarantine_equivocation_descendants};
+use crate::graph::equivocation::{
+    QuarantineError, publish_quarantine_dispositions_metered, quarantine_equivocation_descendants,
+};
 use crate::graph::schedule::ScheduleError;
 use crate::reference::apply::apply_exact_closure_metered;
 use crate::reference::branch_state::PersistentDeltaMap;
@@ -564,9 +566,12 @@ pub(crate) fn evaluate_epoch(
     })?;
     let quarantine = quarantine_equivocation_descendants(eligible, &graph, budget, cancellation)
         .map_err(EpochEvaluationError::Quarantine)?;
-    for hash in &quarantine.quarantined {
-        dispositions.insert(*hash, ProtocolDisposition::Excluded);
-    }
+    publish_quarantine_dispositions_metered(
+        &quarantine.quarantined,
+        &mut dispositions,
+        |counter| charge_epoch_item(counter, budget, cancellation),
+    )
+    .map_err(EpochEvaluationError::Schedule)?;
     let (accepted_closure, accepted_candidates) = project_accepted_candidates_metered(
         &all_candidates,
         input.accepted_base().accepted_closure(),
@@ -1035,13 +1040,15 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "remediation v12 expected failure: quarantine overlays are not metered"]
     fn finding_100_quarantine_overlay_work_reproduction() {
         let selected_source = include_str!("epoch_engine.rs");
         let fallback_source = include_str!("evaluate.rs");
+        let direct_loop = concat!("for hash in &quarantine.", "quarantined");
         assert!(
-            !selected_source.contains("for hash in &quarantine.quarantined")
-                && !fallback_source.contains("for hash in &quarantine.quarantined"),
+            !selected_source.contains(direct_loop)
+                && !fallback_source.contains(direct_loop)
+                && selected_source.contains("publish_quarantine_dispositions_metered(")
+                && fallback_source.contains("publish_quarantine_dispositions_metered("),
             "unmetered selected and fallback quarantine overlays remain"
         );
     }

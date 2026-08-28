@@ -92,7 +92,7 @@ EXPECTED_CASES = [
         "path": "crates/nostr_automerge/src/reference/epoch_engine.rs",
         "test": "reference::epoch_engine::tests::finding_100_quarantine_overlay_work_reproduction",
         "diagnostic": "unmetered selected and fallback quarantine overlays remain",
-        "expected": "open_failure",
+        "expected": "fixed_pass",
     },
     {
         "finding": "FINDING_100",

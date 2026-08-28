@@ -3,7 +3,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use super::change_candidate::ChangeCandidate;
 use super::dependency_graph::DependencyGraph;
 use crate::integrity::{AlertError, DeviceEquivocationAlert, IntegrityAlert};
-use crate::{ActorId, CancellationCheck, ChangeHash, EventId, WorkBudget, WorkCounter};
+use crate::{
+    ActorId, CancellationCheck, ChangeHash, EventId, ProtocolDisposition, WorkBudget, WorkCounter,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct EquivocationGroup {
@@ -30,6 +32,39 @@ impl From<AlertError> for QuarantineError {
     fn from(error: AlertError) -> Self {
         Self::Alert(error)
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum QuarantineOverlayOperation {
+    QuarantinedPull,
+    DispositionInsert,
+}
+
+pub(crate) fn publish_quarantine_dispositions_metered<E>(
+    quarantined: &BTreeSet<ChangeHash>,
+    dispositions: &mut BTreeMap<ChangeHash, ProtocolDisposition>,
+    mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
+) -> Result<(), E> {
+    publish_quarantine_dispositions_observed(quarantined, dispositions, &mut charge, |_| {})
+}
+
+fn publish_quarantine_dispositions_observed<E>(
+    quarantined: &BTreeSet<ChangeHash>,
+    dispositions: &mut BTreeMap<ChangeHash, ProtocolDisposition>,
+    charge: &mut impl FnMut(WorkCounter) -> Result<(), E>,
+    mut observed: impl FnMut(QuarantineOverlayOperation),
+) -> Result<(), E> {
+    let mut items = quarantined.iter();
+    for _ in 0..quarantined.len() {
+        charge(WorkCounter::GraphNode)?;
+        let hash = items.next().copied();
+        observed(QuarantineOverlayOperation::QuarantinedPull);
+        let Some(hash) = hash else { break };
+        charge(WorkCounter::GraphNode)?;
+        dispositions.insert(hash, ProtocolDisposition::Excluded);
+        observed(QuarantineOverlayOperation::DispositionInsert);
+    }
+    Ok(())
 }
 
 pub(crate) fn detect_equivocations<I>(
@@ -259,15 +294,85 @@ fn charge_quarantine_work(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeSet;
+    use std::collections::{BTreeMap, BTreeSet};
 
     use super::{
-        detect_equivocations, quarantine_equivocation_descendants as quarantine_descendants,
+        QuarantineOverlayOperation, detect_equivocations, publish_quarantine_dispositions_observed,
+        quarantine_equivocation_descendants as quarantine_descendants,
     };
     use crate::graph::actor_state::tests::candidate;
     use crate::graph::dependency_graph::build_graph;
     use crate::integrity::IntegrityAlert;
-    use crate::{ChangeHash, EventId, NeverCancelled, WorkBudget, WorkCounter};
+    use crate::{
+        ChangeHash, EventId, NeverCancelled, ProtocolDisposition, WorkBudget, WorkCounter,
+    };
+
+    #[test]
+    fn quarantine_overlay_charges_each_pull_and_insert_before_work() {
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        enum Stop {
+            BudgetExhausted,
+            Cancelled,
+        }
+        let quarantined = BTreeSet::from([
+            ChangeHash::from_bytes([1; 32]),
+            ChangeHash::from_bytes([2; 32]),
+            ChangeHash::from_bytes([3; 32]),
+        ]);
+        let mut ample_dispositions = BTreeMap::new();
+        let mut trace = Vec::new();
+        let ample = publish_quarantine_dispositions_observed(
+            &quarantined,
+            &mut ample_dispositions,
+            &mut |_| Ok::<_, Stop>(()),
+            |operation| trace.push(operation),
+        );
+        assert_eq!(ample, Ok(()));
+        assert_eq!(
+            trace,
+            [
+                QuarantineOverlayOperation::QuarantinedPull,
+                QuarantineOverlayOperation::DispositionInsert,
+                QuarantineOverlayOperation::QuarantinedPull,
+                QuarantineOverlayOperation::DispositionInsert,
+                QuarantineOverlayOperation::QuarantinedPull,
+                QuarantineOverlayOperation::DispositionInsert,
+            ]
+        );
+        assert!(
+            ample_dispositions
+                .values()
+                .all(|value| { *value == ProtocolDisposition::Excluded })
+        );
+
+        for allowance in 0..trace.len() {
+            for stop in [Stop::BudgetExhausted, Stop::Cancelled] {
+                let mut successful = 0_usize;
+                let mut observed = Vec::new();
+                let mut dispositions = BTreeMap::new();
+                let result = publish_quarantine_dispositions_observed(
+                    &quarantined,
+                    &mut dispositions,
+                    &mut |_| {
+                        if successful == allowance {
+                            return Err(stop);
+                        }
+                        successful += 1;
+                        Ok(())
+                    },
+                    |operation| observed.push(operation),
+                );
+                assert_eq!(result, Err(stop));
+                assert_eq!(successful, allowance);
+                assert_eq!(observed, trace[..allowance]);
+                assert_eq!(
+                    dispositions.len(),
+                    allowance / 2,
+                    "no insertion before its charge"
+                );
+            }
+        }
+    }
 
     #[test]
     fn detect_device_equivocation_groups() {
