@@ -44,7 +44,15 @@ identity, and performs neither the operation nor its observation after a
 failed charge. The next checkpoint is `step_1427`.
 
 `step_1427` routes all canonical member, dependency, membership, candidate,
-ordering, and ready-frontier pulls through the sealed boundary. Seventeen
+ordering, and ready-frontier pulls through the sealed boundary. Thirteen
 owned operations in the two-member dependency construction have exact
 N-1/cancel boundaries, and malformed member/dependency order is still rejected
 without sorting or repair. The next checkpoint is `step_1428`.
+
+`step_1428` routes readiness checks and transitions, actor and causal-state
+lookups, sequence and operation-counter comparisons, checked arithmetic, and
+actor/frontier insertion through the sealed boundary. Empty, single, wide,
+deep, and dense constructions retain exact first-stop behavior, and all
+affected budget assertions now count the newly visible logical operations.
+Dependency propagation and shared-reference work remain assigned to
+`step_1429`. The next checkpoint is `step_1429`.

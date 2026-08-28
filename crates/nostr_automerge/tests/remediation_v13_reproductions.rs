@@ -28,4 +28,5 @@ fn finding_108_projection_operations_use_one_closed_boundary() {
     assert!(source.contains("ProjectionBuildOperation"));
     assert!(source.contains("perform_projection_build_operation"));
     assert!(!source.contains("while !ready.is_empty()"));
+    assert!(!source.contains("charge(WorkCounter::"));
 }

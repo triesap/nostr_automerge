@@ -18,7 +18,7 @@ EVIDENCE_POLICY = ROOT / "spec/remediation_v13_evidence_policy.json"
 EVIDENCE_SCHEMA = ROOT / "tools/validation/remediation_v13_evidence_policy.schema.json"
 HOLDS = ["external_assurance","event_kind_allocation","nip_submission","production_qualification","publication","release","remote_mutation"]
 OPEN = [f"FINDING_{value:03d}" for value in range(104, 113)]
-SCOPE = ["crates/nostr_automerge/src/control/epoch_state.rs","crates/nostr_automerge/src/engine/reference_evaluator.rs","crates/nostr_automerge/src/graph/actor_state.rs","docs/execution/remediation_v13/ledger.md","implementation/runtime_ledger_v13.json","reports/spec_baseline.txt","scripts/validate_causal_projection_source_v13.py","scripts/validate_remediation_v13.py","scripts/validate_spec.py","tools/nostr_automerge_xtask/src/validate.rs"]
+SCOPE = ["crates/nostr_automerge/src/control/epoch_state.rs","crates/nostr_automerge/src/engine/reference_evaluator.rs","crates/nostr_automerge/src/graph/actor_state.rs","crates/nostr_automerge/src/reference/epoch_engine.rs","crates/nostr_automerge/src/reference/evaluate.rs","crates/nostr_automerge/tests/remediation_v13_reproductions.rs","docs/execution/remediation_v13/ledger.md","implementation/runtime_ledger_v13.json","reports/spec_baseline.txt","scripts/validate_causal_projection_source_v13.py","scripts/validate_remediation_v13.py","tools/nostr_automerge_conformance/src/fixture_generation.rs"]
 ROW_FIELDS = ["id","family","source_path","source_symbol","owner_mode","requirements","test","command","candidate","artifact_sha256","mutation"]
 
 class EvidenceError(RuntimeError):
@@ -54,10 +54,10 @@ def validate(authority: object, findings: object, ledger: object, schema: object
     l = keys(ledger,["schema","status","authority","cursor","findings","active_checkpoint_scope","predecessors"],"ledger")
     require(l["schema"] == "nostr_automerge.runtime_ledger.v13.v1" and l["status"] == "correction_active", "ledger:state")
     require(l["authority"] == "spec/remediation_v13_authority.json", "ledger:authority")
-    require(l["cursor"] == {"active_rcld":117,"active_step":"step_1427","next_step":"step_1428","last_planned_step":"step_1452","remaining_checkpoint_count":26,"remaining_rcld_count":4}, "ledger:cursor")
+    require(l["cursor"] == {"active_rcld":117,"active_step":"step_1428","next_step":"step_1429","last_planned_step":"step_1452","remaining_checkpoint_count":25,"remaining_rcld_count":4}, "ledger:cursor")
     require(l["findings"] == {"open":OPEN,"held":["FINDING_080"]}, "ledger:findings")
     require(l["active_checkpoint_scope"] == SCOPE, "ledger:scope")
-    require(l["predecessors"] == [{"step":"step_1419","candidate":"00ef954ff2dece37119ad235638046ffaa7305d4","owner_class":"public","result":"pass"},{"step":"step_1420","candidate":"6bbc29b5fa1a0e88cf5f61d9b751181f913c928b","owner_class":"public","result":"pass"},{"step":"step_1421","candidate":"38c65ae597af0500af64b67c21fb12f7933125b0","owner_class":"public","result":"pass"},{"step":"step_1422","candidate":"2435f60145aba99cc5f96a49aadc86e162a82b06","owner_class":"public","result":"pass"},{"step":"step_1423","candidate":"285c39239ebef6dd1179d842ca29671b9cf92dfa","owner_class":"public","result":"pass"},{"step":"step_1424","candidate":"219d4844de68ee01eafb9a0bf6c55a8adac8f6db","owner_class":"public","result":"pass"},{"step":"step_1425","candidate":"fbb3fd36cc91af41c7a91327688b921518958ba3","owner_class":"public","result":"pass"},{"step":"step_1426","candidate":"e3e8c0e650f7ce0ab95023b8240ffb96aeb627e9","owner_class":"public","result":"pass"}], "ledger:predecessor")
+    require(l["predecessors"] == [{"step":"step_1419","candidate":"00ef954ff2dece37119ad235638046ffaa7305d4","owner_class":"public","result":"pass"},{"step":"step_1420","candidate":"6bbc29b5fa1a0e88cf5f61d9b751181f913c928b","owner_class":"public","result":"pass"},{"step":"step_1421","candidate":"38c65ae597af0500af64b67c21fb12f7933125b0","owner_class":"public","result":"pass"},{"step":"step_1422","candidate":"2435f60145aba99cc5f96a49aadc86e162a82b06","owner_class":"public","result":"pass"},{"step":"step_1423","candidate":"285c39239ebef6dd1179d842ca29671b9cf92dfa","owner_class":"public","result":"pass"},{"step":"step_1424","candidate":"219d4844de68ee01eafb9a0bf6c55a8adac8f6db","owner_class":"public","result":"pass"},{"step":"step_1425","candidate":"fbb3fd36cc91af41c7a91327688b921518958ba3","owner_class":"public","result":"pass"},{"step":"step_1426","candidate":"e3e8c0e650f7ce0ab95023b8240ffb96aeb627e9","owner_class":"public","result":"pass"},{"step":"step_1427","candidate":"5c65022c86f3931d2df16d71b334be17cd8483ad","owner_class":"public","result":"pass"}], "ledger:predecessor")
     require(type(schema) is dict and schema.get("additionalProperties") is False and schema.get("required") == ["schema","status","authority","cursor","findings","active_checkpoint_scope","predecessors"], "schema")
     require("nostr_automerge_v1_multi_rcld_v13.md" in (ROOT / "AGENTS.md").read_text(), "instructions:plan")
     e = keys(evidence,["schema","status","authority","policy","requirements","owner_modes","required_row_fields","approved_roots","opaque_allowed_fields","opaque_prohibited_fields","result"],"evidence")
@@ -84,7 +84,7 @@ def self_test(authority: dict, findings: dict, ledger: dict, schema: dict, evide
         ("sequence","authority",lambda value: value["active_sequence"].update(step_count=32)),
         ("finding_order","findings",lambda value: value["findings"].reverse()),
         ("premature_close","findings",lambda value: value["findings"][0].update(status="closed")),
-        ("cursor","ledger",lambda value: value["cursor"].update(active_step="step_1426")),
+        ("cursor","ledger",lambda value: value["cursor"].update(active_step="step_1427")),
         ("scope","ledger",lambda value: value["active_checkpoint_scope"].pop()),
         ("predecessor","ledger",lambda value: value["predecessors"][0].update(candidate="0"*40)),
         ("open_schema","schema",lambda value: value.update(additionalProperties=True)),
@@ -113,7 +113,7 @@ def main() -> int:
     evidence_schema = json.loads(EVIDENCE_SCHEMA.read_text())
     validate(authority, findings, ledger, schema, evidence, evidence_schema)
     mutations = self_test(authority, findings, ledger, schema, evidence, evidence_schema)
-    print(f"PASS: remediation-v13 authority active=step_1427 findings=9 mutations={mutations}")
+    print(f"PASS: remediation-v13 authority active=step_1428 findings=9 mutations={mutations}")
     return 0
 
 if __name__ == "__main__":

@@ -19,6 +19,9 @@ FINAL_SEQUENCE = """let causal_next_op = states
         .unwrap_or(1);
     charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
     published(ProjectionPublicationOperation::Projection);"""
+READY_SEQUENCE = """let has_ready = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::ReadinessTransition,"""
 
 sys.path.insert(0, str(ROOT / "scripts"))
 from validate_report_contract_v9 import ReportSuiteError, rust_code_view  # noqa: E402
@@ -60,7 +63,8 @@ def function_body(source: str, name: str = FUNCTION) -> str:
 
 def validate(source: str) -> None:
     body = function_body(source)
-    require("while !ready.is_empty()" in body, "open:raw_ready_loop")
+    require("while !ready.is_empty()" not in body, "fixed:raw_ready_loop")
+    require(READY_SEQUENCE in body, "partial:readiness_boundary")
     require("states\n        .values()" in body, "open:final_state_scan")
     require(".map(|state| state.next_op)" in body, "open:final_state_projection")
     require("ProjectionBuildOperation" in body, "partial:operation_boundary")
@@ -82,7 +86,7 @@ def mutation_self_test(source: str) -> int:
     attacks = []
     attacks.append("// fn build_trusted_epoch_projection_observed() {}\n" + source)
     attacks.append('const DECOY: &str = r#"fn build_trusted_epoch_projection_observed() {}"#;\n' + source)
-    attacks.append(source.replace("    while !ready.is_empty() {", "    #[cfg(test)]\n    while !ready.is_empty() {", 1))
+    attacks.append(source.replace("    loop {", "    #[cfg(test)]\n    loop {", 1))
     attacks.append(source + "\nfn nearby() { charge(WorkCounter::GraphNode); }\n")
     for index, attacked in enumerate(attacks):
         try:
@@ -94,7 +98,15 @@ def mutation_self_test(source: str) -> int:
         source.replace("fn build_trusted_epoch_projection_observed", "fn stale_projection_builder", 1),
         replace_in_function(source, "states\n        .values()", "states.values()"),
         replace_in_function(source, ".map(|state| state.next_op)", ".map(|state| state.last_sequence)"),
-        replace_in_function(source, "while !ready.is_empty()", "while false"),
+        replace_in_function(
+            source,
+            READY_SEQUENCE,
+            READY_SEQUENCE.replace(
+                "ProjectionBuildOperation::ReadinessTransition",
+                "ProjectionBuildOperation::StateLookup",
+            ),
+        ),
+        replace_in_function(source, "    loop {", "    while !ready.is_empty() {"),
         replace_in_function(
             source,
             FINAL_SEQUENCE,

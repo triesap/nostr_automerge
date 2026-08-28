@@ -1004,8 +1004,13 @@ fn build_trusted_epoch_projection_observed<'a, E>(
             published(ProjectionPublicationOperation::Dependant);
         }
         if candidate_dependencies.is_empty() {
-            charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-            ready.insert(hash);
+            perform_projection_build_operation(
+                WorkCounter::GraphNode,
+                ProjectionBuildOperation::ReadinessTransition,
+                &mut charge,
+                &mut built,
+                || ready.insert(hash),
+            )?;
             published(ProjectionPublicationOperation::ReadyCandidate);
         }
         charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
@@ -1021,7 +1026,17 @@ fn build_trusted_epoch_projection_observed<'a, E>(
     let mut writer_contributions = BTreeMap::new();
     let mut causal_next_by_change = BTreeMap::<ChangeHash, u64>::new();
     let mut processed = 0usize;
-    while !ready.is_empty() {
+    loop {
+        let has_ready = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::ReadinessTransition,
+            &mut charge,
+            &mut built,
+            || !ready.is_empty(),
+        )?;
+        if !has_ready {
+            break;
+        }
         let Some(hash) = perform_projection_build_operation(
             WorkCounter::GraphNode,
             ProjectionBuildOperation::CanonicalSourcePull,
@@ -1046,52 +1061,110 @@ fn build_trusted_epoch_projection_observed<'a, E>(
                 ActorStateError::MissingDependency,
             ));
         };
-        if !depended_on.contains(&hash) {
-            charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-            frontier_heads.insert(hash);
+        let is_depended_on = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::StateLookup,
+            &mut charge,
+            &mut built,
+            || depended_on.contains(&hash),
+        )?;
+        if !is_depended_on {
+            perform_projection_build_operation(
+                WorkCounter::GraphNode,
+                ProjectionBuildOperation::SetInsertion,
+                &mut charge,
+                &mut built,
+                || frontier_heads.insert(hash),
+            )?;
             published(ProjectionPublicationOperation::FrontierHead);
         }
-        let expected_sequence = match states.get(&candidate.actor) {
-            Some(state) => state
-                .last_sequence
-                .checked_add(1)
-                .ok_or(MeteredActorStateError::State(ActorStateError::SequenceGap))?,
+        let previous_state = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::StateLookup,
+            &mut charge,
+            &mut built,
+            || states.get(&candidate.actor).copied(),
+        )?;
+        let expected_sequence = match previous_state {
+            Some(state) => perform_projection_build_operation(
+                WorkCounter::GraphNode,
+                ProjectionBuildOperation::CheckedArithmetic,
+                &mut charge,
+                &mut built,
+                || state.last_sequence.checked_add(1),
+            )?
+            .ok_or(MeteredActorStateError::State(ActorStateError::SequenceGap))?,
             None => 1,
         };
-        if candidate.sequence < expected_sequence {
+        let sequence_precedes = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::CanonicalOrderCompare,
+            &mut charge,
+            &mut built,
+            || candidate.sequence < expected_sequence,
+        )?;
+        if sequence_precedes {
             return Err(MeteredActorStateError::State(ActorStateError::Equivocation));
         }
-        if candidate.sequence != expected_sequence {
+        let sequence_matches = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::CanonicalOrderCompare,
+            &mut charge,
+            &mut built,
+            || candidate.sequence == expected_sequence,
+        )?;
+        if !sequence_matches {
             return Err(MeteredActorStateError::State(ActorStateError::SequenceGap));
         }
-        let next_op = causal_next_by_change.get(&hash).copied().unwrap_or(1);
-        let advanced =
-            if candidate.operation_count == 0 {
-                if candidate.start_op != next_op {
-                    return Err(MeteredActorStateError::State(
-                        ActorStateError::OperationCounter,
-                    ));
-                }
-                next_op
-            } else {
-                if candidate.start_op != next_op {
-                    return Err(MeteredActorStateError::State(
-                        ActorStateError::OperationCounter,
-                    ));
-                }
-                next_op.checked_add(candidate.operation_count).ok_or(
-                    MeteredActorStateError::State(ActorStateError::OperationCounter),
-                )?
-            };
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        states.insert(
-            candidate.actor,
-            EpochActorState {
-                last_sequence: candidate.sequence,
-                next_op: advanced,
-                highest_change: candidate.change_hash,
+        let next_op = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::StateLookup,
+            &mut charge,
+            &mut built,
+            || causal_next_by_change.get(&hash).copied().unwrap_or(1),
+        )?;
+        let start_matches = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::CanonicalOrderCompare,
+            &mut charge,
+            &mut built,
+            || candidate.start_op == next_op,
+        )?;
+        if !start_matches {
+            return Err(MeteredActorStateError::State(
+                ActorStateError::OperationCounter,
+            ));
+        }
+        let advanced = if candidate.operation_count == 0 {
+            next_op
+        } else {
+            perform_projection_build_operation(
+                WorkCounter::GraphNode,
+                ProjectionBuildOperation::CheckedArithmetic,
+                &mut charge,
+                &mut built,
+                || next_op.checked_add(candidate.operation_count),
+            )?
+            .ok_or(MeteredActorStateError::State(
+                ActorStateError::OperationCounter,
+            ))?
+        };
+        perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::MapInsertion,
+            &mut charge,
+            &mut built,
+            || {
+                states.insert(
+                    candidate.actor,
+                    EpochActorState {
+                        last_sequence: candidate.sequence,
+                        next_op: advanced,
+                        highest_change: candidate.change_hash,
+                    },
+                )
             },
-        );
+        )?;
         published(ProjectionPublicationOperation::ActorState);
         charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
         writer_contributions.insert(candidate.actor, candidate.change_hash);
@@ -1099,11 +1172,16 @@ fn build_trusted_epoch_projection_observed<'a, E>(
         charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
         causal_next_by_change.insert(candidate.change_hash, advanced);
         published(ProjectionPublicationOperation::CausalCounter);
-        processed = processed
-            .checked_add(1)
-            .ok_or(MeteredActorStateError::State(
-                ActorStateError::DependencyCycle,
-            ))?;
+        processed = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::CheckedArithmetic,
+            &mut charge,
+            &mut built,
+            || processed.checked_add(1),
+        )?
+        .ok_or(MeteredActorStateError::State(
+            ActorStateError::DependencyCycle,
+        ))?;
         if let Some(children) = dependants.get(&hash) {
             let mut child_iter = children.iter();
             for _ in 0..children.len() {
@@ -1130,8 +1208,13 @@ fn build_trusted_epoch_projection_observed<'a, E>(
                     .or_insert(advanced);
                 published(ProjectionPublicationOperation::CausalCounter);
                 if *remaining == 0 {
-                    charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-                    ready.insert(*child);
+                    perform_projection_build_operation(
+                        WorkCounter::GraphNode,
+                        ProjectionBuildOperation::ReadinessTransition,
+                        &mut charge,
+                        &mut built,
+                        || ready.insert(*child),
+                    )?;
                     published(ProjectionPublicationOperation::ReadyDependant);
                 }
             }
@@ -1505,7 +1588,7 @@ pub(crate) mod tests {
                     .writer_contributions()
                     .eq([(first.actor, first.change_hash)])
         }));
-        assert_eq!(charges, vec![WorkCounter::GraphNode; 13]);
+        assert_eq!(charges, vec![WorkCounter::GraphNode; 23]);
     }
 
     fn observed_candidate_lookup<E: Copy>(
@@ -2795,8 +2878,8 @@ pub(crate) mod tests {
         query.change_hash = ChangeHash::from_bytes([3; 32]);
         query.dependencies = vec![second.change_hash].into();
 
-        const TOTAL_CHARGES: usize = 42;
-        const GRAPH_NODES: usize = 33;
+        const TOTAL_CHARGES: usize = 62;
+        const GRAPH_NODES: usize = 53;
         const GRAPH_EDGES: usize = 9;
         let (ample, trace) = projection_work_contract_run(
             &closure,
@@ -2996,12 +3079,17 @@ pub(crate) mod tests {
                     | ProjectionBuildOperation::CanonicalOrderCompare
                     | ProjectionBuildOperation::MembershipLookup
                     | ProjectionBuildOperation::CandidateLookup
-                    | ProjectionBuildOperation::DependencyLookup),
+                    | ProjectionBuildOperation::DependencyLookup
+                    | ProjectionBuildOperation::StateLookup
+                    | ProjectionBuildOperation::ReadinessTransition
+                    | ProjectionBuildOperation::CheckedArithmetic
+                    | ProjectionBuildOperation::MapInsertion
+                    | ProjectionBuildOperation::SetInsertion),
                 ) => Some(*operation),
                 _ => None,
             })
             .collect::<Vec<_>>();
-        assert_eq!(owned.len(), 13);
+        assert_eq!(owned.len(), 38);
         assert_eq!(
             owned
                 .iter()
@@ -3017,6 +3105,43 @@ pub(crate) mod tests {
                 .filter(|operation| {
                     **operation == ProjectionBuildOperation::CanonicalOrderCompare
                 })
+                .count(),
+            7
+        );
+        assert_eq!(
+            owned
+                .iter()
+                .filter(|operation| **operation == ProjectionBuildOperation::StateLookup)
+                .count(),
+            6
+        );
+        assert_eq!(
+            owned
+                .iter()
+                .filter(|operation| {
+                    **operation == ProjectionBuildOperation::ReadinessTransition
+                })
+                .count(),
+            5
+        );
+        assert_eq!(
+            owned
+                .iter()
+                .filter(|operation| **operation == ProjectionBuildOperation::CheckedArithmetic)
+                .count(),
+            5
+        );
+        assert_eq!(
+            owned
+                .iter()
+                .filter(|operation| **operation == ProjectionBuildOperation::MapInsertion)
+                .count(),
+            2
+        );
+        assert_eq!(
+            owned
+                .iter()
+                .filter(|operation| **operation == ProjectionBuildOperation::SetInsertion)
                 .count(),
             1
         );
