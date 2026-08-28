@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/tools/validation/distribution_v13_compatibility_contract.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "protocol_revision", "authority", "counts", "opaque_evidence_fields", "prohibited_private_fields", "holds", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.distribution_v13_compatibility_contract.v1"},
+    "status": {"const": "approved"},
+    "protocol_revision": {"const": "draft_2026_08"},
+    "authority": {"type": "object", "additionalProperties": false, "required": ["manifest_sha256", "manifest_lock_sha256", "rust_result_identity_sha256", "signed_input_projection_sha256", "expected_report_projection_sha256"], "properties": {"manifest_sha256": {"$ref": "#/$defs/sha256"}, "manifest_lock_sha256": {"$ref": "#/$defs/sha256"}, "rust_result_identity_sha256": {"$ref": "#/$defs/sha256"}, "signed_input_projection_sha256": {"$ref": "#/$defs/sha256"}, "expected_report_projection_sha256": {"$ref": "#/$defs/sha256"}}},
+    "counts": {"type": "object", "additionalProperties": false, "required": ["scenarios", "signed_events", "delivery_orders", "processes", "fixture_rebindings"], "properties": {"scenarios": {"const": 204}, "signed_events": {"const": 771}, "delivery_orders": {"const": 8}, "processes": {"const": 2}, "fixture_rebindings": {"const": 4}}},
+    "opaque_evidence_fields": {"type": "array", "minItems": 16, "maxItems": 16, "uniqueItems": true, "items": {"type": "string"}},
+    "prohibited_private_fields": {"type": "array", "minItems": 8, "maxItems": 8, "uniqueItems": true, "items": {"type": "string"}},
+    "holds": {"type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true, "items": {"type": "string"}},
+    "result": {"const": "pass"}
+  },
+  "$defs": {"sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+}

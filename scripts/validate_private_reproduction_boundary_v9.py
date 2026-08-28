@@ -105,6 +105,8 @@ PUBLIC_JSON_RECORDS = (
     "reports/remediation_v12_distribution_gate.json",
     "tools/validation/remediation_v12_distribution_gate.schema.json",
     "spec/distribution_v13_transition.json",
+    "spec/distribution_v13_compatibility_contract.json",
+    "tools/validation/distribution_v13_compatibility_contract.schema.json",
     "tools/validation/distribution_v13.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
@@ -123,6 +125,7 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v13.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/rust_conformance_v13.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/remediation_v12_distribution_gate.schema.json",
+        b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v13_compatibility_contract.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -203,6 +206,7 @@ PYTHON_SURFACES = (
     "scripts/validate_distribution_v13.py",
     "scripts/validate_rust_conformance_v13.py",
     "scripts/validate_remediation_v12_distribution_gate.py",
+    "scripts/validate_distribution_v13_compatibility_contract.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -362,6 +366,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "fixtures/v13/rebindings/resource_followup",
         "fixtures/v13/rebindings/resource_followup/",
         "spec/distribution_v13_transition.json",
+        "spec/distribution_v13_compatibility_contract.json",
         "crates/nostr_automerge/src/control/authorize.rs",
         "crates/nostr_automerge/src/graph/actor_state.rs",
         "crates/nostr_automerge/src/graph/closure.rs",
@@ -426,6 +431,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_distribution_v13.py",
         "scripts/validate_rust_conformance_v13.py",
         "scripts/validate_remediation_v12_distribution_gate.py",
+        "scripts/validate_distribution_v13_compatibility_contract.py",
         "scripts/validate_opaque_conformance_v10.py",
         "scripts/validate_signed_conformance_gate_v10.py",
         "scripts/validate_semantic_proof_catalog_v10.py",
@@ -547,6 +553,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/validation/distribution_v13.schema.json",
         "tools/validation/rust_conformance_v13.schema.json",
         "tools/validation/remediation_v12_distribution_gate.schema.json",
+        "tools/validation/distribution_v13_compatibility_contract.schema.json",
         "tools/validation/opaque_conformance_v10.schema.json",
         "tools/validation/signed_conformance_gate_v10.schema.json",
         "tools/validation/semantic_proof_catalog_v10.schema.json",

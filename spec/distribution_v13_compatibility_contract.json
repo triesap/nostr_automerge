@@ -1,0 +1,57 @@
+{
+  "schema": "nostr_automerge.distribution_v13_compatibility_contract.v1",
+  "status": "approved",
+  "protocol_revision": "draft_2026_08",
+  "authority": {
+    "manifest_sha256": "12aa1b1f806ce810463768d566cc63d2ceba6126014d4da9fe5688df518bef3f",
+    "manifest_lock_sha256": "c8145bbbd84d5d149b7ae7712f2ee4d16e3c8f5f367348c7119b41ccac40333f",
+    "rust_result_identity_sha256": "67d21245aaddbf5fe487a8e763063e428f7f71ec2ef0ac9b0ed3d682ede76007",
+    "signed_input_projection_sha256": "3133a31e1ef98e7974f600f97a5f461bb2f7143071509469c451cf3b207939e8",
+    "expected_report_projection_sha256": "0eca38a0df0edd9da7e574e1c6ed5ecec252e56b812a54c61722fd9594a4b087"
+  },
+  "counts": {
+    "scenarios": 204,
+    "signed_events": 771,
+    "delivery_orders": 8,
+    "processes": 2,
+    "fixture_rebindings": 4
+  },
+  "opaque_evidence_fields": [
+    "candidate",
+    "predecessor",
+    "result_identity_sha256",
+    "execution_identity_sha256",
+    "signed_input_projection_sha256",
+    "report_projection_sha256",
+    "work_contract_identity_sha256",
+    "scenario_count",
+    "signed_event_count",
+    "delivery_permutations",
+    "process_count",
+    "canonical_output_sha256",
+    "serialized_run_sha256",
+    "byte_mismatch_count",
+    "deliberate_expectation_mismatch",
+    "result"
+  ],
+  "prohibited_private_fields": [
+    "commands",
+    "credentials",
+    "logs",
+    "package_layout",
+    "paths",
+    "source",
+    "urls",
+    "workflows"
+  ],
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "remote_mutation"
+  ],
+  "result": "pass"
+}

@@ -86,6 +86,7 @@ VALIDATORS = [
     "validate_distribution_v13.py",
     "validate_rust_conformance_v13.py",
     "validate_remediation_v12_distribution_gate.py",
+    "validate_distribution_v13_compatibility_contract.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",
@@ -253,6 +254,7 @@ def controlled_files() -> list[pathlib.Path]:
             "fixtures/distribution/manifest_v13.json",
             "fixtures/distribution/manifest_v13.lock.json",
             "spec/distribution_v13_transition.json",
+            "spec/distribution_v13_compatibility_contract.json",
             "reports/evidence_transition_v11.json",
             "reports/persistent_state_core_v11.json",
             "tools/validation/persistent_state_core_v11.schema.json",
@@ -271,6 +273,7 @@ def controlled_files() -> list[pathlib.Path]:
             "tools/validation/distribution_v13.schema.json",
             "tools/validation/rust_conformance_v13.schema.json",
             "tools/validation/remediation_v12_distribution_gate.schema.json",
+            "tools/validation/distribution_v13_compatibility_contract.schema.json",
             "scripts/generate_semantic_proof_catalog_final_v10.py",
             "scripts/reproduce_remediation_v11.py",
             "scripts/reproduce_remediation_v12.py",

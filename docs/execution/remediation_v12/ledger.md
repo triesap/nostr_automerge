@@ -343,3 +343,13 @@ events or expected semantics. Two independent Rust processes produce identical
 The distribution gate binds the seven-checkpoint chain, 671 tracked corpus
 files, the manifest and lock, the Rust result identity, and all external holds.
 RCLD 114 begins at `step_1406`.
+
+`step_1406` publishes the neutral distribution-v13 compatibility contract.
+The contract binds the immutable 204-scenario and 771-signed-Event corpus,
+eight delivery orders, two byte-identical Rust processes, the reviewed
+manifest, lock, result, input, and expected-report projections, and exactly
+sixteen permitted opaque compatibility fields. Commands, credentials, logs,
+package layout, paths, source details, URLs, and workflows are prohibited;
+all external holds remain unchanged. Missing, extra, reordered, private-path,
+source, log, command, workflow, authority, count, and coordinated-hash
+mutations fail closed. Private compatibility execution begins at `step_1407`.

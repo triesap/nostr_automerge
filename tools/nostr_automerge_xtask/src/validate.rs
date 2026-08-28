@@ -215,6 +215,10 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "remediation_v12_distribution_gate",
         "scripts/validate_remediation_v12_distribution_gate.py",
     ),
+    (
+        "distribution_v13_compatibility_contract",
+        "scripts/validate_distribution_v13_compatibility_contract.py",
+    ),
     ("complete_specification", "scripts/validate_spec.py"),
     (
         "fixture_schema_checksum_snake_case",
@@ -387,6 +391,7 @@ mod tests {
         assert!(names.contains(&"distribution_v13"));
         assert!(names.contains(&"rust_conformance_v13"));
         assert!(names.contains(&"remediation_v12_distribution_gate"));
+        assert!(names.contains(&"distribution_v13_compatibility_contract"));
         assert!(names.contains(&"complete_specification"));
         assert!(names.contains(&"sealed_constants"));
         assert!(names.contains(&"automerge_boundary"));

@@ -62,6 +62,7 @@ EMPTY_FRONTIER_FIXTURE_CANDIDATE = "364755aa60dd0298b0959329529366ee3d806ce8"
 WIDE_ANCESTRY_FIXTURE_CANDIDATE = "bac152eeb1d48c4e60d47277296386f6d1e624c4"
 WRITER_AUTHORIZATION_FIXTURE_CANDIDATE = "02208ffc9fc51244e7858f9ff6ee520b581549fc"
 POST_STOP_FIXTURE_CANDIDATE = "378f15e7af474e34884b9b25a19960d37b0c02f6"
+DISTRIBUTION_GATE_CANDIDATE = "73ce3be33ddd1beba6528fb9f61a533e5d571cc6"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -72,39 +73,16 @@ HOLDS = [
     "remote_mutation",
 ]
 ACTIVE_SCOPE = [
-    "tools/nostr_automerge_conformance/src/fixture_generation.rs",
-    "tools/nostr_automerge_conformance/src/runner.rs",
     "docs/execution/remediation_v12/ledger.md",
-    "fixtures/distribution/manifest_v13.json",
-    "fixtures/distribution/manifest_v13.lock.json",
-    "fixtures/v13/rebindings/resource_followup/canonical_derivation_exact_budget.expected.json",
-    "fixtures/v13/rebindings/resource_followup/canonical_derivation_exact_budget.fixture.json",
-    "fixtures/v13/rebindings/resource_followup/canonical_derivation_exact_budget.input.json",
-    "fixtures/v13/rebindings/resource_followup/deep_delta_absent_lookup_exact_budget.expected.json",
-    "fixtures/v13/rebindings/resource_followup/deep_delta_absent_lookup_exact_budget.fixture.json",
-    "fixtures/v13/rebindings/resource_followup/deep_delta_absent_lookup_exact_budget.input.json",
-    "fixtures/v13/rebindings/resource_followup/deep_delta_extend_exact_budget.expected.json",
-    "fixtures/v13/rebindings/resource_followup/deep_delta_extend_exact_budget.fixture.json",
-    "fixtures/v13/rebindings/resource_followup/deep_delta_extend_exact_budget.input.json",
-    "fixtures/v13/rebindings/resource_followup/deep_delta_root_lookup_exact_budget.expected.json",
-    "fixtures/v13/rebindings/resource_followup/deep_delta_root_lookup_exact_budget.fixture.json",
-    "fixtures/v13/rebindings/resource_followup/deep_delta_root_lookup_exact_budget.input.json",
     "implementation/runtime_ledger_v12.json",
-    "reports/remediation_v12_distribution_gate.json",
-    "reports/rust_conformance_v13.json",
     "reports/spec_baseline.txt",
-    "scripts/generate_distribution_v13.py",
-    "scripts/validate_distribution_v13.py",
+    "scripts/validate_distribution_v13_compatibility_contract.py",
     "scripts/validate_private_reproduction_boundary_v9.py",
-    "scripts/validate_remediation_v12_distribution_gate.py",
     "scripts/validate_remediation_v12.py",
-    "scripts/validate_rust_conformance_v13.py",
     "scripts/validate_spec.py",
-    "spec/distribution_v13_transition.json",
+    "spec/distribution_v13_compatibility_contract.json",
     "tools/nostr_automerge_xtask/src/validate.rs",
-    "tools/validation/distribution_v13.schema.json",
-    "tools/validation/remediation_v12_distribution_gate.schema.json",
-    "tools/validation/rust_conformance_v13.schema.json",
+    "tools/validation/distribution_v13_compatibility_contract.schema.json",
 ]
 
 EVIDENCE_REQUIREMENTS = [
@@ -232,13 +210,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 113, "active_step": "step_1405", "next_step": "step_1406", "last_planned_step": "step_1419", "remaining_checkpoint_count": 14, "remaining_rcld_count": 2}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 114, "active_step": "step_1406", "next_step": "step_1407", "last_planned_step": "step_1419", "remaining_checkpoint_count": 13, "remaining_rcld_count": 2}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 43:
+    if not isinstance(predecessors, list) or len(predecessors) != 44:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -283,6 +261,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[40], {"step": "step_1402", "candidate": WIDE_ANCESTRY_FIXTURE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1402")
     require_equal(predecessors[41], {"step": "step_1403", "candidate": WRITER_AUTHORIZATION_FIXTURE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1403")
     require_equal(predecessors[42], {"step": "step_1404", "candidate": POST_STOP_FIXTURE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1404")
+    require_equal(predecessors[43], {"step": "step_1405", "candidate": DISTRIBUTION_GATE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1405")
 
 
 def validate_trusted_projection() -> None:
@@ -2362,7 +2341,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1405"),
+        ("cursor", "next_step", "step_1406"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -2564,7 +2543,7 @@ def main() -> None:
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
     print(f"- source_mutations={source_mutations}")
-    print("- active=RCLD113/step_1405")
+    print("- active=RCLD114/step_1406")
 
 
 if __name__ == "__main__":
