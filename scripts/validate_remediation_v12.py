@@ -78,20 +78,17 @@ HOLDS = [
     "remote_mutation",
 ]
 ACTIVE_SCOPE = [
-    "Cargo.lock",
-    "crates/nostr_automerge/tests/core_profile_report.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
-    "reports/remediation_v12_public_assurance.json",
+    "reports/opaque_private_assurance_v13.json",
+    "reports/remediation_v12_combined_assurance.json",
     "reports/spec_baseline.txt",
-    "scripts/local_gate.py",
     "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v12.py",
-    "scripts/validate_remediation_v12_public_assurance.py",
-    "scripts/validate_rust_conformance_v13.py",
+    "scripts/validate_remediation_v12_combined_assurance.py",
     "scripts/validate_spec.py",
     "tools/nostr_automerge_xtask/src/validate.rs",
-    "tools/validation/remediation_v12_public_assurance.schema.json",
+    "tools/validation/remediation_v12_combined_assurance.schema.json",
 ]
 
 EVIDENCE_REQUIREMENTS = [
@@ -219,13 +216,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 115, "active_step": "step_1415", "next_step": "step_1416", "last_planned_step": "step_1419", "remaining_checkpoint_count": 4, "remaining_rcld_count": 1}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 115, "active_step": "step_1417", "next_step": "step_1418", "last_planned_step": "step_1419", "remaining_checkpoint_count": 2, "remaining_rcld_count": 1}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_101", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 49:
+    if not isinstance(predecessors, list) or len(predecessors) != 50:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -276,6 +273,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[46], {"step": "step_1412", "candidate": OPERATION_INVENTORY_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1412")
     require_equal(predecessors[47], {"step": "step_1413", "candidate": PROOF_CATALOG_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1413")
     require_equal(predecessors[48], {"step": "step_1414", "candidate": MUTATION_QUALIFICATION_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1414")
+    require_equal(predecessors[49], {"step": "step_1415", "candidate": "3f97f0bfd9d9a516a1e6ff88ca0fe964d671eda3", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1415")
 
 
 def validate_trusted_projection() -> None:
@@ -2557,7 +2555,7 @@ def main() -> None:
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
     print(f"- source_mutations={source_mutations}")
-    print("- active=RCLD115/step_1415")
+    print("- active=RCLD115/step_1417")
 
 
 if __name__ == "__main__":

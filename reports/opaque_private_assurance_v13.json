@@ -1,0 +1,29 @@
+{
+  "evidence_sha256": "8fcedef517036392343066206916a9439f73161ffbacc4a33d37e623a12b859b",
+  "candidate": "6c6eb3b9604ad6d2db8b9800960bd6a2e5fde5f5",
+  "counts": {
+    "coverage_branch_basis_points": 8865,
+    "coverage_function_basis_points": 9111,
+    "coverage_line_basis_points": 8991,
+    "delivery_permutations": 8,
+    "job_count": 7,
+    "mutation_survivors": 0,
+    "process_count": 2,
+    "release_entry_count": 86,
+    "scenario_count": 204,
+    "signed_event_count": 771,
+    "standard_passed": 378,
+    "standard_skipped": 15,
+    "standard_checks": 393
+  },
+  "identity_sha256": "13dd2c5ac91fa051eaaadd370d2da70cf45b857e7676328a16dec976c3df8b85",
+  "result_classes": [
+    "standard",
+    "conformance",
+    "resource",
+    "coverage",
+    "supply_chain",
+    "release",
+    "source_only"
+  ]
+}

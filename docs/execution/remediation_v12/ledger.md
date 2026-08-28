@@ -394,3 +394,10 @@ The historical core-profile report now validates its report and dependency
 lock against their immutable publication commit, so a current security-only
 lock refresh cannot silently rewrite or falsely invalidate the older evidence
 record.
+
+`step_1416` runs the independent implementation's seven pinned local-assurance
+classes and records a five-field opaque result with no paths, commands, logs,
+package layout, source details, URLs, or workflow data. `step_1417` imports that
+record and binds it with the public assurance, distribution parity, fifteen
+owned runtime operations, thirty-six exact proofs, twelve caught selected
+source mutations, coverage, dependency policy, and all seven external holds.

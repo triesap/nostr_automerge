@@ -52,6 +52,7 @@ JSON_RECORDS = (
     "reports/opaque_distribution_parity_v12.json",
     "reports/distribution_v13_parity.json",
     "reports/opaque_compatibility_v13.json",
+    "reports/opaque_private_assurance_v13.json",
     "implementation/runtime_ledger_v9.json",
     "tools/validation/opaque_reproduction_v9.schema.json",
     "tools/validation/opaque_checkpoint_v9.schema.json",
@@ -119,6 +120,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/remediation_v12_mutation_qualification.schema.json",
     "reports/remediation_v12_public_assurance.json",
     "tools/validation/remediation_v12_public_assurance.schema.json",
+    "reports/remediation_v12_combined_assurance.json",
+    "tools/validation/remediation_v12_combined_assurance.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -223,6 +226,7 @@ PYTHON_SURFACES = (
     "scripts/validate_remediation_v12_proof_catalog.py",
     "scripts/validate_remediation_v12_mutation_qualification.py",
     "scripts/validate_remediation_v12_public_assurance.py",
+    "scripts/validate_remediation_v12_combined_assurance.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -380,6 +384,8 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/remediation_v12_proof_catalog.json",
         "reports/remediation_v12_mutation_qualification.json",
         "reports/remediation_v12_public_assurance.json",
+        "reports/opaque_private_assurance_v13.json",
+        "reports/remediation_v12_combined_assurance.json",
         "fixtures/distribution/manifest_v13.json",
         "fixtures/distribution/manifest_v13.lock.json",
         "fixtures/v13/scenarios/epoch_semantics",
@@ -459,6 +465,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_remediation_v12_proof_catalog.py",
         "scripts/validate_remediation_v12_mutation_qualification.py",
         "scripts/validate_remediation_v12_public_assurance.py",
+        "scripts/validate_remediation_v12_combined_assurance.py",
         "scripts/validate_opaque_conformance_v10.py",
         "scripts/validate_signed_conformance_gate_v10.py",
         "scripts/validate_semantic_proof_catalog_v10.py",
@@ -586,6 +593,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/validation/remediation_v12_proof_catalog.schema.json",
         "tools/validation/remediation_v12_mutation_qualification.schema.json",
         "tools/validation/remediation_v12_public_assurance.schema.json",
+        "tools/validation/remediation_v12_combined_assurance.schema.json",
         "tools/validation/opaque_conformance_v10.schema.json",
         "tools/validation/signed_conformance_gate_v10.schema.json",
         "tools/validation/semantic_proof_catalog_v10.schema.json",

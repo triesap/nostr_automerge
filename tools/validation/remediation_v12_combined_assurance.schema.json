@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "status",
+    "candidate",
+    "public_assurance_sha256",
+    "compatibility_assurance_sha256",
+    "compatibility_assurance_identity_sha256",
+    "distribution_parity_sha256",
+    "operation_inventory_sha256",
+    "proof_catalog_sha256",
+    "mutation_qualification_sha256",
+    "counts",
+    "checks",
+    "holds",
+    "result",
+    "result_identity_sha256"
+  ],
+  "properties": {
+    "schema": { "const": "nostr_automerge.remediation_v12_combined_assurance.v1" },
+    "status": { "const": "pass" },
+    "candidate": { "$ref": "#/$defs/commit" },
+    "public_assurance_sha256": { "$ref": "#/$defs/hash" },
+    "compatibility_assurance_sha256": { "$ref": "#/$defs/hash" },
+    "compatibility_assurance_identity_sha256": { "$ref": "#/$defs/hash" },
+    "distribution_parity_sha256": { "$ref": "#/$defs/hash" },
+    "operation_inventory_sha256": { "$ref": "#/$defs/hash" },
+    "proof_catalog_sha256": { "$ref": "#/$defs/hash" },
+    "mutation_qualification_sha256": { "$ref": "#/$defs/hash" },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_count",
+        "signed_event_count",
+        "delivery_permutations",
+        "process_count",
+        "operation_count",
+        "exact_proof_count",
+        "selected_mutation_count",
+        "mutation_survivor_count",
+        "public_job_count",
+        "compatibility_job_count"
+      ],
+      "properties": {
+        "scenario_count": { "const": 204 },
+        "signed_event_count": { "const": 771 },
+        "delivery_permutations": { "const": 8 },
+        "process_count": { "const": 2 },
+        "operation_count": { "const": 15 },
+        "exact_proof_count": { "const": 36 },
+        "selected_mutation_count": { "const": 12 },
+        "mutation_survivor_count": { "const": 0 },
+        "public_job_count": { "const": 6 },
+        "compatibility_job_count": { "const": 7 }
+      }
+    },
+    "checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "public_assurance",
+        "compatibility_assurance",
+        "distribution_parity",
+        "operation_inventory",
+        "proof_catalog",
+        "mutation_qualification",
+        "coverage",
+        "dependency_policy"
+      ],
+      "properties": {
+        "public_assurance": { "const": true },
+        "compatibility_assurance": { "const": true },
+        "distribution_parity": { "const": true },
+        "operation_inventory": { "const": true },
+        "proof_catalog": { "const": true },
+        "mutation_qualification": { "const": true },
+        "coverage": { "const": true },
+        "dependency_policy": { "const": true }
+      }
+    },
+    "holds": {
+      "const": [
+        "external_assurance",
+        "event_kind_allocation",
+        "nip_submission",
+        "production_qualification",
+        "publication",
+        "release",
+        "remote_mutation"
+      ]
+    },
+    "result": { "const": "pass" },
+    "result_identity_sha256": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

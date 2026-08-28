@@ -1,0 +1,45 @@
+{
+  "schema": "nostr_automerge.remediation_v12_combined_assurance.v1",
+  "status": "pass",
+  "candidate": "3f97f0bfd9d9a516a1e6ff88ca0fe964d671eda3",
+  "public_assurance_sha256": "e54be990e7dace8e35525f2199fd914e7aa88846538b284929d6a1477c99208e",
+  "compatibility_assurance_sha256": "1f71c31cc229538d3fbe67b9c605e603497834e133d1824bef511f6a639a3562",
+  "compatibility_assurance_identity_sha256": "13dd2c5ac91fa051eaaadd370d2da70cf45b857e7676328a16dec976c3df8b85",
+  "distribution_parity_sha256": "25f6f4b4f032d04d8aec3a67dfc434a8dc274ab249542a01b32d22de82d9b4bd",
+  "operation_inventory_sha256": "9f57e966d2f3ff94bb15bf01071f839f628b30771c2f6797a9bae98d4aea7687",
+  "proof_catalog_sha256": "6f44512eeee0bc2e9fa8b07e1069f655cb6f3c61439f1ac754f0d92deb522305",
+  "mutation_qualification_sha256": "d33d108c991802ae90f8bcb7218286478ae15a1cbe98e8f3561c10f27453196c",
+  "counts": {
+    "scenario_count": 204,
+    "signed_event_count": 771,
+    "delivery_permutations": 8,
+    "process_count": 2,
+    "operation_count": 15,
+    "exact_proof_count": 36,
+    "selected_mutation_count": 12,
+    "mutation_survivor_count": 0,
+    "public_job_count": 6,
+    "compatibility_job_count": 7
+  },
+  "checks": {
+    "public_assurance": true,
+    "compatibility_assurance": true,
+    "distribution_parity": true,
+    "operation_inventory": true,
+    "proof_catalog": true,
+    "mutation_qualification": true,
+    "coverage": true,
+    "dependency_policy": true
+  },
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "remote_mutation"
+  ],
+  "result": "pass",
+  "result_identity_sha256": "69bd11534111591a9a97c414d8d06c8921f7d1e6e3589b6d428d665640cf6156"
+}
