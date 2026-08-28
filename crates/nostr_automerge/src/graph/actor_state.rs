@@ -127,6 +127,13 @@ enum ProjectionLookupOperation {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum CausalNextOperation {
+    StoredCounterRead,
+    ExpectedStartComparison,
+    CheckedAdvance,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ProjectionPublicationOperation {
     CandidateDependency,
     DependedOn,
@@ -217,6 +224,43 @@ impl TrustedEpochProjection<'_> {
             )),
             Some(_) => Ok(()),
         }
+    }
+
+    /// Validates and advances one candidate's causal operation interval from
+    /// the immutable closure-wide counter retained by this projection.
+    pub(crate) fn causal_next_decision_metered<E>(
+        &self,
+        candidate: &ChangeCandidate,
+        charge: impl FnMut(WorkCounter) -> Result<(), E>,
+    ) -> Result<u64, MeteredActorStateError<E>> {
+        self.causal_next_decision_metered_observed(candidate, charge, |_| {})
+    }
+
+    fn causal_next_decision_metered_observed<E>(
+        &self,
+        candidate: &ChangeCandidate,
+        mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
+        mut observed: impl FnMut(CausalNextOperation),
+    ) -> Result<u64, MeteredActorStateError<E>> {
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+        let causal_next_op = self.causal_next_op;
+        observed(CausalNextOperation::StoredCounterRead);
+
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+        let start_matches = candidate.start_op == causal_next_op;
+        observed(CausalNextOperation::ExpectedStartComparison);
+        if !start_matches {
+            return Err(MeteredActorStateError::State(
+                ActorStateError::OperationCounter,
+            ));
+        }
+
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+        let advanced = causal_next_op.checked_add(candidate.operation_count);
+        observed(CausalNextOperation::CheckedAdvance);
+        advanced.ok_or(MeteredActorStateError::State(
+            ActorStateError::OperationCounter,
+        ))
     }
 
     pub(crate) fn candidate_metered<E>(
@@ -786,11 +830,12 @@ pub(crate) mod tests {
     use std::rc::Rc;
 
     use super::{
-        ActorStateError, CanonicalEpochProjectionSource, EpochActorState, EpochProjectionSource,
-        MeteredActorStateError, ProjectionLookupOperation, ProjectionPublicationOperation,
-        TrustedEpochProjection, TrustedEpochView, apply_empty_counter, apply_nonempty_counter,
-        build_trusted_epoch_projection, build_trusted_epoch_projection_observed,
-        initialize_actor_states, initialize_actor_states_metered,
+        ActorStateError, CanonicalEpochProjectionSource, CausalNextOperation, EpochActorState,
+        EpochProjectionSource, MeteredActorStateError, ProjectionLookupOperation,
+        ProjectionPublicationOperation, TrustedEpochProjection, TrustedEpochView,
+        apply_empty_counter, apply_nonempty_counter, build_trusted_epoch_projection,
+        build_trusted_epoch_projection_observed, initialize_actor_states,
+        initialize_actor_states_metered,
     };
     use crate::graph::change_candidate::ChangeCandidate;
     use crate::{ActorId, ChangeHash, Completion, DevicePublicKey, EventId, WorkCounter};
@@ -814,6 +859,12 @@ pub(crate) mod tests {
     enum LookupTrace {
         Charge(WorkCounter),
         Operation(ProjectionLookupOperation),
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum CausalNextTrace {
+        Charge(WorkCounter),
+        Operation(CausalNextOperation),
     }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1058,6 +1109,35 @@ pub(crate) mod tests {
             },
             |operation| {
                 trace.borrow_mut().push(LookupTrace::Operation(operation));
+            },
+        );
+        let observed = trace.borrow().clone();
+        (result, observed)
+    }
+
+    fn observed_causal_next<E: Copy>(
+        projection: &TrustedEpochProjection<'_>,
+        candidate: &ChangeCandidate,
+        successful_limit: usize,
+        stopped: E,
+    ) -> (Result<u64, MeteredActorStateError<E>>, Vec<CausalNextTrace>) {
+        let trace = Rc::new(RefCell::new(Vec::new()));
+        let successful = Cell::new(0_usize);
+        let result = projection.causal_next_decision_metered_observed(
+            candidate,
+            |counter| {
+                trace.borrow_mut().push(CausalNextTrace::Charge(counter));
+                if successful.get() == successful_limit {
+                    Err(stopped)
+                } else {
+                    successful.set(successful.get().saturating_add(1));
+                    Ok(())
+                }
+            },
+            |operation| {
+                trace
+                    .borrow_mut()
+                    .push(CausalNextTrace::Operation(operation));
             },
         );
         let observed = trace.borrow().clone();
@@ -1597,6 +1677,154 @@ pub(crate) mod tests {
             });
             assert!(result.is_ok());
             assert_eq!(observed.get(), LOOKUP_CHARGES);
+        }
+    }
+
+    #[test]
+    fn projected_causal_next_decision_is_checked_constant_size_and_exactly_metered() {
+        let empty_closure = BTreeSet::new();
+        let empty_changes = BTreeMap::new();
+        let empty =
+            initialize_actor_states_metered(&empty_closure, &empty_changes, |_| Ok::<_, ()>(()));
+        assert!(empty.is_ok());
+        let Some(empty) = empty.ok() else { return };
+        let empty_change = candidate(1, 1, 1, 0);
+        assert_eq!(
+            empty.causal_next_decision_metered(&empty_change, |_| Ok::<_, ()>(())),
+            Ok(1)
+        );
+
+        let many = (1_u8..=64)
+            .map(|actor| {
+                let mut change = candidate(actor, 1, 1, u64::from(actor));
+                change.change_hash = ChangeHash::from_bytes([actor; 32]);
+                change
+            })
+            .collect::<Vec<_>>();
+        let many_closure = many
+            .iter()
+            .map(|candidate| candidate.change_hash)
+            .collect::<BTreeSet<_>>();
+        let many_changes = many
+            .into_iter()
+            .map(|candidate| (candidate.change_hash, candidate))
+            .collect::<BTreeMap<_, _>>();
+        let many_projection =
+            initialize_actor_states_metered(&many_closure, &many_changes, |_| Ok::<_, ()>(()));
+        assert!(many_projection.is_ok());
+        let Some(many_projection) = many_projection.ok() else {
+            return;
+        };
+        let mut next = candidate(100, 1, 65, 1);
+        next.change_hash = ChangeHash::from_bytes([100; 32]);
+        let states_before = many_projection.actor_states.clone();
+        assert_eq!(
+            many_projection.causal_next_decision_metered(&next, |_| Ok::<_, ()>(())),
+            Ok(66)
+        );
+        assert_eq!(many_projection.actor_states, states_before);
+        let mut legacy_states = states_before;
+        assert_eq!(apply_nonempty_counter(&mut legacy_states, &next), Ok(()));
+        assert_eq!(legacy_states[&next.actor].next_op, 66);
+
+        let mut gap = next.clone();
+        gap.start_op = 66;
+        assert_eq!(
+            many_projection.causal_next_decision_metered(&gap, |_| Ok::<_, ()>(())),
+            Err(MeteredActorStateError::State(
+                ActorStateError::OperationCounter
+            ))
+        );
+        let mut duplicate = next.clone();
+        duplicate.start_op = 64;
+        assert_eq!(
+            many_projection.causal_next_decision_metered(&duplicate, |_| Ok::<_, ()>(())),
+            Err(MeteredActorStateError::State(
+                ActorStateError::OperationCounter
+            ))
+        );
+
+        let max_actor = ActorId::from_bytes([200; 32]);
+        let max_hash = ChangeHash::from_bytes([200; 32]);
+        let max_branch = BTreeMap::new();
+        let max_closure = BTreeSet::new();
+        let max_projection = TrustedEpochProjection {
+            branch_membership: &max_branch,
+            accepted_closure: &max_closure,
+            dependencies: BTreeMap::new(),
+            frontier_heads: BTreeSet::new(),
+            actor_states: BTreeMap::from([(
+                max_actor,
+                EpochActorState {
+                    last_sequence: 1,
+                    next_op: u64::MAX,
+                    highest_change: max_hash,
+                },
+            )]),
+            writer_contributions: BTreeMap::from([(max_actor, max_hash)]),
+            causal_next_op: u64::MAX,
+        };
+        let mut max_empty = candidate(201, 1, u64::MAX, 0);
+        max_empty.change_hash = ChangeHash::from_bytes([201; 32]);
+        assert_eq!(
+            max_projection.causal_next_decision_metered(&max_empty, |_| Ok::<_, ()>(())),
+            Ok(u64::MAX)
+        );
+        let mut overflow = max_empty.clone();
+        overflow.operation_count = 1;
+        assert_eq!(
+            max_projection.causal_next_decision_metered(&overflow, |_| Ok::<_, ()>(())),
+            Err(MeteredActorStateError::State(
+                ActorStateError::OperationCounter
+            ))
+        );
+
+        let expected_trace = [
+            CausalNextOperation::StoredCounterRead,
+            CausalNextOperation::ExpectedStartComparison,
+            CausalNextOperation::CheckedAdvance,
+        ]
+        .into_iter()
+        .flat_map(|operation| {
+            [
+                CausalNextTrace::Charge(WorkCounter::GraphNode),
+                CausalNextTrace::Operation(operation),
+            ]
+        })
+        .collect::<Vec<_>>();
+        let (ample, ample_trace) = observed_causal_next(
+            &many_projection,
+            &next,
+            usize::MAX,
+            Completion::BudgetExhausted,
+        );
+        assert_eq!(ample, Ok(66));
+        assert_eq!(ample_trace, expected_trace);
+
+        const DECISION_CHARGES: usize = 3;
+        for successful in 0..DECISION_CHARGES {
+            for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
+                let (result, trace) =
+                    observed_causal_next(&many_projection, &next, successful, stopped);
+                assert_eq!(result, Err(MeteredActorStateError::Work(stopped)));
+                assert_eq!(
+                    trace
+                        .iter()
+                        .filter(|entry| matches!(entry, CausalNextTrace::Operation(_)))
+                        .count(),
+                    successful
+                );
+            }
+        }
+        for allowance in [DECISION_CHARGES, DECISION_CHARGES + 1] {
+            let (result, trace) = observed_causal_next(
+                &many_projection,
+                &next,
+                allowance,
+                Completion::BudgetExhausted,
+            );
+            assert_eq!(result, Ok(66));
+            assert_eq!(trace, expected_trace);
         }
     }
 

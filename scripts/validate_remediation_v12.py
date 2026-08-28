@@ -36,6 +36,7 @@ WORK_CONTRACT_CANDIDATE = "5b3a386160e3310071e644a7030ade80248640d5"
 PROJECTION_GATE_CANDIDATE = "187a260858bdd41f9dd967e32279b9f21454ede2"
 ACTOR_DECISION_CANDIDATE = "629747ab2537593ddf0a4f689a3e14ea6e576039"
 ACTOR_ROUTE_CANDIDATE = "3ced1446a04a422f5760d00d9786dd18ace76930"
+ACTOR_SIGNED_CANDIDATE = "63661f2f1df8394d7526ec2f5d2fa2be60e65efe"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -46,7 +47,7 @@ HOLDS = [
     "remote_mutation",
 ]
 ACTIVE_SCOPE = [
-    "crates/nostr_automerge/tests/public_engine_api.rs",
+    "crates/nostr_automerge/src/graph/actor_state.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
     "reports/spec_baseline.txt",
@@ -178,13 +179,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 111, "active_step": "step_1382", "next_step": "step_1383", "last_planned_step": "step_1419", "remaining_checkpoint_count": 37, "remaining_rcld_count": 5}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 111, "active_step": "step_1383", "next_step": "step_1384", "last_planned_step": "step_1419", "remaining_checkpoint_count": 36, "remaining_rcld_count": 5}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 20:
+    if not isinstance(predecessors, list) or len(predecessors) != 21:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -206,6 +207,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[17], {"step": "step_1379", "candidate": PROJECTION_GATE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1379")
     require_equal(predecessors[18], {"step": "step_1380", "candidate": ACTOR_DECISION_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1380")
     require_equal(predecessors[19], {"step": "step_1381", "candidate": ACTOR_ROUTE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1381")
+    require_equal(predecessors[20], {"step": "step_1382", "candidate": ACTOR_SIGNED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1382")
 
 
 def validate_trusted_projection() -> None:
@@ -509,6 +511,83 @@ def validate_signed_transitive_actor_constructions() -> None:
         raise EvidenceError("actor_sequence:signed_ignored")
 
 
+def validate_projected_causal_next_decision(source: str | None = None) -> None:
+    source = source or (
+        ROOT / "crates/nostr_automerge/src/graph/actor_state.rs"
+    ).read_text()
+    production, tests = source.split(
+        "#[cfg(test)]\npub(crate) mod tests", 1
+    )
+    if production.count("pub(crate) fn causal_next_decision_metered<E>(") != 1:
+        raise EvidenceError("causal_next:decision_inventory")
+    method = production.split(
+        "pub(crate) fn causal_next_decision_metered<E>(", 1
+    )[1].split("pub(crate) fn candidate_metered<E>(", 1)[0]
+    required = [
+        "let causal_next_op = self.causal_next_op;",
+        "candidate.start_op == causal_next_op",
+        "causal_next_op.checked_add(candidate.operation_count)",
+        "ActorStateError::OperationCounter",
+    ]
+    if any(token not in method for token in required):
+        raise EvidenceError("causal_next:decision_shape")
+    if method.count("charge(WorkCounter::GraphNode)") != 3:
+        raise EvidenceError("causal_next:charge_count")
+    if "actor_states" in method or ".values()" in method or "causal_next_op(" in method:
+        raise EvidenceError("causal_next:state_scan")
+    name = (
+        "projected_causal_next_decision_is_checked_constant_size_"
+        "and_exactly_metered"
+    )
+    if tests.count(f"fn {name}()") != 1:
+        raise EvidenceError("causal_next:test_inventory")
+    prefix, body = tests.split(f"fn {name}()", 1)
+    if "#[ignore" in prefix.rsplit("#[test]", 1)[-1]:
+        raise EvidenceError("causal_next:test_ignored")
+    body = body.split("\n    #[test]", 1)[0]
+    test_requirements = [
+        "1_u8..=64",
+        "candidate(1, 1, 1, 0)",
+        "gap.start_op = 66",
+        "duplicate.start_op = 64",
+        "u64::MAX",
+        "overflow.operation_count = 1",
+        "Completion::BudgetExhausted",
+        "Completion::Cancelled",
+        "DECISION_CHARGES",
+        "assert_eq!(legacy_states[&next.actor].next_op, 66)",
+    ]
+    if any(token not in body for token in test_requirements):
+        raise EvidenceError("causal_next:test_matrix")
+
+
+def causal_next_source_mutation_self_test() -> int:
+    source = (
+        ROOT / "crates/nostr_automerge/src/graph/actor_state.rs"
+    ).read_text()
+    mutations = (
+        source.replace(
+            "causal_next_op.checked_add(candidate.operation_count)",
+            "causal_next_op.saturating_add(candidate.operation_count)",
+            1,
+        ),
+        source.replace(
+            "let causal_next_op = self.causal_next_op;",
+            "let causal_next_op = self.actor_states.values().map(|state| state.next_op).max().unwrap_or(1);",
+            1,
+        ),
+    )
+    caught = 0
+    for changed in mutations:
+        try:
+            validate_projected_causal_next_decision(changed)
+        except EvidenceError:
+            caught += 1
+            continue
+        raise EvidenceError("causal_next:source_mutation_survived")
+    return caught
+
+
 def validate_reproductions(reproductions: object) -> None:
     record = require_keys(reproductions, ["schema", "cases", "result"], "reproductions")
     require_equal(record["schema"], "nostr_automerge.remediation_v12_reproductions.v1", "reproductions:schema")
@@ -677,7 +756,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1384"),
+        ("cursor", "next_step", "step_1385"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -805,11 +884,13 @@ def main() -> None:
     validate_projected_actor_sequence_production_path()
     source_mutations = actor_sequence_source_mutation_self_test()
     validate_signed_transitive_actor_constructions()
+    validate_projected_causal_next_decision()
+    source_mutations += causal_next_source_mutation_self_test()
     mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
     print(f"- source_mutations={source_mutations}")
-    print("- active=RCLD111/step_1382")
+    print("- active=RCLD111/step_1383")
 
 
 if __name__ == "__main__":

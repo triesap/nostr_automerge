@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v12_authority.json",
   "cursor": {
     "active_rcld": 111,
-    "active_step": "step_1382",
-    "next_step": "step_1383",
+    "active_step": "step_1383",
+    "next_step": "step_1384",
     "last_planned_step": "step_1419",
-    "remaining_checkpoint_count": 37,
+    "remaining_checkpoint_count": 36,
     "remaining_rcld_count": 5
   },
   "findings": {
@@ -28,7 +28,7 @@
     "NCRDT-EVIDENCE-007"
   ],
   "active_checkpoint_scope": [
-    "crates/nostr_automerge/tests/public_engine_api.rs",
+    "crates/nostr_automerge/src/graph/actor_state.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
     "reports/spec_baseline.txt",
@@ -152,6 +152,12 @@
     {
       "step": "step_1381",
       "candidate": "3ced1446a04a422f5760d00d9786dd18ace76930",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1382",
+      "candidate": "63661f2f1df8394d7526ec2f5d2fa2be60e65efe",
       "owner_class": "public",
       "result": "pass"
     }

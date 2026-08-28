@@ -145,3 +145,11 @@ predecessor is accepted transitively rather than named as a direct dependency.
 Three delivery orders produce identical complete reports, and the test checks
 all carrier Event outcomes separately from the four accepted semantic hashes
 and the exact returning head.
+
+`step_1383` adds the nonmutating projected causal-counter decision. It reads
+the projection's stored closure-wide next operation, compares the candidate's
+declared start, and advances by the candidate operation count with checked
+arithmetic. Empty history, sixty-four independent actors, exact maximum,
+gap, duplicate, and overflow cases are covered without scanning or mutating
+the actor-state map. Each of the three scalar operations has an immediately
+preceding graph-node charge with exact budget and cancellation boundaries.
