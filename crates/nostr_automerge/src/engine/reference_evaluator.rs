@@ -9,6 +9,7 @@ use crate::checkpoint::{
 };
 use crate::conformance::dispositions_digest::{disposition_items, dispositions_digest};
 use crate::conformance::history_digest::history_digest;
+use crate::control::authorize::any_control_member_metered;
 use crate::control::candidate::{
     CandidateResult, evaluate_account_continuity_metered, evaluate_device_ancestry_metered,
     evaluate_parent_continuity, evaluate_role_continuity_metered, evaluate_terminal_continuity,
@@ -3690,24 +3691,6 @@ fn collect_change_dependencies_metered<E>(
     Ok(collected)
 }
 
-fn any_control_member_metered<T, E>(
-    members: &[T],
-    mut predicate: impl FnMut(&T) -> bool,
-    mut visit: impl FnMut(WorkCounter) -> Result<(), E>,
-) -> Result<bool, E> {
-    let mut members = members.iter();
-    loop {
-        visit(WorkCounter::Control)?;
-        let Some(member) = members.next() else {
-            return Ok(false);
-        };
-        visit(WorkCounter::Control)?;
-        if predicate(member) {
-            return Ok(true);
-        }
-    }
-}
-
 fn change_for_hash(
     view: &DocumentEvidenceView<'_>,
     control: &crate::carrier::control::ValidatedControlCarrier,
@@ -3801,9 +3784,9 @@ mod tests {
         FixedFallbackPass, PreparedCheckpointInputs, REEVALUATION_STAGE_OBSERVATIONS,
         REPORT_INVARIANT_ITEMS, ReferenceEvaluator, ReportFinalizationPermit,
         ReportFinalizationPlan, additional_prior_knowledge, aggregate_change_contribution,
-        any_control_member_metered, assembly_status, canonical_ancestor_hashes,
-        carrier_control_is_historical, change_carrier_disposition, charge_checkpoint_work,
-        charge_ingress, checkpoint_control_refusal, checkpoint_historical_control_ancestry,
+        assembly_status, canonical_ancestor_hashes, carrier_control_is_historical,
+        change_carrier_disposition, charge_checkpoint_work, charge_ingress,
+        checkpoint_control_refusal, checkpoint_historical_control_ancestry,
         checkpoint_preflight_refusal, collect_change_dependencies_metered, join_status,
         noncanonical_branch_claim_reason, prepare_controls,
         project_selected_prior_knowledge_metered, reduce_aggregate_change_outcome,
@@ -3821,6 +3804,7 @@ mod tests {
     use crate::checkpoint::{
         AssemblyError, CheckpointChunk, CheckpointDescriptor, HistoryVerificationError, leaf_hash,
     };
+    use crate::control::authorize::any_control_member_metered;
     use crate::evidence::corpus_builder::EvidenceCorpus;
     use crate::evidence::document_view::DocumentEvidenceView;
     use crate::evidence::event::{EventEvidence, RawChecksum};

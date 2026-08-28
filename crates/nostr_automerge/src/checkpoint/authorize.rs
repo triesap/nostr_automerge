@@ -1,4 +1,5 @@
 use crate::carrier::checkpoint_descriptor::ValidatedCheckpointDescriptorCarrier;
+use crate::control::authorize::any_control_member_metered;
 use crate::control::reference_state::ReferencedControlState;
 use crate::types::role::Role;
 
@@ -32,18 +33,21 @@ pub(crate) fn authorize_descriptor(
 pub(crate) fn authorize_descriptor_with<E>(
     descriptor: &ValidatedCheckpointDescriptorCarrier,
     state: ReferencedControlState<'_>,
-    visit_member: &mut impl FnMut() -> Result<(), E>,
+    visit_authorization_work: &mut impl FnMut() -> Result<(), E>,
 ) -> Result<DescriptorControlOutcome, E> {
     match state {
-        ReferencedControlState::Canonical(control) => {
-            for grant in control.members() {
-                visit_member()?;
-                if grant.device == descriptor.author() && grant.roles.contains(&Role::Checkpoint) {
-                    return Ok(DescriptorControlOutcome::CanonicalAuthorized);
-                }
+        ReferencedControlState::Canonical(control) => any_control_member_metered(
+            control.members(),
+            |grant| grant.device == descriptor.author() && grant.roles.contains(&Role::Checkpoint),
+            |_| visit_authorization_work(),
+        )
+        .map(|authorized| {
+            if authorized {
+                DescriptorControlOutcome::CanonicalAuthorized
+            } else {
+                DescriptorControlOutcome::RoleDenied
             }
-            Ok(DescriptorControlOutcome::RoleDenied)
-        }
+        }),
         ReferencedControlState::Missing => Ok(DescriptorControlOutcome::Missing),
         ReferencedControlState::Pending(_) => Ok(DescriptorControlOutcome::Pending),
         ReferencedControlState::NoncanonicalValid(_) => Ok(DescriptorControlOutcome::Noncanonical),

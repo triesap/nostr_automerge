@@ -219,3 +219,11 @@ original budget or cancellation error is returned without normalization. The
 signed omission and missing-dependency scenarios remain green, and the epoch
 ancestry reproduction is now enabled, bringing the Finding 100 harness to
 four fixed families and six open families.
+
+`step_1391` moves the ordered metered control-member scan into the control
+authorization domain. The existing batch-change and checkpoint-descriptor
+callers now share that single boundary. Every member pull, including the final
+absent pull, and every role or identity predicate is observed before work;
+empty, denied, and first, middle, or final matches have exact callback counts,
+budget boundaries, and cancellation prefixes. Epoch-writer and remaining
+change-disposition authorization adoption stays reserved for `step_1392`.

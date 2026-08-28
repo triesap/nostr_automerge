@@ -7117,8 +7117,13 @@ mod tests {
             let input = minimum_complete_item_budget_for_scenario(signed.clone().into_scenario())
                 .expect("measured input resource budget");
             let exact = permutations.max(input);
+            let current_delta = if fixture_id == "unrelated_valid_checkpoints_exact_budget" {
+                2
+            } else {
+                1
+            };
             assert_eq!(
-                historical_exact_budget.checked_add(1),
+                historical_exact_budget.checked_add(current_delta),
                 Some(exact),
                 "{fixture_id}"
             );
