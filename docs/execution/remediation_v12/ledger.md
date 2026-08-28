@@ -210,3 +210,12 @@ dependency or omitted base head, allocates no target-sized state, preserves
 the exact injected budget or cancellation cause, and ignores unrelated
 accepted history. The legacy no-op-charge wrapper remains the only deliberate
 production bypass and is reserved for removal in `step_1390`.
+
+`step_1390` routes the authoritative epoch evaluator through the compact
+metered ancestry classifier and deletes the no-op-charge compatibility
+wrapper. Missing dependency evidence remains pending, omitted accepted base
+heads remain invalid, unrelated retained history remains inert, and the
+original budget or cancellation error is returned without normalization. The
+signed omission and missing-dependency scenarios remain green, and the epoch
+ancestry reproduction is now enabled, bringing the Finding 100 harness to
+four fixed families and six open families.

@@ -1,5 +1,4 @@
 use std::collections::BTreeSet;
-use std::convert::Infallible;
 
 use crate::{ChangeHash, WorkCounter};
 
@@ -144,22 +143,6 @@ fn ancestry_operation<E, T>(
     Ok(result)
 }
 
-pub(crate) fn validate_epoch_ancestry(
-    base_heads: &BTreeSet<ChangeHash>,
-    dependency_closure: &BTreeSet<ChangeHash>,
-    missing_dependencies: &BTreeSet<ChangeHash>,
-) -> EpochAncestry {
-    match classify_epoch_ancestry_metered(
-        base_heads,
-        dependency_closure,
-        missing_dependencies,
-        |_| Ok::<(), Infallible>(()),
-    ) {
-        Ok(outcome) => outcome,
-        Err(never) => match never {},
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeSet;
@@ -167,7 +150,6 @@ mod tests {
     use super::{
         EpochAncestry, EpochAncestryObservation, EpochAncestryOperation,
         classify_epoch_ancestry_metered, classify_epoch_ancestry_metered_observed,
-        validate_epoch_ancestry,
     };
     use crate::ChangeHash;
 
@@ -179,24 +161,40 @@ mod tests {
     fn enforce_epoch_base_ancestry() {
         let base = BTreeSet::from([hash(1), hash(2)]);
         assert_eq!(
-            validate_epoch_ancestry(
+            classify_epoch_ancestry_metered(
                 &base,
                 &BTreeSet::from([hash(1), hash(2), hash(3)]),
-                &BTreeSet::new()
+                &BTreeSet::new(),
+                |_| Ok::<(), ()>(()),
             ),
-            EpochAncestry::Valid
+            Ok(EpochAncestry::Valid)
         );
         assert_eq!(
-            validate_epoch_ancestry(&base, &BTreeSet::from([hash(1)]), &BTreeSet::new()),
-            EpochAncestry::InvalidOmission
+            classify_epoch_ancestry_metered(
+                &base,
+                &BTreeSet::from([hash(1)]),
+                &BTreeSet::new(),
+                |_| Ok::<(), ()>(()),
+            ),
+            Ok(EpochAncestry::InvalidOmission)
         );
         assert_eq!(
-            validate_epoch_ancestry(&base, &BTreeSet::new(), &BTreeSet::new()),
-            EpochAncestry::InvalidOmission
+            classify_epoch_ancestry_metered(&base, &BTreeSet::new(), &BTreeSet::new(), |_| Ok::<
+                (),
+                (),
+            >(
+                ()
+            ),),
+            Ok(EpochAncestry::InvalidOmission)
         );
         assert_eq!(
-            validate_epoch_ancestry(&base, &BTreeSet::new(), &BTreeSet::from([hash(9)])),
-            EpochAncestry::PendingMissing
+            classify_epoch_ancestry_metered(
+                &base,
+                &BTreeSet::new(),
+                &BTreeSet::from([hash(9)]),
+                |_| Ok::<(), ()>(()),
+            ),
+            Ok(EpochAncestry::PendingMissing)
         );
     }
 
@@ -337,27 +335,34 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "remediation v12 expected failure: unmetered ancestry materialization"]
     fn finding_100_epoch_ancestry_work_reproduction() {
         let base = (1..=64).map(hash).collect::<BTreeSet<_>>();
         assert_eq!(
-            validate_epoch_ancestry(&base, &base, &BTreeSet::new()),
-            EpochAncestry::Valid
+            classify_epoch_ancestry_metered(&base, &base, &BTreeSet::new(), |_| Ok::<(), ()>(())),
+            Ok(EpochAncestry::Valid)
         );
 
         let closure = (1..64).map(hash).collect::<BTreeSet<_>>();
         assert_eq!(
-            validate_epoch_ancestry(&base, &closure, &BTreeSet::new()),
-            EpochAncestry::InvalidOmission
+            classify_epoch_ancestry_metered(&base, &closure, &BTreeSet::new(), |_| {
+                Ok::<(), ()>(())
+            }),
+            Ok(EpochAncestry::InvalidOmission)
         );
         assert_eq!(
-            validate_epoch_ancestry(&base, &closure, &BTreeSet::from([hash(65)])),
-            EpochAncestry::PendingMissing
+            classify_epoch_ancestry_metered(
+                &base,
+                &closure,
+                &BTreeSet::from([hash(65)]),
+                |_| Ok::<(), ()>(()),
+            ),
+            Ok(EpochAncestry::PendingMissing)
         );
 
         let source = include_str!("epoch.rs");
+        let legacy = ["pub(crate) fn validate_epoch_", "ancestry("].concat();
         assert!(
-            !source.contains("pub(crate) fn validate_epoch_ancestry("),
+            !source.contains(&legacy),
             "unmetered epoch ancestry materialization remains"
         );
     }

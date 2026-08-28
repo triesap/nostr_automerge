@@ -44,6 +44,7 @@ FRONTIER_CANDIDATE = "502c5701d73c4452906ef92f0a324908b9d039a8"
 COMBINED_CANDIDATE = "6a190cefa11f84e069ece47644b66992dc82e8f3"
 ACTOR_GATE_CANDIDATE = "e98ec40d582c5e8d5e54b856681b260dce716183"
 COMPACT_ANCESTRY_CANDIDATE = "43884403ee71c5a0b6fbf7a9b91b4617dd53b43c"
+METERED_ANCESTRY_CANDIDATE = "89009e315cfe8596f3a639a0af9e359a7c0a40d7"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -55,10 +56,16 @@ HOLDS = [
 ]
 ACTIVE_SCOPE = [
     "crates/nostr_automerge/src/graph/epoch.rs",
+    "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+    "crates/nostr_automerge/src/reference/epoch_engine.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
     "reports/spec_baseline.txt",
+    "scripts/reproduce_remediation_v12.py",
     "scripts/validate_remediation_v12.py",
+    "scripts/validate_remediation_v12_actor_gate.py",
+    "spec/remediation_v12_reproductions.json",
+    "tools/nostr_automerge_conformance/src/fixture_generation.rs",
 ]
 
 EVIDENCE_REQUIREMENTS = [
@@ -186,13 +193,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 112, "active_step": "step_1389", "next_step": "step_1390", "last_planned_step": "step_1419", "remaining_checkpoint_count": 30, "remaining_rcld_count": 4}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 112, "active_step": "step_1390", "next_step": "step_1391", "last_planned_step": "step_1419", "remaining_checkpoint_count": 29, "remaining_rcld_count": 4}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 27:
+    if not isinstance(predecessors, list) or len(predecessors) != 28:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -221,6 +228,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[24], {"step": "step_1386", "candidate": COMBINED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1386")
     require_equal(predecessors[25], {"step": "step_1387", "candidate": ACTOR_GATE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1387")
     require_equal(predecessors[26], {"step": "step_1388", "candidate": COMPACT_ANCESTRY_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1388")
+    require_equal(predecessors[27], {"step": "step_1389", "candidate": METERED_ANCESTRY_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1389")
 
 
 def validate_trusted_projection() -> None:
@@ -1113,6 +1121,116 @@ def metered_epoch_ancestry_source_mutation_self_test() -> int:
     return caught
 
 
+def validate_epoch_ancestry_production_path(
+    epoch_source: str | None = None,
+    engine_source: str | None = None,
+    public_source: str | None = None,
+) -> None:
+    epoch_source = epoch_source or (
+        ROOT / "crates/nostr_automerge/src/graph/epoch.rs"
+    ).read_text()
+    engine_source = engine_source or (
+        ROOT / "crates/nostr_automerge/src/reference/epoch_engine.rs"
+    ).read_text()
+    public_source = public_source or (
+        ROOT / "crates/nostr_automerge/tests/public_engine_api.rs"
+    ).read_text()
+    epoch_production, epoch_tests = epoch_source.split("#[cfg(test)]\nmod tests", 1)
+    engine_production = engine_source.split("#[cfg(test)]\nmod tests", 1)[0]
+    if "pub(crate) fn validate_epoch_ancestry(" in epoch_production:
+        raise EvidenceError("ancestry:legacy_helper")
+    if engine_production.count("classify_epoch_ancestry_metered(") != 1:
+        raise EvidenceError("ancestry:production_route")
+    route = engine_production.split("classify_epoch_ancestry_metered(", 1)[1].split(
+        "let prior_dependencies_valid", 1
+    )[0]
+    for token in (
+        "input.accepted_base().frontier_heads()",
+        "&closure.known",
+        "&closure.missing",
+        "charge_epoch_item(counter, budget, cancellation)",
+        ".map_err(EpochEvaluationError::Schedule)",
+        "EpochAncestry::InvalidOmission",
+    ):
+        if token not in route:
+            raise EvidenceError("ancestry:production_route_shape")
+    for prohibited in ("Infallible", "Ok::<(), Infallible>", "validate_epoch_ancestry("):
+        if prohibited in epoch_production or prohibited in engine_production:
+            raise EvidenceError("ancestry:production_bypass")
+    reproduction = "finding_100_epoch_ancestry_work_reproduction"
+    if epoch_tests.count(f"fn {reproduction}()") != 1:
+        raise EvidenceError("ancestry:reproduction_inventory")
+    prefix = epoch_tests.split(f"fn {reproduction}()", 1)[0].rsplit("#[test]", 1)[-1]
+    if "#[ignore" in prefix:
+        raise EvidenceError("ancestry:reproduction_ignored")
+    for test_name in (
+        "base_omission_cannot_poison_valid_same_sequence_change",
+        "missing_dependency_promotes_after_delivery",
+    ):
+        if public_source.count(f"fn {test_name}()") != 1:
+            raise EvidenceError("ancestry:signed_inventory")
+        attributes = public_source.split(f"fn {test_name}()", 1)[0].rsplit("#[test]", 1)[-1]
+        if "#[ignore" in attributes:
+            raise EvidenceError("ancestry:signed_ignored")
+
+
+def epoch_ancestry_route_source_mutation_self_test() -> int:
+    epoch_source = (ROOT / "crates/nostr_automerge/src/graph/epoch.rs").read_text()
+    engine_source = (
+        ROOT / "crates/nostr_automerge/src/reference/epoch_engine.rs"
+    ).read_text()
+    public_source = (
+        ROOT / "crates/nostr_automerge/tests/public_engine_api.rs"
+    ).read_text()
+    mutations = (
+        (
+            epoch_source,
+            engine_source.replace(
+                "classify_epoch_ancestry_metered(", "validate_epoch_ancestry(", 1
+            ),
+            public_source,
+        ),
+        (
+            epoch_source,
+            engine_source.replace(
+                "charge_epoch_item(counter, budget, cancellation)\n                    .map_err(EpochEvaluationError::Schedule)",
+                "Ok::<(), EpochEvaluationError>(())",
+                1,
+            ),
+            public_source,
+        ),
+        (
+            epoch_source.replace(
+                "#[test]\n    fn finding_100_epoch_ancestry_work_reproduction()",
+                "#[test]\n    #[ignore = \"restored\"]\n    fn finding_100_epoch_ancestry_work_reproduction()",
+                1,
+            ),
+            engine_source,
+            public_source,
+        ),
+        (
+            epoch_source,
+            engine_source,
+            public_source.replace(
+                "fn missing_dependency_promotes_after_delivery()",
+                "fn missing_dependency_after_delivery()",
+                1,
+            ),
+        ),
+    )
+    caught = 0
+    for changed_epoch, changed_engine, changed_public in mutations:
+        try:
+            validate_epoch_ancestry_production_path(
+                changed_epoch, changed_engine, changed_public
+            )
+        except EvidenceError:
+            caught += 1
+            continue
+        raise EvidenceError("ancestry:route_source_mutation_survived")
+    return caught
+
+
 def validate_active_causal_budget_deltas(
     evaluator_source: str | None = None,
     fixture_source: str | None = None,
@@ -1123,9 +1241,9 @@ def validate_active_causal_budget_deltas(
     fixture_source = fixture_source or (
         ROOT / "tools/nostr_automerge_conformance/src/fixture_generation.rs"
     ).read_text()
-    if "fixture_items.checked_add(73)" not in evaluator_source:
+    if "fixture_items.checked_add(82)" not in evaluator_source:
         raise EvidenceError("causal_next:post_branch_delta")
-    if "signed.budget.max_items.checked_add(1003)" not in fixture_source:
+    if "signed.budget.max_items.checked_add(1048)" not in fixture_source:
         raise EvidenceError("causal_next:persistent_delta")
 
 
@@ -1137,8 +1255,8 @@ def causal_budget_source_mutation_self_test() -> int:
         ROOT / "tools/nostr_automerge_conformance/src/fixture_generation.rs"
     ).read_text()
     mutations = (
-        (evaluator_source.replace("checked_add(73)", "checked_add(72)", 1), fixture_source),
-        (evaluator_source, fixture_source.replace("checked_add(1003)", "checked_add(1002)", 1)),
+        (evaluator_source.replace("checked_add(82)", "checked_add(81)", 1), fixture_source),
+        (evaluator_source, fixture_source.replace("checked_add(1048)", "checked_add(1047)", 1)),
     )
     caught = 0
     for changed_evaluator, changed_fixture in mutations:
@@ -1178,7 +1296,7 @@ def validate_reproductions(reproductions: object) -> None:
             "path": path,
             "test": test,
             "diagnostic": diagnostic,
-            "expected": "fixed_pass" if index <= 2 else "open_failure",
+            "expected": "fixed_pass" if index <= 3 else "open_failure",
         }, f"reproductions:{family}")
     require_equal(record["result"], "pass", "reproductions:result")
 
@@ -1393,7 +1511,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1391"),
+        ("cursor", "next_step", "step_1392"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -1557,13 +1675,15 @@ def main() -> None:
     source_mutations += compact_epoch_ancestry_source_mutation_self_test()
     validate_metered_epoch_ancestry()
     source_mutations += metered_epoch_ancestry_source_mutation_self_test()
+    validate_epoch_ancestry_production_path()
+    source_mutations += epoch_ancestry_route_source_mutation_self_test()
     validate_active_causal_budget_deltas()
     source_mutations += causal_budget_source_mutation_self_test()
     mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate, actor_gate)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
     print(f"- source_mutations={source_mutations}")
-    print("- active=RCLD112/step_1389")
+    print("- active=RCLD112/step_1390")
 
 
 if __name__ == "__main__":

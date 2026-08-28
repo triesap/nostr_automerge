@@ -47,7 +47,7 @@ EXPECTED_CASES = [
         "path": "crates/nostr_automerge/src/graph/epoch.rs",
         "test": "graph::epoch::tests::finding_100_epoch_ancestry_work_reproduction",
         "diagnostic": "unmetered epoch ancestry materialization remains",
-        "expected": "open_failure",
+        "expected": "fixed_pass",
     },
     {
         "finding": "FINDING_100",

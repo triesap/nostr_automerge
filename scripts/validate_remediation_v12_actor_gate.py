@@ -222,7 +222,9 @@ def validate_sources() -> None:
     ids = tuple(row.get("id") for row in requirements.get("requirements", []))
     if len(ids) != 156 or ids[-4:] != REQUIREMENTS:
         raise GateError("requirements:inventory")
-    reproductions = json.loads((ROOT / "spec/remediation_v12_reproductions.json").read_text())
+    reproductions = json.loads(
+        git("show", f"{CANDIDATES[-1][1]}:spec/remediation_v12_reproductions.json")
+    )
     cases = reproductions.get("cases", [])
     if [row.get("family") for row in cases[:3]] != [
         "actor_predecessor", "causal_next_op", "empty_frontier"

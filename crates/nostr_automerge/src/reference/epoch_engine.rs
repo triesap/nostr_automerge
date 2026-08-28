@@ -15,7 +15,7 @@ use crate::graph::closure::{CandidateClosureError, candidate_dependency_closure}
 use crate::graph::dependency_graph::{
     GraphBuildError, MeteredGraphBuildError, build_graph_metered,
 };
-use crate::graph::epoch::{EpochAncestry, validate_epoch_ancestry};
+use crate::graph::epoch::{EpochAncestry, classify_epoch_ancestry_metered};
 use crate::graph::equivocation::{QuarantineError, quarantine_equivocation_descendants};
 use crate::graph::schedule::ScheduleError;
 use crate::reference::apply::apply_exact_closure_metered;
@@ -439,14 +439,16 @@ pub(crate) fn evaluate_epoch(
         } else {
             true
         };
-        let ancestry_valid = !matches!(
-            validate_epoch_ancestry(
-                input.accepted_base().frontier_heads(),
-                &closure.known,
-                &closure.missing,
-            ),
-            EpochAncestry::InvalidOmission
-        );
+        let ancestry = classify_epoch_ancestry_metered(
+            input.accepted_base().frontier_heads(),
+            &closure.known,
+            &closure.missing,
+            |counter| {
+                charge_epoch_item(counter, budget, cancellation)
+                    .map_err(EpochEvaluationError::Schedule)
+            },
+        )?;
+        let ancestry_valid = !matches!(ancestry, EpochAncestry::InvalidOmission);
         let prior_dependencies_valid = prior_dependencies_valid_metered(
             input.prior_change_knowledge(),
             &candidate.dependencies,

@@ -3912,12 +3912,12 @@ mod tests {
             return;
         };
         // The v12 fixture remains an immutable predecessor input. The active
-        // v12 remediation exposes seventy-three previously hidden projection
-        // source, publication, and actor-sequence decision operations before
+        // v12 remediation exposes eighty-two previously hidden projection,
+        // actor-sequence, and ancestry operations before
         // the same post-branch boundary;
         // distribution v13 will bind the replacement exact budget after the
         // work closure.
-        assert_eq!(fixture_items.checked_add(73), Some(branch_stop_items));
+        assert_eq!(fixture_items.checked_add(82), Some(branch_stop_items));
 
         let evaluator = ReferenceEvaluator::new(crate::ProtocolRevision::draft_v1());
         let mut stopped_budget = WorkBudget::new(1_000_000, branch_stop_items);
