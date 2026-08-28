@@ -244,3 +244,12 @@ Deep, wide, cyclic, and missing graphs preserve the canonical closure result;
 the exhaustive prefix matrix proves budget and cancellation stop before the
 target operation. The dependency-closure reproduction is enabled, leaving
 four Finding 100 work families open.
+
+`step_1394` replaces eager candidate scheduling with one closed charged
+operation boundary. Candidate and dependency pulls, eligibility and readiness
+comparisons, map and set construction, deterministic ready selection, pop,
+dependant resolution, missing and pending propagation, cyclic classification,
+and final result publication each occur only after their own successful
+charge. Equal-ready, fan-out, fan-in, missing, pending, and cyclic graphs are
+order invariant across every budget and cancellation prefix. Both scheduler
+reproductions are enabled, leaving two Finding 100 work families open.

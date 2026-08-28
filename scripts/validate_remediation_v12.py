@@ -48,6 +48,7 @@ METERED_ANCESTRY_CANDIDATE = "89009e315cfe8596f3a639a0af9e359a7c0a40d7"
 ANCESTRY_ROUTE_CANDIDATE = "4f4d43c3aca9d4d959edb2464039d50a983e70a0"
 AUTHORIZATION_HELPER_CANDIDATE = "d3b1d462ee4691741821067fb51d33d6d8eb24d6"
 AUTHORIZATION_ROUTE_CANDIDATE = "b7a72c9c0be884fa821cd4224fe523fa02e03426"
+DEPENDENCY_CLOSURE_CANDIDATE = "6de8d68c83996009962b315306ada3c339f12844"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -59,7 +60,10 @@ HOLDS = [
 ]
 ACTIVE_SCOPE = [
     "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-    "crates/nostr_automerge/src/graph/closure.rs",
+    "crates/nostr_automerge/src/graph/scaling.rs",
+    "crates/nostr_automerge/src/graph/schedule.rs",
+    "crates/nostr_automerge/src/reference/epoch_engine.rs",
+    "crates/nostr_automerge/src/reference/evaluate.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
     "reports/spec_baseline.txt",
@@ -194,13 +198,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 112, "active_step": "step_1393", "next_step": "step_1394", "last_planned_step": "step_1419", "remaining_checkpoint_count": 26, "remaining_rcld_count": 4}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 112, "active_step": "step_1394", "next_step": "step_1395", "last_planned_step": "step_1419", "remaining_checkpoint_count": 25, "remaining_rcld_count": 4}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 31:
+    if not isinstance(predecessors, list) or len(predecessors) != 32:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -233,6 +237,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[28], {"step": "step_1390", "candidate": ANCESTRY_ROUTE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1390")
     require_equal(predecessors[29], {"step": "step_1391", "candidate": AUTHORIZATION_HELPER_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1391")
     require_equal(predecessors[30], {"step": "step_1392", "candidate": AUTHORIZATION_ROUTE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1392")
+    require_equal(predecessors[31], {"step": "step_1393", "candidate": DEPENDENCY_CLOSURE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1393")
 
 
 def validate_trusted_projection() -> None:
@@ -1614,6 +1619,115 @@ def candidate_dependency_closure_source_mutation_self_test() -> int:
     return caught
 
 
+def validate_metered_candidate_schedule(
+    source: str | None = None,
+    scaling_source: str | None = None,
+) -> None:
+    source = source or (ROOT / "crates/nostr_automerge/src/graph/schedule.rs").read_text()
+    scaling_source = scaling_source or (
+        ROOT / "crates/nostr_automerge/src/graph/scaling.rs"
+    ).read_text()
+    production, tests = source.split("#[cfg(test)]\nmod tests", 1)
+    implementation = production.split("fn schedule_candidates_observed", 1)[1].split(
+        "fn charge_schedule_work", 1
+    )[0]
+    helper = implementation.split("fn schedule_operation", 1)[1]
+    ordered = ["charge(counter)?;", "let value = target();", "observed(operation);", "Ok(value)"]
+    positions = [helper.find(token) for token in ordered]
+    if any(position < 0 for position in positions) or positions != sorted(positions):
+        raise EvidenceError("schedule:charge_target_order")
+    if production.split("pub(crate) fn schedule_candidates(", 1)[1].split(
+        "fn schedule_candidates_observed", 1
+    )[0].count("schedule_candidates_observed(") != 1:
+        raise EvidenceError("schedule:production_route")
+    operations = [
+        "ScheduleConstruction", "RemainingMapConstruction", "CandidatePull",
+        "RemainingInsert", "CandidateHashSetConstruction", "RemainingKeyPull",
+        "CandidateHashInsert", "UnresolvedMapConstruction", "DependantMapConstruction",
+        "RemainingEntryPull", "DependencyPull", "AcceptedLookup", "UnresolvedIncrement",
+        "CandidateLookup", "DependantLookup", "DependantBucketInsert", "DependantInsert",
+        "UnresolvedInsert", "ReadySetConstruction", "UnresolvedPull",
+        "ReadinessComparison", "ReadyInsert", "OrderedVecConstruction", "ReadyPeek",
+        "ReadyTieComparison", "ReadyPop", "RemainingRemove", "OrderedPush",
+        "ChildrenLookup", "ChildPull", "UnresolvedLookup", "UnresolvedDecrement",
+        "MissingSetConstruction", "RemainingValuePull", "MissingCandidateLookup",
+        "MissingAcceptedLookup", "MissingInsert", "PendingSetConstruction",
+        "MissingLookup", "PendingInsert", "BlockedStackConstruction", "PendingPull",
+        "BlockedPush", "BlockedPull", "RemainingLookup", "PendingLookup",
+        "CyclicSetConstruction", "CyclicCandidatePull", "CyclicPendingLookup",
+        "CyclicInsert", "ResultPublication",
+    ]
+    for operation in operations:
+        if production.count(f"ScheduleOperation::{operation}") < 1:
+            raise EvidenceError("schedule:operation:" + operation)
+    for prohibited in (
+        "remaining.keys().copied().collect::<BTreeSet<_>>()",
+        "pending.iter().copied().collect::<Vec<_>>()",
+        "while let Some(hash) = blocked.pop()",
+        ".filter_map(|(hash, count)|",
+    ):
+        if prohibited in implementation:
+            raise EvidenceError("schedule:unmetered_preparation")
+    for test_name in (
+        "scheduling_charges_immediately_before_every_operation_and_preserves_typed_stops",
+        "finding_100_schedule_readiness_work_reproduction",
+        "finding_100_schedule_publication_work_reproduction",
+    ):
+        if tests.count(f"fn {test_name}()") != 1:
+            raise EvidenceError("schedule:test_inventory")
+        attributes = tests.split(f"fn {test_name}()", 1)[0].rsplit("#[test]", 1)[-1]
+        if "#[ignore" in attributes:
+            raise EvidenceError("schedule:test_ignored")
+    matrix = tests.split(
+        "fn scheduling_charges_immediately_before_every_operation_and_preserves_typed_stops()", 1
+    )[1].split("\n    #[test]", 1)[0]
+    for token in (
+        "Trace::Charge(counter)", "Trace::Operation(operation)",
+        "for allowance in 0..operations.len()", "Stop::BudgetExhausted",
+        "Stop::Cancelled", "operations[..allowance]", "inputs.into_iter().rev()",
+    ):
+        if token not in matrix:
+            raise EvidenceError("schedule:boundary_matrix")
+    for token in (
+        "(128, 0, 2_186, 1_273)", "(128, 0, 2_186, 1_147)",
+        "(0, 1, 29, 13)", "(0, 2, 39, 28)",
+    ):
+        if token not in scaling_source:
+            raise EvidenceError("schedule:scaling")
+
+
+def candidate_schedule_source_mutation_self_test() -> int:
+    source = (ROOT / "crates/nostr_automerge/src/graph/schedule.rs").read_text()
+    scaling = (ROOT / "crates/nostr_automerge/src/graph/scaling.rs").read_text()
+    mutations = (
+        (source.replace("charge(counter)?;", "let _ = counter;", 1), scaling),
+        (source.replace(
+            "charge(counter)?;\n    let value = target();",
+            "let value = target();\n    charge(counter)?;",
+            1,
+        ), scaling),
+        (source.replace("ScheduleOperation::ReadyTieComparison", "ScheduleOperation::ReadyPeek", 1), scaling),
+        (source.replace("ScheduleOperation::ReadyPop", "ScheduleOperation::ReadyPeek", 1), scaling),
+        (source.replace("ScheduleOperation::ResultPublication", "ScheduleOperation::ScheduleConstruction", 1), scaling),
+        (source.replace(
+            "#[test]\n    fn scheduling_charges",
+            "#[test]\n    #[ignore]\n    fn scheduling_charges",
+            1,
+        ), scaling),
+        (source.replace("fn finding_100_schedule_readiness_work_reproduction()", "fn removed_readiness_proof()", 1), scaling),
+        (source, scaling.replace("(128, 0, 2_186, 1_273)", "(128, 0, 256, 254)")),
+    )
+    caught = 0
+    for index, (changed_source, changed_scaling) in enumerate(mutations):
+        try:
+            validate_metered_candidate_schedule(changed_source, changed_scaling)
+        except EvidenceError:
+            caught += 1
+            continue
+        raise EvidenceError(f"schedule:source_mutation_survived:{index}")
+    return caught
+
+
 def validate_active_causal_budget_deltas(
     evaluator_source: str | None = None,
     fixture_source: str | None = None,
@@ -1624,9 +1738,14 @@ def validate_active_causal_budget_deltas(
     fixture_source = fixture_source or (
         ROOT / "tools/nostr_automerge_conformance/src/fixture_generation.rs"
     ).read_text()
-    if "fixture_items.checked_add(117)" not in evaluator_source:
+    if "fixture_items.checked_add(226)" not in evaluator_source:
         raise EvidenceError("causal_next:post_branch_delta")
-    if "signed.budget.max_items.checked_add(1718)" not in fixture_source:
+    if any(token not in fixture_source for token in (
+        '("deep_delta_root_lookup_exact_budget", 17, 9, 8, 0, 2_160)',
+        '("deep_delta_absent_lookup_exact_budget", 16, 8, 8, 0, 2_145)',
+        '("deep_delta_extend_exact_budget", 17, 9, 1, 7, 1_999)',
+        "signed.budget.max_items.checked_add(active_delta)",
+    )):
         raise EvidenceError("causal_next:persistent_delta")
 
 
@@ -1638,8 +1757,10 @@ def causal_budget_source_mutation_self_test() -> int:
         ROOT / "tools/nostr_automerge_conformance/src/fixture_generation.rs"
     ).read_text()
     mutations = (
-        (evaluator_source.replace("checked_add(117)", "checked_add(116)", 1), fixture_source),
-        (evaluator_source, fixture_source.replace("checked_add(1718)", "checked_add(1717)", 1)),
+        (evaluator_source.replace("checked_add(226)", "checked_add(225)", 1), fixture_source),
+        (evaluator_source, fixture_source.replace("2_160)", "2_159)", 1)),
+        (evaluator_source, fixture_source.replace("2_145)", "2_144)", 1)),
+        (evaluator_source, fixture_source.replace("1_999)", "1_998)", 1)),
     )
     caught = 0
     for changed_evaluator, changed_fixture in mutations:
@@ -1679,7 +1800,7 @@ def validate_reproductions(reproductions: object) -> None:
             "path": path,
             "test": test,
             "diagnostic": diagnostic,
-            "expected": "fixed_pass" if index <= 5 else "open_failure",
+            "expected": "fixed_pass" if index <= 7 else "open_failure",
         }, f"reproductions:{family}")
     require_equal(record["result"], "pass", "reproductions:result")
 
@@ -1894,7 +2015,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1395"),
+        ("cursor", "next_step", "step_1396"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -2066,13 +2187,15 @@ def main() -> None:
     source_mutations += authorization_production_source_mutation_self_test()
     validate_metered_candidate_dependency_closure()
     source_mutations += candidate_dependency_closure_source_mutation_self_test()
+    validate_metered_candidate_schedule()
+    source_mutations += candidate_schedule_source_mutation_self_test()
     validate_active_causal_budget_deltas()
     source_mutations += causal_budget_source_mutation_self_test()
     mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate, actor_gate)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
     print(f"- source_mutations={source_mutations}")
-    print("- active=RCLD112/step_1393")
+    print("- active=RCLD112/step_1394")
 
 
 if __name__ == "__main__":

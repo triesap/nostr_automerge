@@ -53,12 +53,12 @@ fn graph_scaling_regression_models_are_proportional() {
             )
         })
         .collect::<Vec<_>>();
-    assert_eq!(measured(chain), (128, 0, 256, 254));
+    assert_eq!(measured(chain), (128, 0, 2_186, 1_273));
 
     let fan_out = std::iter::once(candidate(1, vec![]))
         .chain((2..=128).map(|value| candidate(value, vec![hash(1)])))
         .collect::<Vec<_>>();
-    assert_eq!(measured(fan_out), (128, 0, 256, 254));
+    assert_eq!(measured(fan_out), (128, 0, 2_186, 1_147));
 
     let fan_in = (1..=127)
         .map(|value| candidate(value, vec![]))
@@ -67,15 +67,15 @@ fn graph_scaling_regression_models_are_proportional() {
             (1..=127).map(hash).collect(),
         )))
         .collect::<Vec<_>>();
-    assert_eq!(measured(fan_in), (128, 0, 256, 254));
+    assert_eq!(measured(fan_in), (128, 0, 2_186, 1_273));
 
     let missing = measured(vec![candidate(1, vec![hash(999)])]);
-    assert_eq!(missing, (0, 1, 3, 2));
+    assert_eq!(missing, (0, 1, 29, 13));
     let cycle = measured(vec![
         candidate(1, vec![hash(2)]),
         candidate(2, vec![hash(1)]),
     ]);
-    assert_eq!(cycle, (0, 2, 6, 4));
+    assert_eq!(cycle, (0, 2, 39, 28));
 
     assert_eq!(
         build_graph(
@@ -102,8 +102,8 @@ fn expanded_control_actor_conflict_and_projection_models_are_bounded() {
             (
                 usize::from(size),
                 0,
-                u64::from(size) * 2,
-                u64::from(size - 1) * 2,
+                u64::from(size) * 17 + 10,
+                u64::from(size) * 10 - 7,
             )
         );
     }

@@ -2719,7 +2719,7 @@ mod tests {
 
         let concurrent = evaluate_batch(
             [control(1, None, vec![change(1, 1, 1), change(2, 2, 1)])],
-            &mut WorkBudget::new(0, 200),
+            &mut WorkBudget::new(0, 2_000),
             &NeverCancelled,
         );
         assert_eq!(concurrent.accepted_changes.len(), 2);
@@ -2728,7 +2728,7 @@ mod tests {
         invalid.legacy_eligible = false;
         let revoked = evaluate_batch(
             [control(1, None, vec![invalid.clone()])],
-            &mut WorkBudget::new(0, 200),
+            &mut WorkBudget::new(0, 2_000),
             &NeverCancelled,
         );
         assert_eq!(
@@ -2736,7 +2736,7 @@ mod tests {
             ProtocolDisposition::Invalid
         );
 
-        let mut fork_budget = WorkBudget::new(0, 200);
+        let mut fork_budget = WorkBudget::new(0, 2_000);
         let forked = evaluate_batch(
             [control(2, None, vec![]), control(1, None, vec![])],
             &mut fork_budget,
@@ -2747,7 +2747,7 @@ mod tests {
             vec![EventId::from_bytes([1; 32])]
         );
         assert_eq!(forked.integrity_alerts.len(), 1);
-        let fork_consumed = 200 - fork_budget.remaining().1;
+        let fork_consumed = 2_000 - fork_budget.remaining().1;
         let interrupted_fork = evaluate_batch(
             [control(2, None, vec![]), control(1, None, vec![])],
             &mut WorkBudget::new(0, fork_consumed - 1),
@@ -2757,7 +2757,7 @@ mod tests {
 
         let equivocated = evaluate_batch(
             [control(1, None, vec![change(1, 1, 1), change(2, 1, 1)])],
-            &mut WorkBudget::new(0, 200),
+            &mut WorkBudget::new(0, 2_000),
             &NeverCancelled,
         );
         assert!(equivocated.accepted_changes.is_empty());
@@ -2765,7 +2765,7 @@ mod tests {
 
         let mut frozen = control(1, None, vec![change(1, 1, 1)]);
         frozen.frozen = true;
-        let frozen = evaluate_batch([frozen], &mut WorkBudget::new(0, 200), &NeverCancelled);
+        let frozen = evaluate_batch([frozen], &mut WorkBudget::new(0, 2_000), &NeverCancelled);
         assert!(frozen.accepted_changes.is_empty());
         assert_eq!(
             frozen.dispositions.values().next(),
@@ -2775,18 +2775,18 @@ mod tests {
         let mut reversed = vec![control(2, None, vec![]), control(1, None, vec![basic])];
         let first = evaluate_batch(
             reversed.clone(),
-            &mut WorkBudget::new(0, 200),
+            &mut WorkBudget::new(0, 2_000),
             &NeverCancelled,
         );
         reversed.reverse();
-        let second = evaluate_batch(reversed, &mut WorkBudget::new(0, 200), &NeverCancelled);
+        let second = evaluate_batch(reversed, &mut WorkBudget::new(0, 2_000), &NeverCancelled);
         assert_eq!(first, second);
     }
 
     #[test]
     fn finding_075_interrupted_batch_discards_all_canonical_progress() {
         let controls = || [control(2, None, vec![]), control(1, None, vec![])];
-        let mut complete_budget = WorkBudget::new(0, 200);
+        let mut complete_budget = WorkBudget::new(0, 2_000);
         let complete = evaluate_batch(controls(), &mut complete_budget, &NeverCancelled);
         assert_eq!(complete.completion, Completion::Complete);
         let consumed = 200_u64.saturating_sub(complete_budget.remaining().1);
@@ -2797,7 +2797,7 @@ mod tests {
         );
         assert_no_progress_batch(&interrupted, Completion::BudgetExhausted);
 
-        let cancelled = evaluate_batch(controls(), &mut WorkBudget::new(0, 200), &|| true);
+        let cancelled = evaluate_batch(controls(), &mut WorkBudget::new(0, 2_000), &|| true);
         assert_no_progress_batch(&cancelled, Completion::Cancelled);
     }
 

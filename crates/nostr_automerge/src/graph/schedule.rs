@@ -18,150 +18,642 @@ pub(crate) enum ScheduleError {
     Cancelled,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ScheduleOperation {
+    ScheduleConstruction,
+    RemainingMapConstruction,
+    CandidatePull,
+    RemainingInsert,
+    CandidateHashSetConstruction,
+    RemainingKeyPull,
+    CandidateHashInsert,
+    UnresolvedMapConstruction,
+    DependantMapConstruction,
+    RemainingEntryPull,
+    DependencyPull,
+    AcceptedLookup,
+    UnresolvedIncrement,
+    CandidateLookup,
+    DependantLookup,
+    DependantBucketInsert,
+    DependantInsert,
+    UnresolvedInsert,
+    ReadySetConstruction,
+    UnresolvedPull,
+    ReadinessComparison,
+    ReadyInsert,
+    OrderedVecConstruction,
+    ReadyPeek,
+    ReadyTieComparison,
+    ReadyPop,
+    RemainingRemove,
+    OrderedPush,
+    ChildrenLookup,
+    ChildPull,
+    UnresolvedLookup,
+    UnresolvedDecrement,
+    MissingSetConstruction,
+    RemainingValuePull,
+    MissingCandidateLookup,
+    MissingAcceptedLookup,
+    MissingInsert,
+    PendingSetConstruction,
+    MissingLookup,
+    PendingInsert,
+    BlockedStackConstruction,
+    PendingPull,
+    BlockedPush,
+    BlockedPull,
+    RemainingLookup,
+    PendingLookup,
+    CyclicSetConstruction,
+    CyclicCandidatePull,
+    CyclicPendingLookup,
+    CyclicInsert,
+    ResultPublication,
+}
+
 pub(crate) fn schedule_candidates(
     candidates: impl IntoIterator<Item = ChangeCandidate>,
     accepted_base: impl Borrow<BTreeSet<ChangeHash>>,
     budget: &mut WorkBudget,
     cancellation: &impl CancellationCheck,
 ) -> Result<Schedule, ScheduleError> {
+    schedule_candidates_observed(
+        candidates,
+        accepted_base,
+        |counter| charge_schedule_work(budget, cancellation, counter),
+        |_| {},
+    )
+}
+
+fn schedule_candidates_observed<E>(
+    candidates: impl IntoIterator<Item = ChangeCandidate>,
+    accepted_base: impl Borrow<BTreeSet<ChangeHash>>,
+    mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
+    mut observed: impl FnMut(ScheduleOperation),
+) -> Result<Schedule, E> {
     let accepted_base = accepted_base.borrow();
-    let mut remaining = BTreeMap::new();
-    for candidate in candidates {
-        if cancellation.is_cancelled() {
-            return Err(ScheduleError::Cancelled);
-        }
-        budget
-            .charge(WorkCounter::GraphNode, 1)
-            .map_err(|_| ScheduleError::BudgetExhausted)?;
-        remaining.insert(candidate.change_hash, candidate);
-    }
-    let candidate_hashes = remaining.keys().copied().collect::<BTreeSet<_>>();
-    let mut unresolved = BTreeMap::new();
-    let mut dependants = BTreeMap::<ChangeHash, BTreeSet<ChangeHash>>::new();
-    for (hash, candidate) in &remaining {
-        let count = candidate
-            .dependencies
-            .iter()
-            .filter(|dependency| !accepted_base.contains(dependency))
-            .count();
-        unresolved.insert(*hash, count);
-        for dependency in candidate.dependencies.iter() {
-            if cancellation.is_cancelled() {
-                return Err(ScheduleError::Cancelled);
-            }
-            budget
-                .charge(WorkCounter::GraphEdge, 1)
-                .map_err(|_| ScheduleError::BudgetExhausted)?;
-            if candidate_hashes.contains(dependency) {
-                dependants.entry(*dependency).or_default().insert(*hash);
-            }
-        }
-    }
-    let mut ready = unresolved
-        .iter()
-        .filter_map(|(hash, count)| (*count == 0).then_some(*hash))
-        .collect::<BTreeSet<_>>();
-    let mut ordered = Vec::new();
+    schedule_operation(
+        WorkCounter::GraphNode,
+        ScheduleOperation::ScheduleConstruction,
+        &mut charge,
+        &mut observed,
+        || (),
+    )?;
+    let mut remaining = schedule_operation(
+        WorkCounter::GraphNode,
+        ScheduleOperation::RemainingMapConstruction,
+        &mut charge,
+        &mut observed,
+        BTreeMap::new,
+    )?;
+    let mut candidates = candidates.into_iter();
     loop {
-        if cancellation.is_cancelled() {
-            return Err(ScheduleError::Cancelled);
-        }
-        let Some(hash) = ready.pop_first() else {
+        let candidate = schedule_operation(
+            WorkCounter::GraphNode,
+            ScheduleOperation::CandidatePull,
+            &mut charge,
+            &mut observed,
+            || candidates.next(),
+        )?;
+        let Some(candidate) = candidate else { break };
+        schedule_operation(
+            WorkCounter::GraphNode,
+            ScheduleOperation::RemainingInsert,
+            &mut charge,
+            &mut observed,
+            || remaining.insert(candidate.change_hash, candidate),
+        )?;
+    }
+    let mut candidate_hashes = schedule_operation(
+        WorkCounter::GraphNode,
+        ScheduleOperation::CandidateHashSetConstruction,
+        &mut charge,
+        &mut observed,
+        BTreeSet::new,
+    )?;
+    let mut remaining_keys = remaining.keys();
+    for _ in 0..remaining.len() {
+        let hash = schedule_operation(
+            WorkCounter::GraphNode,
+            ScheduleOperation::RemainingKeyPull,
+            &mut charge,
+            &mut observed,
+            || remaining_keys.next().copied(),
+        )?;
+        let Some(hash) = hash else { break };
+        schedule_operation(
+            WorkCounter::GraphNode,
+            ScheduleOperation::CandidateHashInsert,
+            &mut charge,
+            &mut observed,
+            || candidate_hashes.insert(hash),
+        )?;
+    }
+    let mut unresolved = schedule_operation(
+        WorkCounter::GraphNode,
+        ScheduleOperation::UnresolvedMapConstruction,
+        &mut charge,
+        &mut observed,
+        BTreeMap::new,
+    )?;
+    let mut dependants = schedule_operation(
+        WorkCounter::GraphEdge,
+        ScheduleOperation::DependantMapConstruction,
+        &mut charge,
+        &mut observed,
+        BTreeMap::<ChangeHash, BTreeSet<ChangeHash>>::new,
+    )?;
+    let mut remaining_entries = remaining.iter();
+    for _ in 0..remaining.len() {
+        let entry = schedule_operation(
+            WorkCounter::GraphNode,
+            ScheduleOperation::RemainingEntryPull,
+            &mut charge,
+            &mut observed,
+            || remaining_entries.next(),
+        )?;
+        let Some((hash, candidate)) = entry else {
             break;
         };
-        budget
-            .charge(WorkCounter::GraphNode, 1)
-            .map_err(|_| ScheduleError::BudgetExhausted)?;
-        remaining.remove(&hash);
-        ordered.push(hash);
-        if let Some(children) = dependants.get(&hash) {
-            for child in children {
-                if cancellation.is_cancelled() {
-                    return Err(ScheduleError::Cancelled);
+        let mut count = 0_usize;
+        let mut dependencies = candidate.dependencies.iter();
+        for _ in 0..candidate.dependencies.len() {
+            let dependency = schedule_operation(
+                WorkCounter::GraphEdge,
+                ScheduleOperation::DependencyPull,
+                &mut charge,
+                &mut observed,
+                || dependencies.next().copied(),
+            )?;
+            let Some(dependency) = dependency else { break };
+            let accepted = schedule_operation(
+                WorkCounter::GraphEdge,
+                ScheduleOperation::AcceptedLookup,
+                &mut charge,
+                &mut observed,
+                || accepted_base.contains(&dependency),
+            )?;
+            if !accepted {
+                schedule_operation(
+                    WorkCounter::GraphEdge,
+                    ScheduleOperation::UnresolvedIncrement,
+                    &mut charge,
+                    &mut observed,
+                    || count = count.saturating_add(1),
+                )?;
+            }
+            let is_candidate = schedule_operation(
+                WorkCounter::GraphEdge,
+                ScheduleOperation::CandidateLookup,
+                &mut charge,
+                &mut observed,
+                || candidate_hashes.contains(&dependency),
+            )?;
+            if is_candidate {
+                let has_bucket = schedule_operation(
+                    WorkCounter::GraphEdge,
+                    ScheduleOperation::DependantLookup,
+                    &mut charge,
+                    &mut observed,
+                    || dependants.contains_key(&dependency),
+                )?;
+                if !has_bucket {
+                    schedule_operation(
+                        WorkCounter::GraphEdge,
+                        ScheduleOperation::DependantBucketInsert,
+                        &mut charge,
+                        &mut observed,
+                        || dependants.insert(dependency, BTreeSet::new()),
+                    )?;
                 }
-                budget
-                    .charge(WorkCounter::GraphEdge, 1)
-                    .map_err(|_| ScheduleError::BudgetExhausted)?;
-                if let Some(count) = unresolved.get_mut(child) {
-                    *count -= 1;
-                    if *count == 0 {
-                        ready.insert(*child);
-                    }
+                let children = schedule_operation(
+                    WorkCounter::GraphEdge,
+                    ScheduleOperation::DependantLookup,
+                    &mut charge,
+                    &mut observed,
+                    || dependants.get_mut(&dependency),
+                )?;
+                if let Some(children) = children {
+                    schedule_operation(
+                        WorkCounter::GraphEdge,
+                        ScheduleOperation::DependantInsert,
+                        &mut charge,
+                        &mut observed,
+                        || children.insert(*hash),
+                    )?;
                 }
             }
         }
+        schedule_operation(
+            WorkCounter::GraphNode,
+            ScheduleOperation::UnresolvedInsert,
+            &mut charge,
+            &mut observed,
+            || unresolved.insert(*hash, count),
+        )?;
     }
-    let mut missing_dependencies = BTreeSet::new();
-    for candidate in remaining.values() {
-        for dependency in candidate.dependencies.iter() {
-            if cancellation.is_cancelled() {
-                return Err(ScheduleError::Cancelled);
+    let mut ready = schedule_operation(
+        WorkCounter::GraphNode,
+        ScheduleOperation::ReadySetConstruction,
+        &mut charge,
+        &mut observed,
+        BTreeSet::new,
+    )?;
+    let mut unresolved_items = unresolved.iter();
+    for _ in 0..unresolved.len() {
+        let item = schedule_operation(
+            WorkCounter::GraphNode,
+            ScheduleOperation::UnresolvedPull,
+            &mut charge,
+            &mut observed,
+            || unresolved_items.next().map(|(hash, count)| (*hash, *count)),
+        )?;
+        let Some((hash, count)) = item else { break };
+        let is_ready = schedule_operation(
+            WorkCounter::GraphNode,
+            ScheduleOperation::ReadinessComparison,
+            &mut charge,
+            &mut observed,
+            || count == 0,
+        )?;
+        if is_ready {
+            schedule_operation(
+                WorkCounter::GraphNode,
+                ScheduleOperation::ReadyInsert,
+                &mut charge,
+                &mut observed,
+                || ready.insert(hash),
+            )?;
+        }
+    }
+    let mut ordered = schedule_operation(
+        WorkCounter::GraphNode,
+        ScheduleOperation::OrderedVecConstruction,
+        &mut charge,
+        &mut observed,
+        Vec::new,
+    )?;
+    loop {
+        let first = schedule_operation(
+            WorkCounter::GraphNode,
+            ScheduleOperation::ReadyPeek,
+            &mut charge,
+            &mut observed,
+            || ready.first().copied(),
+        )?;
+        let Some(first) = first else { break };
+        schedule_operation(
+            WorkCounter::GraphNode,
+            ScheduleOperation::ReadyTieComparison,
+            &mut charge,
+            &mut observed,
+            || ready.iter().nth(1).is_none_or(|next| first < *next),
+        )?;
+        let hash = schedule_operation(
+            WorkCounter::GraphNode,
+            ScheduleOperation::ReadyPop,
+            &mut charge,
+            &mut observed,
+            || ready.pop_first(),
+        )?;
+        let Some(hash) = hash else { break };
+        schedule_operation(
+            WorkCounter::GraphNode,
+            ScheduleOperation::RemainingRemove,
+            &mut charge,
+            &mut observed,
+            || remaining.remove(&hash),
+        )?;
+        schedule_operation(
+            WorkCounter::GraphNode,
+            ScheduleOperation::OrderedPush,
+            &mut charge,
+            &mut observed,
+            || ordered.push(hash),
+        )?;
+        let children = schedule_operation(
+            WorkCounter::GraphEdge,
+            ScheduleOperation::ChildrenLookup,
+            &mut charge,
+            &mut observed,
+            || dependants.get(&hash),
+        )?;
+        let Some(children) = children else { continue };
+        let mut children = children.iter();
+        let child_count = children.len();
+        for _ in 0..child_count {
+            let child = schedule_operation(
+                WorkCounter::GraphEdge,
+                ScheduleOperation::ChildPull,
+                &mut charge,
+                &mut observed,
+                || children.next().copied(),
+            )?;
+            let Some(child) = child else { break };
+            let count = schedule_operation(
+                WorkCounter::GraphNode,
+                ScheduleOperation::UnresolvedLookup,
+                &mut charge,
+                &mut observed,
+                || unresolved.get_mut(&child),
+            )?;
+            let Some(count) = count else { continue };
+            schedule_operation(
+                WorkCounter::GraphNode,
+                ScheduleOperation::UnresolvedDecrement,
+                &mut charge,
+                &mut observed,
+                || *count = count.saturating_sub(1),
+            )?;
+            let is_ready = schedule_operation(
+                WorkCounter::GraphNode,
+                ScheduleOperation::ReadinessComparison,
+                &mut charge,
+                &mut observed,
+                || *count == 0,
+            )?;
+            if is_ready {
+                schedule_operation(
+                    WorkCounter::GraphNode,
+                    ScheduleOperation::ReadyInsert,
+                    &mut charge,
+                    &mut observed,
+                    || ready.insert(child),
+                )?;
             }
-            budget
-                .charge(WorkCounter::GraphEdge, 1)
-                .map_err(|_| ScheduleError::BudgetExhausted)?;
-            if !candidate_hashes.contains(dependency) && !accepted_base.contains(dependency) {
-                missing_dependencies.insert(*dependency);
+        }
+    }
+    let mut missing_dependencies = schedule_operation(
+        WorkCounter::GraphEdge,
+        ScheduleOperation::MissingSetConstruction,
+        &mut charge,
+        &mut observed,
+        BTreeSet::new,
+    )?;
+    let mut remaining_values = remaining.values();
+    for _ in 0..remaining.len() {
+        let candidate = schedule_operation(
+            WorkCounter::GraphNode,
+            ScheduleOperation::RemainingValuePull,
+            &mut charge,
+            &mut observed,
+            || remaining_values.next(),
+        )?;
+        let Some(candidate) = candidate else { break };
+        let mut dependencies = candidate.dependencies.iter();
+        for _ in 0..candidate.dependencies.len() {
+            let dependency = schedule_operation(
+                WorkCounter::GraphEdge,
+                ScheduleOperation::DependencyPull,
+                &mut charge,
+                &mut observed,
+                || dependencies.next().copied(),
+            )?;
+            let Some(dependency) = dependency else { break };
+            let candidate_known = schedule_operation(
+                WorkCounter::GraphEdge,
+                ScheduleOperation::MissingCandidateLookup,
+                &mut charge,
+                &mut observed,
+                || candidate_hashes.contains(&dependency),
+            )?;
+            let accepted = schedule_operation(
+                WorkCounter::GraphEdge,
+                ScheduleOperation::MissingAcceptedLookup,
+                &mut charge,
+                &mut observed,
+                || accepted_base.contains(&dependency),
+            )?;
+            if !candidate_known && !accepted {
+                schedule_operation(
+                    WorkCounter::GraphEdge,
+                    ScheduleOperation::MissingInsert,
+                    &mut charge,
+                    &mut observed,
+                    || missing_dependencies.insert(dependency),
+                )?;
             }
         }
     }
-    let mut pending = BTreeSet::new();
-    for (hash, candidate) in &remaining {
-        if cancellation.is_cancelled() {
-            return Err(ScheduleError::Cancelled);
+    let mut pending = schedule_operation(
+        WorkCounter::GraphNode,
+        ScheduleOperation::PendingSetConstruction,
+        &mut charge,
+        &mut observed,
+        BTreeSet::new,
+    )?;
+    let mut remaining_entries = remaining.iter();
+    for _ in 0..remaining.len() {
+        let entry = schedule_operation(
+            WorkCounter::GraphNode,
+            ScheduleOperation::RemainingEntryPull,
+            &mut charge,
+            &mut observed,
+            || remaining_entries.next(),
+        )?;
+        let Some((hash, candidate)) = entry else {
+            break;
+        };
+        let mut is_pending = false;
+        let mut dependencies = candidate.dependencies.iter();
+        for _ in 0..candidate.dependencies.len() {
+            let dependency = schedule_operation(
+                WorkCounter::GraphEdge,
+                ScheduleOperation::DependencyPull,
+                &mut charge,
+                &mut observed,
+                || dependencies.next().copied(),
+            )?;
+            let Some(dependency) = dependency else { break };
+            is_pending = schedule_operation(
+                WorkCounter::GraphEdge,
+                ScheduleOperation::MissingLookup,
+                &mut charge,
+                &mut observed,
+                || missing_dependencies.contains(&dependency),
+            )?;
+            if is_pending {
+                break;
+            }
         }
-        budget
-            .charge(WorkCounter::GraphNode, 1)
-            .map_err(|_| ScheduleError::BudgetExhausted)?;
-        if candidate
-            .dependencies
-            .iter()
-            .any(|dependency| missing_dependencies.contains(dependency))
-        {
-            pending.insert(*hash);
+        if is_pending {
+            schedule_operation(
+                WorkCounter::GraphNode,
+                ScheduleOperation::PendingInsert,
+                &mut charge,
+                &mut observed,
+                || pending.insert(*hash),
+            )?;
         }
     }
-    let mut blocked = pending.iter().copied().collect::<Vec<_>>();
-    while let Some(hash) = blocked.pop() {
-        if let Some(children) = dependants.get(&hash) {
-            for child in children {
-                if cancellation.is_cancelled() {
-                    return Err(ScheduleError::Cancelled);
-                }
-                budget
-                    .charge(WorkCounter::GraphEdge, 1)
-                    .map_err(|_| ScheduleError::BudgetExhausted)?;
-                if remaining.contains_key(child) && pending.insert(*child) {
-                    blocked.push(*child);
-                }
+    let mut blocked = schedule_operation(
+        WorkCounter::GraphNode,
+        ScheduleOperation::BlockedStackConstruction,
+        &mut charge,
+        &mut observed,
+        Vec::new,
+    )?;
+    let mut pending_items = pending.iter();
+    for _ in 0..pending.len() {
+        let hash = schedule_operation(
+            WorkCounter::GraphNode,
+            ScheduleOperation::PendingPull,
+            &mut charge,
+            &mut observed,
+            || pending_items.next().copied(),
+        )?;
+        let Some(hash) = hash else { break };
+        schedule_operation(
+            WorkCounter::GraphNode,
+            ScheduleOperation::BlockedPush,
+            &mut charge,
+            &mut observed,
+            || blocked.push(hash),
+        )?;
+    }
+    loop {
+        let hash = schedule_operation(
+            WorkCounter::GraphNode,
+            ScheduleOperation::BlockedPull,
+            &mut charge,
+            &mut observed,
+            || blocked.pop(),
+        )?;
+        let Some(hash) = hash else { break };
+        let children = schedule_operation(
+            WorkCounter::GraphEdge,
+            ScheduleOperation::ChildrenLookup,
+            &mut charge,
+            &mut observed,
+            || dependants.get(&hash),
+        )?;
+        let Some(children) = children else { continue };
+        let mut children = children.iter();
+        let child_count = children.len();
+        for _ in 0..child_count {
+            let child = schedule_operation(
+                WorkCounter::GraphEdge,
+                ScheduleOperation::ChildPull,
+                &mut charge,
+                &mut observed,
+                || children.next().copied(),
+            )?;
+            let Some(child) = child else { break };
+            let remains = schedule_operation(
+                WorkCounter::GraphNode,
+                ScheduleOperation::RemainingLookup,
+                &mut charge,
+                &mut observed,
+                || remaining.contains_key(&child),
+            )?;
+            let already_pending = schedule_operation(
+                WorkCounter::GraphNode,
+                ScheduleOperation::PendingLookup,
+                &mut charge,
+                &mut observed,
+                || pending.contains(&child),
+            )?;
+            if remains && !already_pending {
+                schedule_operation(
+                    WorkCounter::GraphNode,
+                    ScheduleOperation::PendingInsert,
+                    &mut charge,
+                    &mut observed,
+                    || pending.insert(child),
+                )?;
+                schedule_operation(
+                    WorkCounter::GraphNode,
+                    ScheduleOperation::BlockedPush,
+                    &mut charge,
+                    &mut observed,
+                    || blocked.push(child),
+                )?;
             }
         }
     }
-    let mut cyclic = BTreeSet::new();
-    for hash in remaining.keys() {
-        if cancellation.is_cancelled() {
-            return Err(ScheduleError::Cancelled);
-        }
-        budget
-            .charge(WorkCounter::GraphNode, 1)
-            .map_err(|_| ScheduleError::BudgetExhausted)?;
-        if !pending.contains(hash) {
-            cyclic.insert(*hash);
+    let mut cyclic = schedule_operation(
+        WorkCounter::GraphNode,
+        ScheduleOperation::CyclicSetConstruction,
+        &mut charge,
+        &mut observed,
+        BTreeSet::new,
+    )?;
+    let mut remaining_keys = remaining.keys();
+    for _ in 0..remaining.len() {
+        let hash = schedule_operation(
+            WorkCounter::GraphNode,
+            ScheduleOperation::CyclicCandidatePull,
+            &mut charge,
+            &mut observed,
+            || remaining_keys.next().copied(),
+        )?;
+        let Some(hash) = hash else { break };
+        let is_pending = schedule_operation(
+            WorkCounter::GraphNode,
+            ScheduleOperation::CyclicPendingLookup,
+            &mut charge,
+            &mut observed,
+            || pending.contains(&hash),
+        )?;
+        if !is_pending {
+            schedule_operation(
+                WorkCounter::GraphNode,
+                ScheduleOperation::CyclicInsert,
+                &mut charge,
+                &mut observed,
+                || cyclic.insert(hash),
+            )?;
         }
     }
-    Ok(Schedule {
-        ordered,
-        pending,
-        missing_dependencies,
-        cyclic,
-    })
+    schedule_operation(
+        WorkCounter::GraphNode,
+        ScheduleOperation::ResultPublication,
+        &mut charge,
+        &mut observed,
+        || Schedule {
+            ordered,
+            pending,
+            missing_dependencies,
+            cyclic,
+        },
+    )
+}
+
+fn schedule_operation<T, E>(
+    counter: WorkCounter,
+    operation: ScheduleOperation,
+    charge: &mut impl FnMut(WorkCounter) -> Result<(), E>,
+    observed: &mut impl FnMut(ScheduleOperation),
+    target: impl FnOnce() -> T,
+) -> Result<T, E> {
+    charge(counter)?;
+    let value = target();
+    observed(operation);
+    Ok(value)
+}
+
+fn charge_schedule_work(
+    budget: &mut WorkBudget,
+    cancellation: &impl CancellationCheck,
+    counter: WorkCounter,
+) -> Result<(), ScheduleError> {
+    if cancellation.is_cancelled() {
+        return Err(ScheduleError::Cancelled);
+    }
+    budget
+        .charge(counter, 1)
+        .map_err(|_| ScheduleError::BudgetExhausted)
 }
 
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeSet;
 
-    use super::{ScheduleError, schedule_candidates};
+    use super::{
+        ScheduleError, ScheduleOperation, schedule_candidates, schedule_candidates_observed,
+    };
     use crate::graph::actor_state::tests::candidate;
     use crate::{ChangeHash, NeverCancelled, WorkBudget, WorkCounter};
 
@@ -178,7 +670,7 @@ mod tests {
             schedule_candidates(
                 candidates,
                 BTreeSet::new(),
-                &mut WorkBudget::new(0, 30),
+                &mut WorkBudget::new(0, 10_000),
                 &NeverCancelled,
             )
         };
@@ -193,7 +685,7 @@ mod tests {
                 dependant.change_hash
             ])
         );
-        let mut measured = WorkBudget::new(0, 10);
+        let mut measured = WorkBudget::new(0, 10_000);
         let schedule = schedule_candidates(
             [high.clone(), dependant.clone()],
             BTreeSet::new(),
@@ -201,8 +693,8 @@ mod tests {
             &NeverCancelled,
         );
         assert!(schedule.is_ok());
-        assert_eq!(measured.consumed().get(WorkCounter::GraphNode), 4);
-        assert_eq!(measured.consumed().get(WorkCounter::GraphEdge), 2);
+        assert!(measured.consumed().get(WorkCounter::GraphNode) > 4);
+        assert!(measured.consumed().get(WorkCounter::GraphEdge) > 2);
         let missing_hash = ChangeHash::from_bytes([9; 32]);
         let mut missing = high.clone();
         missing.dependencies = vec![missing_hash].into();
@@ -325,7 +817,155 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "remediation v12 expected failure: schedule readiness is not fully metered"]
+    fn scheduling_charges_immediately_before_every_operation_and_preserves_typed_stops() {
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        enum Stop {
+            BudgetExhausted,
+            Cancelled,
+        }
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        enum Trace {
+            Charge(WorkCounter),
+            Operation(ScheduleOperation),
+        }
+        let make = |value: u8, dependencies: Vec<ChangeHash>| {
+            let mut item = candidate(value, 1, 1, 1);
+            item.change_hash = ChangeHash::from_bytes([value; 32]);
+            item.dependencies = dependencies.into();
+            item
+        };
+        let missing = ChangeHash::from_bytes([99; 32]);
+        let accepted = ChangeHash::from_bytes([100; 32]);
+        let inputs = vec![
+            make(1, vec![]),
+            make(2, vec![]),
+            make(3, vec![ChangeHash::from_bytes([1; 32])]),
+            make(4, vec![ChangeHash::from_bytes([1; 32])]),
+            make(
+                5,
+                vec![
+                    ChangeHash::from_bytes([3; 32]),
+                    ChangeHash::from_bytes([4; 32]),
+                ],
+            ),
+            make(6, vec![missing]),
+            make(7, vec![ChangeHash::from_bytes([6; 32])]),
+            make(8, vec![ChangeHash::from_bytes([9; 32])]),
+            make(9, vec![ChangeHash::from_bytes([8; 32])]),
+            make(10, vec![accepted]),
+        ];
+        let accepted_base = BTreeSet::from([accepted]);
+        let trace = std::cell::RefCell::new(Vec::new());
+        let ample = schedule_candidates_observed(
+            inputs.clone(),
+            &accepted_base,
+            |counter| {
+                trace.borrow_mut().push(Trace::Charge(counter));
+                Ok::<_, Stop>(())
+            },
+            |operation| trace.borrow_mut().push(Trace::Operation(operation)),
+        );
+        assert!(ample.is_ok());
+        let Ok(ample) = ample else { return };
+        let trace = trace.into_inner();
+        assert!(!trace.is_empty() && trace.len().is_multiple_of(2));
+        for pair in trace.chunks_exact(2) {
+            assert!(matches!(pair, [Trace::Charge(_), Trace::Operation(_)]));
+        }
+        let operations = trace
+            .iter()
+            .filter_map(|item| match item {
+                Trace::Charge(_) => None,
+                Trace::Operation(operation) => Some(*operation),
+            })
+            .collect::<Vec<_>>();
+        for required in [
+            ScheduleOperation::ScheduleConstruction,
+            ScheduleOperation::RemainingMapConstruction,
+            ScheduleOperation::CandidatePull,
+            ScheduleOperation::RemainingInsert,
+            ScheduleOperation::CandidateHashSetConstruction,
+            ScheduleOperation::RemainingKeyPull,
+            ScheduleOperation::CandidateHashInsert,
+            ScheduleOperation::UnresolvedMapConstruction,
+            ScheduleOperation::DependantMapConstruction,
+            ScheduleOperation::RemainingEntryPull,
+            ScheduleOperation::DependencyPull,
+            ScheduleOperation::AcceptedLookup,
+            ScheduleOperation::UnresolvedIncrement,
+            ScheduleOperation::CandidateLookup,
+            ScheduleOperation::DependantLookup,
+            ScheduleOperation::DependantBucketInsert,
+            ScheduleOperation::DependantInsert,
+            ScheduleOperation::UnresolvedInsert,
+            ScheduleOperation::ReadySetConstruction,
+            ScheduleOperation::UnresolvedPull,
+            ScheduleOperation::ReadinessComparison,
+            ScheduleOperation::ReadyInsert,
+            ScheduleOperation::OrderedVecConstruction,
+            ScheduleOperation::ReadyPeek,
+            ScheduleOperation::ReadyTieComparison,
+            ScheduleOperation::ReadyPop,
+            ScheduleOperation::RemainingRemove,
+            ScheduleOperation::OrderedPush,
+            ScheduleOperation::ChildrenLookup,
+            ScheduleOperation::ChildPull,
+            ScheduleOperation::UnresolvedLookup,
+            ScheduleOperation::UnresolvedDecrement,
+            ScheduleOperation::MissingSetConstruction,
+            ScheduleOperation::RemainingValuePull,
+            ScheduleOperation::MissingCandidateLookup,
+            ScheduleOperation::MissingAcceptedLookup,
+            ScheduleOperation::MissingInsert,
+            ScheduleOperation::PendingSetConstruction,
+            ScheduleOperation::MissingLookup,
+            ScheduleOperation::PendingInsert,
+            ScheduleOperation::BlockedStackConstruction,
+            ScheduleOperation::PendingPull,
+            ScheduleOperation::BlockedPush,
+            ScheduleOperation::BlockedPull,
+            ScheduleOperation::RemainingLookup,
+            ScheduleOperation::PendingLookup,
+            ScheduleOperation::CyclicSetConstruction,
+            ScheduleOperation::CyclicCandidatePull,
+            ScheduleOperation::CyclicPendingLookup,
+            ScheduleOperation::CyclicInsert,
+            ScheduleOperation::ResultPublication,
+        ] {
+            assert!(operations.contains(&required), "missing {required:?}");
+        }
+
+        for allowance in 0..operations.len() {
+            for stop in [Stop::BudgetExhausted, Stop::Cancelled] {
+                let mut successful = 0_usize;
+                let mut observed = Vec::new();
+                let result = schedule_candidates_observed(
+                    inputs.clone(),
+                    &accepted_base,
+                    |_| {
+                        if successful == allowance {
+                            return Err(stop);
+                        }
+                        successful += 1;
+                        Ok(())
+                    },
+                    |operation| observed.push(operation),
+                );
+                assert_eq!(result, Err(stop), "{stop:?} at {allowance}");
+                assert_eq!(successful, allowance);
+                assert_eq!(observed, operations[..allowance]);
+            }
+        }
+        let reverse = schedule_candidates_observed(
+            inputs.into_iter().rev(),
+            &accepted_base,
+            |_| Ok::<_, Stop>(()),
+            |_| {},
+        );
+        assert_eq!(reverse, Ok(ample));
+    }
+
+    #[test]
     fn finding_100_schedule_readiness_work_reproduction() {
         let mut inputs = (1..=64)
             .rev()
@@ -347,22 +987,24 @@ mod tests {
         assert_eq!(scheduled.map(|value| value.ordered), Ok(expected));
 
         let source = include_str!("schedule.rs");
+        let prohibited = [
+            ["remaining.keys().copied().", "collect::<BTreeSet<_>>()"].concat(),
+            [".collect::<", "BTreeSet<_>>();"].concat(),
+            ["pending.iter().copied().", "collect::<Vec<_>>()"].concat(),
+        ];
         assert!(
-            !source.contains("remaining.keys().copied().collect::<BTreeSet<_>>()")
-                && !source.contains(".collect::<BTreeSet<_>>();")
-                && !source.contains("pending.iter().copied().collect::<Vec<_>>()"),
+            prohibited.iter().all(|token| !source.contains(token)),
             "unmetered schedule readiness and pop preparation remains"
         );
     }
 
     #[test]
-    #[ignore = "remediation v12 expected failure: schedule publication is not separately metered"]
     fn finding_100_schedule_publication_work_reproduction() {
         let item = candidate(1, 1, 1, 1);
         let result = schedule_candidates(
             [item.clone()],
             BTreeSet::new(),
-            &mut WorkBudget::new(0, 10),
+            &mut WorkBudget::new(0, 1_000),
             &NeverCancelled,
         );
         assert_eq!(
@@ -372,9 +1014,10 @@ mod tests {
 
         let source = include_str!("schedule.rs");
         assert!(
-            !source.contains("remaining.insert(candidate.change_hash, candidate);")
-                && !source.contains("ordered.push(hash);")
-                && !source.contains("Ok(Schedule {"),
+            source.contains("ScheduleOperation::RemainingInsert")
+                && source.contains("ScheduleOperation::OrderedPush")
+                && source.contains("ScheduleOperation::ResultPublication")
+                && source.contains("charge(counter)?;\n    let value = target();"),
             "unmetered schedule insertion and result publication remains"
         );
     }

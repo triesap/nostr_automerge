@@ -992,7 +992,7 @@ mod tests {
             result.dispositions().get(&candidate.change_hash) == Some(&ProtocolDisposition::Invalid)
         }));
         assert_eq!(ample.consumed().get(WorkCounter::Control), 3);
-        assert_eq!(ample.consumed().get(WorkCounter::GraphEdge), 1);
+        assert_eq!(ample.consumed().get(WorkCounter::GraphEdge), 3);
         assert_eq!(ample.consumed().get(WorkCounter::ApplyChange), 0);
 
         for (capacity, expected_control) in [(2, 0), (3, 1), (4, 2)] {

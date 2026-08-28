@@ -74,7 +74,7 @@ EXPECTED_CASES = [
         "path": "crates/nostr_automerge/src/graph/schedule.rs",
         "test": "graph::schedule::tests::finding_100_schedule_readiness_work_reproduction",
         "diagnostic": "unmetered schedule readiness and pop preparation remains",
-        "expected": "open_failure",
+        "expected": "fixed_pass",
     },
     {
         "finding": "FINDING_100",
@@ -83,7 +83,7 @@ EXPECTED_CASES = [
         "path": "crates/nostr_automerge/src/graph/schedule.rs",
         "test": "graph::schedule::tests::finding_100_schedule_publication_work_reproduction",
         "diagnostic": "unmetered schedule insertion and result publication remains",
-        "expected": "open_failure",
+        "expected": "fixed_pass",
     },
     {
         "finding": "FINDING_100",

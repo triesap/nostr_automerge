@@ -6954,10 +6954,17 @@ mod tests {
     #[test]
     #[allow(clippy::expect_used)]
     fn v12_persistent_fixtures_bind_selected_boundaries_and_eight_orders() {
-        for (fixture_id, event_count, control_count, accepted_count, excluded_count) in [
-            ("deep_delta_root_lookup_exact_budget", 17, 9, 8, 0),
-            ("deep_delta_absent_lookup_exact_budget", 16, 8, 8, 0),
-            ("deep_delta_extend_exact_budget", 17, 9, 1, 7),
+        for (
+            fixture_id,
+            event_count,
+            control_count,
+            accepted_count,
+            excluded_count,
+            active_delta,
+        ) in [
+            ("deep_delta_root_lookup_exact_budget", 17, 9, 8, 0, 2_160),
+            ("deep_delta_absent_lookup_exact_budget", 16, 8, 8, 0, 2_145),
+            ("deep_delta_extend_exact_budget", 17, 9, 1, 7, 1_999),
         ] {
             let root = repository_root().join("fixtures/v12/scenarios/resource_followup");
             let signed = SignedScenarioInput::parse(
@@ -6990,7 +6997,7 @@ mod tests {
             // The v12 inputs remain immutable predecessor evidence. Distribution v13
             // will bind replacement budgets after the full metering refactor lands.
             assert_eq!(
-                signed.budget.max_items.checked_add(1718),
+                signed.budget.max_items.checked_add(active_delta),
                 Some(exact),
                 "{fixture_id}"
             );
