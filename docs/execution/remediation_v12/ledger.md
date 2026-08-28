@@ -62,3 +62,10 @@ applicability, evidence-policy linkage, schema cardinality, order, and
 append-only history are fail-closed. The v10 152-row authority remains an
 immutable historical projection rather than being silently rebound to the
 current registry.
+
+`step_1373` defines the sealed crate-private trusted epoch projection and its
+candidate-specific immutable view. The projection borrows exact branch and
+accepted-closure membership, owns ordered dependency, frontier, actor-state,
+writer-contribution, and causal-counter facts, and exposes no mutable map
+reference. Existing evaluation behavior remains unchanged while later steps
+replace its legacy compatibility decision with the fully metered view.

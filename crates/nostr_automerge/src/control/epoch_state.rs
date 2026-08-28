@@ -109,14 +109,16 @@ impl AcceptedEpochState {
                     AcceptedEpochStateError::ActorState(error),
                 ),
             })?;
+        let (frontier_heads, dependencies, actor_states, writer_contributions) =
+            projection.into_accepted_state_parts();
 
         Ok(Self {
             accepted_closure,
-            frontier_heads: Arc::new(projection.frontier_heads),
+            frontier_heads: Arc::new(frontier_heads),
             accepted_candidates,
-            dependencies: projection.dependencies,
-            actor_states: Arc::new(projection.actor_states),
-            writer_contributions: projection.writer_contributions,
+            dependencies,
+            actor_states: Arc::new(actor_states),
+            writer_contributions,
             materialized,
         })
     }

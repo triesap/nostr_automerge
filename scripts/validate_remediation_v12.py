@@ -25,6 +25,7 @@ PLAN_TREE = "739068407a059b071655cc63bcf1b570285fbaf7"
 PLAN_PATH = "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v12.md"
 PLAN_SHA256 = "aa8ea9bc6801175dd247dd283521a4ad8f0735eafcd280151a842c37418e5585"
 REQUIREMENTS_BASELINE_CANDIDATE = "4a5abe6f0bff2dbe147d9805f4cd3de844874ab6"
+REQUIREMENTS_CANDIDATE = "fd9ed9103879d4933832766c0c8dadb57262a49f"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -35,19 +36,13 @@ HOLDS = [
     "remote_mutation",
 ]
 ACTIVE_SCOPE = [
+    "crates/nostr_automerge/src/control/epoch_state.rs",
+    "crates/nostr_automerge/src/graph/actor_state.rs",
+    "crates/nostr_automerge/src/reference/epoch_engine.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
     "reports/spec_baseline.txt",
-    "scripts/validate_adrs.py",
-    "scripts/validate_authority_transition_v10.py",
-    "scripts/validate_companion_specs.py",
-    "scripts/validate_import.py",
     "scripts/validate_remediation_v12.py",
-    "scripts/validate_requirements.py",
-    "spec/NORMATIVE_REQUIREMENTS.md",
-    "spec/requirements.json",
-    "spec/requirements_applicability.json",
-    "tools/validation/requirements_schema.json",
 ]
 
 EVIDENCE_REQUIREMENTS = [
@@ -175,13 +170,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 110, "active_step": "step_1372", "next_step": "step_1373", "last_planned_step": "step_1419", "remaining_checkpoint_count": 47, "remaining_rcld_count": 6}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 110, "active_step": "step_1373", "next_step": "step_1374", "last_planned_step": "step_1419", "remaining_checkpoint_count": 46, "remaining_rcld_count": 6}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 10:
+    if not isinstance(predecessors, list) or len(predecessors) != 11:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -193,6 +188,40 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[7], {"step": "step_1369", "candidate": "4819b9ae58650f8b5decfb19e0f8d895dc47c7d2", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1369")
     require_equal(predecessors[8], {"step": "step_1370", "candidate": "670e300c4cb029ce8b67468c6009b756ea703002", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1370")
     require_equal(predecessors[9], {"step": "step_1371", "candidate": REQUIREMENTS_BASELINE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1371")
+    require_equal(predecessors[10], {"step": "step_1372", "candidate": REQUIREMENTS_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1372")
+
+
+def validate_trusted_projection() -> None:
+    source = (ROOT / "crates/nostr_automerge/src/graph/actor_state.rs").read_text()
+    production = source.split("#[cfg(test)]", 1)[0]
+    required = [
+        "pub(crate) struct TrustedEpochProjection<'a>",
+        "pub(crate) struct TrustedEpochView",
+        "branch_membership: &'a BTreeMap<ChangeHash, ChangeCandidate>",
+        "expected_sequence: u64",
+    ]
+    if any(production.count(token) != 1 for token in required):
+        raise EvidenceError("projection:shape")
+    if production.count("causal_next_op: u64") != 2:
+        raise EvidenceError("projection:causal_counter_shape")
+    if production.count("accepted_closure: &'a BTreeSet<ChangeHash>") != 2:
+        raise EvidenceError("projection:closure_shape")
+    if production.count("Ok(TrustedEpochProjection {") != 1:
+        raise EvidenceError("projection:constructor")
+    for prohibited in (
+        "pub struct TrustedEpochProjection",
+        "pub struct TrustedEpochView",
+        "&mut TrustedEpochProjection",
+        "pub(crate) actor_states:",
+        "pub(crate) dependencies:",
+    ):
+        if prohibited in production:
+            raise EvidenceError("projection:visibility")
+    require_equal(
+        git("diff", "--name-only", REQUIREMENTS_CANDIDATE, "--", "crates/nostr_automerge/src/lib.rs"),
+        "",
+        "projection:public_api",
+    )
 
 
 def validate_reproductions(reproductions: object) -> None:
@@ -361,7 +390,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1374"),
+        ("cursor", "next_step", "step_1375"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -479,10 +508,11 @@ def main() -> None:
     validate_evidence_policy(evidence_policy)
     validate_authority_gate(authority_gate)
     validate_files()
+    validate_trusted_projection()
     mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
-    print("- active=RCLD110/step_1372")
+    print("- active=RCLD110/step_1373")
 
 
 if __name__ == "__main__":

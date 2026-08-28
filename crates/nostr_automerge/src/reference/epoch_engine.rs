@@ -8,8 +8,8 @@ use crate::control::ancestry::ControlAncestry;
 use crate::control::epoch_state::{AcceptedEpochState, MeteredAcceptedEpochStateError};
 use crate::control::validate::ControlEnvelope;
 use crate::graph::actor_state::{
-    EpochActorState, MeteredActorStateError, apply_empty_counter, apply_nonempty_counter,
-    initialize_actor_states_metered, validate_actor_predecessor,
+    EpochActorState, MeteredActorStateError, initialize_actor_states_metered,
+    validate_actor_predecessor,
 };
 use crate::graph::change_candidate::ChangeCandidate;
 use crate::graph::closure::{CandidateClosureError, candidate_dependency_closure};
@@ -432,20 +432,8 @@ pub(crate) fn evaluate_epoch(
                     Err(MeteredActorStateError::State(_)) => None,
                 };
             projection.is_some_and(|projection| {
-                let mut states = projection.actor_states;
-                if candidate.operation_count == 0 {
-                    let mut current_heads = projection.frontier_heads;
-                    current_heads.extend(
-                        input
-                            .accepted_base()
-                            .frontier_heads()
-                            .difference(known)
-                            .copied(),
-                    );
-                    apply_empty_counter(&mut states, &candidate, &current_heads).is_ok()
-                } else {
-                    apply_nonempty_counter(&mut states, &candidate).is_ok()
-                }
+                projection
+                    .legacy_counter_is_valid(&candidate, input.accepted_base().frontier_heads())
             })
         } else {
             true

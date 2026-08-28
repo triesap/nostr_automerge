@@ -31,11 +31,128 @@ pub(crate) enum MeteredActorStateError<E> {
     State(ActorStateError),
 }
 
-pub(crate) struct MeteredActorState {
-    pub(crate) dependencies: BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
-    pub(crate) frontier_heads: BTreeSet<ChangeHash>,
-    pub(crate) actor_states: BTreeMap<ActorId, EpochActorState>,
-    pub(crate) writer_contributions: BTreeMap<ActorId, ChangeHash>,
+/// Immutable accepted-closure facts used by authoritative epoch semantics.
+///
+/// Construction is sealed in this module. Consumers receive only copied
+/// scalar facts or ordered iterators and cannot mutate the trusted maps.
+pub(crate) struct TrustedEpochProjection<'a> {
+    branch_membership: &'a BTreeMap<ChangeHash, ChangeCandidate>,
+    accepted_closure: &'a BTreeSet<ChangeHash>,
+    dependencies: BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
+    frontier_heads: BTreeSet<ChangeHash>,
+    actor_states: BTreeMap<ActorId, EpochActorState>,
+    writer_contributions: BTreeMap<ActorId, ChangeHash>,
+    causal_next_op: u64,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct TrustedEpochView {
+    branch_member: bool,
+    accepted_member: bool,
+    predecessor: Option<ChangeHash>,
+    expected_sequence: u64,
+    causal_next_op: u64,
+}
+
+pub(crate) type AcceptedEpochStateParts = (
+    BTreeSet<ChangeHash>,
+    BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
+    BTreeMap<ActorId, EpochActorState>,
+    BTreeMap<ActorId, ChangeHash>,
+);
+
+impl TrustedEpochView {
+    pub(crate) const fn is_branch_member(self) -> bool {
+        self.branch_member
+    }
+
+    pub(crate) const fn is_accepted_member(self) -> bool {
+        self.accepted_member
+    }
+
+    pub(crate) const fn predecessor(self) -> Option<ChangeHash> {
+        self.predecessor
+    }
+
+    pub(crate) const fn expected_sequence(self) -> u64 {
+        self.expected_sequence
+    }
+
+    pub(crate) const fn causal_next_op(self) -> u64 {
+        self.causal_next_op
+    }
+}
+
+impl TrustedEpochProjection<'_> {
+    pub(crate) fn candidate(
+        &self,
+        candidate: &ChangeCandidate,
+    ) -> Result<TrustedEpochView, ActorStateError> {
+        let actor = self.actor_states.get(&candidate.actor).copied();
+        let expected_sequence = actor.map_or(Ok(1), |state| {
+            state
+                .last_sequence
+                .checked_add(1)
+                .ok_or(ActorStateError::SequenceGap)
+        })?;
+        Ok(TrustedEpochView {
+            branch_member: self.branch_membership.contains_key(&candidate.change_hash),
+            accepted_member: self.accepted_closure.contains(&candidate.change_hash),
+            predecessor: actor.map(|state| state.highest_change),
+            expected_sequence,
+            causal_next_op: self.causal_next_op,
+        })
+    }
+
+    pub(crate) fn dependencies(
+        &self,
+        change: &ChangeHash,
+    ) -> impl Iterator<Item = ChangeHash> + '_ {
+        self.dependencies
+            .get(change)
+            .into_iter()
+            .flat_map(|dependencies| dependencies.iter().copied())
+    }
+
+    pub(crate) fn dependency_count(&self, change: &ChangeHash) -> usize {
+        self.dependencies.get(change).map_or(0, BTreeSet::len)
+    }
+
+    pub(crate) fn frontier_heads(&self) -> impl ExactSizeIterator<Item = ChangeHash> + '_ {
+        self.frontier_heads.iter().copied()
+    }
+
+    pub(crate) fn writer_contributions(
+        &self,
+    ) -> impl ExactSizeIterator<Item = (ActorId, ChangeHash)> + '_ {
+        self.writer_contributions
+            .iter()
+            .map(|(actor, hash)| (*actor, *hash))
+    }
+
+    pub(crate) fn legacy_counter_is_valid(
+        self,
+        candidate: &ChangeCandidate,
+        base_frontier: &BTreeSet<ChangeHash>,
+    ) -> bool {
+        let mut states = self.actor_states;
+        if candidate.operation_count == 0 {
+            let mut current_heads = self.frontier_heads;
+            current_heads.extend(base_frontier.difference(self.accepted_closure).copied());
+            apply_empty_counter(&mut states, candidate, &current_heads).is_ok()
+        } else {
+            apply_nonempty_counter(&mut states, candidate).is_ok()
+        }
+    }
+
+    pub(crate) fn into_accepted_state_parts(self) -> AcceptedEpochStateParts {
+        (
+            self.frontier_heads,
+            self.dependencies,
+            self.actor_states,
+            self.writer_contributions,
+        )
+    }
 }
 
 pub(crate) fn apply_empty_counter(
@@ -260,11 +377,11 @@ pub(crate) fn initialize_actor_states(
     Ok(states)
 }
 
-pub(crate) fn initialize_actor_states_metered<E>(
-    accepted_closure: &BTreeSet<ChangeHash>,
-    changes: &BTreeMap<ChangeHash, ChangeCandidate>,
+pub(crate) fn initialize_actor_states_metered<'a, E>(
+    accepted_closure: &'a BTreeSet<ChangeHash>,
+    changes: &'a BTreeMap<ChangeHash, ChangeCandidate>,
     mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
-) -> Result<MeteredActorState, MeteredActorStateError<E>> {
+) -> Result<TrustedEpochProjection<'a>, MeteredActorStateError<E>> {
     let mut dependencies = BTreeMap::new();
     let mut depended_on = BTreeSet::new();
     let mut remaining_dependencies = BTreeMap::new();
@@ -405,11 +522,19 @@ pub(crate) fn initialize_actor_states_metered<E>(
             ActorStateError::DependencyCycle,
         ));
     }
-    Ok(MeteredActorState {
+    let causal_next_op = states
+        .values()
+        .map(|state| state.next_op)
+        .max()
+        .unwrap_or(1);
+    Ok(TrustedEpochProjection {
+        branch_membership: changes,
+        accepted_closure,
         dependencies,
         frontier_heads,
         actor_states: states,
         writer_contributions,
+        causal_next_op,
     })
 }
 
@@ -506,14 +631,45 @@ pub(crate) mod tests {
             Ok::<_, ()>(())
         });
         assert!(result.is_ok_and(|projection| {
-            projection.actor_states.len() == 1
-                && projection.actor_states.contains_key(&first.actor)
-                && projection.frontier_heads == closure
+            let Ok(view) = projection.candidate(&first) else {
+                return false;
+            };
+            view.is_branch_member()
+                && view.is_accepted_member()
+                && view
+                    .predecessor()
+                    .is_some_and(|hash| hash == first.change_hash)
+                && view.expected_sequence() == 2
+                && view.causal_next_op() == 2
+                && projection.dependency_count(&first.change_hash) == 0
+                && projection.dependencies(&first.change_hash).next().is_none()
+                && projection.frontier_heads().eq([first.change_hash])
+                && projection
+                    .writer_contributions()
+                    .eq([(first.actor, first.change_hash)])
         }));
         assert_eq!(
             charges,
             vec![WorkCounter::GraphNode, WorkCounter::GraphNode]
         );
+    }
+
+    #[test]
+    fn trusted_epoch_projection_shape_and_construction_are_sealed() {
+        fn assert_shape<T: Send + Sync>() {}
+        assert_shape::<super::TrustedEpochProjection<'static>>();
+        assert_shape::<super::TrustedEpochView>();
+
+        let source = include_str!("actor_state.rs");
+        let production = source
+            .split_once("#[cfg(test)]")
+            .map_or(source, |item| item.0);
+        assert_eq!(production.matches("Ok(TrustedEpochProjection {").count(), 1);
+        assert!(!production.contains("pub struct TrustedEpochProjection"));
+        assert!(!production.contains("pub(crate) struct TrustedEpochProjectionParts"));
+        assert!(!production.contains("&mut TrustedEpochProjection"));
+        assert!(!production.contains("pub(crate) dependencies:"));
+        assert!(!production.contains("pub(crate) actor_states:"));
     }
 
     #[test]
