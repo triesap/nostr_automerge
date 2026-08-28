@@ -69,3 +69,12 @@ accepted-closure membership, owns ordered dependency, frontier, actor-state,
 writer-contribution, and causal-counter facts, and exposes no mutable map
 reference. Existing evaluation behavior remains unchanged while later steps
 replace its legacy compatibility decision with the fully metered view.
+
+`step_1374` makes projection construction consume a sealed canonical source.
+Every accepted-closure pull, membership read, candidate read, dependency pull,
+and dependency-membership read is charged immediately before the operation.
+Tests exercise N-1, N, N+1, and cancellation at every source boundary and
+reject missing, extra, duplicate, descending, and key-mismatched inputs without
+sorting, deduplicating, or repairing them. The immutable v12 distribution
+remains unchanged while its newly exposed work delta is tracked until the v13
+resource fixtures are created.

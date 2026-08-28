@@ -12,6 +12,7 @@ pub(crate) struct EpochActorState {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum ActorStateError {
+    NoncanonicalInput,
     SequenceGap,
     Equivocation,
     OperationCounter,
@@ -23,6 +24,60 @@ pub(crate) enum ActorStateError {
     DependencyFrontier,
     MissingDependency,
     DependencyCycle,
+}
+
+trait EpochProjectionSource<'a> {
+    fn member_count(&self) -> usize;
+    fn next_member(&mut self) -> Option<ChangeHash>;
+    fn accepted_member(&mut self, hash: &ChangeHash) -> bool;
+    fn candidate(&mut self, hash: &ChangeHash) -> Option<&'a ChangeCandidate>;
+    fn dependency_count(&mut self, candidate: &ChangeCandidate) -> usize;
+    fn dependency(&mut self, candidate: &ChangeCandidate, index: usize) -> Option<ChangeHash>;
+}
+
+struct CanonicalEpochProjectionSource<'a> {
+    members: std::collections::btree_set::Iter<'a, ChangeHash>,
+    accepted_closure: &'a BTreeSet<ChangeHash>,
+    changes: &'a BTreeMap<ChangeHash, ChangeCandidate>,
+}
+
+impl<'a> CanonicalEpochProjectionSource<'a> {
+    fn new(
+        accepted_closure: &'a BTreeSet<ChangeHash>,
+        changes: &'a BTreeMap<ChangeHash, ChangeCandidate>,
+    ) -> Self {
+        Self {
+            members: accepted_closure.iter(),
+            accepted_closure,
+            changes,
+        }
+    }
+}
+
+impl<'a> EpochProjectionSource<'a> for CanonicalEpochProjectionSource<'a> {
+    fn member_count(&self) -> usize {
+        self.accepted_closure.len()
+    }
+
+    fn next_member(&mut self) -> Option<ChangeHash> {
+        self.members.next().copied()
+    }
+
+    fn accepted_member(&mut self, hash: &ChangeHash) -> bool {
+        self.accepted_closure.contains(hash)
+    }
+
+    fn candidate(&mut self, hash: &ChangeHash) -> Option<&'a ChangeCandidate> {
+        self.changes.get(hash)
+    }
+
+    fn dependency_count(&mut self, candidate: &ChangeCandidate) -> usize {
+        candidate.dependencies.len()
+    }
+
+    fn dependency(&mut self, candidate: &ChangeCandidate, index: usize) -> Option<ChangeHash> {
+        candidate.dependencies.get(index).copied()
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -380,49 +435,91 @@ pub(crate) fn initialize_actor_states(
 pub(crate) fn initialize_actor_states_metered<'a, E>(
     accepted_closure: &'a BTreeSet<ChangeHash>,
     changes: &'a BTreeMap<ChangeHash, ChangeCandidate>,
+    charge: impl FnMut(WorkCounter) -> Result<(), E>,
+) -> Result<TrustedEpochProjection<'a>, MeteredActorStateError<E>> {
+    let mut source = CanonicalEpochProjectionSource::new(accepted_closure, changes);
+    build_trusted_epoch_projection(accepted_closure, changes, &mut source, charge)
+}
+
+fn build_trusted_epoch_projection<'a, E>(
+    accepted_closure: &'a BTreeSet<ChangeHash>,
+    changes: &'a BTreeMap<ChangeHash, ChangeCandidate>,
+    source: &mut impl EpochProjectionSource<'a>,
     mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
 ) -> Result<TrustedEpochProjection<'a>, MeteredActorStateError<E>> {
+    let member_count = source.member_count();
+    if member_count != accepted_closure.len() {
+        return Err(MeteredActorStateError::State(
+            ActorStateError::NoncanonicalInput,
+        ));
+    }
     let mut dependencies = BTreeMap::new();
     let mut depended_on = BTreeSet::new();
     let mut remaining_dependencies = BTreeMap::new();
     let mut dependants = BTreeMap::<ChangeHash, BTreeSet<ChangeHash>>::new();
     let mut ready = BTreeSet::new();
-    let mut closure_iter = accepted_closure.iter();
-    for _ in 0..accepted_closure.len() {
+    let mut previous_hash = None;
+    for _ in 0..member_count {
         charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        let Some(hash) = closure_iter.next() else {
+        let Some(hash) = source.next_member() else {
             return Err(MeteredActorStateError::State(
-                ActorStateError::DependencyCycle,
+                ActorStateError::NoncanonicalInput,
             ));
         };
-        let Some(candidate) = changes.get(hash) else {
+        if previous_hash.is_some_and(|previous| previous >= hash) {
+            return Err(MeteredActorStateError::State(
+                ActorStateError::NoncanonicalInput,
+            ));
+        }
+        previous_hash = Some(hash);
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+        if !source.accepted_member(&hash) {
+            return Err(MeteredActorStateError::State(
+                ActorStateError::NoncanonicalInput,
+            ));
+        }
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+        let Some(candidate) = source.candidate(&hash) else {
             return Err(MeteredActorStateError::State(
                 ActorStateError::MissingDependency,
             ));
         };
+        if candidate.change_hash != hash {
+            return Err(MeteredActorStateError::State(
+                ActorStateError::NoncanonicalInput,
+            ));
+        }
         let mut candidate_dependencies = BTreeSet::new();
-        let mut dependency_iter = candidate.dependencies.iter();
-        for _ in 0..candidate.dependencies.len() {
+        let dependency_count = source.dependency_count(candidate);
+        let mut previous_dependency = None;
+        for index in 0..dependency_count {
             charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
-            let Some(dependency) = dependency_iter.next().copied() else {
+            let Some(dependency) = source.dependency(candidate, index) else {
                 return Err(MeteredActorStateError::State(
-                    ActorStateError::DependencyCycle,
+                    ActorStateError::NoncanonicalInput,
                 ));
             };
-            if !accepted_closure.contains(&dependency) {
+            if previous_dependency.is_some_and(|previous| previous >= dependency) {
+                return Err(MeteredActorStateError::State(
+                    ActorStateError::NoncanonicalInput,
+                ));
+            }
+            previous_dependency = Some(dependency);
+            charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
+            if !source.accepted_member(&dependency) {
                 return Err(MeteredActorStateError::State(
                     ActorStateError::MissingDependency,
                 ));
             }
             candidate_dependencies.insert(dependency);
             depended_on.insert(dependency);
-            dependants.entry(dependency).or_default().insert(*hash);
+            dependants.entry(dependency).or_default().insert(hash);
         }
-        if candidate.dependencies.is_empty() {
-            ready.insert(*hash);
+        if candidate_dependencies.is_empty() {
+            ready.insert(hash);
         }
-        remaining_dependencies.insert(*hash, candidate.dependencies.len());
-        dependencies.insert(*hash, candidate_dependencies);
+        remaining_dependencies.insert(hash, dependency_count);
+        dependencies.insert(hash, candidate_dependencies);
     }
 
     let mut states = BTreeMap::<ActorId, EpochActorState>::new();
@@ -437,7 +534,12 @@ pub(crate) fn initialize_actor_states_metered<'a, E>(
                 ActorStateError::DependencyCycle,
             ));
         };
-        let candidate = &changes[&hash];
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+        let Some(candidate) = source.candidate(&hash) else {
+            return Err(MeteredActorStateError::State(
+                ActorStateError::MissingDependency,
+            ));
+        };
         if !depended_on.contains(&hash) {
             frontier_heads.insert(hash);
         }
@@ -517,7 +619,7 @@ pub(crate) fn initialize_actor_states_metered<'a, E>(
             }
         }
     }
-    if processed != accepted_closure.len() {
+    if processed != member_count {
         return Err(MeteredActorStateError::State(
             ActorStateError::DependencyCycle,
         ));
@@ -540,15 +642,85 @@ pub(crate) fn initialize_actor_states_metered<'a, E>(
 
 #[cfg(test)]
 pub(crate) mod tests {
+    use std::cell::{Cell, RefCell};
     use std::collections::BTreeSet;
+    use std::rc::Rc;
 
     use super::{
-        ActorStateError, EpochActorState, apply_empty_counter, apply_nonempty_counter,
+        ActorStateError, EpochActorState, EpochProjectionSource, MeteredActorStateError,
+        apply_empty_counter, apply_nonempty_counter, build_trusted_epoch_projection,
         initialize_actor_states, initialize_actor_states_metered, validate_actor_predecessor,
     };
     use crate::graph::change_candidate::ChangeCandidate;
-    use crate::{ActorId, ChangeHash, DevicePublicKey, EventId, WorkCounter};
+    use crate::{ActorId, ChangeHash, Completion, DevicePublicKey, EventId, WorkCounter};
     use std::collections::BTreeMap;
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum SourceOperation {
+        PullMember(ChangeHash),
+        ReadAcceptedMember(ChangeHash),
+        ReadCandidate(ChangeHash),
+        PullDependency(ChangeHash, usize, ChangeHash),
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum TraversalTrace {
+        Charge(WorkCounter),
+        Operation(SourceOperation),
+    }
+
+    struct ObservedEpochProjectionSource<'a> {
+        members: Vec<ChangeHash>,
+        cursor: usize,
+        accepted_closure: &'a BTreeSet<ChangeHash>,
+        changes: &'a BTreeMap<ChangeHash, ChangeCandidate>,
+        trace: Rc<RefCell<Vec<TraversalTrace>>>,
+    }
+
+    impl<'a> EpochProjectionSource<'a> for ObservedEpochProjectionSource<'a> {
+        fn member_count(&self) -> usize {
+            self.members.len()
+        }
+
+        fn next_member(&mut self) -> Option<ChangeHash> {
+            let member = self.members.get(self.cursor).copied();
+            self.cursor = self.cursor.saturating_add(1);
+            if let Some(member) = member {
+                self.trace.borrow_mut().push(TraversalTrace::Operation(
+                    SourceOperation::PullMember(member),
+                ));
+            }
+            member
+        }
+
+        fn accepted_member(&mut self, hash: &ChangeHash) -> bool {
+            self.trace.borrow_mut().push(TraversalTrace::Operation(
+                SourceOperation::ReadAcceptedMember(*hash),
+            ));
+            self.accepted_closure.contains(hash)
+        }
+
+        fn candidate(&mut self, hash: &ChangeHash) -> Option<&'a ChangeCandidate> {
+            self.trace.borrow_mut().push(TraversalTrace::Operation(
+                SourceOperation::ReadCandidate(*hash),
+            ));
+            self.changes.get(hash)
+        }
+
+        fn dependency_count(&mut self, candidate: &ChangeCandidate) -> usize {
+            candidate.dependencies.len()
+        }
+
+        fn dependency(&mut self, candidate: &ChangeCandidate, index: usize) -> Option<ChangeHash> {
+            let dependency = candidate.dependencies.get(index).copied();
+            if let Some(dependency) = dependency {
+                self.trace.borrow_mut().push(TraversalTrace::Operation(
+                    SourceOperation::PullDependency(candidate.change_hash, index, dependency),
+                ));
+            }
+            dependency
+        }
+    }
 
     pub(crate) fn candidate(actor: u8, sequence: u64, start: u64, count: u64) -> ChangeCandidate {
         ChangeCandidate {
@@ -650,8 +822,241 @@ pub(crate) mod tests {
         }));
         assert_eq!(
             charges,
-            vec![WorkCounter::GraphNode, WorkCounter::GraphNode]
+            vec![
+                WorkCounter::GraphNode,
+                WorkCounter::GraphNode,
+                WorkCounter::GraphNode,
+                WorkCounter::GraphNode,
+                WorkCounter::GraphNode,
+            ]
         );
+    }
+
+    fn observed_projection<'a>(
+        members: Vec<ChangeHash>,
+        accepted_closure: &'a BTreeSet<ChangeHash>,
+        changes: &'a BTreeMap<ChangeHash, ChangeCandidate>,
+        successful_limit: usize,
+        stopped: Completion,
+    ) -> (
+        Result<super::TrustedEpochProjection<'a>, MeteredActorStateError<Completion>>,
+        Vec<TraversalTrace>,
+    ) {
+        let trace = Rc::new(RefCell::new(Vec::new()));
+        let mut source = ObservedEpochProjectionSource {
+            members,
+            cursor: 0,
+            accepted_closure,
+            changes,
+            trace: Rc::clone(&trace),
+        };
+        let successful = Cell::new(0_usize);
+        let result =
+            build_trusted_epoch_projection(accepted_closure, changes, &mut source, |counter| {
+                trace.borrow_mut().push(TraversalTrace::Charge(counter));
+                if successful.get() == successful_limit {
+                    Err(stopped)
+                } else {
+                    successful.set(successful.get().saturating_add(1));
+                    Ok(())
+                }
+            });
+        let observed = trace.borrow().clone();
+        (result, observed)
+    }
+
+    #[test]
+    fn charged_projection_traversal_stops_before_every_source_read() {
+        let first = candidate(1, 1, 1, 1);
+        let mut second = candidate(1, 2, 2, 1);
+        second.dependencies = vec![first.change_hash].into();
+        let closure = BTreeSet::from([first.change_hash, second.change_hash]);
+        let changes = BTreeMap::from([
+            (first.change_hash, first.clone()),
+            (second.change_hash, second.clone()),
+        ]);
+        let members = vec![first.change_hash, second.change_hash];
+        let (ample, full_trace) = observed_projection(
+            members.clone(),
+            &closure,
+            &changes,
+            usize::MAX,
+            Completion::BudgetExhausted,
+        );
+        assert!(ample.is_ok());
+
+        let mut charge_count = 0_usize;
+        let mut operation_count = 0_usize;
+        let mut boundaries = Vec::new();
+        for (index, entry) in full_trace.iter().enumerate() {
+            match entry {
+                TraversalTrace::Charge(_) => charge_count = charge_count.saturating_add(1),
+                TraversalTrace::Operation(_) => {
+                    operation_count = operation_count.saturating_add(1);
+                    let expected_counter = match entry {
+                        TraversalTrace::Operation(
+                            SourceOperation::PullMember(_) | SourceOperation::ReadCandidate(_),
+                        ) => WorkCounter::GraphNode,
+                        TraversalTrace::Operation(SourceOperation::PullDependency(_, _, _)) => {
+                            WorkCounter::GraphEdge
+                        }
+                        TraversalTrace::Operation(SourceOperation::ReadAcceptedMember(hash)) => {
+                            let counter = match index
+                                .checked_sub(2)
+                                .and_then(|prior| full_trace.get(prior))
+                            {
+                                Some(TraversalTrace::Operation(SourceOperation::PullMember(
+                                    member,
+                                ))) if member == hash => Some(WorkCounter::GraphNode),
+                                Some(TraversalTrace::Operation(
+                                    SourceOperation::PullDependency(_, _, dependency),
+                                )) if dependency == hash => Some(WorkCounter::GraphEdge),
+                                _ => None,
+                            };
+                            assert!(
+                                counter.is_some(),
+                                "accepted membership lacks its source pull"
+                            );
+                            counter.unwrap_or(WorkCounter::GraphNode)
+                        }
+                        TraversalTrace::Charge(_) => unreachable!(),
+                    };
+                    assert_eq!(
+                        index.checked_sub(1).and_then(|prior| full_trace.get(prior)),
+                        Some(&TraversalTrace::Charge(expected_counter))
+                    );
+                    boundaries.push((charge_count, operation_count));
+                }
+            }
+        }
+        assert_eq!(boundaries.len(), 10);
+
+        for (target_charge, target_operation) in boundaries {
+            let operation_prefix = |trace: &[TraversalTrace]| {
+                trace
+                    .iter()
+                    .filter(|entry| matches!(entry, TraversalTrace::Operation(_)))
+                    .count()
+            };
+            let (before, before_trace) = observed_projection(
+                members.clone(),
+                &closure,
+                &changes,
+                target_charge.saturating_sub(1),
+                Completion::BudgetExhausted,
+            );
+            assert!(matches!(
+                before,
+                Err(MeteredActorStateError::Work(Completion::BudgetExhausted))
+            ));
+            assert_eq!(operation_prefix(&before_trace), target_operation - 1);
+
+            for allowance in [target_charge, target_charge.saturating_add(1)] {
+                let (_, trace) = observed_projection(
+                    members.clone(),
+                    &closure,
+                    &changes,
+                    allowance,
+                    Completion::BudgetExhausted,
+                );
+                assert!(operation_prefix(&trace) >= target_operation);
+            }
+
+            let (cancelled, cancelled_trace) = observed_projection(
+                members.clone(),
+                &closure,
+                &changes,
+                target_charge.saturating_sub(1),
+                Completion::Cancelled,
+            );
+            assert!(matches!(
+                cancelled,
+                Err(MeteredActorStateError::Work(Completion::Cancelled))
+            ));
+            assert_eq!(operation_prefix(&cancelled_trace), target_operation - 1);
+        }
+    }
+
+    #[test]
+    fn projection_rejects_noncanonical_members_and_dependencies_without_repair() {
+        let first = candidate(1, 1, 1, 1);
+        let mut second = candidate(2, 1, 1, 1);
+        second.change_hash = ChangeHash::from_bytes([2; 32]);
+        let closure = BTreeSet::from([first.change_hash, second.change_hash]);
+        let changes = BTreeMap::from([
+            (first.change_hash, first.clone()),
+            (second.change_hash, second.clone()),
+        ]);
+        for members in [
+            vec![second.change_hash, first.change_hash],
+            vec![first.change_hash, first.change_hash],
+        ] {
+            let (result, _) = observed_projection(
+                members,
+                &closure,
+                &changes,
+                usize::MAX,
+                Completion::BudgetExhausted,
+            );
+            assert!(matches!(
+                result,
+                Err(MeteredActorStateError::State(
+                    ActorStateError::NoncanonicalInput
+                ))
+            ));
+        }
+        for members in [
+            vec![first.change_hash],
+            vec![first.change_hash, second.change_hash, second.change_hash],
+        ] {
+            let (result, trace) = observed_projection(
+                members,
+                &closure,
+                &changes,
+                usize::MAX,
+                Completion::BudgetExhausted,
+            );
+            assert!(matches!(
+                result,
+                Err(MeteredActorStateError::State(
+                    ActorStateError::NoncanonicalInput
+                ))
+            ));
+            assert!(trace.is_empty());
+        }
+
+        let mut third = candidate(3, 1, 2, 1);
+        third.change_hash = ChangeHash::from_bytes([3; 32]);
+        let closure = BTreeSet::from([first.change_hash, second.change_hash, third.change_hash]);
+        for dependencies in [
+            vec![second.change_hash, first.change_hash],
+            vec![first.change_hash, first.change_hash],
+        ] {
+            third.dependencies = dependencies.into();
+            let changes = BTreeMap::from([
+                (first.change_hash, first.clone()),
+                (second.change_hash, second.clone()),
+                (third.change_hash, third.clone()),
+            ]);
+            assert!(matches!(
+                initialize_actor_states_metered(&closure, &changes, |_| Ok::<_, ()>(())),
+                Err(MeteredActorStateError::State(
+                    ActorStateError::NoncanonicalInput
+                ))
+            ));
+        }
+
+        let mismatched = BTreeMap::from([(first.change_hash, second)]);
+        assert!(matches!(
+            initialize_actor_states_metered(
+                &BTreeSet::from([first.change_hash]),
+                &mismatched,
+                |_| Ok::<_, ()>(())
+            ),
+            Err(MeteredActorStateError::State(
+                ActorStateError::NoncanonicalInput
+            ))
+        ));
     }
 
     #[test]

@@ -142,11 +142,11 @@ METERED_SOURCE_ANCHORS = (
     ),
     (
         "crates/nostr_automerge/src/graph/actor_state.rs",
-        "charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;\n        let Some(hash) = closure_iter.next()",
+        "charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;\n        let Some(hash) = source.next_member()",
     ),
     (
         "crates/nostr_automerge/src/graph/actor_state.rs",
-        "charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;\n            let Some(dependency) = dependency_iter.next().copied()",
+        "charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;\n            let Some(dependency) = source.dependency(candidate, index)",
     ),
     (
         "crates/nostr_automerge/src/graph/dependency_graph.rs",

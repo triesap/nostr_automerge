@@ -26,6 +26,7 @@ PLAN_PATH = "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v12.md"
 PLAN_SHA256 = "aa8ea9bc6801175dd247dd283521a4ad8f0735eafcd280151a842c37418e5585"
 REQUIREMENTS_BASELINE_CANDIDATE = "4a5abe6f0bff2dbe147d9805f4cd3de844874ab6"
 REQUIREMENTS_CANDIDATE = "fd9ed9103879d4933832766c0c8dadb57262a49f"
+PROJECTION_CANDIDATE = "25b540e176d291c9de823e8106e074a5d4eff48b"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -37,12 +38,16 @@ HOLDS = [
 ]
 ACTIVE_SCOPE = [
     "crates/nostr_automerge/src/control/epoch_state.rs",
+    "crates/nostr_automerge/src/engine/reference_evaluator.rs",
     "crates/nostr_automerge/src/graph/actor_state.rs",
     "crates/nostr_automerge/src/reference/epoch_engine.rs",
+    "crates/nostr_automerge/src/reference/evaluate.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
     "reports/spec_baseline.txt",
+    "scripts/validate_resource_operation_inventory_v10.py",
     "scripts/validate_remediation_v12.py",
+    "tools/nostr_automerge_conformance/src/fixture_generation.rs",
 ]
 
 EVIDENCE_REQUIREMENTS = [
@@ -170,13 +175,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 110, "active_step": "step_1373", "next_step": "step_1374", "last_planned_step": "step_1419", "remaining_checkpoint_count": 46, "remaining_rcld_count": 6}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 110, "active_step": "step_1374", "next_step": "step_1375", "last_planned_step": "step_1419", "remaining_checkpoint_count": 45, "remaining_rcld_count": 6}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 11:
+    if not isinstance(predecessors, list) or len(predecessors) != 12:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -189,6 +194,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[8], {"step": "step_1370", "candidate": "670e300c4cb029ce8b67468c6009b756ea703002", "owner_class": "public", "result": "pass"}, "ledger:predecessor_1370")
     require_equal(predecessors[9], {"step": "step_1371", "candidate": REQUIREMENTS_BASELINE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1371")
     require_equal(predecessors[10], {"step": "step_1372", "candidate": REQUIREMENTS_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1372")
+    require_equal(predecessors[11], {"step": "step_1373", "candidate": PROJECTION_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1373")
 
 
 def validate_trusted_projection() -> None:
@@ -200,11 +206,11 @@ def validate_trusted_projection() -> None:
         "branch_membership: &'a BTreeMap<ChangeHash, ChangeCandidate>",
         "expected_sequence: u64",
     ]
-    if any(production.count(token) != 1 for token in required):
+    if any(token not in production for token in required):
         raise EvidenceError("projection:shape")
     if production.count("causal_next_op: u64") != 2:
         raise EvidenceError("projection:causal_counter_shape")
-    if production.count("accepted_closure: &'a BTreeSet<ChangeHash>") != 2:
+    if production.count("accepted_closure: &'a BTreeSet<ChangeHash>") < 2:
         raise EvidenceError("projection:closure_shape")
     if production.count("Ok(TrustedEpochProjection {") != 1:
         raise EvidenceError("projection:constructor")
@@ -222,6 +228,36 @@ def validate_trusted_projection() -> None:
         "",
         "projection:public_api",
     )
+
+
+def validate_charged_projection_traversal() -> None:
+    source = (ROOT / "crates/nostr_automerge/src/graph/actor_state.rs").read_text()
+    production = source.split("#[cfg(test)]", 1)[0]
+    required = [
+        "trait EpochProjectionSource<'a>",
+        "struct CanonicalEpochProjectionSource<'a>",
+        "ActorStateError::NoncanonicalInput",
+        "let Some(hash) = source.next_member()",
+        "if !source.accepted_member(&hash)",
+        "let Some(candidate) = source.candidate(&hash)",
+        "let Some(dependency) = source.dependency(candidate, index)",
+        "if !source.accepted_member(&dependency)",
+        "previous >= hash",
+        "previous >= dependency",
+    ]
+    if any(token not in production for token in required):
+        raise EvidenceError("projection:charged_traversal")
+    body = production.split("fn build_trusted_epoch_projection", 1)[1]
+    for prohibited in (".sort(", ".sort_by(", ".sort_unstable(", ".dedup("):
+        if prohibited in body:
+            raise EvidenceError("projection:repair")
+    tests = source.split("#[cfg(test)]", 1)[1]
+    for name in (
+        "charged_projection_traversal_stops_before_every_source_read",
+        "projection_rejects_noncanonical_members_and_dependencies_without_repair",
+    ):
+        if tests.count(f"fn {name}()") != 1:
+            raise EvidenceError("projection:test_inventory")
 
 
 def validate_reproductions(reproductions: object) -> None:
@@ -390,7 +426,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1375"),
+        ("cursor", "next_step", "step_1376"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -509,10 +545,11 @@ def main() -> None:
     validate_authority_gate(authority_gate)
     validate_files()
     validate_trusted_projection()
+    validate_charged_projection_traversal()
     mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
-    print("- active=RCLD110/step_1373")
+    print("- active=RCLD110/step_1374")
 
 
 if __name__ == "__main__":

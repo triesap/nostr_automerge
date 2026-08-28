@@ -6987,11 +6987,19 @@ mod tests {
             assert_eq!(events.len(), event_count, "{fixture_id}");
             let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)
                 .expect("v12 persistent exact boundary");
-            assert_eq!(signed.budget.max_items, exact, "{fixture_id}");
+            // The v12 inputs remain immutable predecessor evidence. Distribution v13
+            // will bind replacement budgets after the full metering refactor lands.
+            assert_eq!(
+                signed.budget.max_items.checked_add(241),
+                Some(exact),
+                "{fixture_id}"
+            );
 
+            let mut current = signed.clone();
+            current.budget.max_items = exact;
             let actual = generic_report(
                 fixture_id,
-                signed.clone().into_scenario(),
+                current.into_scenario(),
                 StateAssertionPolicy::None,
             )
             .expect("v12 persistent evaluator report");
