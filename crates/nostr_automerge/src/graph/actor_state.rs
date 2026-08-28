@@ -189,6 +189,36 @@ impl TrustedEpochView {
 }
 
 impl TrustedEpochProjection<'_> {
+    /// Decides actor-sequence continuity from immutable projected state.
+    ///
+    /// The actor predecessor may be anywhere in the accepted closure. It is
+    /// intentionally not required to be a direct dependency of `candidate`.
+    pub(crate) fn actor_sequence_decision_metered<E>(
+        &self,
+        candidate: &ChangeCandidate,
+        charge: impl FnMut(WorkCounter) -> Result<(), E>,
+    ) -> Result<(), MeteredActorStateError<E>> {
+        let view = self.candidate_metered(candidate, charge)?;
+        if !view.actor_identity_matches() {
+            return Err(MeteredActorStateError::State(
+                ActorStateError::MissingPredecessor,
+            ));
+        }
+        match view.predecessor() {
+            None if candidate.sequence == 1 => Ok(()),
+            None => Err(MeteredActorStateError::State(
+                ActorStateError::MissingPredecessor,
+            )),
+            Some(_) if candidate.sequence < view.expected_sequence() => Err(
+                MeteredActorStateError::State(ActorStateError::SequenceRollback),
+            ),
+            Some(_) if !view.sequence_matches() => Err(MeteredActorStateError::State(
+                ActorStateError::MissingPredecessor,
+            )),
+            Some(_) => Ok(()),
+        }
+    }
+
     pub(crate) fn candidate_metered<E>(
         &self,
         candidate: &ChangeCandidate,
@@ -1439,6 +1469,170 @@ pub(crate) mod tests {
                 .eq(wide_hashes.iter().copied())
         );
         assert_eq!(wide_projection.writer_contributions().count(), 8);
+    }
+
+    #[test]
+    fn projected_actor_sequence_decision_is_nonmutating_and_complete() {
+        let genesis = candidate(1, 1, 1, 1);
+        let empty_closure = BTreeSet::new();
+        let empty_changes = BTreeMap::new();
+        let empty =
+            initialize_actor_states_metered(&empty_closure, &empty_changes, |_| Ok::<_, ()>(()));
+        assert!(empty.is_ok());
+        let Some(empty) = empty.ok() else { return };
+        assert!(
+            empty
+                .actor_sequence_decision_metered(&genesis, |_| Ok::<_, ()>(()))
+                .is_ok()
+        );
+
+        let first = candidate(1, 1, 1, 1);
+        let mut bridge = candidate(2, 1, 2, 1);
+        bridge.change_hash = ChangeHash::from_bytes([2; 32]);
+        bridge.dependencies = vec![first.change_hash].into();
+        let closure = BTreeSet::from([first.change_hash, bridge.change_hash]);
+        let changes = BTreeMap::from([
+            (first.change_hash, first.clone()),
+            (bridge.change_hash, bridge.clone()),
+        ]);
+        let projection = initialize_actor_states_metered(&closure, &changes, |_| Ok::<_, ()>(()));
+        assert!(projection.is_ok());
+        let Some(projection) = projection.ok() else {
+            return;
+        };
+
+        let mut deep = candidate(1, 2, 3, 1);
+        deep.change_hash = ChangeHash::from_bytes([3; 32]);
+        deep.dependencies = vec![bridge.change_hash].into();
+        let deep_view = projection.candidate_metered(&deep, |_| Ok::<_, ()>(()));
+        assert!(deep_view.is_ok_and(|view| {
+            view.predecessor() == Some(first.change_hash)
+                && !view.predecessor_is_direct_dependency()
+        }));
+        assert!(
+            projection
+                .actor_sequence_decision_metered(&deep, |_| Ok::<_, ()>(()))
+                .is_ok()
+        );
+
+        let mut independent = candidate(2, 1, 1, 1);
+        independent.change_hash = ChangeHash::from_bytes([4; 32]);
+        let unrelated_closure = BTreeSet::from([first.change_hash, independent.change_hash]);
+        let unrelated_changes = BTreeMap::from([
+            (first.change_hash, first.clone()),
+            (independent.change_hash, independent.clone()),
+        ]);
+        let unrelated_projection =
+            initialize_actor_states_metered(&unrelated_closure, &unrelated_changes, |_| {
+                Ok::<_, ()>(())
+            });
+        assert!(unrelated_projection.is_ok());
+        let Some(unrelated_projection) = unrelated_projection.ok() else {
+            return;
+        };
+        let mut unrelated = deep.clone();
+        unrelated.change_hash = ChangeHash::from_bytes([6; 32]);
+        unrelated.dependencies = vec![independent.change_hash].into();
+        assert!(
+            unrelated_projection
+                .actor_sequence_decision_metered(&unrelated, |_| Ok::<_, ()>(()))
+                .is_ok()
+        );
+
+        let mut gap = deep.clone();
+        gap.sequence = 3;
+        assert!(matches!(
+            projection.actor_sequence_decision_metered(&gap, |_| Ok::<_, ()>(())),
+            Err(MeteredActorStateError::State(
+                ActorStateError::MissingPredecessor
+            ))
+        ));
+        let mut rollback = deep.clone();
+        rollback.sequence = 1;
+        assert!(matches!(
+            projection.actor_sequence_decision_metered(&rollback, |_| Ok::<_, ()>(())),
+            Err(MeteredActorStateError::State(
+                ActorStateError::SequenceRollback
+            ))
+        ));
+        let mut duplicate = first.clone();
+        duplicate.change_hash = ChangeHash::from_bytes([5; 32]);
+        assert!(matches!(
+            projection.actor_sequence_decision_metered(&duplicate, |_| Ok::<_, ()>(())),
+            Err(MeteredActorStateError::State(
+                ActorStateError::SequenceRollback
+            ))
+        ));
+
+        let overflow_hash = ChangeHash::from_bytes([8; 32]);
+        let overflow_actor = ActorId::from_bytes([8; 32]);
+        let overflow_candidate = ChangeCandidate {
+            change_hash: overflow_hash,
+            actor: overflow_actor,
+            sequence: u64::MAX,
+            start_op: 1,
+            operation_count: 1,
+            dependencies: Vec::new().into(),
+            control_id: EventId::from_bytes([9; 32]),
+            author: DevicePublicKey::from_bytes([8; 32]),
+            valid_carriers: Vec::new().into(),
+        };
+        let overflow_branch = BTreeMap::from([(overflow_hash, overflow_candidate.clone())]);
+        let overflow_closure = BTreeSet::from([overflow_hash]);
+        let overflow_projection = TrustedEpochProjection {
+            branch_membership: &overflow_branch,
+            accepted_closure: &overflow_closure,
+            dependencies: BTreeMap::from([(overflow_hash, BTreeSet::new())]),
+            frontier_heads: BTreeSet::from([overflow_hash]),
+            actor_states: BTreeMap::from([(
+                overflow_actor,
+                EpochActorState {
+                    last_sequence: u64::MAX,
+                    next_op: 1,
+                    highest_change: overflow_hash,
+                },
+            )]),
+            writer_contributions: BTreeMap::from([(overflow_actor, overflow_hash)]),
+            causal_next_op: 1,
+        };
+        assert!(matches!(
+            overflow_projection
+                .actor_sequence_decision_metered(&overflow_candidate, |_| Ok::<_, ()>(())),
+            Err(MeteredActorStateError::State(ActorStateError::SequenceGap))
+        ));
+
+        const LOOKUP_CHARGES: usize = 9;
+        for successful in 0..LOOKUP_CHARGES {
+            for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
+                let observed = Cell::new(0_usize);
+                let result = projection.actor_sequence_decision_metered(&deep, |_| {
+                    if observed.get() == successful {
+                        Err(stopped)
+                    } else {
+                        observed.set(observed.get().saturating_add(1));
+                        Ok(())
+                    }
+                });
+                assert!(matches!(
+                    result,
+                    Err(MeteredActorStateError::Work(actual)) if actual == stopped
+                ));
+                assert_eq!(observed.get(), successful);
+            }
+        }
+        for allowance in [LOOKUP_CHARGES, LOOKUP_CHARGES + 1] {
+            let observed = Cell::new(0_usize);
+            let result = projection.actor_sequence_decision_metered(&deep, |_| {
+                if observed.get() == allowance {
+                    Err(Completion::BudgetExhausted)
+                } else {
+                    observed.set(observed.get().saturating_add(1));
+                    Ok(())
+                }
+            });
+            assert!(result.is_ok());
+            assert_eq!(observed.get(), LOOKUP_CHARGES);
+        }
     }
 
     #[test]

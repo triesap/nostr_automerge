@@ -120,3 +120,11 @@ semantic cases, nine lookup operations, 19 publication operations, and the
 extra, reordered, stale, or weakened evidence. Findings 100 through 103 remain
 open, Finding 080 remains held, and the next implementation checkpoint is
 `step_1380` in RCLD 111.
+
+`step_1380` adds the nonmutating projected actor-sequence decision. Genesis,
+deep transitive predecessor, and unrelated direct-dependency cases are
+accepted from immutable projected state without requiring the actor
+predecessor to be a direct edge. Gap, rollback, duplicate sequence, actor
+mismatch, and checked-sequence overflow fail closed. Every one of the nine
+underlying lookup charges has exact N-1, N, N+1, budget, and cancellation
+coverage, and no caller-owned state is mutated.

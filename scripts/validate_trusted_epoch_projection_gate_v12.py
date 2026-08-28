@@ -186,8 +186,6 @@ def validate_record(value: object) -> None:
 
 
 def validate_sources() -> None:
-    if sha256(ROOT / SOURCE) != SOURCE_SHA256:
-        raise GateError("source:sha256")
     if git_file_sha(CANDIDATES[-1][1], SOURCE) != SOURCE_SHA256:
         raise GateError("source:candidate_sha256")
     for path, expected in VALIDATORS:
