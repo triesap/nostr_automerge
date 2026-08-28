@@ -1152,6 +1152,246 @@ pub(crate) mod tests {
         }
     }
 
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    struct ExpectedProjectionCase {
+        predecessor: Option<ChangeHash>,
+        direct: bool,
+        actor_matches: bool,
+        expected_sequence: u64,
+        sequence_matches: bool,
+        causal_next_op: u64,
+        expected_next_matches: bool,
+        frontier: Vec<ChangeHash>,
+        writers: Vec<(ActorId, ChangeHash)>,
+    }
+
+    #[test]
+    fn projection_semantic_matrix_is_complete_and_order_invariant() {
+        let first = candidate(1, 1, 1, 1);
+        let mut inherited_other = candidate(2, 1, 2, 1);
+        inherited_other.change_hash = ChangeHash::from_bytes([2; 32]);
+        inherited_other.dependencies = vec![first.change_hash].into();
+        let mut unrelated_other = candidate(2, 1, 1, 1);
+        unrelated_other.change_hash = ChangeHash::from_bytes([4; 32]);
+
+        let cases = [
+            (
+                "empty",
+                Vec::new(),
+                candidate(1, 1, 1, 1),
+                ExpectedProjectionCase {
+                    predecessor: None,
+                    direct: false,
+                    actor_matches: true,
+                    expected_sequence: 1,
+                    sequence_matches: true,
+                    causal_next_op: 1,
+                    expected_next_matches: true,
+                    frontier: Vec::new(),
+                    writers: Vec::new(),
+                },
+            ),
+            (
+                "single",
+                vec![first.clone()],
+                candidate(1, 2, 2, 1),
+                ExpectedProjectionCase {
+                    predecessor: Some(first.change_hash),
+                    direct: false,
+                    actor_matches: true,
+                    expected_sequence: 2,
+                    sequence_matches: true,
+                    causal_next_op: 2,
+                    expected_next_matches: true,
+                    frontier: vec![first.change_hash],
+                    writers: vec![(first.actor, first.change_hash)],
+                },
+            ),
+            (
+                "deep_predecessor",
+                vec![first.clone(), inherited_other.clone()],
+                {
+                    let mut query = candidate(1, 2, 3, 1);
+                    query.change_hash = ChangeHash::from_bytes([3; 32]);
+                    query.dependencies = vec![inherited_other.change_hash].into();
+                    query
+                },
+                ExpectedProjectionCase {
+                    predecessor: Some(first.change_hash),
+                    direct: false,
+                    actor_matches: true,
+                    expected_sequence: 2,
+                    sequence_matches: true,
+                    causal_next_op: 3,
+                    expected_next_matches: true,
+                    frontier: vec![inherited_other.change_hash],
+                    writers: vec![
+                        (first.actor, first.change_hash),
+                        (inherited_other.actor, inherited_other.change_hash),
+                    ],
+                },
+            ),
+            (
+                "unrelated_dependency",
+                vec![first.clone(), unrelated_other.clone()],
+                {
+                    let mut query = candidate(1, 2, 2, 1);
+                    query.change_hash = ChangeHash::from_bytes([5; 32]);
+                    query.dependencies = vec![unrelated_other.change_hash].into();
+                    query
+                },
+                ExpectedProjectionCase {
+                    predecessor: Some(first.change_hash),
+                    direct: false,
+                    actor_matches: true,
+                    expected_sequence: 2,
+                    sequence_matches: true,
+                    causal_next_op: 2,
+                    expected_next_matches: true,
+                    frontier: vec![first.change_hash, unrelated_other.change_hash],
+                    writers: vec![
+                        (first.actor, first.change_hash),
+                        (unrelated_other.actor, unrelated_other.change_hash),
+                    ],
+                },
+            ),
+            (
+                "actor_gap",
+                vec![first.clone()],
+                candidate(1, 3, 2, 1),
+                ExpectedProjectionCase {
+                    predecessor: Some(first.change_hash),
+                    direct: false,
+                    actor_matches: true,
+                    expected_sequence: 2,
+                    sequence_matches: false,
+                    causal_next_op: 2,
+                    expected_next_matches: true,
+                    frontier: vec![first.change_hash],
+                    writers: vec![(first.actor, first.change_hash)],
+                },
+            ),
+            (
+                "actor_rollback",
+                vec![first.clone()],
+                candidate(1, 1, 2, 1),
+                ExpectedProjectionCase {
+                    predecessor: Some(first.change_hash),
+                    direct: false,
+                    actor_matches: true,
+                    expected_sequence: 2,
+                    sequence_matches: false,
+                    causal_next_op: 2,
+                    expected_next_matches: true,
+                    frontier: vec![first.change_hash],
+                    writers: vec![(first.actor, first.change_hash)],
+                },
+            ),
+        ];
+
+        for (name, accepted, query, expected) in cases {
+            let accepted_hashes = accepted
+                .iter()
+                .map(|candidate| candidate.change_hash)
+                .collect::<BTreeSet<_>>();
+            for mut order in [accepted.clone(), accepted.into_iter().rev().collect()] {
+                let changes = order
+                    .drain(..)
+                    .map(|candidate| (candidate.change_hash, candidate))
+                    .collect::<BTreeMap<_, _>>();
+                let projection = initialize_actor_states_metered(
+                    &accepted_hashes,
+                    &changes,
+                    |_| Ok::<_, ()>(()),
+                );
+                assert!(projection.is_ok(), "{name}");
+                let Some(projection) = projection.ok() else {
+                    continue;
+                };
+                let view = projection.candidate_metered(&query, |_| Ok::<_, ()>(()));
+                assert!(view.is_ok(), "{name}");
+                let Some(view) = view.ok() else { continue };
+                let actual = ExpectedProjectionCase {
+                    predecessor: view.predecessor(),
+                    direct: view.predecessor_is_direct_dependency(),
+                    actor_matches: view.actor_identity_matches(),
+                    expected_sequence: view.expected_sequence(),
+                    sequence_matches: view.sequence_matches(),
+                    causal_next_op: view.causal_next_op(),
+                    expected_next_matches: view.expected_next_matches(),
+                    frontier: projection.frontier_heads().collect(),
+                    writers: projection.writer_contributions().collect(),
+                };
+                assert_eq!(actual, expected, "{name}");
+            }
+        }
+
+        let overflow_hash = ChangeHash::from_bytes([8; 32]);
+        let overflow_actor = ActorId::from_bytes([8; 32]);
+        let overflow_candidate = ChangeCandidate {
+            change_hash: overflow_hash,
+            actor: overflow_actor,
+            sequence: u64::MAX,
+            start_op: 1,
+            operation_count: 1,
+            dependencies: Vec::new().into(),
+            control_id: EventId::from_bytes([9; 32]),
+            author: DevicePublicKey::from_bytes([8; 32]),
+            valid_carriers: Vec::new().into(),
+        };
+        let overflow_branch = BTreeMap::from([(overflow_hash, overflow_candidate.clone())]);
+        let overflow_closure = BTreeSet::from([overflow_hash]);
+        let overflow_projection = TrustedEpochProjection {
+            branch_membership: &overflow_branch,
+            accepted_closure: &overflow_closure,
+            dependencies: BTreeMap::from([(overflow_hash, BTreeSet::new())]),
+            frontier_heads: BTreeSet::from([overflow_hash]),
+            actor_states: BTreeMap::from([(
+                overflow_actor,
+                EpochActorState {
+                    last_sequence: u64::MAX,
+                    next_op: 1,
+                    highest_change: overflow_hash,
+                },
+            )]),
+            writer_contributions: BTreeMap::from([(overflow_actor, overflow_hash)]),
+            causal_next_op: 1,
+        };
+        assert!(matches!(
+            overflow_projection.candidate_metered(&overflow_candidate, |_| Ok::<_, ()>(())),
+            Err(MeteredActorStateError::State(ActorStateError::SequenceGap))
+        ));
+
+        let wide = (1_u8..=8)
+            .map(|index| {
+                let mut change = candidate(index, 1, 1, 1);
+                change.change_hash = ChangeHash::from_bytes([index; 32]);
+                change
+            })
+            .collect::<Vec<_>>();
+        let wide_hashes = wide
+            .iter()
+            .map(|candidate| candidate.change_hash)
+            .collect::<BTreeSet<_>>();
+        let wide_changes = wide
+            .iter()
+            .cloned()
+            .map(|candidate| (candidate.change_hash, candidate))
+            .collect::<BTreeMap<_, _>>();
+        let wide_projection =
+            initialize_actor_states_metered(&wide_hashes, &wide_changes, |_| Ok::<_, ()>(()));
+        assert!(wide_projection.is_ok());
+        let Some(wide_projection) = wide_projection.ok() else {
+            return;
+        };
+        assert!(
+            wide_projection
+                .frontier_heads()
+                .eq(wide_hashes.iter().copied())
+        );
+        assert_eq!(wide_projection.writer_contributions().count(), 8);
+    }
+
     #[test]
     fn projection_lookups_and_semantic_comparisons_are_immediately_charged() {
         let first = candidate(1, 1, 1, 1);

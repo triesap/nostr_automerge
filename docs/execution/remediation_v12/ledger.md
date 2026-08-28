@@ -94,3 +94,10 @@ or edge charge. The operation matrix stops before every allocation/insertion
 boundary, and the builder contains no capacity reservation, eager collection,
 or clone. Historical v12 inputs remain frozen while their current exact work
 delta is bound for the later v13 replacement corpus.
+
+`step_1377` closes the trusted projection semantic table before production
+adoption. An independent expected-case model covers empty and single-member
+epochs, deep actor predecessors, unrelated dependencies, gap, rollback,
+overflow, wide frontiers, causal next-op, and writer-contribution snapshots.
+Every constructible row is identical under forward and reversed insertion
+orders, while overflow fails closed through the typed projection boundary.
