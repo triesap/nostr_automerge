@@ -1,0 +1,23 @@
+{
+  "schema": "nostr_automerge.rust_conformance.v14.v1",
+  "status": "pass",
+  "base_candidate": "54537099a48f79150e46a7d6ebbdab55044a4e42",
+  "manifest_sha256": "c76cd24bc91308b0e615bd837d69b72fe145b7713a544fb325f7f054275c485d",
+  "manifest_lock_sha256": "0fc414a0e49b4e87bb0cf1f21bea3cf0cd70af904720b93a95fae00f079e7304",
+  "distribution_schema_sha256": "cbfa8139becf5eef29476fe09a5bbd59dd1f8aaab130f740ecf299be64bd7863",
+  "lock_schema_sha256": "65bdfe6f7a3819eb0a9ab64c3882061bdda8d4f095835d227a40b96380a2e04e",
+  "generator_sha256": "30fff2476f87c28bba9db4b7f76ee3cf5cc83d7ed308f7e08ab579092f94d96d",
+  "fixture_generator_sha256": "a1bdb5013ddc8a47bff3dfd8a5caae69ee3d9c2a3810ec9dd5c07e7bf4e4018e",
+  "runner_sha256": "f1bfb5d8fe8e35392588a84720bf854797ac97cdf3e7e0c4500c7ff1838bd406",
+  "cargo_lock_sha256": "9dd7897a8b729fb687c6f9001bfdeb09e441db69a36f8f86ab4260a30d75ca19",
+  "rust_toolchain_sha256": "5d959dfcc98b53886ee772ba216c4f9a1b31f093b46b5b263c0d084af54e821d",
+  "scenario_count": 204,
+  "fixture_rebinding_count": 9,
+  "process_count": 2,
+  "delivery_order_count": 8,
+  "canonical_process_bytes": "identical",
+  "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+  "serialized_run_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344",
+  "deliberate_expectation_mismatch": "rejected",
+  "result_identity_sha256": "dfe756364617c21bf95466b80c506f89de31c156d9f436b27afb447c182ad159"
+}

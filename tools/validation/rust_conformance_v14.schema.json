@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/tools/validation/rust_conformance_v14.schema.json",
+  "title": "nostr_automerge Rust conformance v14 evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "status", "base_candidate", "manifest_sha256", "manifest_lock_sha256",
+    "distribution_schema_sha256", "lock_schema_sha256", "generator_sha256",
+    "fixture_generator_sha256", "runner_sha256", "cargo_lock_sha256",
+    "rust_toolchain_sha256", "scenario_count", "fixture_rebinding_count",
+    "process_count", "delivery_order_count", "canonical_process_bytes",
+    "canonical_output_sha256", "serialized_run_sha256",
+    "deliberate_expectation_mismatch", "result_identity_sha256"
+  ],
+  "properties": {
+    "schema": {"const": "nostr_automerge.rust_conformance.v14.v1"},
+    "status": {"const": "pass"},
+    "base_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "manifest_lock_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "distribution_schema_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "lock_schema_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "generator_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "fixture_generator_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "runner_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "cargo_lock_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "rust_toolchain_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "scenario_count": {"const": 204},
+    "fixture_rebinding_count": {"const": 9},
+    "process_count": {"const": 2},
+    "delivery_order_count": {"const": 8},
+    "canonical_process_bytes": {"const": "identical"},
+    "canonical_output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "serialized_run_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "deliberate_expectation_mismatch": {"const": "rejected"},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

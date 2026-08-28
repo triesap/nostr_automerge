@@ -1,0 +1,13 @@
+{
+  "schema": "nostr_automerge.fixture_distribution_lock.v14.v1",
+  "status": "locked",
+  "source_candidate": "54537099a48f79150e46a7d6ebbdab55044a4e42",
+  "manifest_sha256": "c76cd24bc91308b0e615bd837d69b72fe145b7713a544fb325f7f054275c485d",
+  "scenario_count": 204,
+  "file_count": 698,
+  "fixture_ids_sha256": "523a1c6203080aefc91107f203bb305e9405a800f6c3182de5d4bd73730bf200",
+  "files_sha256": "0955046f5394da48990b3b35b833d65f0c764bb849bc3b5f9d097f5b9b8d6148",
+  "fixture_rebindings_sha256": "1d5fda4c3bdde8c8fca688e4f5bc03995bfa017364606325057077c5d4dbfe60",
+  "profiles_sha256": "84f80b3a819b70ea943c861dd6636d22c8c66d489c68a422cf372b045e727134",
+  "result_identity_sha256": "2e26916e0dfd9c315b4e07d5c15b69181c5ec1f059053c74a55cbe079f92a8b0"
+}

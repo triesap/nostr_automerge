@@ -116,7 +116,7 @@ def rebindings() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         require(input_value == projected, "budget_only:" + fixture_id)
         require((ROOT / (root + ".expected.json")).read_bytes() == (ROOT / prior["expected_path"]).read_bytes(), "report_bytes:" + fixture_id)
         require(input_value["raw_events"] == prior_input["raw_events"], "event_bytes:" + fixture_id)
-        require(input_value["delivery_orders"] == prior_input["delivery_orders"], "delivery_orders:" + fixture_id)
+        require(input_value.get("delivery_orders") == prior_input.get("delivery_orders"), "delivery_orders:" + fixture_id)
         require(metadata["fixture_id"] == fixture_id, "metadata_id:" + fixture_id)
         require(metadata["inputs"][0]["sha256"] == digest(root + ".input.json"), "metadata_input:" + fixture_id)
         require(metadata["expected"]["sha256"] == digest(root + ".expected.json"), "metadata_report:" + fixture_id)
@@ -136,6 +136,30 @@ def rebindings() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
             "delivery_orders_identical": True,
         })
     return entries, records
+
+
+def materialize_rebindings() -> None:
+    base = historical_base()
+    by_id = {row["fixture_id"]: row for row in base["fixtures"]}
+    REBINDING_ROOT.mkdir(parents=True, exist_ok=True)
+    for fixture_id, old_budget, new_budget in AFFECTED:
+        prior = by_id[fixture_id]
+        prior_input = load(prior["input_paths"][0])
+        require(prior_input["budget"]["max_items"] == old_budget, "materialize_prior:" + fixture_id)
+        current_input = json.loads(json.dumps(prior_input))
+        current_input["budget"]["max_items"] = new_budget
+        input_bytes = canonical_json(current_input)
+        expected_bytes = (ROOT / prior["expected_path"]).read_bytes()
+        prior_metadata = load(prior["metadata_path"])
+        metadata = json.loads(json.dumps(prior_metadata))
+        metadata["inputs"][0]["path"] = fixture_id + ".input.json"
+        metadata["inputs"][0]["sha256"] = hashlib.sha256(input_bytes).hexdigest()
+        metadata["expected"]["report_path"] = fixture_id + ".expected.json"
+        metadata["expected"]["sha256"] = hashlib.sha256(expected_bytes).hexdigest()
+        metadata["provenance"]["generator"] = "nostr_automerge distribution-v14 budget rebinding"
+        (REBINDING_ROOT / (fixture_id + ".input.json")).write_bytes(input_bytes)
+        (REBINDING_ROOT / (fixture_id + ".expected.json")).write_bytes(expected_bytes)
+        (REBINDING_ROOT / (fixture_id + ".fixture.json")).write_bytes(canonical_json(metadata))
 
 
 def expected_manifest(state: dict[str, Any]) -> dict[str, Any]:
@@ -182,8 +206,12 @@ def expected_manifest(state: dict[str, Any]) -> dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--write", action="store_true")
+    parser.add_argument("--materialize", action="store_true")
     args = parser.parse_args()
     state = load(STATE_PATH)
+    if args.materialize:
+        require(validate_state(state), "materialize_stage")
+        materialize_rebindings()
     expected = canonical_json(expected_manifest(state))
     output = ROOT / OUTPUT_PATH
     if args.write:

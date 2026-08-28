@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v13_authority.json",
   "cursor": {
     "active_rcld": 118,
-    "active_step": "step_1436",
-    "next_step": "step_1437",
+    "active_step": "step_1437",
+    "next_step": "step_1438",
     "last_planned_step": "step_1452",
-    "remaining_checkpoint_count": 17,
+    "remaining_checkpoint_count": 16,
     "remaining_rcld_count": 3
   },
   "findings": {
@@ -17,16 +17,49 @@
   "active_checkpoint_scope": [
     "docs/execution/remediation_v13/ledger.md",
     "fixtures/distribution/manifest_v14.json",
+    "fixtures/distribution/manifest_v14.lock.json",
+    "fixtures/v14/rebindings/causal_projection/canonical_derivation_exact_budget.expected.json",
+    "fixtures/v14/rebindings/causal_projection/canonical_derivation_exact_budget.fixture.json",
+    "fixtures/v14/rebindings/causal_projection/canonical_derivation_exact_budget.input.json",
+    "fixtures/v14/rebindings/causal_projection/deep_actor_predecessor_exact_budget.expected.json",
+    "fixtures/v14/rebindings/causal_projection/deep_actor_predecessor_exact_budget.fixture.json",
+    "fixtures/v14/rebindings/causal_projection/deep_actor_predecessor_exact_budget.input.json",
+    "fixtures/v14/rebindings/causal_projection/deep_delta_absent_lookup_exact_budget.expected.json",
+    "fixtures/v14/rebindings/causal_projection/deep_delta_absent_lookup_exact_budget.fixture.json",
+    "fixtures/v14/rebindings/causal_projection/deep_delta_absent_lookup_exact_budget.input.json",
+    "fixtures/v14/rebindings/causal_projection/deep_delta_extend_exact_budget.expected.json",
+    "fixtures/v14/rebindings/causal_projection/deep_delta_extend_exact_budget.fixture.json",
+    "fixtures/v14/rebindings/causal_projection/deep_delta_extend_exact_budget.input.json",
+    "fixtures/v14/rebindings/causal_projection/deep_delta_root_lookup_exact_budget.expected.json",
+    "fixtures/v14/rebindings/causal_projection/deep_delta_root_lookup_exact_budget.fixture.json",
+    "fixtures/v14/rebindings/causal_projection/deep_delta_root_lookup_exact_budget.input.json",
+    "fixtures/v14/rebindings/causal_projection/empty_merge_frontier_exact_budget.expected.json",
+    "fixtures/v14/rebindings/causal_projection/empty_merge_frontier_exact_budget.fixture.json",
+    "fixtures/v14/rebindings/causal_projection/empty_merge_frontier_exact_budget.input.json",
+    "fixtures/v14/rebindings/causal_projection/epoch_writer_authorization_exact_budget.expected.json",
+    "fixtures/v14/rebindings/causal_projection/epoch_writer_authorization_exact_budget.fixture.json",
+    "fixtures/v14/rebindings/causal_projection/epoch_writer_authorization_exact_budget.input.json",
+    "fixtures/v14/rebindings/causal_projection/many_actor_causal_next_op_exact_budget.expected.json",
+    "fixtures/v14/rebindings/causal_projection/many_actor_causal_next_op_exact_budget.fixture.json",
+    "fixtures/v14/rebindings/causal_projection/many_actor_causal_next_op_exact_budget.input.json",
+    "fixtures/v14/rebindings/causal_projection/wide_epoch_ancestry_exact_budget.expected.json",
+    "fixtures/v14/rebindings/causal_projection/wide_epoch_ancestry_exact_budget.fixture.json",
+    "fixtures/v14/rebindings/causal_projection/wide_epoch_ancestry_exact_budget.input.json",
     "implementation/runtime_ledger_v13.json",
+    "reports/rust_conformance_v14.json",
     "reports/spec_baseline.txt",
     "scripts/generate_distribution_v14.py",
     "scripts/validate_distribution_v14.py",
     "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v13.py",
+    "scripts/validate_rust_conformance_v14.py",
     "scripts/validate_spec.py",
     "spec/distribution_v14_transition.json",
+    "tools/nostr_automerge_conformance/src/fixture_generation.rs",
+    "tools/nostr_automerge_conformance/src/runner.rs",
     "tools/nostr_automerge_xtask/src/validate.rs",
-    "tools/validation/distribution_v14.schema.json"
+    "tools/validation/distribution_v14_lock.schema.json",
+    "tools/validation/rust_conformance_v14.schema.json"
   ],
   "predecessors": [
     {"step":"step_1419","candidate":"00ef954ff2dece37119ad235638046ffaa7305d4","owner_class":"public","result":"pass"},
@@ -45,6 +78,7 @@
     {"step":"step_1432","candidate":"898545fddf1c40b77b7557d49ae1030a009059db","owner_class":"public","result":"pass"},
     {"step":"step_1433","candidate":"2bf59a8a22aff9acad87c0d5e09f37e2ebc443a6","owner_class":"public","result":"pass"},
     {"step":"step_1434","candidate":"4b404afaa1d3ce1775f0dbd91a283f82141f1eca","owner_class":"public","result":"pass"},
-    {"step":"step_1435","candidate":"19e2ee7de07d02a92e9702540c80963a665d6611","owner_class":"public","result":"pass"}
+    {"step":"step_1435","candidate":"19e2ee7de07d02a92e9702540c80963a665d6611","owner_class":"public","result":"pass"},
+    {"step":"step_1436","candidate":"54537099a48f79150e46a7d6ebbdab55044a4e42","owner_class":"public","result":"pass"}
   ]
 }

@@ -131,3 +131,12 @@ manifest entries. The transition authority fixes each old/new budget pair,
 requires unchanged signed Event bytes, delivery orders, and ample-work report
 bytes, and publishes a closed staged manifest, schema, generator, and validator
 with thirteen negative mutations. The next checkpoint is `step_1437`.
+
+`step_1437` completes and locks distribution v14. Exactly nine authorized
+budget-bearing inputs are rebound while all signed Event bytes, delivery
+orders, and expected report bytes remain unchanged; the other 195 scenarios
+retain their distribution-v13 entries. The closed manifest contains 204
+scenarios and 698 files. Rust proves each corrected exact N-1/N boundary, two
+independent 204-by-eight distribution processes produce byte-identical output,
+and a deliberately corrupted expectation is rejected. The next checkpoint is
+`step_1438`.

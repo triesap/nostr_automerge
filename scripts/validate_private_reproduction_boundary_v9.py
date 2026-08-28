@@ -105,7 +105,9 @@ PUBLIC_JSON_RECORDS = (
     "reports/remediation_v12_ancestry_authorization_gate.json",
     "tools/validation/remediation_v12_ancestry_authorization_gate.schema.json",
     "reports/rust_conformance_v13.json",
+    "reports/rust_conformance_v14.json",
     "tools/validation/rust_conformance_v13.schema.json",
+    "tools/validation/rust_conformance_v14.schema.json",
     "reports/remediation_v12_distribution_gate.json",
     "tools/validation/remediation_v12_distribution_gate.schema.json",
     "spec/distribution_v13_transition.json",
@@ -148,6 +150,8 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://github.com/triesap/nostr_automerge/tools/validation/remediation_v12_ancestry_authorization_gate.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v13.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v14.schema.json",
+        b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v14_lock.schema.json",
+        b"https://github.com/triesap/nostr_automerge/tools/validation/rust_conformance_v14.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/rust_conformance_v13.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/remediation_v12_distribution_gate.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v13_compatibility_contract.schema.json",
@@ -233,6 +237,7 @@ PYTHON_SURFACES = (
     "scripts/validate_distribution_v13.py",
     "scripts/generate_distribution_v14.py",
     "scripts/validate_distribution_v14.py",
+    "scripts/validate_rust_conformance_v14.py",
     "scripts/validate_rust_conformance_v13.py",
     "scripts/validate_remediation_v12_distribution_gate.py",
     "scripts/validate_distribution_v13_compatibility_contract.py",
@@ -409,8 +414,10 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/remediation_v12_final_decision.json",
         "reports/causal_projection_implementation_gate_v13.json",
         "reports/causal_projection_mutations_v13.json",
+        "reports/rust_conformance_v14.json",
         "fixtures/distribution/manifest_v13.json",
         "fixtures/distribution/manifest_v14.json",
+        "fixtures/distribution/manifest_v14.lock.json",
         "fixtures/distribution/manifest_v13.lock.json",
         "fixtures/v13/scenarios/epoch_semantics",
         "fixtures/v13/scenarios/epoch_semantics/",
@@ -517,6 +524,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_distribution_v13.py",
         "scripts/generate_distribution_v14.py",
         "scripts/validate_distribution_v14.py",
+        "scripts/validate_rust_conformance_v14.py",
         "scripts/validate_rust_conformance_v13.py",
         "scripts/validate_remediation_v12_distribution_gate.py",
         "scripts/validate_distribution_v13_compatibility_contract.py",
@@ -648,6 +656,8 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/validation/remediation_v12_ancestry_authorization_gate.schema.json",
         "tools/validation/distribution_v13.schema.json",
         "tools/validation/distribution_v14.schema.json",
+        "tools/validation/distribution_v14_lock.schema.json",
+        "tools/validation/rust_conformance_v14.schema.json",
         "tools/validation/rust_conformance_v13.schema.json",
         "tools/validation/remediation_v12_distribution_gate.schema.json",
         "tools/validation/distribution_v13_compatibility_contract.schema.json",
@@ -951,6 +961,7 @@ def validate_source_surfaces() -> None:
                             "scripts/generate_distribution_v13.py",
                             "scripts/generate_distribution_v14.py",
                             "scripts/validate_distribution_v13.py",
+                            "scripts/validate_distribution_v14.py",
                             "scripts/validate_remediation_v12_distribution_gate.py",
                             "scripts/validate_remediation_v12_final_decision.py",
                             "scripts/validate_causal_projection_implementation_gate_v13.py",
@@ -1009,6 +1020,10 @@ def validate_source_surfaces() -> None:
                     or (
                         value in {"cargo", "git"}
                         and relative == "scripts/validate_rust_conformance_v13.py"
+                    )
+                    or (
+                        value in {"cargo", "git"}
+                        and relative == "scripts/validate_rust_conformance_v14.py"
                     )
                     or (
                         value in {"cargo", "git"}

@@ -7885,14 +7885,55 @@ fn sha256(bytes: &[u8]) -> String {
 mod tests {
     use super::{
         assert_post_epoch_semantic_stop_boundaries, assert_resource_followup_v12_boundaries,
-        assert_unsupported_event_only_boundaries, minimum_complete_item_budget,
-        minimum_complete_item_budget_for_scenario, repository_root,
+        assert_unsupported_event_only_boundaries, exact_complete_item_budget,
+        minimum_complete_item_budget, minimum_complete_item_budget_for_scenario, repository_root,
     };
     use crate::expected::ExpectedReport;
     use crate::report_json::write_canonical_report;
     use crate::runner::{StateAssertionPolicy, generic_report};
     use crate::scenario::{ScenarioBudget, SignedScenarioInput};
     use nostr_automerge::{DocumentCoordinate, ProtocolRevision, RawEventBytes};
+
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn distribution_v14_budget_rebindings_have_exact_typed_boundaries() {
+        let root = repository_root().join("fixtures/v14/rebindings/causal_projection");
+        for (fixture_id, required) in [
+            ("canonical_derivation_exact_budget", 455),
+            ("deep_actor_predecessor_exact_budget", 2_104),
+            ("deep_delta_absent_lookup_exact_budget", 10_162),
+            ("deep_delta_extend_exact_budget", 10_381),
+            ("deep_delta_root_lookup_exact_budget", 10_994),
+            ("empty_merge_frontier_exact_budget", 2_019),
+            ("epoch_writer_authorization_exact_budget", 38_156),
+            ("many_actor_causal_next_op_exact_budget", 5_328),
+            ("wide_epoch_ancestry_exact_budget", 15_230),
+        ] {
+            let signed = SignedScenarioInput::parse(
+                &std::fs::read(root.join(format!("{fixture_id}.input.json")))
+                    .expect("checked-in v14 budget-rebound input"),
+            )
+            .expect("closed v14 budget-rebound input");
+            let coordinate = signed.coordinate.parse().expect("v14 coordinate");
+            let events = signed
+                .raw_events
+                .iter()
+                .map(|event| {
+                    RawEventBytes::new(
+                        &event.decoded().expect("v14 Event bytes"),
+                        ProtocolRevision::draft_v1(),
+                    )
+                    .expect("bounded v14 Event")
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(signed.budget.max_items, required, "{fixture_id}");
+            assert_eq!(
+                exact_complete_item_budget(coordinate, &events).expect("v14 exact typed boundary"),
+                required,
+                "{fixture_id}"
+            );
+        }
+    }
 
     #[test]
     #[allow(clippy::expect_used)]

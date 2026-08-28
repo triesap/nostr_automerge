@@ -1,6 +1,6 @@
 {
   "schema": "nostr_automerge.distribution_v14_transition.v1",
-  "current_stage": "authority_defined",
+  "current_stage": "distribution_complete",
   "stage_order": ["authority_defined", "distribution_complete"],
   "base_manifest": "fixtures/distribution/manifest_v13.json",
   "base_manifest_sha256": "12aa1b1f806ce810463768d566cc63d2ceba6126014d4da9fe5688df518bef3f",
