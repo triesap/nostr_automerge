@@ -184,3 +184,12 @@ The complete charge matrix covers every budget and cancellation boundary, and
 the eight signed actor-counter fixtures still produce their exact immutable
 expected bytes across all required delivery permutations. No diagnostic,
 accepted history, or ample-budget report byte changes.
+
+`step_1387` closes RCLD 111 with a public actor/counter/frontier gate. The
+closed record binds the exact eight-candidate chain, four requirements,
+twenty-three decision operations, eight signed scenarios, typed work-stop
+behavior, and the three mapped Finding 100 reproduction families. Only the
+actor-predecessor, causal-next-operation, and empty-frontier families are
+fixed; Finding 100 remains open with seven families assigned to RCLD 112.
+The runtime cursor advances to `step_1388` and RCLD 112 without changing any
+protocol, requirement, fixture, or conformance output.

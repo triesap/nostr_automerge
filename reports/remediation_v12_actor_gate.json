@@ -1,0 +1,65 @@
+{
+  "schema": "nostr_automerge.remediation_v12_actor_gate.v1",
+  "status": "rcld_111_complete",
+  "rcld": 111,
+  "candidate_chain": [
+    { "step": "step_1379", "candidate": "187a260858bdd41f9dd967e32279b9f21454ede2" },
+    { "step": "step_1380", "candidate": "629747ab2537593ddf0a4f689a3e14ea6e576039" },
+    { "step": "step_1381", "candidate": "3ced1446a04a422f5760d00d9786dd18ace76930" },
+    { "step": "step_1382", "candidate": "63661f2f1df8394d7526ec2f5d2fa2be60e65efe" },
+    { "step": "step_1383", "candidate": "287b0967751f7575faf3a8ee38c15c65aa428290" },
+    { "step": "step_1384", "candidate": "5377b9d276b4deabd0fd3c6f6dac1734d213e74d" },
+    { "step": "step_1385", "candidate": "502c5701d73c4452906ef92f0a324908b9d039a8" },
+    { "step": "step_1386", "candidate": "6a190cefa11f84e069ece47644b66992dc82e8f3" }
+  ],
+  "requirements": [
+    "NCRDT-RESOURCE-017",
+    "NCRDT-RESOURCE-018",
+    "NCRDT-RESOURCE-019",
+    "NCRDT-EVIDENCE-007"
+  ],
+  "decisions": {
+    "actor_lookup_operations": 9,
+    "causal_counter_operations": 3,
+    "frontier_operations": 11,
+    "combined_stages": 3,
+    "signed_scenarios": 8,
+    "delivery_order_minimum": 2,
+    "typed_precedence": "actor_then_counter_then_frontier"
+  },
+  "work_contract": {
+    "budget_matrix": "pass",
+    "cancellation_matrix": "pass",
+    "first_stop_preserved": true,
+    "zero_later_stage_work": true,
+    "unexpected_identity": "preserved",
+    "predecessor_output_bytes": "equal",
+    "production_bypasses": 0
+  },
+  "reproductions": {
+    "fixed_families": ["actor_predecessor", "causal_next_op", "empty_frontier"],
+    "remaining_finding_100_families": 7,
+    "finding_100_status": "open"
+  },
+  "source_bindings": [
+    { "path": "crates/nostr_automerge/src/graph/actor_state.rs", "sha256": "b33733c9c84a7b7a6247967172a562c2c3f0da68a64514a50b27b715127c8290" },
+    { "path": "crates/nostr_automerge/src/reference/epoch_engine.rs", "sha256": "3ffd16c4fb3b8d6de7c7a6aa49e2a7f8f57ef23df39e54f1a1f2f511b9bf68ac" },
+    { "path": "tools/nostr_automerge_conformance/src/runner.rs", "sha256": "dcf1826785ff35fd636838e55b67a0b40bf40d4ba3ff5dca1875e64d56233b5a" },
+    { "path": "scripts/validate_remediation_v12.py", "sha256": "be0e3cd28d9aa2d9e3973d4a950d53d9a39b804378a8fea8780afd18b1e7bd75" },
+    { "path": "scripts/reproduce_remediation_v12.py", "sha256": "ad3e3c6df4f20963efb2bea22aceac373e7b014d9b11d91ec5028f39d65019a4" }
+  ],
+  "findings": {
+    "open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"],
+    "held": ["FINDING_080"]
+  },
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "remote_mutation"
+  ],
+  "result": "pass"
+}

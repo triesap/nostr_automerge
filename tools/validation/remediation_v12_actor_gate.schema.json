@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/tools/validation/remediation_v12_actor_gate.schema.json",
+  "title": "nostr_automerge remediation v12 actor gate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "rcld", "candidate_chain", "requirements", "decisions", "work_contract", "reproductions", "source_bindings", "findings", "holds", "result"],
+  "properties": {
+    "schema": { "const": "nostr_automerge.remediation_v12_actor_gate.v1" },
+    "status": { "const": "rcld_111_complete" },
+    "rcld": { "const": 111 },
+    "candidate_chain": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": { "$ref": "#/$defs/candidate" }
+    },
+    "requirements": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": { "type": "string" }
+    },
+    "decisions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actor_lookup_operations", "causal_counter_operations", "frontier_operations", "combined_stages", "signed_scenarios", "delivery_order_minimum", "typed_precedence"],
+      "properties": {
+        "actor_lookup_operations": { "const": 9 },
+        "causal_counter_operations": { "const": 3 },
+        "frontier_operations": { "const": 11 },
+        "combined_stages": { "const": 3 },
+        "signed_scenarios": { "const": 8 },
+        "delivery_order_minimum": { "const": 2 },
+        "typed_precedence": { "const": "actor_then_counter_then_frontier" }
+      }
+    },
+    "work_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["budget_matrix", "cancellation_matrix", "first_stop_preserved", "zero_later_stage_work", "unexpected_identity", "predecessor_output_bytes", "production_bypasses"],
+      "properties": {
+        "budget_matrix": { "const": "pass" },
+        "cancellation_matrix": { "const": "pass" },
+        "first_stop_preserved": { "const": true },
+        "zero_later_stage_work": { "const": true },
+        "unexpected_identity": { "const": "preserved" },
+        "predecessor_output_bytes": { "const": "equal" },
+        "production_bypasses": { "const": 0 }
+      }
+    },
+    "reproductions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fixed_families", "remaining_finding_100_families", "finding_100_status"],
+      "properties": {
+        "fixed_families": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": { "type": "string" }
+        },
+        "remaining_finding_100_families": { "const": 7 },
+        "finding_100_status": { "const": "open" }
+      }
+    },
+    "source_bindings": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": { "$ref": "#/$defs/artifact" }
+    },
+    "findings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["open", "held"],
+      "properties": {
+        "open": { "type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true, "items": { "type": "string" } },
+        "held": { "type": "array", "minItems": 1, "maxItems": 1, "items": { "const": "FINDING_080" } }
+      }
+    },
+    "holds": { "type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true, "items": { "type": "string" } },
+    "result": { "const": "pass" }
+  },
+  "$defs": {
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step", "candidate"],
+      "properties": {
+        "step": { "type": "string", "pattern": "^step_[0-9]{4}$" },
+        "candidate": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

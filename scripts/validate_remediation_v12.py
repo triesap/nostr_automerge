@@ -18,6 +18,7 @@ REPRODUCTIONS_PATH = ROOT / "spec/remediation_v12_reproductions.json"
 EVIDENCE_POLICY_PATH = ROOT / "spec/remediation_v12_evidence_policy.json"
 AUTHORITY_GATE_PATH = ROOT / "reports/remediation_v12_authority_gate.json"
 PROJECTION_GATE_PATH = ROOT / "reports/trusted_epoch_projection_gate_v12.json"
+ACTOR_GATE_PATH = ROOT / "reports/remediation_v12_actor_gate.json"
 
 REVIEWED_CANDIDATE = "9e99af892764ccb165a12b8bb186935bd599d561"
 REVIEWED_TREE = "4b684dc123f371ded75c1469505b130c36359f93"
@@ -40,6 +41,7 @@ ACTOR_SIGNED_CANDIDATE = "63661f2f1df8394d7526ec2f5d2fa2be60e65efe"
 CAUSAL_DECISION_CANDIDATE = "287b0967751f7575faf3a8ee38c15c65aa428290"
 CAUSAL_ROUTE_CANDIDATE = "5377b9d276b4deabd0fd3c6f6dac1734d213e74d"
 FRONTIER_CANDIDATE = "502c5701d73c4452906ef92f0a324908b9d039a8"
+COMBINED_CANDIDATE = "6a190cefa11f84e069ece47644b66992dc82e8f3"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -50,13 +52,16 @@ HOLDS = [
     "remote_mutation",
 ]
 ACTIVE_SCOPE = [
-    "crates/nostr_automerge/src/graph/actor_state.rs",
-    "crates/nostr_automerge/src/reference/epoch_engine.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
+    "reports/remediation_v12_actor_gate.json",
     "reports/spec_baseline.txt",
+    "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v12.py",
-    "tools/nostr_automerge_conformance/src/runner.rs",
+    "scripts/validate_remediation_v12_actor_gate.py",
+    "scripts/validate_spec.py",
+    "tools/nostr_automerge_xtask/src/validate.rs",
+    "tools/validation/remediation_v12_actor_gate.schema.json",
 ]
 
 EVIDENCE_REQUIREMENTS = [
@@ -184,13 +189,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 111, "active_step": "step_1386", "next_step": "step_1387", "last_planned_step": "step_1419", "remaining_checkpoint_count": 33, "remaining_rcld_count": 5}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 111, "active_step": "step_1387", "next_step": "step_1388", "last_planned_step": "step_1419", "remaining_checkpoint_count": 32, "remaining_rcld_count": 5}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 24:
+    if not isinstance(predecessors, list) or len(predecessors) != 25:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -216,6 +221,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[21], {"step": "step_1383", "candidate": CAUSAL_DECISION_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1383")
     require_equal(predecessors[22], {"step": "step_1384", "candidate": CAUSAL_ROUTE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1384")
     require_equal(predecessors[23], {"step": "step_1385", "candidate": FRONTIER_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1385")
+    require_equal(predecessors[24], {"step": "step_1386", "candidate": COMBINED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1386")
 
 
 def validate_trusted_projection() -> None:
@@ -1119,6 +1125,80 @@ def validate_authority_gate(gate: object) -> None:
     require_equal(record["result"], "pass", "authority_gate:result")
 
 
+def validate_actor_gate(gate: object) -> None:
+    record = require_keys(gate, [
+        "schema", "status", "rcld", "candidate_chain", "requirements",
+        "decisions", "work_contract", "reproductions", "source_bindings",
+        "findings", "holds", "result",
+    ], "actor_gate")
+    require_equal(record["schema"], "nostr_automerge.remediation_v12_actor_gate.v1", "actor_gate:schema")
+    require_equal(record["status"], "rcld_111_complete", "actor_gate:status")
+    require_equal(record["rcld"], 111, "actor_gate:rcld")
+    require_equal(record["candidate_chain"], [
+        {"step": step, "candidate": candidate}
+        for step, candidate in (
+            ("step_1379", PROJECTION_GATE_CANDIDATE),
+            ("step_1380", ACTOR_DECISION_CANDIDATE),
+            ("step_1381", ACTOR_ROUTE_CANDIDATE),
+            ("step_1382", ACTOR_SIGNED_CANDIDATE),
+            ("step_1383", CAUSAL_DECISION_CANDIDATE),
+            ("step_1384", CAUSAL_ROUTE_CANDIDATE),
+            ("step_1385", FRONTIER_CANDIDATE),
+            ("step_1386", COMBINED_CANDIDATE),
+        )
+    ], "actor_gate:chain")
+    require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "actor_gate:requirements")
+    require_equal(require_keys(record["decisions"], [
+        "actor_lookup_operations", "causal_counter_operations",
+        "frontier_operations", "combined_stages", "signed_scenarios",
+        "delivery_order_minimum", "typed_precedence",
+    ], "actor_gate:decisions"), {
+        "actor_lookup_operations": 9,
+        "causal_counter_operations": 3,
+        "frontier_operations": 11,
+        "combined_stages": 3,
+        "signed_scenarios": 8,
+        "delivery_order_minimum": 2,
+        "typed_precedence": "actor_then_counter_then_frontier",
+    }, "actor_gate:decisions")
+    require_equal(require_keys(record["work_contract"], [
+        "budget_matrix", "cancellation_matrix", "first_stop_preserved",
+        "zero_later_stage_work", "unexpected_identity",
+        "predecessor_output_bytes", "production_bypasses",
+    ], "actor_gate:work"), {
+        "budget_matrix": "pass",
+        "cancellation_matrix": "pass",
+        "first_stop_preserved": True,
+        "zero_later_stage_work": True,
+        "unexpected_identity": "preserved",
+        "predecessor_output_bytes": "equal",
+        "production_bypasses": 0,
+    }, "actor_gate:work")
+    require_equal(require_keys(record["reproductions"], [
+        "fixed_families", "remaining_finding_100_families", "finding_100_status",
+    ], "actor_gate:reproductions"), {
+        "fixed_families": ["actor_predecessor", "causal_next_op", "empty_frontier"],
+        "remaining_finding_100_families": 7,
+        "finding_100_status": "open",
+    }, "actor_gate:reproductions")
+    require_equal(record["source_bindings"], [
+        {"path": path, "sha256": digest}
+        for path, digest in (
+            ("crates/nostr_automerge/src/graph/actor_state.rs", "b33733c9c84a7b7a6247967172a562c2c3f0da68a64514a50b27b715127c8290"),
+            ("crates/nostr_automerge/src/reference/epoch_engine.rs", "3ffd16c4fb3b8d6de7c7a6aa49e2a7f8f57ef23df39e54f1a1f2f511b9bf68ac"),
+            ("tools/nostr_automerge_conformance/src/runner.rs", "dcf1826785ff35fd636838e55b67a0b40bf40d4ba3ff5dca1875e64d56233b5a"),
+            ("scripts/validate_remediation_v12.py", "be0e3cd28d9aa2d9e3973d4a950d53d9a39b804378a8fea8780afd18b1e7bd75"),
+            ("scripts/reproduce_remediation_v12.py", "ad3e3c6df4f20963efb2bea22aceac373e7b014d9b11d91ec5028f39d65019a4"),
+        )
+    ], "actor_gate:bindings")
+    require_equal(require_keys(record["findings"], ["open", "held"], "actor_gate:findings"), {
+        "open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"],
+        "held": ["FINDING_080"],
+    }, "actor_gate:findings")
+    require_equal(record["holds"], HOLDS, "actor_gate:holds")
+    require_equal(record["result"], "pass", "actor_gate:result")
+
+
 def validate_files() -> None:
     require_equal(git("rev-parse", f"{REVIEWED_CANDIDATE}^{{tree}}"), REVIEWED_TREE, "git:reviewed_tree")
     require_equal(git("rev-parse", f"{PLAN_CANDIDATE}^{{tree}}"), PLAN_TREE, "git:plan_tree")
@@ -1138,7 +1218,7 @@ def validate_files() -> None:
     require_equal(sha256(ROOT / "tools/validation/trusted_epoch_projection_gate_v12.schema.json"), "8451ac4a647b8f2f12eca0bdbddf37becc1757deac765bf3558dc0f6cbce4577", "file:projection_gate_schema")
 
 
-def mutation_self_test(authority: object, ledger: object, findings: object, reproductions: object, evidence_policy: object, authority_gate: object) -> int:
+def mutation_self_test(authority: object, ledger: object, findings: object, reproductions: object, evidence_policy: object, authority_gate: object, actor_gate: object) -> int:
     mutations: list[tuple[str, object, object]] = []
     for label, path, value in (
         ("reviewed", ("reviewed_public", "candidate"), "0" * 40),
@@ -1159,7 +1239,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1388"),
+        ("cursor", "next_step", "step_1389"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -1260,7 +1340,29 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
         except EvidenceError:
             continue
         raise EvidenceError("mutation_survived:" + label)
-    return len(mutations) + len(finding_mutations) + len(reproduction_mutations) + len(policy_mutations) + len(gate_mutations)
+    actor_gate_mutations = []
+    wrong_status = copy.deepcopy(actor_gate)
+    wrong_status["status"] = "implementation_in_progress"
+    actor_gate_mutations.append(("actor_gate_status", wrong_status))
+    wrong_remaining = copy.deepcopy(actor_gate)
+    wrong_remaining["reproductions"]["remaining_finding_100_families"] = 6
+    actor_gate_mutations.append(("actor_gate_remaining", wrong_remaining))
+    closed_finding_100 = copy.deepcopy(actor_gate)
+    closed_finding_100["reproductions"]["finding_100_status"] = "closed"
+    actor_gate_mutations.append(("actor_gate_finding", closed_finding_100))
+    wrong_work = copy.deepcopy(actor_gate)
+    wrong_work["work_contract"]["production_bypasses"] = 1
+    actor_gate_mutations.append(("actor_gate_work", wrong_work))
+    wrong_binding = copy.deepcopy(actor_gate)
+    wrong_binding["source_bindings"][0]["sha256"] = "0" * 64
+    actor_gate_mutations.append(("actor_gate_binding", wrong_binding))
+    for label, changed in actor_gate_mutations:
+        try:
+            validate_actor_gate(changed)
+        except EvidenceError:
+            continue
+        raise EvidenceError("mutation_survived:" + label)
+    return len(mutations) + len(finding_mutations) + len(reproduction_mutations) + len(policy_mutations) + len(gate_mutations) + len(actor_gate_mutations)
 
 
 def main() -> None:
@@ -1270,12 +1372,14 @@ def main() -> None:
     reproductions = json.loads(REPRODUCTIONS_PATH.read_text())
     evidence_policy = json.loads(EVIDENCE_POLICY_PATH.read_text())
     authority_gate = json.loads(AUTHORITY_GATE_PATH.read_text())
+    actor_gate = json.loads(ACTOR_GATE_PATH.read_text())
     validate_authority(authority)
     validate_ledger(ledger)
     validate_findings(findings)
     validate_reproductions(reproductions)
     validate_evidence_policy(evidence_policy)
     validate_authority_gate(authority_gate)
+    validate_actor_gate(actor_gate)
     validate_files()
     validate_trusted_projection()
     validate_charged_projection_traversal()
@@ -1297,11 +1401,11 @@ def main() -> None:
     source_mutations += combined_candidate_source_mutation_self_test()
     validate_active_causal_budget_deltas()
     source_mutations += causal_budget_source_mutation_self_test()
-    mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate)
+    mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate, actor_gate)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
     print(f"- source_mutations={source_mutations}")
-    print("- active=RCLD111/step_1386")
+    print("- active=RCLD111/step_1387")
 
 
 if __name__ == "__main__":
