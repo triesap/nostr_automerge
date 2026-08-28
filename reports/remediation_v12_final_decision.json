@@ -1,0 +1,74 @@
+{
+  "schema": "nostr_automerge.remediation_v12_final_decision.v1",
+  "status": "code_complete_publication_held",
+  "checkpoint": "step_1419",
+  "revision": "draft_2026_08",
+  "candidates": {
+    "public": "cb1f536ec511471ce439556245960d694c335c91",
+    "opaque_compatibility": "6c6eb3b9604ad6d2db8b9800960bd6a2e5fde5f5"
+  },
+  "sequence": {
+    "rcld_first": 109,
+    "rcld_last": 115,
+    "rcld_count": 7,
+    "step_first": "step_1364",
+    "step_last": "step_1419",
+    "step_count": 56,
+    "unfinished_rclds": []
+  },
+  "bindings": [
+    {"category": "runtime_ledger", "sha256": "982019a68e984f6a2de7730b0ca816b5c9ff814f02684bfdb058f4c62958c16b"},
+    {"category": "execution_plan", "sha256": "9df74a124e982aa3026465f62b6401c78499691b681a3798c7bfacae5dbb845a"},
+    {"category": "finding_closure", "sha256": "0c5da204b51a34d1219ecf4524f3d402f891ab3b6d4ecbb846cfc891ec14d929"},
+    {"category": "combined_assurance", "sha256": "3149a72ccdc84ae0435e8cce807574276fd64472eef8ae40c856bd3525fd79ff"},
+    {"category": "distribution_parity", "sha256": "25f6f4b4f032d04d8aec3a67dfc434a8dc274ab249542a01b32d22de82d9b4bd"},
+    {"category": "operation_inventory", "sha256": "9f57e966d2f3ff94bb15bf01071f839f628b30771c2f6797a9bae98d4aea7687"},
+    {"category": "proof_catalog", "sha256": "6f44512eeee0bc2e9fa8b07e1069f655cb6f3c61439f1ac754f0d92deb522305"},
+    {"category": "mutation_qualification", "sha256": "d33d108c991802ae90f8bcb7218286478ae15a1cbe98e8f3561c10f27453196c"},
+    {"category": "public_assurance", "sha256": "e54be990e7dace8e35525f2199fd914e7aa88846538b284929d6a1477c99208e"},
+    {"category": "opaque_compatibility_assurance", "sha256": "1f71c31cc229538d3fbe67b9c605e603497834e133d1824bef511f6a639a3562"},
+    {"category": "finding_registry", "sha256": "d9bcf09326f7e46e9a110c5a7ac15acd990924f9b0526a4f0278788a01b41f02"}
+  ],
+  "requirements": {"total": 156, "added": 4, "result": "pass"},
+  "distribution": {
+    "scenarios": 204,
+    "signed_events": 771,
+    "delivery_permutations": 8,
+    "processes": 2,
+    "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+    "serialized_run_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344",
+    "result": "pass"
+  },
+  "operations": {"owned": 15, "unowned": 0, "result": "pass"},
+  "proofs": {"exact": 36, "result": "pass"},
+  "mutations": {"selected": 12, "survivors": 0, "result": "pass"},
+  "findings": {
+    "closed": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"],
+    "held": ["FINDING_080"],
+    "open": []
+  },
+  "gates": {
+    "public_standard": "pass",
+    "public_conformance": "pass",
+    "public_resource": "pass",
+    "public_coverage": "pass",
+    "public_supply_chain": "pass",
+    "public_release_evidence": "pass",
+    "compatibility_assurance": "pass",
+    "repository_policy": "pass"
+  },
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "remote_mutation"
+  ],
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "a9051453bf587d80eb9bca95ad82f24adee252bf221beb6b69219c9386a2f567"
+}

@@ -1,12 +1,12 @@
 # nostr_automerge draft-v1 epoch semantic work v12 multi-RCLD plan
 
-Status: `approved_execution_pending`
+Status: `code_complete_publication_held`
 
 The reviewed public predecessor is
 `9e99af892764ccb165a12b8bb186935bd599d561`. Steps `step_1364` through
-`step_1419` are 56 contiguous checkpoints. `RCLD 109 / step_1364` is the sole
-active checkpoint. Every other checkpoint and RCLD in this document is
-unfinished.
+`step_1419` are 56 contiguous checkpoints. All seven RCLDs and all 56
+checkpoints are locally complete. Publication, release, remote mutation, and
+the other enumerated external actions remain held.
 
 This plan supersedes the proposed v12 commit ordering. It preserves the
 approved seven-RCLD shape while correcting dependency, repository-boundary,
@@ -178,5 +178,5 @@ green reviewed candidate in its owning repository and all exit criteria pass
 fresh. A local RCLD completion does not imply publication, external assurance,
 production qualification, deployment, allocation, submission, or release.
 
-The initial unfinished set is RCLD 109, RCLD 110, RCLD 111, RCLD 112,
-RCLD 113, RCLD 114, and RCLD 115.
+The initial unfinished set was RCLD 109, RCLD 110, RCLD 111, RCLD 112,
+RCLD 113, RCLD 114, and RCLD 115. The current unfinished set is empty.

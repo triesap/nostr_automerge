@@ -407,3 +407,10 @@ inventory, exact proof catalog, selected source-mutation qualification,
 distribution parity, and combined assurance records all agree. Findings 100
 through 103 are locally closed; Finding 080 and all seven external actions
 remain held, with no release or remote action claimed.
+
+`step_1419` closes RCLDs 109 through 115 and the 56-checkpoint local sequence.
+The final decision binds the terminal runtime cursor, finalized governing plan,
+finding closure, combined assurance, distribution parity, operation inventory,
+proof catalog, mutation qualification, and both local assurance records.
+Status is `code_complete_publication_held`: Finding 080 and all seven external
+actions remain held, and no publication, release, or remote mutation occurred.

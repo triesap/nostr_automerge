@@ -1,0 +1,28 @@
+{
+  "title": "nostr_automerge remediation v12 final decision",
+  "type": "object",
+  "required": ["schema", "status", "checkpoint", "revision", "candidates", "sequence", "bindings", "requirements", "distribution", "operations", "proofs", "mutations", "findings", "gates", "holds", "release_claimed", "publication_claimed", "remote_actions", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.remediation_v12_final_decision.v1"},
+    "status": {"const": "code_complete_publication_held"},
+    "checkpoint": {"const": "step_1419"},
+    "revision": {"const": "draft_2026_08"},
+    "candidates": {"type": "object", "required": ["public", "opaque_compatibility"], "properties": {"public": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "opaque_compatibility": {"type": "string", "pattern": "^[0-9a-f]{40}$"}}, "additionalProperties": false},
+    "sequence": {"type": "object", "required": ["rcld_first", "rcld_last", "rcld_count", "step_first", "step_last", "step_count", "unfinished_rclds"], "properties": {"rcld_first": {"const": 109}, "rcld_last": {"const": 115}, "rcld_count": {"const": 7}, "step_first": {"const": "step_1364"}, "step_last": {"const": "step_1419"}, "step_count": {"const": 56}, "unfinished_rclds": {"type": "array", "maxItems": 0}}, "additionalProperties": false},
+    "bindings": {"type": "array", "minItems": 11, "maxItems": 11, "items": {"type": "object", "required": ["category", "sha256"], "properties": {"category": {"type": "string"}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}, "additionalProperties": false}},
+    "requirements": {"type": "object", "required": ["total", "added", "result"], "properties": {"total": {"const": 156}, "added": {"const": 4}, "result": {"const": "pass"}}, "additionalProperties": false},
+    "distribution": {"type": "object", "required": ["scenarios", "signed_events", "delivery_permutations", "processes", "canonical_output_sha256", "serialized_run_sha256", "result"], "properties": {"scenarios": {"const": 204}, "signed_events": {"const": 771}, "delivery_permutations": {"const": 8}, "processes": {"const": 2}, "canonical_output_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "serialized_run_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "result": {"const": "pass"}}, "additionalProperties": false},
+    "operations": {"type": "object", "required": ["owned", "unowned", "result"], "properties": {"owned": {"const": 15}, "unowned": {"const": 0}, "result": {"const": "pass"}}, "additionalProperties": false},
+    "proofs": {"type": "object", "required": ["exact", "result"], "properties": {"exact": {"const": 36}, "result": {"const": "pass"}}, "additionalProperties": false},
+    "mutations": {"type": "object", "required": ["selected", "survivors", "result"], "properties": {"selected": {"const": 12}, "survivors": {"const": 0}, "result": {"const": "pass"}}, "additionalProperties": false},
+    "findings": {"type": "object", "required": ["closed", "held", "open"], "properties": {"closed": {"type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true}, "held": {"type": "array", "minItems": 1, "maxItems": 1, "uniqueItems": true}, "open": {"type": "array", "maxItems": 0}}, "additionalProperties": false},
+    "gates": {"type": "object", "required": ["public_standard", "public_conformance", "public_resource", "public_coverage", "public_supply_chain", "public_release_evidence", "compatibility_assurance", "repository_policy"], "properties": {"public_standard": {"const": "pass"}, "public_conformance": {"const": "pass"}, "public_resource": {"const": "pass"}, "public_coverage": {"const": "pass"}, "public_supply_chain": {"const": "pass"}, "public_release_evidence": {"const": "pass"}, "compatibility_assurance": {"const": "pass"}, "repository_policy": {"const": "pass"}}, "additionalProperties": false},
+    "holds": {"type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true},
+    "release_claimed": {"const": false},
+    "publication_claimed": {"const": false},
+    "remote_actions": {"const": 0},
+    "result": {"const": "pass"},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}
