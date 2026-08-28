@@ -201,3 +201,12 @@ comparison, so an ambiguous missing-plus-omission state cannot be constructed.
 The legacy traversal now short-circuits without allocating a diagnostic
 vector, while its unmetered source walk remains explicitly open for
 `step_1389` and production routing remains assigned to `step_1390`.
+
+`step_1389` implements compact ancestry as a streaming metered classifier.
+Every attempted missing-dependency pull, base-head pull, accepted-closure
+membership lookup, inclusion comparison, and result transition has one
+immediately preceding graph charge. The classifier stops at the first missing
+dependency or omitted base head, allocates no target-sized state, preserves
+the exact injected budget or cancellation cause, and ignores unrelated
+accepted history. The legacy no-op-charge wrapper remains the only deliberate
+production bypass and is reserved for removal in `step_1390`.

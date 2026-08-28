@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v12_authority.json",
   "cursor": {
     "active_rcld": 112,
-    "active_step": "step_1388",
-    "next_step": "step_1389",
+    "active_step": "step_1389",
+    "next_step": "step_1390",
     "last_planned_step": "step_1419",
-    "remaining_checkpoint_count": 31,
+    "remaining_checkpoint_count": 30,
     "remaining_rcld_count": 4
   },
   "findings": {
@@ -29,7 +29,6 @@
   ],
   "active_checkpoint_scope": [
     "crates/nostr_automerge/src/graph/epoch.rs",
-    "crates/nostr_automerge/src/reference/epoch_engine.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
     "reports/spec_baseline.txt",
@@ -189,6 +188,12 @@
     {
       "step": "step_1387",
       "candidate": "e98ec40d582c5e8d5e54b856681b260dce716183",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1388",
+      "candidate": "43884403ee71c5a0b6fbf7a9b91b4617dd53b43c",
       "owner_class": "public",
       "result": "pass"
     }

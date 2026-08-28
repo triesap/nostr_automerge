@@ -43,6 +43,7 @@ CAUSAL_ROUTE_CANDIDATE = "5377b9d276b4deabd0fd3c6f6dac1734d213e74d"
 FRONTIER_CANDIDATE = "502c5701d73c4452906ef92f0a324908b9d039a8"
 COMBINED_CANDIDATE = "6a190cefa11f84e069ece47644b66992dc82e8f3"
 ACTOR_GATE_CANDIDATE = "e98ec40d582c5e8d5e54b856681b260dce716183"
+COMPACT_ANCESTRY_CANDIDATE = "43884403ee71c5a0b6fbf7a9b91b4617dd53b43c"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -54,7 +55,6 @@ HOLDS = [
 ]
 ACTIVE_SCOPE = [
     "crates/nostr_automerge/src/graph/epoch.rs",
-    "crates/nostr_automerge/src/reference/epoch_engine.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
     "reports/spec_baseline.txt",
@@ -186,13 +186,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 112, "active_step": "step_1388", "next_step": "step_1389", "last_planned_step": "step_1419", "remaining_checkpoint_count": 31, "remaining_rcld_count": 4}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 112, "active_step": "step_1389", "next_step": "step_1390", "last_planned_step": "step_1419", "remaining_checkpoint_count": 30, "remaining_rcld_count": 4}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 26:
+    if not isinstance(predecessors, list) or len(predecessors) != 27:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -220,6 +220,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[23], {"step": "step_1385", "candidate": FRONTIER_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1385")
     require_equal(predecessors[24], {"step": "step_1386", "candidate": COMBINED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1386")
     require_equal(predecessors[25], {"step": "step_1387", "candidate": ACTOR_GATE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1387")
+    require_equal(predecessors[26], {"step": "step_1388", "candidate": COMPACT_ANCESTRY_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1388")
 
 
 def validate_trusted_projection() -> None:
@@ -1025,6 +1026,93 @@ def compact_epoch_ancestry_source_mutation_self_test() -> int:
     return caught
 
 
+def validate_metered_epoch_ancestry(source: str | None = None) -> None:
+    source = source or (ROOT / "crates/nostr_automerge/src/graph/epoch.rs").read_text()
+    production, tests = source.split("#[cfg(test)]\nmod tests", 1)
+    body = production.split("fn classify_epoch_ancestry_metered_observed", 1)[1].split(
+        "fn ancestry_operation", 1
+    )[0]
+    required = [
+        "EpochAncestryOperation::MissingDependencyPull",
+        "EpochAncestryOperation::BaseHeadPull",
+        "EpochAncestryOperation::AcceptedClosureLookup",
+        "EpochAncestryOperation::InclusionComparison",
+        "EpochAncestryOperation::StateTransition",
+        "WorkCounter::GraphNode",
+        "WorkCounter::GraphEdge",
+        "missing.next().copied()",
+        "base.next().copied()",
+        "dependency_closure.contains(&head)",
+    ]
+    if any(token not in body for token in required):
+        raise EvidenceError("ancestry:metered_operations")
+    expected_counts = {
+        "EpochAncestryOperation::MissingDependencyPull": 1,
+        "EpochAncestryOperation::BaseHeadPull": 1,
+        "EpochAncestryOperation::AcceptedClosureLookup": 1,
+        "EpochAncestryOperation::InclusionComparison": 1,
+        "EpochAncestryOperation::StateTransition": 3,
+    }
+    if any(body.count(token) != count for token, count in expected_counts.items()):
+        raise EvidenceError("ancestry:metered_operation_counts")
+    for prohibited in ("Vec::", ".collect", ".sort", ".dedup", ".difference", ".is_empty"):
+        if prohibited in body:
+            raise EvidenceError("ancestry:metered_allocation_or_repair")
+    operation = production.split("fn ancestry_operation", 1)[1].split(
+        "pub(crate) fn validate_epoch_ancestry", 1
+    )[0]
+    ordered = ["charge(counter)?;", "let result = target();", "observed(operation);", "Ok(result)"]
+    positions = [operation.find(token) for token in ordered]
+    if any(position < 0 for position in positions) or positions != sorted(positions):
+        raise EvidenceError("ancestry:charge_order")
+    test_name = "ancestry_classification_is_nonallocating_streaming_and_exactly_metered"
+    if tests.count(f"fn {test_name}()") != 1:
+        raise EvidenceError("ancestry:metered_test_inventory")
+    prefix, test = tests.split(f"fn {test_name}()", 1)
+    if "#[ignore" in prefix.rsplit("#[test]", 1)[-1]:
+        raise EvidenceError("ancestry:metered_test_ignored")
+    test = test.split("\n    #[test]", 1)[0]
+    for token in (
+        "TestStop::BudgetExhausted, TestStop::Cancelled",
+        "for limit in 0..exact",
+        "assert_eq!(observed, expected_trace[..limit])",
+        "(1..=64).map(hash).collect()",
+        "EpochAncestry::PendingMissing",
+        "EpochAncestry::InvalidOmission",
+        "EpochAncestry::Valid",
+    ):
+        if token not in test:
+            raise EvidenceError("ancestry:metered_test_matrix")
+
+
+def metered_epoch_ancestry_source_mutation_self_test() -> int:
+    source = (ROOT / "crates/nostr_automerge/src/graph/epoch.rs").read_text()
+    mutations = (
+        source.replace("charge(counter)?;", "let _ = counter;", 1),
+        source.replace(
+            "charge(counter)?;\n    let result = target();",
+            "let result = target();\n    charge(counter)?;",
+            1,
+        ),
+        source.replace("missing.next().copied()", "missing.collect::<Vec<_>>().first().copied().copied()", 1),
+        source.replace("dependency_closure.contains(&head)", "true", 1),
+        source.replace(
+            "EpochAncestryOperation::StateTransition,\n            || EpochAncestry::from_observation(EpochAncestryObservation::Missing)",
+            "EpochAncestryOperation::BaseHeadPull,\n            || EpochAncestry::from_observation(EpochAncestryObservation::Missing)",
+            1,
+        ),
+    )
+    caught = 0
+    for changed in mutations:
+        try:
+            validate_metered_epoch_ancestry(changed)
+        except EvidenceError:
+            caught += 1
+            continue
+        raise EvidenceError("ancestry:metered_source_mutation_survived")
+    return caught
+
+
 def validate_active_causal_budget_deltas(
     evaluator_source: str | None = None,
     fixture_source: str | None = None,
@@ -1305,7 +1393,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1390"),
+        ("cursor", "next_step", "step_1391"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -1467,13 +1555,15 @@ def main() -> None:
     source_mutations += combined_candidate_source_mutation_self_test()
     validate_compact_epoch_ancestry()
     source_mutations += compact_epoch_ancestry_source_mutation_self_test()
+    validate_metered_epoch_ancestry()
+    source_mutations += metered_epoch_ancestry_source_mutation_self_test()
     validate_active_causal_budget_deltas()
     source_mutations += causal_budget_source_mutation_self_test()
     mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate, actor_gate)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
     print(f"- source_mutations={source_mutations}")
-    print("- active=RCLD112/step_1388")
+    print("- active=RCLD112/step_1389")
 
 
 if __name__ == "__main__":
