@@ -3912,10 +3912,11 @@ mod tests {
             return;
         };
         // The v12 fixture remains an immutable predecessor input. The active
-        // v12 remediation exposes thirteen previously hidden projection
-        // source reads before the same post-branch boundary; distribution v13
-        // will bind the replacement exact budget after the work closure.
-        assert_eq!(fixture_items.checked_add(13), Some(branch_stop_items));
+        // v12 remediation exposes fifty previously hidden projection source
+        // reads and publications before the same post-branch boundary;
+        // distribution v13 will bind the replacement exact budget after the
+        // work closure.
+        assert_eq!(fixture_items.checked_add(50), Some(branch_stop_items));
 
         let evaluator = ReferenceEvaluator::new(crate::ProtocolRevision::draft_v1());
         let mut stopped_budget = WorkBudget::new(1_000_000, branch_stop_items);

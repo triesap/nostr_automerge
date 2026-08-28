@@ -206,7 +206,7 @@ METERED_SOURCE_ANCHORS = (
     ),
     (
         "tools/nostr_automerge_conformance/src/fixture_generation.rs",
-        "assert_eq!(exact, current_exact_budget, \"{fixture_id}\");\n            assert!(signed.budget.max_items < exact, \"{fixture_id}\");",
+        "historical_exact_budget.checked_add(1),\n                Some(exact),\n                \"{fixture_id}\"\n            );\n            assert!(signed.budget.max_items < exact, \"{fixture_id}\");",
     ),
 )
 

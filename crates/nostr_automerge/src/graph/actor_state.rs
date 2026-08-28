@@ -126,6 +126,23 @@ enum ProjectionLookupOperation {
     ExpectedNextComparison,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ProjectionPublicationOperation {
+    CandidateDependency,
+    DependedOn,
+    DependantBucket,
+    Dependant,
+    ReadyCandidate,
+    RemainingDependencies,
+    Dependencies,
+    FrontierHead,
+    ActorState,
+    WriterContribution,
+    CausalCounter,
+    ReadyDependant,
+    Projection,
+}
+
 pub(crate) type AcceptedEpochStateParts = (
     BTreeSet<ChangeHash>,
     BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
@@ -533,7 +550,17 @@ fn build_trusted_epoch_projection<'a, E>(
     accepted_closure: &'a BTreeSet<ChangeHash>,
     changes: &'a BTreeMap<ChangeHash, ChangeCandidate>,
     source: &mut impl EpochProjectionSource<'a>,
+    charge: impl FnMut(WorkCounter) -> Result<(), E>,
+) -> Result<TrustedEpochProjection<'a>, MeteredActorStateError<E>> {
+    build_trusted_epoch_projection_observed(accepted_closure, changes, source, charge, |_| {})
+}
+
+fn build_trusted_epoch_projection_observed<'a, E>(
+    accepted_closure: &'a BTreeSet<ChangeHash>,
+    changes: &'a BTreeMap<ChangeHash, ChangeCandidate>,
+    source: &mut impl EpochProjectionSource<'a>,
     mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
+    mut published: impl FnMut(ProjectionPublicationOperation),
 ) -> Result<TrustedEpochProjection<'a>, MeteredActorStateError<E>> {
     let member_count = source.member_count();
     if member_count != accepted_closure.len() {
@@ -599,15 +626,30 @@ fn build_trusted_epoch_projection<'a, E>(
                     ActorStateError::MissingDependency,
                 ));
             }
+            charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
             candidate_dependencies.insert(dependency);
+            published(ProjectionPublicationOperation::CandidateDependency);
+            charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
             depended_on.insert(dependency);
-            dependants.entry(dependency).or_default().insert(hash);
+            published(ProjectionPublicationOperation::DependedOn);
+            charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
+            let dependant_bucket = dependants.entry(dependency).or_default();
+            published(ProjectionPublicationOperation::DependantBucket);
+            charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
+            dependant_bucket.insert(hash);
+            published(ProjectionPublicationOperation::Dependant);
         }
         if candidate_dependencies.is_empty() {
+            charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
             ready.insert(hash);
+            published(ProjectionPublicationOperation::ReadyCandidate);
         }
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
         remaining_dependencies.insert(hash, dependency_count);
+        published(ProjectionPublicationOperation::RemainingDependencies);
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
         dependencies.insert(hash, candidate_dependencies);
+        published(ProjectionPublicationOperation::Dependencies);
     }
 
     let mut states = BTreeMap::<ActorId, EpochActorState>::new();
@@ -629,7 +671,9 @@ fn build_trusted_epoch_projection<'a, E>(
             ));
         };
         if !depended_on.contains(&hash) {
+            charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
             frontier_heads.insert(hash);
+            published(ProjectionPublicationOperation::FrontierHead);
         }
         let expected_sequence = match states.get(&candidate.actor) {
             Some(state) => state
@@ -663,6 +707,7 @@ fn build_trusted_epoch_projection<'a, E>(
                     MeteredActorStateError::State(ActorStateError::OperationCounter),
                 )?
             };
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
         states.insert(
             candidate.actor,
             EpochActorState {
@@ -671,8 +716,13 @@ fn build_trusted_epoch_projection<'a, E>(
                 highest_change: candidate.change_hash,
             },
         );
+        published(ProjectionPublicationOperation::ActorState);
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
         writer_contributions.insert(candidate.actor, candidate.change_hash);
+        published(ProjectionPublicationOperation::WriterContribution);
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
         causal_next_by_change.insert(candidate.change_hash, advanced);
+        published(ProjectionPublicationOperation::CausalCounter);
         processed = processed
             .checked_add(1)
             .ok_or(MeteredActorStateError::State(
@@ -697,12 +747,16 @@ fn build_trusted_epoch_projection<'a, E>(
                     .ok_or(MeteredActorStateError::State(
                         ActorStateError::DependencyCycle,
                     ))?;
+                charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
                 causal_next_by_change
                     .entry(*child)
                     .and_modify(|value| *value = (*value).max(advanced))
                     .or_insert(advanced);
+                published(ProjectionPublicationOperation::CausalCounter);
                 if *remaining == 0 {
+                    charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
                     ready.insert(*child);
+                    published(ProjectionPublicationOperation::ReadyDependant);
                 }
             }
         }
@@ -717,6 +771,8 @@ fn build_trusted_epoch_projection<'a, E>(
         .map(|state| state.next_op)
         .max()
         .unwrap_or(1);
+    charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+    published(ProjectionPublicationOperation::Projection);
     Ok(TrustedEpochProjection {
         branch_membership: changes,
         accepted_closure,
@@ -735,10 +791,11 @@ pub(crate) mod tests {
     use std::rc::Rc;
 
     use super::{
-        ActorStateError, EpochActorState, EpochProjectionSource, MeteredActorStateError,
-        ProjectionLookupOperation, TrustedEpochProjection, TrustedEpochView, apply_empty_counter,
-        apply_nonempty_counter, build_trusted_epoch_projection, initialize_actor_states,
-        initialize_actor_states_metered, validate_actor_predecessor,
+        ActorStateError, CanonicalEpochProjectionSource, EpochActorState, EpochProjectionSource,
+        MeteredActorStateError, ProjectionLookupOperation, ProjectionPublicationOperation,
+        TrustedEpochProjection, TrustedEpochView, apply_empty_counter, apply_nonempty_counter,
+        build_trusted_epoch_projection, build_trusted_epoch_projection_observed,
+        initialize_actor_states, initialize_actor_states_metered, validate_actor_predecessor,
     };
     use crate::graph::change_candidate::ChangeCandidate;
     use crate::{ActorId, ChangeHash, Completion, DevicePublicKey, EventId, WorkCounter};
@@ -762,6 +819,12 @@ pub(crate) mod tests {
     enum LookupTrace {
         Charge(WorkCounter),
         Operation(ProjectionLookupOperation),
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum PublicationTrace {
+        Charge(WorkCounter),
+        Publication(ProjectionPublicationOperation),
     }
 
     struct ObservedEpochProjectionSource<'a> {
@@ -924,16 +987,7 @@ pub(crate) mod tests {
                     .writer_contributions()
                     .eq([(first.actor, first.change_hash)])
         }));
-        assert_eq!(
-            charges,
-            vec![
-                WorkCounter::GraphNode,
-                WorkCounter::GraphNode,
-                WorkCounter::GraphNode,
-                WorkCounter::GraphNode,
-                WorkCounter::GraphNode,
-            ]
-        );
+        assert_eq!(charges, vec![WorkCounter::GraphNode; 13]);
     }
 
     fn observed_candidate_lookup<E: Copy>(
@@ -964,6 +1018,138 @@ pub(crate) mod tests {
         );
         let observed = trace.borrow().clone();
         (result, observed)
+    }
+
+    fn observed_projection_publication<'a>(
+        accepted_closure: &'a BTreeSet<ChangeHash>,
+        changes: &'a BTreeMap<ChangeHash, ChangeCandidate>,
+        successful_limit: usize,
+        stopped: Completion,
+    ) -> (
+        Result<TrustedEpochProjection<'a>, MeteredActorStateError<Completion>>,
+        Vec<PublicationTrace>,
+    ) {
+        let trace = Rc::new(RefCell::new(Vec::new()));
+        let successful = Cell::new(0_usize);
+        let mut source = CanonicalEpochProjectionSource::new(accepted_closure, changes);
+        let result = build_trusted_epoch_projection_observed(
+            accepted_closure,
+            changes,
+            &mut source,
+            |counter| {
+                trace.borrow_mut().push(PublicationTrace::Charge(counter));
+                if successful.get() == successful_limit {
+                    Err(stopped)
+                } else {
+                    successful.set(successful.get().saturating_add(1));
+                    Ok(())
+                }
+            },
+            |operation| {
+                trace
+                    .borrow_mut()
+                    .push(PublicationTrace::Publication(operation));
+            },
+        );
+        let observed = trace.borrow().clone();
+        (result, observed)
+    }
+
+    #[test]
+    fn projection_allocation_insertion_and_publication_are_charged_before_work() {
+        let first = candidate(1, 1, 1, 1);
+        let mut second = candidate(2, 1, 2, 1);
+        second.change_hash = ChangeHash::from_bytes([2; 32]);
+        second.dependencies = vec![first.change_hash].into();
+        let closure = BTreeSet::from([first.change_hash, second.change_hash]);
+        let changes = BTreeMap::from([(first.change_hash, first), (second.change_hash, second)]);
+        let (ample, full_trace) = observed_projection_publication(
+            &closure,
+            &changes,
+            usize::MAX,
+            Completion::BudgetExhausted,
+        );
+        assert!(ample.is_ok());
+
+        let mut charge_count = 0_usize;
+        let mut publication_count = 0_usize;
+        let mut boundaries = Vec::new();
+        for (index, entry) in full_trace.iter().enumerate() {
+            match entry {
+                PublicationTrace::Charge(_) => charge_count = charge_count.saturating_add(1),
+                PublicationTrace::Publication(operation) => {
+                    publication_count = publication_count.saturating_add(1);
+                    let expected_counter = match operation {
+                        ProjectionPublicationOperation::CandidateDependency
+                        | ProjectionPublicationOperation::DependedOn
+                        | ProjectionPublicationOperation::DependantBucket
+                        | ProjectionPublicationOperation::Dependant => WorkCounter::GraphEdge,
+                        ProjectionPublicationOperation::ReadyCandidate
+                        | ProjectionPublicationOperation::RemainingDependencies
+                        | ProjectionPublicationOperation::Dependencies
+                        | ProjectionPublicationOperation::FrontierHead
+                        | ProjectionPublicationOperation::ActorState
+                        | ProjectionPublicationOperation::WriterContribution
+                        | ProjectionPublicationOperation::ReadyDependant
+                        | ProjectionPublicationOperation::Projection => WorkCounter::GraphNode,
+                        ProjectionPublicationOperation::CausalCounter => {
+                            match index.checked_sub(1).and_then(|prior| full_trace.get(prior)) {
+                                Some(PublicationTrace::Charge(counter)) => *counter,
+                                _ => WorkCounter::GraphNode,
+                            }
+                        }
+                    };
+                    assert_eq!(
+                        index.checked_sub(1).and_then(|prior| full_trace.get(prior)),
+                        Some(&PublicationTrace::Charge(expected_counter))
+                    );
+                    boundaries.push((charge_count, publication_count));
+                }
+            }
+        }
+        assert_eq!(boundaries.len(), 19);
+
+        let count_publications = |trace: &[PublicationTrace]| {
+            trace
+                .iter()
+                .filter(|entry| matches!(entry, PublicationTrace::Publication(_)))
+                .count()
+        };
+        for (target_charge, target_publication) in boundaries {
+            let (before, before_trace) = observed_projection_publication(
+                &closure,
+                &changes,
+                target_charge - 1,
+                Completion::BudgetExhausted,
+            );
+            assert!(matches!(
+                before,
+                Err(MeteredActorStateError::Work(Completion::BudgetExhausted))
+            ));
+            assert_eq!(count_publications(&before_trace), target_publication - 1);
+
+            for allowance in [target_charge, target_charge + 1] {
+                let (_, allowed_trace) = observed_projection_publication(
+                    &closure,
+                    &changes,
+                    allowance,
+                    Completion::BudgetExhausted,
+                );
+                assert!(count_publications(&allowed_trace) >= target_publication);
+            }
+
+            let (cancelled, cancelled_trace) = observed_projection_publication(
+                &closure,
+                &changes,
+                target_charge - 1,
+                Completion::Cancelled,
+            );
+            assert!(matches!(
+                cancelled,
+                Err(MeteredActorStateError::Work(Completion::Cancelled))
+            ));
+            assert_eq!(count_publications(&cancelled_trace), target_publication - 1);
+        }
     }
 
     #[test]

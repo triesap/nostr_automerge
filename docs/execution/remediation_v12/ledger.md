@@ -85,3 +85,12 @@ expected-sequence derivation, and the actor, sequence, and causal-next
 comparisons each execute only after their own successful charge. The exact
 alternating trace proves N-1, N, N+1, cancellation, and injected-error identity
 without a bulk, retroactive, or unmetered candidate-view path.
+
+`step_1376` charges every projection-owned publication before mutation.
+Dependency sets and dependant buckets, readiness, remaining counts, accepted
+dependencies, frontier heads, actor state, writer contribution, causal
+counters, and the final projection are published only after their exact node
+or edge charge. The operation matrix stops before every allocation/insertion
+boundary, and the builder contains no capacity reservation, eager collection,
+or clone. Historical v12 inputs remain frozen while their current exact work
+delta is bound for the later v13 replacement corpus.

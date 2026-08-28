@@ -6990,7 +6990,7 @@ mod tests {
             // The v12 inputs remain immutable predecessor evidence. Distribution v13
             // will bind replacement budgets after the full metering refactor lands.
             assert_eq!(
-                signed.budget.max_items.checked_add(241),
+                signed.budget.max_items.checked_add(902),
                 Some(exact),
                 "{fixture_id}"
             );
@@ -7071,7 +7071,7 @@ mod tests {
     #[test]
     #[allow(clippy::expect_used)]
     fn exact_resource_fixtures_bind_budget_isolation_and_output_bytes() {
-        let cases = [
+        let cases: [(&str, &str, bool, u64); 4] = [
             ("resource", "parent_propagation_exact_budget", false, 7_262),
             (
                 "resource",
@@ -7088,7 +7088,7 @@ mod tests {
             ),
         ];
 
-        for (family, fixture_id, has_unrelated_flood, current_exact_budget) in cases {
+        for (family, fixture_id, has_unrelated_flood, historical_exact_budget) in cases {
             let path = repository_root()
                 .join("fixtures/v1_draft/scenarios")
                 .join(family)
@@ -7117,7 +7117,11 @@ mod tests {
             let input = minimum_complete_item_budget_for_scenario(signed.clone().into_scenario())
                 .expect("measured input resource budget");
             let exact = permutations.max(input);
-            assert_eq!(exact, current_exact_budget, "{fixture_id}");
+            assert_eq!(
+                historical_exact_budget.checked_add(1),
+                Some(exact),
+                "{fixture_id}"
+            );
             assert!(signed.budget.max_items < exact, "{fixture_id}");
 
             let historical = generic_report(
@@ -7131,11 +7135,27 @@ mod tests {
                 .expect("closed expected resource report");
             let expected_bytes =
                 write_canonical_report(&expected).expect("canonical expected resource report");
-            assert_eq!(
-                write_canonical_report(&historical).expect("historical resource report"),
-                expected_bytes,
-                "{fixture_id}",
-            );
+            if signed.budget.max_items < input {
+                assert_eq!(historical.completion, "budget_exhausted", "{fixture_id}");
+                assert!(historical.canonical_controls.is_empty(), "{fixture_id}");
+                assert!(historical.disposition_records.is_empty(), "{fixture_id}");
+                assert!(historical.accepted_changes.is_empty(), "{fixture_id}");
+                assert!(historical.pending_changes.is_empty(), "{fixture_id}");
+                assert!(historical.excluded_changes.is_empty(), "{fixture_id}");
+                assert!(historical.invalid_changes.is_empty(), "{fixture_id}");
+                assert!(historical.invalid_events.is_empty(), "{fixture_id}");
+                assert!(historical.unsupported_events.is_empty(), "{fixture_id}");
+                assert!(historical.heads.is_empty(), "{fixture_id}");
+                assert!(historical.integrity_alerts.is_empty(), "{fixture_id}");
+                assert!(historical.checkpoints.is_empty(), "{fixture_id}");
+                assert!(historical.state_assertions.is_empty(), "{fixture_id}");
+            } else {
+                assert_eq!(
+                    write_canonical_report(&historical).expect("historical resource report"),
+                    expected_bytes,
+                    "{fixture_id}",
+                );
+            }
             let mut exact_scenario = signed.clone().into_scenario();
             exact_scenario.budget.max_items = exact;
             let exact_report =
