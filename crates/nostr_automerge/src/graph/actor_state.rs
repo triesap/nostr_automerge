@@ -827,12 +827,61 @@ pub(crate) mod tests {
         Publication(ProjectionPublicationOperation),
     }
 
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum ProjectionWorkTrace {
+        Charge(WorkCounter),
+        Target,
+    }
+
     struct ObservedEpochProjectionSource<'a> {
         members: Vec<ChangeHash>,
         cursor: usize,
         accepted_closure: &'a BTreeSet<ChangeHash>,
         changes: &'a BTreeMap<ChangeHash, ChangeCandidate>,
         trace: Rc<RefCell<Vec<TraversalTrace>>>,
+    }
+
+    struct WorkContractEpochProjectionSource<'a> {
+        members: std::collections::btree_set::Iter<'a, ChangeHash>,
+        accepted_closure: &'a BTreeSet<ChangeHash>,
+        changes: &'a BTreeMap<ChangeHash, ChangeCandidate>,
+        trace: Rc<RefCell<Vec<ProjectionWorkTrace>>>,
+    }
+
+    impl<'a> EpochProjectionSource<'a> for WorkContractEpochProjectionSource<'a> {
+        fn member_count(&self) -> usize {
+            self.accepted_closure.len()
+        }
+
+        fn next_member(&mut self) -> Option<ChangeHash> {
+            let member = self.members.next().copied();
+            if member.is_some() {
+                self.trace.borrow_mut().push(ProjectionWorkTrace::Target);
+            }
+            member
+        }
+
+        fn accepted_member(&mut self, hash: &ChangeHash) -> bool {
+            self.trace.borrow_mut().push(ProjectionWorkTrace::Target);
+            self.accepted_closure.contains(hash)
+        }
+
+        fn candidate(&mut self, hash: &ChangeHash) -> Option<&'a ChangeCandidate> {
+            self.trace.borrow_mut().push(ProjectionWorkTrace::Target);
+            self.changes.get(hash)
+        }
+
+        fn dependency_count(&mut self, candidate: &ChangeCandidate) -> usize {
+            candidate.dependencies.len()
+        }
+
+        fn dependency(&mut self, candidate: &ChangeCandidate, index: usize) -> Option<ChangeHash> {
+            let dependency = candidate.dependencies.get(index).copied();
+            if dependency.is_some() {
+                self.trace.borrow_mut().push(ProjectionWorkTrace::Target);
+            }
+            dependency
+        }
     }
 
     impl<'a> EpochProjectionSource<'a> for ObservedEpochProjectionSource<'a> {
@@ -1523,6 +1572,197 @@ pub(crate) mod tests {
             result,
             Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
         ));
+    }
+
+    fn projection_work_contract_run<'a>(
+        accepted_closure: &'a BTreeSet<ChangeHash>,
+        changes: &'a BTreeMap<ChangeHash, ChangeCandidate>,
+        query: &ChangeCandidate,
+        successful_limit: usize,
+        stopped: Completion,
+    ) -> (
+        Result<(TrustedEpochProjection<'a>, TrustedEpochView), MeteredActorStateError<Completion>>,
+        Vec<ProjectionWorkTrace>,
+    ) {
+        let trace = Rc::new(RefCell::new(Vec::new()));
+        let successful = Cell::new(0_usize);
+        let mut charge = |counter| {
+            trace
+                .borrow_mut()
+                .push(ProjectionWorkTrace::Charge(counter));
+            if successful.get() == successful_limit {
+                Err(stopped)
+            } else {
+                successful.set(successful.get().saturating_add(1));
+                Ok(())
+            }
+        };
+        let mut source = WorkContractEpochProjectionSource {
+            members: accepted_closure.iter(),
+            accepted_closure,
+            changes,
+            trace: Rc::clone(&trace),
+        };
+        let projection = build_trusted_epoch_projection_observed(
+            accepted_closure,
+            changes,
+            &mut source,
+            &mut charge,
+            |_| trace.borrow_mut().push(ProjectionWorkTrace::Target),
+        );
+        let result = match projection {
+            Ok(projection) => projection
+                .candidate_metered_observed(query, &mut charge, |_| {
+                    trace.borrow_mut().push(ProjectionWorkTrace::Target)
+                })
+                .map(|view| (projection, view)),
+            Err(error) => Err(error),
+        };
+        let observed = trace.borrow().clone();
+        (result, observed)
+    }
+
+    fn actor_state_bytes(states: &BTreeMap<ActorId, EpochActorState>) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        for (actor, state) in states {
+            bytes.extend_from_slice(actor.as_bytes());
+            bytes.extend_from_slice(&state.last_sequence.to_be_bytes());
+            bytes.extend_from_slice(&state.next_op.to_be_bytes());
+            bytes.extend_from_slice(state.highest_change.as_bytes());
+        }
+        bytes
+    }
+
+    #[test]
+    #[allow(clippy::panic)]
+    fn projection_work_contract_preserves_first_stop_and_predecessor_output() {
+        let first = candidate(1, 1, 1, 1);
+        let mut second = candidate(1, 2, 2, 1);
+        second.change_hash = ChangeHash::from_bytes([2; 32]);
+        second.dependencies = vec![first.change_hash].into();
+        let accepted = vec![first.clone(), second.clone()];
+        let closure = BTreeSet::from([first.change_hash, second.change_hash]);
+        let changes = accepted
+            .iter()
+            .cloned()
+            .map(|candidate| (candidate.change_hash, candidate))
+            .collect::<BTreeMap<_, _>>();
+        let mut query = candidate(1, 3, 3, 1);
+        query.change_hash = ChangeHash::from_bytes([3; 32]);
+        query.dependencies = vec![second.change_hash].into();
+
+        const TOTAL_CHARGES: usize = 41;
+        const GRAPH_NODES: usize = 32;
+        const GRAPH_EDGES: usize = 9;
+        let (ample, trace) = projection_work_contract_run(
+            &closure,
+            &changes,
+            &query,
+            usize::MAX,
+            Completion::BudgetExhausted,
+        );
+        assert!(ample.is_ok());
+        assert_eq!(
+            trace
+                .iter()
+                .filter(|entry| matches!(entry, ProjectionWorkTrace::Charge(_)))
+                .count(),
+            TOTAL_CHARGES
+        );
+        assert_eq!(
+            trace
+                .iter()
+                .filter(|entry| {
+                    matches!(entry, ProjectionWorkTrace::Charge(WorkCounter::GraphNode))
+                })
+                .count(),
+            GRAPH_NODES
+        );
+        assert_eq!(
+            trace
+                .iter()
+                .filter(|entry| {
+                    matches!(entry, ProjectionWorkTrace::Charge(WorkCounter::GraphEdge))
+                })
+                .count(),
+            GRAPH_EDGES
+        );
+        let Some((projection, view)) = ample.ok() else {
+            return;
+        };
+        assert!(view.predecessor_is_direct_dependency());
+        let (_, _, metered_states, _) = projection.into_accepted_state_parts();
+        let predecessor_states = initialize_actor_states(accepted);
+        assert!(predecessor_states.is_ok());
+        let Some(predecessor_states) = predecessor_states.ok() else {
+            return;
+        };
+        assert_eq!(
+            actor_state_bytes(&metered_states),
+            actor_state_bytes(&predecessor_states)
+        );
+
+        for successful_limit in 0..TOTAL_CHARGES {
+            for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
+                let (result, stopped_trace) = projection_work_contract_run(
+                    &closure,
+                    &changes,
+                    &query,
+                    successful_limit,
+                    stopped,
+                );
+                assert!(matches!(
+                    result,
+                    Err(MeteredActorStateError::Work(actual)) if actual == stopped
+                ));
+                assert_eq!(
+                    stopped_trace
+                        .iter()
+                        .filter(|entry| matches!(entry, ProjectionWorkTrace::Charge(_)))
+                        .count(),
+                    successful_limit + 1
+                );
+                assert!(matches!(
+                    stopped_trace.last(),
+                    Some(ProjectionWorkTrace::Charge(_))
+                ));
+            }
+        }
+        for successful_limit in [TOTAL_CHARGES, TOTAL_CHARGES + 1] {
+            let (result, _) = projection_work_contract_run(
+                &closure,
+                &changes,
+                &query,
+                successful_limit,
+                Completion::BudgetExhausted,
+            );
+            assert!(result.is_ok());
+        }
+
+        #[derive(Debug)]
+        struct Injected;
+        let injected = Injected;
+        let result = initialize_actor_states_metered(&closure, &changes, |_| Err(&injected));
+        assert!(matches!(
+            result,
+            Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
+        ));
+
+        static PANIC_IDENTITY: u8 = 41;
+        let panic = std::panic::catch_unwind(|| {
+            let _ = initialize_actor_states_metered(&closure, &changes, |_| {
+                std::panic::panic_any(PANIC_IDENTITY);
+                #[allow(unreachable_code)]
+                Ok::<_, ()>(())
+            });
+        });
+        assert!(panic.is_err());
+        assert!(
+            panic
+                .err()
+                .and_then(|payload| payload.downcast::<u8>().ok())
+                .is_some_and(|identity| *identity == PANIC_IDENTITY)
+        );
     }
 
     fn observed_projection<'a>(

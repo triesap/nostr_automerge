@@ -210,6 +210,35 @@ METERED_SOURCE_ANCHORS = (
     ),
 )
 
+PROJECTION_WORK_CONTRACT_PATH = "crates/nostr_automerge/src/graph/actor_state.rs"
+PROJECTION_WORK_CONTRACT_TEST = (
+    "projection_work_contract_preserves_first_stop_and_predecessor_output"
+)
+PROJECTION_WORK_CONTRACT_ANCHORS = (
+    "const TOTAL_CHARGES: usize = 41;",
+    "const GRAPH_NODES: usize = 32;",
+    "const GRAPH_EDGES: usize = 9;",
+    "for successful_limit in 0..TOTAL_CHARGES",
+    "for stopped in [Completion::BudgetExhausted, Completion::Cancelled]",
+    "successful_limit + 1",
+    "Some(ProjectionWorkTrace::Charge(_))",
+    "for successful_limit in [TOTAL_CHARGES, TOTAL_CHARGES + 1]",
+    "actor_state_bytes(&metered_states)",
+    "actor_state_bytes(&predecessor_states)",
+    "core::ptr::eq(error, &injected)",
+    "std::panic::panic_any(PANIC_IDENTITY)",
+)
+
+
+def validate_projection_work_contract(source: str) -> None:
+    declaration = f"fn {PROJECTION_WORK_CONTRACT_TEST}()"
+    if source.count(declaration) != 1:
+        raise InventoryError("projection_contract:test")
+    body = source.split(declaration, 1)[1].split("\n    #[test]", 1)[0]
+    for anchor in PROJECTION_WORK_CONTRACT_ANCHORS:
+        if anchor not in body:
+            raise InventoryError(f"projection_contract:anchor:{anchor[:24]}")
+
 
 def validate_metered_sources(sources: dict[str, str]) -> None:
     if "fn charge_control_closures(" in sources[
@@ -277,6 +306,7 @@ def source_mutation_self_test() -> int:
     paths = {path for path, _ in METERED_SOURCE_ANCHORS}
     sources = {path: (ROOT / path).read_text() for path in paths}
     validate_metered_sources(sources)
+    validate_projection_work_contract(sources[PROJECTION_WORK_CONTRACT_PATH])
     mutations = []
     for path, anchor in METERED_SOURCE_ANCHORS:
         candidate = dict(sources)
@@ -308,9 +338,21 @@ def source_mutation_self_test() -> int:
         candidate = dict(sources)
         candidate["crates/nostr_automerge/src/engine/reference_evaluator.rs"] += forbidden
         mutations.append(candidate)
+    for anchor in PROJECTION_WORK_CONTRACT_ANCHORS:
+        candidate = dict(sources)
+        before, separator, after = candidate[PROJECTION_WORK_CONTRACT_PATH].rpartition(
+            anchor
+        )
+        if not separator:
+            raise InventoryError(f"source_mutation_anchor:{anchor[:24]}")
+        candidate[PROJECTION_WORK_CONTRACT_PATH] = before + after
+        mutations.append(candidate)
     for index, mutation in enumerate(mutations):
         try:
             validate_metered_sources(mutation)
+            validate_projection_work_contract(
+                mutation[PROJECTION_WORK_CONTRACT_PATH]
+            )
         except InventoryError:
             continue
         raise InventoryError(f"source_mutation:{index}")
@@ -347,6 +389,7 @@ def main() -> None:
     mutations = mutation_self_test()
     sources = {path: (ROOT / path).read_text() for path, _ in METERED_SOURCE_ANCHORS}
     validate_metered_sources(sources)
+    validate_projection_work_contract(sources[PROJECTION_WORK_CONTRACT_PATH])
     source_mutations = source_mutation_self_test()
     executed = run_proofs() if args.run_proofs else 0
     print("PASS: resource operation inventory v10")
@@ -355,6 +398,7 @@ def main() -> None:
     print(f"- mutations={mutations}")
     print(f"- source_mutations={source_mutations}")
     print(f"- proofs={len(PROOF_TESTS)}")
+    print("- projection_contract=1")
     print(f"- executed={executed}")
 
 

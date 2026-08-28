@@ -101,3 +101,13 @@ epochs, deep actor predecessors, unrelated dependencies, gap, rollback,
 overflow, wide frontiers, causal next-op, and writer-contribution snapshots.
 Every constructible row is identical under forward and reversed insertion
 orders, while overflow fails closed through the typed projection boundary.
+
+`step_1378` binds the trusted projection work contract. The representative
+two-change projection plus candidate view consumes exactly 41 successful
+charges: 32 graph-node operations and nine graph-edge operations. Every
+budget and cancellation stop is the first failed charge, performs no later
+observed target work, and preserves its typed cause. Ample execution produces
+the exact actor-state bytes of the predecessor algorithm, while deliberate
+error and panic payloads cross the boundary unchanged. The current contract is
+also source-bound by the resource-operation inventory validator without
+rewriting its immutable historical v10 record.

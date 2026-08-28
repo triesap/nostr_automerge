@@ -30,6 +30,7 @@ PROJECTION_CANDIDATE = "25b540e176d291c9de823e8106e074a5d4eff48b"
 TRAVERSAL_CANDIDATE = "eafa932ff4cfa7a4356827f2b97037a8d35c89f3"
 LOOKUP_CANDIDATE = "6e7d13e735017ce310670ca70d56bd4e5225ac61"
 PUBLICATION_CANDIDATE = "bb2f600aeb08c74dd7c8556c1bfc14baa4568ce6"
+SEMANTIC_MATRIX_CANDIDATE = "41be17ed694f1e9848c47acd99a79f4513dfc2e4"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -44,6 +45,7 @@ ACTIVE_SCOPE = [
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
     "reports/spec_baseline.txt",
+    "scripts/validate_resource_operation_inventory_v10.py",
     "scripts/validate_remediation_v12.py",
 ]
 
@@ -172,13 +174,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 110, "active_step": "step_1377", "next_step": "step_1378", "last_planned_step": "step_1419", "remaining_checkpoint_count": 42, "remaining_rcld_count": 6}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 110, "active_step": "step_1378", "next_step": "step_1379", "last_planned_step": "step_1419", "remaining_checkpoint_count": 41, "remaining_rcld_count": 6}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 15:
+    if not isinstance(predecessors, list) or len(predecessors) != 16:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -195,6 +197,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[12], {"step": "step_1374", "candidate": TRAVERSAL_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1374")
     require_equal(predecessors[13], {"step": "step_1375", "candidate": LOOKUP_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1375")
     require_equal(predecessors[14], {"step": "step_1376", "candidate": PUBLICATION_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1376")
+    require_equal(predecessors[15], {"step": "step_1377", "candidate": SEMANTIC_MATRIX_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1377")
 
 
 def validate_trusted_projection() -> None:
@@ -347,6 +350,37 @@ def validate_projection_semantic_matrix() -> None:
     ]
     if any(token not in body for token in required):
         raise EvidenceError("projection:semantic_matrix")
+
+
+def validate_projection_work_contract() -> None:
+    source = (ROOT / "crates/nostr_automerge/src/graph/actor_state.rs").read_text()
+    tests = source.split("#[cfg(test)]", 1)[1]
+    name = "projection_work_contract_preserves_first_stop_and_predecessor_output"
+    if tests.count(f"fn {name}()") != 1:
+        raise EvidenceError("projection:work_contract_inventory")
+    body = tests.split(f"fn {name}()", 1)[1].split("\n    #[test]", 1)[0]
+    required = [
+        "const TOTAL_CHARGES: usize = 41;",
+        "const GRAPH_NODES: usize = 32;",
+        "const GRAPH_EDGES: usize = 9;",
+        "for successful_limit in 0..TOTAL_CHARGES",
+        "Completion::BudgetExhausted, Completion::Cancelled",
+        "successful_limit + 1",
+        "actor_state_bytes(&metered_states)",
+        "actor_state_bytes(&predecessor_states)",
+        "core::ptr::eq(error, &injected)",
+        "std::panic::panic_any(PANIC_IDENTITY)",
+    ]
+    if any(token not in body for token in required):
+        raise EvidenceError("projection:work_contract")
+    inventory = (ROOT / "scripts/validate_resource_operation_inventory_v10.py").read_text()
+    for token in (
+        "PROJECTION_WORK_CONTRACT_ANCHORS",
+        "def validate_projection_work_contract(source: str)",
+        "validate_projection_work_contract(sources[PROJECTION_WORK_CONTRACT_PATH])",
+    ):
+        if token not in inventory:
+            raise EvidenceError("projection:operation_inventory")
 
 
 def validate_reproductions(reproductions: object) -> None:
@@ -515,7 +549,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1379"),
+        ("cursor", "next_step", "step_1380"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -638,10 +672,11 @@ def main() -> None:
     validate_metered_projection_lookups()
     validate_metered_projection_publication()
     validate_projection_semantic_matrix()
+    validate_projection_work_contract()
     mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
-    print("- active=RCLD110/step_1377")
+    print("- active=RCLD110/step_1378")
 
 
 if __name__ == "__main__":
