@@ -97,6 +97,8 @@ VALIDATORS = [
     "validate_remediation_v12_final_decision.py",
     "validate_remediation_v13.py",
     "validate_causal_projection_operations_v13.py",
+    "validate_causal_projection_source_v13.py",
+    "run_causal_projection_mutations_v13.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",

@@ -24,3 +24,9 @@ post-loop actor-state maximum scan; the other requires the complete sealed
 projection-build boundary and rejects the raw readiness loop. The harness
 requires exact named assertion failures rather than accepting compilation
 errors or unrelated test failures. The next checkpoint is `step_1424`.
+
+`step_1424` replaces proximity-based source inspection with a balanced Rust
+lexical function-body audit. It also executes the reviewed projection maximum
+to minimum mutation in an isolated Git worktree and requires the exact owning
+semantic test to fail without compilation, ignored-test, or unrelated-test
+substitution. The next checkpoint is `step_1425`.
