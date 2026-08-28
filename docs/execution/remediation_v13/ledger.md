@@ -87,3 +87,13 @@ production caller, the single semantic consumer, and twenty-one lexical and
 call-graph mutations. Finding 108's exact reproduction is now enabled and
 fixed; the finding remains open until the later Rust assurance gate. The next
 checkpoint is `step_1432`.
+
+`step_1432` closes RCLD 117 with a repository-owned implementation gate. The
+gate binds the six-step implementation chain, the sole trusted constructor,
+all fourteen operation families and their exact two-change trace, the
+nineteen internal publication observations, the three-stage semantic
+consumer, the 72-charge compatibility boundary, immutable signed fixtures,
+and eight enabled proofs. Thirty closed-record mutations and direct source,
+validator, schema, ancestry, and fixture bindings fail closed. All findings
+remain open pending the proof, distribution, and cross-language RCLDs. The
+next checkpoint is `step_1433` in RCLD 118.

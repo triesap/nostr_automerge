@@ -126,6 +126,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/remediation_v12_finding_closure.schema.json",
     "reports/remediation_v12_final_decision.json",
     "tools/validation/remediation_v12_final_decision.schema.json",
+    "reports/causal_projection_implementation_gate_v13.json",
+    "tools/validation/causal_projection_implementation_gate_v13.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -144,6 +146,7 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://github.com/triesap/nostr_automerge/tools/validation/rust_conformance_v13.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/remediation_v12_distribution_gate.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v13_compatibility_contract.schema.json",
+        b"https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_implementation_gate_v13.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -233,6 +236,7 @@ PYTHON_SURFACES = (
     "scripts/validate_remediation_v12_combined_assurance.py",
     "scripts/validate_remediation_v12_finding_closure.py",
     "scripts/validate_remediation_v12_final_decision.py",
+    "scripts/validate_causal_projection_implementation_gate_v13.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -264,6 +268,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "crates/nostr_automerge/src/conformance/history_digest.rs",
         "crates/nostr_automerge/src/control/candidate.rs",
         "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/tests/remediation_v13_reproductions.rs",
         "crates/nostr_automerge/src/control/frontier.rs",
         "crates/nostr_automerge/src/control/ancestry.rs",
         "crates/nostr_automerge/src/control/parent_view.rs",
@@ -394,6 +399,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/remediation_v12_combined_assurance.json",
         "reports/remediation_v12_finding_closure.json",
         "reports/remediation_v12_final_decision.json",
+        "reports/causal_projection_implementation_gate_v13.json",
         "fixtures/distribution/manifest_v13.json",
         "fixtures/distribution/manifest_v13.lock.json",
         "fixtures/v13/scenarios/epoch_semantics",
@@ -439,6 +445,23 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_private_reproduction_boundary_v9.py",
         "scripts/validate_remediation_v11.py",
         "scripts/validate_remediation_v12.py",
+        "scripts/reproduce_remediation_v13.py",
+        "scripts/run_causal_projection_mutations_v13.py",
+        "scripts/validate_remediation_v13.py",
+        "scripts/validate_causal_projection_operations_v13.py",
+        "scripts/validate_causal_projection_authority_gate_v13.py",
+        "scripts/validate_causal_projection_implementation_gate_v13.py",
+        "scripts/validate_causal_projection_source_v13.py",
+        "spec/causal_projection_operation_contract_v13.json",
+        "spec/remediation_v13_authority.json",
+        "docs/execution/remediation_v13/baseline.md",
+        "docs/execution/remediation_v13/ledger.md",
+        "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v13.md",
+        "implementation/runtime_ledger_v13.json",
+        "tools/validation/runtime_ledger_v13.schema.json",
+        "tools/validation/remediation_v13_evidence_policy.schema.json",
+        "tools/validation/causal_projection_operation_contract_v13.schema.json",
+        "tools/validation/causal_projection_implementation_gate_v13.schema.json",
         "reports/remediation_v12_finding_closure.json",
         "tools/validation/remediation_v12_finding_closure.schema.json",
         "reports/remediation_v12_final_decision.json",
@@ -911,6 +934,7 @@ def validate_source_surfaces() -> None:
                             "scripts/validate_distribution_v13.py",
                             "scripts/validate_remediation_v12_distribution_gate.py",
                             "scripts/validate_remediation_v12_final_decision.py",
+                            "scripts/validate_causal_projection_implementation_gate_v13.py",
                             "scripts/validate_runtime_ledger_v9.py",
                         }
                     )

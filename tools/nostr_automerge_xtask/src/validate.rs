@@ -268,6 +268,10 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "causal_projection_authority_gate_v13",
         "scripts/validate_causal_projection_authority_gate_v13.py",
     ),
+    (
+        "causal_projection_implementation_gate_v13",
+        "scripts/validate_causal_projection_implementation_gate_v13.py",
+    ),
     ("complete_specification", "scripts/validate_spec.py"),
     (
         "fixture_schema_checksum_snake_case",

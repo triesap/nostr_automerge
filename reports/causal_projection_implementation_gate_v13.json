@@ -1,0 +1,60 @@
+{
+  "schema": "nostr_automerge.causal_projection_implementation_gate.v13.v1",
+  "status": "rcld_117_complete",
+  "rcld": 117,
+  "candidate_chain": [
+    {"step":"step_1426","candidate":"e3e8c0eca50800a53462fd90ad306f51223f2173"},
+    {"step":"step_1427","candidate":"5c65022c86f3931d2df16d71b334be17cd8483ad"},
+    {"step":"step_1428","candidate":"f4efd6b4bfff04a0d2cce19d61c7487421113f06"},
+    {"step":"step_1429","candidate":"c875ca6b234a5d97b5427d9382b628000bc1392e"},
+    {"step":"step_1430","candidate":"2bb7dd7f241db00767aa66402e14a03e2a151b58"},
+    {"step":"step_1431","candidate":"9cdd8665b68499c4975c08fd1fac07dd5eed999f"}
+  ],
+  "requirements": ["NCRDT-RESOURCE-017","NCRDT-RESOURCE-018","NCRDT-RESOURCE-019","NCRDT-EVIDENCE-007"],
+  "projection": {
+    "source": "crates/nostr_automerge/src/graph/actor_state.rs",
+    "source_sha256": "c8d04545c7f330806dd86a09b23e1318afde88c594de7860357d7ca42f400970",
+    "sealed_constructors": 1,
+    "operation_families": 14,
+    "operation_counts": [4,7,3,4,2,11,6,6,12,4,0,2,1,1],
+    "publication_operations": 19,
+    "semantic_consumer_stages": 3,
+    "raw_builder_charges": 0,
+    "unmetered_production_bypasses": 0
+  },
+  "work_contract": {
+    "total_charges": 72,
+    "graph_node_charges": 56,
+    "graph_edge_charges": 16,
+    "budget_matrix": "pass",
+    "cancellation_matrix": "pass",
+    "first_stop_preserved": true,
+    "zero_post_stop_target_work": true,
+    "reference_oracle_output": "equal",
+    "signed_fixture_inputs": "immutable",
+    "ample_reports": "byte_identical",
+    "unexpected_identity": "preserved"
+  },
+  "validators": [
+    {"path":"scripts/validate_causal_projection_source_v13.py","sha256":"a14d78b12bef9a9d91e591088fea1bd4d73fdad4028cad42af7ae16453492506"},
+    {"path":"scripts/reproduce_remediation_v13.py","sha256":"4ec2cdbf604df8a33b2ab3cb1a16c94973ac177e47618fd2e7baa09d3fb814e1"},
+    {"path":"scripts/run_causal_projection_mutations_v13.py","sha256":"44eba6855d134353ea2f58699993abfa8ed5bf59cfc8aa53b1ebe03dd22091b3"}
+  ],
+  "proof_tests": [
+    "projection_build_operation_boundary_is_sealed_exhaustive_and_immediate",
+    "projection_source_operations_use_the_sealed_boundary",
+    "projection_causal_maximum_is_charged_once_per_accepted_change",
+    "complete_candidate_semantics_preserve_precedence_and_every_stop_boundary",
+    "projection_work_contract_preserves_first_stop_and_predecessor_output",
+    "trusted_epoch_projection_shape_and_construction_are_sealed",
+    "finding_104_projection_causal_maximum_has_no_final_state_scan",
+    "finding_108_projection_operations_use_one_closed_boundary"
+  ],
+  "findings": {
+    "open": ["FINDING_104","FINDING_105","FINDING_106","FINDING_107","FINDING_108","FINDING_109","FINDING_110","FINDING_111","FINDING_112"],
+    "held": ["FINDING_080"]
+  },
+  "next_step": "step_1433",
+  "holds": ["external_assurance","event_kind_allocation","nip_submission","production_qualification","publication","release","remote_mutation"],
+  "result": "pass"
+}
