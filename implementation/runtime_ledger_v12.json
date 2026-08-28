@@ -4,15 +4,14 @@
   "authority": "spec/remediation_v12_authority.json",
   "cursor": {
     "active_rcld": 112,
-    "active_step": "step_1396",
-    "next_step": "step_1397",
+    "active_step": "step_1397",
+    "next_step": "step_1398",
     "last_planned_step": "step_1419",
-    "remaining_checkpoint_count": 23,
-    "remaining_rcld_count": 4
+    "remaining_checkpoint_count": 22,
+    "remaining_rcld_count": 3
   },
   "findings": {
     "open": [
-      "FINDING_100",
       "FINDING_101",
       "FINDING_102",
       "FINDING_103"
@@ -28,17 +27,17 @@
     "NCRDT-EVIDENCE-007"
   ],
   "active_checkpoint_scope": [
-    "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-    "crates/nostr_automerge/src/reference/epoch_engine.rs",
-    "crates/nostr_automerge/src/reference/evaluate.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
+    "reports/remediation_v12_ancestry_authorization_gate.json",
     "reports/spec_baseline.txt",
-    "scripts/reproduce_remediation_v12.py",
+    "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v12.py",
-    "scripts/validate_resource_operation_inventory_v10.py",
-    "spec/remediation_v12_reproductions.json",
-    "tools/nostr_automerge_conformance/src/fixture_generation.rs"
+    "scripts/validate_remediation_v12_ancestry_authorization_gate.py",
+    "scripts/validate_spec.py",
+    "spec/remediation_findings_v12.json",
+    "tools/nostr_automerge_xtask/src/validate.rs",
+    "tools/validation/remediation_v12_ancestry_authorization_gate.schema.json"
   ],
   "predecessors": [
     {
@@ -242,6 +241,12 @@
     {
       "step": "step_1395",
       "candidate": "c59f25b09576aa595e0ce97aadb0d159e33a1a8c",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1396",
+      "candidate": "0dc4160ea4f419cbab8ac2523717c7ce4d3644b5",
       "owner_class": "public",
       "result": "pass"
     }

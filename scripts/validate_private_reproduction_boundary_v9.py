@@ -98,6 +98,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/trusted_epoch_projection_gate_v12.schema.json",
     "reports/remediation_v12_actor_gate.json",
     "tools/validation/remediation_v12_actor_gate.schema.json",
+    "reports/remediation_v12_ancestry_authorization_gate.json",
+    "tools/validation/remediation_v12_ancestry_authorization_gate.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -111,6 +113,7 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://github.com/triesap/nostr_automerge/tools/validation/rust_conformance_v12.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/trusted_epoch_projection_gate_v12.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/remediation_v12_actor_gate.schema.json",
+        b"https://github.com/triesap/nostr_automerge/tools/validation/remediation_v12_ancestry_authorization_gate.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -186,6 +189,7 @@ PYTHON_SURFACES = (
     "scripts/validate_remediation_v11_final_decision.py",
     "scripts/validate_trusted_epoch_projection_gate_v12.py",
     "scripts/validate_remediation_v12_actor_gate.py",
+    "scripts/validate_remediation_v12_ancestry_authorization_gate.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -334,6 +338,14 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/remediation_v12_authority_gate.json",
         "reports/trusted_epoch_projection_gate_v12.json",
         "reports/remediation_v12_actor_gate.json",
+        "reports/remediation_v12_ancestry_authorization_gate.json",
+        "crates/nostr_automerge/src/control/authorize.rs",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/graph/closure.rs",
+        "crates/nostr_automerge/src/graph/epoch.rs",
+        "crates/nostr_automerge/src/graph/equivocation.rs",
+        "crates/nostr_automerge/src/graph/schedule.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs",
         "reports/external_holds_v8.json",
         "reports/spec_baseline.txt",
         "spec/remediation_v12_reproductions.json",
@@ -386,6 +398,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/reproduce_remediation_v12.py",
         "scripts/validate_trusted_epoch_projection_gate_v12.py",
         "scripts/validate_remediation_v12_actor_gate.py",
+        "scripts/validate_remediation_v12_ancestry_authorization_gate.py",
         "scripts/validate_opaque_conformance_v10.py",
         "scripts/validate_signed_conformance_gate_v10.py",
         "scripts/validate_semantic_proof_catalog_v10.py",
@@ -503,6 +516,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "implementation/runtime_ledger_v12.json",
         "tools/validation/trusted_epoch_projection_gate_v12.schema.json",
         "tools/validation/remediation_v12_actor_gate.schema.json",
+        "tools/validation/remediation_v12_ancestry_authorization_gate.schema.json",
         "tools/validation/opaque_conformance_v10.schema.json",
         "tools/validation/signed_conformance_gate_v10.schema.json",
         "tools/validation/semantic_proof_catalog_v10.schema.json",
@@ -552,6 +566,19 @@ def validate_public_record(value: Any, diagnostic: str) -> None:
             validate_source_literal(key, f"{diagnostic}:key")
             if key in {"$schema", "$id"}:
                 require(child in PUBLIC_SCHEMA_URIS, f"{diagnostic}:{key}:uri")
+                continue
+            if (
+                key == "command"
+                and ":operations:" in diagnostic
+                and isinstance(child, str)
+                and re.fullmatch(
+                    chr(99) + r"argo test -p nostr_automerge --lib [a-z0-9_]+ --locked",
+                    child,
+                )
+            ):
+                validate_source_literal(
+                    child, f"{diagnostic}:{key}", allow_command_token=True
+                )
                 continue
             validate_public_record(child, f"{diagnostic}:{key}")
         return
@@ -777,6 +804,7 @@ def validate_source_surfaces() -> None:
                             "scripts/validate_opaque_distribution_parity_v12.py",
                             "scripts/validate_trusted_epoch_projection_gate_v12.py",
                             "scripts/validate_remediation_v12_actor_gate.py",
+                            "scripts/validate_remediation_v12_ancestry_authorization_gate.py",
                             "scripts/validate_runtime_ledger_v9.py",
                         }
                     )

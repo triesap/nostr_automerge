@@ -25,7 +25,7 @@
         "crates/nostr_automerge/src/reference/evaluate.rs"
       ],
       "closure": "Project actor and epoch state once, charge immediately before every proportional operation, remove all production scan and allocation bypasses, and prove zero target work after the first typed stop.",
-      "status": "open"
+      "status": "closed"
     },
     {
       "id": "FINDING_101",

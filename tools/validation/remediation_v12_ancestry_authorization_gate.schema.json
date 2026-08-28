@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/tools/validation/remediation_v12_ancestry_authorization_gate.schema.json",
+  "title": "nostr_automerge remediation v12 ancestry and authorization gate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "rcld", "candidate_chain", "requirements", "operations", "work_contract", "reproductions", "findings", "holds", "result"],
+  "properties": {
+    "schema": { "const": "nostr_automerge.remediation_v12_ancestry_authorization_gate.v1" },
+    "status": { "const": "rcld_112_complete" },
+    "rcld": { "const": 112 },
+    "candidate_chain": { "type": "array", "minItems": 9, "maxItems": 9, "items": { "$ref": "#/$defs/candidate" } },
+    "requirements": { "type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true, "items": { "type": "string" } },
+    "operations": { "type": "array", "minItems": 13, "maxItems": 13, "items": { "$ref": "#/$defs/operation" } },
+    "work_contract": {
+      "type": "object", "additionalProperties": false,
+      "required": ["operation_rows", "item_metered", "sealed_constant_time", "exact_reserved", "unowned_operations", "budget_matrix", "cancellation_matrix", "first_stop_preserved", "zero_post_stop_work", "production_bypasses"],
+      "properties": {
+        "operation_rows": { "const": 13 }, "item_metered": { "const": 12 }, "sealed_constant_time": { "const": 1 }, "exact_reserved": { "const": 0 }, "unowned_operations": { "const": 0 },
+        "budget_matrix": { "const": "pass" }, "cancellation_matrix": { "const": "pass" }, "first_stop_preserved": { "const": true }, "zero_post_stop_work": { "const": true }, "production_bypasses": { "const": 0 }
+      }
+    },
+    "reproductions": {
+      "type": "object", "additionalProperties": false,
+      "required": ["fixed_families", "remaining_finding_100_families", "finding_100_status"],
+      "properties": { "fixed_families": { "const": 10 }, "remaining_finding_100_families": { "const": 0 }, "finding_100_status": { "const": "closed" } }
+    },
+    "findings": {
+      "type": "object", "additionalProperties": false, "required": ["open", "closed", "held"],
+      "properties": {
+        "open": { "type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": { "type": "string" } },
+        "closed": { "type": "array", "minItems": 1, "maxItems": 1, "items": { "const": "FINDING_100" } },
+        "held": { "type": "array", "minItems": 1, "maxItems": 1, "items": { "const": "FINDING_080" } }
+      }
+    },
+    "holds": { "type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true, "items": { "type": "string" } },
+    "result": { "const": "pass" }
+  },
+  "$defs": {
+    "candidate": { "type": "object", "additionalProperties": false, "required": ["step", "candidate"], "properties": { "step": { "type": "string", "pattern": "^step_[0-9]{4}$" }, "candidate": { "$ref": "#/$defs/commit" } } },
+    "operation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "family", "source_path", "source_symbol", "owner_mode", "test", "command", "candidate", "artifact_sha256"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 }, "family": { "type": "string", "minLength": 1 }, "source_path": { "type": "string", "minLength": 1 }, "source_symbol": { "type": "string", "minLength": 1 },
+        "owner_mode": { "enum": ["item_metered", "exact_reserved", "sealed_constant_time"] }, "test": { "type": "string", "minLength": 1 }, "command": { "type": "string", "minLength": 1 },
+        "candidate": { "$ref": "#/$defs/commit" }, "artifact_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

@@ -19,6 +19,7 @@ EVIDENCE_POLICY_PATH = ROOT / "spec/remediation_v12_evidence_policy.json"
 AUTHORITY_GATE_PATH = ROOT / "reports/remediation_v12_authority_gate.json"
 PROJECTION_GATE_PATH = ROOT / "reports/trusted_epoch_projection_gate_v12.json"
 ACTOR_GATE_PATH = ROOT / "reports/remediation_v12_actor_gate.json"
+ANCESTRY_AUTHORIZATION_GATE_PATH = ROOT / "reports/remediation_v12_ancestry_authorization_gate.json"
 
 REVIEWED_CANDIDATE = "9e99af892764ccb165a12b8bb186935bd599d561"
 REVIEWED_TREE = "4b684dc123f371ded75c1469505b130c36359f93"
@@ -51,6 +52,7 @@ AUTHORIZATION_ROUTE_CANDIDATE = "b7a72c9c0be884fa821cd4224fe523fa02e03426"
 DEPENDENCY_CLOSURE_CANDIDATE = "6de8d68c83996009962b315306ada3c339f12844"
 CANDIDATE_SCHEDULE_CANDIDATE = "6659ca2e5186af9447592e296eb375e17b62ae67"
 QUARANTINE_OVERLAY_CANDIDATE = "c59f25b09576aa595e0ce97aadb0d159e33a1a8c"
+CANDIDATE_STORAGE_CANDIDATE = "0dc4160ea4f419cbab8ac2523717c7ce4d3644b5"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -61,17 +63,17 @@ HOLDS = [
     "remote_mutation",
 ]
 ACTIVE_SCOPE = [
-    "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-    "crates/nostr_automerge/src/reference/epoch_engine.rs",
-    "crates/nostr_automerge/src/reference/evaluate.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
+    "reports/remediation_v12_ancestry_authorization_gate.json",
     "reports/spec_baseline.txt",
-    "scripts/reproduce_remediation_v12.py",
+    "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v12.py",
-    "scripts/validate_resource_operation_inventory_v10.py",
-    "spec/remediation_v12_reproductions.json",
-    "tools/nostr_automerge_conformance/src/fixture_generation.rs",
+    "scripts/validate_remediation_v12_ancestry_authorization_gate.py",
+    "scripts/validate_spec.py",
+    "spec/remediation_findings_v12.json",
+    "tools/nostr_automerge_xtask/src/validate.rs",
+    "tools/validation/remediation_v12_ancestry_authorization_gate.schema.json",
 ]
 
 EVIDENCE_REQUIREMENTS = [
@@ -199,13 +201,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 112, "active_step": "step_1396", "next_step": "step_1397", "last_planned_step": "step_1419", "remaining_checkpoint_count": 23, "remaining_rcld_count": 4}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 112, "active_step": "step_1397", "next_step": "step_1398", "last_planned_step": "step_1419", "remaining_checkpoint_count": 22, "remaining_rcld_count": 3}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
-    require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
+    require_equal(findings, {"open": ["FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 34:
+    if not isinstance(predecessors, list) or len(predecessors) != 35:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -241,6 +243,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[31], {"step": "step_1393", "candidate": DEPENDENCY_CLOSURE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1393")
     require_equal(predecessors[32], {"step": "step_1394", "candidate": CANDIDATE_SCHEDULE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1394")
     require_equal(predecessors[33], {"step": "step_1395", "candidate": QUARANTINE_OVERLAY_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1395")
+    require_equal(predecessors[34], {"step": "step_1396", "candidate": CANDIDATE_STORAGE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1396")
 
 
 def validate_trusted_projection() -> None:
@@ -2080,7 +2083,7 @@ def validate_findings(findings: object) -> None:
             raise EvidenceError("findings:closure")
         if not isinstance(row["requirements"], list) or not isinstance(row["source_paths"], list):
             raise EvidenceError("findings:vectors")
-    require_equal([row["status"] for row in rows], ["open", "open", "open", "open", "held"], "findings:statuses")
+    require_equal([row["status"] for row in rows], ["closed", "open", "open", "open", "held"], "findings:statuses")
     require_equal(rows[-1]["severity"], "hold", "findings:held_severity")
     require_equal(record["result"], "pass", "findings:result")
 
@@ -2233,6 +2236,51 @@ def validate_actor_gate(gate: object) -> None:
     require_equal(record["result"], "pass", "actor_gate:result")
 
 
+def validate_ancestry_authorization_gate(gate: object) -> None:
+    record = require_keys(gate, [
+        "schema", "status", "rcld", "candidate_chain", "requirements",
+        "operations", "work_contract", "reproductions", "findings", "holds", "result",
+    ], "ancestry_gate")
+    require_equal(
+        record["schema"],
+        "nostr_automerge.remediation_v12_ancestry_authorization_gate.v1",
+        "ancestry_gate:schema",
+    )
+    require_equal(record["status"], "rcld_112_complete", "ancestry_gate:status")
+    require_equal(record["rcld"], 112, "ancestry_gate:rcld")
+    require_equal(record["candidate_chain"][-1], {
+        "step": "step_1396", "candidate": CANDIDATE_STORAGE_CANDIDATE,
+    }, "ancestry_gate:candidate")
+    require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ancestry_gate:requirements")
+    operations = record["operations"]
+    if not isinstance(operations, list) or len(operations) != 13:
+        raise EvidenceError("ancestry_gate:operations")
+    if len({row.get("id") for row in operations if isinstance(row, dict)}) != 13:
+        raise EvidenceError("ancestry_gate:operation_ids")
+    require_equal(require_keys(record["work_contract"], [
+        "operation_rows", "item_metered", "sealed_constant_time", "exact_reserved",
+        "unowned_operations", "budget_matrix", "cancellation_matrix",
+        "first_stop_preserved", "zero_post_stop_work", "production_bypasses",
+    ], "ancestry_gate:work"), {
+        "operation_rows": 13, "item_metered": 12, "sealed_constant_time": 1,
+        "exact_reserved": 0, "unowned_operations": 0, "budget_matrix": "pass",
+        "cancellation_matrix": "pass", "first_stop_preserved": True,
+        "zero_post_stop_work": True, "production_bypasses": 0,
+    }, "ancestry_gate:work")
+    require_equal(require_keys(record["reproductions"], [
+        "fixed_families", "remaining_finding_100_families", "finding_100_status",
+    ], "ancestry_gate:reproductions"), {
+        "fixed_families": 10, "remaining_finding_100_families": 0,
+        "finding_100_status": "closed",
+    }, "ancestry_gate:reproductions")
+    require_equal(require_keys(record["findings"], ["open", "closed", "held"], "ancestry_gate:findings"), {
+        "open": ["FINDING_101", "FINDING_102", "FINDING_103"],
+        "closed": ["FINDING_100"], "held": ["FINDING_080"],
+    }, "ancestry_gate:findings")
+    require_equal(record["holds"], HOLDS, "ancestry_gate:holds")
+    require_equal(record["result"], "pass", "ancestry_gate:result")
+
+
 def validate_files() -> None:
     require_equal(git("rev-parse", f"{REVIEWED_CANDIDATE}^{{tree}}"), REVIEWED_TREE, "git:reviewed_tree")
     require_equal(git("rev-parse", f"{PLAN_CANDIDATE}^{{tree}}"), PLAN_TREE, "git:plan_tree")
@@ -2252,7 +2300,7 @@ def validate_files() -> None:
     require_equal(sha256(ROOT / "tools/validation/trusted_epoch_projection_gate_v12.schema.json"), "8451ac4a647b8f2f12eca0bdbddf37becc1757deac765bf3558dc0f6cbce4577", "file:projection_gate_schema")
 
 
-def mutation_self_test(authority: object, ledger: object, findings: object, reproductions: object, evidence_policy: object, authority_gate: object, actor_gate: object) -> int:
+def mutation_self_test(authority: object, ledger: object, findings: object, reproductions: object, evidence_policy: object, authority_gate: object, actor_gate: object, ancestry_gate: object) -> int:
     mutations: list[tuple[str, object, object]] = []
     for label, path, value in (
         ("reviewed", ("reviewed_public", "candidate"), "0" * 40),
@@ -2273,7 +2321,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1398"),
+        ("cursor", "next_step", "step_1397"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -2295,9 +2343,9 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     missing = copy.deepcopy(findings)
     missing["findings"].pop(1)
     finding_mutations.append(("finding_missing", missing))
-    closed = copy.deepcopy(findings)
-    closed["findings"][0]["status"] = "closed"
-    finding_mutations.append(("finding_closed", closed))
+    reopened_finding = copy.deepcopy(findings)
+    reopened_finding["findings"][0]["status"] = "open"
+    finding_mutations.append(("finding_reopened", reopened_finding))
     unheld = copy.deepcopy(findings)
     unheld["findings"][-1]["status"] = "open"
     finding_mutations.append(("finding_unheld", unheld))
@@ -2396,7 +2444,23 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
         except EvidenceError:
             continue
         raise EvidenceError("mutation_survived:" + label)
-    return len(mutations) + len(finding_mutations) + len(reproduction_mutations) + len(policy_mutations) + len(gate_mutations) + len(actor_gate_mutations)
+    ancestry_gate_mutations = []
+    wrong_unowned = copy.deepcopy(ancestry_gate)
+    wrong_unowned["work_contract"]["unowned_operations"] = 1
+    ancestry_gate_mutations.append(("ancestry_gate_unowned", wrong_unowned))
+    wrong_operation = copy.deepcopy(ancestry_gate)
+    wrong_operation["operations"].pop()
+    ancestry_gate_mutations.append(("ancestry_gate_operation", wrong_operation))
+    wrong_closure = copy.deepcopy(ancestry_gate)
+    wrong_closure["reproductions"]["finding_100_status"] = "open"
+    ancestry_gate_mutations.append(("ancestry_gate_closure", wrong_closure))
+    for label, changed in ancestry_gate_mutations:
+        try:
+            validate_ancestry_authorization_gate(changed)
+        except EvidenceError:
+            continue
+        raise EvidenceError("mutation_survived:" + label)
+    return len(mutations) + len(finding_mutations) + len(reproduction_mutations) + len(policy_mutations) + len(gate_mutations) + len(actor_gate_mutations) + len(ancestry_gate_mutations)
 
 
 def main() -> None:
@@ -2407,6 +2471,7 @@ def main() -> None:
     evidence_policy = json.loads(EVIDENCE_POLICY_PATH.read_text())
     authority_gate = json.loads(AUTHORITY_GATE_PATH.read_text())
     actor_gate = json.loads(ACTOR_GATE_PATH.read_text())
+    ancestry_gate = json.loads(ANCESTRY_AUTHORIZATION_GATE_PATH.read_text())
     validate_authority(authority)
     validate_ledger(ledger)
     validate_findings(findings)
@@ -2414,6 +2479,7 @@ def main() -> None:
     validate_evidence_policy(evidence_policy)
     validate_authority_gate(authority_gate)
     validate_actor_gate(actor_gate)
+    validate_ancestry_authorization_gate(ancestry_gate)
     validate_files()
     validate_trusted_projection()
     validate_charged_projection_traversal()
@@ -2453,11 +2519,11 @@ def main() -> None:
     source_mutations += candidate_storage_source_mutation_self_test()
     validate_active_causal_budget_deltas()
     source_mutations += causal_budget_source_mutation_self_test()
-    mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate, actor_gate)
+    mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate, actor_gate, ancestry_gate)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
     print(f"- source_mutations={source_mutations}")
-    print("- active=RCLD112/step_1396")
+    print("- active=RCLD112/step_1397")
 
 
 if __name__ == "__main__":

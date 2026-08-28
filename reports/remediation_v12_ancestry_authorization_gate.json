@@ -1,0 +1,69 @@
+{
+  "schema": "nostr_automerge.remediation_v12_ancestry_authorization_gate.v1",
+  "status": "rcld_112_complete",
+  "rcld": 112,
+  "candidate_chain": [
+    { "step": "step_1388", "candidate": "43884403ee71c5a0b6fbf7a9b91b4617dd53b43c" },
+    { "step": "step_1389", "candidate": "89009e315cfe8596f3a639a0af9e359a7c0a40d7" },
+    { "step": "step_1390", "candidate": "4f4d43c3aca9d4d959edb2464039d50a983e70a0" },
+    { "step": "step_1391", "candidate": "d3b1d462ee4691741821067fb51d33d6d8eb24d6" },
+    { "step": "step_1392", "candidate": "b7a72c9c0be884fa821cd4224fe523fa02e03426" },
+    { "step": "step_1393", "candidate": "6de8d68c83996009962b315306ada3c339f12844" },
+    { "step": "step_1394", "candidate": "6659ca2e5186af9447592e296eb375e17b62ae67" },
+    { "step": "step_1395", "candidate": "c59f25b09576aa595e0ce97aadb0d159e33a1a8c" },
+    { "step": "step_1396", "candidate": "0dc4160ea4f419cbab8ac2523717c7ce4d3644b5" }
+  ],
+  "requirements": [
+    "NCRDT-RESOURCE-017",
+    "NCRDT-RESOURCE-018",
+    "NCRDT-RESOURCE-019",
+    "NCRDT-EVIDENCE-007"
+  ],
+  "operations": [
+    { "id": "actor_predecessor_expected_sequence", "family": "actor_state", "source_path": "crates/nostr_automerge/src/graph/actor_state.rs", "source_symbol": "initialize_actor_states_metered", "owner_mode": "item_metered", "test": "projected_actor_sequence_decision_is_nonmutating_and_complete", "command": "cargo test -p nostr_automerge --lib projected_actor_sequence_decision_is_nonmutating_and_complete --locked", "candidate": "0dc4160ea4f419cbab8ac2523717c7ce4d3644b5", "artifact_sha256": "b33733c9c84a7b7a6247967172a562c2c3f0da68a64514a50b27b715127c8290" },
+    { "id": "causal_next_operation_projection", "family": "actor_state", "source_path": "crates/nostr_automerge/src/graph/actor_state.rs", "source_symbol": "candidate_semantics_decision_metered_observed", "owner_mode": "item_metered", "test": "projected_causal_next_decision_is_checked_constant_size_and_exactly_metered", "command": "cargo test -p nostr_automerge --lib projected_causal_next_decision_is_checked_constant_size_and_exactly_metered --locked", "candidate": "0dc4160ea4f419cbab8ac2523717c7ce4d3644b5", "artifact_sha256": "b33733c9c84a7b7a6247967172a562c2c3f0da68a64514a50b27b715127c8290" },
+    { "id": "empty_frontier_validation", "family": "actor_state", "source_path": "crates/nostr_automerge/src/graph/actor_state.rs", "source_symbol": "empty_frontier_decision_metered_observed", "owner_mode": "item_metered", "test": "empty_frontier_comparison_is_streaming_exact_and_immediately_metered", "command": "cargo test -p nostr_automerge --lib empty_frontier_comparison_is_streaming_exact_and_immediately_metered --locked", "candidate": "0dc4160ea4f419cbab8ac2523717c7ce4d3644b5", "artifact_sha256": "b33733c9c84a7b7a6247967172a562c2c3f0da68a64514a50b27b715127c8290" },
+    { "id": "combined_candidate_semantics", "family": "actor_state", "source_path": "crates/nostr_automerge/src/graph/actor_state.rs", "source_symbol": "candidate_semantics_decision_metered_observed", "owner_mode": "item_metered", "test": "complete_candidate_semantics_preserve_precedence_and_every_stop_boundary", "command": "cargo test -p nostr_automerge --lib complete_candidate_semantics_preserve_precedence_and_every_stop_boundary --locked", "candidate": "0dc4160ea4f419cbab8ac2523717c7ce4d3644b5", "artifact_sha256": "b33733c9c84a7b7a6247967172a562c2c3f0da68a64514a50b27b715127c8290" },
+    { "id": "epoch_ancestry_classification", "family": "epoch_ancestry", "source_path": "crates/nostr_automerge/src/graph/epoch.rs", "source_symbol": "classify_epoch_ancestry_metered", "owner_mode": "item_metered", "test": "ancestry_classification_is_nonallocating_streaming_and_exactly_metered", "command": "cargo test -p nostr_automerge --lib ancestry_classification_is_nonallocating_streaming_and_exactly_metered --locked", "candidate": "0dc4160ea4f419cbab8ac2523717c7ce4d3644b5", "artifact_sha256": "10d9b2a5869f6f1fde91ae090c4ad1295137b95f13d316237b2f7d2a4085fb6b" },
+    { "id": "epoch_writer_authorization", "family": "authorization", "source_path": "crates/nostr_automerge/src/control/authorize.rs", "source_symbol": "any_control_member_metered", "owner_mode": "item_metered", "test": "member_authorization_preserves_every_budget_and_cancellation_boundary", "command": "cargo test -p nostr_automerge --lib member_authorization_preserves_every_budget_and_cancellation_boundary --locked", "candidate": "0dc4160ea4f419cbab8ac2523717c7ce4d3644b5", "artifact_sha256": "9da039016ab9305e2aa2784cf847d942c21dfa2664af3671941af77788d13e9d" },
+    { "id": "dependency_closure", "family": "dependency_closure", "source_path": "crates/nostr_automerge/src/graph/closure.rs", "source_symbol": "candidate_dependency_closure", "owner_mode": "item_metered", "test": "candidate_dependency_closure_charges_immediately_before_every_target_operation", "command": "cargo test -p nostr_automerge --lib candidate_dependency_closure_charges_immediately_before_every_target_operation --locked", "candidate": "0dc4160ea4f419cbab8ac2523717c7ce4d3644b5", "artifact_sha256": "d185e6636179304142bd0119ce413cea74d3e87ae79c6ad919216a897d868320" },
+    { "id": "candidate_schedule", "family": "scheduling", "source_path": "crates/nostr_automerge/src/graph/schedule.rs", "source_symbol": "schedule_candidates", "owner_mode": "item_metered", "test": "scheduling_charges_immediately_before_every_operation_and_preserves_typed_stops", "command": "cargo test -p nostr_automerge --lib scheduling_charges_immediately_before_every_operation_and_preserves_typed_stops --locked", "candidate": "0dc4160ea4f419cbab8ac2523717c7ce4d3644b5", "artifact_sha256": "0f06063ecd2cb62371784054ca035cb9b0a9ca0f6402a975deb3851c95dc8a62" },
+    { "id": "quarantine_traversal", "family": "quarantine", "source_path": "crates/nostr_automerge/src/graph/equivocation.rs", "source_symbol": "quarantine_equivocation_descendants", "owner_mode": "item_metered", "test": "quarantine_traversal_has_exact_prefix_and_cancellation_boundaries", "command": "cargo test -p nostr_automerge --lib quarantine_traversal_has_exact_prefix_and_cancellation_boundaries --locked", "candidate": "0dc4160ea4f419cbab8ac2523717c7ce4d3644b5", "artifact_sha256": "38a4a9c0ab867531a36df7be5ee0d296bf5e0fab5d5c7d4eb04219b4fd04fd7b" },
+    { "id": "quarantine_overlay_publication", "family": "quarantine", "source_path": "crates/nostr_automerge/src/graph/equivocation.rs", "source_symbol": "publish_quarantine_dispositions_metered", "owner_mode": "item_metered", "test": "quarantine_overlay_charges_each_pull_and_insert_before_work", "command": "cargo test -p nostr_automerge --lib quarantine_overlay_charges_each_pull_and_insert_before_work --locked", "candidate": "0dc4160ea4f419cbab8ac2523717c7ce4d3644b5", "artifact_sha256": "38a4a9c0ab867531a36df7be5ee0d296bf5e0fab5d5c7d4eb04219b4fd04fd7b" },
+    { "id": "candidate_storage_projection", "family": "publication", "source_path": "crates/nostr_automerge/src/reference/epoch_engine.rs", "source_symbol": "clone_candidate_maps_metered", "owner_mode": "item_metered", "test": "candidate_projections_charge_before_each_owned_entry", "command": "cargo test -p nostr_automerge --lib candidate_projections_charge_before_each_owned_entry --locked", "candidate": "0dc4160ea4f419cbab8ac2523717c7ce4d3644b5", "artifact_sha256": "31ae4b474737015d4734977bd01880d1258d149e6735b1a43341849932ca07d1" },
+    { "id": "epoch_result_publication", "family": "publication", "source_path": "crates/nostr_automerge/src/reference/epoch_engine.rs", "source_symbol": "publish_epoch_result_metered", "owner_mode": "item_metered", "test": "epoch_result_publication_is_charged_immediately_before_construction", "command": "cargo test -p nostr_automerge --lib epoch_result_publication_is_charged_immediately_before_construction --locked", "candidate": "0dc4160ea4f419cbab8ac2523717c7ce4d3644b5", "artifact_sha256": "31ae4b474737015d4734977bd01880d1258d149e6735b1a43341849932ca07d1" },
+    { "id": "zero_post_stop", "family": "stop_behavior", "source_path": "crates/nostr_automerge/src/reference/epoch_engine.rs", "source_symbol": "evaluate_epoch", "owner_mode": "sealed_constant_time", "test": "finding_100_zero_post_stop_work_reproduction", "command": "cargo test -p nostr_automerge --lib finding_100_zero_post_stop_work_reproduction --locked", "candidate": "0dc4160ea4f419cbab8ac2523717c7ce4d3644b5", "artifact_sha256": "31ae4b474737015d4734977bd01880d1258d149e6735b1a43341849932ca07d1" }
+  ],
+  "work_contract": {
+    "operation_rows": 13,
+    "item_metered": 12,
+    "sealed_constant_time": 1,
+    "exact_reserved": 0,
+    "unowned_operations": 0,
+    "budget_matrix": "pass",
+    "cancellation_matrix": "pass",
+    "first_stop_preserved": true,
+    "zero_post_stop_work": true,
+    "production_bypasses": 0
+  },
+  "reproductions": {
+    "fixed_families": 10,
+    "remaining_finding_100_families": 0,
+    "finding_100_status": "closed"
+  },
+  "findings": {
+    "open": ["FINDING_101", "FINDING_102", "FINDING_103"],
+    "closed": ["FINDING_100"],
+    "held": ["FINDING_080"]
+  },
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "remote_mutation"
+  ],
+  "result": "pass"
+}
