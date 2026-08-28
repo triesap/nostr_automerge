@@ -18,3 +18,9 @@ lookups, readiness, checked arithmetic, insertions, shared-reference clones,
 causal maximum comparisons, result publication, and constant-size candidate
 validation. Final implementation-specific operation counts remain unset until
 the reproduction phase completes. The next checkpoint is `step_1423`.
+
+`step_1423` adds two exact expected-failure reproductions. One detects the
+post-loop actor-state maximum scan; the other requires the complete sealed
+projection-build boundary and rejects the raw readiness loop. The harness
+requires exact named assertion failures rather than accepting compilation
+errors or unrelated test failures. The next checkpoint is `step_1424`.
