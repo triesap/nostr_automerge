@@ -128,6 +128,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/remediation_v12_final_decision.schema.json",
     "reports/causal_projection_implementation_gate_v13.json",
     "tools/validation/causal_projection_implementation_gate_v13.schema.json",
+    "reports/causal_projection_mutations_v13.json",
+    "tools/validation/causal_projection_mutations_v13.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -147,6 +149,7 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://github.com/triesap/nostr_automerge/tools/validation/remediation_v12_distribution_gate.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v13_compatibility_contract.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_implementation_gate_v13.schema.json",
+        b"https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_mutations_v13.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -400,6 +403,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/remediation_v12_finding_closure.json",
         "reports/remediation_v12_final_decision.json",
         "reports/causal_projection_implementation_gate_v13.json",
+        "reports/causal_projection_mutations_v13.json",
         "fixtures/distribution/manifest_v13.json",
         "fixtures/distribution/manifest_v13.lock.json",
         "fixtures/v13/scenarios/epoch_semantics",
@@ -462,6 +466,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/validation/remediation_v13_evidence_policy.schema.json",
         "tools/validation/causal_projection_operation_contract_v13.schema.json",
         "tools/validation/causal_projection_implementation_gate_v13.schema.json",
+        "tools/validation/causal_projection_mutations_v13.schema.json",
         "reports/remediation_v12_finding_closure.json",
         "tools/validation/remediation_v12_finding_closure.schema.json",
         "reports/remediation_v12_final_decision.json",

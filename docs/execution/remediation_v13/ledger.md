@@ -114,3 +114,12 @@ exact expected projections and predecessor actor-state bytes across three
 insertion orders. Overflow, missing, duplicate, and noncanonical dependencies
 fail with the exact typed state errors across reversed delivery. The next
 checkpoint is `step_1435`.
+
+`step_1435` executes fourteen isolated, compiled Rust mutations, one for every
+closed projection-build family. Each mutation changes the logical operation
+observed at a real production boundary, including insertion of the otherwise
+absent shared-reference-clone family, and the exact owning trace proof rejects
+all fourteen with a single-test failure transcript. The closed mutation record
+reports zero survivors and rejects inventory, transcript, record, schema,
+candidate, and coordinated identity drift. The next checkpoint is
+`step_1436`.

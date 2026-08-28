@@ -1,0 +1,30 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutations.v13.v1",
+  "status": "verified",
+  "candidate": "4b404afaa1d3ce1775f0dbd91a283f82141f1eca",
+  "target": "crates/nostr_automerge/src/graph/actor_state.rs",
+  "target_sha256": "14722b6be00453b784d809272dbfaba227b5a97f937cd2c9c5ff6d18fd7b3237",
+  "owning_test": "graph::actor_state::tests::projection_operation_families_have_exact_n_minus_one_n_and_n_plus_one_stops",
+  "operation_families": [
+    "CanonicalSourcePull",
+    "CanonicalOrderCompare",
+    "MembershipLookup",
+    "CandidateLookup",
+    "DependencyLookup",
+    "StateLookup",
+    "ReadinessTransition",
+    "CheckedArithmetic",
+    "MapInsertion",
+    "SetInsertion",
+    "SharedReferenceClone",
+    "CausalMaximumCompare",
+    "ResultPublication",
+    "ConstantCandidateValidation"
+  ],
+  "selected_mutations": 14,
+  "executed_mutations": 14,
+  "survivors": 0,
+  "inventory_and_transcript_mutations": 15,
+  "mutation_identity_sha256": "7afe29e061383e4566a20a8e7fb1bb83568a780e18ed7a354c0675e93ce9df12",
+  "result": "pass"
+}
