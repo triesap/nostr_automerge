@@ -123,3 +123,11 @@ all fourteen with a single-test failure transcript. The closed mutation record
 reports zero survivors and rejects inventory, transcript, record, schema,
 candidate, and coordinated identity drift. The next checkpoint is
 `step_1436`.
+
+`step_1436` derives the complete distribution-v14 transition from the locked
+distribution-v13 corpus. Exactly nine exact-budget scenarios are affected;
+the remaining 195 scenarios are byte-identical and retain their original
+manifest entries. The transition authority fixes each old/new budget pair,
+requires unchanged signed Event bytes, delivery orders, and ample-work report
+bytes, and publishes a closed staged manifest, schema, generator, and validator
+with thirteen negative mutations. The next checkpoint is `step_1437`.

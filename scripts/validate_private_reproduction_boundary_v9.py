@@ -112,6 +112,8 @@ PUBLIC_JSON_RECORDS = (
     "spec/distribution_v13_compatibility_contract.json",
     "tools/validation/distribution_v13_compatibility_contract.schema.json",
     "tools/validation/distribution_v13.schema.json",
+    "spec/distribution_v14_transition.json",
+    "tools/validation/distribution_v14.schema.json",
     "reports/remediation_v12_operation_inventory.json",
     "tools/validation/remediation_v12_operation_inventory.schema.json",
     "reports/remediation_v12_proof_catalog.json",
@@ -145,6 +147,7 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://github.com/triesap/nostr_automerge/tools/validation/remediation_v12_actor_gate.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/remediation_v12_ancestry_authorization_gate.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v13.schema.json",
+        b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v14.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/rust_conformance_v13.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/remediation_v12_distribution_gate.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v13_compatibility_contract.schema.json",
@@ -228,6 +231,8 @@ PYTHON_SURFACES = (
     "scripts/validate_remediation_v12_ancestry_authorization_gate.py",
     "scripts/generate_distribution_v13.py",
     "scripts/validate_distribution_v13.py",
+    "scripts/generate_distribution_v14.py",
+    "scripts/validate_distribution_v14.py",
     "scripts/validate_rust_conformance_v13.py",
     "scripts/validate_remediation_v12_distribution_gate.py",
     "scripts/validate_distribution_v13_compatibility_contract.py",
@@ -405,13 +410,17 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/causal_projection_implementation_gate_v13.json",
         "reports/causal_projection_mutations_v13.json",
         "fixtures/distribution/manifest_v13.json",
+        "fixtures/distribution/manifest_v14.json",
         "fixtures/distribution/manifest_v13.lock.json",
         "fixtures/v13/scenarios/epoch_semantics",
         "fixtures/v13/scenarios/epoch_semantics/",
         "fixtures/v13/scenarios/epoch_semantics/deep_actor_predecessor_exact_budget",
         "fixtures/v13/rebindings/resource_followup",
         "fixtures/v13/rebindings/resource_followup/",
+        "fixtures/v14/rebindings/causal_projection",
+        "fixtures/v14/rebindings/causal_projection/",
         "spec/distribution_v13_transition.json",
+        "spec/distribution_v14_transition.json",
         "spec/distribution_v13_compatibility_contract.json",
         "crates/nostr_automerge/src/control/authorize.rs",
         "crates/nostr_automerge/src/graph/actor_state.rs",
@@ -506,6 +515,8 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_remediation_v12_ancestry_authorization_gate.py",
         "scripts/generate_distribution_v13.py",
         "scripts/validate_distribution_v13.py",
+        "scripts/generate_distribution_v14.py",
+        "scripts/validate_distribution_v14.py",
         "scripts/validate_rust_conformance_v13.py",
         "scripts/validate_remediation_v12_distribution_gate.py",
         "scripts/validate_distribution_v13_compatibility_contract.py",
@@ -636,6 +647,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/validation/remediation_v12_actor_gate.schema.json",
         "tools/validation/remediation_v12_ancestry_authorization_gate.schema.json",
         "tools/validation/distribution_v13.schema.json",
+        "tools/validation/distribution_v14.schema.json",
         "tools/validation/rust_conformance_v13.schema.json",
         "tools/validation/remediation_v12_distribution_gate.schema.json",
         "tools/validation/distribution_v13_compatibility_contract.schema.json",
@@ -766,6 +778,7 @@ def is_public_route(value: str) -> bool:
         or value.startswith("fixtures/v1_draft/scenarios/resource/")
         or value.startswith("fixtures/v11/scenarios/resource_followup/")
         or value.startswith("fixtures/v12/scenarios/resource_followup/")
+        or value.startswith("fixtures/v14/rebindings/causal_projection/")
         or value.startswith("fixtures/v1_draft/scenarios/scope/")
         or value.startswith("fixtures/v1_draft/checkpoints/")
         or value in {row["value"] for row in APPROVED_WIRE_DOMAINS}
@@ -936,6 +949,7 @@ def validate_source_surfaces() -> None:
                             "scripts/validate_remediation_v12_actor_gate.py",
                             "scripts/validate_remediation_v12_ancestry_authorization_gate.py",
                             "scripts/generate_distribution_v13.py",
+                            "scripts/generate_distribution_v14.py",
                             "scripts/validate_distribution_v13.py",
                             "scripts/validate_remediation_v12_distribution_gate.py",
                             "scripts/validate_remediation_v12_final_decision.py",
