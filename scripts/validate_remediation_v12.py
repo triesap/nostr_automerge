@@ -35,6 +35,7 @@ SEMANTIC_MATRIX_CANDIDATE = "41be17ed694f1e9848c47acd99a79f4513dfc2e4"
 WORK_CONTRACT_CANDIDATE = "5b3a386160e3310071e644a7030ade80248640d5"
 PROJECTION_GATE_CANDIDATE = "187a260858bdd41f9dd967e32279b9f21454ede2"
 ACTOR_DECISION_CANDIDATE = "629747ab2537593ddf0a4f689a3e14ea6e576039"
+ACTOR_ROUTE_CANDIDATE = "3ced1446a04a422f5760d00d9786dd18ace76930"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -45,16 +46,11 @@ HOLDS = [
     "remote_mutation",
 ]
 ACTIVE_SCOPE = [
-    "crates/nostr_automerge/src/graph/actor_state.rs",
-    "crates/nostr_automerge/src/engine/reference_evaluator.rs",
-    "crates/nostr_automerge/src/reference/epoch_engine.rs",
+    "crates/nostr_automerge/tests/public_engine_api.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
     "reports/spec_baseline.txt",
-    "scripts/reproduce_remediation_v12.py",
     "scripts/validate_remediation_v12.py",
-    "spec/remediation_v12_reproductions.json",
-    "tools/nostr_automerge_conformance/src/fixture_generation.rs",
 ]
 
 EVIDENCE_REQUIREMENTS = [
@@ -182,13 +178,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 111, "active_step": "step_1381", "next_step": "step_1382", "last_planned_step": "step_1419", "remaining_checkpoint_count": 38, "remaining_rcld_count": 5}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 111, "active_step": "step_1382", "next_step": "step_1383", "last_planned_step": "step_1419", "remaining_checkpoint_count": 37, "remaining_rcld_count": 5}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 19:
+    if not isinstance(predecessors, list) or len(predecessors) != 20:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -209,6 +205,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[16], {"step": "step_1378", "candidate": WORK_CONTRACT_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1378")
     require_equal(predecessors[17], {"step": "step_1379", "candidate": PROJECTION_GATE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1379")
     require_equal(predecessors[18], {"step": "step_1380", "candidate": ACTOR_DECISION_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1380")
+    require_equal(predecessors[19], {"step": "step_1381", "candidate": ACTOR_ROUTE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1381")
 
 
 def validate_trusted_projection() -> None:
@@ -483,6 +480,35 @@ def actor_sequence_source_mutation_self_test() -> int:
     return caught
 
 
+def validate_signed_transitive_actor_constructions() -> None:
+    source = (
+        ROOT / "crates/nostr_automerge/tests/public_engine_api.rs"
+    ).read_text()
+    name = (
+        "signed_transitive_actor_predecessor_is_order_independent_"
+        "across_chain_and_fork"
+    )
+    if source.count(f"fn {name}()") != 1:
+        raise EvidenceError("actor_sequence:signed_inventory")
+    body = source.split(f"fn {name}()", 1)[1].split("\n#[test]", 1)[0]
+    required = [
+        "evaluate_case(0xd1, false)",
+        "evaluate_case(0xd2, true)",
+        "[0_usize, 1, 2, 3, 4]",
+        "[4, 3, 2, 1, 0]",
+        "[2, 0, 4, 1, 3]",
+        "event_disposition(&report, event_id)",
+        ".accepted_changes()",
+        "report.heads(), [returning_hash]",
+        "reports.windows(2).all",
+    ]
+    if any(token not in body for token in required):
+        raise EvidenceError("actor_sequence:signed_matrix")
+    prefix = source.split(f"fn {name}()", 1)[0].rsplit("#[test]", 1)[-1]
+    if "#[ignore" in prefix:
+        raise EvidenceError("actor_sequence:signed_ignored")
+
+
 def validate_reproductions(reproductions: object) -> None:
     record = require_keys(reproductions, ["schema", "cases", "result"], "reproductions")
     require_equal(record["schema"], "nostr_automerge.remediation_v12_reproductions.v1", "reproductions:schema")
@@ -651,7 +677,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1383"),
+        ("cursor", "next_step", "step_1384"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -778,11 +804,12 @@ def main() -> None:
     validate_projected_actor_sequence_decision()
     validate_projected_actor_sequence_production_path()
     source_mutations = actor_sequence_source_mutation_self_test()
+    validate_signed_transitive_actor_constructions()
     mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
     print(f"- source_mutations={source_mutations}")
-    print("- active=RCLD111/step_1381")
+    print("- active=RCLD111/step_1382")
 
 
 if __name__ == "__main__":

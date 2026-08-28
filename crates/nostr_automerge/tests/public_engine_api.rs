@@ -4926,6 +4926,163 @@ fn actor_sequence_requires_exact_predecessor() {
 }
 
 #[test]
+#[allow(clippy::expect_used)]
+fn signed_transitive_actor_predecessor_is_order_independent_across_chain_and_fork() {
+    let evaluate_case = |document_byte: u8, forked: bool| {
+        let controller = TestSigner::from_byte(130);
+        let first_writer = TestSigner::from_byte(131);
+        let second_writer = TestSigner::from_byte(132);
+        let third_writer = TestSigner::from_byte(133);
+        let coordinate: DocumentCoordinate = format!(
+            "31624:{}:{}",
+            controller.public_key().to_hex(),
+            format!("{document_byte:02x}").repeat(32)
+        )
+        .parse()
+        .expect("fixed transitive coordinate");
+        let control = signed_acl_control(
+            &controller,
+            coordinate,
+            1,
+            None,
+            0,
+            vec![
+                (first_writer.public_key().to_hex(), vec!["write"]),
+                (second_writer.public_key().to_hex(), vec!["write"]),
+                (third_writer.public_key().to_hex(), vec!["write"]),
+            ],
+        );
+        let control_id = VerifiedNip01Event::verify(control.clone())
+            .expect("signed transitive control")
+            .event_id();
+
+        let make_change = |writer: &TestSigner, prior: &[Vec<u8>], key: &str| {
+            let actor = ActorId::derive(coordinate, writer.public_key());
+            let mut document = AutoCommit::new_with_encoding(TextEncoding::Utf16CodeUnit);
+            let changes = prior
+                .iter()
+                .map(|raw| automerge::Change::from_bytes(raw.clone()).expect("prior change"))
+                .collect::<Vec<_>>();
+            document
+                .apply_changes(changes)
+                .expect("apply prior history");
+            document.set_actor(automerge::ActorId::from(actor.as_bytes().to_vec()));
+            document
+                .put(ROOT, key, "accepted")
+                .expect("change operation");
+            let hash = document.commit().expect("change hash");
+            let raw = document
+                .get_change_by_hash(&hash)
+                .expect("authored change")
+                .raw_bytes()
+                .to_vec();
+            (ChangeHash::from_bytes(hash.0), raw)
+        };
+
+        let (first_hash, first_raw) = make_change(&first_writer, &[], "first");
+        let (second_hash, second_raw) =
+            make_change(&second_writer, std::slice::from_ref(&first_raw), "second");
+        let third_prior = if forked {
+            vec![first_raw.clone()]
+        } else {
+            vec![first_raw.clone(), second_raw.clone()]
+        };
+        let (third_hash, third_raw) = make_change(&third_writer, &third_prior, "third");
+        let (returning_hash, returning_raw) = make_change(
+            &first_writer,
+            &[first_raw.clone(), second_raw.clone(), third_raw.clone()],
+            "returning",
+        );
+
+        let sign_change = |writer: &TestSigner, created_at: u64, hash: ChangeHash, raw: &[u8]| {
+            writer.sign(
+                &UnsignedEventDraft::new(
+                    created_at,
+                    1_624,
+                    vec![
+                        vec!["a".to_owned(), coordinate.to_address()],
+                        vec!["e".to_owned(), control_id.to_hex()],
+                        vec!["x".to_owned(), hash.to_hex()],
+                    ],
+                    base64::engine::general_purpose::STANDARD.encode(raw),
+                )
+                .expect("transitive change draft")
+                .prepare(writer.public_key())
+                .expect("transitive change preimage"),
+            )
+        };
+        let changes = [
+            sign_change(&first_writer, 2, first_hash, &first_raw),
+            sign_change(&second_writer, 3, second_hash, &second_raw),
+            sign_change(&third_writer, 4, third_hash, &third_raw),
+            sign_change(&first_writer, 5, returning_hash, &returning_raw),
+        ];
+        let carrier_ids = changes.each_ref().map(|event| {
+            VerifiedNip01Event::verify(event.clone())
+                .expect("signed transitive carrier")
+                .event_id()
+        });
+        let events = [
+            control,
+            changes[0].clone(),
+            changes[1].clone(),
+            changes[2].clone(),
+            changes[3].clone(),
+        ];
+        let orders = [[0_usize, 1, 2, 3, 4], [4, 3, 2, 1, 0], [2, 0, 4, 1, 3]];
+        let expected_hashes = BTreeSet::from([first_hash, second_hash, third_hash, returning_hash]);
+        let mut reports = Vec::new();
+        for order in orders {
+            let mut builder = CorpusBuilder::new();
+            for index in order {
+                assert!(matches!(
+                    builder.ingest(events[index].clone()),
+                    IngestOutcome::Accepted { .. }
+                ));
+            }
+            let report = ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate_report(
+                &builder.finish(),
+                coordinate,
+                &mut WorkBudget::new(10_000_000, 10_000_000),
+                &NeverCancelled,
+            );
+            assert_eq!(report.completion(), Completion::Complete);
+            assert_eq!(
+                report
+                    .accepted_changes()
+                    .iter()
+                    .copied()
+                    .collect::<BTreeSet<_>>(),
+                expected_hashes
+            );
+            assert_eq!(report.heads(), [returning_hash]);
+            for hash in &expected_hashes {
+                assert_eq!(
+                    report
+                        .dispositions()
+                        .binary_search_by_key(hash, |(candidate, _)| *candidate)
+                        .ok()
+                        .and_then(|index| report.dispositions().get(index))
+                        .map(|(_, disposition)| *disposition),
+                    Some(ProtocolDisposition::Accepted)
+                );
+            }
+            for event_id in carrier_ids.iter().copied() {
+                assert_eq!(
+                    event_disposition(&report, event_id),
+                    Some(ProtocolDisposition::Accepted)
+                );
+            }
+            reports.push(report);
+        }
+        assert!(reports.windows(2).all(|pair| pair[0] == pair[1]));
+    };
+
+    evaluate_case(0xd1, false);
+    evaluate_case(0xd2, true);
+}
+
+#[test]
 fn actor_sequence_gap_is_invalid() {
     new_actor_sequence_must_start_at_one();
     actor_sequence_requires_exact_predecessor();

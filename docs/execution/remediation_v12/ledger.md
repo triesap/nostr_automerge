@@ -137,3 +137,11 @@ stay open. The immutable v12 fixture budget is not rewritten; the active
 post-branch boundary records the current sixty-five-operation delta until v13
 replaces the resource fixtures. The three persistent deep-delta cases likewise
 bind the current 971-operation delta without changing their signed inputs.
+
+`step_1382` adds two real signed actor-predecessor constructions. One returns
+to the first actor after a three-hop chain; the other returns after a
+concurrent two-branch fork. In both cases the first actor's immediate sequence
+predecessor is accepted transitively rather than named as a direct dependency.
+Three delivery orders produce identical complete reports, and the test checks
+all carrier Event outcomes separately from the four accepted semantic hashes
+and the exact returning head.
