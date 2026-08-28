@@ -53,6 +53,7 @@ DEPENDENCY_CLOSURE_CANDIDATE = "6de8d68c83996009962b315306ada3c339f12844"
 CANDIDATE_SCHEDULE_CANDIDATE = "6659ca2e5186af9447592e296eb375e17b62ae67"
 QUARANTINE_OVERLAY_CANDIDATE = "c59f25b09576aa595e0ce97aadb0d159e33a1a8c"
 CANDIDATE_STORAGE_CANDIDATE = "0dc4160ea4f419cbab8ac2523717c7ce4d3644b5"
+ANCESTRY_GATE_CANDIDATE = "68522597bea37ece76b4f08e88c5335d6ea77b09"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -64,16 +65,17 @@ HOLDS = [
 ]
 ACTIVE_SCOPE = [
     "docs/execution/remediation_v12/ledger.md",
+    "fixtures/distribution/manifest_v13.json",
     "implementation/runtime_ledger_v12.json",
-    "reports/remediation_v12_ancestry_authorization_gate.json",
     "reports/spec_baseline.txt",
+    "scripts/generate_distribution_v13.py",
     "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v12.py",
-    "scripts/validate_remediation_v12_ancestry_authorization_gate.py",
+    "scripts/validate_distribution_v13.py",
     "scripts/validate_spec.py",
-    "spec/remediation_findings_v12.json",
+    "spec/distribution_v13_transition.json",
     "tools/nostr_automerge_xtask/src/validate.rs",
-    "tools/validation/remediation_v12_ancestry_authorization_gate.schema.json",
+    "tools/validation/distribution_v13.schema.json",
 ]
 
 EVIDENCE_REQUIREMENTS = [
@@ -201,13 +203,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 112, "active_step": "step_1397", "next_step": "step_1398", "last_planned_step": "step_1419", "remaining_checkpoint_count": 22, "remaining_rcld_count": 3}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 113, "active_step": "step_1398", "next_step": "step_1399", "last_planned_step": "step_1419", "remaining_checkpoint_count": 21, "remaining_rcld_count": 3}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 35:
+    if not isinstance(predecessors, list) or len(predecessors) != 36:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -244,6 +246,7 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[32], {"step": "step_1394", "candidate": CANDIDATE_SCHEDULE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1394")
     require_equal(predecessors[33], {"step": "step_1395", "candidate": QUARANTINE_OVERLAY_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1395")
     require_equal(predecessors[34], {"step": "step_1396", "candidate": CANDIDATE_STORAGE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1396")
+    require_equal(predecessors[35], {"step": "step_1397", "candidate": ANCESTRY_GATE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1397")
 
 
 def validate_trusted_projection() -> None:
@@ -2321,7 +2324,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1397"),
+        ("cursor", "next_step", "step_1398"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -2523,7 +2526,7 @@ def main() -> None:
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
     print(f"- source_mutations={source_mutations}")
-    print("- active=RCLD112/step_1397")
+    print("- active=RCLD113/step_1398")
 
 
 if __name__ == "__main__":

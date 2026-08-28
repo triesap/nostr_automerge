@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/tools/validation/distribution_v13.schema.json",
+  "title": "nostr_automerge signed fixture distribution v13 transition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["distribution_schema", "distribution_id", "protocol_revision", "transition_stage", "status", "target_fixture_count", "fixture_count", "complete", "base_manifest_sha256", "preserved_v12_fixture_count", "preserved_v12_file_count", "preserved_v12_files_sha256", "authorized_v12_source_rebindings", "planned_v13_fixtures", "appended_v13_fixtures", "missing_v13_fixtures", "requirements_sha256", "supersedes", "profiles", "fixtures", "files"],
+  "properties": {
+    "distribution_schema": {"const": "nostr_automerge.fixture_distribution.v13"},
+    "distribution_id": {"const": "draft_2026_08_signed_neutral_13"},
+    "protocol_revision": {"const": "draft_2026_08"},
+    "transition_stage": {"enum": ["authority_defined", "inventory_installed", "deep_actor_fixture_added", "many_actor_fixture_added", "empty_frontier_fixture_added", "wide_ancestry_fixture_added", "writer_authorization_fixture_added", "post_stop_fixture_added", "distribution_complete"]},
+    "status": {"enum": ["locked_transition", "canonical_signed_neutral_corpus"]},
+    "target_fixture_count": {"const": 204},
+    "fixture_count": {"enum": [198, 199, 200, 201, 202, 203, 204]},
+    "complete": {"type": "boolean"},
+    "base_manifest_sha256": {"$ref": "#/$defs/sha256"},
+    "preserved_v12_fixture_count": {"const": 198},
+    "preserved_v12_file_count": {"const": 641},
+    "preserved_v12_files_sha256": {"$ref": "#/$defs/sha256"},
+    "authorized_v12_source_rebindings": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"$ref": "#/$defs/rebinding"}},
+    "planned_v13_fixtures": {"$ref": "#/$defs/identifiers"},
+    "appended_v13_fixtures": {"$ref": "#/$defs/identifiers"},
+    "missing_v13_fixtures": {"$ref": "#/$defs/identifiers"},
+    "requirements_sha256": {"$ref": "#/$defs/sha256"},
+    "supersedes": {"const": "fixtures/distribution/manifest_v12.json"},
+    "profiles": {"type": "object", "additionalProperties": false, "required": ["checkpoint", "core", "malformed", "property", "resource"], "properties": {"checkpoint": {"$ref": "#/$defs/identifiers"}, "core": {"$ref": "#/$defs/identifiers"}, "malformed": {"$ref": "#/$defs/identifiers"}, "property": {"$ref": "#/$defs/identifiers"}, "resource": {"$ref": "#/$defs/identifiers"}}},
+    "fixtures": {"type": "array", "minItems": 198, "maxItems": 204, "items": {"$ref": "#/$defs/fixture"}},
+    "files": {"type": "array", "minItems": 641, "maxItems": 659, "items": {"$ref": "#/$defs/file"}}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "identifiers": {"type": "array", "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_]{2,127}$"}, "uniqueItems": true},
+    "rebinding": {"type": "object", "additionalProperties": false, "required": ["path", "v12_sha256", "v13_sha256"], "properties": {"path": {"type": "string", "minLength": 1}, "v12_sha256": {"$ref": "#/$defs/sha256"}, "v13_sha256": {"$ref": "#/$defs/sha256"}}},
+    "fixture": {"type": "object", "additionalProperties": false, "required": ["expected_path", "fixture_id", "input_paths", "metadata_path", "profile", "requirements"], "properties": {"expected_path": {"type": "string", "minLength": 1}, "fixture_id": {"type": "string", "minLength": 1}, "input_paths": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}, "uniqueItems": true}, "metadata_path": {"type": "string", "minLength": 1}, "profile": {"enum": ["checkpoint", "core", "malformed", "property", "resource"]}, "requirements": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}, "uniqueItems": true}}},
+    "file": {"type": "object", "additionalProperties": false, "required": ["path", "sha256"], "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"$ref": "#/$defs/sha256"}}}
+  }
+}

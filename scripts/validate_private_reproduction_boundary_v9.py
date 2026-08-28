@@ -100,6 +100,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/remediation_v12_actor_gate.schema.json",
     "reports/remediation_v12_ancestry_authorization_gate.json",
     "tools/validation/remediation_v12_ancestry_authorization_gate.schema.json",
+    "spec/distribution_v13_transition.json",
+    "tools/validation/distribution_v13.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -114,6 +116,7 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://github.com/triesap/nostr_automerge/tools/validation/trusted_epoch_projection_gate_v12.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/remediation_v12_actor_gate.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/remediation_v12_ancestry_authorization_gate.schema.json",
+        b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v13.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -190,6 +193,8 @@ PYTHON_SURFACES = (
     "scripts/validate_trusted_epoch_projection_gate_v12.py",
     "scripts/validate_remediation_v12_actor_gate.py",
     "scripts/validate_remediation_v12_ancestry_authorization_gate.py",
+    "scripts/generate_distribution_v13.py",
+    "scripts/validate_distribution_v13.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -339,6 +344,10 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/trusted_epoch_projection_gate_v12.json",
         "reports/remediation_v12_actor_gate.json",
         "reports/remediation_v12_ancestry_authorization_gate.json",
+        "fixtures/distribution/manifest_v13.json",
+        "fixtures/v13/scenarios/epoch_semantics",
+        "fixtures/v13/scenarios/epoch_semantics/",
+        "spec/distribution_v13_transition.json",
         "crates/nostr_automerge/src/control/authorize.rs",
         "crates/nostr_automerge/src/graph/actor_state.rs",
         "crates/nostr_automerge/src/graph/closure.rs",
@@ -399,6 +408,8 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_trusted_epoch_projection_gate_v12.py",
         "scripts/validate_remediation_v12_actor_gate.py",
         "scripts/validate_remediation_v12_ancestry_authorization_gate.py",
+        "scripts/generate_distribution_v13.py",
+        "scripts/validate_distribution_v13.py",
         "scripts/validate_opaque_conformance_v10.py",
         "scripts/validate_signed_conformance_gate_v10.py",
         "scripts/validate_semantic_proof_catalog_v10.py",
@@ -517,6 +528,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/validation/trusted_epoch_projection_gate_v12.schema.json",
         "tools/validation/remediation_v12_actor_gate.schema.json",
         "tools/validation/remediation_v12_ancestry_authorization_gate.schema.json",
+        "tools/validation/distribution_v13.schema.json",
         "tools/validation/opaque_conformance_v10.schema.json",
         "tools/validation/signed_conformance_gate_v10.schema.json",
         "tools/validation/semantic_proof_catalog_v10.schema.json",
@@ -805,6 +817,7 @@ def validate_source_surfaces() -> None:
                             "scripts/validate_trusted_epoch_projection_gate_v12.py",
                             "scripts/validate_remediation_v12_actor_gate.py",
                             "scripts/validate_remediation_v12_ancestry_authorization_gate.py",
+                            "scripts/generate_distribution_v13.py",
                             "scripts/validate_runtime_ledger_v9.py",
                         }
                     )

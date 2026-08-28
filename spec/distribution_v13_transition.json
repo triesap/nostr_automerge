@@ -1,0 +1,29 @@
+{
+  "schema": "nostr_automerge.distribution_v13_transition.v1",
+  "current_stage": "inventory_installed",
+  "stage_order": [
+    "authority_defined",
+    "inventory_installed",
+    "deep_actor_fixture_added",
+    "many_actor_fixture_added",
+    "empty_frontier_fixture_added",
+    "wide_ancestry_fixture_added",
+    "writer_authorization_fixture_added",
+    "post_stop_fixture_added",
+    "distribution_complete"
+  ],
+  "base_manifest": "fixtures/distribution/manifest_v12.json",
+  "base_manifest_sha256": "29d1304aae027d33ff66b39b2cc499cca0e40fb24e5d4f5d749e33bf7dafd7c0",
+  "preserved_fixture_count": 198,
+  "target_fixture_count": 204,
+  "planned_v13_fixtures": [
+    "deep_actor_predecessor_exact_budget",
+    "many_actor_causal_next_op_exact_budget",
+    "empty_merge_frontier_exact_budget",
+    "wide_epoch_ancestry_exact_budget",
+    "epoch_writer_authorization_exact_budget",
+    "post_epoch_semantic_stop_has_no_target_work"
+  ],
+  "requirements_sha256": "a8926ae4610b4855294f769871e87a14dee73d05ed201419de35711a8a781974",
+  "result": "pass"
+}

@@ -282,3 +282,11 @@ ten Finding 100 reproductions pass, budget and cancellation matrices preserve
 the first typed stop, and no target operation occurs after that stop.
 Finding 100 is therefore closed. Findings 101–103 and the external Finding 080
 hold remain unchanged as execution advances to distribution-v13 preparation.
+
+`step_1398` installs the closed distribution-v13 transition before any new
+fixture is admitted. The immutable 198-scenario v12 manifest is the sole base;
+the only authorized source rebinding is the reviewed 156-requirement record.
+The six new scenario identifiers, their order, stage transitions, companion
+inventory, target count of 204, and append-only manifest construction are
+closed. Missing, extra, duplicate, reordered, traversal, checksum, and
+coordinated state/manifest/schema mutations all fail closed.
