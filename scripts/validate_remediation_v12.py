@@ -37,6 +37,7 @@ PROJECTION_GATE_CANDIDATE = "187a260858bdd41f9dd967e32279b9f21454ede2"
 ACTOR_DECISION_CANDIDATE = "629747ab2537593ddf0a4f689a3e14ea6e576039"
 ACTOR_ROUTE_CANDIDATE = "3ced1446a04a422f5760d00d9786dd18ace76930"
 ACTOR_SIGNED_CANDIDATE = "63661f2f1df8394d7526ec2f5d2fa2be60e65efe"
+CAUSAL_DECISION_CANDIDATE = "287b0967751f7575faf3a8ee38c15c65aa428290"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -47,11 +48,16 @@ HOLDS = [
     "remote_mutation",
 ]
 ACTIVE_SCOPE = [
+    "crates/nostr_automerge/src/engine/reference_evaluator.rs",
     "crates/nostr_automerge/src/graph/actor_state.rs",
+    "crates/nostr_automerge/src/reference/epoch_engine.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
     "reports/spec_baseline.txt",
+    "scripts/reproduce_remediation_v12.py",
     "scripts/validate_remediation_v12.py",
+    "spec/remediation_v12_reproductions.json",
+    "tools/nostr_automerge_conformance/src/fixture_generation.rs",
 ]
 
 EVIDENCE_REQUIREMENTS = [
@@ -179,13 +185,13 @@ def validate_ledger(ledger: object) -> None:
     require_equal(record["status"], "implementation_in_progress", "ledger:status")
     require_equal(record["authority"], "spec/remediation_v12_authority.json", "ledger:authority")
     cursor = require_keys(record["cursor"], ["active_rcld", "active_step", "next_step", "last_planned_step", "remaining_checkpoint_count", "remaining_rcld_count"], "ledger:cursor")
-    require_equal(cursor, {"active_rcld": 111, "active_step": "step_1383", "next_step": "step_1384", "last_planned_step": "step_1419", "remaining_checkpoint_count": 36, "remaining_rcld_count": 5}, "ledger:cursor")
+    require_equal(cursor, {"active_rcld": 111, "active_step": "step_1384", "next_step": "step_1385", "last_planned_step": "step_1419", "remaining_checkpoint_count": 35, "remaining_rcld_count": 5}, "ledger:cursor")
     findings = require_keys(record["findings"], ["open", "held"], "ledger:findings")
     require_equal(findings, {"open": ["FINDING_100", "FINDING_101", "FINDING_102", "FINDING_103"], "held": ["FINDING_080"]}, "ledger:findings")
     require_equal(record["requirements"], EVIDENCE_REQUIREMENTS, "ledger:requirements")
     require_equal(record["active_checkpoint_scope"], ACTIVE_SCOPE, "ledger:scope")
     predecessors = record["predecessors"]
-    if not isinstance(predecessors, list) or len(predecessors) != 21:
+    if not isinstance(predecessors, list) or len(predecessors) != 22:
         raise EvidenceError("ledger:predecessors")
     require_equal(predecessors[0], {"step": "step_1363", "candidate": REVIEWED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_v11")
     require_equal(predecessors[1], {"step": "plan_v12", "candidate": PLAN_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_plan")
@@ -208,11 +214,12 @@ def validate_ledger(ledger: object) -> None:
     require_equal(predecessors[18], {"step": "step_1380", "candidate": ACTOR_DECISION_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1380")
     require_equal(predecessors[19], {"step": "step_1381", "candidate": ACTOR_ROUTE_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1381")
     require_equal(predecessors[20], {"step": "step_1382", "candidate": ACTOR_SIGNED_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1382")
+    require_equal(predecessors[21], {"step": "step_1383", "candidate": CAUSAL_DECISION_CANDIDATE, "owner_class": "public", "result": "pass"}, "ledger:predecessor_1383")
 
 
 def validate_trusted_projection() -> None:
     source = (ROOT / "crates/nostr_automerge/src/graph/actor_state.rs").read_text()
-    production = source.split("#[cfg(test)]", 1)[0]
+    production = source.split("#[cfg(test)]\npub(crate) mod tests", 1)[0]
     required = [
         "pub(crate) struct TrustedEpochProjection<'a>",
         "pub(crate) struct TrustedEpochView",
@@ -245,7 +252,7 @@ def validate_trusted_projection() -> None:
 
 def validate_charged_projection_traversal() -> None:
     source = (ROOT / "crates/nostr_automerge/src/graph/actor_state.rs").read_text()
-    production = source.split("#[cfg(test)]", 1)[0]
+    production = source.split("#[cfg(test)]\npub(crate) mod tests", 1)[0]
     required = [
         "trait EpochProjectionSource<'a>",
         "struct CanonicalEpochProjectionSource<'a>",
@@ -264,7 +271,7 @@ def validate_charged_projection_traversal() -> None:
     for prohibited in (".sort(", ".sort_by(", ".sort_unstable(", ".dedup("):
         if prohibited in body:
             raise EvidenceError("projection:repair")
-    tests = source.split("#[cfg(test)]", 1)[1]
+    tests = source.split("#[cfg(test)]\npub(crate) mod tests", 1)[1]
     for name in (
         "charged_projection_traversal_stops_before_every_source_read",
         "projection_rejects_noncanonical_members_and_dependencies_without_repair",
@@ -275,7 +282,7 @@ def validate_charged_projection_traversal() -> None:
 
 def validate_metered_projection_lookups() -> None:
     source = (ROOT / "crates/nostr_automerge/src/graph/actor_state.rs").read_text()
-    production, tests = source.split("#[cfg(test)]", 1)
+    production, tests = source.split("#[cfg(test)]\npub(crate) mod tests", 1)
     required = [
         "pub(crate) fn candidate_metered<E>(",
         "fn candidate_metered_observed<E>(",
@@ -308,7 +315,7 @@ def validate_metered_projection_lookups() -> None:
 
 def validate_metered_projection_publication() -> None:
     source = (ROOT / "crates/nostr_automerge/src/graph/actor_state.rs").read_text()
-    production, tests = source.split("#[cfg(test)]", 1)
+    production, tests = source.split("#[cfg(test)]\npub(crate) mod tests", 1)
     required = [
         "enum ProjectionPublicationOperation",
         "fn build_trusted_epoch_projection_observed<'a, E>(",
@@ -340,7 +347,7 @@ def validate_metered_projection_publication() -> None:
 
 def validate_projection_semantic_matrix() -> None:
     source = (ROOT / "crates/nostr_automerge/src/graph/actor_state.rs").read_text()
-    tests = source.split("#[cfg(test)]", 1)[1]
+    tests = source.split("#[cfg(test)]\npub(crate) mod tests", 1)[1]
     name = "projection_semantic_matrix_is_complete_and_order_invariant"
     if tests.count(f"fn {name}()") != 1:
         raise EvidenceError("projection:semantic_matrix_inventory")
@@ -364,7 +371,7 @@ def validate_projection_semantic_matrix() -> None:
 
 def validate_projection_work_contract() -> None:
     source = (ROOT / "crates/nostr_automerge/src/graph/actor_state.rs").read_text()
-    tests = source.split("#[cfg(test)]", 1)[1]
+    tests = source.split("#[cfg(test)]\npub(crate) mod tests", 1)[1]
     name = "projection_work_contract_preserves_first_stop_and_predecessor_output"
     if tests.count(f"fn {name}()") != 1:
         raise EvidenceError("projection:work_contract_inventory")
@@ -395,7 +402,7 @@ def validate_projection_work_contract() -> None:
 
 def validate_projected_actor_sequence_decision() -> None:
     source = (ROOT / "crates/nostr_automerge/src/graph/actor_state.rs").read_text()
-    production, tests = source.split("#[cfg(test)]", 1)
+    production, tests = source.split("#[cfg(test)]\npub(crate) mod tests", 1)
     required = [
         "pub(crate) fn actor_sequence_decision_metered<E>(",
         "let view = self.candidate_metered(candidate, charge)?;",
@@ -588,6 +595,126 @@ def causal_next_source_mutation_self_test() -> int:
     return caught
 
 
+def validate_projected_causal_next_production_path(
+    actor_source: str | None = None,
+    engine_source: str | None = None,
+) -> None:
+    actor_source = actor_source or (
+        ROOT / "crates/nostr_automerge/src/graph/actor_state.rs"
+    ).read_text()
+    engine_source = engine_source or (
+        ROOT / "crates/nostr_automerge/src/reference/epoch_engine.rs"
+    ).read_text()
+    actor_production = actor_source.split(
+        "#[cfg(test)]\npub(crate) mod tests", 1
+    )[0]
+    engine_production = engine_source.split("#[cfg(test)]\nmod tests", 1)[0]
+    forbidden = [
+        "pub(crate) fn apply_empty_counter",
+        "pub(crate) fn apply_nonempty_counter",
+        "fn causal_next_op(states:",
+        "legacy_counter_is_valid",
+    ]
+    if any(token in actor_production for token in forbidden):
+        raise EvidenceError("causal_next:legacy_production")
+    if engine_production.count(
+        ".causal_next_decision_metered(&candidate"
+    ) != 1:
+        raise EvidenceError("causal_next:production_route")
+    if "legacy_counter_is_valid" in engine_production:
+        raise EvidenceError("causal_next:legacy_call")
+    route = engine_production.split(
+        ".causal_next_decision_metered(&candidate", 1
+    )[0]
+    if "initialize_actor_states_metered(known, &all_candidates" not in route[-1000:]:
+        raise EvidenceError("causal_next:projection_route")
+    if engine_production.count(".legacy_empty_frontier_is_valid(") != 1:
+        raise EvidenceError("causal_next:frontier_isolation")
+    tests = actor_source.split("#[cfg(test)]\npub(crate) mod tests", 1)[1]
+    name = "finding_100_causal_next_op_scan_reproduction"
+    if tests.count(f"fn {name}()") != 1:
+        raise EvidenceError("causal_next:public_regression")
+    prefix = tests.split(f"fn {name}()", 1)[0].rsplit("#[test]", 1)[-1]
+    if "#[ignore" in prefix:
+        raise EvidenceError("causal_next:ignored_regression")
+
+
+def causal_next_route_source_mutation_self_test() -> int:
+    actor_source = (
+        ROOT / "crates/nostr_automerge/src/graph/actor_state.rs"
+    ).read_text()
+    engine_source = (
+        ROOT / "crates/nostr_automerge/src/reference/epoch_engine.rs"
+    ).read_text()
+    mutations = (
+        (
+            actor_source,
+            engine_source.replace(
+                ".causal_next_decision_metered(&candidate",
+                ".legacy_counter_is_valid(&candidate",
+                1,
+            ),
+        ),
+        (
+            actor_source.replace(
+                "#[cfg(test)]\nfn reference_apply_nonempty_counter",
+                "pub(crate) fn apply_nonempty_counter",
+                1,
+            ),
+            engine_source,
+        ),
+    )
+    caught = 0
+    for changed_actor, changed_engine in mutations:
+        try:
+            validate_projected_causal_next_production_path(
+                changed_actor, changed_engine
+            )
+        except EvidenceError:
+            caught += 1
+            continue
+        raise EvidenceError("causal_next:route_mutation_survived")
+    return caught
+
+
+def validate_active_causal_budget_deltas(
+    evaluator_source: str | None = None,
+    fixture_source: str | None = None,
+) -> None:
+    evaluator_source = evaluator_source or (
+        ROOT / "crates/nostr_automerge/src/engine/reference_evaluator.rs"
+    ).read_text()
+    fixture_source = fixture_source or (
+        ROOT / "tools/nostr_automerge_conformance/src/fixture_generation.rs"
+    ).read_text()
+    if "fixture_items.checked_add(71)" not in evaluator_source:
+        raise EvidenceError("causal_next:post_branch_delta")
+    if "signed.budget.max_items.checked_add(995)" not in fixture_source:
+        raise EvidenceError("causal_next:persistent_delta")
+
+
+def causal_budget_source_mutation_self_test() -> int:
+    evaluator_source = (
+        ROOT / "crates/nostr_automerge/src/engine/reference_evaluator.rs"
+    ).read_text()
+    fixture_source = (
+        ROOT / "tools/nostr_automerge_conformance/src/fixture_generation.rs"
+    ).read_text()
+    mutations = (
+        (evaluator_source.replace("checked_add(71)", "checked_add(70)", 1), fixture_source),
+        (evaluator_source, fixture_source.replace("checked_add(995)", "checked_add(994)", 1)),
+    )
+    caught = 0
+    for changed_evaluator, changed_fixture in mutations:
+        try:
+            validate_active_causal_budget_deltas(changed_evaluator, changed_fixture)
+        except EvidenceError:
+            caught += 1
+            continue
+        raise EvidenceError("causal_next:budget_mutation_survived")
+    return caught
+
+
 def validate_reproductions(reproductions: object) -> None:
     record = require_keys(reproductions, ["schema", "cases", "result"], "reproductions")
     require_equal(record["schema"], "nostr_automerge.remediation_v12_reproductions.v1", "reproductions:schema")
@@ -615,7 +742,7 @@ def validate_reproductions(reproductions: object) -> None:
             "path": path,
             "test": test,
             "diagnostic": diagnostic,
-            "expected": "fixed_pass" if index == 0 else "open_failure",
+            "expected": "fixed_pass" if index <= 1 else "open_failure",
         }, f"reproductions:{family}")
     require_equal(record["result"], "pass", "reproductions:result")
 
@@ -756,7 +883,7 @@ def mutation_self_test(authority: object, ledger: object, findings: object, repr
     reordered["schema"] = reordered.pop("schema")
     mutations.append(("authority_order", reordered, ledger))
     for label, field, value in (
-        ("cursor", "next_step", "step_1385"),
+        ("cursor", "next_step", "step_1386"),
         ("scope", "active_checkpoint_scope", ACTIVE_SCOPE[:-1]),
         ("finding", "findings", {"open": ["FINDING_100"], "held": ["FINDING_080"]}),
         ("requirements", "requirements", EVIDENCE_REQUIREMENTS[:-1]),
@@ -886,11 +1013,15 @@ def main() -> None:
     validate_signed_transitive_actor_constructions()
     validate_projected_causal_next_decision()
     source_mutations += causal_next_source_mutation_self_test()
+    validate_projected_causal_next_production_path()
+    source_mutations += causal_next_route_source_mutation_self_test()
+    validate_active_causal_budget_deltas()
+    source_mutations += causal_budget_source_mutation_self_test()
     mutation_count = mutation_self_test(authority, ledger, findings, reproductions, evidence_policy, authority_gate)
     print("PASS: remediation v12 authority")
     print(f"- mutations={mutation_count}")
     print(f"- source_mutations={source_mutations}")
-    print("- active=RCLD111/step_1383")
+    print("- active=RCLD111/step_1384")
 
 
 if __name__ == "__main__":

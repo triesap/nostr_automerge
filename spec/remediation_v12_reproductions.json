@@ -17,7 +17,7 @@
       "path": "crates/nostr_automerge/src/graph/actor_state.rs",
       "test": "graph::actor_state::tests::finding_100_causal_next_op_scan_reproduction",
       "diagnostic": "unmetered causal next-op scan remains",
-      "expected": "open_failure"
+      "expected": "fixed_pass"
     },
     {
       "finding": "FINDING_100",

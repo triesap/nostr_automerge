@@ -153,3 +153,13 @@ arithmetic. Empty history, sixty-four independent actors, exact maximum,
 gap, duplicate, and overflow cases are covered without scanning or mutating
 the actor-state map. Each of the three scalar operations has an immediately
 preceding graph-node charge with exact budget and cancellation boundaries.
+
+`step_1384` routes production causal-counter validation through the projected
+decision and removes the mutable actor-state counter path from production.
+The old closure-wide maximum scan is now test-reference-only; no production
+call can reach it. The causal-next reproduction is enabled and passing, while
+the unmetered empty-frontier comparison remains explicitly isolated for
+`step_1385`. The Finding 100 harness now reports two fixed families and eight
+remaining open families. Immutable v12 fixture budgets remain unchanged; the
+active post-branch delta is seventy-one operations and the three persistent
+resource cases bind the current cumulative 995-operation delta until v13.

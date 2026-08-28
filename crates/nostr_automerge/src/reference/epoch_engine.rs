@@ -431,7 +431,16 @@ pub(crate) fn evaluate_epoch(
                         }
                         Err(MeteredActorStateError::State(_)) => false,
                     };
-                    let actor_counter_valid = projection.legacy_counter_is_valid(
+                    let actor_counter_valid = match projection
+                        .causal_next_decision_metered(&candidate, |counter| {
+                            charge_epoch_item(counter, budget, cancellation)
+                        }) {
+                        Ok(_) => true,
+                        Err(MeteredActorStateError::Work(error)) => {
+                            return Err(EpochEvaluationError::Schedule(error));
+                        }
+                        Err(MeteredActorStateError::State(_)) => false,
+                    } && projection.legacy_empty_frontier_is_valid(
                         &candidate,
                         input.accepted_base().frontier_heads(),
                     );

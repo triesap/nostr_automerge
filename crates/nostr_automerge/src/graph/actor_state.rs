@@ -364,19 +364,22 @@ impl TrustedEpochProjection<'_> {
             .map(|(actor, hash)| (*actor, *hash))
     }
 
-    pub(crate) fn legacy_counter_is_valid(
-        self,
+    pub(crate) fn legacy_empty_frontier_is_valid(
+        &self,
         candidate: &ChangeCandidate,
         base_frontier: &BTreeSet<ChangeHash>,
     ) -> bool {
-        let mut states = self.actor_states;
-        if candidate.operation_count == 0 {
-            let mut current_heads = self.frontier_heads;
-            current_heads.extend(base_frontier.difference(self.accepted_closure).copied());
-            apply_empty_counter(&mut states, candidate, &current_heads).is_ok()
-        } else {
-            apply_nonempty_counter(&mut states, candidate).is_ok()
+        if candidate.operation_count != 0 {
+            return true;
         }
+        let mut current_heads = self.frontier_heads.clone();
+        current_heads.extend(base_frontier.difference(self.accepted_closure).copied());
+        candidate
+            .dependencies
+            .iter()
+            .copied()
+            .collect::<BTreeSet<_>>()
+            == current_heads
     }
 
     pub(crate) fn into_accepted_state_parts(self) -> AcceptedEpochStateParts {
@@ -389,7 +392,8 @@ impl TrustedEpochProjection<'_> {
     }
 }
 
-pub(crate) fn apply_empty_counter(
+#[cfg(test)]
+fn reference_apply_empty_counter(
     states: &mut BTreeMap<ActorId, EpochActorState>,
     candidate: &ChangeCandidate,
     current_heads: &std::collections::BTreeSet<ChangeHash>,
@@ -409,7 +413,7 @@ pub(crate) fn apply_empty_counter(
     let last_sequence = states
         .get(&candidate.actor)
         .map_or(0, |state| state.last_sequence);
-    let next_op = causal_next_op(states);
+    let next_op = reference_causal_next_op(states);
     if candidate.sequence
         != last_sequence
             .checked_add(1)
@@ -431,7 +435,8 @@ pub(crate) fn apply_empty_counter(
     Ok(())
 }
 
-pub(crate) fn apply_nonempty_counter(
+#[cfg(test)]
+fn reference_apply_nonempty_counter(
     states: &mut BTreeMap<ActorId, EpochActorState>,
     candidate: &ChangeCandidate,
 ) -> Result<(), ActorStateError> {
@@ -441,7 +446,7 @@ pub(crate) fn apply_nonempty_counter(
     let last_sequence = states
         .get(&candidate.actor)
         .map_or(0, |state| state.last_sequence);
-    let next_op = causal_next_op(states);
+    let next_op = reference_causal_next_op(states);
     if candidate.sequence
         != last_sequence
             .checked_add(1)
@@ -466,7 +471,8 @@ pub(crate) fn apply_nonempty_counter(
     Ok(())
 }
 
-fn causal_next_op(states: &BTreeMap<ActorId, EpochActorState>) -> u64 {
+#[cfg(test)]
+fn reference_causal_next_op(states: &BTreeMap<ActorId, EpochActorState>) -> u64 {
     // Automerge operation counters are causal Lamport counters. Actor sequence
     // remains actor-local, while a new change starts after the greatest
     // operation visible in its exact dependency closure.
@@ -833,9 +839,9 @@ pub(crate) mod tests {
         ActorStateError, CanonicalEpochProjectionSource, CausalNextOperation, EpochActorState,
         EpochProjectionSource, MeteredActorStateError, ProjectionLookupOperation,
         ProjectionPublicationOperation, TrustedEpochProjection, TrustedEpochView,
-        apply_empty_counter, apply_nonempty_counter, build_trusted_epoch_projection,
-        build_trusted_epoch_projection_observed, initialize_actor_states,
-        initialize_actor_states_metered,
+        build_trusted_epoch_projection, build_trusted_epoch_projection_observed,
+        initialize_actor_states, initialize_actor_states_metered, reference_apply_empty_counter,
+        reference_apply_nonempty_counter,
     };
     use crate::graph::change_candidate::ChangeCandidate;
     use crate::{ActorId, ChangeHash, Completion, DevicePublicKey, EventId, WorkCounter};
@@ -1724,7 +1730,10 @@ pub(crate) mod tests {
         );
         assert_eq!(many_projection.actor_states, states_before);
         let mut legacy_states = states_before;
-        assert_eq!(apply_nonempty_counter(&mut legacy_states, &next), Ok(()));
+        assert_eq!(
+            reference_apply_nonempty_counter(&mut legacy_states, &next),
+            Ok(())
+        );
         assert_eq!(legacy_states[&next.actor].next_op, 66);
 
         let mut gap = next.clone();
@@ -2387,7 +2396,7 @@ pub(crate) mod tests {
 
         let source = include_str!("actor_state.rs");
         let production = source
-            .split_once("#[cfg(test)]")
+            .split_once("#[cfg(test)]\npub(crate) mod tests")
             .map_or(source, |item| item.0);
         assert_eq!(production.matches("Ok(TrustedEpochProjection {").count(), 1);
         assert!(!production.contains("pub struct TrustedEpochProjection"));
@@ -2402,19 +2411,25 @@ pub(crate) mod tests {
         let actor = ActorId::from_bytes([1; 32]);
         let mut states = BTreeMap::new();
         let first = candidate(1, 1, 1, 2);
-        assert_eq!(apply_nonempty_counter(&mut states, &first), Ok(()));
+        assert_eq!(
+            reference_apply_nonempty_counter(&mut states, &first),
+            Ok(())
+        );
         assert_eq!(states[&actor].next_op, 3);
         let second = candidate(1, 2, 3, 1);
-        assert_eq!(apply_nonempty_counter(&mut states, &second), Ok(()));
+        assert_eq!(
+            reference_apply_nonempty_counter(&mut states, &second),
+            Ok(())
+        );
 
         let mut gap = candidate(1, 3, 5, 1);
         assert_eq!(
-            apply_nonempty_counter(&mut states.clone(), &gap),
+            reference_apply_nonempty_counter(&mut states.clone(), &gap),
             Err(ActorStateError::OperationCounter)
         );
         gap.start_op = 2;
         assert_eq!(
-            apply_nonempty_counter(&mut states.clone(), &gap),
+            reference_apply_nonempty_counter(&mut states.clone(), &gap),
             Err(ActorStateError::OperationCounter)
         );
         let mut overflow_states = BTreeMap::from([(
@@ -2427,11 +2442,11 @@ pub(crate) mod tests {
         )]);
         let overflow = candidate(1, 2, u64::MAX, 1);
         assert_eq!(
-            apply_nonempty_counter(&mut overflow_states, &overflow),
+            reference_apply_nonempty_counter(&mut overflow_states, &overflow),
             Err(ActorStateError::OperationCounter)
         );
         assert_eq!(
-            apply_nonempty_counter(&mut states, &candidate(2, 1, 4, 1)),
+            reference_apply_nonempty_counter(&mut states, &candidate(2, 1, 4, 1)),
             Ok(())
         );
     }
@@ -2442,8 +2457,14 @@ pub(crate) mod tests {
         let first = candidate(5, 1, 1, 2);
         let second = candidate(5, 2, 3, 4);
         let mut states = BTreeMap::new();
-        assert_eq!(apply_nonempty_counter(&mut states, &first), Ok(()));
-        assert_eq!(apply_nonempty_counter(&mut states, &second), Ok(()));
+        assert_eq!(
+            reference_apply_nonempty_counter(&mut states, &first),
+            Ok(())
+        );
+        assert_eq!(
+            reference_apply_nonempty_counter(&mut states, &second),
+            Ok(())
+        );
         assert_eq!(states[&actor].last_sequence, 2);
         assert_eq!(states[&actor].next_op, 7);
         assert_eq!(states[&actor].highest_change, second.change_hash);
@@ -2457,7 +2478,7 @@ pub(crate) mod tests {
             },
         )]);
         assert_eq!(
-            apply_nonempty_counter(&mut overflow, &candidate(5, 3, u64::MAX, 1)),
+            reference_apply_nonempty_counter(&mut overflow, &candidate(5, 3, u64::MAX, 1)),
             Err(ActorStateError::OperationCounter)
         );
     }
@@ -2535,9 +2556,9 @@ pub(crate) mod tests {
             );
             candidate.dependencies = current_heads.iter().copied().collect::<Vec<_>>().into();
             let result = if input["empty"].as_bool() == Some(true) {
-                apply_empty_counter(&mut states, &candidate, &current_heads)
+                reference_apply_empty_counter(&mut states, &candidate, &current_heads)
             } else {
-                apply_nonempty_counter(&mut states, &candidate)
+                reference_apply_nonempty_counter(&mut states, &candidate)
             };
             match case["expected"]["result"].as_str() {
                 Some("accepted") => {
@@ -2575,13 +2596,16 @@ pub(crate) mod tests {
     fn validate_empty_merge_change_counters() {
         let mut states = BTreeMap::new();
         let first = candidate(1, 1, 1, 2);
-        assert_eq!(apply_nonempty_counter(&mut states, &first), Ok(()));
+        assert_eq!(
+            reference_apply_nonempty_counter(&mut states, &first),
+            Ok(())
+        );
         let first_head = ChangeHash::from_bytes([7; 32]);
         let mut empty = candidate(1, 2, 3, 0);
         empty.change_hash = ChangeHash::from_bytes([2; 32]);
         empty.dependencies = vec![first_head].into();
         assert_eq!(
-            apply_empty_counter(&mut states, &empty, &BTreeSet::from([first_head])),
+            reference_apply_empty_counter(&mut states, &empty, &BTreeSet::from([first_head])),
             Ok(())
         );
         assert_eq!(states[&ActorId::from_bytes([1; 32])].next_op, 3);
@@ -2590,7 +2614,7 @@ pub(crate) mod tests {
         second_empty.change_hash = ChangeHash::from_bytes([3; 32]);
         second_empty.dependencies = vec![empty.change_hash].into();
         assert_eq!(
-            apply_empty_counter(
+            reference_apply_empty_counter(
                 &mut states,
                 &second_empty,
                 &BTreeSet::from([empty.change_hash])
@@ -2600,7 +2624,7 @@ pub(crate) mod tests {
         let mut wrong_start = candidate(1, 4, 4, 0);
         wrong_start.dependencies = vec![second_empty.change_hash].into();
         assert_eq!(
-            apply_empty_counter(
+            reference_apply_empty_counter(
                 &mut states.clone(),
                 &wrong_start,
                 &BTreeSet::from([second_empty.change_hash])
@@ -2608,7 +2632,7 @@ pub(crate) mod tests {
             Err(ActorStateError::OperationCounter)
         );
         assert_eq!(
-            apply_empty_counter(&mut states, &wrong_start, &BTreeSet::new()),
+            reference_apply_empty_counter(&mut states, &wrong_start, &BTreeSet::new()),
             Err(ActorStateError::DependencyFrontier)
         );
     }
@@ -2666,25 +2690,43 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[ignore = "open remediation-v12 resource-accounting reproduction"]
     fn finding_100_causal_next_op_scan_reproduction() {
-        let mut states = BTreeMap::new();
+        let mut accepted = BTreeMap::new();
+        let mut closure = BTreeSet::new();
         for actor in 1..=64 {
-            states.insert(
-                ActorId::from_bytes([actor; 32]),
-                EpochActorState {
-                    last_sequence: 1,
-                    next_op: u64::from(actor) + 1,
-                    highest_change: ChangeHash::from_bytes([actor; 32]),
-                },
-            );
+            let mut change = candidate(actor, 1, 1, u64::from(actor));
+            change.change_hash = ChangeHash::from_bytes([actor; 32]);
+            closure.insert(change.change_hash);
+            accepted.insert(change.change_hash, change);
         }
-        let next = candidate(100, 1, 65, 1);
-        assert_eq!(apply_nonempty_counter(&mut states, &next), Ok(()));
+        let projection = initialize_actor_states_metered(&closure, &accepted, |_| Ok::<_, ()>(()));
+        assert!(projection.is_ok());
+        let Some(projection) = projection.ok() else {
+            return;
+        };
+        let mut next = candidate(100, 1, 65, 1);
+        next.change_hash = ChangeHash::from_bytes([100; 32]);
+        assert_eq!(
+            projection.causal_next_decision_metered(&next, |_| Ok::<_, ()>(())),
+            Ok(66)
+        );
 
         let source = include_str!("actor_state.rs");
+        let production = source
+            .split_once("#[cfg(test)]\npub(crate) mod tests")
+            .map_or(source, |item| item.0);
+        let engine = include_str!("../reference/epoch_engine.rs");
+        let engine_production = engine
+            .split_once("#[cfg(test)]\nmod tests")
+            .map_or(engine, |item| item.0);
         assert!(
-            !source.contains("fn causal_next_op(states: &BTreeMap<ActorId, EpochActorState>)"),
+            !production.contains("fn causal_next_op(states:")
+                && !production.contains("legacy_counter_is_valid")
+                && !production.contains("pub(crate) fn apply_nonempty_counter")
+                && engine_production
+                    .matches(".causal_next_decision_metered(&candidate")
+                    .count()
+                    == 1,
             "unmetered causal next-op scan remains"
         );
     }
@@ -2700,7 +2742,7 @@ pub(crate) mod tests {
         let mut empty = candidate(1, 1, 1, 0);
         empty.dependencies = current_heads.iter().copied().collect::<Vec<_>>().into();
         assert_eq!(
-            apply_empty_counter(&mut BTreeMap::new(), &empty, &current_heads),
+            reference_apply_empty_counter(&mut BTreeMap::new(), &empty, &current_heads),
             Ok(())
         );
 
