@@ -922,6 +922,30 @@ mod tests {
     }
 
     #[test]
+    fn actor_counter_frontier_reports_match_predecessor_bytes() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../fixtures/v1_draft/scenarios/actor_counters");
+        for fixture_id in [
+            "actor_counter_sequence_start",
+            "actor_counter_exact_predecessor",
+            "actor_counter_missing_predecessor",
+            "actor_counter_sequence_gap",
+            "actor_counter_sequence_rollback",
+            "actor_counter_start_op",
+            "actor_counter_empty_preservation",
+            "actor_counter_empty_frontier",
+        ] {
+            let fixture = root.join(format!("{fixture_id}.fixture.json"));
+            let expected = fs::read(root.join(format!("{fixture_id}.expected.json")));
+            assert!(expected.is_ok(), "{fixture_id}");
+            assert_eq!(
+                run_fixture(&fixture),
+                expected.map_err(|_| RunError::Expected)
+            );
+        }
+    }
+
+    #[test]
     fn report_contract_compatibility_consumers_are_exact() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         let fixture_path =

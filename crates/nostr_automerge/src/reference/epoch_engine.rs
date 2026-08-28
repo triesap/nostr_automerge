@@ -416,52 +416,28 @@ pub(crate) fn evaluate_epoch(
             candidate_dependency_closure(&candidate, &all_candidates, budget, cancellation)
                 .map_err(|error| EpochEvaluationError::Schedule(closure_schedule_error(error)))?;
         let complete_closure = closure.missing.is_empty().then_some(&closure.known);
-        let (actor_sequence_valid, actor_counter_valid) = if let Some(known) = complete_closure {
+        let actor_counter_frontier_valid = if let Some(known) = complete_closure {
             match initialize_actor_states_metered(known, &all_candidates, |counter| {
                 charge_epoch_item(counter, budget, cancellation)
             }) {
-                Ok(projection) => {
-                    let actor_sequence_valid = match projection
-                        .actor_sequence_decision_metered(&candidate, |counter| {
-                            charge_epoch_item(counter, budget, cancellation)
-                        }) {
-                        Ok(()) => true,
-                        Err(MeteredActorStateError::Work(error)) => {
-                            return Err(EpochEvaluationError::Schedule(error));
-                        }
-                        Err(MeteredActorStateError::State(_)) => false,
-                    };
-                    let actor_counter_valid = match projection
-                        .causal_next_decision_metered(&candidate, |counter| {
-                            charge_epoch_item(counter, budget, cancellation)
-                        }) {
-                        Ok(_) => true,
-                        Err(MeteredActorStateError::Work(error)) => {
-                            return Err(EpochEvaluationError::Schedule(error));
-                        }
-                        Err(MeteredActorStateError::State(_)) => false,
-                    };
-                    let actor_counter_valid = actor_counter_valid
-                        && match projection.empty_frontier_decision_metered(
-                            &candidate,
-                            input.accepted_base().frontier_heads(),
-                            |counter| charge_epoch_item(counter, budget, cancellation),
-                        ) {
-                            Ok(()) => true,
-                            Err(MeteredActorStateError::Work(error)) => {
-                                return Err(EpochEvaluationError::Schedule(error));
-                            }
-                            Err(MeteredActorStateError::State(_)) => false,
-                        };
-                    (actor_sequence_valid, actor_counter_valid)
-                }
+                Ok(projection) => match projection.candidate_semantics_decision_metered(
+                    &candidate,
+                    input.accepted_base().frontier_heads(),
+                    |counter| charge_epoch_item(counter, budget, cancellation),
+                ) {
+                    Ok(()) => true,
+                    Err(MeteredActorStateError::Work(error)) => {
+                        return Err(EpochEvaluationError::Schedule(error));
+                    }
+                    Err(MeteredActorStateError::State(_)) => false,
+                },
                 Err(MeteredActorStateError::Work(error)) => {
                     return Err(EpochEvaluationError::Schedule(error));
                 }
-                Err(MeteredActorStateError::State(_)) => (false, false),
+                Err(MeteredActorStateError::State(_)) => false,
             }
         } else {
-            (true, true)
+            true
         };
         let ancestry_valid = !matches!(
             validate_epoch_ancestry(
@@ -481,8 +457,7 @@ pub(crate) fn evaluate_epoch(
             },
         )?;
         let prior_semantics_valid = authorized
-            && actor_sequence_valid
-            && actor_counter_valid
+            && actor_counter_frontier_valid
             && ancestry_valid
             && prior_dependencies_valid;
         let application_valid = if !prior_semantics_valid {

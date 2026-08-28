@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v12_authority.json",
   "cursor": {
     "active_rcld": 111,
-    "active_step": "step_1385",
-    "next_step": "step_1386",
+    "active_step": "step_1386",
+    "next_step": "step_1387",
     "last_planned_step": "step_1419",
-    "remaining_checkpoint_count": 34,
+    "remaining_checkpoint_count": 33,
     "remaining_rcld_count": 5
   },
   "findings": {
@@ -28,16 +28,13 @@
     "NCRDT-EVIDENCE-007"
   ],
   "active_checkpoint_scope": [
-    "crates/nostr_automerge/src/engine/reference_evaluator.rs",
     "crates/nostr_automerge/src/graph/actor_state.rs",
     "crates/nostr_automerge/src/reference/epoch_engine.rs",
     "docs/execution/remediation_v12/ledger.md",
     "implementation/runtime_ledger_v12.json",
     "reports/spec_baseline.txt",
-    "scripts/reproduce_remediation_v12.py",
     "scripts/validate_remediation_v12.py",
-    "spec/remediation_v12_reproductions.json",
-    "tools/nostr_automerge_conformance/src/fixture_generation.rs"
+    "tools/nostr_automerge_conformance/src/runner.rs"
   ],
   "predecessors": [
     {
@@ -175,6 +172,12 @@
     {
       "step": "step_1384",
       "candidate": "5377b9d276b4deabd0fd3c6f6dac1734d213e74d",
+      "owner_class": "public",
+      "result": "pass"
+    },
+    {
+      "step": "step_1385",
+      "candidate": "502c5701d73c4452906ef92f0a324908b9d039a8",
       "owner_class": "public",
       "result": "pass"
     }

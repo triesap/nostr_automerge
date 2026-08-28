@@ -175,3 +175,12 @@ covered without allocation, sorting, deduplication, or repair. The Finding
 immutable fixture budgets remain frozen; the current post-branch delta is
 seventy-three operations and the persistent cases bind the cumulative
 1,003-operation delta until v13.
+
+`step_1386` composes actor sequence, causal counter, and empty-frontier
+validation behind one ordered metered candidate decision. Actor failure has
+precedence over counter failure, counter failure has precedence over frontier
+failure, and the first typed work stop prevents every later decision family.
+The complete charge matrix covers every budget and cancellation boundary, and
+the eight signed actor-counter fixtures still produce their exact immutable
+expected bytes across all required delivery permutations. No diagnostic,
+accepted history, or ample-budget report byte changes.

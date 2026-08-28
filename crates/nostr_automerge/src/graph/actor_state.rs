@@ -149,6 +149,13 @@ enum FrontierComparisonOperation {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum CandidateSemanticStage {
+    ActorSequence,
+    CausalCounter,
+    EmptyFrontier,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ProjectionPublicationOperation {
     CandidateDependency,
     DependedOn,
@@ -211,6 +218,35 @@ impl TrustedEpochView {
 }
 
 impl TrustedEpochProjection<'_> {
+    /// Applies the complete actor/counter/frontier decision in protocol order.
+    ///
+    /// A semantic failure stops before later decision families. Work failures
+    /// retain the exact injected cause and likewise prevent later work.
+    pub(crate) fn candidate_semantics_decision_metered<E>(
+        &self,
+        candidate: &ChangeCandidate,
+        base_frontier: &BTreeSet<ChangeHash>,
+        charge: impl FnMut(WorkCounter) -> Result<(), E>,
+    ) -> Result<(), MeteredActorStateError<E>> {
+        self.candidate_semantics_decision_metered_observed(candidate, base_frontier, charge, |_| {})
+    }
+
+    fn candidate_semantics_decision_metered_observed<E>(
+        &self,
+        candidate: &ChangeCandidate,
+        base_frontier: &BTreeSet<ChangeHash>,
+        mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
+        mut observed: impl FnMut(CandidateSemanticStage),
+    ) -> Result<(), MeteredActorStateError<E>> {
+        self.actor_sequence_decision_metered(candidate, &mut charge)?;
+        observed(CandidateSemanticStage::ActorSequence);
+        self.causal_next_decision_metered(candidate, &mut charge)?;
+        observed(CandidateSemanticStage::CausalCounter);
+        self.empty_frontier_decision_metered(candidate, base_frontier, charge)?;
+        observed(CandidateSemanticStage::EmptyFrontier);
+        Ok(())
+    }
+
     /// Decides actor-sequence continuity from immutable projected state.
     ///
     /// The actor predecessor may be anywhere in the accepted closure. It is
@@ -1032,11 +1068,12 @@ pub(crate) mod tests {
     use std::rc::Rc;
 
     use super::{
-        ActorStateError, CanonicalEpochProjectionSource, CausalNextOperation, EpochActorState,
-        EpochProjectionSource, FrontierComparisonOperation, MeteredActorStateError,
-        ProjectionLookupOperation, ProjectionPublicationOperation, TrustedEpochProjection,
-        TrustedEpochView, build_trusted_epoch_projection, build_trusted_epoch_projection_observed,
-        initialize_actor_states, initialize_actor_states_metered, reference_apply_empty_counter,
+        ActorStateError, CandidateSemanticStage, CanonicalEpochProjectionSource,
+        CausalNextOperation, EpochActorState, EpochProjectionSource, FrontierComparisonOperation,
+        MeteredActorStateError, ProjectionLookupOperation, ProjectionPublicationOperation,
+        TrustedEpochProjection, TrustedEpochView, build_trusted_epoch_projection,
+        build_trusted_epoch_projection_observed, initialize_actor_states,
+        initialize_actor_states_metered, reference_apply_empty_counter,
         reference_apply_nonempty_counter,
     };
     use crate::graph::change_candidate::ChangeCandidate;
@@ -2226,6 +2263,149 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn complete_candidate_semantics_preserve_precedence_and_every_stop_boundary() {
+        let first = candidate(1, 1, 1, 1);
+        let closure = BTreeSet::from([first.change_hash]);
+        let changes = BTreeMap::from([(first.change_hash, first.clone())]);
+        let projection = initialize_actor_states_metered(&closure, &changes, |_| Ok::<_, ()>(()));
+        assert!(projection.is_ok());
+        let Some(projection) = projection.ok() else {
+            return;
+        };
+        let base_frontier = BTreeSet::new();
+        let mut valid = candidate(1, 2, 2, 0);
+        valid.change_hash = ChangeHash::from_bytes([2; 32]);
+        valid.dependencies = vec![first.change_hash].into();
+
+        let charges = Cell::new(0_usize);
+        let mut completed = Vec::new();
+        let ample = projection.candidate_semantics_decision_metered_observed(
+            &valid,
+            &base_frontier,
+            |_| {
+                charges.set(charges.get().saturating_add(1));
+                Ok::<_, Completion>(())
+            },
+            |stage| completed.push((stage, charges.get())),
+        );
+        assert_eq!(ample, Ok(()));
+        assert_eq!(
+            completed
+                .iter()
+                .map(|(stage, _)| *stage)
+                .collect::<Vec<_>>(),
+            vec![
+                CandidateSemanticStage::ActorSequence,
+                CandidateSemanticStage::CausalCounter,
+                CandidateSemanticStage::EmptyFrontier,
+            ]
+        );
+        assert!(completed.windows(2).all(|pair| pair[0].1 < pair[1].1));
+        assert_eq!(
+            completed.last().map(|(_, count)| *count),
+            Some(charges.get())
+        );
+
+        for successful in 0..charges.get() {
+            for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
+                let observed = Cell::new(0_usize);
+                let mut stopped_stages = Vec::new();
+                let result = projection.candidate_semantics_decision_metered_observed(
+                    &valid,
+                    &base_frontier,
+                    |_| {
+                        if observed.get() == successful {
+                            Err(stopped)
+                        } else {
+                            observed.set(observed.get().saturating_add(1));
+                            Ok(())
+                        }
+                    },
+                    |stage| stopped_stages.push(stage),
+                );
+                assert_eq!(result, Err(MeteredActorStateError::Work(stopped)));
+                assert_eq!(observed.get(), successful);
+                assert_eq!(
+                    stopped_stages,
+                    completed
+                        .iter()
+                        .take_while(|(_, boundary)| *boundary <= successful)
+                        .map(|(stage, _)| *stage)
+                        .collect::<Vec<_>>()
+                );
+            }
+        }
+        for allowance in [charges.get(), charges.get().saturating_add(1)] {
+            let observed = Cell::new(0_usize);
+            let result =
+                projection.candidate_semantics_decision_metered(&valid, &base_frontier, |_| {
+                    if observed.get() == allowance {
+                        Err(Completion::BudgetExhausted)
+                    } else {
+                        observed.set(observed.get().saturating_add(1));
+                        Ok(())
+                    }
+                });
+            assert_eq!(result, Ok(()));
+            assert_eq!(observed.get(), charges.get());
+        }
+
+        let mut actor_invalid = valid.clone();
+        actor_invalid.sequence = 3;
+        actor_invalid.start_op = 9;
+        actor_invalid.dependencies = Vec::new().into();
+        assert_eq!(
+            projection.candidate_semantics_decision_metered(
+                &actor_invalid,
+                &base_frontier,
+                |_| Ok::<_, Completion>(())
+            ),
+            Err(MeteredActorStateError::State(
+                ActorStateError::MissingPredecessor
+            ))
+        );
+
+        let mut counter_invalid = valid.clone();
+        counter_invalid.start_op = 9;
+        counter_invalid.dependencies = Vec::new().into();
+        assert_eq!(
+            projection.candidate_semantics_decision_metered(
+                &counter_invalid,
+                &base_frontier,
+                |_| Ok::<_, Completion>(())
+            ),
+            Err(MeteredActorStateError::State(
+                ActorStateError::OperationCounter
+            ))
+        );
+
+        let mut frontier_invalid = valid;
+        frontier_invalid.dependencies = Vec::new().into();
+        assert_eq!(
+            projection.candidate_semantics_decision_metered(
+                &frontier_invalid,
+                &base_frontier,
+                |_| Ok::<_, Completion>(())
+            ),
+            Err(MeteredActorStateError::State(
+                ActorStateError::DependencyFrontier
+            ))
+        );
+
+        #[derive(Debug, PartialEq, Eq)]
+        struct Injected;
+        let injected = Injected;
+        assert!(matches!(
+            projection.candidate_semantics_decision_metered(
+                &frontier_invalid,
+                &base_frontier,
+                |_| Err(&injected)
+            ),
+            Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
+        ));
+    }
+
+    #[test]
     fn projection_lookups_and_semantic_comparisons_are_immediately_charged() {
         let first = candidate(1, 1, 1, 1);
         let mut second = candidate(1, 2, 2, 1);
@@ -3070,7 +3250,7 @@ pub(crate) mod tests {
             !production.contains("fn validate_actor_predecessor(")
                 && !engine_production.contains("validate_actor_predecessor")
                 && engine_production
-                    .matches(".actor_sequence_decision_metered(")
+                    .matches(".candidate_semantics_decision_metered(")
                     .count()
                     == 1,
             "unmetered actor predecessor collection remains"
@@ -3112,7 +3292,11 @@ pub(crate) mod tests {
                 && !production.contains("legacy_counter_is_valid")
                 && !production.contains("pub(crate) fn apply_nonempty_counter")
                 && engine_production
-                    .matches(".causal_next_decision_metered(&candidate")
+                    .matches(".causal_next_decision_metered(")
+                    .count()
+                    == 0
+                && engine_production
+                    .matches(".candidate_semantics_decision_metered(")
                     .count()
                     == 1,
             "unmetered causal next-op scan remains"
@@ -3158,7 +3342,13 @@ pub(crate) mod tests {
             !method.contains(".collect::<")
                 && !method.contains(".clone()")
                 && !method.contains(".sort")
-                && !method.contains(".dedup"),
+                && !method.contains(".dedup")
+                && include_str!("../reference/epoch_engine.rs")
+                    .split_once("#[cfg(test)]\nmod tests")
+                    .map_or("", |item| item.0)
+                    .matches(".empty_frontier_decision_metered(")
+                    .count()
+                    == 0,
             "unmetered empty-frontier allocation remains"
         );
     }
