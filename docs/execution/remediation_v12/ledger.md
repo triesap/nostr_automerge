@@ -78,3 +78,10 @@ reject missing, extra, duplicate, descending, and key-mismatched inputs without
 sorting, deduplicating, or repairing them. The immutable v12 distribution
 remains unchanged while its newly exposed work delta is tracked until the v13
 resource fixtures are created.
+
+`step_1375` seals the candidate-view lookup boundary. Branch and accepted
+membership, actor-state and predecessor reads, direct-edge lookup, checked
+expected-sequence derivation, and the actor, sequence, and causal-next
+comparisons each execute only after their own successful charge. The exact
+alternating trace proves N-1, N, N+1, cancellation, and injected-error identity
+without a bulk, retroactive, or unmetered candidate-view path.

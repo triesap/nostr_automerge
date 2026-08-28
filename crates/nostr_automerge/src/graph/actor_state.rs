@@ -105,8 +105,25 @@ pub(crate) struct TrustedEpochView {
     branch_member: bool,
     accepted_member: bool,
     predecessor: Option<ChangeHash>,
+    predecessor_is_direct_dependency: bool,
+    actor_identity_matches: bool,
     expected_sequence: u64,
+    sequence_matches: bool,
     causal_next_op: u64,
+    expected_next_matches: bool,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ProjectionLookupOperation {
+    BranchMembership,
+    AcceptedMembership,
+    ActorState,
+    DirectDependency,
+    PredecessorCandidate,
+    ActorIdentityComparison,
+    ExpectedSequence,
+    SequenceComparison,
+    ExpectedNextComparison,
 }
 
 pub(crate) type AcceptedEpochStateParts = (
@@ -129,33 +146,104 @@ impl TrustedEpochView {
         self.predecessor
     }
 
+    pub(crate) const fn predecessor_is_direct_dependency(self) -> bool {
+        self.predecessor_is_direct_dependency
+    }
+
+    pub(crate) const fn actor_identity_matches(self) -> bool {
+        self.actor_identity_matches
+    }
+
     pub(crate) const fn expected_sequence(self) -> u64 {
         self.expected_sequence
+    }
+
+    pub(crate) const fn sequence_matches(self) -> bool {
+        self.sequence_matches
     }
 
     pub(crate) const fn causal_next_op(self) -> u64 {
         self.causal_next_op
     }
+
+    pub(crate) const fn expected_next_matches(self) -> bool {
+        self.expected_next_matches
+    }
 }
 
 impl TrustedEpochProjection<'_> {
-    pub(crate) fn candidate(
+    pub(crate) fn candidate_metered<E>(
         &self,
         candidate: &ChangeCandidate,
-    ) -> Result<TrustedEpochView, ActorStateError> {
+        charge: impl FnMut(WorkCounter) -> Result<(), E>,
+    ) -> Result<TrustedEpochView, MeteredActorStateError<E>> {
+        self.candidate_metered_observed(candidate, charge, |_| {})
+    }
+
+    fn candidate_metered_observed<E>(
+        &self,
+        candidate: &ChangeCandidate,
+        mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
+        mut observed: impl FnMut(ProjectionLookupOperation),
+    ) -> Result<TrustedEpochView, MeteredActorStateError<E>> {
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+        let branch_member = self.branch_membership.contains_key(&candidate.change_hash);
+        observed(ProjectionLookupOperation::BranchMembership);
+
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+        let accepted_member = self.accepted_closure.contains(&candidate.change_hash);
+        observed(ProjectionLookupOperation::AcceptedMembership);
+
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
         let actor = self.actor_states.get(&candidate.actor).copied();
-        let expected_sequence = actor.map_or(Ok(1), |state| {
-            state
-                .last_sequence
-                .checked_add(1)
-                .ok_or(ActorStateError::SequenceGap)
-        })?;
+        observed(ProjectionLookupOperation::ActorState);
+
+        let (predecessor, predecessor_is_direct_dependency, actor_identity_matches) =
+            if let Some(state) = actor {
+                charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
+                let direct = candidate
+                    .dependencies
+                    .binary_search(&state.highest_change)
+                    .is_ok();
+                observed(ProjectionLookupOperation::DirectDependency);
+
+                charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+                let predecessor_candidate = self.branch_membership.get(&state.highest_change);
+                observed(ProjectionLookupOperation::PredecessorCandidate);
+
+                charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+                let actor_matches = predecessor_candidate
+                    .is_some_and(|predecessor| predecessor.actor == candidate.actor);
+                observed(ProjectionLookupOperation::ActorIdentityComparison);
+                (Some(state.highest_change), direct, actor_matches)
+            } else {
+                (None, false, true)
+            };
+
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+        let expected_sequence = actor.map_or(Some(1), |state| state.last_sequence.checked_add(1));
+        observed(ProjectionLookupOperation::ExpectedSequence);
+        let expected_sequence =
+            expected_sequence.ok_or(MeteredActorStateError::State(ActorStateError::SequenceGap))?;
+
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+        let sequence_matches = candidate.sequence == expected_sequence;
+        observed(ProjectionLookupOperation::SequenceComparison);
+
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+        let expected_next_matches = candidate.start_op == self.causal_next_op;
+        observed(ProjectionLookupOperation::ExpectedNextComparison);
+
         Ok(TrustedEpochView {
-            branch_member: self.branch_membership.contains_key(&candidate.change_hash),
-            accepted_member: self.accepted_closure.contains(&candidate.change_hash),
-            predecessor: actor.map(|state| state.highest_change),
+            branch_member,
+            accepted_member,
+            predecessor,
+            predecessor_is_direct_dependency,
+            actor_identity_matches,
             expected_sequence,
+            sequence_matches,
             causal_next_op: self.causal_next_op,
+            expected_next_matches,
         })
     }
 
@@ -648,8 +736,9 @@ pub(crate) mod tests {
 
     use super::{
         ActorStateError, EpochActorState, EpochProjectionSource, MeteredActorStateError,
-        apply_empty_counter, apply_nonempty_counter, build_trusted_epoch_projection,
-        initialize_actor_states, initialize_actor_states_metered, validate_actor_predecessor,
+        ProjectionLookupOperation, TrustedEpochProjection, TrustedEpochView, apply_empty_counter,
+        apply_nonempty_counter, build_trusted_epoch_projection, initialize_actor_states,
+        initialize_actor_states_metered, validate_actor_predecessor,
     };
     use crate::graph::change_candidate::ChangeCandidate;
     use crate::{ActorId, ChangeHash, Completion, DevicePublicKey, EventId, WorkCounter};
@@ -667,6 +756,12 @@ pub(crate) mod tests {
     enum TraversalTrace {
         Charge(WorkCounter),
         Operation(SourceOperation),
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum LookupTrace {
+        Charge(WorkCounter),
+        Operation(ProjectionLookupOperation),
     }
 
     struct ObservedEpochProjectionSource<'a> {
@@ -803,16 +898,25 @@ pub(crate) mod tests {
             Ok::<_, ()>(())
         });
         assert!(result.is_ok_and(|projection| {
-            let Ok(view) = projection.candidate(&first) else {
+            let mut lookup_charges = Vec::new();
+            let Ok(view) = projection.candidate_metered(&first, |counter| {
+                lookup_charges.push(counter);
+                Ok::<_, ()>(())
+            }) else {
                 return false;
             };
-            view.is_branch_member()
+            lookup_charges.len() == 9
+                && view.is_branch_member()
                 && view.is_accepted_member()
                 && view
                     .predecessor()
                     .is_some_and(|hash| hash == first.change_hash)
+                && !view.predecessor_is_direct_dependency()
+                && view.actor_identity_matches()
                 && view.expected_sequence() == 2
+                && !view.sequence_matches()
                 && view.causal_next_op() == 2
+                && !view.expected_next_matches()
                 && projection.dependency_count(&first.change_hash) == 0
                 && projection.dependencies(&first.change_hash).next().is_none()
                 && projection.frontier_heads().eq([first.change_hash])
@@ -830,6 +934,169 @@ pub(crate) mod tests {
                 WorkCounter::GraphNode,
             ]
         );
+    }
+
+    fn observed_candidate_lookup<E: Copy>(
+        projection: &TrustedEpochProjection<'_>,
+        candidate: &ChangeCandidate,
+        successful_limit: usize,
+        stopped: E,
+    ) -> (
+        Result<TrustedEpochView, MeteredActorStateError<E>>,
+        Vec<LookupTrace>,
+    ) {
+        let trace = Rc::new(RefCell::new(Vec::new()));
+        let successful = Cell::new(0_usize);
+        let result = projection.candidate_metered_observed(
+            candidate,
+            |counter| {
+                trace.borrow_mut().push(LookupTrace::Charge(counter));
+                if successful.get() == successful_limit {
+                    Err(stopped)
+                } else {
+                    successful.set(successful.get().saturating_add(1));
+                    Ok(())
+                }
+            },
+            |operation| {
+                trace.borrow_mut().push(LookupTrace::Operation(operation));
+            },
+        );
+        let observed = trace.borrow().clone();
+        (result, observed)
+    }
+
+    #[test]
+    fn projection_lookups_and_semantic_comparisons_are_immediately_charged() {
+        let first = candidate(1, 1, 1, 1);
+        let mut second = candidate(1, 2, 2, 1);
+        second.change_hash = ChangeHash::from_bytes([2; 32]);
+        second.dependencies = vec![first.change_hash].into();
+        let closure = BTreeSet::from([first.change_hash, second.change_hash]);
+        let changes = BTreeMap::from([
+            (first.change_hash, first),
+            (second.change_hash, second.clone()),
+        ]);
+        let projection = initialize_actor_states_metered(&closure, &changes, |_| Ok::<_, ()>(()));
+        assert!(projection.is_ok(), "canonical projection");
+        let Some(projection) = projection.ok() else {
+            return;
+        };
+        let mut query = candidate(1, 3, 3, 1);
+        query.change_hash = ChangeHash::from_bytes([3; 32]);
+        query.dependencies = vec![second.change_hash].into();
+
+        let (ample, trace) =
+            observed_candidate_lookup(&projection, &query, usize::MAX, Completion::BudgetExhausted);
+        assert!(ample.is_ok(), "ample lookup");
+        let Some(view) = ample.ok() else {
+            return;
+        };
+        assert!(!view.is_branch_member());
+        assert!(!view.is_accepted_member());
+        assert_eq!(view.predecessor(), Some(second.change_hash));
+        assert!(view.predecessor_is_direct_dependency());
+        assert!(view.actor_identity_matches());
+        assert_eq!(view.expected_sequence(), 3);
+        assert!(view.sequence_matches());
+        assert_eq!(view.causal_next_op(), 3);
+        assert!(view.expected_next_matches());
+
+        let operations = [
+            (
+                WorkCounter::GraphNode,
+                ProjectionLookupOperation::BranchMembership,
+            ),
+            (
+                WorkCounter::GraphNode,
+                ProjectionLookupOperation::AcceptedMembership,
+            ),
+            (
+                WorkCounter::GraphNode,
+                ProjectionLookupOperation::ActorState,
+            ),
+            (
+                WorkCounter::GraphEdge,
+                ProjectionLookupOperation::DirectDependency,
+            ),
+            (
+                WorkCounter::GraphNode,
+                ProjectionLookupOperation::PredecessorCandidate,
+            ),
+            (
+                WorkCounter::GraphNode,
+                ProjectionLookupOperation::ActorIdentityComparison,
+            ),
+            (
+                WorkCounter::GraphNode,
+                ProjectionLookupOperation::ExpectedSequence,
+            ),
+            (
+                WorkCounter::GraphNode,
+                ProjectionLookupOperation::SequenceComparison,
+            ),
+            (
+                WorkCounter::GraphNode,
+                ProjectionLookupOperation::ExpectedNextComparison,
+            ),
+        ];
+        let expected = operations
+            .iter()
+            .flat_map(|(counter, operation)| {
+                [
+                    LookupTrace::Charge(*counter),
+                    LookupTrace::Operation(*operation),
+                ]
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(trace, expected);
+
+        for target in 1..=operations.len() {
+            let count_operations = |trace: &[LookupTrace]| {
+                trace
+                    .iter()
+                    .filter(|entry| matches!(entry, LookupTrace::Operation(_)))
+                    .count()
+            };
+            let (before, before_trace) = observed_candidate_lookup(
+                &projection,
+                &query,
+                target - 1,
+                Completion::BudgetExhausted,
+            );
+            assert_eq!(
+                before,
+                Err(MeteredActorStateError::Work(Completion::BudgetExhausted))
+            );
+            assert_eq!(count_operations(&before_trace), target - 1);
+
+            for allowance in [target, target + 1] {
+                let (_, allowed_trace) = observed_candidate_lookup(
+                    &projection,
+                    &query,
+                    allowance,
+                    Completion::BudgetExhausted,
+                );
+                assert!(count_operations(&allowed_trace) >= target);
+            }
+
+            let (cancelled, cancelled_trace) =
+                observed_candidate_lookup(&projection, &query, target - 1, Completion::Cancelled);
+            assert_eq!(
+                cancelled,
+                Err(MeteredActorStateError::Work(Completion::Cancelled))
+            );
+            assert_eq!(count_operations(&cancelled_trace), target - 1);
+        }
+
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        struct Injected;
+        let injected = Injected;
+        let result = projection.candidate_metered(&query, |_| Err(&injected));
+        assert!(matches!(
+            result,
+            Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
+        ));
     }
 
     fn observed_projection<'a>(
