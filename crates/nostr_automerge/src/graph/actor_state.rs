@@ -990,17 +990,37 @@ fn build_trusted_epoch_projection_observed<'a, E>(
                     ActorStateError::MissingDependency,
                 ));
             }
-            charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
-            candidate_dependencies.insert(dependency);
+            perform_projection_build_operation(
+                WorkCounter::GraphEdge,
+                ProjectionBuildOperation::SetInsertion,
+                &mut charge,
+                &mut built,
+                || candidate_dependencies.insert(dependency),
+            )?;
             published(ProjectionPublicationOperation::CandidateDependency);
-            charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
-            depended_on.insert(dependency);
+            perform_projection_build_operation(
+                WorkCounter::GraphEdge,
+                ProjectionBuildOperation::SetInsertion,
+                &mut charge,
+                &mut built,
+                || depended_on.insert(dependency),
+            )?;
             published(ProjectionPublicationOperation::DependedOn);
-            charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
-            let dependant_bucket = dependants.entry(dependency).or_default();
+            let dependant_bucket = perform_projection_build_operation(
+                WorkCounter::GraphEdge,
+                ProjectionBuildOperation::MapInsertion,
+                &mut charge,
+                &mut built,
+                || dependants.entry(dependency).or_default(),
+            )?;
             published(ProjectionPublicationOperation::DependantBucket);
-            charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
-            dependant_bucket.insert(hash);
+            perform_projection_build_operation(
+                WorkCounter::GraphEdge,
+                ProjectionBuildOperation::SetInsertion,
+                &mut charge,
+                &mut built,
+                || dependant_bucket.insert(hash),
+            )?;
             published(ProjectionPublicationOperation::Dependant);
         }
         if candidate_dependencies.is_empty() {
@@ -1013,11 +1033,21 @@ fn build_trusted_epoch_projection_observed<'a, E>(
             )?;
             published(ProjectionPublicationOperation::ReadyCandidate);
         }
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        remaining_dependencies.insert(hash, dependency_count);
+        perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::MapInsertion,
+            &mut charge,
+            &mut built,
+            || remaining_dependencies.insert(hash, dependency_count),
+        )?;
         published(ProjectionPublicationOperation::RemainingDependencies);
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        dependencies.insert(hash, candidate_dependencies);
+        perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::MapInsertion,
+            &mut charge,
+            &mut built,
+            || dependencies.insert(hash, candidate_dependencies),
+        )?;
         published(ProjectionPublicationOperation::Dependencies);
     }
 
@@ -1166,11 +1196,21 @@ fn build_trusted_epoch_projection_observed<'a, E>(
             },
         )?;
         published(ProjectionPublicationOperation::ActorState);
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        writer_contributions.insert(candidate.actor, candidate.change_hash);
+        perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::MapInsertion,
+            &mut charge,
+            &mut built,
+            || writer_contributions.insert(candidate.actor, candidate.change_hash),
+        )?;
         published(ProjectionPublicationOperation::WriterContribution);
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        causal_next_by_change.insert(candidate.change_hash, advanced);
+        perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::MapInsertion,
+            &mut charge,
+            &mut built,
+            || causal_next_by_change.insert(candidate.change_hash, advanced),
+        )?;
         published(ProjectionPublicationOperation::CausalCounter);
         processed = perform_projection_build_operation(
             WorkCounter::GraphNode,
@@ -1182,38 +1222,98 @@ fn build_trusted_epoch_projection_observed<'a, E>(
         .ok_or(MeteredActorStateError::State(
             ActorStateError::DependencyCycle,
         ))?;
-        if let Some(children) = dependants.get(&hash) {
+        let children = perform_projection_build_operation(
+            WorkCounter::GraphEdge,
+            ProjectionBuildOperation::StateLookup,
+            &mut charge,
+            &mut built,
+            || dependants.get(&hash),
+        )?;
+        if let Some(children) = children {
+            let child_count = perform_projection_build_operation(
+                WorkCounter::GraphEdge,
+                ProjectionBuildOperation::StateLookup,
+                &mut charge,
+                &mut built,
+                || children.len(),
+            )?;
             let mut child_iter = children.iter();
-            for _ in 0..children.len() {
-                charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
-                let Some(child) = child_iter.next() else {
+            for _ in 0..child_count {
+                let Some(child) = perform_projection_build_operation(
+                    WorkCounter::GraphEdge,
+                    ProjectionBuildOperation::DependencyLookup,
+                    &mut charge,
+                    &mut built,
+                    || child_iter.next().copied(),
+                )?
+                else {
                     return Err(MeteredActorStateError::State(
                         ActorStateError::DependencyCycle,
                     ));
                 };
-                let Some(remaining) = remaining_dependencies.get_mut(child) else {
+                let Some(remaining) = perform_projection_build_operation(
+                    WorkCounter::GraphEdge,
+                    ProjectionBuildOperation::StateLookup,
+                    &mut charge,
+                    &mut built,
+                    || remaining_dependencies.get_mut(&child),
+                )?
+                else {
                     return Err(MeteredActorStateError::State(
                         ActorStateError::MissingDependency,
                     ));
                 };
-                *remaining = remaining
-                    .checked_sub(1)
-                    .ok_or(MeteredActorStateError::State(
-                        ActorStateError::DependencyCycle,
-                    ))?;
-                charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
-                causal_next_by_change
-                    .entry(*child)
-                    .and_modify(|value| *value = (*value).max(advanced))
-                    .or_insert(advanced);
+                let updated_remaining = perform_projection_build_operation(
+                    WorkCounter::GraphEdge,
+                    ProjectionBuildOperation::CheckedArithmetic,
+                    &mut charge,
+                    &mut built,
+                    || remaining.checked_sub(1),
+                )?
+                .ok_or(MeteredActorStateError::State(
+                    ActorStateError::DependencyCycle,
+                ))?;
+                *remaining = updated_remaining;
+                let prior_causal = perform_projection_build_operation(
+                    WorkCounter::GraphEdge,
+                    ProjectionBuildOperation::StateLookup,
+                    &mut charge,
+                    &mut built,
+                    || causal_next_by_change.get(&child).copied(),
+                )?;
+                let propagated = if let Some(prior) = prior_causal {
+                    perform_projection_build_operation(
+                        WorkCounter::GraphEdge,
+                        ProjectionBuildOperation::CausalMaximumCompare,
+                        &mut charge,
+                        &mut built,
+                        || prior.max(advanced),
+                    )?
+                } else {
+                    advanced
+                };
+                perform_projection_build_operation(
+                    WorkCounter::GraphEdge,
+                    ProjectionBuildOperation::MapInsertion,
+                    &mut charge,
+                    &mut built,
+                    || causal_next_by_change.insert(child, propagated),
+                )?;
                 published(ProjectionPublicationOperation::CausalCounter);
-                if *remaining == 0 {
+                let became_ready = perform_projection_build_operation(
+                    WorkCounter::GraphEdge,
+                    ProjectionBuildOperation::ReadinessTransition,
+                    &mut charge,
+                    &mut built,
+                    || updated_remaining == 0,
+                )?;
+                if became_ready {
                     perform_projection_build_operation(
                         WorkCounter::GraphNode,
                         ProjectionBuildOperation::ReadinessTransition,
                         &mut charge,
                         &mut built,
-                        || ready.insert(*child),
+                        || ready.insert(child),
                     )?;
                     published(ProjectionPublicationOperation::ReadyDependant);
                 }
@@ -1588,7 +1688,20 @@ pub(crate) mod tests {
                     .writer_contributions()
                     .eq([(first.actor, first.change_hash)])
         }));
-        assert_eq!(charges, vec![WorkCounter::GraphNode; 23]);
+        assert_eq!(
+            charges
+                .iter()
+                .filter(|counter| **counter == WorkCounter::GraphNode)
+                .count(),
+            23
+        );
+        assert_eq!(
+            charges
+                .iter()
+                .filter(|counter| **counter == WorkCounter::GraphEdge)
+                .count(),
+            1
+        );
     }
 
     fn observed_candidate_lookup<E: Copy>(
@@ -2878,9 +2991,9 @@ pub(crate) mod tests {
         query.change_hash = ChangeHash::from_bytes([3; 32]);
         query.dependencies = vec![second.change_hash].into();
 
-        const TOTAL_CHARGES: usize = 62;
+        const TOTAL_CHARGES: usize = 69;
         const GRAPH_NODES: usize = 53;
-        const GRAPH_EDGES: usize = 9;
+        const GRAPH_EDGES: usize = 16;
         let (ample, trace) = projection_work_contract_run(
             &closure,
             &changes,
@@ -3089,7 +3202,7 @@ pub(crate) mod tests {
                 _ => None,
             })
             .collect::<Vec<_>>();
-        assert_eq!(owned.len(), 38);
+        assert_eq!(owned.len(), 59);
         assert_eq!(
             owned
                 .iter()
@@ -3113,7 +3226,7 @@ pub(crate) mod tests {
                 .iter()
                 .filter(|operation| **operation == ProjectionBuildOperation::StateLookup)
                 .count(),
-            6
+            11
         );
         assert_eq!(
             owned
@@ -3122,28 +3235,28 @@ pub(crate) mod tests {
                     **operation == ProjectionBuildOperation::ReadinessTransition
                 })
                 .count(),
-            5
+            6
         );
         assert_eq!(
             owned
                 .iter()
                 .filter(|operation| **operation == ProjectionBuildOperation::CheckedArithmetic)
                 .count(),
-            5
+            6
         );
         assert_eq!(
             owned
                 .iter()
                 .filter(|operation| **operation == ProjectionBuildOperation::MapInsertion)
                 .count(),
-            2
+            12
         );
         assert_eq!(
             owned
                 .iter()
                 .filter(|operation| **operation == ProjectionBuildOperation::SetInsertion)
                 .count(),
-            1
+            4
         );
 
         let boundaries = full_trace

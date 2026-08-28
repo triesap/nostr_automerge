@@ -1941,7 +1941,7 @@ mod tests {
         let accepted = BTreeSet::from([retained.change_hash]);
         let candidates = BTreeMap::from([(retained.change_hash, retained)]);
         let mut cache = BTreeMap::new();
-        let mut exact = WorkBudget::new(0, 27);
+        let mut exact = WorkBudget::new(0, 28);
 
         let first = accepted_state_for_closure(
             &accepted,
@@ -1965,9 +1965,10 @@ mod tests {
         .flatten();
         assert!(matches!((&first, &second), (Some(left), Some(right)) if Arc::ptr_eq(left, right)));
         assert_eq!(exact.consumed().get(WorkCounter::GraphNode), 27);
+        assert_eq!(exact.consumed().get(WorkCounter::GraphEdge), 1);
 
         let mut insufficient_cache = BTreeMap::new();
-        let mut insufficient = WorkBudget::new(0, 25);
+        let mut insufficient = WorkBudget::new(0, 26);
         assert!(matches!(
             accepted_state_for_closure(
                 &accepted,
@@ -1979,7 +1980,11 @@ mod tests {
             ),
             Err(Completion::BudgetExhausted)
         ));
-        assert_eq!(insufficient.consumed().get(WorkCounter::GraphNode), 25);
+        assert_eq!(
+            insufficient.consumed().get(WorkCounter::GraphNode)
+                + insufficient.consumed().get(WorkCounter::GraphEdge),
+            26
+        );
         assert!(insufficient_cache.is_empty());
 
         let mut cancelled_cache = BTreeMap::new();

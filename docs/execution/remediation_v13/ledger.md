@@ -56,3 +56,12 @@ deep, and dense constructions retain exact first-stop behavior, and all
 affected budget assertions now count the newly visible logical operations.
 Dependency propagation and shared-reference work remain assigned to
 `step_1429`. The next checkpoint is `step_1429`.
+
+`step_1429` routes dependency-map and set insertion, dependent collection
+lookup and traversal, remaining-count arithmetic, per-child causal lookup and
+maximum propagation, and readiness publication through the sealed operation
+boundary. Deep and dense dependency graphs now expose the full per-edge work,
+while immutable fixture inputs are represented only by temporary active-delta
+assertions pending distribution v14. The sole raw charge left in projection
+construction belongs to the staged final result publication. The next
+checkpoint is `step_1430`.

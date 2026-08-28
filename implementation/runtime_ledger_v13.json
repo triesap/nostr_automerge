@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v13_authority.json",
   "cursor": {
     "active_rcld": 117,
-    "active_step": "step_1428",
-    "next_step": "step_1429",
+    "active_step": "step_1429",
+    "next_step": "step_1430",
     "last_planned_step": "step_1452",
-    "remaining_checkpoint_count": 25,
+    "remaining_checkpoint_count": 24,
     "remaining_rcld_count": 4
   },
   "findings": {
@@ -20,7 +20,6 @@
     "crates/nostr_automerge/src/graph/actor_state.rs",
     "crates/nostr_automerge/src/reference/epoch_engine.rs",
     "crates/nostr_automerge/src/reference/evaluate.rs",
-    "crates/nostr_automerge/tests/remediation_v13_reproductions.rs",
     "docs/execution/remediation_v13/ledger.md",
     "implementation/runtime_ledger_v13.json",
     "reports/spec_baseline.txt",
@@ -37,6 +36,7 @@
     {"step":"step_1424","candidate":"219d4844de68ee01eafb9a0bf6c55a8adac8f6db","owner_class":"public","result":"pass"},
     {"step":"step_1425","candidate":"fbb3fd36cc91af41c7a91327688b921518958ba3","owner_class":"public","result":"pass"},
     {"step":"step_1426","candidate":"e3e8c0e650f7ce0ab95023b8240ffb96aeb627e9","owner_class":"public","result":"pass"},
-    {"step":"step_1427","candidate":"5c65022c86f3931d2df16d71b334be17cd8483ad","owner_class":"public","result":"pass"}
+    {"step":"step_1427","candidate":"5c65022c86f3931d2df16d71b334be17cd8483ad","owner_class":"public","result":"pass"},
+    {"step":"step_1428","candidate":"f4efd6b4bfff04a0d2cce19d61c7487421113f06","owner_class":"public","result":"pass"}
   ]
 }

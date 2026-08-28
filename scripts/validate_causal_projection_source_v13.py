@@ -69,6 +69,7 @@ def validate(source: str) -> None:
     require(".map(|state| state.next_op)" in body, "open:final_state_projection")
     require("ProjectionBuildOperation" in body, "partial:operation_boundary")
     require("perform_projection_build_operation" in body, "partial:dispatch")
+    require(body.count("charge(WorkCounter::") == 1, "partial:single_raw_publication_charge")
     require(FINAL_SEQUENCE in body, "open:reviewed_final_sequence")
     scan = body.index("states\n        .values()")
     charge = body.index("charge(WorkCounter::GraphNode)", scan)
@@ -107,6 +108,12 @@ def mutation_self_test(source: str) -> int:
             ),
         ),
         replace_in_function(source, "    loop {", "    while !ready.is_empty() {"),
+        replace_in_function(
+            source,
+            "    charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;",
+            "    charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;\n"
+            "    charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;",
+        ),
         replace_in_function(
             source,
             FINAL_SEQUENCE,
