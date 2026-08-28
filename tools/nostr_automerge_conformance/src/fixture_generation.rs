@@ -16,7 +16,7 @@ use secp256k1::{Keypair, Secp256k1, SecretKey};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
-use crate::expected::StateAssertion;
+use crate::expected::{ExpectedReport, StateAssertion};
 use crate::report_json::write_canonical_report;
 use crate::runner::{
     StateAssertionPolicy, evaluate_scenario, generic_report, state_assertion_policy,
@@ -81,7 +81,8 @@ fn generate_epoch_semantics_v13() -> Result<(), String> {
     generate_many_actor_causal_next_v13(&root)?;
     generate_empty_merge_frontier_v13(&root)?;
     generate_wide_epoch_ancestry_v13(&root)?;
-    generate_epoch_writer_authorization_v13(&root)
+    generate_epoch_writer_authorization_v13(&root)?;
+    generate_post_epoch_semantic_stop_v13(&root)
 }
 
 fn generate_deep_actor_predecessor_v13(root: &Path) -> Result<(), String> {
@@ -634,6 +635,90 @@ fn generate_epoch_writer_authorization_v13(root: &Path) -> Result<(), String> {
     )
 }
 
+fn generate_post_epoch_semantic_stop_v13(root: &Path) -> Result<(), String> {
+    const POST_EPOCH_STOP_ITEMS: u64 = 979;
+
+    let fixture_id = "post_epoch_semantic_stop_has_no_target_work";
+    let controller = Signer::from_byte(150)?;
+    let writer = Signer::from_byte(151)?;
+    let coordinate: DocumentCoordinate = format!(
+        "31624:{}:{}",
+        controller.public_key.to_hex(),
+        "f0".repeat(32)
+    )
+    .parse()
+    .map_err(|_| "invalid v13 post-epoch stop coordinate".to_owned())?;
+    let members = || vec![(&writer, None, &["write"][..])];
+    let control = sign_control(
+        &controller,
+        1,
+        coordinate,
+        None,
+        control_content_full(0, members(), "automerge-change-v1"),
+    )?;
+    let control_id = event_id(&control)?;
+    let actor = ActorId::derive(coordinate, writer.public_key);
+    let mut document = AuthoringDocument::empty(ActorState::initial(actor, Default::default()))
+        .map_err(|error| format!("v13 post-epoch stop document: {error:?}"))?;
+    let first = document
+        .author_change(&[Operation::PutString {
+            key: "parent".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .map_err(|error| format!("v13 post-epoch first change: {error:?}"))?;
+    let first_event = sign_change(
+        &writer,
+        2,
+        coordinate,
+        control_id,
+        first.change_hash(),
+        first.raw(),
+    )?;
+    let child = sign_control(
+        &controller,
+        3,
+        coordinate,
+        Some(control_id),
+        control_content_with_links(1, members(), &[first.change_hash()], None, None),
+    )?;
+    let child_id = event_id(&child)?;
+    let second = document
+        .author_change(&[Operation::PutString {
+            key: "child".to_owned(),
+            value: "accepted".to_owned(),
+        }])
+        .map_err(|error| format!("v13 post-epoch second change: {error:?}"))?;
+    let second_event = sign_change(
+        &writer,
+        4,
+        coordinate,
+        child_id,
+        second.change_hash(),
+        second.raw(),
+    )?;
+    let events = vec![control, first_event, child, second_event];
+    assert_post_epoch_semantic_stop_boundaries(
+        fixture_id,
+        coordinate,
+        &events,
+        POST_EPOCH_STOP_ITEMS,
+    )?;
+    write_fixture_with_execution(
+        root,
+        fixture_id,
+        coordinate,
+        events,
+        &["NCRDT-COMPLETION-001", "NCRDT-RESOURCE-017"],
+        "epoch_semantics_v13",
+        Vec::new(),
+        ScenarioBudget {
+            max_bytes: 1_000_000,
+            max_items: POST_EPOCH_STOP_ITEMS,
+        },
+        None,
+    )
+}
+
 fn generate_resource_followup_v12() -> Result<(), String> {
     const DEPTH: u64 = 8;
     const POST_BRANCH_STOP_ITEMS: u64 = 687;
@@ -917,6 +1002,141 @@ fn assert_post_branch_stop_boundaries(
             ));
         }
         expected = Some(bytes);
+    }
+    Ok(())
+}
+
+fn assert_post_epoch_semantic_stop_boundaries(
+    fixture_id: &str,
+    coordinate: DocumentCoordinate,
+    events: &[RawEventBytes],
+    max_items: u64,
+) -> Result<(), String> {
+    let kind = |event: &RawEventBytes| {
+        serde_json::from_str::<Value>(event.as_str())
+            .ok()?
+            .get("kind")?
+            .as_u64()
+    };
+    let permutations = crate::permutations::required_delivery_permutations(
+        events,
+        |event| kind(event) == Some(1_624),
+        |event| kind(event) == Some(1_625),
+        |_| false,
+    );
+    if permutations.len() != 8 {
+        return Err(format!("{fixture_id}: expected eight delivery orders"));
+    }
+    let scenario = |scenario_events: &[RawEventBytes], budget, cancel_after| ScenarioInput {
+        scenario_schema: "nostr_automerge.scenario.v1".to_owned(),
+        coordinate: coordinate.to_address(),
+        raw_events: scenario_events
+            .iter()
+            .map(|event| RawScenarioEvent::Utf8(event.as_str().to_owned()))
+            .collect(),
+        budget: ScenarioBudget {
+            max_bytes: 1_000_000,
+            max_items: budget,
+        },
+        cancel_after,
+    };
+    let no_progress = |report: &ExpectedReport, completion: &str| {
+        report.completion == completion
+            && report.canonical_controls.is_empty()
+            && report.disposition_records.is_empty()
+            && report.accepted_changes.is_empty()
+            && report.pending_changes.is_empty()
+            && report.excluded_changes.is_empty()
+            && report.invalid_changes.is_empty()
+            && report.heads.is_empty()
+            && report.checkpoints.is_empty()
+            && report.state_assertions.is_empty()
+    };
+    let mut exhausted_bytes = None;
+    let mut cancelled_bytes = None;
+    for permutation in permutations {
+        let exhausted = generic_report(
+            fixture_id,
+            scenario(&permutation.events, max_items, None),
+            StateAssertionPolicy::None,
+        )
+        .map_err(|error| error.message().to_owned())?;
+        if !no_progress(&exhausted, "budget_exhausted") {
+            return Err(format!(
+                "{fixture_id}: {} did not stop at the semantic boundary",
+                permutation.name
+            ));
+        }
+        let bytes = write_canonical_report(&exhausted).map_err(|error| format!("{error:?}"))?;
+        if exhausted_bytes
+            .as_ref()
+            .is_some_and(|expected| expected != &bytes)
+        {
+            return Err(format!(
+                "{fixture_id}: {} changed exhausted output",
+                permutation.name
+            ));
+        }
+        exhausted_bytes = Some(bytes);
+
+        let mut cancel_lower = 0_u64;
+        let mut cancel_upper = 1_000_000_u64;
+        while cancel_lower < cancel_upper {
+            let middle = cancel_lower + (cancel_upper - cancel_lower) / 2;
+            let report = generic_report(
+                fixture_id,
+                scenario(&permutation.events, 1_000_000, Some(middle)),
+                StateAssertionPolicy::None,
+            )
+            .map_err(|error| error.message().to_owned())?;
+            if report.completion == "complete" {
+                cancel_upper = middle;
+            } else {
+                cancel_lower = middle.saturating_add(1);
+            }
+        }
+        if cancel_lower == 0 {
+            return Err(format!(
+                "{fixture_id}: {} had no cancellation boundary",
+                permutation.name
+            ));
+        }
+        let cancelled = generic_report(
+            fixture_id,
+            scenario(&permutation.events, 1_000_000, Some(cancel_lower - 1)),
+            StateAssertionPolicy::None,
+        )
+        .map_err(|error| error.message().to_owned())?;
+        if !no_progress(&cancelled, "cancelled") {
+            return Err(format!(
+                "{fixture_id}: {} did not preserve cancellation",
+                permutation.name
+            ));
+        }
+        let bytes = write_canonical_report(&cancelled).map_err(|error| format!("{error:?}"))?;
+        if cancelled_bytes
+            .as_ref()
+            .is_some_and(|expected| expected != &bytes)
+        {
+            return Err(format!(
+                "{fixture_id}: {} changed cancelled output",
+                permutation.name
+            ));
+        }
+        cancelled_bytes = Some(bytes);
+
+        let complete = generic_report(
+            fixture_id,
+            scenario(&permutation.events, 1_000_000, Some(cancel_lower)),
+            StateAssertionPolicy::None,
+        )
+        .map_err(|error| error.message().to_owned())?;
+        if complete.completion != "complete" || complete.accepted_changes.len() != 2 {
+            return Err(format!(
+                "{fixture_id}: {} did not complete with ample work",
+                permutation.name
+            ));
+        }
     }
     Ok(())
 }
@@ -7503,8 +7723,9 @@ fn sha256(bytes: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        assert_resource_followup_v12_boundaries, assert_unsupported_event_only_boundaries,
-        minimum_complete_item_budget, minimum_complete_item_budget_for_scenario, repository_root,
+        assert_post_epoch_semantic_stop_boundaries, assert_resource_followup_v12_boundaries,
+        assert_unsupported_event_only_boundaries, minimum_complete_item_budget,
+        minimum_complete_item_budget_for_scenario, repository_root,
     };
     use crate::expected::ExpectedReport;
     use crate::report_json::write_canonical_report;
@@ -7747,6 +7968,60 @@ mod tests {
         assert_eq!(
             write_canonical_report(&actual).expect("v13 writer authorization actual bytes"),
             write_canonical_report(&expected).expect("v13 writer authorization expected bytes")
+        );
+    }
+
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn post_epoch_semantic_stop_has_no_target_work() {
+        let fixture_id = "post_epoch_semantic_stop_has_no_target_work";
+        let root = repository_root().join("fixtures/v13/scenarios/epoch_semantics");
+        let signed = SignedScenarioInput::parse(
+            &std::fs::read(root.join(format!("{fixture_id}.input.json")))
+                .expect("checked-in v13 post-epoch stop input"),
+        )
+        .expect("closed v13 post-epoch stop input");
+        assert_eq!(
+            signed.requirements,
+            ["NCRDT-COMPLETION-001", "NCRDT-RESOURCE-017"]
+        );
+        let coordinate = signed
+            .coordinate
+            .parse()
+            .expect("v13 post-epoch stop coordinate");
+        let events = signed
+            .raw_events
+            .iter()
+            .map(|event| {
+                RawEventBytes::new(
+                    &event.decoded().expect("v13 post-epoch stop Event bytes"),
+                    ProtocolRevision::draft_v1(),
+                )
+                .expect("bounded v13 post-epoch stop Event")
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(events.len(), 4);
+        assert_eq!(signed.budget.max_items, 979);
+        assert_post_epoch_semantic_stop_boundaries(
+            fixture_id,
+            coordinate,
+            &events,
+            signed.budget.max_items,
+        )
+        .expect("v13 post-epoch semantic stop boundary");
+        let actual = generic_report(
+            fixture_id,
+            signed.clone().into_scenario(),
+            StateAssertionPolicy::None,
+        )
+        .expect("v13 post-epoch stop report");
+        let expected = serde_json::from_value::<ExpectedReport>(signed.expected_report)
+            .expect("v13 post-epoch stop expected report");
+        assert_eq!(expected.completion, "budget_exhausted");
+        assert!(expected.disposition_records.is_empty());
+        assert_eq!(
+            write_canonical_report(&actual).expect("v13 post-epoch stop actual bytes"),
+            write_canonical_report(&expected).expect("v13 post-epoch stop expected bytes")
         );
     }
 

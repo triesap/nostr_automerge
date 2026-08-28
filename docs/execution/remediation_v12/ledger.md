@@ -326,3 +326,11 @@ member order, then rejects an absent writer before its deliberately missing
 dependency can affect disposition. Exact budget and cancellation boundaries
 and eight delivery orders preserve two accepted and one invalid change. The
 staged manifest now contains 203 of 204 scenarios.
+
+`step_1404` adds the post-epoch semantic-stop scenario. The signed two-epoch
+construction exhausts its item budget exactly after semantic evaluation and
+before any report publication, yielding the canonical constant no-progress
+shape in all eight delivery orders. The corresponding cancellation boundary
+preserves its typed cause, while ample work completes with both changes. The
+closed distribution validator now binds the final six-fixture generator source,
+and the staged manifest contains all 204 planned scenarios.

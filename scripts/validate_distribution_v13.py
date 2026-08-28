@@ -13,6 +13,8 @@ import generate_distribution_v13 as distribution
 
 ROOT = distribution.ROOT
 SCHEMA_KEYS = ("$schema", "$id", "title", "type", "additionalProperties", "required", "properties", "$defs")
+GENERATOR_PATH = ROOT / "tools/nostr_automerge_conformance/src/fixture_generation.rs"
+GENERATOR_SHA256 = "ac4b0354326de47c7bc9a40a9ffa57c68a60eacd5bc6c878fe1d99b7bfc77093"
 
 
 def require(condition: bool, diagnostic: str) -> None:
@@ -53,7 +55,17 @@ def validate_manifest(manifest: object, state: dict[str, Any]) -> None:
         require(path and not path.startswith("/") and ".." not in parts and "." not in parts, "path_traversal")
 
 
-def mutation_self_test(state: dict[str, Any], manifest: dict[str, Any], schema: dict[str, Any]) -> int:
+def validate_generator_source(source: bytes) -> None:
+    require(hashlib.sha256(source).hexdigest() == GENERATOR_SHA256, "generator_hash")
+    text = source.decode()
+    required = tuple(identifier for identifier, _ in distribution.PLAN)
+    require(text.count('"epoch_semantics_v13" => generate_epoch_semantics_v13()') == 1, "generator_route")
+    for identifier in required:
+        require(text.count(f'let fixture_id = "{identifier}";') == 2, "generator_fixture:" + identifier)
+        require(text.count(f"fn {identifier}()") == 1, "generator_test:" + identifier)
+
+
+def mutation_self_test(state: dict[str, Any], manifest: dict[str, Any], schema: dict[str, Any], source: bytes) -> int:
     state_mutations = []
     for mutate in (
         lambda value: value.update(extra=False),
@@ -121,7 +133,13 @@ def mutation_self_test(state: dict[str, Any], manifest: dict[str, Any], schema: 
         except distribution.DistributionError:
             continue
         raise distribution.DistributionError("mutation:companions")
-    return len(state_mutations) + len(manifest_mutations) + len(schema_mutations) + len(companion_mutations)
+    try:
+        validate_generator_source(source + b"\n")
+    except distribution.DistributionError:
+        pass
+    else:
+        raise distribution.DistributionError("mutation:generator")
+    return len(state_mutations) + len(manifest_mutations) + len(schema_mutations) + len(companion_mutations) + 1
 
 
 def main() -> int:
@@ -130,8 +148,10 @@ def main() -> int:
     manifest = distribution.load(distribution.OUTPUT_PATH)
     validate_schema(schema)
     validate_manifest(manifest, state)
+    source = GENERATOR_PATH.read_bytes()
+    validate_generator_source(source)
     require((ROOT / distribution.OUTPUT_PATH).read_bytes() == distribution.canonical_bytes(state), "manifest_bytes")
-    mutations = mutation_self_test(state, manifest, schema)
+    mutations = mutation_self_test(state, manifest, schema, source)
     print("PASS: distribution-v13 authority")
     print(f"- stage={state['current_stage']}")
     print(f"- fixtures={manifest['fixture_count']}/204")

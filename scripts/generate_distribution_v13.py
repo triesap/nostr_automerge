@@ -27,7 +27,7 @@ PLAN = (
     ("empty_merge_frontier_exact_budget", ("NCRDT-RESOURCE-017", "NCRDT-RESOURCE-018")),
     ("wide_epoch_ancestry_exact_budget", ("NCRDT-RESOURCE-019",)),
     ("epoch_writer_authorization_exact_budget", ("NCRDT-RESOURCE-017",)),
-    ("post_epoch_semantic_stop_has_no_target_work", ("NCRDT-RESOURCE-017", "NCRDT-COMPLETION-001")),
+    ("post_epoch_semantic_stop_has_no_target_work", ("NCRDT-COMPLETION-001", "NCRDT-RESOURCE-017")),
 )
 STAGE_COUNTS = {
     "authority_defined": 0,
