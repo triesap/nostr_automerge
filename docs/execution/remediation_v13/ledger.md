@@ -36,3 +36,9 @@ family to its exact RCLD-117 proof checkpoint. The closed RCLD-116 authority
 gate binds all five predecessor commits, both open reproductions, the lexical
 source audit, the isolated behavioral mutation, and every external hold. No
 behavior finding is closed. The next checkpoint is `step_1426`.
+
+`step_1426` introduces the sealed crate-private projection-build operation
+boundary and its exhaustive fourteen-variant type. The boundary guarantees
+`charge -> operation -> observation`, preserves an injected typed stop by
+identity, and performs neither the operation nor its observation after a
+failed charge. The next checkpoint is `step_1427`.

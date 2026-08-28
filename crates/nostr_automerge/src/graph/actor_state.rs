@@ -172,6 +172,37 @@ enum ProjectionPublicationOperation {
     Projection,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ProjectionBuildOperation {
+    CanonicalSourcePull,
+    CanonicalOrderCompare,
+    MembershipLookup,
+    CandidateLookup,
+    DependencyLookup,
+    StateLookup,
+    ReadinessTransition,
+    CheckedArithmetic,
+    MapInsertion,
+    SetInsertion,
+    SharedReferenceClone,
+    CausalMaximumCompare,
+    ResultPublication,
+    ConstantCandidateValidation,
+}
+
+fn perform_projection_build_operation<T, E>(
+    counter: WorkCounter,
+    operation: ProjectionBuildOperation,
+    charge: &mut impl FnMut(WorkCounter) -> Result<(), E>,
+    observed: &mut impl FnMut(ProjectionBuildOperation),
+    perform: impl FnOnce() -> T,
+) -> Result<T, MeteredActorStateError<E>> {
+    charge(counter).map_err(MeteredActorStateError::Work)?;
+    let result = perform();
+    observed(operation);
+    Ok(result)
+}
+
 pub(crate) type AcceptedEpochStateParts = (
     BTreeSet<ChangeHash>,
     BTreeMap<ChangeHash, BTreeSet<ChangeHash>>,
@@ -1070,10 +1101,11 @@ pub(crate) mod tests {
     use super::{
         ActorStateError, CandidateSemanticStage, CanonicalEpochProjectionSource,
         CausalNextOperation, EpochActorState, EpochProjectionSource, FrontierComparisonOperation,
-        MeteredActorStateError, ProjectionLookupOperation, ProjectionPublicationOperation,
-        TrustedEpochProjection, TrustedEpochView, build_trusted_epoch_projection,
-        build_trusted_epoch_projection_observed, initialize_actor_states,
-        initialize_actor_states_metered, reference_apply_empty_counter,
+        MeteredActorStateError, ProjectionBuildOperation, ProjectionLookupOperation,
+        ProjectionPublicationOperation, TrustedEpochProjection, TrustedEpochView,
+        build_trusted_epoch_projection, build_trusted_epoch_projection_observed,
+        initialize_actor_states, initialize_actor_states_metered,
+        perform_projection_build_operation, reference_apply_empty_counter,
         reference_apply_nonempty_counter,
     };
     use crate::graph::change_candidate::ChangeCandidate;
@@ -1086,6 +1118,78 @@ pub(crate) mod tests {
         ReadAcceptedMember(ChangeHash),
         ReadCandidate(ChangeHash),
         PullDependency(ChangeHash, usize, ChangeHash),
+    }
+
+    #[test]
+    fn projection_build_operation_boundary_is_sealed_exhaustive_and_immediate() {
+        let operations = [
+            ProjectionBuildOperation::CanonicalSourcePull,
+            ProjectionBuildOperation::CanonicalOrderCompare,
+            ProjectionBuildOperation::MembershipLookup,
+            ProjectionBuildOperation::CandidateLookup,
+            ProjectionBuildOperation::DependencyLookup,
+            ProjectionBuildOperation::StateLookup,
+            ProjectionBuildOperation::ReadinessTransition,
+            ProjectionBuildOperation::CheckedArithmetic,
+            ProjectionBuildOperation::MapInsertion,
+            ProjectionBuildOperation::SetInsertion,
+            ProjectionBuildOperation::SharedReferenceClone,
+            ProjectionBuildOperation::CausalMaximumCompare,
+            ProjectionBuildOperation::ResultPublication,
+            ProjectionBuildOperation::ConstantCandidateValidation,
+        ];
+        assert_eq!(operations.len(), 14);
+
+        let events = RefCell::new(Vec::new());
+        let mut charge = |counter| {
+            events.borrow_mut().push(("charge", Some(counter), None));
+            Ok::<_, Completion>(())
+        };
+        let mut observed = |operation| {
+            events
+                .borrow_mut()
+                .push(("observed", None, Some(operation)));
+        };
+        let result = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::CanonicalSourcePull,
+            &mut charge,
+            &mut observed,
+            || {
+                events.borrow_mut().push(("operation", None, None));
+                7
+            },
+        );
+        assert_eq!(result, Ok(7));
+        assert_eq!(
+            events.into_inner(),
+            [
+                ("charge", Some(WorkCounter::GraphNode), None),
+                ("operation", None, None),
+                (
+                    "observed",
+                    None,
+                    Some(ProjectionBuildOperation::CanonicalSourcePull)
+                ),
+            ]
+        );
+
+        let performed = Cell::new(false);
+        let observations = Cell::new(0);
+        let injected = Completion::Cancelled;
+        let stopped = perform_projection_build_operation(
+            WorkCounter::GraphEdge,
+            ProjectionBuildOperation::DependencyLookup,
+            &mut |_| Err(&injected),
+            &mut |_| observations.set(observations.get() + 1),
+            || performed.set(true),
+        );
+        assert!(matches!(
+            stopped,
+            Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
+        ));
+        assert!(!performed.get());
+        assert_eq!(observations.get(), 0);
     }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -14,7 +14,7 @@ SOURCE = ROOT / "crates/nostr_automerge/src/graph/actor_state.rs"
 FIELDS = ["schema","status","requirements","charge_rule","families","source_boundaries","prohibited_patterns","final_operation_count","result"]
 FAMILY_FIELDS = ["id","counter","target_scaled","proof_step"]
 FAMILIES = ["canonical_source_pull","canonical_order_compare","membership_lookup","candidate_lookup","dependency_lookup","state_lookup","readiness_transition","checked_arithmetic","map_insertion","set_insertion","shared_reference_clone","causal_maximum_compare","result_publication","constant_candidate_validation"]
-BOUNDARIES = ["build_trusted_epoch_projection_observed","causal_next_decision_metered_observed","initialize_actor_states_metered"]
+BOUNDARIES = ["build_trusted_epoch_projection_observed","perform_projection_build_operation","causal_next_decision_metered_observed","initialize_actor_states_metered"]
 PROHIBITED = ["target_work_before_charge","bulk_retroactive_charge","post_stop_target_work","final_actor_state_maximum_scan","unmetered_production_bypass"]
 PROOF_STEPS = ["step_1427"] * 5 + ["step_1428"] * 5 + ["step_1429","step_1430","step_1431","step_1431"]
 

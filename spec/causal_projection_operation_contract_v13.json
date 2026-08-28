@@ -21,6 +21,7 @@
   ],
   "source_boundaries": [
     "build_trusted_epoch_projection_observed",
+    "perform_projection_build_operation",
     "causal_next_decision_metered_observed",
     "initialize_actor_states_metered"
   ],

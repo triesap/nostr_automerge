@@ -10,7 +10,7 @@
     "requirements":{"type":"array","minItems":5,"maxItems":5,"uniqueItems":true},
     "charge_rule":{"const":"charge_then_operation_then_observation"},
     "families":{"type":"array","minItems":14,"maxItems":14,"items":{"type":"object","additionalProperties":false,"required":["id","counter","target_scaled","proof_step"],"properties":{"id":{"type":"string"},"counter":{"enum":["graph_node","graph_edge","graph_node_or_edge"]},"target_scaled":{"type":"boolean"},"proof_step":{"pattern":"^step_[0-9]{4}$"}}}},
-    "source_boundaries":{"type":"array","minItems":3,"maxItems":3,"uniqueItems":true},
+    "source_boundaries":{"type":"array","minItems":4,"maxItems":4,"uniqueItems":true},
     "prohibited_patterns":{"type":"array","minItems":5,"maxItems":5,"uniqueItems":true},
     "final_operation_count":{"type":["integer","null"],"minimum":1},
     "result":{"const":"pass"}
