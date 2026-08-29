@@ -21,7 +21,7 @@ HOLDS = ["external_assurance","event_kind_allocation","nip_submission","producti
 ALL = [f"FINDING_{value:03d}" for value in range(104, 113)]
 CLOSED = ALL
 OPEN = []
-SCOPE = ["docs/execution/remediation_v13/ledger.md","implementation/runtime_ledger_v13.json","reports/causal_projection_finding_closure_v14.json","reports/spec_baseline.txt","scripts/validate_causal_projection_assurance_v13.py","scripts/validate_causal_projection_finding_closure_v14.py","scripts/validate_private_reproduction_boundary_v9.py","scripts/validate_remediation_v13.py","scripts/validate_spec.py","spec/remediation_findings_v13.json","tools/nostr_automerge_xtask/src/validate.rs","tools/validation/causal_projection_finding_closure_v14.schema.json"]
+SCOPE = ["docs/execution/remediation_v13/ledger.md","implementation/runtime_ledger_v13.json","reports/causal_projection_final_verification_v14.json","reports/spec_baseline.txt","scripts/local_gate.py","scripts/validate_causal_projection_final_verification_v14.py","scripts/validate_private_reproduction_boundary_v9.py","scripts/validate_remediation_v13.py","scripts/validate_spec.py","tools/nostr_automerge_xtask/src/validate.rs","tools/validation/causal_projection_final_verification_v14.schema.json"]
 ROW_FIELDS = ["id","family","source_path","source_symbol","owner_mode","requirements","test","command","candidate","artifact_sha256","mutation"]
 
 class EvidenceError(RuntimeError):
@@ -57,17 +57,19 @@ def validate(authority: object, findings: object, ledger: object, schema: object
     l = keys(ledger,["schema","status","authority","cursor","findings","active_checkpoint_scope","predecessors"],"ledger")
     require(l["schema"] == "nostr_automerge.runtime_ledger.v13.v1" and l["status"] == "correction_active", "ledger:state")
     require(l["authority"] == "spec/remediation_v13_authority.json", "ledger:authority")
-    require(l["cursor"] == {"active_rcld":120,"active_step":"step_1450","next_step":"step_1451","last_planned_step":"step_1452","remaining_checkpoint_count":3,"remaining_rcld_count":1}, "ledger:cursor")
+    require(l["cursor"] == {"active_rcld":120,"active_step":"step_1451","next_step":"step_1452","last_planned_step":"step_1452","remaining_checkpoint_count":2,"remaining_rcld_count":1}, "ledger:cursor")
     require(l["findings"] == {"open":OPEN,"held":["FINDING_080"]}, "ledger:findings")
     require(l["active_checkpoint_scope"] == SCOPE, "ledger:scope")
     latest_predecessor = l["predecessors"].pop()
-    require(latest_predecessor == {"step":"step_1449","candidate":"9af01749c9a297b755688f057946b558c51a25b6","owner_class":"public","result":"pass"}, "ledger:latest_predecessor")
+    require(latest_predecessor == {"step":"step_1450","candidate":"ec9c8d7d40242eeec1bcabd2ea484d25268f3f9a","owner_class":"public","result":"pass"}, "ledger:latest_predecessor")
     middle_predecessor = l["predecessors"].pop()
-    require(middle_predecessor == {"step":"step_1448","candidate":"89ccc8af6de5d0f593da32b537fc12cf2d9610b1","owner_class":"public","result":"pass"}, "ledger:middle_predecessor")
+    require(middle_predecessor == {"step":"step_1449","candidate":"9af01749c9a297b755688f057946b558c51a25b6","owner_class":"public","result":"pass"}, "ledger:middle_predecessor")
     prior_predecessor = l["predecessors"].pop()
-    require(prior_predecessor == {"step":"step_1447","candidate":"8b6c4278b44fb2f9a95d1d2c8eefbf42fee2e327","owner_class":"public","result":"pass"}, "ledger:prior_predecessor")
+    require(prior_predecessor == {"step":"step_1448","candidate":"89ccc8af6de5d0f593da32b537fc12cf2d9610b1","owner_class":"public","result":"pass"}, "ledger:prior_predecessor")
+    earlier_predecessor = l["predecessors"].pop()
+    require(earlier_predecessor == {"step":"step_1447","candidate":"8b6c4278b44fb2f9a95d1d2c8eefbf42fee2e327","owner_class":"public","result":"pass"}, "ledger:earlier_predecessor")
     require(l["predecessors"] == [{"step":"step_1419","candidate":"00ef954ff2dece37119ad235638046ffaa7305d4","owner_class":"public","result":"pass"},{"step":"step_1420","candidate":"6bbc29b5fa1a0e88cf5f61d9b751181f913c928b","owner_class":"public","result":"pass"},{"step":"step_1421","candidate":"38c65ae597af0500af64b67c21fb12f7933125b0","owner_class":"public","result":"pass"},{"step":"step_1422","candidate":"2435f60145aba99cc5f96a49aadc86e162a82b06","owner_class":"public","result":"pass"},{"step":"step_1423","candidate":"285c3922c7a7d80af361bfa011b223caca43e3e1","owner_class":"public","result":"pass"},{"step":"step_1424","candidate":"219d4844de68ee01eafb9a0bf6c55a8adac8f6db","owner_class":"public","result":"pass"},{"step":"step_1425","candidate":"fbb3fd31bd0d37ff4976f733aa574e185d5280b6","owner_class":"public","result":"pass"},{"step":"step_1426","candidate":"e3e8c0eca50800a53462fd90ad306f51223f2173","owner_class":"public","result":"pass"},{"step":"step_1427","candidate":"5c65022c86f3931d2df16d71b334be17cd8483ad","owner_class":"public","result":"pass"},{"step":"step_1428","candidate":"f4efd6b4bfff04a0d2cce19d61c7487421113f06","owner_class":"public","result":"pass"},{"step":"step_1429","candidate":"c875ca6b234a5d97b5427d9382b628000bc1392e","owner_class":"public","result":"pass"},{"step":"step_1430","candidate":"2bb7dd7f241db00767aa66402e14a03e2a151b58","owner_class":"public","result":"pass"},{"step":"step_1431","candidate":"9cdd8665b68499c4975c08fd1fac07dd5eed999f","owner_class":"public","result":"pass"},{"step":"step_1432","candidate":"898545fddf1c40b77b7557d49ae1030a009059db","owner_class":"public","result":"pass"},{"step":"step_1433","candidate":"2bf59a8a22aff9acad87c0d5e09f37e2ebc443a6","owner_class":"public","result":"pass"},{"step":"step_1434","candidate":"4b404afaa1d3ce1775f0dbd91a283f82141f1eca","owner_class":"public","result":"pass"},{"step":"step_1435","candidate":"19e2ee7de07d02a92e9702540c80963a665d6611","owner_class":"public","result":"pass"},{"step":"step_1436","candidate":"54537099a48f79150e46a7d6ebbdab55044a4e42","owner_class":"public","result":"pass"},{"step":"step_1437","candidate":"6d6c507d86f84b25d4fb2a0c46fd48ab0cc14e4b","owner_class":"public","result":"pass"},{"step":"step_1438","candidate":"367ce3731d9bc2dd344ff77c48f2b63bb07b8bbe","owner_class":"public","result":"pass"},{"step":"step_1446","candidate":"a30f3fd8d2c2c8ee5b07a67e548c5afa5e2da125","owner_class":"public","result":"pass"}], "ledger:predecessor")
-    l["predecessors"].extend((prior_predecessor, middle_predecessor, latest_predecessor))
+    l["predecessors"].extend((earlier_predecessor, prior_predecessor, middle_predecessor, latest_predecessor))
     for index, row in enumerate(l["predecessors"]):
         candidate = row["candidate"]
         actual = subprocess.run(["git","rev-parse","--verify",f"{candidate}^{{commit}}"],cwd=ROOT,capture_output=True,text=True,check=False)
@@ -130,7 +132,7 @@ def main() -> int:
     evidence_schema = json.loads(EVIDENCE_SCHEMA.read_text())
     validate(authority, findings, ledger, schema, evidence, evidence_schema)
     mutations = self_test(authority, findings, ledger, schema, evidence, evidence_schema)
-    print(f"PASS: remediation-v13 authority active=step_1450 open=0 closed=9 mutations={mutations}")
+    print(f"PASS: remediation-v13 authority active=step_1451 open=0 closed=9 mutations={mutations}")
     return 0
 
 if __name__ == "__main__":

@@ -1,10 +1,10 @@
 nostr_automerge specification baseline
 revision: draft_2026_08
 status: approved_implementation_baseline
-controlled_files: 477
+controlled_files: 480
 requirements: 156
 transition_stage: distribution_complete
 historical_v9_validation: immutable_wrapper
-validators: 34
-aggregate_sha256: 2ff03808ced4ec34155f93763ae8920c87c8f548c2a9e7163ac90b13b109d8b0
+validators: 35
+aggregate_sha256: c1647d18ffe1a0ea2a770e29779beadeee9780e456bba87ef4dea056d51405a0
 result: pass

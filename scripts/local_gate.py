@@ -55,7 +55,7 @@ def standard() -> None:
 def conformance() -> None:
     command = (
         "cargo", "run", "--quiet", "-p", "nostr_automerge_conformance",
-        "--locked", "--", "run_distribution", "fixtures/distribution/manifest_v13.json",
+        "--locked", "--", "run_distribution", "fixtures/distribution/manifest_v14.json",
     )
     first = run(*command, capture=True).stdout
     second = run(*command, capture=True).stdout
@@ -65,8 +65,8 @@ def conformance() -> None:
     if summary.get("status") != "pass" or summary.get("fixture_count") != 204:
         raise AssertionError("Rust distribution did not pass in both independent processes")
     OUTPUT.mkdir(parents=True, exist_ok=True)
-    (OUTPUT / "rust_distribution_v13.json").write_text(first, encoding="utf-8")
-    (OUTPUT / "rust_distribution_v13_process_evidence.json").write_text(
+    (OUTPUT / "rust_distribution_v14.json").write_text(first, encoding="utf-8")
+    (OUTPUT / "rust_distribution_v14_process_evidence.json").write_text(
         json.dumps(
             {
                 "canonical_bytes": "identical",

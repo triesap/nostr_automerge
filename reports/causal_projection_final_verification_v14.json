@@ -1,0 +1,49 @@
+{
+  "schema": "nostr_automerge.causal_projection_final_verification.v14.v1",
+  "status": "verified",
+  "checkpoint": "step_1451",
+  "candidates": {
+    "public": "ec9c8d7d40242eeec1bcabd2ea484d25268f3f9a",
+    "independent": "2ff0a9d4bbbd32cc07cecbda3fbb1abef8a1b95e"
+  },
+  "counts": {
+    "operation_families": 14,
+    "proofs": 14,
+    "public_mutations": 144,
+    "independent_mutations": 17,
+    "mutation_survivors": 0,
+    "scenarios": 204,
+    "signed_events": 771,
+    "delivery_orders": 8,
+    "processes": 2
+  },
+  "outputs": {
+    "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+    "distribution_manifest_sha256": "c76cd24bc91308b0e615bd837d69b72fe145b7713a544fb325f7f054275c485d",
+    "rust_conformance_sha256": "1a3788359da325ddecfa7d9d9f9c0031503b6530ed21f7998854f9c39911f7d3",
+    "combined_assurance_sha256": "d0557d5f3427b07e1edfa8b6cf2badda93b99203604995d3e058c2996b724ea3",
+    "finding_closure_sha256": "112c63d0e58de5aa229548aedb6ad0401a840405c63ea18fd7fcdd0beb8d301c",
+    "opaque_import_sha256": "2afc2c53e1653f5db53309e7f506e7b08f585cb4d69ab51cfee872a30f47a881",
+    "independent_gate_identity_sha256": "4ca522e7ef5f2571ddc365f5eb0ef42092da9fb6c792e1d5b16c6d9639e14fa8"
+  },
+  "gates": [
+    {"name": "public_standard", "result": "pass"},
+    {"name": "public_conformance", "result": "pass"},
+    {"name": "independent_pinned_check", "result": "pass"},
+    {"name": "independent_distribution", "result": "pass"}
+  ],
+  "audits": {
+    "public_clean_before_evidence": true,
+    "independent_clean": true,
+    "diff_check": true,
+    "leak_scan": true,
+    "artifact_scan": true,
+    "cross_record_hash_equality": true
+  },
+  "holds": ["external_assurance", "event_kind_allocation", "nip_submission", "production_qualification", "publication", "release", "remote_mutation"],
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "a9c0bc9a1602f24bc762a6bc9f962e4942f79c7f6143e0cea62ca05232f44a0d"
+}

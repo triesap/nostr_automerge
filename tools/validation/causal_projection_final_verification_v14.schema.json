@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_final_verification_v14.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "checkpoint", "candidates", "counts", "outputs", "gates", "audits", "holds", "release_claimed", "publication_claimed", "remote_actions", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_final_verification.v14.v1"},
+    "status": {"const": "verified"},
+    "checkpoint": {"const": "step_1451"},
+    "candidates": {"type": "object", "additionalProperties": false, "required": ["public", "independent"]},
+    "counts": {"type": "object", "additionalProperties": false, "required": ["operation_families", "proofs", "public_mutations", "independent_mutations", "mutation_survivors", "scenarios", "signed_events", "delivery_orders", "processes"]},
+    "outputs": {"type": "object", "additionalProperties": false, "required": ["canonical_output_sha256", "distribution_manifest_sha256", "rust_conformance_sha256", "combined_assurance_sha256", "finding_closure_sha256", "opaque_import_sha256", "independent_gate_identity_sha256"]},
+    "gates": {"type": "array", "minItems": 4, "maxItems": 4},
+    "audits": {"type": "object", "additionalProperties": false, "required": ["public_clean_before_evidence", "independent_clean", "diff_check", "leak_scan", "artifact_scan", "cross_record_hash_equality"]},
+    "holds": {"type": "array", "minItems": 7, "maxItems": 7},
+    "release_claimed": {"const": false},
+    "publication_claimed": {"const": false},
+    "remote_actions": {"const": 0},
+    "result": {"const": "pass"},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

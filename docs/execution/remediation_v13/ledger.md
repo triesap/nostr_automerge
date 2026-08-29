@@ -183,3 +183,10 @@ Finding 080 and all seven external holds remain held. The closure explicitly
 supersedes the v12 decision and Rust-only v13 assurance without rewriting either
 historical record, and it makes no release, publication, or remote-action claim.
 The next checkpoint is `step_1451`.
+
+`step_1451` runs the final repository-owned lanes from clean public and
+independent target states. The public standard and corrected distribution-v14
+conformance lanes pass, the pinned independent full check and 204-by-eight-by-two
+distribution lane pass, and both implementations agree on the canonical output
+identity. No push, publication, release, deployment, or remote mutation occurs.
+The next checkpoint is `step_1452`.
