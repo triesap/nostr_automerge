@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_final_decision_v14.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "checkpoint", "candidate", "imports", "completion", "findings", "gates", "holds", "release_claimed", "publication_claimed", "remote_actions", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_final_decision.v14.v1"},
+    "status": {"const": "code_complete_publication_held"},
+    "checkpoint": {"const": "step_1452"},
+    "candidate": {"const": "bc0ac22fe4645c3acb5d25730e6be16045813f27"},
+    "imports": {"type": "object", "additionalProperties": false, "required": ["authority_sha256", "final_verification_sha256", "finding_closure_sha256", "combined_assurance_sha256", "opaque_assurance_sha256"]},
+    "completion": {"type": "object", "additionalProperties": false, "required": ["rclds", "checkpoints", "unfinished_rclds", "public_candidate", "independent_candidate", "canonical_output_sha256"]},
+    "findings": {"type": "object", "additionalProperties": false, "required": ["closed", "held", "open"]},
+    "gates": {"type": "array", "minItems": 10, "maxItems": 10},
+    "holds": {"type": "array", "minItems": 7, "maxItems": 7},
+    "release_claimed": {"const": false},
+    "publication_claimed": {"const": false},
+    "remote_actions": {"const": 0},
+    "result": {"const": "pass"},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

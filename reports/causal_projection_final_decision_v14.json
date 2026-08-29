@@ -1,0 +1,44 @@
+{
+  "schema": "nostr_automerge.causal_projection_final_decision.v14.v1",
+  "status": "code_complete_publication_held",
+  "checkpoint": "step_1452",
+  "candidate": "bc0ac22fe4645c3acb5d25730e6be16045813f27",
+  "imports": {
+    "authority_sha256": "9074485196ac73cbf921632b7b6c3ddd106092eed308febcfddcf4358f3accda",
+    "final_verification_sha256": "430a5582c4c8362b48643d3f45feb3aa7808128e2a348795d0e6fd572f4b14f6",
+    "finding_closure_sha256": "112c63d0e58de5aa229548aedb6ad0401a840405c63ea18fd7fcdd0beb8d301c",
+    "combined_assurance_sha256": "d0557d5f3427b07e1edfa8b6cf2badda93b99203604995d3e058c2996b724ea3",
+    "opaque_assurance_sha256": "2afc2c53e1653f5db53309e7f506e7b08f585cb4d69ab51cfee872a30f47a881"
+  },
+  "completion": {
+    "rclds": [116, 117, 118, 119, 120],
+    "checkpoints": 33,
+    "unfinished_rclds": [],
+    "public_candidate": "bc0ac22fe4645c3acb5d25730e6be16045813f27",
+    "independent_candidate": "2ff0a9d4bbbd32cc07cecbda3fbb1abef8a1b95e",
+    "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415"
+  },
+  "findings": {
+    "closed": ["FINDING_104", "FINDING_105", "FINDING_106", "FINDING_107", "FINDING_108", "FINDING_109", "FINDING_110", "FINDING_111", "FINDING_112"],
+    "held": ["FINDING_080"],
+    "open": []
+  },
+  "gates": [
+    {"name": "authority", "result": "pass"},
+    {"name": "requirements", "result": "pass"},
+    {"name": "operation_inventory", "result": "pass"},
+    {"name": "proof_catalog", "result": "pass"},
+    {"name": "mutation_qualification", "result": "pass"},
+    {"name": "distribution_v14", "result": "pass"},
+    {"name": "opaque_import", "result": "pass"},
+    {"name": "combined_assurance", "result": "pass"},
+    {"name": "final_verification", "result": "pass"},
+    {"name": "complete_specification", "result": "pass"}
+  ],
+  "holds": ["external_assurance", "event_kind_allocation", "nip_submission", "production_qualification", "publication", "release", "remote_mutation"],
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "0ef2496a35a65e0ec91ff4af14d89d5327f3bf14b29699c440f56de7096b2039"
+}

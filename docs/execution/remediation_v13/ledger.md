@@ -190,3 +190,10 @@ conformance lanes pass, the pinned independent full check and 204-by-eight-by-tw
 distribution lane pass, and both implementations agree on the canonical output
 identity. No push, publication, release, deployment, or remote mutation occurs.
 The next checkpoint is `step_1452`.
+
+`step_1452` closes RCLD 120 and the full five-RCLD causal-projection sequence.
+All 33 checkpoints are green, Findings 104 through 112 are closed, and no local
+RCLD remains unfinished. The terminal status is
+`code_complete_publication_held`: Finding 080 and all seven external actions
+remain held, while release and publication claims remain false and remote
+actions remain zero.

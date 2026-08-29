@@ -1,6 +1,6 @@
 {
   "schema": "nostr_automerge.remediation_findings.v13.v1",
-  "status": "correction_active",
+  "status": "code_complete_publication_held",
   "findings": [
     {"id":"FINDING_104","severity":"high","class":"resource_accounting","title":"Projection causal maximum is derived by an unmetered final actor-state scan","requirements":["NCRDT-RESOURCE-016","NCRDT-RESOURCE-017","NCRDT-RESOURCE-018"],"owner":"public_rust","closure":"Accumulate the maximum during charged projection traversal and remove the production final scan.","status":"closed"},
     {"id":"FINDING_105","severity":"high","class":"evidence_completeness","title":"Operation inventory omits causal projection construction","requirements":["NCRDT-EVIDENCE-007","NCRDT-RESOURCE-017"],"owner":"public_evidence","closure":"Represent projection construction and constant-size candidate validation as separate complete evidence rows.","status":"closed"},

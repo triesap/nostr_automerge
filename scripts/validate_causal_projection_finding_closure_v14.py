@@ -19,15 +19,19 @@ class ClosureError(RuntimeError):pass
 def require(v:bool,label:str)->None:
     if not v:raise ClosureError(label)
 def sha(p:str)->str:return hashlib.sha256((ROOT/p).read_bytes()).hexdigest()
+def historical_registry()->bytes:
+    result=subprocess.run(["git","show",f"ec9c8d7d40242eeec1bcabd2ea484d25268f3f9a:spec/remediation_findings_v13.json"],cwd=ROOT,capture_output=True,check=False)
+    require(result.returncode==0,"record:historical_registry")
+    return result.stdout
 def canonical(v:Any)->bytes:return json.dumps(v,separators=(",",":"),ensure_ascii=False).encode()
 def validate(record:object,schema:object)->None:
     require(type(record)is dict and list(record)==FIELDS,"record:shape")
     require(record["schema"]=="nostr_automerge.causal_projection_finding_closure.v14.v1" and record["status"]=="code_complete_publication_held" and record["checkpoint"]=="step_1450" and record["candidate"]==CANDIDATE,"record:state")
     commit=subprocess.run(["git","rev-parse","--verify",f"{CANDIDATE}^{{commit}}"],cwd=ROOT,capture_output=True,text=True,check=False);require(commit.returncode==0 and commit.stdout.strip()==CANDIDATE,"record:candidate")
-    require(record["imports"]==IMPORTS and all(sha(path)==IMPORTS[key] for key,path in IMPORT_PATHS.items()),"record:imports")
+    require(record["imports"]==IMPORTS and all((hashlib.sha256(historical_registry()).hexdigest() if key=="finding_registry_sha256" else sha(path))==IMPORTS[key] for key,path in IMPORT_PATHS.items()),"record:imports")
     require(record["history"]==HISTORY and all(sha(path)==HISTORY[key] for key,path in HISTORY_PATHS.items()),"record:history")
     require(record["findings"]==FINDINGS and record["counts"]=={"findings":10,"closed":9,"held":1,"open":0},"record:findings")
-    registry=json.loads((ROOT/"spec/remediation_findings_v13.json").read_text());require([{"id":row["id"],"status":row["status"]} for row in registry["findings"]]==FINDINGS,"record:registry")
+    registry=json.loads(historical_registry());require([{"id":row["id"],"status":row["status"]} for row in registry["findings"]]==FINDINGS,"record:registry")
     require(record["holds"]==HOLDS and record["release_claimed"]is False and record["publication_claimed"]is False and record["remote_actions"]==0 and record["result"]=="pass","record:holds")
     projection={key:record[key] for key in FIELDS[:-1]};require(record["result_identity_sha256"]==IDENTITY==hashlib.sha256(canonical(projection)).hexdigest(),"record:identity")
     require(type(schema)is dict and list(schema)==["$schema","$id","type","additionalProperties","required","properties"] and schema["additionalProperties"]is False and schema["required"]==FIELDS and list(schema["properties"])==FIELDS,"schema:closed")

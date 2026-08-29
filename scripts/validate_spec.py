@@ -110,6 +110,7 @@ VALIDATORS = [
     "validate_causal_projection_combined_assurance_v14.py",
     "validate_causal_projection_finding_closure_v14.py",
     "validate_causal_projection_final_verification_v14.py",
+    "validate_causal_projection_final_decision_v14.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",
@@ -318,6 +319,7 @@ def controlled_files() -> list[pathlib.Path]:
             "reports/causal_projection_combined_assurance_v14.json",
             "reports/causal_projection_finding_closure_v14.json",
             "reports/causal_projection_final_verification_v14.json",
+            "reports/causal_projection_final_decision_v14.json",
             "fixtures/distribution/manifest_v12.json",
             "fixtures/distribution/manifest_v13.json",
             "fixtures/distribution/manifest_v13.lock.json",
@@ -357,6 +359,7 @@ def controlled_files() -> list[pathlib.Path]:
             "tools/validation/causal_projection_combined_assurance_v14.schema.json",
             "tools/validation/causal_projection_finding_closure_v14.schema.json",
             "tools/validation/causal_projection_final_verification_v14.schema.json",
+            "tools/validation/causal_projection_final_decision_v14.schema.json",
             "tools/validation/rust_conformance_v13.schema.json",
             "tools/validation/remediation_v12_distribution_gate.schema.json",
             "tools/validation/distribution_v13_compatibility_contract.schema.json",

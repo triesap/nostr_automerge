@@ -1,13 +1,13 @@
 {
   "schema": "nostr_automerge.remediation_v13_authority.v1",
-  "status": "approved_active",
+  "status": "code_complete_publication_held",
   "reviewed_public": {
     "candidate": "00ef954ff2dece37119ad235638046ffaa7305d4",
     "tree": "c248fd7415447900cf76f3d26977317b86816bca"
   },
   "governing_plan": {
     "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v13.md",
-    "sha256": "b021eebe8ce18e196a0aaf42cead5f96321d8ed95742ce9ac07f129e67c10be9"
+    "sha256": "4166a0a2710a364ca960e1fcda80b1b48e9b3073905bf8543cba607bf726a4e8"
   },
   "historical_v12": {
     "final_decision_sha256": "b7b11ebf3bbcea30e3dbacf5b8c01f9da18485a0f453257410d1ec08383f4349",

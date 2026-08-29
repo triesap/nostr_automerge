@@ -1,6 +1,6 @@
 # nostr_automerge draft-v1 causal projection follow-up v13 multi-RCLD plan
 
-Status: `approved_not_started`
+Status: complete — `code_complete_publication_held`
 
 The reviewed public predecessor is
 `00ef954ff2dece37119ad235638046ffaa7305d4`. RCLDs 109 through 115 and
@@ -177,5 +177,8 @@ and all external holds remain held, both repository identities are clean, and
 the final decision records `release_claimed=false`,
 `publication_claimed=false`, and `remote_actions=0`.
 
-Until then, the unfinished RCLDs are RCLD 116, RCLD 117, RCLD 118, RCLD 119,
-and RCLD 120.
+All five RCLDs and all 33 checkpoints are complete. No RCLD in this sequence
+remains unfinished. Finding 080 and the external assurance, event-kind
+allocation, NIP submission, production qualification, publication, release,
+and remote-mutation actions remain explicit holds rather than unfinished local
+implementation work.
