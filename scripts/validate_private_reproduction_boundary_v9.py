@@ -53,6 +53,7 @@ JSON_RECORDS = (
     "reports/distribution_v13_parity.json",
     "reports/opaque_compatibility_v13.json",
     "reports/opaque_private_assurance_v13.json",
+    "reports/opaque_causal_projection_v14.json",
     "implementation/runtime_ledger_v9.json",
     "tools/validation/opaque_reproduction_v9.schema.json",
     "tools/validation/opaque_checkpoint_v9.schema.json",
@@ -71,6 +72,7 @@ JSON_RECORDS = (
     "tools/validation/report_parity_v9.schema.json",
     "tools/validation/opaque_semantic_proofs_v10.schema.json",
     "tools/validation/opaque_distribution_parity_v12.schema.json",
+    "tools/validation/opaque_causal_projection_v14.schema.json",
     "tools/validation/distribution_v13_parity.schema.json",
     "tools/validation/runtime_ledger_v9.schema.json",
 )
@@ -254,6 +256,7 @@ PYTHON_SURFACES = (
     "scripts/validate_remediation_v12_finding_closure.py",
     "scripts/validate_remediation_v12_final_decision.py",
     "scripts/validate_causal_projection_implementation_gate_v13.py",
+    "scripts/validate_opaque_causal_projection_v14.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -413,6 +416,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/remediation_v12_mutation_qualification.json",
         "reports/remediation_v12_public_assurance.json",
         "reports/opaque_private_assurance_v13.json",
+        "reports/opaque_causal_projection_v14.json",
         "reports/remediation_v12_combined_assurance.json",
         "reports/remediation_v12_finding_closure.json",
         "reports/remediation_v12_final_decision.json",
@@ -421,6 +425,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/causal_projection_mutations_v13.json",
         "reports/rust_conformance_v14.json",
         "reports/causal_projection_assurance_v13.json",
+        "tools/validation/opaque_causal_projection_v14.schema.json",
         "fixtures/distribution/manifest_v13.json",
         "fixtures/distribution/manifest_v14.json",
         "fixtures/distribution/manifest_v14.lock.json",
@@ -533,6 +538,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_distribution_v14.py",
         "scripts/validate_rust_conformance_v14.py",
         "scripts/validate_causal_projection_assurance_v13.py",
+        "scripts/validate_opaque_causal_projection_v14.py",
         "scripts/validate_rust_conformance_v13.py",
         "scripts/validate_remediation_v12_distribution_gate.py",
         "scripts/validate_distribution_v13_compatibility_contract.py",

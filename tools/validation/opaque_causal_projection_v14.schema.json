@@ -1,0 +1,79 @@
+{
+  "title": "nostr_automerge opaque causal projection v14",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "independent_candidate", "opaque_record_sha256", "assurance", "public_bindings", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": { "const": "nostr_automerge.opaque_causal_projection_import.v14.v1" },
+    "status": { "const": "code_complete_publication_held" },
+    "independent_candidate": { "$ref": "#/$defs/commit" },
+    "opaque_record_sha256": { "$ref": "#/$defs/hash" },
+    "assurance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "status", "candidates", "counts", "hashes", "result_classes", "release_claimed", "publication_claimed", "remote_actions", "result", "identity_sha256"],
+      "properties": {
+        "schema": { "const": "nostr_automerge.opaque_causal_projection.v14.v1" },
+        "status": { "const": "code_complete_publication_held" },
+        "candidates": { "type": "array", "minItems": 6, "maxItems": 6, "uniqueItems": true, "items": { "$ref": "#/$defs/commit" } },
+        "counts": { "$ref": "#/$defs/counts" },
+        "hashes": { "$ref": "#/$defs/hashes" },
+        "result_classes": { "const": ["logical_operation_parity", "typed_stop_preservation", "delivery_order_invariance", "mutation_qualification", "source_only_boundary"] },
+        "release_claimed": { "const": false },
+        "publication_claimed": { "const": false },
+        "remote_actions": { "const": 0 },
+        "result": { "const": "pass" },
+        "identity_sha256": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "public_bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rust_candidate", "rust_assurance_sha256", "operation_contract_sha256", "distribution_manifest_sha256", "distribution_lock_sha256", "canonical_output_sha256", "logical_operation_families"],
+      "properties": {
+        "rust_candidate": { "$ref": "#/$defs/commit" },
+        "rust_assurance_sha256": { "$ref": "#/$defs/hash" },
+        "operation_contract_sha256": { "$ref": "#/$defs/hash" },
+        "distribution_manifest_sha256": { "$ref": "#/$defs/hash" },
+        "distribution_lock_sha256": { "$ref": "#/$defs/hash" },
+        "canonical_output_sha256": { "$ref": "#/$defs/hash" },
+        "logical_operation_families": { "const": 14 }
+      }
+    },
+    "result": { "const": "pass" },
+    "result_identity_sha256": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation_families", "proofs", "executed_mutations", "mutation_survivors", "scenarios", "signed_events", "delivery_orders", "processes", "budget_rebindings"],
+      "properties": {
+        "operation_families": { "const": 14 },
+        "proofs": { "const": 14 },
+        "executed_mutations": { "const": 17 },
+        "mutation_survivors": { "const": 0 },
+        "scenarios": { "const": 204 },
+        "signed_events": { "const": 771 },
+        "delivery_orders": { "const": 8 },
+        "processes": { "const": 2 },
+        "budget_rebindings": { "const": 9 }
+      }
+    },
+    "hashes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation_contract_sha256", "distribution_projection_sha256", "canonical_output_sha256", "operation_inventory_identity_sha256", "mutation_identity_sha256", "private_gate_identity_sha256"],
+      "properties": {
+        "operation_contract_sha256": { "$ref": "#/$defs/hash" },
+        "distribution_projection_sha256": { "$ref": "#/$defs/hash" },
+        "canonical_output_sha256": { "$ref": "#/$defs/hash" },
+        "operation_inventory_identity_sha256": { "$ref": "#/$defs/hash" },
+        "mutation_identity_sha256": { "$ref": "#/$defs/hash" },
+        "private_gate_identity_sha256": { "$ref": "#/$defs/hash" }
+      }
+    }
+  }
+}

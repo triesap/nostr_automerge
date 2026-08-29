@@ -148,3 +148,12 @@ and 112 are closed by their exact public evidence; only independent
 TypeScript compatibility finding 111 remains open, while finding 080 and all
 publication or remote-action authority remain held. The next checkpoint is
 `step_1439` in RCLD 119.
+
+`step_1446` imports the completed independent TypeScript lane through one
+closed opaque record. The import binds the exact independent candidate, six
+opaque predecessor candidates, fourteen operations and proofs, seventeen
+executed mutations with zero survivors, and the same 204-by-eight-by-two
+canonical distribution identity as the Rust assurance. It contains no private
+path, source, command, package-layout, workflow, or log detail, and all release,
+publication, and remote-action claims remain held. The next checkpoint is
+`step_1447` in RCLD 120.

@@ -1,0 +1,60 @@
+{
+  "schema": "nostr_automerge.opaque_causal_projection_import.v14.v1",
+  "status": "code_complete_publication_held",
+  "independent_candidate": "2ff0a9d4bbbd32cc07cecbda3fbb1abef8a1b95e",
+  "opaque_record_sha256": "8168bcf02c79b427b6f9c68cbaa6aeca421a65c36bddd47e65a269f1376fe57d",
+  "assurance": {
+    "schema": "nostr_automerge.opaque_causal_projection.v14.v1",
+    "status": "code_complete_publication_held",
+    "candidates": [
+      "e94bfa4d96b0180037f7f6a81546ceb2ac1aa3ef",
+      "08e9037037083099231d05051f75079af28e7071",
+      "ddc39dbca35d0f735d5cee6cad84112cbf6ac37a",
+      "a465425cd3b41a03260e741472f3ebf0aeb23d54",
+      "06ab6bae2703215a29dbdf8f72f244c0732f16b3",
+      "5968197f1342d65fabd5d0e4c8215ed4bbe8aa55"
+    ],
+    "counts": {
+      "operation_families": 14,
+      "proofs": 14,
+      "executed_mutations": 17,
+      "mutation_survivors": 0,
+      "scenarios": 204,
+      "signed_events": 771,
+      "delivery_orders": 8,
+      "processes": 2,
+      "budget_rebindings": 9
+    },
+    "hashes": {
+      "operation_contract_sha256": "0df7119713f5f59c5bcc1cb9149b734d394acc469f2839468ee32704b23f1d3f",
+      "distribution_projection_sha256": "315f82e5795a0c8fba0e98d21891971d5180b338106e5791acb41bcc25c85f39",
+      "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+      "operation_inventory_identity_sha256": "c15201f700d5d0c883e148acc4976a6966b739b5f707d97735e2245aa67ef0cf",
+      "mutation_identity_sha256": "392006debfe4d29cf56b9ee4a2a2817513b1f9401cccc9ba1e8f12e04babc820",
+      "private_gate_identity_sha256": "4ca522e7ef5f2571ddc365f5eb0ef42092da9fb6c792e1d5b16c6d9639e14fa8"
+    },
+    "result_classes": [
+      "logical_operation_parity",
+      "typed_stop_preservation",
+      "delivery_order_invariance",
+      "mutation_qualification",
+      "source_only_boundary"
+    ],
+    "release_claimed": false,
+    "publication_claimed": false,
+    "remote_actions": 0,
+    "result": "pass",
+    "identity_sha256": "68de40abb71bd07eb9bafeb9a54f00187214ebe3a4fb8153a014f36d46b88a35"
+  },
+  "public_bindings": {
+    "rust_candidate": "367ce3731d9bc2dd344ff77c48f2b63bb07b8bbe",
+    "rust_assurance_sha256": "6f09d1fe2f0ca690838f82d463a2cc20ef18c5f382da1bb7c1b9f98287f7e44c",
+    "operation_contract_sha256": "0df7119713f5f59c5bcc1cb9149b734d394acc469f2839468ee32704b23f1d3f",
+    "distribution_manifest_sha256": "c76cd24bc91308b0e615bd837d69b72fe145b7713a544fb325f7f054275c485d",
+    "distribution_lock_sha256": "0fc414a0e49b4e87bb0cf1f21bea3cf0cd70af904720b93a95fae00f079e7304",
+    "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+    "logical_operation_families": 14
+  },
+  "result": "pass",
+  "result_identity_sha256": "e5317db419535e10c494f5b61c46c01c00f4e256a7e8740d19692ae4f43367d7"
+}
