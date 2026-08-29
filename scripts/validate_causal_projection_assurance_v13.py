@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REPORT = ROOT / "reports/causal_projection_assurance_v13.json"
 SCHEMA = ROOT / "tools/validation/causal_projection_assurance_v13.schema.json"
 FINDINGS = ROOT / "spec/remediation_findings_v13.json"
+HISTORICAL_CANDIDATE = "367ce3731d9bc2dd344ff77c48f2b63bb07b8bbe"
 SCHEMA_SHA256 = "4d04605983db2ca7ec569d76284f2ffaa187327f91a60077fdde1535c062d52d"
 KEYS = ("schema","status","rcld","checkpoint","candidate_chain","imports","finding_registry_sha256","findings","counts","holds","release_claimed","remote_actions","result","result_identity_sha256")
 CANDIDATES = (
@@ -57,6 +58,15 @@ def canonical(value: Any) -> bytes:
     return json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(",",":")).encode()
 
 
+def historical_findings() -> bytes:
+    result = subprocess.run(
+        ("git","show",f"{HISTORICAL_CANDIDATE}:spec/remediation_findings_v13.json"),
+        cwd=ROOT,capture_output=True,check=False,
+    )
+    require(result.returncode == 0,"record:historical_registry")
+    return result.stdout
+
+
 def validate_record(value: object) -> None:
     require(type(value) is dict and tuple(value) == KEYS,"record:shape")
     assert isinstance(value,dict)
@@ -73,7 +83,7 @@ def validate_record(value: object) -> None:
     require(value["findings"] == expected_findings,"record:findings")
     require(value["counts"] == {"findings":10,"closed":8,"open":1,"held":1},"record:counts")
     require(value["holds"] == HOLDS and value["release_claimed"] is False and value["remote_actions"] == 0 and value["result"] == "pass","record:result")
-    require(value["finding_registry_sha256"] == hashlib.sha256(FINDINGS.read_bytes()).hexdigest() == "a04492a584f87d140f15789095b79fe2b2991a987c22a334c99093c24295ad3c","record:registry")
+    require(value["finding_registry_sha256"] == hashlib.sha256(historical_findings()).hexdigest() == "a04492a584f87d140f15789095b79fe2b2991a987c22a334c99093c24295ad3c","record:registry")
     require(value["result_identity_sha256"] == hashlib.sha256(canonical({key:value[key] for key in KEYS[:-1]})).hexdigest(),"record:identity")
 
 
@@ -85,7 +95,7 @@ def validate_sources(value: dict[str, Any]) -> None:
         prior = candidate
     for category,path,expected in IMPORTS:
         require(hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == expected,"import:" + category)
-    registry = json.loads(FINDINGS.read_text())
+    registry = json.loads(historical_findings())
     statuses = {row["id"]:row["status"] for row in registry["findings"]}
     require(all(statuses[identifier] == "closed" for identifier in EVIDENCE),"registry:closed")
     require(statuses["FINDING_111"] == "open" and statuses["FINDING_080"] == "held","registry:remaining")

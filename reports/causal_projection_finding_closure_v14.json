@@ -1,0 +1,16 @@
+{
+  "schema":"nostr_automerge.causal_projection_finding_closure.v14.v1",
+  "status":"code_complete_publication_held",
+  "checkpoint":"step_1450",
+  "candidate":"9af01749c9a297b755688f057946b558c51a25b6",
+  "imports":{"combined_assurance_sha256":"d0557d5f3427b07e1edfa8b6cf2badda93b99203604995d3e058c2996b724ea3","opaque_assurance_sha256":"2afc2c53e1653f5db53309e7f506e7b08f585cb4d69ab51cfee872a30f47a881","finding_registry_sha256":"7037fb1e9efd9aa82c36fad6207a3d8a6fc6986037e0e324985ce3db49401f4f"},
+  "history":{"v12_final_decision_sha256":"b7b11ebf3bbcea30e3dbacf5b8c01f9da18485a0f453257410d1ec08383f4349","v12_runtime_ledger_sha256":"982019a68e984f6a2de7730b0ca816b5c9ff814f02684bfdb058f4c62958c16b","v13_rust_assurance_sha256":"6f09d1fe2f0ca690838f82d463a2cc20ef18c5f382da1bb7c1b9f98287f7e44c","relationship":"supersedes_without_rewriting_history"},
+  "findings":[{"id":"FINDING_104","status":"closed"},{"id":"FINDING_105","status":"closed"},{"id":"FINDING_106","status":"closed"},{"id":"FINDING_107","status":"closed"},{"id":"FINDING_108","status":"closed"},{"id":"FINDING_109","status":"closed"},{"id":"FINDING_110","status":"closed"},{"id":"FINDING_111","status":"closed"},{"id":"FINDING_112","status":"closed"},{"id":"FINDING_080","status":"held"}],
+  "counts":{"findings":10,"closed":9,"held":1,"open":0},
+  "holds":["external_assurance","event_kind_allocation","nip_submission","production_qualification","publication","release","remote_mutation"],
+  "release_claimed":false,
+  "publication_claimed":false,
+  "remote_actions":0,
+  "result":"pass",
+  "result_identity_sha256":"88aff99bbb99a59299cc1eef4fee28371557de1d5eb9ba137f31e7e920a66deb"
+}

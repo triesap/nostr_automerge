@@ -1,0 +1,11 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_finding_closure_v14.schema.json",
+  "type":"object","additionalProperties":false,
+  "required":["schema","status","checkpoint","candidate","imports","history","findings","counts","holds","release_claimed","publication_claimed","remote_actions","result","result_identity_sha256"],
+  "properties":{
+    "schema":{"const":"nostr_automerge.causal_projection_finding_closure.v14.v1"},"status":{"const":"code_complete_publication_held"},"checkpoint":{"const":"step_1450"},"candidate":{"const":"9af01749c9a297b755688f057946b558c51a25b6"},
+    "imports":{"type":"object","additionalProperties":false},"history":{"type":"object","additionalProperties":false},"findings":{"type":"array","minItems":10,"maxItems":10},"counts":{"type":"object","additionalProperties":false},"holds":{"type":"array","minItems":7,"maxItems":7,"uniqueItems":true},
+    "release_claimed":{"const":false},"publication_claimed":{"const":false},"remote_actions":{"const":0},"result":{"const":"pass"},"result_identity_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"}
+  }
+}

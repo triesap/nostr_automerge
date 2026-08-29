@@ -177,3 +177,9 @@ and opaque TypeScript operation semantics, typed stops, exact proof and mutation
 inventories, distribution-v14, and two byte-identical 204-by-eight Rust
 conformance processes. Publication, release, and remote-action claims remain
 false. The next checkpoint is `step_1450`.
+
+`step_1450` closes Findings 104 through 112 from the combined local evidence.
+Finding 080 and all seven external holds remain held. The closure explicitly
+supersedes the v12 decision and Rust-only v13 assurance without rewriting either
+historical record, and it makes no release, publication, or remote-action claim.
+The next checkpoint is `step_1451`.
