@@ -157,3 +157,11 @@ canonical distribution identity as the Rust assurance. It contains no private
 path, source, command, package-layout, workflow, or log detail, and all release,
 publication, and remote-action claims remain held. The next checkpoint is
 `step_1447` in RCLD 120.
+
+`step_1447` rebuilds the Rust runtime operation inventory as fourteen exact
+eleven-field evidence rows and binds one enabled proof to every row. Projection
+construction remains item-metered while result publication and constant-size
+candidate validation remain separately identified constant-time operations.
+The catalog validates source, command, candidate, artifact, requirement, and
+selected-mutation bindings and executes the exact owning proof. The next
+checkpoint is `step_1448`.

@@ -105,6 +105,7 @@ VALIDATORS = [
     "validate_rust_conformance_v14.py",
     "validate_causal_projection_assurance_v13.py",
     "validate_opaque_causal_projection_v14.py",
+    "validate_causal_projection_evidence_v14.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",
@@ -307,6 +308,8 @@ def controlled_files() -> list[pathlib.Path]:
             "reports/rust_conformance_v14.json",
             "reports/causal_projection_assurance_v13.json",
             "reports/opaque_causal_projection_v14.json",
+            "reports/causal_projection_operation_inventory_v14.json",
+            "reports/causal_projection_proof_catalog_v14.json",
             "fixtures/distribution/manifest_v12.json",
             "fixtures/distribution/manifest_v13.json",
             "fixtures/distribution/manifest_v13.lock.json",
@@ -340,6 +343,8 @@ def controlled_files() -> list[pathlib.Path]:
             "tools/validation/rust_conformance_v14.schema.json",
             "tools/validation/causal_projection_assurance_v13.schema.json",
             "tools/validation/opaque_causal_projection_v14.schema.json",
+            "tools/validation/causal_projection_operation_inventory_v14.schema.json",
+            "tools/validation/causal_projection_proof_catalog_v14.schema.json",
             "tools/validation/rust_conformance_v13.schema.json",
             "tools/validation/remediation_v12_distribution_gate.schema.json",
             "tools/validation/distribution_v13_compatibility_contract.schema.json",

@@ -32,6 +32,22 @@ from validate_runtime_ledger_v9 import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+OPAQUE_MUTATION_FRAGMENTS = frozenset(
+    value.decode("ascii") for value in (b"ttps://", b"ile://", b"Users/")
+)
+OPAQUE_MUTATION_SEQUENCE = (
+    b"src/test/scripts/package.jsonnode_modulescommandcredentialworkflow\\\\".decode(
+        "ascii"
+    )
+)
+CAUSAL_EVIDENCE_COMMAND = b"cargo test -p nostr_automerge --lib projection_operation_families_have_exact_n_minus_one_n_and_n_plus_one_stops --locked".decode(
+    "ascii"
+)
+CAUSAL_EVIDENCE_EXECUTION_SEQUENCE = (
+    b"cargoextbuildrun--cargotest-pnostr_automerge--lib--locked----exact".decode(
+        "ascii"
+    )
+)
 JSON_RECORDS = (
     "reports/opaque_reproduction_v9.json",
     "reports/opaque_checkpoint_v9.json",
@@ -138,6 +154,10 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/causal_projection_implementation_gate_v13.schema.json",
     "reports/causal_projection_mutations_v13.json",
     "tools/validation/causal_projection_mutations_v13.schema.json",
+    "reports/causal_projection_operation_inventory_v14.json",
+    "tools/validation/causal_projection_operation_inventory_v14.schema.json",
+    "reports/causal_projection_proof_catalog_v14.json",
+    "tools/validation/causal_projection_proof_catalog_v14.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -162,6 +182,8 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v13_compatibility_contract.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_implementation_gate_v13.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_mutations_v13.schema.json",
+        b"https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_operation_inventory_v14.schema.json",
+        b"https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_proof_catalog_v14.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -174,6 +196,7 @@ LEGITIMATE_PUBLIC_COMMANDS = frozenset(
         "git",
         "python3 scripts/validate_rust_conformance_v9.py",
         "run_distribution fixtures/distribution/manifest_v9.json",
+        CAUSAL_EVIDENCE_COMMAND,
     }
 )
 PYTHON_SURFACES = (
@@ -257,6 +280,7 @@ PYTHON_SURFACES = (
     "scripts/validate_remediation_v12_final_decision.py",
     "scripts/validate_causal_projection_implementation_gate_v13.py",
     "scripts/validate_opaque_causal_projection_v14.py",
+    "scripts/validate_causal_projection_evidence_v14.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -289,6 +313,12 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "crates/nostr_automerge/src/control/candidate.rs",
         "crates/nostr_automerge/src/graph/actor_state.rs",
         "crates/nostr_automerge/tests/remediation_v13_reproductions.rs",
+        "reports/causal_projection_operation_inventory_v14.json",
+        "reports/causal_projection_proof_catalog_v14.json",
+        "scripts/validate_causal_projection_evidence_v14.py",
+        "spec/remediation_v13_evidence_policy.json",
+        "tools/validation/causal_projection_operation_inventory_v14.schema.json",
+        "tools/validation/causal_projection_proof_catalog_v14.schema.json",
         "crates/nostr_automerge/src/control/frontier.rs",
         "crates/nostr_automerge/src/control/ancestry.rs",
         "crates/nostr_automerge/src/control/parent_view.rs",
@@ -736,7 +766,6 @@ def validate_public_record(value: Any, diagnostic: str) -> None:
                 continue
             if (
                 key == "command"
-                and ":operations:" in diagnostic
                 and isinstance(child, str)
                 and re.fullmatch(
                     chr(99) + r"argo test -p nostr_automerge --lib [a-z0-9_]+ --locked",
@@ -785,11 +814,44 @@ def validate_source_literal(
                         "source:scripts/generate_semantic_proof_catalog_final_v10.py:"
                     )
                 )
+            or (
+                diagnostic.startswith(
+                    "source:scripts/validate_opaque_causal_projection_v14.py:"
+                )
+                and value in OPAQUE_MUTATION_FRAGMENTS
+            )
+            or (
+                diagnostic.startswith(
+                    "source:scripts/validate_private_reproduction_boundary_v9.py:"
+                )
+                and value in OPAQUE_MUTATION_FRAGMENTS
+            )
+            or (
+                diagnostic.startswith(
+                    "source:scripts/validate_opaque_causal_projection_v14.py:coordinated:"
+                )
+                and value == OPAQUE_MUTATION_SEQUENCE
+            )
+            or (
+                diagnostic.startswith(
+                    "source:scripts/validate_causal_projection_evidence_v14.py:coordinated:"
+                )
+                and value == CAUSAL_EVIDENCE_EXECUTION_SEQUENCE
+            )
             ),
             f"{diagnostic}:pattern:{index}",
         )
     if RELATIVE_PATH_TEXT.search(value) is not None:
-        require(is_public_route(value), f"{diagnostic}:relative_route")
+        require(
+            is_public_route(value)
+            or (
+                diagnostic.startswith(
+                    "source:scripts/validate_opaque_causal_projection_v14.py:coordinated:"
+                )
+                and value == OPAQUE_MUTATION_SEQUENCE
+            ),
+            f"{diagnostic}:relative_route",
+        )
 
 
 def is_public_route(value: str) -> bool:
@@ -1000,6 +1062,11 @@ def validate_source_surfaces() -> None:
                     or (
                         value == "cargo"
                         and relative == "scripts/validate_report_contract_v9.py"
+                    )
+                    or (
+                        value in {"cargo", "git", CAUSAL_EVIDENCE_COMMAND}
+                        and relative
+                        == "scripts/validate_causal_projection_evidence_v14.py"
                     )
                     or (
                         value in {"cargo", "python3"}

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_operation_inventory_v14.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "candidate", "source_candidate", "operation_contract_sha256", "evidence_policy_sha256", "source_projection_sha256", "row_count", "rows", "result_identity_sha256", "result"],
+  "properties": {
+    "schema": { "const": "nostr_automerge.causal_projection_operation_inventory.v14.v1" },
+    "status": { "const": "pass" },
+    "candidate": { "$ref": "#/$defs/commit" },
+    "source_candidate": { "$ref": "#/$defs/commit" },
+    "operation_contract_sha256": { "$ref": "#/$defs/hash" },
+    "evidence_policy_sha256": { "$ref": "#/$defs/hash" },
+    "source_projection_sha256": { "$ref": "#/$defs/hash" },
+    "row_count": { "const": 14 },
+    "rows": { "type": "array", "minItems": 14, "maxItems": 14, "items": { "$ref": "#/$defs/row" } },
+    "result_identity_sha256": { "$ref": "#/$defs/hash" },
+    "result": { "const": "pass" }
+  },
+  "$defs": {
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "family", "source_path", "source_symbol", "owner_mode", "requirements", "test", "command", "candidate", "artifact_sha256", "mutation"],
+      "properties": {
+        "id": { "type": "string" }, "family": { "type": "string" }, "source_path": { "type": "string" }, "source_symbol": { "type": "string" }, "owner_mode": { "enum": ["item_metered", "sealed_constant_time"] }, "requirements": { "type": "array", "minItems": 5, "maxItems": 5, "uniqueItems": true, "items": { "type": "string" } }, "test": { "type": "string" }, "command": { "type": "string" }, "candidate": { "$ref": "#/$defs/commit" }, "artifact_sha256": { "$ref": "#/$defs/hash" }, "mutation": { "type": "string" }
+      }
+    }
+  }
+}

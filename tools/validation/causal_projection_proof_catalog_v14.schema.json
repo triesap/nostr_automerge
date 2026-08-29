@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_proof_catalog_v14.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "candidate", "operation_inventory_sha256", "proof_count", "proofs", "result_identity_sha256", "result"],
+  "properties": {
+    "schema": { "const": "nostr_automerge.causal_projection_proof_catalog.v14.v1" },
+    "status": { "const": "pass" },
+    "candidate": { "$ref": "#/$defs/commit" },
+    "operation_inventory_sha256": { "$ref": "#/$defs/hash" },
+    "proof_count": { "const": 14 },
+    "proofs": { "type": "array", "minItems": 14, "maxItems": 14, "items": { "$ref": "#/$defs/proof" } },
+    "result_identity_sha256": { "$ref": "#/$defs/hash" },
+    "result": { "const": "pass" }
+  },
+  "$defs": {
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "test", "command", "artifact_sha256", "enabled"],
+      "properties": { "id": { "type": "string" }, "test": { "type": "string" }, "command": { "type": "string" }, "artifact_sha256": { "$ref": "#/$defs/hash" }, "enabled": { "const": true } }
+    }
+  }
+}
