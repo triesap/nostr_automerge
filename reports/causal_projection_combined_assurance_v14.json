@@ -1,0 +1,23 @@
+{
+  "schema": "nostr_automerge.causal_projection_combined_assurance.v14.v1",
+  "status": "verified",
+  "candidate": "89ccc8af6de5d0f593da32b537fc12cf2d9610b1",
+  "imports": {
+    "rust_assurance_sha256": "6f09d1fe2f0ca690838f82d463a2cc20ef18c5f382da1bb7c1b9f98287f7e44c",
+    "rust_conformance_sha256": "1a3788359da325ddecfa7d9d9f9c0031503b6530ed21f7998854f9c39911f7d3",
+    "opaque_compatibility_sha256": "2afc2c53e1653f5db53309e7f506e7b08f585cb4d69ab51cfee872a30f47a881",
+    "operation_inventory_sha256": "7ce4ad42f26fb90fd2aa53a8b7f343d3f58e46227b209c50854384726dd47cd9",
+    "proof_catalog_sha256": "37f89ecce6534bbfe7d9942badbc426d0f39ca996eb3024e610b4f23032362bc",
+    "mutation_qualification_sha256": "e6d1b3b3fab05eeac4a61349ebb7a16261d0f1f6d8a9f7ce57b162fb2ff62383",
+    "distribution_manifest_sha256": "c76cd24bc91308b0e615bd837d69b72fe145b7713a544fb325f7f054275c485d"
+  },
+  "counts": {"operation_families":14,"proofs":14,"rust_mutations":14,"independent_mutations":17,"combined_mutations":144,"mutation_survivors":0,"scenarios":204,"signed_events":771,"delivery_orders":8,"processes":2,"budget_rebindings":9},
+  "identities": {"operation_contract_sha256":"0df7119713f5f59c5bcc1cb9149b734d394acc469f2839468ee32704b23f1d3f","canonical_output_sha256":"e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415","serialized_run_sha256":"000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344","opaque_identity_sha256":"68de40abb71bd07eb9bafeb9a54f00187214ebe3a4fb8153a014f36d46b88a35"},
+  "result_classes": ["logical_operation_parity","typed_stop_preservation","delivery_order_invariance","mutation_qualification","source_only_boundary"],
+  "canonical_process_bytes": "identical",
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "cbebde58344a6e00a17ba0ff1c59b06624258982cfed18183cbae6e4877243e1"
+}

@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v13_authority.json",
   "cursor": {
     "active_rcld": 120,
-    "active_step": "step_1448",
-    "next_step": "step_1449",
+    "active_step": "step_1449",
+    "next_step": "step_1450",
     "last_planned_step": "step_1452",
-    "remaining_checkpoint_count": 5,
+    "remaining_checkpoint_count": 4,
     "remaining_rcld_count": 1
   },
   "findings": {
@@ -17,14 +17,14 @@
   "active_checkpoint_scope": [
     "docs/execution/remediation_v13/ledger.md",
     "implementation/runtime_ledger_v13.json",
-    "reports/causal_projection_mutation_qualification_v14.json",
+    "reports/causal_projection_combined_assurance_v14.json",
     "reports/spec_baseline.txt",
-    "scripts/validate_causal_projection_mutation_qualification_v14.py",
+    "scripts/validate_causal_projection_combined_assurance_v14.py",
     "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v13.py",
     "scripts/validate_spec.py",
     "tools/nostr_automerge_xtask/src/validate.rs",
-    "tools/validation/causal_projection_mutation_qualification_v14.schema.json"
+    "tools/validation/causal_projection_combined_assurance_v14.schema.json"
   ],
   "predecessors": [
     {"step":"step_1419","candidate":"00ef954ff2dece37119ad235638046ffaa7305d4","owner_class":"public","result":"pass"},
@@ -48,6 +48,7 @@
     {"step":"step_1437","candidate":"6d6c507d86f84b25d4fb2a0c46fd48ab0cc14e4b","owner_class":"public","result":"pass"},
     {"step":"step_1438","candidate":"367ce3731d9bc2dd344ff77c48f2b63bb07b8bbe","owner_class":"public","result":"pass"},
     {"step":"step_1446","candidate":"a30f3fd8d2c2c8ee5b07a67e548c5afa5e2da125","owner_class":"public","result":"pass"},
-    {"step":"step_1447","candidate":"8b6c4278b44fb2f9a95d1d2c8eefbf42fee2e327","owner_class":"public","result":"pass"}
+    {"step":"step_1447","candidate":"8b6c4278b44fb2f9a95d1d2c8eefbf42fee2e327","owner_class":"public","result":"pass"},
+    {"step":"step_1448","candidate":"89ccc8af6de5d0f593da32b537fc12cf2d9610b1","owner_class":"public","result":"pass"}
   ]
 }

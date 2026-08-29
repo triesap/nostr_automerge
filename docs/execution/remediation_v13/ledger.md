@@ -171,3 +171,9 @@ binds them to the validator, evidence, distribution, and opaque-boundary
 mutation families. All 144 selected mutations execute with zero survivors, the
 fourteen source mutations restore the source exactly, and false-pass and
 coordinated-rehash attacks fail closed. The next checkpoint is `step_1449`.
+
+`step_1449` creates the combined causal-projection assurance. It binds the Rust
+and opaque TypeScript operation semantics, typed stops, exact proof and mutation
+inventories, distribution-v14, and two byte-identical 204-by-eight Rust
+conformance processes. Publication, release, and remote-action claims remain
+false. The next checkpoint is `step_1450`.
