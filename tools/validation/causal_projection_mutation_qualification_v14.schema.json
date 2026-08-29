@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_mutation_qualification_v14.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema","status","candidate","inputs","families","selected_mutations","executed_mutations","survivors","isolated_source_executions","source_restored","release_claimed","publication_claimed","remote_actions","result","result_identity_sha256"],
+  "properties": {
+    "schema": {"const":"nostr_automerge.causal_projection_mutation_qualification.v14.v1"},
+    "status": {"const":"verified"},
+    "candidate": {"const":"8b6c4278b44fb2f9a95d1d2c8eefbf42fee2e327"},
+    "inputs": {"type":"object","additionalProperties":false,"required":["operation_inventory_sha256","proof_catalog_sha256","rust_mutation_record_sha256","distribution_manifest_sha256","opaque_projection_sha256"]},
+    "families": {"type":"array","minItems":5,"maxItems":5},
+    "selected_mutations": {"const":144},
+    "executed_mutations": {"const":144},
+    "survivors": {"const":0},
+    "isolated_source_executions": {"const":14},
+    "source_restored": {"const":true},
+    "release_claimed": {"const":false},
+    "publication_claimed": {"const":false},
+    "remote_actions": {"const":0},
+    "result": {"const":"pass"},
+    "result_identity_sha256": {"type":"string","pattern":"^[0-9a-f]{64}$"}
+  }
+}

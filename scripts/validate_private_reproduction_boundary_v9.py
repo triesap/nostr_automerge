@@ -158,6 +158,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/causal_projection_operation_inventory_v14.schema.json",
     "reports/causal_projection_proof_catalog_v14.json",
     "tools/validation/causal_projection_proof_catalog_v14.schema.json",
+    "reports/causal_projection_mutation_qualification_v14.json",
+    "tools/validation/causal_projection_mutation_qualification_v14.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -184,6 +186,7 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_mutations_v13.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_operation_inventory_v14.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_proof_catalog_v14.schema.json",
+        b"https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_mutation_qualification_v14.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -281,6 +284,7 @@ PYTHON_SURFACES = (
     "scripts/validate_causal_projection_implementation_gate_v13.py",
     "scripts/validate_opaque_causal_projection_v14.py",
     "scripts/validate_causal_projection_evidence_v14.py",
+    "scripts/validate_causal_projection_mutation_qualification_v14.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -317,6 +321,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/causal_projection_proof_catalog_v14.json",
         "scripts/validate_causal_projection_evidence_v14.py",
         "spec/remediation_v13_evidence_policy.json",
+        "reports/causal_projection_mutation_qualification_v14.json",
+        "scripts/validate_causal_projection_mutation_qualification_v14.py",
+        "tools/validation/causal_projection_mutation_qualification_v14.schema.json",
         "tools/validation/causal_projection_operation_inventory_v14.schema.json",
         "tools/validation/causal_projection_proof_catalog_v14.schema.json",
         "crates/nostr_automerge/src/control/frontier.rs",
@@ -1067,6 +1074,11 @@ def validate_source_surfaces() -> None:
                         value in {"cargo", "git", CAUSAL_EVIDENCE_COMMAND}
                         and relative
                         == "scripts/validate_causal_projection_evidence_v14.py"
+                    )
+                    or (
+                        value in {"git", "python3"}
+                        and relative
+                        == "scripts/validate_causal_projection_mutation_qualification_v14.py"
                     )
                     or (
                         value in {"cargo", "python3"}

@@ -1,0 +1,29 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_qualification.v14.v1",
+  "status": "verified",
+  "candidate": "8b6c4278b44fb2f9a95d1d2c8eefbf42fee2e327",
+  "inputs": {
+    "operation_inventory_sha256": "7ce4ad42f26fb90fd2aa53a8b7f343d3f58e46227b209c50854384726dd47cd9",
+    "proof_catalog_sha256": "37f89ecce6534bbfe7d9942badbc426d0f39ca996eb3024e610b4f23032362bc",
+    "rust_mutation_record_sha256": "4769b40515bc9f66e76aeade3ff70cf00a1fa8f070fd0b9705b3812d51793e17",
+    "distribution_manifest_sha256": "c76cd24bc91308b0e615bd837d69b72fe145b7713a544fb325f7f054275c485d",
+    "opaque_projection_sha256": "2afc2c53e1653f5db53309e7f506e7b08f585cb4d69ab51cfee872a30f47a881"
+  },
+  "families": [
+    {"id":"rust_source","selected":14,"executed":14,"survivors":0},
+    {"id":"validator","selected":22,"executed":22,"survivors":0},
+    {"id":"evidence","selected":24,"executed":24,"survivors":0},
+    {"id":"distribution","selected":24,"executed":24,"survivors":0},
+    {"id":"opaque_boundary","selected":60,"executed":60,"survivors":0}
+  ],
+  "selected_mutations": 144,
+  "executed_mutations": 144,
+  "survivors": 0,
+  "isolated_source_executions": 14,
+  "source_restored": true,
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "f292101b44adb7d974fee66f74bf6f92a753d3a8c297c9de1819955b0d5503e7"
+}

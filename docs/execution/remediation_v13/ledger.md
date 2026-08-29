@@ -165,3 +165,9 @@ candidate validation remain separately identified constant-time operations.
 The catalog validates source, command, candidate, artifact, requirement, and
 selected-mutation bindings and executes the exact owning proof. The next
 checkpoint is `step_1448`.
+
+`step_1448` re-executes the selected Rust mutations in isolated worktrees and
+binds them to the validator, evidence, distribution, and opaque-boundary
+mutation families. All 144 selected mutations execute with zero survivors, the
+fourteen source mutations restore the source exactly, and false-pass and
+coordinated-rehash attacks fail closed. The next checkpoint is `step_1449`.
