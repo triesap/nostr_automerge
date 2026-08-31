@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema","status","source_candidate","source_path","phases","owned_operations","unowned_operations","inactive_operations","excluded_local_control","counts","final_inventory_state","result"],
+  "properties": {
+    "schema": {"const":"nostr_automerge.causal_projection_discovery.v15.v1"},
+    "status": {"const":"provisional_complete"},
+    "source_candidate": {"const":"dc6b820cd3af14d1ef4ede308ee1ee199c55b0e0"},
+    "source_path": {"const":"crates/nostr_automerge/src/graph/actor_state.rs"},
+    "phases": {"type":"array","minItems":5,"maxItems":5,"uniqueItems":true},
+    "owned_operations": {"type":"array","minItems":35,"maxItems":35,"uniqueItems":true},
+    "unowned_operations": {"type":"array","minItems":8,"maxItems":8,"uniqueItems":true},
+    "inactive_operations": {"type":"array","minItems":1,"maxItems":1,"uniqueItems":true},
+    "excluded_local_control": {"type":"array","minItems":4,"maxItems":4,"uniqueItems":true},
+    "counts": {"type":"object","additionalProperties":false,"required":["owned","unowned","inactive","active_total"]},
+    "final_inventory_state": {"const":"pending_implementation_and_proof_binding"},
+    "result": {"const":"pass"}
+  }
+}

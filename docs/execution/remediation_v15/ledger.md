@@ -18,3 +18,11 @@ final family count. It separates construction, lookup, causal-counter,
 frontier-comparison, and publication phases; requires explicit language
 applicability and nonzero active reachability; and defines the exact
 seventeen-field evidence row. The next checkpoint is `step_1456`.
+
+`step_1456` derives the provisional Rust inventory from balanced lexical
+function bodies and exhaustive operation enums. It finds 35 currently owned
+operations, eight unowned operations, and one inactive Rust-only family across
+five phases. Four local scalar/control-flow categories are explicitly excluded
+because they neither access nor mutate target storage after their owning
+operation. Implementation and final proof binding remain pending. The next
+checkpoint is `step_1457` in RCLD 122.

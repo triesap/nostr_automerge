@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v15_authority.json",
   "cursor": {
     "active_rcld": 121,
-    "active_step": "step_1455",
-    "next_step": "step_1456",
+    "active_step": "step_1456",
+    "next_step": "step_1457",
     "last_planned_step": "step_1468",
-    "remaining_checkpoint_count": 13,
+    "remaining_checkpoint_count": 12,
     "remaining_rcld_count": 3
   },
   "findings": {
@@ -17,14 +17,15 @@
   "active_checkpoint_scope": [
     "docs/execution/remediation_v15/ledger.md",
     "implementation/runtime_ledger_v15.json",
-    "scripts/validate_causal_projection_operation_discovery_v15.py",
+    "reports/causal_projection_discovery_v15.json",
+    "scripts/validate_causal_projection_discovery_v15.py",
     "scripts/validate_remediation_v15.py",
-    "spec/causal_projection_operation_discovery_v15.json",
-    "tools/validation/causal_projection_operation_discovery_v15.schema.json"
+    "tools/validation/causal_projection_discovery_v15.schema.json"
   ],
   "predecessors": [
     {"step":"step_1452","candidate":"0612e24ffa064b6ed362698a0ffcecad17b9b511","owner_class":"public","result":"pass"},
     {"step":"step_1453","candidate":"64ed00fe5342d190dfa1de01bd26f025a456914d","owner_class":"public","result":"pass"},
-    {"step":"step_1454","candidate":"ff4fecd9816f082d5ed869f19ef8911670f3b7cc","owner_class":"public","result":"pass"}
+    {"step":"step_1454","candidate":"ff4fecd9816f082d5ed869f19ef8911670f3b7cc","owner_class":"public","result":"pass"},
+    {"step":"step_1455","candidate":"dc6b820cd3af14d1ef4ede308ee1ee199c55b0e0","owner_class":"public","result":"pass"}
   ]
 }
