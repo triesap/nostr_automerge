@@ -200,6 +200,19 @@ STEP_SCOPES = {
         "tools/nostr_automerge_xtask/src/validate.rs",
         "tools/validation/opaque_causal_projection_v15.schema.json",
     ],
+    "step_1467": [
+        "docs/execution/remediation_v15/ledger.md",
+        "implementation/runtime_ledger_v15.json",
+        "reports/causal_projection_combined_assurance_v15.json",
+        "reports/spec_baseline.txt",
+        "scripts/validate_causal_projection_combined_assurance_v15.py",
+        "scripts/validate_private_reproduction_boundary_v9.py",
+        "scripts/validate_remediation_v15.py",
+        "scripts/validate_spec.py",
+        "spec/remediation_findings_v15.json",
+        "tools/nostr_automerge_xtask/src/validate.rs",
+        "tools/validation/causal_projection_combined_assurance_v15.schema.json",
+    ],
 }
 
 
@@ -240,7 +253,9 @@ def validate(authority: object, findings: object, ledger: object, schema: object
     f = exact(findings,["schema","status","findings","result"],"findings")
     require(f["schema"] == "nostr_automerge.remediation_findings.v15.v1" and f["status"] == "active" and f["result"] == "pass", "findings:state")
     require([row["id"] for row in f["findings"]] == ["FINDING_113","FINDING_114","FINDING_115","FINDING_080"], "findings:order")
-    require([row["status"] for row in f["findings"]] == ["open","open","open","held"], "findings:status")
+    active_step = ledger.get("cursor", {}).get("active_step") if type(ledger) is dict else None
+    findings_closed = active_step in {"step_1467", "step_1468"}
+    require([row["status"] for row in f["findings"]] == (["closed","closed","closed","held"] if findings_closed else ["open","open","open","held"]), "findings:status")
 
     l = exact(ledger,["schema","status","authority","cursor","findings","active_checkpoint_scope","predecessors"],"ledger")
     require(l["schema"] == "nostr_automerge.runtime_ledger.v15.v1" and l["status"] == "active" and l["authority"] == "spec/remediation_v15_authority.json", "ledger:state")
@@ -252,7 +267,8 @@ def validate(authority: object, findings: object, ledger: object, schema: object
     expected_rcld = 121 if active_index < 4 else 122 if active_index < 9 else 123 if active_index < 13 else 124
     expected_next = STEPS[active_index + 1] if active_index + 1 < len(STEPS) else None
     require(cursor == {"active_rcld":expected_rcld,"active_step":active,"next_step":expected_next,"last_planned_step":"step_1468","remaining_checkpoint_count":15-active_index,"remaining_rcld_count":124-expected_rcld}, "ledger:cursor")
-    require(l["findings"] == {"open":["FINDING_113","FINDING_114","FINDING_115"],"held":["FINDING_080"]}, "ledger:findings")
+    expected_findings = {"open":[],"closed":["FINDING_113","FINDING_114","FINDING_115"],"held":["FINDING_080"]} if findings_closed else {"open":["FINDING_113","FINDING_114","FINDING_115"],"held":["FINDING_080"]}
+    require(l["findings"] == expected_findings, "ledger:findings")
     scope = l["active_checkpoint_scope"]
     require(type(scope) is list and scope == STEP_SCOPES.get(active) and scope == sorted(scope) and len(scope) == len(set(scope)) and all(type(path) is str and (ROOT / path).exists() for path in scope), "ledger:scope")
     predecessors = l["predecessors"]
@@ -278,8 +294,8 @@ def self_test(authority: dict, findings: dict, ledger: dict, schema: dict) -> in
         ("hold","authority",lambda value: value["holds"].pop()),
         ("sequence","authority",lambda value: value["active_sequence"].update(public_step_count=15)),
         ("finding_order","findings",lambda value: value["findings"].reverse()),
-        ("premature_close","findings",lambda value: value["findings"][0].update(status="closed")),
-        ("cursor","ledger",lambda value: value["cursor"].update(next_step="step_1468")),
+        ("finding_status","findings",lambda value: value["findings"][0].update(status="open")),
+        ("cursor","ledger",lambda value: value["cursor"].update(next_step="step_1467")),
         ("scope","ledger",lambda value: value["active_checkpoint_scope"].pop()),
         ("predecessor","ledger",lambda value: value["predecessors"][0].update(candidate="0"*40)),
         ("schema","schema",lambda value: value.update(additionalProperties=True)),

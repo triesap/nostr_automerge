@@ -108,3 +108,11 @@ catalog, executed mutation evidence, distribution-v15 lock, and Rust
 conformance without importing private paths, source, commands, logs, workflow
 details, or package layout. Findings 113 through 115 remain open until the
 combined assurance checkpoint. The next checkpoint is `step_1467`.
+
+`step_1467` cross-binds the public and independent implementations to the same
+43-family operation contract, 43 focused proofs per implementation, 22 total
+behavior-changing mutations with zero survivors, and the same 204-scenario,
+eight-order, two-process distribution identity. Findings 113 through 115 are
+closed by their exact ownership, evidence-completeness, and mutation evidence;
+Finding 080 and every external action remain held. The next checkpoint is the
+terminal decision at `step_1468`.

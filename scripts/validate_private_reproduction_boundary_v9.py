@@ -74,6 +74,7 @@ JSON_RECORDS = (
     "reports/opaque_private_assurance_v13.json",
     "reports/opaque_causal_projection_v14.json",
     "reports/opaque_causal_projection_v15.json",
+    "reports/causal_projection_combined_assurance_v15.json",
     "implementation/runtime_ledger_v9.json",
     "tools/validation/opaque_reproduction_v9.schema.json",
     "tools/validation/opaque_checkpoint_v9.schema.json",
@@ -94,6 +95,7 @@ JSON_RECORDS = (
     "tools/validation/opaque_distribution_parity_v12.schema.json",
     "tools/validation/opaque_causal_projection_v14.schema.json",
     "tools/validation/opaque_causal_projection_v15.schema.json",
+    "tools/validation/causal_projection_combined_assurance_v15.schema.json",
     "tools/validation/distribution_v13_parity.schema.json",
     "tools/validation/runtime_ledger_v9.schema.json",
 )
@@ -317,6 +319,7 @@ PYTHON_SURFACES = (
     "scripts/validate_distribution_v15.py",
     "scripts/validate_rust_conformance_v15.py",
     "scripts/validate_opaque_causal_projection_v15.py",
+    "scripts/validate_causal_projection_combined_assurance_v15.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -534,6 +537,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_opaque_causal_projection_v15.py",
         "reports/opaque_causal_projection_v15.json",
         "tools/validation/opaque_causal_projection_v15.schema.json",
+        "scripts/validate_causal_projection_combined_assurance_v15.py",
+        "reports/causal_projection_combined_assurance_v15.json",
+        "tools/validation/causal_projection_combined_assurance_v15.schema.json",
         "scripts/validate_remediation_v15.py",
         "scripts/validate_causal_projection_operation_discovery_v15.py",
         "scripts/validate_causal_projection_discovery_v15.py",
@@ -1194,6 +1200,11 @@ def validate_source_surfaces() -> None:
                         value in {"cargo", "git"}
                         and relative
                         == "scripts/validate_causal_projection_combined_assurance_v14.py"
+                    )
+                    or (
+                        value in {"cargo", "git"}
+                        and relative
+                        == "scripts/validate_causal_projection_combined_assurance_v15.py"
                     )
                     or (
                         value == "git"
