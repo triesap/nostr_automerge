@@ -15,16 +15,27 @@ FINDINGS_PATH = ROOT / "spec/remediation_findings_v15.json"
 LEDGER_PATH = ROOT / "implementation/runtime_ledger_v15.json"
 SCHEMA_PATH = ROOT / "tools/validation/runtime_ledger_v15.schema.json"
 HOLDS = ["external_assurance","event_kind_allocation","nip_submission","production_qualification","publication","release","remote_mutation"]
-SCOPE = [
-    "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v15.md",
-    "docs/execution/remediation_v15/baseline.md",
-    "docs/execution/remediation_v15/ledger.md",
-    "implementation/runtime_ledger_v15.json",
-    "scripts/validate_remediation_v15.py",
-    "spec/remediation_findings_v15.json",
-    "spec/remediation_v15_authority.json",
-    "tools/validation/runtime_ledger_v15.schema.json",
-]
+STEPS = [f"step_{value}" for value in range(1453, 1469)]
+STEP_SCOPES = {
+    "step_1453": [
+        "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v15.md",
+        "docs/execution/remediation_v15/baseline.md",
+        "docs/execution/remediation_v15/ledger.md",
+        "implementation/runtime_ledger_v15.json",
+        "scripts/validate_remediation_v15.py",
+        "spec/remediation_findings_v15.json",
+        "spec/remediation_v15_authority.json",
+        "tools/validation/runtime_ledger_v15.schema.json",
+    ],
+    "step_1454": [
+        "crates/nostr_automerge/tests/remediation_v15_reproductions.rs",
+        "docs/execution/remediation_v15/ledger.md",
+        "implementation/runtime_ledger_v15.json",
+        "scripts/reproduce_remediation_v15.py",
+        "scripts/validate_remediation_v15.py",
+        "spec/remediation_v15_reproductions.json",
+    ],
+}
 
 
 class AuthorityError(RuntimeError):
@@ -68,12 +79,28 @@ def validate(authority: object, findings: object, ledger: object, schema: object
 
     l = exact(ledger,["schema","status","authority","cursor","findings","active_checkpoint_scope","predecessors"],"ledger")
     require(l["schema"] == "nostr_automerge.runtime_ledger.v15.v1" and l["status"] == "active" and l["authority"] == "spec/remediation_v15_authority.json", "ledger:state")
-    require(l["cursor"] == {"active_rcld":121,"active_step":"step_1453","next_step":"step_1454","last_planned_step":"step_1468","remaining_checkpoint_count":15,"remaining_rcld_count":3}, "ledger:cursor")
+    cursor = l["cursor"]
+    require(type(cursor) is dict and list(cursor) == ["active_rcld","active_step","next_step","last_planned_step","remaining_checkpoint_count","remaining_rcld_count"], "ledger:cursor_shape")
+    active = cursor["active_step"]
+    require(active in STEPS, "ledger:active")
+    active_index = STEPS.index(active)
+    expected_rcld = 121 if active_index < 4 else 122 if active_index < 9 else 123 if active_index < 13 else 124
+    expected_next = STEPS[active_index + 1] if active_index + 1 < len(STEPS) else None
+    require(cursor == {"active_rcld":expected_rcld,"active_step":active,"next_step":expected_next,"last_planned_step":"step_1468","remaining_checkpoint_count":15-active_index,"remaining_rcld_count":124-expected_rcld}, "ledger:cursor")
     require(l["findings"] == {"open":["FINDING_113","FINDING_114","FINDING_115"],"held":["FINDING_080"]}, "ledger:findings")
-    require(l["active_checkpoint_scope"] == SCOPE, "ledger:scope")
-    require(l["predecessors"] == [{"step":"step_1452","candidate":"0612e24ffa064b6ed362698a0ffcecad17b9b511","owner_class":"public","result":"pass"}], "ledger:predecessor")
-    resolved = subprocess.run(["git","rev-parse","--verify","0612e24ffa064b6ed362698a0ffcecad17b9b511^{commit}"],cwd=ROOT,capture_output=True,text=True,check=False)
-    require(resolved.returncode == 0 and resolved.stdout.strip() == "0612e24ffa064b6ed362698a0ffcecad17b9b511", "ledger:predecessor_commit")
+    scope = l["active_checkpoint_scope"]
+    require(type(scope) is list and scope == STEP_SCOPES.get(active) and scope == sorted(scope) and len(scope) == len(set(scope)) and all(type(path) is str and (ROOT / path).exists() for path in scope), "ledger:scope")
+    predecessors = l["predecessors"]
+    require(type(predecessors) is list and len(predecessors) == active_index + 1, "ledger:predecessor_count")
+    require([row["step"] for row in predecessors] == ["step_1452"] + STEPS[:active_index], "ledger:predecessor_steps")
+    require(all(type(row) is dict and list(row) == ["step","candidate","owner_class","result"] and row["owner_class"] == "public" and row["result"] == "pass" for row in predecessors), "ledger:predecessor_rows")
+    require(predecessors[0]["candidate"] == "0612e24ffa064b6ed362698a0ffcecad17b9b511", "ledger:base")
+    for index, row in enumerate(predecessors):
+        resolved = subprocess.run(["git","rev-parse","--verify",f"{row['candidate']}^{{commit}}"],cwd=ROOT,capture_output=True,text=True,check=False)
+        require(resolved.returncode == 0 and resolved.stdout.strip() == row["candidate"], f"ledger:predecessor_commit:{index}")
+        if index:
+            parent = subprocess.run(["git","rev-parse",f"{row['candidate']}^"],cwd=ROOT,capture_output=True,text=True,check=True).stdout.strip()
+            require(parent == predecessors[index-1]["candidate"], f"ledger:predecessor_parent:{index}")
     require(type(schema) is dict and schema.get("additionalProperties") is False and schema.get("required") == ["schema","status","authority","cursor","findings","active_checkpoint_scope","predecessors"], "schema")
 
 
@@ -87,7 +114,7 @@ def self_test(authority: dict, findings: dict, ledger: dict, schema: dict) -> in
         ("sequence","authority",lambda value: value["active_sequence"].update(public_step_count=15)),
         ("finding_order","findings",lambda value: value["findings"].reverse()),
         ("premature_close","findings",lambda value: value["findings"][0].update(status="closed")),
-        ("cursor","ledger",lambda value: value["cursor"].update(next_step="step_1455")),
+        ("cursor","ledger",lambda value: value["cursor"].update(next_step="step_1460")),
         ("scope","ledger",lambda value: value["active_checkpoint_scope"].pop()),
         ("predecessor","ledger",lambda value: value["predecessors"][0].update(candidate="0"*40)),
         ("schema","schema",lambda value: value.update(additionalProperties=True)),
@@ -112,7 +139,7 @@ def main() -> int:
     schema = json.loads(SCHEMA_PATH.read_text())
     validate(authority,findings,ledger,schema)
     mutations = self_test(authority,findings,ledger,schema)
-    print(f"PASS: remediation-v15 active=step_1453 next=step_1454 mutations={mutations}")
+    print(f"PASS: remediation-v15 active={ledger['cursor']['active_step']} next={ledger['cursor']['next_step']} mutations={mutations}")
     return 0
 
 
