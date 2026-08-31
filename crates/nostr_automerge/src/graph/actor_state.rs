@@ -1903,6 +1903,425 @@ pub(crate) mod tests {
         (result, observed)
     }
 
+    fn assert_projection_build_family_exact(family: ProjectionBuildOperation) {
+        let first = candidate(1, 1, 1, 1);
+        let mut second = candidate(1, 2, 2, 1);
+        second.change_hash = ChangeHash::from_bytes([2; 32]);
+        second.dependencies = vec![first.change_hash].into();
+        let accepted = BTreeSet::from([first.change_hash, second.change_hash]);
+        let changes = BTreeMap::from([(first.change_hash, first), (second.change_hash, second)]);
+        let (complete, trace) = observed_projection_build_operations(
+            &accepted,
+            &changes,
+            usize::MAX,
+            Completion::BudgetExhausted,
+        );
+        assert!(complete.is_ok());
+        let mut charges = 0_usize;
+        let target_charge = trace.iter().find_map(|entry| match entry {
+            BuildTrace::Charge(_) => {
+                charges = charges.saturating_add(1);
+                None
+            }
+            BuildTrace::Operation(operation) if *operation == family => Some(charges),
+            BuildTrace::Operation(_) => None,
+        });
+        assert!(target_charge.is_some_and(|value| value > 0));
+        let Some(target_charge) = target_charge else {
+            return;
+        };
+        for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
+            let (blocked, blocked_trace) = observed_projection_build_operations(
+                &accepted,
+                &changes,
+                target_charge - 1,
+                stopped,
+            );
+            assert!(matches!(
+                blocked,
+                Err(MeteredActorStateError::Work(value)) if value == stopped
+            ));
+            assert_eq!(
+                blocked_trace
+                    .iter()
+                    .filter(
+                        |entry| matches!(entry, BuildTrace::Operation(value) if *value == family)
+                    )
+                    .count(),
+                0
+            );
+        }
+        for allowance in [target_charge, target_charge + 1] {
+            let (_, admitted_trace) = observed_projection_build_operations(
+                &accepted,
+                &changes,
+                allowance,
+                Completion::BudgetExhausted,
+            );
+            assert!(
+                admitted_trace
+                    .iter()
+                    .any(|entry| matches!(entry, BuildTrace::Operation(value) if *value == family))
+            );
+        }
+    }
+
+    macro_rules! projection_build_family_proofs {
+        ($(($test:ident, $family:ident)),+ $(,)?) => {
+            $(
+                #[test]
+                fn $test() {
+                    assert_projection_build_family_exact(ProjectionBuildOperation::$family);
+                }
+            )+
+        };
+    }
+
+    projection_build_family_proofs!(
+        (
+            causal_projection_proof_construction_source_count_read,
+            SourceCountRead
+        ),
+        (
+            causal_projection_proof_construction_expected_count_comparison,
+            ExpectedCountComparison
+        ),
+        (
+            causal_projection_proof_construction_canonical_source_pull,
+            CanonicalSourcePull
+        ),
+        (
+            causal_projection_proof_construction_canonical_order_compare,
+            CanonicalOrderCompare
+        ),
+        (
+            causal_projection_proof_construction_membership_lookup,
+            MembershipLookup
+        ),
+        (
+            causal_projection_proof_construction_candidate_lookup,
+            CandidateLookup
+        ),
+        (
+            causal_projection_proof_construction_candidate_identity_comparison,
+            CandidateIdentityComparison
+        ),
+        (
+            causal_projection_proof_construction_dependency_count_read,
+            DependencyCountRead
+        ),
+        (
+            causal_projection_proof_construction_dependency_lookup,
+            DependencyLookup
+        ),
+        (
+            causal_projection_proof_construction_candidate_readiness_comparison,
+            CandidateReadinessComparison
+        ),
+        (
+            causal_projection_proof_construction_state_lookup,
+            StateLookup
+        ),
+        (
+            causal_projection_proof_construction_readiness_transition,
+            ReadinessTransition
+        ),
+        (
+            causal_projection_proof_construction_candidate_kind_comparison,
+            CandidateKindComparison
+        ),
+        (
+            causal_projection_proof_construction_checked_arithmetic,
+            CheckedArithmetic
+        ),
+        (
+            causal_projection_proof_construction_remaining_state_write,
+            RemainingStateWrite
+        ),
+        (
+            causal_projection_proof_construction_map_insertion,
+            MapInsertion
+        ),
+        (
+            causal_projection_proof_construction_set_insertion,
+            SetInsertion
+        ),
+        (
+            causal_projection_proof_construction_causal_maximum_compare,
+            CausalMaximumCompare
+        ),
+        (
+            causal_projection_proof_construction_completion_comparison,
+            CompletionComparison
+        ),
+        (
+            causal_projection_proof_construction_result_publication,
+            ResultPublication
+        ),
+    );
+
+    fn assert_projection_lookup_family_exact(family: ProjectionLookupOperation) {
+        let first = candidate(1, 1, 1, 1);
+        let mut second = candidate(1, 2, 2, 1);
+        second.change_hash = ChangeHash::from_bytes([2; 32]);
+        second.dependencies = vec![first.change_hash].into();
+        let closure = BTreeSet::from([first.change_hash, second.change_hash]);
+        let changes = BTreeMap::from([
+            (first.change_hash, first),
+            (second.change_hash, second.clone()),
+        ]);
+        let projection = initialize_actor_states_metered(&closure, &changes, |_| Ok::<_, ()>(()));
+        assert!(projection.is_ok());
+        let Some(projection) = projection.ok() else {
+            return;
+        };
+        let mut query = candidate(1, 3, 3, 1);
+        query.change_hash = ChangeHash::from_bytes([3; 32]);
+        query.dependencies = vec![second.change_hash].into();
+        let (complete, trace) =
+            observed_candidate_lookup(&projection, &query, usize::MAX, Completion::BudgetExhausted);
+        assert!(complete.is_ok());
+        let target = trace
+            .iter()
+            .filter(|entry| matches!(entry, LookupTrace::Operation(_)))
+            .position(|entry| matches!(entry, LookupTrace::Operation(value) if *value == family))
+            .map(|index| index + 1);
+        assert!(target.is_some());
+        let Some(target) = target else { return };
+        for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
+            let (blocked, blocked_trace) =
+                observed_candidate_lookup(&projection, &query, target - 1, stopped);
+            assert!(matches!(
+                blocked,
+                Err(MeteredActorStateError::Work(value)) if value == stopped
+            ));
+            assert!(
+                !blocked_trace.iter().any(
+                    |entry| matches!(entry, LookupTrace::Operation(value) if *value == family)
+                )
+            );
+        }
+        for allowance in [target, target + 1] {
+            let (_, admitted_trace) = observed_candidate_lookup(
+                &projection,
+                &query,
+                allowance,
+                Completion::BudgetExhausted,
+            );
+            assert!(
+                admitted_trace.iter().any(
+                    |entry| matches!(entry, LookupTrace::Operation(value) if *value == family)
+                )
+            );
+        }
+    }
+
+    macro_rules! projection_lookup_family_proofs {
+        ($(($test:ident, $family:ident)),+ $(,)?) => {
+            $(
+                #[test]
+                fn $test() {
+                    assert_projection_lookup_family_exact(ProjectionLookupOperation::$family);
+                }
+            )+
+        };
+    }
+
+    projection_lookup_family_proofs!(
+        (
+            causal_projection_proof_lookup_branch_membership,
+            BranchMembership
+        ),
+        (
+            causal_projection_proof_lookup_accepted_membership,
+            AcceptedMembership
+        ),
+        (causal_projection_proof_lookup_actor_state, ActorState),
+        (
+            causal_projection_proof_lookup_direct_dependency,
+            DirectDependency
+        ),
+        (
+            causal_projection_proof_lookup_predecessor_candidate,
+            PredecessorCandidate
+        ),
+        (
+            causal_projection_proof_lookup_actor_identity_comparison,
+            ActorIdentityComparison
+        ),
+        (
+            causal_projection_proof_lookup_expected_sequence,
+            ExpectedSequence
+        ),
+        (
+            causal_projection_proof_lookup_sequence_comparison,
+            SequenceComparison
+        ),
+        (
+            causal_projection_proof_lookup_expected_next_comparison,
+            ExpectedNextComparison
+        ),
+    );
+
+    fn assert_causal_consumer_family_exact(family: CausalNextOperation) {
+        let branch = BTreeMap::new();
+        let closure = BTreeSet::new();
+        let projection = focused_causal_consumer_projection(&branch, &closure, 7);
+        let candidate = candidate(1, 1, 7, 1);
+        let (complete, trace) = observed_causal_next(
+            &projection,
+            &candidate,
+            usize::MAX,
+            Completion::BudgetExhausted,
+        );
+        assert_eq!(complete, Ok(8));
+        let target = trace
+            .iter()
+            .filter(|entry| matches!(entry, CausalNextTrace::Operation(_)))
+            .position(
+                |entry| matches!(entry, CausalNextTrace::Operation(value) if *value == family),
+            )
+            .map(|index| index + 1);
+        assert!(target.is_some());
+        let Some(target) = target else { return };
+        for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
+            let (blocked, blocked_trace) =
+                observed_causal_next(&projection, &candidate, target - 1, stopped);
+            assert!(matches!(
+                blocked,
+                Err(MeteredActorStateError::Work(value)) if value == stopped
+            ));
+            assert!(!blocked_trace.iter().any(
+                |entry| matches!(entry, CausalNextTrace::Operation(value) if *value == family)
+            ));
+        }
+        for allowance in [target, target + 1] {
+            let (_, admitted_trace) = observed_causal_next(
+                &projection,
+                &candidate,
+                allowance,
+                Completion::BudgetExhausted,
+            );
+            assert!(admitted_trace.iter().any(
+                |entry| matches!(entry, CausalNextTrace::Operation(value) if *value == family)
+            ));
+        }
+    }
+
+    fn assert_frontier_family_exact(family: FrontierComparisonOperation) {
+        let projected_first = ChangeHash::from_bytes([10; 32]);
+        let base_only = ChangeHash::from_bytes([20; 32]);
+        let projected_last = ChangeHash::from_bytes([30; 32]);
+        let branch = BTreeMap::new();
+        let accepted = BTreeSet::from([projected_first, projected_last]);
+        let projection = TrustedEpochProjection {
+            branch_membership: &branch,
+            accepted_closure: &accepted,
+            dependencies: BTreeMap::new(),
+            frontier_heads: BTreeSet::from([projected_first, projected_last]),
+            actor_states: BTreeMap::new(),
+            writer_contributions: BTreeMap::new(),
+            causal_next_op: 1,
+        };
+        let base_frontier = BTreeSet::from([projected_first, base_only]);
+        let mut exact = candidate(1, 1, 1, 0);
+        exact.dependencies = vec![projected_first, base_only, projected_last].into();
+        let (complete, trace) = observed_empty_frontier(
+            &projection,
+            &exact,
+            &base_frontier,
+            usize::MAX,
+            Completion::BudgetExhausted,
+        );
+        assert_eq!(complete, Ok(()));
+        let target = trace
+            .iter()
+            .filter(|entry| matches!(entry, FrontierTrace::Operation(_)))
+            .position(|entry| matches!(entry, FrontierTrace::Operation(value) if *value == family))
+            .map(|index| index + 1);
+        assert!(target.is_some(), "missing frontier operation {family:?}");
+        let Some(target) = target else { return };
+        for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
+            let (blocked, blocked_trace) =
+                observed_empty_frontier(&projection, &exact, &base_frontier, target - 1, stopped);
+            assert!(matches!(
+                blocked,
+                Err(MeteredActorStateError::Work(value)) if value == stopped
+            ));
+            assert!(
+                !blocked_trace.iter().any(
+                    |entry| matches!(entry, FrontierTrace::Operation(value) if *value == family)
+                )
+            );
+        }
+        for allowance in [target, target + 1] {
+            let (_, admitted_trace) = observed_empty_frontier(
+                &projection,
+                &exact,
+                &base_frontier,
+                allowance,
+                Completion::BudgetExhausted,
+            );
+            assert!(
+                admitted_trace.iter().any(
+                    |entry| matches!(entry, FrontierTrace::Operation(value) if *value == family)
+                )
+            );
+        }
+    }
+
+    macro_rules! frontier_family_proofs {
+        ($(($test:ident, $family:ident)),+ $(,)?) => {
+            $(
+                #[test]
+                fn $test() {
+                    assert_frontier_family_exact(FrontierComparisonOperation::$family);
+                }
+            )+
+        };
+    }
+
+    frontier_family_proofs!(
+        (
+            causal_projection_proof_frontier_candidate_kind_comparison,
+            CandidateKindComparison
+        ),
+        (
+            causal_projection_proof_frontier_candidate_count,
+            CandidateCount
+        ),
+        (
+            causal_projection_proof_frontier_projection_count,
+            ProjectionCount
+        ),
+        (causal_projection_proof_frontier_base_count, BaseCount),
+        (
+            causal_projection_proof_frontier_candidate_pull,
+            CandidatePull
+        ),
+        (
+            causal_projection_proof_frontier_candidate_order_comparison,
+            CandidateOrderComparison
+        ),
+        (
+            causal_projection_proof_frontier_projection_pull,
+            ProjectionPull
+        ),
+        (causal_projection_proof_frontier_base_pull, BasePull),
+        (
+            causal_projection_proof_frontier_base_accepted_lookup,
+            BaseAcceptedLookup
+        ),
+        (
+            causal_projection_proof_frontier_expected_source_comparison,
+            ExpectedSourceComparison
+        ),
+        (
+            causal_projection_proof_frontier_frontier_equality_comparison,
+            FrontierEqualityComparison
+        ),
+    );
+
     #[test]
     fn projection_allocation_insertion_and_publication_are_charged_before_work() {
         let first = candidate(1, 1, 1, 1);
@@ -2833,6 +3252,7 @@ pub(crate) mod tests {
 
     #[test]
     fn causal_consumer_stored_counter_read_is_owned() {
+        assert_causal_consumer_family_exact(CausalNextOperation::StoredCounterRead);
         let branch = BTreeMap::new();
         let closure = BTreeSet::new();
         let projection = focused_causal_consumer_projection(&branch, &closure, 7);
@@ -2866,6 +3286,7 @@ pub(crate) mod tests {
 
     #[test]
     fn causal_consumer_expected_start_comparison_is_owned() {
+        assert_causal_consumer_family_exact(CausalNextOperation::ExpectedStartComparison);
         let branch = BTreeMap::new();
         let closure = BTreeSet::new();
         let projection = focused_causal_consumer_projection(&branch, &closure, 7);
@@ -2910,6 +3331,7 @@ pub(crate) mod tests {
 
     #[test]
     fn causal_consumer_checked_advance_is_owned() {
+        assert_causal_consumer_family_exact(CausalNextOperation::CheckedAdvance);
         let branch = BTreeMap::new();
         let closure = BTreeSet::new();
         let projection = focused_causal_consumer_projection(&branch, &closure, 7);

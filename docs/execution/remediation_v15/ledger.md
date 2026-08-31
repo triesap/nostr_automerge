@@ -60,3 +60,11 @@ candidate-consumer rows and focused proofs while retaining TypeScript as a
 required independent applicability lane. Nine expected-defect reproductions
 are fixed; only behavioral source mutation remains open. The next checkpoint is
 `step_1462` in RCLD 123.
+
+`step_1462` binds every one of the 43 reachable Rust ownership operations to a
+unique, enabled proof. The catalog contains 20 construction, nine lookup, three
+candidate-consumer, and 11 frontier rows with nonzero representative
+reachability. Each row proves its own N-1 typed budget and cancellation stop,
+N admission, and N+1 stability; three global proofs retain stop identity,
+semantic precedence, and exact constant-size decision behavior. All 43 exact
+commands pass independently. The next checkpoint is `step_1463`.

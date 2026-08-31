@@ -1,0 +1,30 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://triesap.github.io/nostr-automerge/schemas/causal_projection_proof_catalog_v15.schema.json",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema","status","implementation_candidate","proof_source_sha256","row_count","proof_contract","rows","global_proofs","result_identity_sha256","result"],
+  "properties":{
+    "schema":{"const":"nostr_automerge.causal_projection_proof_catalog.v15.v1"},
+    "status":{"const":"pass"},
+    "implementation_candidate":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "proof_source_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "row_count":{"const":43},
+    "proof_contract":{"type":"object","additionalProperties":false,"required":["budget","cancellation","typed_stop","reachability","umbrella_only"],"properties":{"budget":{"const":"n_minus_one_n_n_plus_one"},"cancellation":{"const":"per_operation"},"typed_stop":{"const":"preserved"},"reachability":{"const":"nonzero"},"umbrella_only":{"const":"prohibited"}}},
+    "rows":{"type":"array","minItems":43,"maxItems":43,"items":{"$ref":"#/$defs/row"}},
+    "global_proofs":{"type":"array","minItems":3,"maxItems":3,"uniqueItems":true,"items":{"type":"string"}},
+    "result_identity_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "result":{"const":"pass"}
+  },
+  "$defs":{
+    "row":{
+      "type":"object","additionalProperties":false,
+      "required":["id","family","phase","counter","reachability_count","test","command","artifact_sha256","result"],
+      "properties":{
+        "id":{"type":"string"},"family":{"type":"string"},"phase":{"enum":["construction","lookup","candidate_consumer","frontier"]},
+        "counter":{"enum":["graph_node","graph_edge","graph_node_or_edge"]},"reachability_count":{"type":"integer","minimum":1},
+        "test":{"type":"string"},"command":{"type":"string"},"artifact_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},"result":{"const":"pass"}
+      }
+    }
+  }
+}
