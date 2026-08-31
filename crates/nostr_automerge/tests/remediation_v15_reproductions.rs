@@ -16,13 +16,11 @@ fn projection_builder() -> &'static str {
 }
 
 #[test]
-#[ignore = "expected defect until step_1458"]
 fn f113_candidate_identity_comparison_is_owned() {
     assert!(projection_builder().contains("ProjectionBuildOperation::CandidateIdentityComparison"));
 }
 
 #[test]
-#[ignore = "expected defect until step_1458"]
 fn f113_dependency_count_read_is_owned() {
     assert!(projection_builder().contains("ProjectionBuildOperation::DependencyCountRead"));
 }
@@ -54,7 +52,6 @@ fn f113_terminal_completion_comparison_is_owned() {
 }
 
 #[test]
-#[ignore = "expected defect until step_1458"]
 fn f113_initial_count_read_and_comparison_are_separate() {
     let builder = projection_builder();
     assert!(builder.contains("ProjectionBuildOperation::SourceCountRead"));

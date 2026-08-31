@@ -887,15 +887,19 @@ fn build_trusted_epoch_projection_observed<'a, E>(
     mut built: impl FnMut(ProjectionBuildOperation),
     mut published: impl FnMut(ProjectionPublicationOperation),
 ) -> Result<TrustedEpochProjection<'a>, MeteredActorStateError<E>> {
-    let (member_count, input_is_canonical) = perform_projection_build_operation(
+    let member_count = perform_projection_build_operation(
         WorkCounter::GraphNode,
-        ProjectionBuildOperation::ConstantCandidateValidation,
+        ProjectionBuildOperation::SourceCountRead,
         &mut charge,
         &mut built,
-        || {
-            let member_count = source.member_count();
-            (member_count, member_count == accepted_closure.len())
-        },
+        || source.member_count(),
+    )?;
+    let input_is_canonical = perform_projection_build_operation(
+        WorkCounter::GraphNode,
+        ProjectionBuildOperation::ExpectedCountComparison,
+        &mut charge,
+        &mut built,
+        || member_count == accepted_closure.len(),
     )?;
     if !input_is_canonical {
         return Err(MeteredActorStateError::State(
@@ -960,13 +964,26 @@ fn build_trusted_epoch_projection_observed<'a, E>(
                 ActorStateError::MissingDependency,
             ));
         };
-        if candidate.change_hash != hash {
+        let candidate_identity_matches = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::CandidateIdentityComparison,
+            &mut charge,
+            &mut built,
+            || candidate.change_hash == hash,
+        )?;
+        if !candidate_identity_matches {
             return Err(MeteredActorStateError::State(
                 ActorStateError::NoncanonicalInput,
             ));
         }
         let mut candidate_dependencies = BTreeSet::new();
-        let dependency_count = source.dependency_count(candidate);
+        let dependency_count = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::DependencyCountRead,
+            &mut charge,
+            &mut built,
+            || source.dependency_count(candidate),
+        )?;
         let mut previous_dependency = None;
         for index in 0..dependency_count {
             let Some(dependency) = perform_projection_build_operation(
@@ -1728,7 +1745,7 @@ pub(crate) mod tests {
                 .iter()
                 .filter(|counter| **counter == WorkCounter::GraphNode)
                 .count(),
-            25
+            28
         );
         assert_eq!(
             charges
@@ -3286,8 +3303,8 @@ pub(crate) mod tests {
         query.change_hash = ChangeHash::from_bytes([3; 32]);
         query.dependencies = vec![second.change_hash].into();
 
-        const TOTAL_CHARGES: usize = 72;
-        const GRAPH_NODES: usize = 56;
+        const TOTAL_CHARGES: usize = 77;
+        const GRAPH_NODES: usize = 61;
         const GRAPH_EDGES: usize = 16;
         let (ample, trace) = projection_work_contract_run(
             &closure,
@@ -3483,10 +3500,14 @@ pub(crate) mod tests {
             .iter()
             .filter_map(|entry| match entry {
                 BuildTrace::Operation(
-                    operation @ (ProjectionBuildOperation::CanonicalSourcePull
+                    operation @ (ProjectionBuildOperation::SourceCountRead
+                    | ProjectionBuildOperation::ExpectedCountComparison
+                    | ProjectionBuildOperation::CanonicalSourcePull
                     | ProjectionBuildOperation::CanonicalOrderCompare
                     | ProjectionBuildOperation::MembershipLookup
                     | ProjectionBuildOperation::CandidateLookup
+                    | ProjectionBuildOperation::CandidateIdentityComparison
+                    | ProjectionBuildOperation::DependencyCountRead
                     | ProjectionBuildOperation::DependencyLookup
                     | ProjectionBuildOperation::StateLookup
                     | ProjectionBuildOperation::ReadinessTransition
@@ -3494,13 +3515,12 @@ pub(crate) mod tests {
                     | ProjectionBuildOperation::MapInsertion
                     | ProjectionBuildOperation::SetInsertion
                     | ProjectionBuildOperation::CausalMaximumCompare
-                    | ProjectionBuildOperation::ResultPublication
-                    | ProjectionBuildOperation::ConstantCandidateValidation),
+                    | ProjectionBuildOperation::ResultPublication),
                 ) => Some(*operation),
                 _ => None,
             })
             .collect::<Vec<_>>();
-        assert_eq!(owned.len(), 63);
+        assert_eq!(owned.len(), 68);
         assert_eq!(
             owned
                 .iter()
@@ -3572,7 +3592,41 @@ pub(crate) mod tests {
                     **operation == ProjectionBuildOperation::ConstantCandidateValidation
                 })
                 .count(),
+            0
+        );
+        assert_eq!(
+            owned
+                .iter()
+                .filter(|operation| **operation == ProjectionBuildOperation::SourceCountRead)
+                .count(),
             1
+        );
+        assert_eq!(
+            owned
+                .iter()
+                .filter(|operation| {
+                    **operation == ProjectionBuildOperation::ExpectedCountComparison
+                })
+                .count(),
+            1
+        );
+        assert_eq!(
+            owned
+                .iter()
+                .filter(|operation| {
+                    **operation == ProjectionBuildOperation::CandidateIdentityComparison
+                })
+                .count(),
+            2
+        );
+        assert_eq!(
+            owned
+                .iter()
+                .filter(|operation| {
+                    **operation == ProjectionBuildOperation::DependencyCountRead
+                })
+                .count(),
+            2
         );
         assert_eq!(
             owned
@@ -3700,12 +3754,16 @@ pub(crate) mod tests {
                 BuildTrace::Charge(_) => None,
             })
             .collect::<Vec<_>>();
-        assert_eq!(operations.len(), 63);
+        assert_eq!(operations.len(), 68);
         let families = [
+            (ProjectionBuildOperation::SourceCountRead, 1),
+            (ProjectionBuildOperation::ExpectedCountComparison, 1),
             (ProjectionBuildOperation::CanonicalSourcePull, 4),
             (ProjectionBuildOperation::CanonicalOrderCompare, 7),
             (ProjectionBuildOperation::MembershipLookup, 3),
             (ProjectionBuildOperation::CandidateLookup, 4),
+            (ProjectionBuildOperation::CandidateIdentityComparison, 2),
+            (ProjectionBuildOperation::DependencyCountRead, 2),
             (ProjectionBuildOperation::DependencyLookup, 2),
             (ProjectionBuildOperation::StateLookup, 11),
             (ProjectionBuildOperation::ReadinessTransition, 6),
@@ -3715,7 +3773,7 @@ pub(crate) mod tests {
             (ProjectionBuildOperation::SharedReferenceClone, 0),
             (ProjectionBuildOperation::CausalMaximumCompare, 2),
             (ProjectionBuildOperation::ResultPublication, 1),
-            (ProjectionBuildOperation::ConstantCandidateValidation, 1),
+            (ProjectionBuildOperation::ConstantCandidateValidation, 0),
         ];
         for (family, expected) in families {
             assert_eq!(
@@ -3770,7 +3828,7 @@ pub(crate) mod tests {
                                 admitted_operations.get(operation_ordinal - 1),
                                 Some(expected)
                             );
-                            if allowance < 63 {
+                            if allowance < 68 {
                                 assert!(matches!(
                                     admitted,
                                     Err(MeteredActorStateError::Work(value)) if value == stopped
@@ -3783,8 +3841,8 @@ pub(crate) mod tests {
                 }
             }
         }
-        assert_eq!(successful_charges, 63);
-        assert_eq!(operation_ordinal, 63);
+        assert_eq!(successful_charges, 68);
+        assert_eq!(operation_ordinal, 68);
     }
 
     #[test]
@@ -3945,7 +4003,13 @@ pub(crate) mod tests {
                     ActorStateError::NoncanonicalInput
                 ))
             ));
-            assert_eq!(trace, [TraversalTrace::Charge(WorkCounter::GraphNode)]);
+            assert_eq!(
+                trace,
+                [
+                    TraversalTrace::Charge(WorkCounter::GraphNode),
+                    TraversalTrace::Charge(WorkCounter::GraphNode),
+                ]
+            );
         }
 
         let mut third = candidate(3, 1, 2, 1);

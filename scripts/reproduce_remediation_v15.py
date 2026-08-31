@@ -28,14 +28,14 @@ def require(condition: bool, label: str) -> None:
 
 def validate(registry: object) -> None:
     require(type(registry) is dict and list(registry) == FIELDS, "registry:shape")
-    require(registry["schema"] == "nostr_automerge.remediation_v15_reproductions.v1" and registry["status"] == "expected_defects" and registry["result"] == "pass", "registry:state")
+    require(registry["schema"] == "nostr_automerge.remediation_v15_reproductions.v1" and registry["status"] == "mixed" and registry["result"] == "pass", "registry:state")
     cases = registry["cases"]
     require(type(cases) is list and [row["id"] for row in cases] == IDS, "cases:order")
     source = TEST_SOURCE.read_text()
     for index, row in enumerate(cases):
         require(type(row) is dict and list(row) == CASE_FIELDS, f"case:{index}:shape")
-        require(row["finding"] in {"FINDING_113","FINDING_114","FINDING_115"} and row["expected"] == "fail", f"case:{index}:value")
-        require(f"fn {row['test']}()" in source and "#[ignore" in source, f"case:{index}:binding")
+        require(row["finding"] in {"FINDING_113","FINDING_114","FINDING_115"} and row["expected"] in {"pass","fail"}, f"case:{index}:value")
+        require(f"fn {row['test']}()" in source, f"case:{index}:binding")
 
 
 def exact_failure(test: str, result: subprocess.CompletedProcess[str]) -> bool:
@@ -43,10 +43,18 @@ def exact_failure(test: str, result: subprocess.CompletedProcess[str]) -> bool:
     return result.returncode != 0 and f"test {test} ... FAILED" in output and "1 failed" in output and "0 ignored" in output
 
 
+def exact_pass(test: str, result: subprocess.CompletedProcess[str]) -> bool:
+    output = result.stdout + result.stderr
+    return result.returncode == 0 and f"test {test} ... ok" in output and "1 passed" in output and "0 failed" in output and "0 ignored" in output
+
+
 def run_cases(registry: dict) -> None:
     for row in registry["cases"]:
-        result = subprocess.run(["cargo","test","-p","nostr_automerge","--test","remediation_v15_reproductions",row["test"],"--locked","--","--ignored","--exact"],cwd=ROOT,capture_output=True,text=True,check=False)
-        require(exact_failure(row["test"], result), "case:not_exact_failure:" + row["id"])
+        command = ["cargo","test","-p","nostr_automerge","--test","remediation_v15_reproductions",row["test"],"--locked","--","--exact"]
+        if row["expected"] == "fail": command.insert(-1,"--ignored")
+        result = subprocess.run(command,cwd=ROOT,capture_output=True,text=True,check=False)
+        accepted = exact_pass(row["test"],result) if row["expected"] == "pass" else exact_failure(row["test"],result)
+        require(accepted, "case:not_exact_result:" + row["id"])
 
 
 def self_test(registry: dict) -> int:
@@ -81,7 +89,8 @@ def main() -> int:
     mutations = self_test(registry)
     if args.run_open:
         run_cases(registry)
-    print(f"PASS: remediation-v15 reproductions cases=10 mutations={mutations} fixed=0 open=10")
+    fixed = sum(row["expected"] == "pass" for row in registry["cases"])
+    print(f"PASS: remediation-v15 reproductions cases=10 mutations={mutations} fixed={fixed} open={10-fixed}")
     return 0
 
 

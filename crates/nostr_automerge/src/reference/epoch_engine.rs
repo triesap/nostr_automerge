@@ -1508,7 +1508,7 @@ mod tests {
         ));
         assert_eq!(exhausted.consumed().get(WorkCounter::GraphNode), 1);
 
-        let mut exact = WorkBudget::new(0, 26);
+        let mut exact = WorkBudget::new(0, 29);
         let result = crate::graph::actor_state::initialize_actor_states_metered(
             &closure,
             &candidates,
@@ -1519,7 +1519,7 @@ mod tests {
             },
         );
         assert!(result.is_ok());
-        assert_eq!(exact.consumed().get(WorkCounter::GraphNode), 25);
+        assert_eq!(exact.consumed().get(WorkCounter::GraphNode), 28);
         assert_eq!(exact.consumed().get(WorkCounter::GraphEdge), 1);
     }
 

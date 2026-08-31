@@ -34,3 +34,9 @@ ordering plus exact injected-stop identity. The historical discovery validator
 now reads its pinned source candidate rather than the moving worktree. No new
 variant is used yet, so production behavior and exact budgets are unchanged.
 The next checkpoint is `step_1458`.
+
+`step_1458` replaces the compound initial validation with distinct source-count
+and expected-count owners, then owns candidate identity and dependency-count
+reads. The exact two-change construction grows from 63 to 68 visible
+operations. Three expected-defect reproductions are enabled and fixed while
+the remaining seven stay open. The next checkpoint is `step_1459`.
