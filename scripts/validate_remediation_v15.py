@@ -83,6 +83,18 @@ STEP_SCOPES = {
         "scripts/validate_remediation_v15.py",
         "spec/remediation_v15_reproductions.json",
     ],
+    "step_1460": [
+        "crates/nostr_automerge/src/control/epoch_state.rs",
+        "crates/nostr_automerge/src/engine/reference_evaluator.rs",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs",
+        "crates/nostr_automerge/src/reference/evaluate.rs",
+        "crates/nostr_automerge/tests/remediation_v15_reproductions.rs",
+        "docs/execution/remediation_v15/ledger.md",
+        "implementation/runtime_ledger_v15.json",
+        "scripts/validate_remediation_v15.py",
+        "spec/remediation_v15_reproductions.json",
+    ],
 }
 
 
@@ -162,7 +174,7 @@ def self_test(authority: dict, findings: dict, ledger: dict, schema: dict) -> in
         ("sequence","authority",lambda value: value["active_sequence"].update(public_step_count=15)),
         ("finding_order","findings",lambda value: value["findings"].reverse()),
         ("premature_close","findings",lambda value: value["findings"][0].update(status="closed")),
-        ("cursor","ledger",lambda value: value["cursor"].update(next_step="step_1461")),
+        ("cursor","ledger",lambda value: value["cursor"].update(next_step="step_1462")),
         ("scope","ledger",lambda value: value["active_checkpoint_scope"].pop()),
         ("predecessor","ledger",lambda value: value["predecessors"][0].update(candidate="0"*40)),
         ("schema","schema",lambda value: value.update(additionalProperties=True)),

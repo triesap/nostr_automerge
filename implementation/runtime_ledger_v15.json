@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v15_authority.json",
   "cursor": {
     "active_rcld": 122,
-    "active_step": "step_1459",
-    "next_step": "step_1460",
+    "active_step": "step_1460",
+    "next_step": "step_1461",
     "last_planned_step": "step_1468",
-    "remaining_checkpoint_count": 9,
+    "remaining_checkpoint_count": 8,
     "remaining_rcld_count": 2
   },
   "findings": {
@@ -33,6 +33,7 @@
     {"step":"step_1455","candidate":"dc6b820cd3af14d1ef4ede308ee1ee199c55b0e0","owner_class":"public","result":"pass"},
     {"step":"step_1456","candidate":"1b9f6645e1bc31357f8eae88bd44fc6f36503365","owner_class":"public","result":"pass"},
     {"step":"step_1457","candidate":"d8beb8e30d3aa498ce73ac7260d5aaf453f99804","owner_class":"public","result":"pass"},
-    {"step":"step_1458","candidate":"abd274f62986d994e8e9412cc3cf78fddb00eb3a","owner_class":"public","result":"pass"}
+    {"step":"step_1458","candidate":"abd274f62986d994e8e9412cc3cf78fddb00eb3a","owner_class":"public","result":"pass"},
+    {"step":"step_1459","candidate":"227b56543aea55d063f5271423e6b78f9dfdeeb0","owner_class":"public","result":"pass"}
   ]
 }

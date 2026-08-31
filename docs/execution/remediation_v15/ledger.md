@@ -46,3 +46,9 @@ their control-flow results can publish readiness or select arithmetic. The exact
 two-change construction grows from 68 to 72 visible operations. Five
 expected-defect reproductions are enabled and fixed while the remaining five
 stay open. The next checkpoint is `step_1460`.
+
+`step_1460` owns each remaining-dependency state write after its checked
+arithmetic and owns the final processed-count comparison before result
+publication. The exact two-change construction grows from 72 to 74 visible
+operations. Seven expected-defect reproductions are enabled and fixed while
+the remaining three stay open. The next checkpoint is `step_1461`.

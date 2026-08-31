@@ -38,13 +38,11 @@ fn f113_candidate_kind_comparison_is_owned() {
 }
 
 #[test]
-#[ignore = "expected defect until step_1460"]
 fn f113_remaining_state_write_is_owned() {
     assert!(projection_builder().contains("ProjectionBuildOperation::RemainingStateWrite"));
 }
 
 #[test]
-#[ignore = "expected defect until step_1460"]
 fn f113_terminal_completion_comparison_is_owned() {
     assert!(projection_builder().contains("ProjectionBuildOperation::CompletionComparison"));
 }
