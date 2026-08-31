@@ -1,0 +1,76 @@
+{
+  "title": "nostr_automerge opaque causal projection v15",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "independent_candidate", "opaque_record_sha256", "assurance", "public_bindings", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": { "const": "nostr_automerge.opaque_causal_projection_import.v15.v1" },
+    "status": { "const": "code_complete_publication_held" },
+    "independent_candidate": { "$ref": "#/$defs/commit" },
+    "opaque_record_sha256": { "$ref": "#/$defs/hash" },
+    "assurance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "status", "terminal_candidate", "public_contract_identity_sha256", "distribution_v15_identity_sha256", "counts", "canonical_output_sha256", "result_classes", "clean_tree", "release_claimed", "publication_claimed", "remote_actions", "result", "identity_sha256"],
+      "properties": {
+        "schema": { "const": "nostr_automerge.opaque_causal_projection.v15.v1" },
+        "status": { "const": "code_complete_publication_held" },
+        "terminal_candidate": { "$ref": "#/$defs/commit" },
+        "public_contract_identity_sha256": { "$ref": "#/$defs/hash" },
+        "distribution_v15_identity_sha256": { "$ref": "#/$defs/hash" },
+        "counts": { "$ref": "#/$defs/counts" },
+        "canonical_output_sha256": { "$ref": "#/$defs/hash" },
+        "result_classes": { "const": ["operation_ownership_complete", "focused_stop_proofs_pass", "behavioral_mutations_caught", "distribution_v15_byte_identity", "independent_implementation_boundary"] },
+        "clean_tree": { "const": true },
+        "release_claimed": { "const": false },
+        "publication_claimed": { "const": false },
+        "remote_actions": { "const": 0 },
+        "result": { "const": "pass" },
+        "identity_sha256": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "public_bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rust_candidate", "operation_contract_sha256", "rust_ownership_sha256", "proof_catalog_sha256", "mutation_qualification_sha256", "rust_conformance_sha256", "distribution_manifest_sha256", "distribution_lock_sha256", "distribution_identity_sha256", "canonical_output_sha256", "logical_operation_families"],
+      "properties": {
+        "rust_candidate": { "$ref": "#/$defs/commit" },
+        "operation_contract_sha256": { "$ref": "#/$defs/hash" },
+        "rust_ownership_sha256": { "$ref": "#/$defs/hash" },
+        "proof_catalog_sha256": { "$ref": "#/$defs/hash" },
+        "mutation_qualification_sha256": { "$ref": "#/$defs/hash" },
+        "rust_conformance_sha256": { "$ref": "#/$defs/hash" },
+        "distribution_manifest_sha256": { "$ref": "#/$defs/hash" },
+        "distribution_lock_sha256": { "$ref": "#/$defs/hash" },
+        "distribution_identity_sha256": { "$ref": "#/$defs/hash" },
+        "canonical_output_sha256": { "$ref": "#/$defs/hash" },
+        "logical_operation_families": { "const": 43 }
+      }
+    },
+    "result": { "const": "pass" },
+    "result_identity_sha256": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation_families", "focused_proofs", "tests_passed", "tests_failed", "tests_skipped", "behavioral_mutations", "mutation_survivors", "scenarios", "signed_events", "delivery_orders", "processes", "budget_rebindings"],
+      "properties": {
+        "operation_families": { "const": 43 },
+        "focused_proofs": { "const": 43 },
+        "tests_passed": { "const": 439 },
+        "tests_failed": { "const": 0 },
+        "tests_skipped": { "const": 15 },
+        "behavioral_mutations": { "const": 9 },
+        "mutation_survivors": { "const": 0 },
+        "scenarios": { "const": 204 },
+        "signed_events": { "const": 771 },
+        "delivery_orders": { "const": 8 },
+        "processes": { "const": 2 },
+        "budget_rebindings": { "const": 9 }
+      }
+    }
+  }
+}

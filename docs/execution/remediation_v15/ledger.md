@@ -99,3 +99,12 @@ The complete Rust distribution passes all eight delivery orders in two
 byte-identical processes with the existing canonical output identity. Historical
 v14 evidence remains pinned to its own committed source. The next checkpoint is
 `step_1466` in RCLD 124 after the six independent TypeScript checkpoints.
+
+`step_1466` imports the closed independent assurance produced after its six
+private checkpoints. The public record exposes only approved candidates,
+counts, hashes, result classes, held status, and the canonical output identity.
+It binds those values to the public 43-operation source ownership, proof
+catalog, executed mutation evidence, distribution-v15 lock, and Rust
+conformance without importing private paths, source, commands, logs, workflow
+details, or package layout. Findings 113 through 115 remain open until the
+combined assurance checkpoint. The next checkpoint is `step_1467`.

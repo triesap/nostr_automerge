@@ -120,6 +120,7 @@ VALIDATORS = [
     "run_causal_projection_behavior_mutations_v15.py",
     "validate_distribution_v15.py",
     "validate_rust_conformance_v15.py",
+    "validate_opaque_causal_projection_v15.py",
 ]
 HISTORICAL_VALIDATORS = {
     "validate_fixture_distribution_v9.py",
@@ -339,6 +340,7 @@ def controlled_files() -> list[pathlib.Path]:
             "reports/causal_projection_proof_catalog_v15.json",
             "reports/causal_projection_source_ownership_v15.json",
             "reports/rust_conformance_v15.json",
+            "reports/opaque_causal_projection_v15.json",
             "fixtures/distribution/manifest_v12.json",
             "fixtures/distribution/manifest_v13.json",
             "fixtures/distribution/manifest_v13.lock.json",
@@ -382,6 +384,7 @@ def controlled_files() -> list[pathlib.Path]:
             "tools/validation/distribution_v15_lock.schema.json",
             "tools/validation/runtime_ledger_v15.schema.json",
             "tools/validation/rust_conformance_v15.schema.json",
+            "tools/validation/opaque_causal_projection_v15.schema.json",
             "tools/validation/causal_projection_assurance_v13.schema.json",
             "tools/validation/opaque_causal_projection_v14.schema.json",
             "tools/validation/causal_projection_operation_inventory_v14.schema.json",

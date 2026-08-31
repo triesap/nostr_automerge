@@ -308,6 +308,10 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "scripts/validate_rust_conformance_v15.py",
     ),
     (
+        "opaque_causal_projection_v15",
+        "scripts/validate_opaque_causal_projection_v15.py",
+    ),
+    (
         "causal_projection_assurance_v13",
         "scripts/validate_causal_projection_assurance_v13.py",
     ),

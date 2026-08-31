@@ -188,6 +188,18 @@ STEP_SCOPES = {
         "tools/validation/distribution_v15_lock.schema.json",
         "tools/validation/rust_conformance_v15.schema.json",
     ],
+    "step_1466": [
+        "docs/execution/remediation_v15/ledger.md",
+        "implementation/runtime_ledger_v15.json",
+        "reports/opaque_causal_projection_v15.json",
+        "reports/spec_baseline.txt",
+        "scripts/validate_opaque_causal_projection_v15.py",
+        "scripts/validate_private_reproduction_boundary_v9.py",
+        "scripts/validate_remediation_v15.py",
+        "scripts/validate_spec.py",
+        "tools/nostr_automerge_xtask/src/validate.rs",
+        "tools/validation/opaque_causal_projection_v15.schema.json",
+    ],
 }
 
 
@@ -267,7 +279,7 @@ def self_test(authority: dict, findings: dict, ledger: dict, schema: dict) -> in
         ("sequence","authority",lambda value: value["active_sequence"].update(public_step_count=15)),
         ("finding_order","findings",lambda value: value["findings"].reverse()),
         ("premature_close","findings",lambda value: value["findings"][0].update(status="closed")),
-        ("cursor","ledger",lambda value: value["cursor"].update(next_step="step_1467")),
+        ("cursor","ledger",lambda value: value["cursor"].update(next_step="step_1468")),
         ("scope","ledger",lambda value: value["active_checkpoint_scope"].pop()),
         ("predecessor","ledger",lambda value: value["predecessors"][0].update(candidate="0"*40)),
         ("schema","schema",lambda value: value.update(additionalProperties=True)),
