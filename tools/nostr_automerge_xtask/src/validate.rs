@@ -277,6 +277,36 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "rust_conformance_v14",
         "scripts/validate_rust_conformance_v14.py",
     ),
+    ("remediation_v15", "scripts/validate_remediation_v15.py"),
+    (
+        "causal_projection_operation_discovery_v15",
+        "scripts/validate_causal_projection_operation_discovery_v15.py",
+    ),
+    (
+        "causal_projection_discovery_v15",
+        "scripts/validate_causal_projection_discovery_v15.py",
+    ),
+    (
+        "causal_projection_consumer_v15",
+        "scripts/validate_causal_projection_consumer_v15.py",
+    ),
+    (
+        "causal_projection_proof_catalog_v15",
+        "scripts/validate_causal_projection_proof_catalog_v15.py",
+    ),
+    (
+        "causal_projection_source_ownership_v15",
+        "scripts/validate_causal_projection_source_ownership_v15.py",
+    ),
+    (
+        "causal_projection_behavior_mutations_v15",
+        "scripts/run_causal_projection_behavior_mutations_v15.py",
+    ),
+    ("distribution_v15", "scripts/validate_distribution_v15.py"),
+    (
+        "rust_conformance_v15",
+        "scripts/validate_rust_conformance_v15.py",
+    ),
     (
         "causal_projection_assurance_v13",
         "scripts/validate_causal_projection_assurance_v13.py",

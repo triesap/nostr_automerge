@@ -7896,39 +7896,39 @@ mod tests {
 
     #[test]
     #[allow(clippy::expect_used)]
-    fn distribution_v14_budget_rebindings_have_exact_typed_boundaries() {
-        let root = repository_root().join("fixtures/v14/rebindings/causal_projection");
+    fn distribution_v15_budget_rebindings_have_exact_typed_boundaries() {
+        let root = repository_root().join("fixtures/v15/rebindings/causal_projection");
         for (fixture_id, required) in [
-            ("canonical_derivation_exact_budget", 455),
-            ("deep_actor_predecessor_exact_budget", 2_104),
-            ("deep_delta_absent_lookup_exact_budget", 10_162),
-            ("deep_delta_extend_exact_budget", 10_381),
-            ("deep_delta_root_lookup_exact_budget", 10_994),
-            ("empty_merge_frontier_exact_budget", 2_019),
-            ("epoch_writer_authorization_exact_budget", 38_156),
-            ("many_actor_causal_next_op_exact_budget", 5_328),
-            ("wide_epoch_ancestry_exact_budget", 15_230),
+            ("canonical_derivation_exact_budget", 457),
+            ("deep_actor_predecessor_exact_budget", 2_158),
+            ("deep_delta_absent_lookup_exact_budget", 10_501),
+            ("deep_delta_extend_exact_budget", 10_720),
+            ("deep_delta_root_lookup_exact_budget", 11_333),
+            ("empty_merge_frontier_exact_budget", 2_069),
+            ("epoch_writer_authorization_exact_budget", 38_183),
+            ("many_actor_causal_next_op_exact_budget", 5_520),
+            ("wide_epoch_ancestry_exact_budget", 15_544),
         ] {
             let signed = SignedScenarioInput::parse(
                 &std::fs::read(root.join(format!("{fixture_id}.input.json")))
-                    .expect("checked-in v14 budget-rebound input"),
+                    .expect("checked-in v15 budget-rebound input"),
             )
-            .expect("closed v14 budget-rebound input");
-            let coordinate = signed.coordinate.parse().expect("v14 coordinate");
+            .expect("closed v15 budget-rebound input");
+            let coordinate = signed.coordinate.parse().expect("v15 coordinate");
             let events = signed
                 .raw_events
                 .iter()
                 .map(|event| {
                     RawEventBytes::new(
-                        &event.decoded().expect("v14 Event bytes"),
+                        &event.decoded().expect("v15 Event bytes"),
                         ProtocolRevision::draft_v1(),
                     )
-                    .expect("bounded v14 Event")
+                    .expect("bounded v15 Event")
                 })
                 .collect::<Vec<_>>();
             assert_eq!(signed.budget.max_items, required, "{fixture_id}");
             assert_eq!(
-                exact_complete_item_budget(coordinate, &events).expect("v14 exact typed boundary"),
+                exact_complete_item_budget(coordinate, &events).expect("v15 exact typed boundary"),
                 required,
                 "{fixture_id}"
             );
@@ -7939,7 +7939,7 @@ mod tests {
     #[allow(clippy::expect_used)]
     fn deep_actor_predecessor_exact_budget() {
         let fixture_id = "deep_actor_predecessor_exact_budget";
-        let root = repository_root().join("fixtures/v13/scenarios/epoch_semantics");
+        let root = repository_root().join("fixtures/v15/rebindings/causal_projection");
         let signed = SignedScenarioInput::parse(
             &std::fs::read(root.join(format!("{fixture_id}.input.json")))
                 .expect("checked-in v13 deep actor input"),
@@ -7967,7 +7967,7 @@ mod tests {
         assert_eq!(events.len(), 6);
         let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)
             .expect("v13 deep actor exact boundary");
-        assert_eq!(signed.budget.max_items.checked_add(138), Some(exact));
+        assert_eq!(signed.budget.max_items, exact);
         let mut current = signed.clone();
         current.budget.max_items = exact;
         let actual = generic_report(
@@ -7989,7 +7989,7 @@ mod tests {
     #[allow(clippy::expect_used)]
     fn many_actor_causal_next_op_exact_budget() {
         let fixture_id = "many_actor_causal_next_op_exact_budget";
-        let root = repository_root().join("fixtures/v13/scenarios/epoch_semantics");
+        let root = repository_root().join("fixtures/v15/rebindings/causal_projection");
         let signed = SignedScenarioInput::parse(
             &std::fs::read(root.join(format!("{fixture_id}.input.json")))
                 .expect("checked-in v13 many actor input"),
@@ -8014,7 +8014,7 @@ mod tests {
         assert_eq!(events.len(), 9);
         let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)
             .expect("v13 many actor exact boundary");
-        assert_eq!(signed.budget.max_items.checked_add(584), Some(exact));
+        assert_eq!(signed.budget.max_items, exact);
         let mut current = signed.clone();
         current.budget.max_items = exact;
         let actual = generic_report(
@@ -8036,7 +8036,7 @@ mod tests {
     #[allow(clippy::expect_used)]
     fn empty_merge_frontier_exact_budget() {
         let fixture_id = "empty_merge_frontier_exact_budget";
-        let root = repository_root().join("fixtures/v13/scenarios/epoch_semantics");
+        let root = repository_root().join("fixtures/v15/rebindings/causal_projection");
         let signed = SignedScenarioInput::parse(
             &std::fs::read(root.join(format!("{fixture_id}.input.json")))
                 .expect("checked-in v13 empty frontier input"),
@@ -8064,7 +8064,7 @@ mod tests {
         assert_eq!(events.len(), 6);
         let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)
             .expect("v13 empty frontier exact boundary");
-        assert_eq!(signed.budget.max_items.checked_add(125), Some(exact));
+        assert_eq!(signed.budget.max_items, exact);
         let mut current = signed.clone();
         current.budget.max_items = exact;
         let actual = generic_report(
@@ -8087,7 +8087,7 @@ mod tests {
     #[allow(clippy::expect_used)]
     fn wide_epoch_ancestry_exact_budget() {
         let fixture_id = "wide_epoch_ancestry_exact_budget";
-        let root = repository_root().join("fixtures/v13/scenarios/epoch_semantics");
+        let root = repository_root().join("fixtures/v15/rebindings/causal_projection");
         let signed = SignedScenarioInput::parse(
             &std::fs::read(root.join(format!("{fixture_id}.input.json")))
                 .expect("checked-in v13 wide ancestry input"),
@@ -8112,7 +8112,7 @@ mod tests {
         assert_eq!(events.len(), 21);
         let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)
             .expect("v13 wide ancestry exact boundary");
-        assert_eq!(signed.budget.max_items.checked_add(853), Some(exact));
+        assert_eq!(signed.budget.max_items, exact);
         let mut current = signed.clone();
         current.budget.max_items = exact;
         let actual = generic_report(
@@ -8136,7 +8136,7 @@ mod tests {
     #[allow(clippy::expect_used)]
     fn epoch_writer_authorization_exact_budget() {
         let fixture_id = "epoch_writer_authorization_exact_budget";
-        let root = repository_root().join("fixtures/v13/scenarios/epoch_semantics");
+        let root = repository_root().join("fixtures/v15/rebindings/causal_projection");
         let signed = SignedScenarioInput::parse(
             &std::fs::read(root.join(format!("{fixture_id}.input.json")))
                 .expect("checked-in v13 writer authorization input"),
@@ -8163,7 +8163,7 @@ mod tests {
         assert_eq!(events.len(), 6);
         let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)
             .expect("v13 writer authorization exact boundary");
-        assert_eq!(signed.budget.max_items.checked_add(60), Some(exact));
+        assert_eq!(signed.budget.max_items, exact);
         let mut current = signed.clone();
         current.budget.max_items = exact;
         let actual = generic_report(
@@ -8239,25 +8239,18 @@ mod tests {
 
     #[test]
     #[allow(clippy::expect_used)]
-    fn v12_persistent_fixtures_bind_selected_boundaries_and_eight_orders() {
-        for (
-            fixture_id,
-            event_count,
-            control_count,
-            accepted_count,
-            excluded_count,
-            active_delta,
-        ) in [
-            ("deep_delta_root_lookup_exact_budget", 17, 9, 8, 0, 3_907),
-            ("deep_delta_absent_lookup_exact_budget", 16, 8, 8, 0, 3_805),
-            ("deep_delta_extend_exact_budget", 17, 9, 1, 7, 3_676),
+    fn v15_persistent_fixtures_bind_selected_boundaries_and_eight_orders() {
+        for (fixture_id, event_count, control_count, accepted_count, excluded_count) in [
+            ("deep_delta_root_lookup_exact_budget", 17, 9, 8, 0),
+            ("deep_delta_absent_lookup_exact_budget", 16, 8, 8, 0),
+            ("deep_delta_extend_exact_budget", 17, 9, 1, 7),
         ] {
-            let root = repository_root().join("fixtures/v12/scenarios/resource_followup");
+            let root = repository_root().join("fixtures/v15/rebindings/causal_projection");
             let signed = SignedScenarioInput::parse(
                 &std::fs::read(root.join(format!("{fixture_id}.input.json")))
-                    .expect("checked-in v12 persistent input"),
+                    .expect("checked-in v15 persistent input"),
             )
-            .expect("closed v12 persistent input");
+            .expect("closed v15 persistent input");
             assert_eq!(signed.fixture_id, fixture_id);
             assert_eq!(signed.requirements, ["NCRDT-RESOURCE-015"]);
             assert_eq!(signed.cancel_after, None);
@@ -8265,28 +8258,22 @@ mod tests {
             let coordinate = signed
                 .coordinate
                 .parse::<DocumentCoordinate>()
-                .expect("v12 persistent coordinate");
+                .expect("v15 persistent coordinate");
             let events = signed
                 .raw_events
                 .iter()
                 .map(|event| {
                     RawEventBytes::new(
-                        &event.decoded().expect("v12 persistent Event bytes"),
+                        &event.decoded().expect("v15 persistent Event bytes"),
                         ProtocolRevision::draft_v1(),
                     )
-                    .expect("bounded v12 persistent Event")
+                    .expect("bounded v15 persistent Event")
                 })
                 .collect::<Vec<_>>();
             assert_eq!(events.len(), event_count, "{fixture_id}");
             let exact = assert_resource_followup_v12_boundaries(fixture_id, coordinate, &events)
-                .expect("v12 persistent exact boundary");
-            // The v12 inputs remain immutable predecessor evidence. Distribution v13
-            // will bind replacement budgets after the full metering refactor lands.
-            assert_eq!(
-                signed.budget.max_items.checked_add(active_delta),
-                Some(exact),
-                "{fixture_id}"
-            );
+                .expect("v15 persistent exact boundary");
+            assert_eq!(signed.budget.max_items, exact, "{fixture_id}");
 
             let mut current = signed.clone();
             current.budget.max_items = exact;
@@ -8295,9 +8282,9 @@ mod tests {
                 current.into_scenario(),
                 StateAssertionPolicy::None,
             )
-            .expect("v12 persistent evaluator report");
+            .expect("v15 persistent evaluator report");
             let expected = serde_json::from_value::<ExpectedReport>(signed.expected_report)
-                .expect("v12 persistent expected report");
+                .expect("v15 persistent expected report");
             assert_eq!(
                 expected.canonical_controls.len(),
                 control_count,
@@ -8314,8 +8301,8 @@ mod tests {
                 "{fixture_id}"
             );
             assert_eq!(
-                write_canonical_report(&actual).expect("v12 actual canonical report"),
-                write_canonical_report(&expected).expect("v12 expected canonical report"),
+                write_canonical_report(&actual).expect("v15 actual canonical report"),
+                write_canonical_report(&expected).expect("v15 expected canonical report"),
                 "{fixture_id}"
             );
         }
@@ -8370,22 +8357,22 @@ mod tests {
                 "parent_propagation_exact_budget",
                 false,
                 7_262,
-                568,
+                570,
             ),
             (
                 "resource",
                 "unrelated_control_flood_exact_budget",
                 true,
                 124,
-                40,
+                42,
             ),
-            ("scope", "foreign_claim_flood_exact_budget", true, 124, 40),
+            ("scope", "foreign_claim_flood_exact_budget", true, 124, 42),
             (
                 "scope",
                 "unrelated_valid_checkpoints_exact_budget",
                 true,
                 278,
-                41,
+                43,
             ),
         ];
 

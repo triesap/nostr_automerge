@@ -1,0 +1,24 @@
+{
+  "schema": "nostr_automerge.distribution_v15_transition.v1",
+  "current_stage": "distribution_complete",
+  "stage_order": ["authority_defined", "distribution_complete"],
+  "base_manifest": "fixtures/distribution/manifest_v14.json",
+  "base_manifest_sha256": "c76cd24bc91308b0e615bd837d69b72fe145b7713a544fb325f7f054275c485d",
+  "scenario_count": 204,
+  "affected_fixture_ids": [
+    "canonical_derivation_exact_budget",
+    "deep_actor_predecessor_exact_budget",
+    "deep_delta_absent_lookup_exact_budget",
+    "deep_delta_extend_exact_budget",
+    "deep_delta_root_lookup_exact_budget",
+    "empty_merge_frontier_exact_budget",
+    "epoch_writer_authorization_exact_budget",
+    "many_actor_causal_next_op_exact_budget",
+    "wide_epoch_ancestry_exact_budget"
+  ],
+  "unaffected_fixture_count": 195,
+  "signed_events_preserved": true,
+  "ample_work_reports_preserved": true,
+  "v14_files_preserved": true,
+  "result": "pass"
+}

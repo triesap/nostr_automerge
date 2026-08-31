@@ -1,0 +1,21 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v15_lock.schema.json",
+  "title":"nostr_automerge distribution v15 lock",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema","status","source_candidate","manifest_sha256","scenario_count","file_count","fixture_ids_sha256","files_sha256","fixture_rebindings_sha256","profiles_sha256","result_identity_sha256"],
+  "properties":{
+    "schema":{"const":"nostr_automerge.fixture_distribution_lock.v15.v1"},
+    "status":{"const":"locked"},
+    "source_candidate":{"const":"10ce03d6a2cf9d7f0e1a006694f248713109a66d"},
+    "manifest_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "scenario_count":{"const":204},
+    "file_count":{"const":725},
+    "fixture_ids_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "files_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "fixture_rebindings_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "profiles_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "result_identity_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"}
+  }
+}

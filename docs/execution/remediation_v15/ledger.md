@@ -90,3 +90,12 @@ exact proof executions fail for the intended runtime or structural reason, no
 mutant survives, and no compile failure is counted as behavioral evidence. All
 ten expected-defect reproductions are now enabled and fixed. The next checkpoint
 is `step_1465`.
+
+`step_1465` creates the immutable distribution-v15 transition from the complete
+204-scenario v14 corpus. It derives exactly nine affected exact-budget fixtures,
+rebinds only their `max_items` values, preserves all signed Event bytes and
+ample-work expected-report bytes, and leaves the other 195 fixtures unchanged.
+The complete Rust distribution passes all eight delivery orders in two
+byte-identical processes with the existing canonical output identity. Historical
+v14 evidence remains pinned to its own committed source. The next checkpoint is
+`step_1466` in RCLD 124 after the six independent TypeScript checkpoints.

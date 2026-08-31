@@ -1,0 +1,11 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema","status","source_candidate","manifest_sha256","manifest_lock_sha256","distribution_schema_sha256","lock_schema_sha256","generator_sha256","fixture_generator_sha256","runner_sha256","cargo_lock_sha256","rust_toolchain_sha256","scenario_count","fixture_rebinding_count","unaffected_fixture_count","process_count","delivery_order_count","canonical_process_bytes","canonical_output_sha256","serialized_run_sha256","deliberate_expectation_mismatch","result_identity_sha256"],
+  "properties":{
+    "schema":{"const":"nostr_automerge.rust_conformance.v15.v1"},"status":{"const":"pass"},"source_candidate":{"type":"string"},
+    "manifest_sha256":{"type":"string"},"manifest_lock_sha256":{"type":"string"},"distribution_schema_sha256":{"type":"string"},"lock_schema_sha256":{"type":"string"},"generator_sha256":{"type":"string"},"fixture_generator_sha256":{"type":"string"},"runner_sha256":{"type":"string"},"cargo_lock_sha256":{"type":"string"},"rust_toolchain_sha256":{"type":"string"},
+    "scenario_count":{"const":204},"fixture_rebinding_count":{"const":9},"unaffected_fixture_count":{"const":195},"process_count":{"const":2},"delivery_order_count":{"const":8},"canonical_process_bytes":{"const":"identical"},"canonical_output_sha256":{"const":"e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415"},"serialized_run_sha256":{"const":"000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344"},"deliberate_expectation_mismatch":{"const":"rejected"},"result_identity_sha256":{"type":"string"}
+  }
+}

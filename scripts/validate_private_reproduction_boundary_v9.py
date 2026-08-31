@@ -171,6 +171,11 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/causal_projection_final_verification_v14.schema.json",
     "reports/causal_projection_final_decision_v14.json",
     "tools/validation/causal_projection_final_decision_v14.schema.json",
+    "spec/distribution_v15_transition.json",
+    "reports/rust_conformance_v15.json",
+    "tools/validation/distribution_v15.schema.json",
+    "tools/validation/distribution_v15_lock.schema.json",
+    "tools/validation/rust_conformance_v15.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -202,6 +207,8 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_finding_closure_v14.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_final_verification_v14.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_final_decision_v14.schema.json",
+        b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v15.schema.json",
+        b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v15_lock.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -304,6 +311,9 @@ PYTHON_SURFACES = (
     "scripts/validate_causal_projection_finding_closure_v14.py",
     "scripts/validate_causal_projection_final_verification_v14.py",
     "scripts/validate_causal_projection_final_decision_v14.py",
+    "scripts/generate_distribution_v15.py",
+    "scripts/validate_distribution_v15.py",
+    "scripts/validate_rust_conformance_v15.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -505,6 +515,41 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "fixtures/v13/rebindings/resource_followup/",
         "fixtures/v14/rebindings/causal_projection",
         "fixtures/v14/rebindings/causal_projection/",
+        "fixtures/v15",
+        "fixtures/v15/rebindings/causal_projection",
+        "fixtures/distribution/manifest_v15.json",
+        "fixtures/distribution/manifest_v15.lock.json",
+        "spec/distribution_v15_transition.json",
+        "reports/rust_conformance_v15.json",
+        "tools/validation/distribution_v15.schema.json",
+        "tools/validation/distribution_v15_lock.schema.json",
+        "tools/validation/rust_conformance_v15.schema.json",
+        "scripts/generate_distribution_v15.py",
+        "scripts/validate_distribution_v15.py",
+        "scripts/validate_rust_conformance_v15.py",
+        "scripts/validate_remediation_v15.py",
+        "scripts/validate_causal_projection_operation_discovery_v15.py",
+        "scripts/validate_causal_projection_discovery_v15.py",
+        "scripts/validate_causal_projection_consumer_v15.py",
+        "scripts/validate_causal_projection_proof_catalog_v15.py",
+        "scripts/validate_causal_projection_source_ownership_v15.py",
+        "scripts/run_causal_projection_behavior_mutations_v15.py",
+        "reports/causal_projection_behavior_mutations_v15.json",
+        "reports/causal_projection_consumer_inventory_v15.json",
+        "reports/causal_projection_discovery_v15.json",
+        "reports/causal_projection_proof_catalog_v15.json",
+        "reports/causal_projection_source_ownership_v15.json",
+        "tools/validation/causal_projection_behavior_mutations_v15.schema.json",
+        "tools/validation/causal_projection_consumer_inventory_v15.schema.json",
+        "tools/validation/causal_projection_discovery_v15.schema.json",
+        "tools/validation/causal_projection_operation_discovery_v15.schema.json",
+        "tools/validation/causal_projection_proof_catalog_v15.schema.json",
+        "tools/validation/causal_projection_source_ownership_v15.schema.json",
+        "tools/validation/runtime_ledger_v15.schema.json",
+        "implementation/runtime_ledger_v15.json",
+        "docs/execution/remediation_v15/baseline.md",
+        "docs/execution/remediation_v15/ledger.md",
+        "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v15.md",
         "spec/distribution_v13_transition.json",
         "spec/distribution_v14_transition.json",
         "spec/remediation_findings_v13.json",
@@ -910,6 +955,7 @@ def is_public_route(value: str) -> bool:
         or value.startswith("fixtures/v11/scenarios/resource_followup/")
         or value.startswith("fixtures/v12/scenarios/resource_followup/")
         or value.startswith("fixtures/v14/rebindings/causal_projection/")
+        or value.startswith("fixtures/v15/rebindings/causal_projection/")
         or value.startswith("fixtures/v1_draft/scenarios/scope/")
         or value.startswith("fixtures/v1_draft/checkpoints/")
         or value in {row["value"] for row in APPROVED_WIRE_DOMAINS}
@@ -1081,8 +1127,10 @@ def validate_source_surfaces() -> None:
                             "scripts/validate_remediation_v12_ancestry_authorization_gate.py",
                             "scripts/generate_distribution_v13.py",
                             "scripts/generate_distribution_v14.py",
+                            "scripts/generate_distribution_v15.py",
                             "scripts/validate_distribution_v13.py",
                             "scripts/validate_distribution_v14.py",
+                            "scripts/validate_distribution_v15.py",
                             "scripts/validate_remediation_v12_distribution_gate.py",
                             "scripts/validate_remediation_v12_final_decision.py",
                             "scripts/validate_causal_projection_implementation_gate_v13.py",
@@ -1176,6 +1224,10 @@ def validate_source_surfaces() -> None:
                     or (
                         value in {"cargo", "git"}
                         and relative == "scripts/validate_rust_conformance_v14.py"
+                    )
+                    or (
+                        value in {"cargo", "git"}
+                        and relative == "scripts/validate_rust_conformance_v15.py"
                     )
                     or (
                         value in {"cargo", "git"}

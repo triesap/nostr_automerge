@@ -1,0 +1,30 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v15.schema.json",
+  "title":"nostr_automerge distribution v15",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["authorized_v14_fixture_rebindings","base_manifest_sha256","complete","distribution_id","distribution_schema","files","fixture_count","fixtures","missing_v15_rebindings","planned_v15_rebindings","preserved_v14_file_count","preserved_v14_files_sha256","preserved_v14_fixture_count","profiles","protocol_revision","requirements_sha256","status","supersedes","target_fixture_count","transition_stage"],
+  "properties":{
+    "authorized_v14_fixture_rebindings":{"type":"array","minItems":9,"maxItems":9},
+    "base_manifest_sha256":{"const":"c76cd24bc91308b0e615bd837d69b72fe145b7713a544fb325f7f054275c485d"},
+    "complete":{"const":true},
+    "distribution_id":{"const":"draft_2026_08_signed_neutral_15"},
+    "distribution_schema":{"const":"nostr_automerge.fixture_distribution.v15"},
+    "files":{"type":"array","minItems":725,"maxItems":725},
+    "fixture_count":{"const":204},
+    "fixtures":{"type":"array","minItems":204,"maxItems":204},
+    "missing_v15_rebindings":{"type":"array","maxItems":0},
+    "planned_v15_rebindings":{"type":"array","minItems":9,"maxItems":9,"uniqueItems":true},
+    "preserved_v14_file_count":{"const":698},
+    "preserved_v14_files_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "preserved_v14_fixture_count":{"const":204},
+    "profiles":{"type":"object"},
+    "protocol_revision":{"const":"draft_2026_08"},
+    "requirements_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "status":{"const":"canonical_signed_neutral_corpus"},
+    "supersedes":{"const":"fixtures/distribution/manifest_v14.json"},
+    "target_fixture_count":{"const":204},
+    "transition_stage":{"const":"distribution_complete"}
+  }
+}

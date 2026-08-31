@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REPORT_PATH = "reports/rust_conformance_v14.json"
 SCHEMA_PATH = "tools/validation/rust_conformance_v14.schema.json"
 MANIFEST_PATH = "fixtures/distribution/manifest_v14.json"
+HISTORICAL_SOURCE_CANDIDATE = "6d6c507d86f84b25d4fb2a0c46fd48ab0cc14e4b"
 FIELDS = (
     "schema", "status", "base_candidate", "manifest_sha256", "manifest_lock_sha256",
     "distribution_schema_sha256", "lock_schema_sha256", "generator_sha256",
@@ -44,6 +45,17 @@ def digest(relative: str) -> str:
     return hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()
 
 
+def historical_digest(relative: str) -> str:
+    completed = subprocess.run(
+        ("git", "show", f"{HISTORICAL_SOURCE_CANDIDATE}:{relative}"),
+        cwd=ROOT,
+        capture_output=True,
+        check=False,
+    )
+    require(completed.returncode == 0, "report:historical_source:" + relative)
+    return hashlib.sha256(completed.stdout).hexdigest()
+
+
 def identity(value: dict[str, Any]) -> str:
     return hashlib.sha256(canonical({key: value[key] for key in FIELDS[:-1]})).hexdigest()
 
@@ -66,7 +78,8 @@ def validate_report(value: object) -> None:
         "rust_toolchain_sha256": "rust-toolchain.toml",
     }
     for field, relative in expected_sources.items():
-        require(value[field] == digest(relative), "report:source:" + field)
+        actual = historical_digest(relative) if field in {"fixture_generator_sha256", "runner_sha256"} else digest(relative)
+        require(value[field] == actual, "report:source:" + field)
     require(value["scenario_count"] == 204 and value["fixture_rebinding_count"] == 9, "report:inventory")
     require(value["process_count"] == 2 and value["delivery_order_count"] == 8, "report:execution")
     require(value["canonical_process_bytes"] == "identical", "report:process_bytes")
