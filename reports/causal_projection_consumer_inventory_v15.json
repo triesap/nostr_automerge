@@ -1,0 +1,19 @@
+{
+  "schema": "nostr_automerge.causal_projection_consumer_inventory.v15.v1",
+  "status": "pass",
+  "implementation_predecessor": "2e9ba998fa89a45a7cd617ccdd5ceb1f04e6dade",
+  "source_path": "crates/nostr_automerge/src/graph/actor_state.rs",
+  "source_symbol": "causal_next_decision_metered_observed",
+  "source_projection_sha256": "1e04143b6e6b7fc97c4d29074045b6c8ae26737f738f8e17f5d6ff87f3a8f7ca",
+  "language_applicability": [
+    {"language":"rust","status":"required_active"},
+    {"language":"typescript","status":"required_private_sequence"}
+  ],
+  "rows": [
+    {"id":"stored_counter_read","family":"StoredCounterRead","phase":"candidate_consumer","counter":"graph_node","owner_mode":"item_metered","reachability_count":1,"proof_test":"graph::actor_state::tests::causal_consumer_stored_counter_read_is_owned","command":"cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_consumer_stored_counter_read_is_owned --locked -- --exact"},
+    {"id":"expected_start_comparison","family":"ExpectedStartComparison","phase":"candidate_consumer","counter":"graph_node","owner_mode":"item_metered","reachability_count":1,"proof_test":"graph::actor_state::tests::causal_consumer_expected_start_comparison_is_owned","command":"cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_consumer_expected_start_comparison_is_owned --locked -- --exact"},
+    {"id":"checked_advance","family":"CheckedAdvance","phase":"candidate_consumer","counter":"graph_node","owner_mode":"item_metered","reachability_count":1,"proof_test":"graph::actor_state::tests::causal_consumer_checked_advance_is_owned","command":"cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_consumer_checked_advance_is_owned --locked -- --exact"}
+  ],
+  "inactive_families_removed": ["ConstantCandidateValidation","SharedReferenceClone"],
+  "result": "pass"
+}

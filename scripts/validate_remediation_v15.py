@@ -95,6 +95,21 @@ STEP_SCOPES = {
         "scripts/validate_remediation_v15.py",
         "spec/remediation_v15_reproductions.json",
     ],
+    "step_1461": [
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/tests/remediation_v15_reproductions.rs",
+        "docs/execution/remediation_v15/ledger.md",
+        "implementation/runtime_ledger_v15.json",
+        "reports/causal_projection_consumer_inventory_v15.json",
+        "reports/spec_baseline.txt",
+        "scripts/run_causal_projection_mutations_v13.py",
+        "scripts/validate_causal_projection_consumer_v15.py",
+        "scripts/validate_causal_projection_evidence_v14.py",
+        "scripts/validate_causal_projection_source_v13.py",
+        "scripts/validate_remediation_v15.py",
+        "spec/remediation_v15_reproductions.json",
+        "tools/validation/causal_projection_consumer_inventory_v15.schema.json",
+    ],
 }
 
 
@@ -174,7 +189,7 @@ def self_test(authority: dict, findings: dict, ledger: dict, schema: dict) -> in
         ("sequence","authority",lambda value: value["active_sequence"].update(public_step_count=15)),
         ("finding_order","findings",lambda value: value["findings"].reverse()),
         ("premature_close","findings",lambda value: value["findings"][0].update(status="closed")),
-        ("cursor","ledger",lambda value: value["cursor"].update(next_step="step_1462")),
+        ("cursor","ledger",lambda value: value["cursor"].update(next_step="step_1463")),
         ("scope","ledger",lambda value: value["active_checkpoint_scope"].pop()),
         ("predecessor","ledger",lambda value: value["predecessors"][0].update(candidate="0"*40)),
         ("schema","schema",lambda value: value.update(additionalProperties=True)),

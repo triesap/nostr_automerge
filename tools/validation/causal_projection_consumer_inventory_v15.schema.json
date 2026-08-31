@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.github.io/nostr-automerge/schemas/causal_projection_consumer_inventory_v15.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema","status","implementation_predecessor","source_path","source_symbol","source_projection_sha256","language_applicability","rows","inactive_families_removed","result"],
+  "properties": {
+    "schema": {"const":"nostr_automerge.causal_projection_consumer_inventory.v15.v1"},
+    "status": {"const":"pass"},
+    "implementation_predecessor": {"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "source_path": {"const":"crates/nostr_automerge/src/graph/actor_state.rs"},
+    "source_symbol": {"const":"causal_next_decision_metered_observed"},
+    "source_projection_sha256": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "language_applicability": {
+      "type":"array","minItems":2,"maxItems":2,
+      "items": {
+        "type":"object","additionalProperties":false,
+        "required":["language","status"],
+        "properties":{"language":{"type":"string"},"status":{"type":"string"}}
+      }
+    },
+    "rows": {
+      "type":"array","minItems":3,"maxItems":3,
+      "items": {
+        "type":"object","additionalProperties":false,
+        "required":["id","family","phase","counter","owner_mode","reachability_count","proof_test","command"],
+        "properties": {
+          "id":{"type":"string"},"family":{"type":"string"},"phase":{"const":"candidate_consumer"},
+          "counter":{"const":"graph_node"},"owner_mode":{"const":"item_metered"},
+          "reachability_count":{"type":"integer","minimum":1},"proof_test":{"type":"string"},"command":{"type":"string"}
+        }
+      }
+    },
+    "inactive_families_removed": {"type":"array","minItems":2,"maxItems":2,"items":{"type":"string"},"uniqueItems":true},
+    "result": {"const":"pass"}
+  }
+}

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -14,6 +15,7 @@ SOURCE = ROOT / "crates/nostr_automerge/src/graph/actor_state.rs"
 CONTROL_STATE = ROOT / "crates/nostr_automerge/src/control/epoch_state.rs"
 EPOCH_ENGINE = ROOT / "crates/nostr_automerge/src/reference/epoch_engine.rs"
 REFERENCE_EVALUATE = ROOT / "crates/nostr_automerge/src/reference/evaluate.rs"
+HISTORICAL_CANDIDATE = "9cdd8665b68499c4975c08fd1fac07dd5eed999f"
 FUNCTION = "build_trusted_epoch_projection_observed"
 MAXIMUM_SEQUENCE = """causal_next_op = perform_projection_build_operation(
             WorkCounter::GraphNode,
@@ -237,11 +239,24 @@ def mutation_self_test(source: str) -> int:
     return len(attacks) + len(mutations)
 
 
+def historical_text(path: Path) -> str:
+    relative = path.relative_to(ROOT).as_posix()
+    completed = subprocess.run(
+        ["git", "show", f"{HISTORICAL_CANDIDATE}:{relative}"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    require(completed.returncode == 0, "historical:" + relative)
+    return completed.stdout
+
+
 def main() -> int:
-    source = SOURCE.read_text(encoding="utf-8")
-    control_state = CONTROL_STATE.read_text(encoding="utf-8")
-    epoch_engine = EPOCH_ENGINE.read_text(encoding="utf-8")
-    reference_evaluate = REFERENCE_EVALUATE.read_text(encoding="utf-8")
+    source = historical_text(SOURCE)
+    control_state = historical_text(CONTROL_STATE)
+    epoch_engine = historical_text(EPOCH_ENGINE)
+    reference_evaluate = historical_text(REFERENCE_EVALUATE)
     validate(source)
     validate_call_graph(source, control_state, epoch_engine, reference_evaluate)
     mutations = mutation_self_test(source) + call_graph_mutation_self_test(

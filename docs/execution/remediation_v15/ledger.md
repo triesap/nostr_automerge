@@ -52,3 +52,11 @@ arithmetic and owns the final processed-count comparison before result
 publication. The exact two-change construction grows from 72 to 74 visible
 operations. Seven expected-defect reproductions are enabled and fixed while
 the remaining three stay open. The next checkpoint is `step_1461`.
+
+`step_1461` removes the unreachable Rust clone family and the obsolete compound
+validation family from the active construction taxonomy. It binds stored
+counter read, expected-start comparison, and checked advance to three distinct
+candidate-consumer rows and focused proofs while retaining TypeScript as a
+required independent applicability lane. Nine expected-defect reproductions
+are fixed; only behavioral source mutation remains open. The next checkpoint is
+`step_1462` in RCLD 123.

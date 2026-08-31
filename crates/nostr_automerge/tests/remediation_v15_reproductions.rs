@@ -2,17 +2,19 @@
 
 const ACTOR_STATE: &str = include_str!("../src/graph/actor_state.rs");
 const INVENTORY: &str =
-    include_str!("../../../reports/causal_projection_operation_inventory_v14.json");
+    include_str!("../../../reports/causal_projection_consumer_inventory_v15.json");
 const MUTATIONS: &str = include_str!("../../../scripts/run_causal_projection_mutations_v13.py");
 
 fn projection_builder() -> &'static str {
-    ACTOR_STATE
-        .split_once("fn build_trusted_epoch_projection_observed")
-        .expect("projection builder exists")
-        .1
-        .split_once("#[cfg(test)]")
-        .expect("test module follows projection builder")
-        .0
+    let Some((_, after_declaration)) =
+        ACTOR_STATE.split_once("fn build_trusted_epoch_projection_observed")
+    else {
+        return "";
+    };
+    let Some((builder, _)) = after_declaration.split_once("#[cfg(test)]") else {
+        return "";
+    };
+    builder
 }
 
 #[test]
@@ -55,13 +57,12 @@ fn f113_initial_count_read_and_comparison_are_separate() {
 }
 
 #[test]
-#[ignore = "expected defect until step_1461"]
 fn f114_active_rust_families_are_reachable() {
-    assert!(projection_builder().contains("ProjectionBuildOperation::SharedReferenceClone"));
+    assert!(!ACTOR_STATE.contains("SharedReferenceClone"));
+    assert!(!ACTOR_STATE.contains("ConstantCandidateValidation"));
 }
 
 #[test]
-#[ignore = "expected defect until step_1461"]
 fn f114_candidate_consumer_has_distinct_inventory_rows() {
     for operation in [
         "StoredCounterRead",

@@ -191,11 +191,9 @@ enum ProjectionBuildOperation {
     RemainingStateWrite,
     MapInsertion,
     SetInsertion,
-    SharedReferenceClone,
     CausalMaximumCompare,
     CompletionComparison,
     ResultPublication,
-    ConstantCandidateValidation,
 }
 
 fn perform_projection_build_operation<T, E>(
@@ -1462,13 +1460,11 @@ pub(crate) mod tests {
             ProjectionBuildOperation::RemainingStateWrite,
             ProjectionBuildOperation::MapInsertion,
             ProjectionBuildOperation::SetInsertion,
-            ProjectionBuildOperation::SharedReferenceClone,
             ProjectionBuildOperation::CausalMaximumCompare,
             ProjectionBuildOperation::CompletionComparison,
             ProjectionBuildOperation::ResultPublication,
-            ProjectionBuildOperation::ConstantCandidateValidation,
         ];
-        assert_eq!(operations.len(), 22);
+        assert_eq!(operations.len(), 20);
 
         let events = RefCell::new(Vec::new());
         let mut charge = |counter| {
@@ -2819,6 +2815,130 @@ pub(crate) mod tests {
         }
     }
 
+    fn focused_causal_consumer_projection<'a>(
+        branch_membership: &'a BTreeMap<ChangeHash, ChangeCandidate>,
+        accepted_closure: &'a BTreeSet<ChangeHash>,
+        causal_next_op: u64,
+    ) -> TrustedEpochProjection<'a> {
+        TrustedEpochProjection {
+            branch_membership,
+            accepted_closure,
+            dependencies: BTreeMap::new(),
+            frontier_heads: BTreeSet::new(),
+            actor_states: BTreeMap::new(),
+            writer_contributions: BTreeMap::new(),
+            causal_next_op,
+        }
+    }
+
+    #[test]
+    fn causal_consumer_stored_counter_read_is_owned() {
+        let branch = BTreeMap::new();
+        let closure = BTreeSet::new();
+        let projection = focused_causal_consumer_projection(&branch, &closure, 7);
+        let candidate = candidate(1, 1, 7, 1);
+        let (blocked, blocked_trace) =
+            observed_causal_next(&projection, &candidate, 0, Completion::BudgetExhausted);
+        assert_eq!(
+            blocked,
+            Err(MeteredActorStateError::Work(Completion::BudgetExhausted))
+        );
+        assert_eq!(
+            blocked_trace,
+            [CausalNextTrace::Charge(WorkCounter::GraphNode)]
+        );
+
+        let (admitted, admitted_trace) =
+            observed_causal_next(&projection, &candidate, 1, Completion::Cancelled);
+        assert_eq!(
+            admitted,
+            Err(MeteredActorStateError::Work(Completion::Cancelled))
+        );
+        assert_eq!(
+            admitted_trace,
+            [
+                CausalNextTrace::Charge(WorkCounter::GraphNode),
+                CausalNextTrace::Operation(CausalNextOperation::StoredCounterRead),
+                CausalNextTrace::Charge(WorkCounter::GraphNode),
+            ]
+        );
+    }
+
+    #[test]
+    fn causal_consumer_expected_start_comparison_is_owned() {
+        let branch = BTreeMap::new();
+        let closure = BTreeSet::new();
+        let projection = focused_causal_consumer_projection(&branch, &closure, 7);
+        let mut candidate = candidate(1, 1, 7, 1);
+        candidate.start_op = 8;
+        let (blocked, blocked_trace) =
+            observed_causal_next(&projection, &candidate, 1, Completion::BudgetExhausted);
+        assert_eq!(
+            blocked,
+            Err(MeteredActorStateError::Work(Completion::BudgetExhausted))
+        );
+        assert_eq!(
+            blocked_trace
+                .iter()
+                .filter(|entry| matches!(entry, CausalNextTrace::Operation(_)))
+                .count(),
+            1
+        );
+
+        let (admitted, admitted_trace) =
+            observed_causal_next(&projection, &candidate, 2, Completion::Cancelled);
+        assert_eq!(
+            admitted,
+            Err(MeteredActorStateError::State(
+                ActorStateError::OperationCounter
+            ))
+        );
+        assert_eq!(
+            admitted_trace
+                .iter()
+                .filter(|entry| matches!(entry, CausalNextTrace::Operation(_)))
+                .count(),
+            2
+        );
+        assert!(matches!(
+            admitted_trace.last(),
+            Some(CausalNextTrace::Operation(
+                CausalNextOperation::ExpectedStartComparison
+            ))
+        ));
+    }
+
+    #[test]
+    fn causal_consumer_checked_advance_is_owned() {
+        let branch = BTreeMap::new();
+        let closure = BTreeSet::new();
+        let projection = focused_causal_consumer_projection(&branch, &closure, 7);
+        let candidate = candidate(1, 1, 7, 1);
+        let (blocked, blocked_trace) =
+            observed_causal_next(&projection, &candidate, 2, Completion::Cancelled);
+        assert_eq!(
+            blocked,
+            Err(MeteredActorStateError::Work(Completion::Cancelled))
+        );
+        assert_eq!(
+            blocked_trace
+                .iter()
+                .filter(|entry| matches!(entry, CausalNextTrace::Operation(_)))
+                .count(),
+            2
+        );
+
+        let (admitted, admitted_trace) =
+            observed_causal_next(&projection, &candidate, 3, Completion::BudgetExhausted);
+        assert_eq!(admitted, Ok(8));
+        assert_eq!(
+            admitted_trace.last(),
+            Some(&CausalNextTrace::Operation(
+                CausalNextOperation::CheckedAdvance
+            ))
+        );
+    }
+
     #[test]
     fn empty_frontier_comparison_is_streaming_exact_and_immediately_metered() {
         let projected_first = ChangeHash::from_bytes([10; 32]);
@@ -3655,15 +3775,6 @@ pub(crate) mod tests {
         assert_eq!(
             owned
                 .iter()
-                .filter(|operation| {
-                    **operation == ProjectionBuildOperation::ConstantCandidateValidation
-                })
-                .count(),
-            0
-        );
-        assert_eq!(
-            owned
-                .iter()
                 .filter(|operation| **operation == ProjectionBuildOperation::SourceCountRead)
                 .count(),
             1
@@ -3840,11 +3951,9 @@ pub(crate) mod tests {
             (ProjectionBuildOperation::RemainingStateWrite, 1),
             (ProjectionBuildOperation::MapInsertion, 12),
             (ProjectionBuildOperation::SetInsertion, 4),
-            (ProjectionBuildOperation::SharedReferenceClone, 0),
             (ProjectionBuildOperation::CausalMaximumCompare, 2),
             (ProjectionBuildOperation::CompletionComparison, 1),
             (ProjectionBuildOperation::ResultPublication, 1),
-            (ProjectionBuildOperation::ConstantCandidateValidation, 0),
         ];
         for (family, expected) in families {
             assert_eq!(

@@ -239,7 +239,7 @@ def run_selected() -> None:
     added = False
     try:
         added_result = subprocess.run(
-            ["git", "worktree", "add", "--detach", str(checkout), "HEAD"],
+            ["git", "worktree", "add", "--detach", str(checkout), EXPECTED_CANDIDATE],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -293,7 +293,15 @@ def run_selected() -> None:
 
 
 def self_test(record: dict[str, object], schema: dict[str, object]) -> tuple[int, int]:
-    source = (ROOT / TARGET).read_text(encoding="utf-8")
+    candidate_source = subprocess.run(
+        ["git", "show", f"{EXPECTED_CANDIDATE}:{TARGET}"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    require(candidate_source.returncode == 0, "inventory:candidate")
+    source = candidate_source.stdout
     families = [item.family for item in MUTATIONS]
     require(len(MUTATIONS) == 14, "inventory:count")
     require(len(set(families)) == 14, "inventory:family_unique")

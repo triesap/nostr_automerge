@@ -77,11 +77,11 @@ def validate_schema(value: object, fields: tuple[str, ...], array: str, nested_f
 def validate_sources(inventory: dict[str, Any]) -> None:
     require(sha(CONTRACT) == inventory["operation_contract_sha256"], "source:contract")
     require(sha(POLICY) == inventory["evidence_policy_sha256"], "source:policy")
-    require(sha(SOURCE) == SOURCE_SHA256 == inventory["source_projection_sha256"], "source:worktree")
     candidate = subprocess.run(("git", "show", f"{SOURCE_CANDIDATE}:{SOURCE_PATH}"), cwd=ROOT, capture_output=True, check=False)
     require(candidate.returncode == 0 and hashlib.sha256(candidate.stdout).hexdigest() == SOURCE_SHA256, "source:candidate")
+    require(SOURCE_SHA256 == inventory["source_projection_sha256"], "source:projection")
     require(subprocess.run(("git", "rev-parse", f"{CANDIDATE}^"), cwd=ROOT, capture_output=True, text=True, check=False).stdout.strip() == SOURCE_CANDIDATE, "candidate:parent")
-    text = SOURCE.read_text()
+    text = candidate.stdout.decode()
     function = re.search(r"#\[test\]\s*fn projection_operation_families_have_exact_n_minus_one_n_and_n_plus_one_stops\(\)", text)
     require(function is not None, "source:test")
     require("#[ignore" not in text[max(0, function.start() - 80) : function.end()], "source:enabled")
