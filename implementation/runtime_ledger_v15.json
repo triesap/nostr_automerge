@@ -4,10 +4,10 @@
   "authority": "spec/remediation_v15_authority.json",
   "cursor": {
     "active_rcld": 122,
-    "active_step": "step_1458",
-    "next_step": "step_1459",
+    "active_step": "step_1459",
+    "next_step": "step_1460",
     "last_planned_step": "step_1468",
-    "remaining_checkpoint_count": 10,
+    "remaining_checkpoint_count": 9,
     "remaining_rcld_count": 2
   },
   "findings": {
@@ -23,7 +23,6 @@
     "crates/nostr_automerge/tests/remediation_v15_reproductions.rs",
     "docs/execution/remediation_v15/ledger.md",
     "implementation/runtime_ledger_v15.json",
-    "scripts/reproduce_remediation_v15.py",
     "scripts/validate_remediation_v15.py",
     "spec/remediation_v15_reproductions.json"
   ],
@@ -33,6 +32,7 @@
     {"step":"step_1454","candidate":"ff4fecd9816f082d5ed869f19ef8911670f3b7cc","owner_class":"public","result":"pass"},
     {"step":"step_1455","candidate":"dc6b820cd3af14d1ef4ede308ee1ee199c55b0e0","owner_class":"public","result":"pass"},
     {"step":"step_1456","candidate":"1b9f6645e1bc31357f8eae88bd44fc6f36503365","owner_class":"public","result":"pass"},
-    {"step":"step_1457","candidate":"d8beb8e30d3aa498ce73ac7260d5aaf453f99804","owner_class":"public","result":"pass"}
+    {"step":"step_1457","candidate":"d8beb8e30d3aa498ce73ac7260d5aaf453f99804","owner_class":"public","result":"pass"},
+    {"step":"step_1458","candidate":"abd274f62986d994e8e9412cc3cf78fddb00eb3a","owner_class":"public","result":"pass"}
   ]
 }

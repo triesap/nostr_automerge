@@ -40,3 +40,9 @@ and expected-count owners, then owns candidate identity and dependency-count
 reads. The exact two-change construction grows from 63 to 68 visible
 operations. Three expected-defect reproductions are enabled and fixed while
 the remaining seven stay open. The next checkpoint is `step_1459`.
+
+`step_1459` owns candidate readiness and empty/nonempty kind comparisons before
+their control-flow results can publish readiness or select arithmetic. The exact
+two-change construction grows from 68 to 72 visible operations. Five
+expected-defect reproductions are enabled and fixed while the remaining five
+stay open. The next checkpoint is `step_1460`.

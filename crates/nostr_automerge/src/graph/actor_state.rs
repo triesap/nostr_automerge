@@ -1058,7 +1058,14 @@ fn build_trusted_epoch_projection_observed<'a, E>(
             )?;
             published(ProjectionPublicationOperation::Dependant);
         }
-        if candidate_dependencies.is_empty() {
+        let candidate_is_ready = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::CandidateReadinessComparison,
+            &mut charge,
+            &mut built,
+            || candidate_dependencies.is_empty(),
+        )?;
+        if candidate_is_ready {
             perform_projection_build_operation(
                 WorkCounter::GraphNode,
                 ProjectionBuildOperation::ReadinessTransition,
@@ -1201,7 +1208,14 @@ fn build_trusted_epoch_projection_observed<'a, E>(
                 ActorStateError::OperationCounter,
             ));
         }
-        let advanced = if candidate.operation_count == 0 {
+        let candidate_is_empty = perform_projection_build_operation(
+            WorkCounter::GraphNode,
+            ProjectionBuildOperation::CandidateKindComparison,
+            &mut charge,
+            &mut built,
+            || candidate.operation_count == 0,
+        )?;
+        let advanced = if candidate_is_empty {
             next_op
         } else {
             perform_projection_build_operation(
@@ -1745,7 +1759,7 @@ pub(crate) mod tests {
                 .iter()
                 .filter(|counter| **counter == WorkCounter::GraphNode)
                 .count(),
-            28
+            30
         );
         assert_eq!(
             charges
@@ -3303,8 +3317,8 @@ pub(crate) mod tests {
         query.change_hash = ChangeHash::from_bytes([3; 32]);
         query.dependencies = vec![second.change_hash].into();
 
-        const TOTAL_CHARGES: usize = 77;
-        const GRAPH_NODES: usize = 61;
+        const TOTAL_CHARGES: usize = 81;
+        const GRAPH_NODES: usize = 65;
         const GRAPH_EDGES: usize = 16;
         let (ample, trace) = projection_work_contract_run(
             &closure,
@@ -3509,8 +3523,10 @@ pub(crate) mod tests {
                     | ProjectionBuildOperation::CandidateIdentityComparison
                     | ProjectionBuildOperation::DependencyCountRead
                     | ProjectionBuildOperation::DependencyLookup
+                    | ProjectionBuildOperation::CandidateReadinessComparison
                     | ProjectionBuildOperation::StateLookup
                     | ProjectionBuildOperation::ReadinessTransition
+                    | ProjectionBuildOperation::CandidateKindComparison
                     | ProjectionBuildOperation::CheckedArithmetic
                     | ProjectionBuildOperation::MapInsertion
                     | ProjectionBuildOperation::SetInsertion
@@ -3520,7 +3536,7 @@ pub(crate) mod tests {
                 _ => None,
             })
             .collect::<Vec<_>>();
-        assert_eq!(owned.len(), 68);
+        assert_eq!(owned.len(), 72);
         assert_eq!(
             owned
                 .iter()
@@ -3581,6 +3597,24 @@ pub(crate) mod tests {
                 .iter()
                 .filter(|operation| {
                     **operation == ProjectionBuildOperation::CausalMaximumCompare
+                })
+                .count(),
+            2
+        );
+        assert_eq!(
+            owned
+                .iter()
+                .filter(|operation| {
+                    **operation == ProjectionBuildOperation::CandidateReadinessComparison
+                })
+                .count(),
+            2
+        );
+        assert_eq!(
+            owned
+                .iter()
+                .filter(|operation| {
+                    **operation == ProjectionBuildOperation::CandidateKindComparison
                 })
                 .count(),
             2
@@ -3754,7 +3788,7 @@ pub(crate) mod tests {
                 BuildTrace::Charge(_) => None,
             })
             .collect::<Vec<_>>();
-        assert_eq!(operations.len(), 68);
+        assert_eq!(operations.len(), 72);
         let families = [
             (ProjectionBuildOperation::SourceCountRead, 1),
             (ProjectionBuildOperation::ExpectedCountComparison, 1),
@@ -3765,8 +3799,10 @@ pub(crate) mod tests {
             (ProjectionBuildOperation::CandidateIdentityComparison, 2),
             (ProjectionBuildOperation::DependencyCountRead, 2),
             (ProjectionBuildOperation::DependencyLookup, 2),
+            (ProjectionBuildOperation::CandidateReadinessComparison, 2),
             (ProjectionBuildOperation::StateLookup, 11),
             (ProjectionBuildOperation::ReadinessTransition, 6),
+            (ProjectionBuildOperation::CandidateKindComparison, 2),
             (ProjectionBuildOperation::CheckedArithmetic, 6),
             (ProjectionBuildOperation::MapInsertion, 12),
             (ProjectionBuildOperation::SetInsertion, 4),
@@ -3828,7 +3864,7 @@ pub(crate) mod tests {
                                 admitted_operations.get(operation_ordinal - 1),
                                 Some(expected)
                             );
-                            if allowance < 68 {
+                            if allowance < 72 {
                                 assert!(matches!(
                                     admitted,
                                     Err(MeteredActorStateError::Work(value)) if value == stopped
@@ -3841,8 +3877,8 @@ pub(crate) mod tests {
                 }
             }
         }
-        assert_eq!(successful_charges, 68);
-        assert_eq!(operation_ordinal, 68);
+        assert_eq!(successful_charges, 72);
+        assert_eq!(operation_ordinal, 72);
     }
 
     #[test]

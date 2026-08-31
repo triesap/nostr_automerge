@@ -26,7 +26,6 @@ fn f113_dependency_count_read_is_owned() {
 }
 
 #[test]
-#[ignore = "expected defect until step_1459"]
 fn f113_candidate_readiness_comparison_is_owned() {
     assert!(
         projection_builder().contains("ProjectionBuildOperation::CandidateReadinessComparison")
@@ -34,7 +33,6 @@ fn f113_candidate_readiness_comparison_is_owned() {
 }
 
 #[test]
-#[ignore = "expected defect until step_1459"]
 fn f113_candidate_kind_comparison_is_owned() {
     assert!(projection_builder().contains("ProjectionBuildOperation::CandidateKindComparison"));
 }
