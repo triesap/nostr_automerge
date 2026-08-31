@@ -174,18 +174,26 @@ enum ProjectionPublicationOperation {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ProjectionBuildOperation {
+    SourceCountRead,
+    ExpectedCountComparison,
     CanonicalSourcePull,
     CanonicalOrderCompare,
     MembershipLookup,
     CandidateLookup,
+    CandidateIdentityComparison,
+    DependencyCountRead,
     DependencyLookup,
+    CandidateReadinessComparison,
     StateLookup,
     ReadinessTransition,
+    CandidateKindComparison,
     CheckedArithmetic,
+    RemainingStateWrite,
     MapInsertion,
     SetInsertion,
     SharedReferenceClone,
     CausalMaximumCompare,
+    CompletionComparison,
     ResultPublication,
     ConstantCandidateValidation,
 }
@@ -1393,22 +1401,30 @@ pub(crate) mod tests {
     #[test]
     fn projection_build_operation_boundary_is_sealed_exhaustive_and_immediate() {
         let operations = [
+            ProjectionBuildOperation::SourceCountRead,
+            ProjectionBuildOperation::ExpectedCountComparison,
             ProjectionBuildOperation::CanonicalSourcePull,
             ProjectionBuildOperation::CanonicalOrderCompare,
             ProjectionBuildOperation::MembershipLookup,
             ProjectionBuildOperation::CandidateLookup,
+            ProjectionBuildOperation::CandidateIdentityComparison,
+            ProjectionBuildOperation::DependencyCountRead,
             ProjectionBuildOperation::DependencyLookup,
+            ProjectionBuildOperation::CandidateReadinessComparison,
             ProjectionBuildOperation::StateLookup,
             ProjectionBuildOperation::ReadinessTransition,
+            ProjectionBuildOperation::CandidateKindComparison,
             ProjectionBuildOperation::CheckedArithmetic,
+            ProjectionBuildOperation::RemainingStateWrite,
             ProjectionBuildOperation::MapInsertion,
             ProjectionBuildOperation::SetInsertion,
             ProjectionBuildOperation::SharedReferenceClone,
             ProjectionBuildOperation::CausalMaximumCompare,
+            ProjectionBuildOperation::CompletionComparison,
             ProjectionBuildOperation::ResultPublication,
             ProjectionBuildOperation::ConstantCandidateValidation,
         ];
-        assert_eq!(operations.len(), 14);
+        assert_eq!(operations.len(), 22);
 
         let events = RefCell::new(Vec::new());
         let mut charge = |counter| {

@@ -51,6 +51,13 @@ STEP_SCOPES = {
         "scripts/validate_remediation_v15.py",
         "tools/validation/causal_projection_discovery_v15.schema.json",
     ],
+    "step_1457": [
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "docs/execution/remediation_v15/ledger.md",
+        "implementation/runtime_ledger_v15.json",
+        "scripts/validate_causal_projection_discovery_v15.py",
+        "scripts/validate_remediation_v15.py",
+    ],
 }
 
 

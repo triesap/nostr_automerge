@@ -26,3 +26,11 @@ five phases. Four local scalar/control-flow categories are explicitly excluded
 because they neither access nor mutate target storage after their owning
 operation. Implementation and final proof binding remain pending. The next
 checkpoint is `step_1457` in RCLD 122.
+
+`step_1457` extends the sealed Rust projection-build operation type with the
+eight source-derived missing owners. The boundary proof now covers all 22
+transitional variants and still proves charge, operation, and observation
+ordering plus exact injected-stop identity. The historical discovery validator
+now reads its pinned source candidate rather than the moving worktree. No new
+variant is used yet, so production behavior and exact budgets are unchanged.
+The next checkpoint is `step_1458`.

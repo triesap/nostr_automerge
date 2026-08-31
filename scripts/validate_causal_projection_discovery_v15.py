@@ -94,6 +94,12 @@ def validate(report: object, schema: object, source: str) -> None:
     require(type(schema) is dict and schema.get("additionalProperties") is False and schema.get("required") == FIELDS, "schema:closed")
 
 
+def committed_source(candidate: str) -> str:
+    completed = subprocess.run(["git","show",f"{candidate}:crates/nostr_automerge/src/graph/actor_state.rs"],cwd=ROOT,capture_output=True,text=True,check=False)
+    require(completed.returncode == 0, "source:committed")
+    return completed.stdout
+
+
 def self_test(report: dict, schema: dict, source: str) -> int:
     cases = [
         ("owned_missing","report",lambda value: value["owned_operations"].pop()),
@@ -130,7 +136,7 @@ def self_test(report: dict, schema: dict, source: str) -> int:
 def main() -> int:
     report = json.loads(REPORT.read_text())
     schema = json.loads(SCHEMA.read_text())
-    source = SOURCE.read_text()
+    source = committed_source(report["source_candidate"])
     validate(report,schema,source)
     mutations = self_test(report,schema,source)
     print(f"PASS: causal projection discovery active={report['counts']['active_total']} owned={report['counts']['owned']} unowned={report['counts']['unowned']} inactive={report['counts']['inactive']} mutations={mutations}")
