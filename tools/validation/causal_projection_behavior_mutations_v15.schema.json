@@ -1,0 +1,22 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema","status","candidate","target","target_sha256","mutation_count","covered_operation_count","proof_execution_count","compile_failures","survivors","mutations","mutation_identity_sha256","result"],
+  "properties":{
+    "schema":{"const":"nostr_automerge.causal_projection_behavior_mutations.v15.v1"},
+    "status":{"const":"pass"},
+    "candidate":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "target":{"const":"crates/nostr_automerge/src/graph/actor_state.rs"},
+    "target_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "mutation_count":{"const":13},
+    "covered_operation_count":{"const":43},
+    "proof_execution_count":{"const":52},
+    "compile_failures":{"const":0},
+    "survivors":{"const":0},
+    "mutations":{"type":"array","minItems":13,"maxItems":13,"items":{"$ref":"#/$defs/mutation"}},
+    "mutation_identity_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "result":{"const":"pass"}
+  },
+  "$defs":{"mutation":{"type":"object","additionalProperties":false,"required":["id","class","affected_operation_rows","proofs","commands","patch_sha256","transcript_sha256","result"]}}
+}

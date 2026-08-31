@@ -28,7 +28,7 @@ def require(condition: bool, label: str) -> None:
 
 def validate(registry: object) -> None:
     require(type(registry) is dict and list(registry) == FIELDS, "registry:shape")
-    require(registry["schema"] == "nostr_automerge.remediation_v15_reproductions.v1" and registry["status"] == "mixed" and registry["result"] == "pass", "registry:state")
+    require(registry["schema"] == "nostr_automerge.remediation_v15_reproductions.v1" and registry["status"] == "fixed" and registry["result"] == "pass", "registry:state")
     cases = registry["cases"]
     require(type(cases) is list and [row["id"] for row in cases] == IDS, "cases:order")
     source = TEST_SOURCE.read_text()
@@ -63,7 +63,7 @@ def self_test(registry: dict) -> int:
         ("extra",lambda value: value["cases"].append(copy.deepcopy(value["cases"][-1]))),
         ("duplicate",lambda value: value["cases"].__setitem__(1,copy.deepcopy(value["cases"][0]))),
         ("order",lambda value: value["cases"].reverse()),
-        ("closed",lambda value: value.update(status="fixed")),
+        ("status",lambda value: value.update(status="mixed")),
         ("wrong_test",lambda value: value["cases"][0].update(test="missing_test")),
         ("wrong_finding",lambda value: value["cases"][0].update(finding="FINDING_080")),
     ]

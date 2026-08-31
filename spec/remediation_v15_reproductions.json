@@ -1,6 +1,6 @@
 {
   "schema": "nostr_automerge.remediation_v15_reproductions.v1",
-  "status": "mixed",
+  "status": "fixed",
   "cases": [
     {"id":"candidate_identity_comparison","finding":"FINDING_113","test":"f113_candidate_identity_comparison_is_owned","expected":"pass"},
     {"id":"dependency_count_read","finding":"FINDING_113","test":"f113_dependency_count_read_is_owned","expected":"pass"},
@@ -11,7 +11,7 @@
     {"id":"initial_count_compound_operation","finding":"FINDING_113","test":"f113_initial_count_read_and_comparison_are_separate","expected":"pass"},
     {"id":"rust_shared_reference_clone_reachability","finding":"FINDING_114","test":"f114_active_rust_families_are_reachable","expected":"pass"},
     {"id":"candidate_consumer_inventory","finding":"FINDING_114","test":"f114_candidate_consumer_has_distinct_inventory_rows","expected":"pass"},
-    {"id":"behavioral_source_mutations","finding":"FINDING_115","test":"f115_mutations_change_resource_behavior","expected":"fail"}
+    {"id":"behavioral_source_mutations","finding":"FINDING_115","test":"f115_mutations_change_resource_behavior","expected":"pass"}
   ],
   "result": "pass"
 }

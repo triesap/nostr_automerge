@@ -79,3 +79,14 @@ and all four reference algorithms remain test-only. Eighteen source, catalog,
 report, and schema attacks are rejected, including unwrapped reads, alternate
 constructors, consumer bypasses, helper reordering, stale proof binding, and
 comment/string decoys. The next checkpoint is `step_1464`.
+
+`step_1464` replaces label-only assurance with 13 behavior-changing source
+mutations executed in a detached worktree. Four phase-wide charge-deletion
+mutants cover all 43 operation rows and fail all 43 exact owning proofs. Nine
+additional mutants exercise charge reordering, doubled target work, causal-min
+semantics, unmetered final scanning, state writes before charge, typed-stop
+collapse, post-stop work, early publication, and direct helper bypass. Fifty-two
+exact proof executions fail for the intended runtime or structural reason, no
+mutant survives, and no compile failure is counted as behavioral evidence. All
+ten expected-defect reproductions are now enabled and fixed. The next checkpoint
+is `step_1465`.

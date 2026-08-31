@@ -3,7 +3,8 @@
 const ACTOR_STATE: &str = include_str!("../src/graph/actor_state.rs");
 const INVENTORY: &str =
     include_str!("../../../reports/causal_projection_consumer_inventory_v15.json");
-const MUTATIONS: &str = include_str!("../../../scripts/run_causal_projection_mutations_v13.py");
+const MUTATIONS: &str =
+    include_str!("../../../scripts/run_causal_projection_behavior_mutations_v15.py");
 
 fn projection_builder() -> &'static str {
     let Some((_, after_declaration)) =
@@ -77,7 +78,6 @@ fn f114_candidate_consumer_has_distinct_inventory_rows() {
 }
 
 #[test]
-#[ignore = "expected defect until step_1464"]
 fn f115_mutations_change_resource_behavior() {
     for mutation in [
         "charge_deletion",

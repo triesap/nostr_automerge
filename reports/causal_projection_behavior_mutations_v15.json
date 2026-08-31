@@ -1,0 +1,341 @@
+{
+  "schema": "nostr_automerge.causal_projection_behavior_mutations.v15.v1",
+  "status": "pass",
+  "candidate": "adda9d3b9856f969aac08e97f22f5ae841dde297",
+  "target": "crates/nostr_automerge/src/graph/actor_state.rs",
+  "target_sha256": "dd9f56235cf918ed91f4f4294aa56c1b4dba0c90b10278eb0c1a725520197727",
+  "mutation_count": 13,
+  "covered_operation_count": 43,
+  "proof_execution_count": 52,
+  "compile_failures": 0,
+  "survivors": 0,
+  "mutations": [
+    {
+      "id": "construction_charge_deletion",
+      "class": "charge_deletion",
+      "affected_operation_rows": [
+        "construction.source_count_read",
+        "construction.expected_count_comparison",
+        "construction.canonical_source_pull",
+        "construction.canonical_order_compare",
+        "construction.membership_lookup",
+        "construction.candidate_lookup",
+        "construction.candidate_identity_comparison",
+        "construction.dependency_count_read",
+        "construction.dependency_lookup",
+        "construction.candidate_readiness_comparison",
+        "construction.state_lookup",
+        "construction.readiness_transition",
+        "construction.candidate_kind_comparison",
+        "construction.checked_arithmetic",
+        "construction.remaining_state_write",
+        "construction.map_insertion",
+        "construction.set_insertion",
+        "construction.causal_maximum_compare",
+        "construction.completion_comparison",
+        "construction.result_publication"
+      ],
+      "proofs": [
+        "graph::actor_state::tests::causal_projection_proof_construction_source_count_read",
+        "graph::actor_state::tests::causal_projection_proof_construction_expected_count_comparison",
+        "graph::actor_state::tests::causal_projection_proof_construction_canonical_source_pull",
+        "graph::actor_state::tests::causal_projection_proof_construction_canonical_order_compare",
+        "graph::actor_state::tests::causal_projection_proof_construction_membership_lookup",
+        "graph::actor_state::tests::causal_projection_proof_construction_candidate_lookup",
+        "graph::actor_state::tests::causal_projection_proof_construction_candidate_identity_comparison",
+        "graph::actor_state::tests::causal_projection_proof_construction_dependency_count_read",
+        "graph::actor_state::tests::causal_projection_proof_construction_dependency_lookup",
+        "graph::actor_state::tests::causal_projection_proof_construction_candidate_readiness_comparison",
+        "graph::actor_state::tests::causal_projection_proof_construction_state_lookup",
+        "graph::actor_state::tests::causal_projection_proof_construction_readiness_transition",
+        "graph::actor_state::tests::causal_projection_proof_construction_candidate_kind_comparison",
+        "graph::actor_state::tests::causal_projection_proof_construction_checked_arithmetic",
+        "graph::actor_state::tests::causal_projection_proof_construction_remaining_state_write",
+        "graph::actor_state::tests::causal_projection_proof_construction_map_insertion",
+        "graph::actor_state::tests::causal_projection_proof_construction_set_insertion",
+        "graph::actor_state::tests::causal_projection_proof_construction_causal_maximum_compare",
+        "graph::actor_state::tests::causal_projection_proof_construction_completion_comparison",
+        "graph::actor_state::tests::causal_projection_proof_construction_result_publication"
+      ],
+      "commands": [
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_source_count_read --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_expected_count_comparison --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_canonical_source_pull --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_canonical_order_compare --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_membership_lookup --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_candidate_lookup --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_candidate_identity_comparison --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_dependency_count_read --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_dependency_lookup --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_candidate_readiness_comparison --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_state_lookup --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_readiness_transition --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_candidate_kind_comparison --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_checked_arithmetic --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_remaining_state_write --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_map_insertion --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_set_insertion --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_causal_maximum_compare --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_completion_comparison --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_result_publication --locked -- --exact"
+      ],
+      "patch_sha256": "c4532c3f9bc12a4b937b4ca55f2f8cc1a537df7ed44b13300ae8f8d010504c9b",
+      "transcript_sha256": "63c2d4ff2db08c6e84835f3f156e9e75d2f8c688bf433f9ffbfead59f949faec",
+      "result": "killed"
+    },
+    {
+      "id": "lookup_charge_deletion",
+      "class": "charge_deletion",
+      "affected_operation_rows": [
+        "lookup.branch_membership",
+        "lookup.accepted_membership",
+        "lookup.actor_state",
+        "lookup.direct_dependency",
+        "lookup.predecessor_candidate",
+        "lookup.actor_identity_comparison",
+        "lookup.expected_sequence",
+        "lookup.sequence_comparison",
+        "lookup.expected_next_comparison"
+      ],
+      "proofs": [
+        "graph::actor_state::tests::causal_projection_proof_lookup_branch_membership",
+        "graph::actor_state::tests::causal_projection_proof_lookup_accepted_membership",
+        "graph::actor_state::tests::causal_projection_proof_lookup_actor_state",
+        "graph::actor_state::tests::causal_projection_proof_lookup_direct_dependency",
+        "graph::actor_state::tests::causal_projection_proof_lookup_predecessor_candidate",
+        "graph::actor_state::tests::causal_projection_proof_lookup_actor_identity_comparison",
+        "graph::actor_state::tests::causal_projection_proof_lookup_expected_sequence",
+        "graph::actor_state::tests::causal_projection_proof_lookup_sequence_comparison",
+        "graph::actor_state::tests::causal_projection_proof_lookup_expected_next_comparison"
+      ],
+      "commands": [
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_lookup_branch_membership --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_lookup_accepted_membership --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_lookup_actor_state --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_lookup_direct_dependency --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_lookup_predecessor_candidate --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_lookup_actor_identity_comparison --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_lookup_expected_sequence --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_lookup_sequence_comparison --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_lookup_expected_next_comparison --locked -- --exact"
+      ],
+      "patch_sha256": "ec8d76376d29de2e48fc52245ecea21764380e1f51f257194b0f251000db58c4",
+      "transcript_sha256": "d5ea9e0234533a10b9489095478c52ed62036ef4a3445cbb4d75f2fe53384fa4",
+      "result": "killed"
+    },
+    {
+      "id": "consumer_charge_deletion",
+      "class": "charge_deletion",
+      "affected_operation_rows": [
+        "candidate_consumer.stored_counter_read",
+        "candidate_consumer.expected_start_comparison",
+        "candidate_consumer.checked_advance"
+      ],
+      "proofs": [
+        "graph::actor_state::tests::causal_consumer_stored_counter_read_is_owned",
+        "graph::actor_state::tests::causal_consumer_expected_start_comparison_is_owned",
+        "graph::actor_state::tests::causal_consumer_checked_advance_is_owned"
+      ],
+      "commands": [
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_consumer_stored_counter_read_is_owned --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_consumer_expected_start_comparison_is_owned --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_consumer_checked_advance_is_owned --locked -- --exact"
+      ],
+      "patch_sha256": "fcd32655510d51657a0897139be21daa05f98919abae66599ea091ef282f477e",
+      "transcript_sha256": "a6d1cdfd01c9489e56fda70fe8209ab5770513093205ad583566303da42a84ba",
+      "result": "killed"
+    },
+    {
+      "id": "frontier_charge_deletion",
+      "class": "charge_deletion",
+      "affected_operation_rows": [
+        "frontier.candidate_kind_comparison",
+        "frontier.candidate_count",
+        "frontier.projection_count",
+        "frontier.base_count",
+        "frontier.candidate_pull",
+        "frontier.candidate_order_comparison",
+        "frontier.projection_pull",
+        "frontier.base_pull",
+        "frontier.base_accepted_lookup",
+        "frontier.expected_source_comparison",
+        "frontier.frontier_equality_comparison"
+      ],
+      "proofs": [
+        "graph::actor_state::tests::causal_projection_proof_frontier_candidate_kind_comparison",
+        "graph::actor_state::tests::causal_projection_proof_frontier_candidate_count",
+        "graph::actor_state::tests::causal_projection_proof_frontier_projection_count",
+        "graph::actor_state::tests::causal_projection_proof_frontier_base_count",
+        "graph::actor_state::tests::causal_projection_proof_frontier_candidate_pull",
+        "graph::actor_state::tests::causal_projection_proof_frontier_candidate_order_comparison",
+        "graph::actor_state::tests::causal_projection_proof_frontier_projection_pull",
+        "graph::actor_state::tests::causal_projection_proof_frontier_base_pull",
+        "graph::actor_state::tests::causal_projection_proof_frontier_base_accepted_lookup",
+        "graph::actor_state::tests::causal_projection_proof_frontier_expected_source_comparison",
+        "graph::actor_state::tests::causal_projection_proof_frontier_frontier_equality_comparison"
+      ],
+      "commands": [
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_frontier_candidate_kind_comparison --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_frontier_candidate_count --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_frontier_projection_count --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_frontier_base_count --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_frontier_candidate_pull --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_frontier_candidate_order_comparison --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_frontier_projection_pull --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_frontier_base_pull --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_frontier_base_accepted_lookup --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_frontier_expected_source_comparison --locked -- --exact",
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_frontier_frontier_equality_comparison --locked -- --exact"
+      ],
+      "patch_sha256": "edead82eb6dd2ef761d61637cb06afc63a06eac0fae09474eb811ab7cbb9c641",
+      "transcript_sha256": "c2dde2a9513015c461d8bc5b33a3477284e1f67901a0f7bcf6e098116dbdabd9",
+      "result": "killed"
+    },
+    {
+      "id": "charge_after_operation",
+      "class": "charge_moved_after_operation",
+      "affected_operation_rows": [
+        "construction.source_count_read"
+      ],
+      "proofs": [
+        "graph::actor_state::tests::projection_build_operation_boundary_is_sealed_exhaustive_and_immediate"
+      ],
+      "commands": [
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::projection_build_operation_boundary_is_sealed_exhaustive_and_immediate --locked -- --exact"
+      ],
+      "patch_sha256": "e602a9ca454067ff25ba5fd0f6773f10434ba12ce105f15b5f4db1b7c235b02c",
+      "transcript_sha256": "bf12bd7580e4f317538831a4335e5620e6c0f28e4fc4ab71e8b88a53dbe36a25",
+      "result": "killed"
+    },
+    {
+      "id": "double_operation_after_one_charge",
+      "class": "double_operation_after_one_charge",
+      "affected_operation_rows": [
+        "construction.canonical_source_pull"
+      ],
+      "proofs": [
+        "graph::actor_state::tests::projection_source_operations_use_the_sealed_boundary"
+      ],
+      "commands": [
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::projection_source_operations_use_the_sealed_boundary --locked -- --exact"
+      ],
+      "patch_sha256": "eb63d84c96018574625d046e763e9625363b03220f6cce76535d6fe0ee2fa2fa",
+      "transcript_sha256": "83bfae8d7e587f82086280578d4a79949e3f1b4ba50f13bc7335da608079d00f",
+      "result": "killed"
+    },
+    {
+      "id": "causal_maximum_minimum",
+      "class": "causal_maximum_semantic_change",
+      "affected_operation_rows": [
+        "construction.causal_maximum_compare"
+      ],
+      "proofs": [
+        "graph::actor_state::tests::projection_causal_maximum_is_charged_once_per_accepted_change"
+      ],
+      "commands": [
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::projection_causal_maximum_is_charged_once_per_accepted_change --locked -- --exact"
+      ],
+      "patch_sha256": "2a6c582a1c25d953ab3f452913f9836dcd581efa009ac6622fdf066f8a6b4a2e",
+      "transcript_sha256": "395f26bebde4f5757c81b27658229340aed812f19e6b4bb0a1604cae729d2898",
+      "result": "killed"
+    },
+    {
+      "id": "final_scan_restoration",
+      "class": "unmetered_final_scan",
+      "affected_operation_rows": [
+        "construction.causal_maximum_compare"
+      ],
+      "proofs": [
+        "source_ownership_audit"
+      ],
+      "commands": [
+        "python3 scripts/validate_causal_projection_source_ownership_v15.py"
+      ],
+      "patch_sha256": "babc0453e336c7e1db457e78dac6e6b9ab727751330a93e61cdd24fae825c0f2",
+      "transcript_sha256": "afaba64fc977c27afcf06775344a9a65b3b56f2460cf75f7b8f3f1929f9dc781",
+      "result": "killed"
+    },
+    {
+      "id": "state_write_before_charge",
+      "class": "state_mutation_before_charge",
+      "affected_operation_rows": [
+        "construction.remaining_state_write"
+      ],
+      "proofs": [
+        "source_ownership_audit"
+      ],
+      "commands": [
+        "python3 scripts/validate_causal_projection_source_ownership_v15.py"
+      ],
+      "patch_sha256": "913a58ab543e0105074df875202764cca2837016ede1548e7b386d8436ec3d89",
+      "transcript_sha256": "afaba64fc977c27afcf06775344a9a65b3b56f2460cf75f7b8f3f1929f9dc781",
+      "result": "killed"
+    },
+    {
+      "id": "typed_stop_collapse",
+      "class": "typed_stop_collapse",
+      "affected_operation_rows": [
+        "construction.source_count_read"
+      ],
+      "proofs": [
+        "graph::actor_state::tests::projection_build_operation_boundary_is_sealed_exhaustive_and_immediate"
+      ],
+      "commands": [
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::projection_build_operation_boundary_is_sealed_exhaustive_and_immediate --locked -- --exact"
+      ],
+      "patch_sha256": "c4b708bc7dfe9a600fd2b4b3783c90c685bcff484f89be6244021b1089fc63d0",
+      "transcript_sha256": "bf12bd7580e4f317538831a4335e5620e6c0f28e4fc4ab71e8b88a53dbe36a25",
+      "result": "killed"
+    },
+    {
+      "id": "post_stop_target_action",
+      "class": "post_stop_target_action",
+      "affected_operation_rows": [
+        "construction.source_count_read"
+      ],
+      "proofs": [
+        "graph::actor_state::tests::projection_build_operation_boundary_is_sealed_exhaustive_and_immediate"
+      ],
+      "commands": [
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::projection_build_operation_boundary_is_sealed_exhaustive_and_immediate --locked -- --exact"
+      ],
+      "patch_sha256": "055976f9c5ddc927d164e7ba39a3b6b97594c0fab5d831c2120db2efb7b9f712",
+      "transcript_sha256": "bf12bd7580e4f317538831a4335e5620e6c0f28e4fc4ab71e8b88a53dbe36a25",
+      "result": "killed"
+    },
+    {
+      "id": "early_publication",
+      "class": "publication_before_charge",
+      "affected_operation_rows": [
+        "construction.result_publication"
+      ],
+      "proofs": [
+        "graph::actor_state::tests::projection_allocation_insertion_and_publication_are_charged_before_work"
+      ],
+      "commands": [
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::projection_allocation_insertion_and_publication_are_charged_before_work --locked -- --exact"
+      ],
+      "patch_sha256": "5b1169b8a6755dc78c61829f8b864f4fcebaa3feb117a66a4054e33680fb8322",
+      "transcript_sha256": "8285d5994dcd3f06bd0e74dc30ccfb4a39780c1953e0304cdc0da7b32ed77558",
+      "result": "killed"
+    },
+    {
+      "id": "direct_helper_bypass",
+      "class": "direct_helper_bypass",
+      "affected_operation_rows": [
+        "construction.source_count_read"
+      ],
+      "proofs": [
+        "graph::actor_state::tests::causal_projection_proof_construction_source_count_read"
+      ],
+      "commands": [
+        "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_proof_construction_source_count_read --locked -- --exact"
+      ],
+      "patch_sha256": "457c233903fbe10d991029410382104e9c6db2d10cce97368c544594f496b7f4",
+      "transcript_sha256": "9faf578003343fe38e74115a302d65285bf24fc46dcc9b53978ee76a797fa854",
+      "result": "killed"
+    }
+  ],
+  "mutation_identity_sha256": "8b07343ca03d4f0d5ef11410ddd8f09979582037ecb1bb34ebe3dd2ff61cfbec",
+  "result": "pass"
+}
