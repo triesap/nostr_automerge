@@ -1,5 +1,7 @@
 # Nostr Automerge causal-projection operation ownership v15
 
+Status: complete — `code_complete_publication_held`
+
 ## Authority and holds
 
 This plan starts from reviewed public candidate
@@ -72,3 +74,5 @@ The sequence is complete only after all sixteen public checkpoints and the six
 independent checkpoints are committed and verified. Historical evidence is
 never rewritten. The terminal record must keep `release_claimed=false`,
 `publication_claimed=false`, and `remote_actions=0`.
+
+No RCLD in this sequence remains unfinished.

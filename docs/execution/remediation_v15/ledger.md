@@ -116,3 +116,9 @@ eight-order, two-process distribution identity. Findings 113 through 115 are
 closed by their exact ownership, evidence-completeness, and mutation evidence;
 Finding 080 and every external action remain held. The next checkpoint is the
 terminal decision at `step_1468`.
+
+`step_1468` records the terminal local decision after all sixteen public and
+six independent checkpoints. All four RCLDs are complete, no RCLD remains
+unfinished, Findings 113 through 115 are closed, and Finding 080 remains held.
+The final status is `code_complete_publication_held`; release, publication,
+deployment, and every remote action remain unclaimed and unperformed.

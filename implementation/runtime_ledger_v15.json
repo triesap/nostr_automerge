@@ -1,13 +1,13 @@
 {
   "schema": "nostr_automerge.runtime_ledger.v15.v1",
-  "status": "active",
+  "status": "code_complete_publication_held",
   "authority": "spec/remediation_v15_authority.json",
   "cursor": {
     "active_rcld": 124,
-    "active_step": "step_1467",
-    "next_step": "step_1468",
+    "active_step": "step_1468",
+    "next_step": null,
     "last_planned_step": "step_1468",
-    "remaining_checkpoint_count": 1,
+    "remaining_checkpoint_count": 0,
     "remaining_rcld_count": 0
   },
   "findings": {
@@ -16,17 +16,19 @@
     "held": ["FINDING_080"]
   },
   "active_checkpoint_scope": [
+    "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v15.md",
     "docs/execution/remediation_v15/ledger.md",
     "implementation/runtime_ledger_v15.json",
-    "reports/causal_projection_combined_assurance_v15.json",
+    "reports/causal_projection_final_decision_v15.json",
     "reports/spec_baseline.txt",
-    "scripts/validate_causal_projection_combined_assurance_v15.py",
+    "scripts/validate_causal_projection_final_decision_v15.py",
     "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v15.py",
     "scripts/validate_spec.py",
     "spec/remediation_findings_v15.json",
+    "spec/remediation_v15_authority.json",
     "tools/nostr_automerge_xtask/src/validate.rs",
-    "tools/validation/causal_projection_combined_assurance_v15.schema.json"
+    "tools/validation/causal_projection_final_decision_v15.schema.json"
   ],
   "predecessors": [
     {"step":"step_1452","candidate":"0612e24ffa064b6ed362698a0ffcecad17b9b511","owner_class":"public","result":"pass"},
@@ -43,6 +45,7 @@
     {"step":"step_1463","candidate":"adda9d3b9856f969aac08e97f22f5ae841dde297","owner_class":"public","result":"pass"},
     {"step":"step_1464","candidate":"10ce03d6a2cf9d7f0e1a006694f248713109a66d","owner_class":"public","result":"pass"},
     {"step":"step_1465","candidate":"e4d418249585adcabaf1a94f4e6a31a1ce0ffb55","owner_class":"public","result":"pass"},
-    {"step":"step_1466","candidate":"f2cf08f1477de2620a3048bfba749588b047fea7","owner_class":"public","result":"pass"}
+    {"step":"step_1466","candidate":"f2cf08f1477de2620a3048bfba749588b047fea7","owner_class":"public","result":"pass"},
+    {"step":"step_1467","candidate":"fe816b5ce3ff5e8d7b3d319aa0bc1a3823127371","owner_class":"public","result":"pass"}
   ]
 }

@@ -213,6 +213,21 @@ STEP_SCOPES = {
         "tools/nostr_automerge_xtask/src/validate.rs",
         "tools/validation/causal_projection_combined_assurance_v15.schema.json",
     ],
+    "step_1468": [
+        "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v15.md",
+        "docs/execution/remediation_v15/ledger.md",
+        "implementation/runtime_ledger_v15.json",
+        "reports/causal_projection_final_decision_v15.json",
+        "reports/spec_baseline.txt",
+        "scripts/validate_causal_projection_final_decision_v15.py",
+        "scripts/validate_private_reproduction_boundary_v9.py",
+        "scripts/validate_remediation_v15.py",
+        "scripts/validate_spec.py",
+        "spec/remediation_findings_v15.json",
+        "spec/remediation_v15_authority.json",
+        "tools/nostr_automerge_xtask/src/validate.rs",
+        "tools/validation/causal_projection_final_decision_v15.schema.json",
+    ],
 }
 
 
@@ -236,10 +251,10 @@ def sha(path: Path) -> str:
 
 def validate(authority: object, findings: object, ledger: object, schema: object) -> None:
     a = exact(authority,["schema","status","reviewed_public","governing_plan","historical_v14","active_sequence","frozen_sha256","holds","result"],"authority")
-    require(a["schema"] == "nostr_automerge.remediation_v15_authority.v1" and a["status"] == "active" and a["result"] == "pass", "authority:state")
+    require(a["schema"] == "nostr_automerge.remediation_v15_authority.v1" and a["status"] == "code_complete_publication_held" and a["result"] == "pass", "authority:state")
     require(a["reviewed_public"] == {"candidate":"0612e24ffa064b6ed362698a0ffcecad17b9b511","tree":"28ccf9d24ea0ae8883ee9e4e145024c8b8c20f72"}, "authority:reviewed")
     plan = ROOT / str(a["governing_plan"]["path"])
-    require(a["governing_plan"] == {"path":"docs/execution/rcl/nostr_automerge_v1_multi_rcld_v15.md","sha256":"befb1c81f38a502a77dbc34e446b17c7836f7595d87102e302c579c46bc7bffe"} and sha(plan) == a["governing_plan"]["sha256"], "authority:plan")
+    require(a["governing_plan"] == {"path":"docs/execution/rcl/nostr_automerge_v1_multi_rcld_v15.md","sha256":"4d0fa7322ba01248456a7f7e1ddd27b566581da49cd926593a4eae6e34a3b5bd"} and sha(plan) == a["governing_plan"]["sha256"], "authority:plan")
     require(a["historical_v14"] == {"final_decision_sha256":"e344d3cbf5f4d10bc60d88a3d93da9c3f4f07c866232d7ed6a70a3103de5b3df","runtime_ledger_sha256":"01cfce72328c704d6d9a45b07fa9cd392a2a337514693d60f79678f62791ca60","combined_assurance_sha256":"d0557d5f3427b07e1edfa8b6cf2badda93b99203604995d3e058c2996b724ea3","opaque_assurance_sha256":"2afc2c53e1653f5db53309e7f506e7b08f585cb4d69ab51cfee872a30f47a881","status":"immutable_history"}, "authority:history")
     history = [("reports/causal_projection_final_decision_v14.json","final_decision_sha256"),("implementation/runtime_ledger_v13.json","runtime_ledger_sha256"),("reports/causal_projection_combined_assurance_v14.json","combined_assurance_sha256"),("reports/opaque_causal_projection_v14.json","opaque_assurance_sha256")]
     require(all(sha(ROOT / path) == a["historical_v14"][field] for path, field in history), "authority:history_hash")
@@ -251,14 +266,14 @@ def validate(authority: object, findings: object, ledger: object, schema: object
     require(sha(ROOT / "spec/REPORT_CONTRACT.md") == frozen["report_contract"] == "0135f6a484388e95ac4f6fe6f8ff4ea7690c58deadcee5818257e9483c9335cf", "authority:report_contract")
 
     f = exact(findings,["schema","status","findings","result"],"findings")
-    require(f["schema"] == "nostr_automerge.remediation_findings.v15.v1" and f["status"] == "active" and f["result"] == "pass", "findings:state")
+    require(f["schema"] == "nostr_automerge.remediation_findings.v15.v1" and f["status"] == "code_complete_publication_held" and f["result"] == "pass", "findings:state")
     require([row["id"] for row in f["findings"]] == ["FINDING_113","FINDING_114","FINDING_115","FINDING_080"], "findings:order")
     active_step = ledger.get("cursor", {}).get("active_step") if type(ledger) is dict else None
     findings_closed = active_step in {"step_1467", "step_1468"}
     require([row["status"] for row in f["findings"]] == (["closed","closed","closed","held"] if findings_closed else ["open","open","open","held"]), "findings:status")
 
     l = exact(ledger,["schema","status","authority","cursor","findings","active_checkpoint_scope","predecessors"],"ledger")
-    require(l["schema"] == "nostr_automerge.runtime_ledger.v15.v1" and l["status"] == "active" and l["authority"] == "spec/remediation_v15_authority.json", "ledger:state")
+    require(l["schema"] == "nostr_automerge.runtime_ledger.v15.v1" and l["status"] == "code_complete_publication_held" and l["authority"] == "spec/remediation_v15_authority.json", "ledger:state")
     cursor = l["cursor"]
     require(type(cursor) is dict and list(cursor) == ["active_rcld","active_step","next_step","last_planned_step","remaining_checkpoint_count","remaining_rcld_count"], "ledger:cursor_shape")
     active = cursor["active_step"]
@@ -288,6 +303,7 @@ def validate(authority: object, findings: object, ledger: object, schema: object
 def self_test(authority: dict, findings: dict, ledger: dict, schema: dict) -> int:
     cases = [
         ("candidate","authority",lambda value: value["reviewed_public"].update(candidate="0"*40)),
+        ("authority_status","authority",lambda value: value.update(status="active")),
         ("tree","authority",lambda value: value["reviewed_public"].update(tree="0"*40)),
         ("plan","authority",lambda value: value["governing_plan"].update(sha256="0"*64)),
         ("history","authority",lambda value: value["historical_v14"].update(final_decision_sha256="0"*64)),
