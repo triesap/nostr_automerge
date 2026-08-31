@@ -119,6 +119,14 @@ STEP_SCOPES = {
         "scripts/validate_remediation_v15.py",
         "tools/validation/causal_projection_proof_catalog_v15.schema.json",
     ],
+    "step_1463": [
+        "docs/execution/remediation_v15/ledger.md",
+        "implementation/runtime_ledger_v15.json",
+        "reports/causal_projection_source_ownership_v15.json",
+        "scripts/validate_causal_projection_source_ownership_v15.py",
+        "scripts/validate_remediation_v15.py",
+        "tools/validation/causal_projection_source_ownership_v15.schema.json",
+    ],
 }
 
 
@@ -198,7 +206,7 @@ def self_test(authority: dict, findings: dict, ledger: dict, schema: dict) -> in
         ("sequence","authority",lambda value: value["active_sequence"].update(public_step_count=15)),
         ("finding_order","findings",lambda value: value["findings"].reverse()),
         ("premature_close","findings",lambda value: value["findings"][0].update(status="closed")),
-        ("cursor","ledger",lambda value: value["cursor"].update(next_step="step_1464")),
+        ("cursor","ledger",lambda value: value["cursor"].update(next_step="step_1465")),
         ("scope","ledger",lambda value: value["active_checkpoint_scope"].pop()),
         ("predecessor","ledger",lambda value: value["predecessors"][0].update(candidate="0"*40)),
         ("schema","schema",lambda value: value.update(additionalProperties=True)),

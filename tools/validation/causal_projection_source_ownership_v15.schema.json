@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema","status","source_candidate","source_path","source_sha256","proof_catalog_sha256","proof_catalog_identity_sha256","phase_count","operation_count","phases","call_graph","test_only_oracles","prohibited_patterns","result_identity_sha256","result"],
+  "properties": {
+    "schema": {"const":"nostr_automerge.causal_projection_source_ownership.v15.v1"},
+    "status": {"const":"pass"},
+    "source_candidate": {"type":"string","pattern":"^[0-9a-f]{7,40}$"},
+    "source_path": {"const":"crates/nostr_automerge/src/graph/actor_state.rs"},
+    "source_sha256": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "proof_catalog_sha256": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "proof_catalog_identity_sha256": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "phase_count": {"const":4},
+    "operation_count": {"const":43},
+    "phases": {"type":"array","minItems":4,"maxItems":4,"items":{"$ref":"#/$defs/phase"}},
+    "call_graph": {"type":"array","minItems":5,"maxItems":5},
+    "test_only_oracles": {"type":"array","minItems":4,"maxItems":4,"uniqueItems":true},
+    "prohibited_patterns": {"type":"array","minItems":8,"maxItems":8,"uniqueItems":true},
+    "result_identity_sha256": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "result": {"const":"pass"}
+  },
+  "$defs": {
+    "phase": {
+      "type":"object",
+      "additionalProperties":false,
+      "required":["id","symbol","operation_enum","wrapper","family_count","source_site_count","direct_charge_count","direct_observation_count","function_sha256","proof_rows"]
+    }
+  }
+}

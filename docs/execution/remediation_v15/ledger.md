@@ -68,3 +68,14 @@ reachability. Each row proves its own N-1 typed budget and cancellation stop,
 N admission, and N+1 stability; three global proofs retain stop identity,
 semantic precedence, and exact constant-size decision behavior. All 43 exact
 commands pass independently. The next checkpoint is `step_1463`.
+
+`step_1463` closes Rust source ownership across four phases and all 43 proof
+rows. The structural audit derives the four operation enums and their 50, nine,
+three, and 11 reachable source sites, verifies the only five production entry
+edges, and requires every construction and frontier operation to remain inside
+its immediate wrapper. The two direct phases retain exact charge-before-observe
+ordering, both helper bodies retain charge-before-operation-before-observation,
+and all four reference algorithms remain test-only. Eighteen source, catalog,
+report, and schema attacks are rejected, including unwrapped reads, alternate
+constructors, consumer bypasses, helper reordering, stale proof binding, and
+comment/string decoys. The next checkpoint is `step_1464`.

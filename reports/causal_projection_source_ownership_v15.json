@@ -1,0 +1,153 @@
+{
+  "schema": "nostr_automerge.causal_projection_source_ownership.v15.v1",
+  "status": "pass",
+  "source_candidate": "af63c193f6588dc3768053fecdef16858a41a0e8",
+  "source_path": "crates/nostr_automerge/src/graph/actor_state.rs",
+  "source_sha256": "dd9f56235cf918ed91f4f4294aa56c1b4dba0c90b10278eb0c1a725520197727",
+  "proof_catalog_sha256": "9a4fa04c1c3be3934d3ef40d8573c16a955eca08092dd7e2f1ec8747580a7f96",
+  "proof_catalog_identity_sha256": "cd7bde0111e0180c5841318ff412e732087798a038f01fe19b280db2e698d91b",
+  "phase_count": 4,
+  "operation_count": 43,
+  "phases": [
+    {
+      "id": "construction",
+      "symbol": "build_trusted_epoch_projection_observed",
+      "operation_enum": "ProjectionBuildOperation",
+      "wrapper": "perform_projection_build_operation",
+      "family_count": 20,
+      "source_site_count": 50,
+      "direct_charge_count": 0,
+      "direct_observation_count": 0,
+      "function_sha256": "f5a1a5b7b9acd7ad9096bd37d1761ec217f4b8b54f4f45b8612875da66277121",
+      "proof_rows": [
+        "construction.source_count_read",
+        "construction.expected_count_comparison",
+        "construction.canonical_source_pull",
+        "construction.canonical_order_compare",
+        "construction.membership_lookup",
+        "construction.candidate_lookup",
+        "construction.candidate_identity_comparison",
+        "construction.dependency_count_read",
+        "construction.dependency_lookup",
+        "construction.candidate_readiness_comparison",
+        "construction.state_lookup",
+        "construction.readiness_transition",
+        "construction.candidate_kind_comparison",
+        "construction.checked_arithmetic",
+        "construction.remaining_state_write",
+        "construction.map_insertion",
+        "construction.set_insertion",
+        "construction.causal_maximum_compare",
+        "construction.completion_comparison",
+        "construction.result_publication"
+      ]
+    },
+    {
+      "id": "lookup",
+      "symbol": "candidate_metered_observed",
+      "operation_enum": "ProjectionLookupOperation",
+      "wrapper": "direct_charge_observe",
+      "family_count": 9,
+      "source_site_count": 9,
+      "direct_charge_count": 9,
+      "direct_observation_count": 9,
+      "function_sha256": "9906b19230460b089a592581a914f33c4151002ba040ad0d9b9f1a1cd2f22717",
+      "proof_rows": [
+        "lookup.branch_membership",
+        "lookup.accepted_membership",
+        "lookup.actor_state",
+        "lookup.direct_dependency",
+        "lookup.predecessor_candidate",
+        "lookup.actor_identity_comparison",
+        "lookup.expected_sequence",
+        "lookup.sequence_comparison",
+        "lookup.expected_next_comparison"
+      ]
+    },
+    {
+      "id": "candidate_consumer",
+      "symbol": "causal_next_decision_metered_observed",
+      "operation_enum": "CausalNextOperation",
+      "wrapper": "direct_charge_observe",
+      "family_count": 3,
+      "source_site_count": 3,
+      "direct_charge_count": 3,
+      "direct_observation_count": 3,
+      "function_sha256": "a94fc93ab06fd6cde4870da5a4916ecb1615d4bc2d357c2a82936b1b6bf78574",
+      "proof_rows": [
+        "candidate_consumer.stored_counter_read",
+        "candidate_consumer.expected_start_comparison",
+        "candidate_consumer.checked_advance"
+      ]
+    },
+    {
+      "id": "frontier",
+      "symbol": "empty_frontier_decision_metered_observed",
+      "operation_enum": "FrontierComparisonOperation",
+      "wrapper": "metered_frontier_operation",
+      "family_count": 11,
+      "source_site_count": 11,
+      "direct_charge_count": 0,
+      "direct_observation_count": 0,
+      "function_sha256": "ef4f16a77b0c201468f7c2ac2ceca61383a1921301b39dd70ebdc670f8024ddb",
+      "proof_rows": [
+        "frontier.candidate_kind_comparison",
+        "frontier.candidate_count",
+        "frontier.projection_count",
+        "frontier.base_count",
+        "frontier.candidate_pull",
+        "frontier.candidate_order_comparison",
+        "frontier.projection_pull",
+        "frontier.base_pull",
+        "frontier.base_accepted_lookup",
+        "frontier.expected_source_comparison",
+        "frontier.frontier_equality_comparison"
+      ]
+    }
+  ],
+  "call_graph": [
+    {
+      "caller": "initialize_actor_states_metered",
+      "callee": "build_trusted_epoch_projection",
+      "calls": 1
+    },
+    {
+      "caller": "build_trusted_epoch_projection",
+      "callee": "build_trusted_epoch_projection_observed",
+      "calls": 1
+    },
+    {
+      "caller": "candidate_metered",
+      "callee": "candidate_metered_observed",
+      "calls": 1
+    },
+    {
+      "caller": "causal_next_decision_metered",
+      "callee": "causal_next_decision_metered_observed",
+      "calls": 1
+    },
+    {
+      "caller": "empty_frontier_decision_metered",
+      "callee": "empty_frontier_decision_metered_observed",
+      "calls": 1
+    }
+  ],
+  "test_only_oracles": [
+    "reference_apply_empty_counter",
+    "reference_apply_nonempty_counter",
+    "reference_causal_next_op",
+    "initialize_actor_states"
+  ],
+  "prohibited_patterns": [
+    "unwrapped_target_read",
+    "raw_charge_in_wrapped_phase",
+    "alternate_constructor",
+    "alternate_consumer_bypass",
+    "charge_after_operation",
+    "observation_before_operation",
+    "production_reference_oracle",
+    "stale_proof_binding"
+  ],
+  "result_identity_sha256": "f611c92cd7e7e136ad54f073571c22a534f5e765afb525ced990b4c230b2b42a",
+  "result": "pass"
+}
