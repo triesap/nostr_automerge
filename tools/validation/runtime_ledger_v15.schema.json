@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema","status","authority","cursor","findings","active_checkpoint_scope","predecessors"],
+  "properties": {
+    "schema": {"const":"nostr_automerge.runtime_ledger.v15.v1"},
+    "status": {"enum":["active","code_complete_publication_held"]},
+    "authority": {"const":"spec/remediation_v15_authority.json"},
+    "cursor": {"type":"object"},
+    "findings": {"type":"object"},
+    "active_checkpoint_scope": {"type":"array","items":{"type":"string"}},
+    "predecessors": {"type":"array","items":{"type":"object"}}
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "schema": "nostr_automerge.remediation_findings.v15.v1",
+  "status": "active",
+  "findings": [
+    {"id":"FINDING_113","severity":"high","class":"resource_accounting","title":"Projection builder retains unowned target operations","requirements":["NCRDT-RESOURCE-014","NCRDT-RESOURCE-016","NCRDT-RESOURCE-017","NCRDT-RESOURCE-019"],"owner":"public_rust","closure":"Derive the complete reachable operation inventory and route every relevant read, comparison, mutation, allocation, and publication through an approved immediate typed owner boundary.","status":"open"},
+    {"id":"FINDING_114","severity":"high","class":"evidence_completeness","title":"Operation inventory and source audit are circular and incomplete","requirements":["NCRDT-EVIDENCE-007"],"owner":"public_assurance","closure":"Replace fixed taxonomy agreement with source-derived reachability, phase-specific consumer evidence, nonzero active-family proofs, and exact per-operation ownership.","status":"open"},
+    {"id":"FINDING_115","severity":"high","class":"mutation_assurance","title":"Source mutations do not establish resource behavior","requirements":["NCRDT-EVIDENCE-007"],"owner":"public_assurance","closure":"Execute behavior-changing charge and work mutations in isolated checkouts against exact owning tests and record zero survivors with exact transcripts.","status":"open"},
+    {"id":"FINDING_080","severity":"hold","class":"external_assurance","title":"External assurance and publication authority remain held","requirements":[],"owner":"external","closure":"Preserve the hold; local work cannot close it.","status":"held"}
+  ],
+  "result": "pass"
+}

@@ -1,0 +1,30 @@
+{
+  "schema": "nostr_automerge.runtime_ledger.v15.v1",
+  "status": "active",
+  "authority": "spec/remediation_v15_authority.json",
+  "cursor": {
+    "active_rcld": 121,
+    "active_step": "step_1453",
+    "next_step": "step_1454",
+    "last_planned_step": "step_1468",
+    "remaining_checkpoint_count": 15,
+    "remaining_rcld_count": 3
+  },
+  "findings": {
+    "open": ["FINDING_113","FINDING_114","FINDING_115"],
+    "held": ["FINDING_080"]
+  },
+  "active_checkpoint_scope": [
+    "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v15.md",
+    "docs/execution/remediation_v15/baseline.md",
+    "docs/execution/remediation_v15/ledger.md",
+    "implementation/runtime_ledger_v15.json",
+    "scripts/validate_remediation_v15.py",
+    "spec/remediation_findings_v15.json",
+    "spec/remediation_v15_authority.json",
+    "tools/validation/runtime_ledger_v15.schema.json"
+  ],
+  "predecessors": [
+    {"step":"step_1452","candidate":"0612e24ffa064b6ed362698a0ffcecad17b9b511","owner_class":"public","result":"pass"}
+  ]
+}

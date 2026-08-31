@@ -1,0 +1,34 @@
+{
+  "schema": "nostr_automerge.remediation_v15_authority.v1",
+  "status": "active",
+  "reviewed_public": {
+    "candidate": "0612e24ffa064b6ed362698a0ffcecad17b9b511",
+    "tree": "28ccf9d24ea0ae8883ee9e4e145024c8b8c20f72"
+  },
+  "governing_plan": {
+    "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v15.md",
+    "sha256": "befb1c81f38a502a77dbc34e446b17c7836f7595d87102e302c579c46bc7bffe"
+  },
+  "historical_v14": {
+    "final_decision_sha256": "e344d3cbf5f4d10bc60d88a3d93da9c3f4f07c866232d7ed6a70a3103de5b3df",
+    "runtime_ledger_sha256": "01cfce72328c704d6d9a45b07fa9cd392a2a337514693d60f79678f62791ca60",
+    "combined_assurance_sha256": "d0557d5f3427b07e1edfa8b6cf2badda93b99203604995d3e058c2996b724ea3",
+    "opaque_assurance_sha256": "2afc2c53e1653f5db53309e7f506e7b08f585cb4d69ab51cfee872a30f47a881",
+    "status": "immutable_history"
+  },
+  "active_sequence": {
+    "rcld_first": 121,
+    "rcld_last": 124,
+    "step_first": "step_1453",
+    "step_last": "step_1468",
+    "public_step_count": 16,
+    "private_step_count": 6
+  },
+  "frozen_sha256": {
+    "nip": "8262bf32cb70b7c0e46210441120652e52504fb73839641ac19dddfed840acf8",
+    "requirements": "a8926ae4610b4855294f769871e87a14dee73d05ed201419de35711a8a781974",
+    "report_contract": "0135f6a484388e95ac4f6fe6f8ff4ea7690c58deadcee5818257e9483c9335cf"
+  },
+  "holds": ["external_assurance","event_kind_allocation","nip_submission","production_qualification","publication","release","remote_mutation"],
+  "result": "pass"
+}
