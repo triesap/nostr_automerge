@@ -12,3 +12,9 @@ exposes the candidate-consumer inventory misbinding, and one rejects the
 relabel-only mutation model. They remain ignored in ordinary tests and the
 reproduction runner requires each named ignored test to fail exactly. The next
 checkpoint is `step_1455`.
+
+`step_1455` freezes the source-derived discovery contract without assigning a
+final family count. It separates construction, lookup, causal-counter,
+frontier-comparison, and publication phases; requires explicit language
+applicability and nonzero active reachability; and defines the exact
+seventeen-field evidence row. The next checkpoint is `step_1456`.

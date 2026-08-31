@@ -35,6 +35,14 @@ STEP_SCOPES = {
         "scripts/validate_remediation_v15.py",
         "spec/remediation_v15_reproductions.json",
     ],
+    "step_1455": [
+        "docs/execution/remediation_v15/ledger.md",
+        "implementation/runtime_ledger_v15.json",
+        "scripts/validate_causal_projection_operation_discovery_v15.py",
+        "scripts/validate_remediation_v15.py",
+        "spec/causal_projection_operation_discovery_v15.json",
+        "tools/validation/causal_projection_operation_discovery_v15.schema.json",
+    ],
 }
 
 

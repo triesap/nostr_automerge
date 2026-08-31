@@ -1,0 +1,30 @@
+{
+  "schema": "nostr_automerge.causal_projection_operation_discovery.v15.v1",
+  "status": "authority_frozen_inventory_pending",
+  "authority": "spec/remediation_v15_authority.json",
+  "requirements": ["NCRDT-RESOURCE-016","NCRDT-RESOURCE-017","NCRDT-RESOURCE-018","NCRDT-RESOURCE-019","NCRDT-EVIDENCE-007"],
+  "phases": [
+    {"id":"projection_construction","source_path":"crates/nostr_automerge/src/graph/actor_state.rs","source_symbol":"build_trusted_epoch_projection_observed"},
+    {"id":"projection_lookup","source_path":"crates/nostr_automerge/src/graph/actor_state.rs","source_symbol":"candidate_metered_observed"},
+    {"id":"causal_counter_consumer","source_path":"crates/nostr_automerge/src/graph/actor_state.rs","source_symbol":"causal_next_decision_metered_observed"},
+    {"id":"frontier_comparison","source_path":"crates/nostr_automerge/src/graph/actor_state.rs","source_symbol":"empty_frontier_decision_metered_observed"},
+    {"id":"projection_publication","source_path":"crates/nostr_automerge/src/graph/actor_state.rs","source_symbol":"build_trusted_epoch_projection_observed"}
+  ],
+  "owner_modes": ["item_metered","exact_reserved","sealed_constant_time"],
+  "operation_rule": {
+    "charge_order": "charge_then_operation_then_observation",
+    "target_operations": ["read","comparison","mutation","allocation","insertion","traversal","publication"],
+    "atomic_pairing": "only_when_contract_names_and_proves_one_indivisible_operation",
+    "once_per_build": "explicit_sealed_constant_time_owner"
+  },
+  "applicability_rule": {
+    "values": ["required","not_applicable"],
+    "active_item_metered_reachability": "nonzero_per_applicable_implementation",
+    "cross_language_mapping": "concrete_language_rows_map_to_shared_abstract_families"
+  },
+  "row_contract": ["id","abstract_family","phase","language","applicability","source_path","source_symbol","source_site","owner_mode","counter","reachability","proof","test","command","candidate","artifact_sha256","mutation"],
+  "prohibited_patterns": ["preset_final_family_count","unowned_target_operation","target_work_before_charge","bulk_retroactive_charge","post_stop_target_work","unreachable_active_family","umbrella_only_proof","relabel_only_mutation","coordinated_contract_inventory_drift"],
+  "inventory_state": "source_derived_after_step_1456",
+  "historical_v14": "immutable",
+  "result": "pass"
+}

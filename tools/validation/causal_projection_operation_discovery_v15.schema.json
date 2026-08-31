@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema","status","authority","requirements","phases","owner_modes","operation_rule","applicability_rule","row_contract","prohibited_patterns","inventory_state","historical_v14","result"],
+  "properties": {
+    "schema": {"const":"nostr_automerge.causal_projection_operation_discovery.v15.v1"},
+    "status": {"const":"authority_frozen_inventory_pending"},
+    "authority": {"const":"spec/remediation_v15_authority.json"},
+    "requirements": {"type":"array","minItems":5,"maxItems":5,"uniqueItems":true},
+    "phases": {"type":"array","minItems":5,"maxItems":5,"items":{"type":"object","additionalProperties":false,"required":["id","source_path","source_symbol"],"properties":{"id":{"type":"string"},"source_path":{"type":"string"},"source_symbol":{"type":"string"}}}},
+    "owner_modes": {"type":"array","minItems":3,"maxItems":3,"uniqueItems":true},
+    "operation_rule": {"type":"object","additionalProperties":false},
+    "applicability_rule": {"type":"object","additionalProperties":false},
+    "row_contract": {"type":"array","minItems":17,"maxItems":17,"uniqueItems":true},
+    "prohibited_patterns": {"type":"array","minItems":9,"maxItems":9,"uniqueItems":true},
+    "inventory_state": {"const":"source_derived_after_step_1456"},
+    "historical_v14": {"const":"immutable"},
+    "result": {"const":"pass"}
+  }
+}
