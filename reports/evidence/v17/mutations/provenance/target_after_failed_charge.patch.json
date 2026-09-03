@@ -1,0 +1,4 @@
+{
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 04c0a304..6f66008f 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -182,7 +182,7 @@ fn perform_actor_decision_operation<T, E>(\n         descriptor,\n         kind: ActorDecisionObservationKind::ChargeAttempt,\n     });\n-    charge(descriptor.counter).map_err(MeteredActorStateError::Work)?;\n+    let _v17_ignored_charge = charge(descriptor.counter).map_err(MeteredActorStateError::Work);\n     let result = perform();\n     observed(ActorDecisionObservation {\n         descriptor,\n@@ -1702,6 +1702,7 @@ fn build_trusted_epoch_projection_observed<'a, E>(\n     Ok(projection)\n }\n \n+// v17 provenance mutation target_after_failed_charge\n #[cfg(test)]\n pub(crate) mod tests {\n     use std::cell::{Cell, RefCell};\n"
+}

@@ -1,0 +1,9 @@
+mutation_id=provenance.cancellation_collapse
+inventory_row_id=rust.actor_sequence.actor_state_read
+command=cargo check -p nostr_automerge --lib --locked
+compile_actual=pass
+expected_property=TYPED_CANCELLED_IDENTITY
+actual_property=TYPED_CANCELLED_IDENTITY
+wrong_property_is_survivor=true
+survivor=false
+restoration=pass

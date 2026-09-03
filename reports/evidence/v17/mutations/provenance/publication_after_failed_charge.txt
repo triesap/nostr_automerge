@@ -1,0 +1,9 @@
+mutation_id=provenance.publication_after_failed_charge
+inventory_row_id=rust.projection_construction.projection_publish
+command=cargo check -p nostr_automerge --lib --locked
+compile_actual=pass
+expected_property=PUBLICATION_AFTER_STOP
+actual_property=PUBLICATION_AFTER_STOP
+wrong_property_is_survivor=true
+survivor=false
+restoration=pass

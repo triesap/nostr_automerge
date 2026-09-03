@@ -1,0 +1,108 @@
+{
+  "schema": "nostr_automerge.causal_projection_provenance_mutations.v17.v1",
+  "status": "actual_execution",
+  "base_candidate": "597f4e8b5762dddbb086cb08dbf8b5fd0278e02e",
+  "rows": [
+    {
+      "mutation_id": "provenance.typed_stop_collapse",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "expected_property_code": "TYPED_BUDGET_EXHAUSTED_IDENTITY",
+      "actual_property_code": "TYPED_BUDGET_EXHAUSTED_IDENTITY",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/provenance/typed_stop_collapse.patch.json",
+      "patch_sha256": "11881f2cdb5c5dbbbb82221d45198b564ea68cd7c2a4c0bc2b2d4d47269d4e92",
+      "transcript_artifact": "reports/evidence/v17/mutations/provenance/typed_stop_collapse.txt",
+      "transcript_sha256": "dc7944e43a14985baf176379ceb2d73745b2e092993b37923c7a70a854dae45b",
+      "wrong_property_is_survivor": true,
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.cancellation_collapse",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "expected_property_code": "TYPED_CANCELLED_IDENTITY",
+      "actual_property_code": "TYPED_CANCELLED_IDENTITY",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/provenance/cancellation_collapse.patch.json",
+      "patch_sha256": "a64ae541829862919e60a85433a45b676189ff146dfb6636db84f93c563953cc",
+      "transcript_artifact": "reports/evidence/v17/mutations/provenance/cancellation_collapse.txt",
+      "transcript_sha256": "40ac239f5f0e108e1a74206042c62108945dc9fcf2f9e24e9b41d57f8836c5d2",
+      "wrong_property_is_survivor": true,
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.unexpected_error_replacement",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "expected_property_code": "UNEXPECTED_WORK_ERROR_IDENTITY",
+      "actual_property_code": "UNEXPECTED_WORK_ERROR_IDENTITY",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/provenance/unexpected_error_replacement.patch.json",
+      "patch_sha256": "0d5388e0ffb7b1a4c78c710d35fbf62de87852c617e4d0d5be9386ae38f82093",
+      "transcript_artifact": "reports/evidence/v17/mutations/provenance/unexpected_error_replacement.txt",
+      "transcript_sha256": "22b5be1af987c48517d82c09480e23d62050271a2c5cf5b4ca655d089dcaf3c4",
+      "wrong_property_is_survivor": true,
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.target_after_failed_charge",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "expected_property_code": "TARGET_AFTER_STOP",
+      "actual_property_code": "TARGET_AFTER_STOP",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/provenance/target_after_failed_charge.patch.json",
+      "patch_sha256": "f059cff2af81f2dfd4f03f3c4108c6a7278aaf9b2897f06f92efcb0e5883beb6",
+      "transcript_artifact": "reports/evidence/v17/mutations/provenance/target_after_failed_charge.txt",
+      "transcript_sha256": "72909423a81419e019af5cd0db757bb602c4015fc17e000ed193ab6787514700",
+      "wrong_property_is_survivor": true,
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.observation_after_failed_charge",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "expected_property_code": "OBSERVATION_AFTER_STOP",
+      "actual_property_code": "OBSERVATION_AFTER_STOP",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/provenance/observation_after_failed_charge.patch.json",
+      "patch_sha256": "a46844c196a7a9b63401e4cd888eb690713d5e4eb06ecc3493b2cc92e11b392d",
+      "transcript_artifact": "reports/evidence/v17/mutations/provenance/observation_after_failed_charge.txt",
+      "transcript_sha256": "8cb843e053a6248c1c411e6cfb66dd67c8cd89de9f47f7bf6646aa1e988e3d9a",
+      "wrong_property_is_survivor": true,
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.publication_after_failed_charge",
+      "inventory_row_id": "rust.projection_construction.projection_publish",
+      "expected_property_code": "PUBLICATION_AFTER_STOP",
+      "actual_property_code": "PUBLICATION_AFTER_STOP",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/provenance/publication_after_failed_charge.patch.json",
+      "patch_sha256": "25f17281f580b14c4c45baa4b8da1ad2bc97ef00eb926cf69f95f4dd4291bc7e",
+      "transcript_artifact": "reports/evidence/v17/mutations/provenance/publication_after_failed_charge.txt",
+      "transcript_sha256": "3ac3a2ec014de3a8294eae3e5c7f7c4b42b0aea1d8faddb795efd2155e245dad",
+      "wrong_property_is_survivor": true,
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    }
+  ],
+  "counts": {
+    "mutations": 6,
+    "compile_pass": 6,
+    "survivors": 0
+  },
+  "worktree": {
+    "isolated": true,
+    "extbuild": true,
+    "restored": true
+  },
+  "result": "pass"
+}

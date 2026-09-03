@@ -92,6 +92,9 @@ def helper_structure(source: str, name: str) -> None:
 
 def validate_structure(source: str, consumer: str, inventory: dict[str, Any], properties: dict[str, Any]) -> None:
     source = production(source)
+    require("_v17_typed_stop_collapsed" not in source, "TYPED_BUDGET_EXHAUSTED_IDENTITY")
+    require("_v17_cancellation_collapsed" not in source, "TYPED_CANCELLED_IDENTITY")
+    require("_v17_unexpected_error_replaced" not in source, "UNEXPECTED_WORK_ERROR_IDENTITY")
     require("_uncharged_second_result" not in source, "TARGET_AFTER_STOP")
     require("_v17_charge_removed" not in source, "CHARGE_AFTER_OPERATION")
     try:

@@ -1,0 +1,9 @@
+mutation_id=provenance.target_after_failed_charge
+inventory_row_id=rust.actor_sequence.actor_state_read
+command=cargo check -p nostr_automerge --lib --locked
+compile_actual=pass
+expected_property=TARGET_AFTER_STOP
+actual_property=TARGET_AFTER_STOP
+wrong_property_is_survivor=true
+survivor=false
+restoration=pass
