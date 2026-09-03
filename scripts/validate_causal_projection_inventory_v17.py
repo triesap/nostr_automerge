@@ -96,7 +96,8 @@ def registry(source: str, macro: str, with_counter: bool) -> tuple[list[tuple[st
 
 
 def exact_test(phase: str, site: str) -> str:
-    return f"graph::actor_state::tests::causal_projection_v17_site_{phase}_{snake(site)}"
+    test_phase = "frontier" if phase == "frontier_comparison" else phase
+    return f"graph::actor_state::tests::causal_projection_v17_site_{test_phase}_{snake(site)}"
 
 
 def derive_rows(source: str) -> list[dict[str, Any]]:

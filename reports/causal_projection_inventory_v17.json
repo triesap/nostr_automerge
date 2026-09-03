@@ -1121,8 +1121,8 @@
       "counter": "graph_node",
       "abstract_owner_class": "direct_operation",
       "reachability_artifact": "4cb37b0a3b9a055d2aed2165fa9582f151c20ee79c3786be8386667623ffa7eb",
-      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_candidate_kind_comparison",
-      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_candidate_kind_comparison --locked -- --exact --nocapture",
+      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_candidate_kind_comparison",
+      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_candidate_kind_comparison --locked -- --exact --nocapture",
       "proof_status": "pending_actual_execution",
       "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
       "result": "pass"
@@ -1140,8 +1140,8 @@
       "counter": "graph_node",
       "abstract_owner_class": "direct_operation",
       "reachability_artifact": "6fd90e2db6dc62da9efb8bfbd016bb821a719f98b747a7029f26ce74b41af8f4",
-      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_candidate_count_read",
-      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_candidate_count_read --locked -- --exact --nocapture",
+      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_candidate_count_read",
+      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_candidate_count_read --locked -- --exact --nocapture",
       "proof_status": "pending_actual_execution",
       "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
       "result": "pass"
@@ -1159,8 +1159,8 @@
       "counter": "graph_node",
       "abstract_owner_class": "direct_operation",
       "reachability_artifact": "4e768e123c92eec6e5d330e0e49758bda5955678d78b43dcf07629594b8e50ec",
-      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_projection_count_read",
-      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_projection_count_read --locked -- --exact --nocapture",
+      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_projection_count_read",
+      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_projection_count_read --locked -- --exact --nocapture",
       "proof_status": "pending_actual_execution",
       "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
       "result": "pass"
@@ -1178,8 +1178,8 @@
       "counter": "graph_node",
       "abstract_owner_class": "direct_operation",
       "reachability_artifact": "5054534aecdc1e7ecf5268d52cc74e48eb19c246516ec9e205557c1236875016",
-      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_base_count_read",
-      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_base_count_read --locked -- --exact --nocapture",
+      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_base_count_read",
+      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_base_count_read --locked -- --exact --nocapture",
       "proof_status": "pending_actual_execution",
       "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
       "result": "pass"
@@ -1197,8 +1197,8 @@
       "counter": "graph_edge",
       "abstract_owner_class": "direct_operation",
       "reachability_artifact": "61c8ea7c32015f02a2f798bfee2f8226a14ab8aa135d9daf89708f022eb31833",
-      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_candidate_pull",
-      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_candidate_pull --locked -- --exact --nocapture",
+      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_candidate_pull",
+      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_candidate_pull --locked -- --exact --nocapture",
       "proof_status": "pending_actual_execution",
       "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
       "result": "pass"
@@ -1216,8 +1216,8 @@
       "counter": "graph_edge",
       "abstract_owner_class": "direct_operation",
       "reachability_artifact": "8be49c5d5d271d92cf9a8273b638897d3780ba0c29bff6f0935dfa126341985c",
-      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_candidate_order_compare",
-      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_candidate_order_compare --locked -- --exact --nocapture",
+      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_candidate_order_compare",
+      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_candidate_order_compare --locked -- --exact --nocapture",
       "proof_status": "pending_actual_execution",
       "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
       "result": "pass"
@@ -1235,8 +1235,8 @@
       "counter": "graph_node",
       "abstract_owner_class": "direct_operation",
       "reachability_artifact": "378c4ce9dc9ea2fbcc3cf71395dab797e6b8e654e392c4e6ac7a95c7654025fd",
-      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_projection_pull",
-      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_projection_pull --locked -- --exact --nocapture",
+      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_projection_pull",
+      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_projection_pull --locked -- --exact --nocapture",
       "proof_status": "pending_actual_execution",
       "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
       "result": "pass"
@@ -1254,8 +1254,8 @@
       "counter": "graph_node",
       "abstract_owner_class": "direct_operation",
       "reachability_artifact": "e664100c5828420ba184119ab7eefbb2b2005bde5031ef324f98488ac852e334",
-      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_base_pull",
-      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_base_pull --locked -- --exact --nocapture",
+      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_base_pull",
+      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_base_pull --locked -- --exact --nocapture",
       "proof_status": "pending_actual_execution",
       "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
       "result": "pass"
@@ -1273,8 +1273,8 @@
       "counter": "graph_node",
       "abstract_owner_class": "direct_operation",
       "reachability_artifact": "7f58174ad7552b0bb5a6f742190e64243fa308974d3d9262204d9c4c571da40c",
-      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_base_accepted_lookup",
-      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_base_accepted_lookup --locked -- --exact --nocapture",
+      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_base_accepted_lookup",
+      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_base_accepted_lookup --locked -- --exact --nocapture",
       "proof_status": "pending_actual_execution",
       "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
       "result": "pass"
@@ -1292,8 +1292,8 @@
       "counter": "graph_node",
       "abstract_owner_class": "direct_operation",
       "reachability_artifact": "ef1805be226ef1418e064a5fddc49b1d25de008def7dd41f297f2f26dd0fbd5e",
-      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_expected_source_compare",
-      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_expected_source_compare --locked -- --exact --nocapture",
+      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_expected_source_compare",
+      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_expected_source_compare --locked -- --exact --nocapture",
       "proof_status": "pending_actual_execution",
       "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
       "result": "pass"
@@ -1311,8 +1311,8 @@
       "counter": "graph_edge",
       "abstract_owner_class": "direct_operation",
       "reachability_artifact": "e7aaa7d1454602fb7644466187a260f19f556454d4f7f9659f2cc130cdda7cc6",
-      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_frontier_equality_compare",
-      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_comparison_frontier_equality_compare --locked -- --exact --nocapture",
+      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_frontier_equality_compare",
+      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_frontier_equality_compare --locked -- --exact --nocapture",
       "proof_status": "pending_actual_execution",
       "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
       "result": "pass"
@@ -1332,6 +1332,6 @@
     "planned_counts": false,
     "proof_evidence_terminal": false
   },
-  "result_identity_sha256": "9a499989a83e801587b12d2d1a8d8f36fb834d5fa12e04f9ac81510a54f1f2e8",
+  "result_identity_sha256": "e8e21f025b626bf9b95c2a3b01ca5bc775f0cd9e390ea5e5cf64c43c2f5fe4c1",
   "result": "pass"
 }
