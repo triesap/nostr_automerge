@@ -214,6 +214,10 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/distribution_v16.schema.json",
     "tools/validation/distribution_v16_lock.schema.json",
     "tools/validation/rust_conformance_v16.schema.json",
+    "spec/distribution_v17_transition.json",
+    "reports/rust_conformance_v17.json",
+    "tools/validation/distribution_v17_transition.schema.json",
+    "tools/validation/rust_conformance_v17.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -250,6 +254,8 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v16.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v16_lock.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v16_transition.schema.json",
+        b"https://triesap.github.io/nostr-automerge/schemas/distribution_v17_transition.schema.json",
+        b"https://triesap.github.io/nostr-automerge/schemas/rust_conformance_v17.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -375,6 +381,7 @@ PYTHON_SURFACES = (
     "scripts/generate_distribution_v16.py",
     "scripts/validate_distribution_v16.py",
     "scripts/validate_rust_conformance_v16.py",
+    "scripts/validate_rust_conformance_v17.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -701,6 +708,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_distribution_v17_transition.py",
         "spec/distribution_v17_transition.json",
         "tools/validation/distribution_v17_transition.schema.json",
+        "scripts/validate_rust_conformance_v17.py",
+        "reports/rust_conformance_v17.json",
+        "tools/validation/rust_conformance_v17.schema.json",
         "tools/nostr_automerge_conformance/src/main.rs",
         "tools/nostr_automerge_conformance/src/runner.rs",
         "ython3 scripts/validate_causal_projection_structural_assurance_v16.py --mode structural",
@@ -1536,6 +1546,7 @@ def validate_source_surfaces() -> None:
                         in {
                             "scripts/validate_distribution_v16.py",
                             "scripts/validate_rust_conformance_v16.py",
+                            "scripts/validate_rust_conformance_v17.py",
                         }
                     )
                     or (
