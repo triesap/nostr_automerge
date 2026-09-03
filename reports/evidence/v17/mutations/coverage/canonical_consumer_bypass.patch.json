@@ -1,0 +1,4 @@
+{
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/reference/epoch_engine.rs b/crates/nostr_automerge/src/reference/epoch_engine.rs\nindex 50283476..6c08b3e5 100644\n--- a/crates/nostr_automerge/src/reference/epoch_engine.rs\n+++ b/crates/nostr_automerge/src/reference/epoch_engine.rs\n@@ -515,7 +515,7 @@ pub(crate) fn evaluate_epoch(\n             match initialize_actor_states_metered(known, &all_candidates, |counter| {\n                 charge_epoch_item(counter, budget, cancellation)\n             }) {\n-                Ok(projection) => match projection.candidate_semantics_decision_metered(\n+                Ok(projection) => match projection.candidate_semantics_decision_unmetered(\n                     &candidate,\n                     input.accepted_base().frontier_heads(),\n                     |counter| charge_epoch_item(counter, budget, cancellation),\n"
+}

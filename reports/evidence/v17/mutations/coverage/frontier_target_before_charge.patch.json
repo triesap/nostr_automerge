@@ -1,0 +1,4 @@
+{
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 04c0a304..724b1325 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -992,8 +992,8 @@ fn metered_frontier_operation<E, T>(\n         descriptor,\n         kind: FrontierComparisonObservationKind::ChargeAttempt,\n     });\n-    charge(descriptor.counter).map_err(MeteredActorStateError::Work)?;\n     let result = target();\n+    charge(descriptor.counter).map_err(MeteredActorStateError::Work)?;\n     observed(FrontierComparisonObservation {\n         descriptor,\n         kind: FrontierComparisonObservationKind::TargetCompleted,\n"
+}

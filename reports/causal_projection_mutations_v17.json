@@ -1,0 +1,2277 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutations.v17.v1",
+  "status": "actual_complete",
+  "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+  "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+  "input_reports": [
+    {
+      "path": "reports/causal_projection_construction_mutations_v17.json",
+      "candidate": "2b316789bd55a8b0ce099d4c12baeab53205b38f",
+      "sha256": "ffc38feb62cd9a6ab42653ca935e9f4c0bce55cdf438fcb61cd18cb1d4cea8c5"
+    },
+    {
+      "path": "reports/causal_projection_direct_mutations_v17.json",
+      "candidate": "597f4e8b5762dddbb086cb08dbf8b5fd0278e02e",
+      "sha256": "aa0b7375a6977dac6c069cbf86ae87f73a7aa05a3c5efdda4632cbc8a4c20321"
+    },
+    {
+      "path": "reports/causal_projection_provenance_mutations_v17.json",
+      "candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "sha256": "80ca7bad08b343ffd36058b13cc43cf2cbc8afde4360acde7977cfbadb0dc671"
+    }
+  ],
+  "mutation_records": [
+    {
+      "mutation_id": "construction.DependencyOrderCompare.wrapper_bypass",
+      "inventory_row_id": "rust.projection_construction.dependency_order_compare",
+      "kind": "wrapper_bypass",
+      "expected_property_code": "ALTERNATE_CONSUMER_BYPASS",
+      "actual_property_code": "ALTERNATE_CONSUMER_BYPASS",
+      "compile_expected": "fail",
+      "compile_actual": "fail",
+      "patch_artifact": "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_wrapper_bypass.patch.json",
+      "patch_sha256": "a1672d009aeb5bc53668c9e0e36cd2b162a09c93c14c7416af6053f7755814d6",
+      "transcript_artifact": "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_wrapper_bypass.txt",
+      "transcript_sha256": "95f7e4e45e4e086a653156fbedc4520ff4a9eb891c09c55a1767d3eb2f97bda0",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "construction.DependencyOrderCompare.double_target",
+      "inventory_row_id": "rust.projection_construction.dependency_order_compare",
+      "kind": "double_target",
+      "expected_property_code": "TARGET_AFTER_STOP",
+      "actual_property_code": "TARGET_AFTER_STOP",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_double_target.patch.json",
+      "patch_sha256": "46a8ab322bd1c8787f1d7c6590357b6b3ac543d614306d47a294f488596c91da",
+      "transcript_artifact": "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_double_target.txt",
+      "transcript_sha256": "ac6726bf82426489d8f733481e2987394e6ddee9e3eb907609cc9b2f18431587",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "construction.DependencyOrderCompare.target_before_charge",
+      "inventory_row_id": "rust.projection_construction.dependency_order_compare",
+      "kind": "target_before_charge",
+      "expected_property_code": "CHARGE_AFTER_OPERATION",
+      "actual_property_code": "CHARGE_AFTER_OPERATION",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json",
+      "patch_sha256": "2fd6aa2bd0a25c27b6d76aa50f973055fb42f7b5c7b9cc644855336d8547bd9c",
+      "transcript_artifact": "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt",
+      "transcript_sha256": "25bd6b496769668bb606e4476d9c123962117f752e85abfed79fa7f5524a5da4",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "construction.DependencyOrderCompare.same_family_site_swap",
+      "inventory_row_id": "rust.projection_construction.dependency_order_compare",
+      "kind": "same_family_site_swap",
+      "expected_property_code": "SITE_ID_MISMATCH",
+      "actual_property_code": "SITE_ID_MISMATCH",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_same_family_site_swap.patch.json",
+      "patch_sha256": "109fe0c6cd73b59377d33623c2f2a9b6823cc004d1bfc59b5b3e6309898b83d0",
+      "transcript_artifact": "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_same_family_site_swap.txt",
+      "transcript_sha256": "b3184f1f597f04f362c4e11d1ef17d6cda8c53765a4b9ceaa32cc7302a33854d",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "construction.ReadyCandidatePull.wrapper_bypass",
+      "inventory_row_id": "rust.projection_construction.ready_candidate_pull",
+      "kind": "wrapper_bypass",
+      "expected_property_code": "ALTERNATE_CONSUMER_BYPASS",
+      "actual_property_code": "ALTERNATE_CONSUMER_BYPASS",
+      "compile_expected": "fail",
+      "compile_actual": "fail",
+      "patch_artifact": "reports/evidence/v17/mutations/construction/construction_ReadyCandidatePull_wrapper_bypass.patch.json",
+      "patch_sha256": "b6b48e9fc295a9e656ce484dd423f110e73fe831664021f02a7daf9e257e916c",
+      "transcript_artifact": "reports/evidence/v17/mutations/construction/construction_ReadyCandidatePull_wrapper_bypass.txt",
+      "transcript_sha256": "231c4e65eb7cbd60a88100622aaa00434eb1c30448a21a4cd12b9fd3b6447d98",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "construction.ReadyCandidatePull.double_target",
+      "inventory_row_id": "rust.projection_construction.ready_candidate_pull",
+      "kind": "double_target",
+      "expected_property_code": "TARGET_AFTER_STOP",
+      "actual_property_code": "TARGET_AFTER_STOP",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/construction/construction_ReadyCandidatePull_double_target.patch.json",
+      "patch_sha256": "5a59fe3722803539c8fc288ddb498dc172515f0b76383fd0601626b196954637",
+      "transcript_artifact": "reports/evidence/v17/mutations/construction/construction_ReadyCandidatePull_double_target.txt",
+      "transcript_sha256": "40891abe47b24fd36bfef282727327d31b26701a0fb1d6ff6ba3a80e8fa6c727",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "construction.ReadyCandidatePull.target_before_charge",
+      "inventory_row_id": "rust.projection_construction.ready_candidate_pull",
+      "kind": "target_before_charge",
+      "expected_property_code": "CHARGE_AFTER_OPERATION",
+      "actual_property_code": "CHARGE_AFTER_OPERATION",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/construction/construction_ReadyCandidatePull_target_before_charge.patch.json",
+      "patch_sha256": "2d80622e7bbbde3621e4851ebf134fd0d1f8c74bd1ca9a7d97e4017880cce097",
+      "transcript_artifact": "reports/evidence/v17/mutations/construction/construction_ReadyCandidatePull_target_before_charge.txt",
+      "transcript_sha256": "f8a80731fa8a9939c25d32379096a8679cab5fcf55d1b371ecfecb8af5b747de",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "construction.ReadyCandidatePull.same_family_site_swap",
+      "inventory_row_id": "rust.projection_construction.ready_candidate_pull",
+      "kind": "same_family_site_swap",
+      "expected_property_code": "SITE_ID_MISMATCH",
+      "actual_property_code": "SITE_ID_MISMATCH",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/construction/construction_ReadyCandidatePull_same_family_site_swap.patch.json",
+      "patch_sha256": "2dd1b57bb9812e22f94f3d8b985daf66a87ad1c6cbbc0083bfe93a8ce05be476",
+      "transcript_artifact": "reports/evidence/v17/mutations/construction/construction_ReadyCandidatePull_same_family_site_swap.txt",
+      "transcript_sha256": "aaab9fe8174573f38e15be88d2dbcb203b62d6f31e6577a73b018da620368b7c",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "construction.ReadyDependantInsert.wrapper_bypass",
+      "inventory_row_id": "rust.projection_construction.ready_dependant_insert",
+      "kind": "wrapper_bypass",
+      "expected_property_code": "ALTERNATE_CONSUMER_BYPASS",
+      "actual_property_code": "ALTERNATE_CONSUMER_BYPASS",
+      "compile_expected": "fail",
+      "compile_actual": "fail",
+      "patch_artifact": "reports/evidence/v17/mutations/construction/construction_ReadyDependantInsert_wrapper_bypass.patch.json",
+      "patch_sha256": "7d0626d316ae17360a96b8820a3071c0bc595d05d4b9f36ea706103f9f60995e",
+      "transcript_artifact": "reports/evidence/v17/mutations/construction/construction_ReadyDependantInsert_wrapper_bypass.txt",
+      "transcript_sha256": "83d910bf48a811e4b0e797f1d4156ea9715edfc8154c2cbe68c83057eb62c580",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "construction.ReadyDependantInsert.double_target",
+      "inventory_row_id": "rust.projection_construction.ready_dependant_insert",
+      "kind": "double_target",
+      "expected_property_code": "TARGET_AFTER_STOP",
+      "actual_property_code": "TARGET_AFTER_STOP",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/construction/construction_ReadyDependantInsert_double_target.patch.json",
+      "patch_sha256": "81685bf53f9851ff8b1521252b659cd6f8b0aa3752d4a3e112e6d1eb7319584e",
+      "transcript_artifact": "reports/evidence/v17/mutations/construction/construction_ReadyDependantInsert_double_target.txt",
+      "transcript_sha256": "a1b900ae981989ac8388ac0819c8c57bf73369aeed679922b648fdb492aef386",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "construction.ReadyDependantInsert.target_before_charge",
+      "inventory_row_id": "rust.projection_construction.ready_dependant_insert",
+      "kind": "target_before_charge",
+      "expected_property_code": "CHARGE_AFTER_OPERATION",
+      "actual_property_code": "CHARGE_AFTER_OPERATION",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/construction/construction_ReadyDependantInsert_target_before_charge.patch.json",
+      "patch_sha256": "c0535869292ed1a395430bb396a9b62d629ebd9a935b4901a3db0497d916d63c",
+      "transcript_artifact": "reports/evidence/v17/mutations/construction/construction_ReadyDependantInsert_target_before_charge.txt",
+      "transcript_sha256": "ce1a3b429178a9dee539d393a97fb99865280cdb10dfd3bf98e1d801b30161a9",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "construction.ReadyDependantInsert.same_family_site_swap",
+      "inventory_row_id": "rust.projection_construction.ready_dependant_insert",
+      "kind": "same_family_site_swap",
+      "expected_property_code": "SITE_ID_MISMATCH",
+      "actual_property_code": "SITE_ID_MISMATCH",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/construction/construction_ReadyDependantInsert_same_family_site_swap.patch.json",
+      "patch_sha256": "e6431b11433b1e613d1d45e8d3ff6629c4b6597e4ecfb82cfe32fa0d1558e3b5",
+      "transcript_artifact": "reports/evidence/v17/mutations/construction/construction_ReadyDependantInsert_same_family_site_swap.txt",
+      "transcript_sha256": "511fb45e7f7a4bc616d3efd54ddc887aca995cbc67e402103e2c1b269b5f1cbf",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "direct.ActorStateRead.charge_before_target",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "kind": "charge_before_target",
+      "expected_property_code": "CHARGE_AFTER_OPERATION",
+      "actual_property_code": "CHARGE_AFTER_OPERATION",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/direct/direct_ActorStateRead_charge_before_target.patch.json",
+      "patch_sha256": "6314e2a7b40a5e07fb427a699d7473e32c1734524ef2ba25536c56203026fe77",
+      "transcript_artifact": "reports/evidence/v17/mutations/direct/direct_ActorStateRead_charge_before_target.txt",
+      "transcript_sha256": "80786e5bbaecd1f99fd8563a0db0a58a81785efab86d8a88f7ac26315a5f380d",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "direct.PredecessorCandidateRead.charge_before_target",
+      "inventory_row_id": "rust.actor_sequence.predecessor_candidate_read",
+      "kind": "charge_before_target",
+      "expected_property_code": "CHARGE_AFTER_OPERATION",
+      "actual_property_code": "CHARGE_AFTER_OPERATION",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/direct/direct_PredecessorCandidateRead_charge_before_target.patch.json",
+      "patch_sha256": "42c09da5be7cd43e61cfc1a1b5df6ce4bca0c09abea73ca02aa0414479ca0c40",
+      "transcript_artifact": "reports/evidence/v17/mutations/direct/direct_PredecessorCandidateRead_charge_before_target.txt",
+      "transcript_sha256": "c340dbdd07b66e21788e908ed62f2c266b3c990ab829b4540baade3fe579abd2",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "direct.ActorIdentityDecision.charge_before_target",
+      "inventory_row_id": "rust.actor_sequence.actor_identity_decision",
+      "kind": "charge_before_target",
+      "expected_property_code": "CHARGE_AFTER_OPERATION",
+      "actual_property_code": "CHARGE_AFTER_OPERATION",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/direct/direct_ActorIdentityDecision_charge_before_target.patch.json",
+      "patch_sha256": "6136d18923121cdcbf398a28a6b268c4b4f1a31cfb52bccf905d5bee1d58ba23",
+      "transcript_artifact": "reports/evidence/v17/mutations/direct/direct_ActorIdentityDecision_charge_before_target.txt",
+      "transcript_sha256": "d00e52cb416ef6733ac7ab4725ea75d814224334d0262eaca118a6ac594df307",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "direct.SequenceRelationDecision.charge_before_target",
+      "inventory_row_id": "rust.actor_sequence.sequence_relation_decision",
+      "kind": "charge_before_target",
+      "expected_property_code": "CHARGE_AFTER_OPERATION",
+      "actual_property_code": "CHARGE_AFTER_OPERATION",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/direct/direct_SequenceRelationDecision_charge_before_target.patch.json",
+      "patch_sha256": "404174c10052359f494cbef41e9a5faf9fde73d5ff7be4cb0a27fb22e6f57a8d",
+      "transcript_artifact": "reports/evidence/v17/mutations/direct/direct_SequenceRelationDecision_charge_before_target.txt",
+      "transcript_sha256": "3b37a2cc5a2d32a93466ed55c7c7bdf080ff6aaa7132dd0b2ffde95a603195d7",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "direct.StoredCounterRead.charge_before_target",
+      "inventory_row_id": "rust.causal_counter.stored_counter_read",
+      "kind": "charge_before_target",
+      "expected_property_code": "CHARGE_AFTER_OPERATION",
+      "actual_property_code": "CHARGE_AFTER_OPERATION",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/direct/direct_StoredCounterRead_charge_before_target.patch.json",
+      "patch_sha256": "016f37a12906a3d9c6a6296c8b4b80b4cbc5b627f49532201f8991a63ef2029d",
+      "transcript_artifact": "reports/evidence/v17/mutations/direct/direct_StoredCounterRead_charge_before_target.txt",
+      "transcript_sha256": "70982b9c2013ce5f50094e3b06243c1037bf7255e7df2aab4386bec9da1f6856",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "direct.ExpectedStartComparison.charge_before_target",
+      "inventory_row_id": "rust.causal_counter.expected_start_comparison",
+      "kind": "charge_before_target",
+      "expected_property_code": "CHARGE_AFTER_OPERATION",
+      "actual_property_code": "CHARGE_AFTER_OPERATION",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/direct/direct_ExpectedStartComparison_charge_before_target.patch.json",
+      "patch_sha256": "a171b34b8aeeeb95b76b88ea2baae41199c561069687f09c62f70c339fb9bf8f",
+      "transcript_artifact": "reports/evidence/v17/mutations/direct/direct_ExpectedStartComparison_charge_before_target.txt",
+      "transcript_sha256": "79b46f32065a1e934d9f26f7835528073adf3af96480cf7dc2066fd2b114b25e",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "direct.CheckedAdvance.charge_before_target",
+      "inventory_row_id": "rust.causal_counter.checked_advance",
+      "kind": "charge_before_target",
+      "expected_property_code": "CHARGE_AFTER_OPERATION",
+      "actual_property_code": "CHARGE_AFTER_OPERATION",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/direct/direct_CheckedAdvance_charge_before_target.patch.json",
+      "patch_sha256": "9b2c2c20fd314fa12b482a7e6dfb629299a7bb1fd97129c87dc524e0ab0b42e1",
+      "transcript_artifact": "reports/evidence/v17/mutations/direct/direct_CheckedAdvance_charge_before_target.txt",
+      "transcript_sha256": "1f06358d1f33d6667f4dede0a13f185b37fa305decaa3da7b0a1f2af58e9016a",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "direct.ActorStateRead.charge_removal",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "kind": "charge_removal",
+      "expected_property_code": "CHARGE_AFTER_OPERATION",
+      "actual_property_code": "CHARGE_AFTER_OPERATION",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/direct/direct_ActorStateRead_charge_removal.patch.json",
+      "patch_sha256": "46aede596e2fee748a718051600c5a5481f5a0fe941fb4a46436be3551be5ccf",
+      "transcript_artifact": "reports/evidence/v17/mutations/direct/direct_ActorStateRead_charge_removal.txt",
+      "transcript_sha256": "04ee8944fdc242083733941a0eb0829d4607197c0adee8fd2e524aecddda854b",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "direct.ActorStateRead.double_target",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "kind": "double_target",
+      "expected_property_code": "TARGET_AFTER_STOP",
+      "actual_property_code": "TARGET_AFTER_STOP",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/direct/direct_ActorStateRead_double_target.patch.json",
+      "patch_sha256": "4acf6012f4b8822fb68ac007ce3ee5c1f0f34ad9ed07541ce11c6b17ceeb87dd",
+      "transcript_artifact": "reports/evidence/v17/mutations/direct/direct_ActorStateRead_double_target.txt",
+      "transcript_sha256": "9be641f9a856418d29435da6c8867423b05efd3b19d191ce69e96f0024f8c2bd",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "direct.ActorStateRead.observer_before_target",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "kind": "observer_before_target",
+      "expected_property_code": "OBSERVATION_AFTER_STOP",
+      "actual_property_code": "OBSERVATION_AFTER_STOP",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/direct/direct_ActorStateRead_observer_before_target.patch.json",
+      "patch_sha256": "5095621c3522dec9b83472f2865a8b976018d439646affa57f7a8f083a0befc8",
+      "transcript_artifact": "reports/evidence/v17/mutations/direct/direct_ActorStateRead_observer_before_target.txt",
+      "transcript_sha256": "c0a946a2355cfbebbb1b5bdf12efbfe81c5a58e8849c86be76d3afe2649523e0",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "direct.ActorStateRead.target_after_failed_charge",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "kind": "target_after_failed_charge",
+      "expected_property_code": "TARGET_AFTER_STOP",
+      "actual_property_code": "TARGET_AFTER_STOP",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/direct/direct_ActorStateRead_target_after_failed_charge.patch.json",
+      "patch_sha256": "da6e2d579ccdedb8679f1b51b1ec8afef4dfd2306fec82f97a869af8b82c4bcd",
+      "transcript_artifact": "reports/evidence/v17/mutations/direct/direct_ActorStateRead_target_after_failed_charge.txt",
+      "transcript_sha256": "c6651c76d45a32631d28e975a1184934699cb881552310a924430aa0609308e7",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.typed_stop_collapse",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "expected_property_code": "TYPED_BUDGET_EXHAUSTED_IDENTITY",
+      "actual_property_code": "TYPED_BUDGET_EXHAUSTED_IDENTITY",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/provenance/typed_stop_collapse.patch.json",
+      "patch_sha256": "11881f2cdb5c5dbbbb82221d45198b564ea68cd7c2a4c0bc2b2d4d47269d4e92",
+      "transcript_artifact": "reports/evidence/v17/mutations/provenance/typed_stop_collapse.txt",
+      "transcript_sha256": "dc7944e43a14985baf176379ceb2d73745b2e092993b37923c7a70a854dae45b",
+      "wrong_property_is_survivor": true,
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.cancellation_collapse",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "expected_property_code": "TYPED_CANCELLED_IDENTITY",
+      "actual_property_code": "TYPED_CANCELLED_IDENTITY",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/provenance/cancellation_collapse.patch.json",
+      "patch_sha256": "a64ae541829862919e60a85433a45b676189ff146dfb6636db84f93c563953cc",
+      "transcript_artifact": "reports/evidence/v17/mutations/provenance/cancellation_collapse.txt",
+      "transcript_sha256": "40ac239f5f0e108e1a74206042c62108945dc9fcf2f9e24e9b41d57f8836c5d2",
+      "wrong_property_is_survivor": true,
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.unexpected_error_replacement",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "expected_property_code": "UNEXPECTED_WORK_ERROR_IDENTITY",
+      "actual_property_code": "UNEXPECTED_WORK_ERROR_IDENTITY",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/provenance/unexpected_error_replacement.patch.json",
+      "patch_sha256": "0d5388e0ffb7b1a4c78c710d35fbf62de87852c617e4d0d5be9386ae38f82093",
+      "transcript_artifact": "reports/evidence/v17/mutations/provenance/unexpected_error_replacement.txt",
+      "transcript_sha256": "22b5be1af987c48517d82c09480e23d62050271a2c5cf5b4ca655d089dcaf3c4",
+      "wrong_property_is_survivor": true,
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.target_after_failed_charge",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "expected_property_code": "TARGET_AFTER_STOP",
+      "actual_property_code": "TARGET_AFTER_STOP",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/provenance/target_after_failed_charge.patch.json",
+      "patch_sha256": "f059cff2af81f2dfd4f03f3c4108c6a7278aaf9b2897f06f92efcb0e5883beb6",
+      "transcript_artifact": "reports/evidence/v17/mutations/provenance/target_after_failed_charge.txt",
+      "transcript_sha256": "72909423a81419e019af5cd0db757bb602c4015fc17e000ed193ab6787514700",
+      "wrong_property_is_survivor": true,
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.observation_after_failed_charge",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "expected_property_code": "OBSERVATION_AFTER_STOP",
+      "actual_property_code": "OBSERVATION_AFTER_STOP",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/provenance/observation_after_failed_charge.patch.json",
+      "patch_sha256": "a46844c196a7a9b63401e4cd888eb690713d5e4eb06ecc3493b2cc92e11b392d",
+      "transcript_artifact": "reports/evidence/v17/mutations/provenance/observation_after_failed_charge.txt",
+      "transcript_sha256": "8cb843e053a6248c1c411e6cfb66dd67c8cd89de9f47f7bf6646aa1e988e3d9a",
+      "wrong_property_is_survivor": true,
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.publication_after_failed_charge",
+      "inventory_row_id": "rust.projection_construction.projection_publish",
+      "expected_property_code": "PUBLICATION_AFTER_STOP",
+      "actual_property_code": "PUBLICATION_AFTER_STOP",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/provenance/publication_after_failed_charge.patch.json",
+      "patch_sha256": "25f17281f580b14c4c45baa4b8da1ad2bc97ef00eb926cf69f95f4dd4291bc7e",
+      "transcript_artifact": "reports/evidence/v17/mutations/provenance/publication_after_failed_charge.txt",
+      "transcript_sha256": "3ac3a2ec014de3a8294eae3e5c7f7c4b42b0aea1d8faddb795efd2155e245dad",
+      "wrong_property_is_survivor": true,
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "coverage.frontier_target_before_charge",
+      "inventory_row_id": "shared.frontier",
+      "expected_property_code": "CHARGE_AFTER_OPERATION",
+      "actual_property_code": "CHARGE_AFTER_OPERATION",
+      "compile_expected": "pass",
+      "compile_actual": "pass",
+      "patch_artifact": "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.patch.json",
+      "patch_sha256": "8215c25660e2bb841be9ede3211e2346cc2f89316ab978b3e8eb4e4fd2ede477",
+      "transcript_artifact": "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.txt",
+      "transcript_sha256": "9a0b30e8f99e3c567e681d0980a7a5fb98bed1fea22a48cd37b497744c562a7d",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "coverage.canonical_consumer_bypass",
+      "inventory_row_id": "shared.consumer",
+      "expected_property_code": "ALTERNATE_CONSUMER_BYPASS",
+      "actual_property_code": "ALTERNATE_CONSUMER_BYPASS",
+      "compile_expected": "fail",
+      "compile_actual": "fail",
+      "patch_artifact": "reports/evidence/v17/mutations/coverage/canonical_consumer_bypass.patch.json",
+      "patch_sha256": "55aa2886f8bdbaedc7928f9c5e3260cb4407f922396fd802590583784f3bcf19",
+      "transcript_artifact": "reports/evidence/v17/mutations/coverage/canonical_consumer_bypass.txt",
+      "transcript_sha256": "238830c5bad3472e3f7c7631666ab332eeb13677f90dd6ebf2c51046c73dd01b",
+      "restoration": "pass",
+      "survivor": false,
+      "result": "killed"
+    }
+  ],
+  "coverage_records": [
+    {
+      "coverage_id": "coverage.rust.projection_construction.member_count_read",
+      "inventory_row_ids": [
+        "rust.projection_construction.member_count_read"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.accepted_count_matches",
+      "inventory_row_ids": [
+        "rust.projection_construction.accepted_count_matches"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.next_member_pull",
+      "inventory_row_ids": [
+        "rust.projection_construction.next_member_pull"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.member_order_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.member_order_compare"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.accepted_member_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.accepted_member_lookup"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.candidate_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_lookup"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.candidate_identity_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_identity_compare"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.dependency_count_read",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependency_count_read"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.dependency_pull",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependency_pull"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.dependency_order_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependency_order_compare"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.wrapper_bypass",
+        "construction.DependencyOrderCompare.double_target",
+        "construction.DependencyOrderCompare.target_before_charge",
+        "construction.DependencyOrderCompare.same_family_site_swap"
+      ],
+      "property_codes": [
+        "ALTERNATE_CONSUMER_BYPASS",
+        "TARGET_AFTER_STOP",
+        "CHARGE_AFTER_OPERATION",
+        "SITE_ID_MISMATCH"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_wrapper_bypass.patch.json",
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_double_target.patch.json",
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json",
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_same_family_site_swap.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_wrapper_bypass.txt",
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_double_target.txt",
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt",
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_same_family_site_swap.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.accepted_dependency_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.accepted_dependency_lookup"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.candidate_dependency_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_dependency_insert"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.depended_on_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.depended_on_insert"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.dependant_bucket_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependant_bucket_insert"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.dependant_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependant_insert"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.candidate_ready_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_ready_compare"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.initial_ready_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.initial_ready_insert"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.remaining_dependencies_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.remaining_dependencies_insert"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.dependencies_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependencies_insert"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.ready_nonempty_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.ready_nonempty_compare"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.ready_candidate_pull",
+      "inventory_row_ids": [
+        "rust.projection_construction.ready_candidate_pull"
+      ],
+      "mutation_ids": [
+        "construction.ReadyCandidatePull.wrapper_bypass",
+        "construction.ReadyCandidatePull.double_target",
+        "construction.ReadyCandidatePull.target_before_charge",
+        "construction.ReadyCandidatePull.same_family_site_swap"
+      ],
+      "property_codes": [
+        "ALTERNATE_CONSUMER_BYPASS",
+        "TARGET_AFTER_STOP",
+        "CHARGE_AFTER_OPERATION",
+        "SITE_ID_MISMATCH"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_ReadyCandidatePull_wrapper_bypass.patch.json",
+        "reports/evidence/v17/mutations/construction/construction_ReadyCandidatePull_double_target.patch.json",
+        "reports/evidence/v17/mutations/construction/construction_ReadyCandidatePull_target_before_charge.patch.json",
+        "reports/evidence/v17/mutations/construction/construction_ReadyCandidatePull_same_family_site_swap.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_ReadyCandidatePull_wrapper_bypass.txt",
+        "reports/evidence/v17/mutations/construction/construction_ReadyCandidatePull_double_target.txt",
+        "reports/evidence/v17/mutations/construction/construction_ReadyCandidatePull_target_before_charge.txt",
+        "reports/evidence/v17/mutations/construction/construction_ReadyCandidatePull_same_family_site_swap.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.ready_candidate_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.ready_candidate_lookup"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.depended_on_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.depended_on_lookup"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.frontier_head_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.frontier_head_insert"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.actor_state_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.actor_state_lookup"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.expected_sequence_advance",
+      "inventory_row_ids": [
+        "rust.projection_construction.expected_sequence_advance"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.sequence_precedes_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.sequence_precedes_compare"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.sequence_matches_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.sequence_matches_compare"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.causal_next_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.causal_next_lookup"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.start_operation_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.start_operation_compare"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.candidate_empty_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_empty_compare"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.candidate_causal_advance",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_causal_advance"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.global_causal_maximum",
+      "inventory_row_ids": [
+        "rust.projection_construction.global_causal_maximum"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.actor_state_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.actor_state_insert"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.writer_contribution_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.writer_contribution_insert"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.causal_counter_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.causal_counter_insert"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.processed_count_advance",
+      "inventory_row_ids": [
+        "rust.projection_construction.processed_count_advance"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.dependants_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependants_lookup"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.child_count_read",
+      "inventory_row_ids": [
+        "rust.projection_construction.child_count_read"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.child_pull",
+      "inventory_row_ids": [
+        "rust.projection_construction.child_pull"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.remaining_dependency_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.remaining_dependency_lookup"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.remaining_dependency_decrement",
+      "inventory_row_ids": [
+        "rust.projection_construction.remaining_dependency_decrement"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.remaining_dependency_write",
+      "inventory_row_ids": [
+        "rust.projection_construction.remaining_dependency_write"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.prior_causal_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.prior_causal_lookup"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.propagated_causal_maximum",
+      "inventory_row_ids": [
+        "rust.projection_construction.propagated_causal_maximum"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.child_causal_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.child_causal_insert"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.child_ready_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.child_ready_compare"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.ready_dependant_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.ready_dependant_insert"
+      ],
+      "mutation_ids": [
+        "construction.ReadyDependantInsert.wrapper_bypass",
+        "construction.ReadyDependantInsert.double_target",
+        "construction.ReadyDependantInsert.target_before_charge",
+        "construction.ReadyDependantInsert.same_family_site_swap"
+      ],
+      "property_codes": [
+        "ALTERNATE_CONSUMER_BYPASS",
+        "TARGET_AFTER_STOP",
+        "CHARGE_AFTER_OPERATION",
+        "SITE_ID_MISMATCH"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_ReadyDependantInsert_wrapper_bypass.patch.json",
+        "reports/evidence/v17/mutations/construction/construction_ReadyDependantInsert_double_target.patch.json",
+        "reports/evidence/v17/mutations/construction/construction_ReadyDependantInsert_target_before_charge.patch.json",
+        "reports/evidence/v17/mutations/construction/construction_ReadyDependantInsert_same_family_site_swap.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_ReadyDependantInsert_wrapper_bypass.txt",
+        "reports/evidence/v17/mutations/construction/construction_ReadyDependantInsert_double_target.txt",
+        "reports/evidence/v17/mutations/construction/construction_ReadyDependantInsert_target_before_charge.txt",
+        "reports/evidence/v17/mutations/construction/construction_ReadyDependantInsert_same_family_site_swap.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.completion_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.completion_compare"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.projection_construction.projection_publish",
+      "inventory_row_ids": [
+        "rust.projection_construction.projection_publish"
+      ],
+      "mutation_ids": [
+        "construction.DependencyOrderCompare.target_before_charge",
+        "provenance.publication_after_failed_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION",
+        "PUBLICATION_AFTER_STOP"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.patch.json",
+        "reports/evidence/v17/mutations/provenance/publication_after_failed_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/construction/construction_DependencyOrderCompare_target_before_charge.txt",
+        "reports/evidence/v17/mutations/provenance/publication_after_failed_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.actor_sequence.actor_state_read",
+      "inventory_row_ids": [
+        "rust.actor_sequence.actor_state_read"
+      ],
+      "mutation_ids": [
+        "direct.ActorStateRead.charge_before_target",
+        "direct.ActorStateRead.charge_removal",
+        "direct.ActorStateRead.double_target",
+        "direct.ActorStateRead.observer_before_target",
+        "direct.ActorStateRead.target_after_failed_charge",
+        "provenance.typed_stop_collapse",
+        "provenance.cancellation_collapse",
+        "provenance.unexpected_error_replacement",
+        "provenance.target_after_failed_charge",
+        "provenance.observation_after_failed_charge",
+        "coverage.canonical_consumer_bypass"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION",
+        "CHARGE_AFTER_OPERATION",
+        "TARGET_AFTER_STOP",
+        "OBSERVATION_AFTER_STOP",
+        "TARGET_AFTER_STOP",
+        "TYPED_BUDGET_EXHAUSTED_IDENTITY",
+        "TYPED_CANCELLED_IDENTITY",
+        "UNEXPECTED_WORK_ERROR_IDENTITY",
+        "TARGET_AFTER_STOP",
+        "OBSERVATION_AFTER_STOP",
+        "ALTERNATE_CONSUMER_BYPASS"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/direct/direct_ActorStateRead_charge_before_target.patch.json",
+        "reports/evidence/v17/mutations/direct/direct_ActorStateRead_charge_removal.patch.json",
+        "reports/evidence/v17/mutations/direct/direct_ActorStateRead_double_target.patch.json",
+        "reports/evidence/v17/mutations/direct/direct_ActorStateRead_observer_before_target.patch.json",
+        "reports/evidence/v17/mutations/direct/direct_ActorStateRead_target_after_failed_charge.patch.json",
+        "reports/evidence/v17/mutations/provenance/typed_stop_collapse.patch.json",
+        "reports/evidence/v17/mutations/provenance/cancellation_collapse.patch.json",
+        "reports/evidence/v17/mutations/provenance/unexpected_error_replacement.patch.json",
+        "reports/evidence/v17/mutations/provenance/target_after_failed_charge.patch.json",
+        "reports/evidence/v17/mutations/provenance/observation_after_failed_charge.patch.json",
+        "reports/evidence/v17/mutations/coverage/canonical_consumer_bypass.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/direct/direct_ActorStateRead_charge_before_target.txt",
+        "reports/evidence/v17/mutations/direct/direct_ActorStateRead_charge_removal.txt",
+        "reports/evidence/v17/mutations/direct/direct_ActorStateRead_double_target.txt",
+        "reports/evidence/v17/mutations/direct/direct_ActorStateRead_observer_before_target.txt",
+        "reports/evidence/v17/mutations/direct/direct_ActorStateRead_target_after_failed_charge.txt",
+        "reports/evidence/v17/mutations/provenance/typed_stop_collapse.txt",
+        "reports/evidence/v17/mutations/provenance/cancellation_collapse.txt",
+        "reports/evidence/v17/mutations/provenance/unexpected_error_replacement.txt",
+        "reports/evidence/v17/mutations/provenance/target_after_failed_charge.txt",
+        "reports/evidence/v17/mutations/provenance/observation_after_failed_charge.txt",
+        "reports/evidence/v17/mutations/coverage/canonical_consumer_bypass.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.actor_sequence.predecessor_candidate_read",
+      "inventory_row_ids": [
+        "rust.actor_sequence.predecessor_candidate_read"
+      ],
+      "mutation_ids": [
+        "direct.PredecessorCandidateRead.charge_before_target"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/direct/direct_PredecessorCandidateRead_charge_before_target.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/direct/direct_PredecessorCandidateRead_charge_before_target.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.actor_sequence.actor_identity_decision",
+      "inventory_row_ids": [
+        "rust.actor_sequence.actor_identity_decision"
+      ],
+      "mutation_ids": [
+        "direct.ActorIdentityDecision.charge_before_target"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/direct/direct_ActorIdentityDecision_charge_before_target.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/direct/direct_ActorIdentityDecision_charge_before_target.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.actor_sequence.sequence_relation_decision",
+      "inventory_row_ids": [
+        "rust.actor_sequence.sequence_relation_decision"
+      ],
+      "mutation_ids": [
+        "direct.SequenceRelationDecision.charge_before_target"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/direct/direct_SequenceRelationDecision_charge_before_target.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/direct/direct_SequenceRelationDecision_charge_before_target.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.causal_counter.stored_counter_read",
+      "inventory_row_ids": [
+        "rust.causal_counter.stored_counter_read"
+      ],
+      "mutation_ids": [
+        "direct.StoredCounterRead.charge_before_target"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/direct/direct_StoredCounterRead_charge_before_target.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/direct/direct_StoredCounterRead_charge_before_target.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.causal_counter.expected_start_comparison",
+      "inventory_row_ids": [
+        "rust.causal_counter.expected_start_comparison"
+      ],
+      "mutation_ids": [
+        "direct.ExpectedStartComparison.charge_before_target"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/direct/direct_ExpectedStartComparison_charge_before_target.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/direct/direct_ExpectedStartComparison_charge_before_target.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.causal_counter.checked_advance",
+      "inventory_row_ids": [
+        "rust.causal_counter.checked_advance"
+      ],
+      "mutation_ids": [
+        "direct.CheckedAdvance.charge_before_target"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/direct/direct_CheckedAdvance_charge_before_target.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/direct/direct_CheckedAdvance_charge_before_target.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.frontier_comparison.candidate_kind_comparison",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.candidate_kind_comparison"
+      ],
+      "mutation_ids": [
+        "coverage.frontier_target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.frontier_comparison.candidate_count_read",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.candidate_count_read"
+      ],
+      "mutation_ids": [
+        "coverage.frontier_target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.frontier_comparison.projection_count_read",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.projection_count_read"
+      ],
+      "mutation_ids": [
+        "coverage.frontier_target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.frontier_comparison.base_count_read",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.base_count_read"
+      ],
+      "mutation_ids": [
+        "coverage.frontier_target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.frontier_comparison.candidate_pull",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.candidate_pull"
+      ],
+      "mutation_ids": [
+        "coverage.frontier_target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.frontier_comparison.candidate_order_compare",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.candidate_order_compare"
+      ],
+      "mutation_ids": [
+        "coverage.frontier_target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.frontier_comparison.projection_pull",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.projection_pull"
+      ],
+      "mutation_ids": [
+        "coverage.frontier_target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.frontier_comparison.base_pull",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.base_pull"
+      ],
+      "mutation_ids": [
+        "coverage.frontier_target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.frontier_comparison.base_accepted_lookup",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.base_accepted_lookup"
+      ],
+      "mutation_ids": [
+        "coverage.frontier_target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.frontier_comparison.expected_source_compare",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.expected_source_compare"
+      ],
+      "mutation_ids": [
+        "coverage.frontier_target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    },
+    {
+      "coverage_id": "coverage.rust.frontier_comparison.frontier_equality_compare",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.frontier_equality_compare"
+      ],
+      "mutation_ids": [
+        "coverage.frontier_target_before_charge"
+      ],
+      "property_codes": [
+        "CHARGE_AFTER_OPERATION"
+      ],
+      "patch_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.patch.json"
+      ],
+      "transcript_artifacts": [
+        "reports/evidence/v17/mutations/coverage/frontier_target_before_charge.txt"
+      ],
+      "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+      "mutation_candidate": "fd8bf182c91649d9c62ecbe860b5a81c9a8f7045",
+      "result": "pass"
+    }
+  ],
+  "reverse_coverage": [
+    {
+      "mutation_id": "construction.DependencyOrderCompare.wrapper_bypass",
+      "coverage_ids": [
+        "coverage.rust.projection_construction.dependency_order_compare"
+      ]
+    },
+    {
+      "mutation_id": "construction.DependencyOrderCompare.double_target",
+      "coverage_ids": [
+        "coverage.rust.projection_construction.dependency_order_compare"
+      ]
+    },
+    {
+      "mutation_id": "construction.DependencyOrderCompare.target_before_charge",
+      "coverage_ids": [
+        "coverage.rust.projection_construction.member_count_read",
+        "coverage.rust.projection_construction.accepted_count_matches",
+        "coverage.rust.projection_construction.next_member_pull",
+        "coverage.rust.projection_construction.member_order_compare",
+        "coverage.rust.projection_construction.accepted_member_lookup",
+        "coverage.rust.projection_construction.candidate_lookup",
+        "coverage.rust.projection_construction.candidate_identity_compare",
+        "coverage.rust.projection_construction.dependency_count_read",
+        "coverage.rust.projection_construction.dependency_pull",
+        "coverage.rust.projection_construction.dependency_order_compare",
+        "coverage.rust.projection_construction.accepted_dependency_lookup",
+        "coverage.rust.projection_construction.candidate_dependency_insert",
+        "coverage.rust.projection_construction.depended_on_insert",
+        "coverage.rust.projection_construction.dependant_bucket_insert",
+        "coverage.rust.projection_construction.dependant_insert",
+        "coverage.rust.projection_construction.candidate_ready_compare",
+        "coverage.rust.projection_construction.initial_ready_insert",
+        "coverage.rust.projection_construction.remaining_dependencies_insert",
+        "coverage.rust.projection_construction.dependencies_insert",
+        "coverage.rust.projection_construction.ready_nonempty_compare",
+        "coverage.rust.projection_construction.ready_candidate_lookup",
+        "coverage.rust.projection_construction.depended_on_lookup",
+        "coverage.rust.projection_construction.frontier_head_insert",
+        "coverage.rust.projection_construction.actor_state_lookup",
+        "coverage.rust.projection_construction.expected_sequence_advance",
+        "coverage.rust.projection_construction.sequence_precedes_compare",
+        "coverage.rust.projection_construction.sequence_matches_compare",
+        "coverage.rust.projection_construction.causal_next_lookup",
+        "coverage.rust.projection_construction.start_operation_compare",
+        "coverage.rust.projection_construction.candidate_empty_compare",
+        "coverage.rust.projection_construction.candidate_causal_advance",
+        "coverage.rust.projection_construction.global_causal_maximum",
+        "coverage.rust.projection_construction.actor_state_insert",
+        "coverage.rust.projection_construction.writer_contribution_insert",
+        "coverage.rust.projection_construction.causal_counter_insert",
+        "coverage.rust.projection_construction.processed_count_advance",
+        "coverage.rust.projection_construction.dependants_lookup",
+        "coverage.rust.projection_construction.child_count_read",
+        "coverage.rust.projection_construction.child_pull",
+        "coverage.rust.projection_construction.remaining_dependency_lookup",
+        "coverage.rust.projection_construction.remaining_dependency_decrement",
+        "coverage.rust.projection_construction.remaining_dependency_write",
+        "coverage.rust.projection_construction.prior_causal_lookup",
+        "coverage.rust.projection_construction.propagated_causal_maximum",
+        "coverage.rust.projection_construction.child_causal_insert",
+        "coverage.rust.projection_construction.child_ready_compare",
+        "coverage.rust.projection_construction.completion_compare",
+        "coverage.rust.projection_construction.projection_publish"
+      ]
+    },
+    {
+      "mutation_id": "construction.DependencyOrderCompare.same_family_site_swap",
+      "coverage_ids": [
+        "coverage.rust.projection_construction.dependency_order_compare"
+      ]
+    },
+    {
+      "mutation_id": "construction.ReadyCandidatePull.wrapper_bypass",
+      "coverage_ids": [
+        "coverage.rust.projection_construction.ready_candidate_pull"
+      ]
+    },
+    {
+      "mutation_id": "construction.ReadyCandidatePull.double_target",
+      "coverage_ids": [
+        "coverage.rust.projection_construction.ready_candidate_pull"
+      ]
+    },
+    {
+      "mutation_id": "construction.ReadyCandidatePull.target_before_charge",
+      "coverage_ids": [
+        "coverage.rust.projection_construction.ready_candidate_pull"
+      ]
+    },
+    {
+      "mutation_id": "construction.ReadyCandidatePull.same_family_site_swap",
+      "coverage_ids": [
+        "coverage.rust.projection_construction.ready_candidate_pull"
+      ]
+    },
+    {
+      "mutation_id": "construction.ReadyDependantInsert.wrapper_bypass",
+      "coverage_ids": [
+        "coverage.rust.projection_construction.ready_dependant_insert"
+      ]
+    },
+    {
+      "mutation_id": "construction.ReadyDependantInsert.double_target",
+      "coverage_ids": [
+        "coverage.rust.projection_construction.ready_dependant_insert"
+      ]
+    },
+    {
+      "mutation_id": "construction.ReadyDependantInsert.target_before_charge",
+      "coverage_ids": [
+        "coverage.rust.projection_construction.ready_dependant_insert"
+      ]
+    },
+    {
+      "mutation_id": "construction.ReadyDependantInsert.same_family_site_swap",
+      "coverage_ids": [
+        "coverage.rust.projection_construction.ready_dependant_insert"
+      ]
+    },
+    {
+      "mutation_id": "direct.ActorStateRead.charge_before_target",
+      "coverage_ids": [
+        "coverage.rust.actor_sequence.actor_state_read"
+      ]
+    },
+    {
+      "mutation_id": "direct.PredecessorCandidateRead.charge_before_target",
+      "coverage_ids": [
+        "coverage.rust.actor_sequence.predecessor_candidate_read"
+      ]
+    },
+    {
+      "mutation_id": "direct.ActorIdentityDecision.charge_before_target",
+      "coverage_ids": [
+        "coverage.rust.actor_sequence.actor_identity_decision"
+      ]
+    },
+    {
+      "mutation_id": "direct.SequenceRelationDecision.charge_before_target",
+      "coverage_ids": [
+        "coverage.rust.actor_sequence.sequence_relation_decision"
+      ]
+    },
+    {
+      "mutation_id": "direct.StoredCounterRead.charge_before_target",
+      "coverage_ids": [
+        "coverage.rust.causal_counter.stored_counter_read"
+      ]
+    },
+    {
+      "mutation_id": "direct.ExpectedStartComparison.charge_before_target",
+      "coverage_ids": [
+        "coverage.rust.causal_counter.expected_start_comparison"
+      ]
+    },
+    {
+      "mutation_id": "direct.CheckedAdvance.charge_before_target",
+      "coverage_ids": [
+        "coverage.rust.causal_counter.checked_advance"
+      ]
+    },
+    {
+      "mutation_id": "direct.ActorStateRead.charge_removal",
+      "coverage_ids": [
+        "coverage.rust.actor_sequence.actor_state_read"
+      ]
+    },
+    {
+      "mutation_id": "direct.ActorStateRead.double_target",
+      "coverage_ids": [
+        "coverage.rust.actor_sequence.actor_state_read"
+      ]
+    },
+    {
+      "mutation_id": "direct.ActorStateRead.observer_before_target",
+      "coverage_ids": [
+        "coverage.rust.actor_sequence.actor_state_read"
+      ]
+    },
+    {
+      "mutation_id": "direct.ActorStateRead.target_after_failed_charge",
+      "coverage_ids": [
+        "coverage.rust.actor_sequence.actor_state_read"
+      ]
+    },
+    {
+      "mutation_id": "provenance.typed_stop_collapse",
+      "coverage_ids": [
+        "coverage.rust.actor_sequence.actor_state_read"
+      ]
+    },
+    {
+      "mutation_id": "provenance.cancellation_collapse",
+      "coverage_ids": [
+        "coverage.rust.actor_sequence.actor_state_read"
+      ]
+    },
+    {
+      "mutation_id": "provenance.unexpected_error_replacement",
+      "coverage_ids": [
+        "coverage.rust.actor_sequence.actor_state_read"
+      ]
+    },
+    {
+      "mutation_id": "provenance.target_after_failed_charge",
+      "coverage_ids": [
+        "coverage.rust.actor_sequence.actor_state_read"
+      ]
+    },
+    {
+      "mutation_id": "provenance.observation_after_failed_charge",
+      "coverage_ids": [
+        "coverage.rust.actor_sequence.actor_state_read"
+      ]
+    },
+    {
+      "mutation_id": "provenance.publication_after_failed_charge",
+      "coverage_ids": [
+        "coverage.rust.projection_construction.projection_publish"
+      ]
+    },
+    {
+      "mutation_id": "coverage.frontier_target_before_charge",
+      "coverage_ids": [
+        "coverage.rust.frontier_comparison.candidate_kind_comparison",
+        "coverage.rust.frontier_comparison.candidate_count_read",
+        "coverage.rust.frontier_comparison.projection_count_read",
+        "coverage.rust.frontier_comparison.base_count_read",
+        "coverage.rust.frontier_comparison.candidate_pull",
+        "coverage.rust.frontier_comparison.candidate_order_compare",
+        "coverage.rust.frontier_comparison.projection_pull",
+        "coverage.rust.frontier_comparison.base_pull",
+        "coverage.rust.frontier_comparison.base_accepted_lookup",
+        "coverage.rust.frontier_comparison.expected_source_compare",
+        "coverage.rust.frontier_comparison.frontier_equality_compare"
+      ]
+    },
+    {
+      "mutation_id": "coverage.canonical_consumer_bypass",
+      "coverage_ids": [
+        "coverage.rust.actor_sequence.actor_state_read"
+      ]
+    }
+  ],
+  "counts": {
+    "inventory_rows": 68,
+    "mutations": 31,
+    "coverage_records": 68,
+    "uncovered_rows": 0,
+    "unreferenced_mutations": 0,
+    "survivors": 0
+  },
+  "result": "pass"
+}

@@ -1,0 +1,9 @@
+mutation_id=coverage.canonical_consumer_bypass
+source_path=crates/nostr_automerge/src/reference/epoch_engine.rs
+command=cargo check -p nostr_automerge --lib --locked
+compile_expected=fail
+compile_actual=fail
+expected_property=ALTERNATE_CONSUMER_BYPASS
+actual_property=ALTERNATE_CONSUMER_BYPASS
+survivor=false
+restoration=pass

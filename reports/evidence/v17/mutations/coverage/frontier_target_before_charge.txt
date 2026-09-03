@@ -1,0 +1,9 @@
+mutation_id=coverage.frontier_target_before_charge
+source_path=crates/nostr_automerge/src/graph/actor_state.rs
+command=cargo check -p nostr_automerge --lib --locked
+compile_expected=pass
+compile_actual=pass
+expected_property=CHARGE_AFTER_OPERATION
+actual_property=CHARGE_AFTER_OPERATION
+survivor=false
+restoration=pass
