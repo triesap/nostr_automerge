@@ -3662,6 +3662,89 @@ pub(crate) mod tests {
     }
 
     #[test]
+    #[ignore = "expected FINDING_116 defect until step_1473"]
+    fn v16_actor_relation_is_not_classified_outside_owned_stage() {
+        let source = include_str!("actor_state.rs");
+        let method = source
+            .split_once("pub(crate) fn actor_sequence_decision_metered")
+            .map(|item| item.1)
+            .and_then(|body| body.split_once("pub(crate) fn causal_next_decision_metered"))
+            .map_or("", |item| item.0);
+        assert!(!method.contains("match view.predecessor()"));
+        assert!(!method.contains("candidate.sequence < view.expected_sequence()"));
+        assert!(!method.contains("!view.sequence_matches()"));
+    }
+
+    #[test]
+    #[ignore = "expected FINDING_116 defect until step_1473"]
+    fn v16_actor_failure_performs_zero_causal_counter_work() {
+        let first = candidate(1, 1, 1, 1);
+        let closure = BTreeSet::from([first.change_hash]);
+        let changes = BTreeMap::from([(first.change_hash, first.clone())]);
+        let projection = initialize_actor_states_metered(&closure, &changes, |_| Ok::<_, ()>(()));
+        let Some(projection) = projection.ok() else {
+            return;
+        };
+        let mut invalid = candidate(1, 3, 99, 1);
+        invalid.change_hash = ChangeHash::from_bytes([3; 32]);
+        invalid.dependencies = Vec::new().into();
+
+        for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
+            let successful = Cell::new(0_usize);
+            let result = projection.actor_sequence_decision_metered(&invalid, |_| {
+                if successful.get() == 8 {
+                    Err(stopped)
+                } else {
+                    successful.set(successful.get().saturating_add(1));
+                    Ok(())
+                }
+            });
+            assert_eq!(
+                result,
+                Err(MeteredActorStateError::State(
+                    ActorStateError::MissingPredecessor
+                ))
+            );
+            assert!(successful.get() < 8);
+        }
+    }
+
+    #[test]
+    #[ignore = "expected FINDING_116 defect until step_1473"]
+    fn v16_candidate_start_counter_is_compared_once() {
+        let source = include_str!("actor_state.rs");
+        let actor = source
+            .split_once("fn candidate_metered_observed")
+            .map(|item| item.1)
+            .and_then(|body| body.split_once("pub(crate) fn dependencies"))
+            .map_or("", |item| item.0);
+        let causal = source
+            .split_once("fn causal_next_decision_metered_observed")
+            .map(|item| item.1)
+            .and_then(|body| body.split_once("pub(crate) fn candidate_metered"))
+            .map_or("", |item| item.0);
+        assert_eq!(
+            actor.matches("candidate.start_op ==").count()
+                + causal.matches("candidate.start_op ==").count(),
+            1
+        );
+    }
+
+    #[test]
+    #[ignore = "expected FINDING_116 defect until step_1473"]
+    fn v16_actor_semantic_comparison_has_an_immediate_charge_boundary() {
+        let source = include_str!("actor_state.rs");
+        let method = source
+            .split_once("pub(crate) fn actor_sequence_decision_metered")
+            .map(|item| item.1)
+            .and_then(|body| body.split_once("pub(crate) fn causal_next_decision_metered"))
+            .map_or("", |item| item.0);
+        assert!(method.contains("ActorIdentityDecision"));
+        assert!(method.contains("SequenceRelationDecision"));
+        assert!(!method.contains("let view = self.candidate_metered"));
+    }
+
+    #[test]
     fn projection_lookups_and_semantic_comparisons_are_immediately_charged() {
         let first = candidate(1, 1, 1, 1);
         let mut second = candidate(1, 2, 2, 1);

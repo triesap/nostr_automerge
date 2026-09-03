@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema","status","source_candidate","production_source_sha256","finding","requirements","cases","closure_evidence","result"],
+  "properties": {
+    "schema":{"const":"nostr_automerge.causal_projection_actor_reproductions.v16.v1"},
+    "status":{"const":"expected_defects_reproduced"},
+    "source_candidate":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "production_source_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "finding":{"const":"FINDING_116"},
+    "requirements":{"const":["NCRDT-RESOURCE-016","NCRDT-RESOURCE-017","NCRDT-RESOURCE-018"]},
+    "cases":{
+      "type":"array",
+      "minItems":4,
+      "maxItems":4,
+      "items":{
+        "type":"object",
+        "additionalProperties":false,
+        "required":["id","test","property","expected"],
+        "properties":{
+          "id":{"type":"string"},
+          "test":{"type":"string"},
+          "property":{"type":"string"},
+          "expected":{"const":"fail"}
+        }
+      }
+    },
+    "closure_evidence":{"const":false},
+    "result":{"const":"pass"}
+  }
+}

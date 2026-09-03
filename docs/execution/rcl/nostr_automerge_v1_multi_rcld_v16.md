@@ -1,6 +1,6 @@
 # Nostr Automerge causal-projection stage ownership v16
 
-Status: approved plan; implementation not started
+Status: approved plan; implementation active
 
 Initial cursor: RCLD 125 / `step_1469`
 

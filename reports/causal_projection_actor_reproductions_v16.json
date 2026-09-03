@@ -1,0 +1,16 @@
+{
+  "schema": "nostr_automerge.causal_projection_actor_reproductions.v16.v1",
+  "status": "expected_defects_reproduced",
+  "source_candidate": "16a8ca3e3d4fe7f4ead60ba5c32ebd018c703856",
+  "production_source_sha256": "3dc491772a2e052de0782b169445307633261dde6814b7c6a9cc823c1da4bb7e",
+  "finding": "FINDING_116",
+  "requirements": ["NCRDT-RESOURCE-016","NCRDT-RESOURCE-017","NCRDT-RESOURCE-018"],
+  "cases": [
+    {"id":"outer_actor_classification","test":"graph::actor_state::tests::v16_actor_relation_is_not_classified_outside_owned_stage","property":"UNWRAPPED_ACTOR_SEQUENCE_DECISION","expected":"fail"},
+    {"id":"early_causal_work","test":"graph::actor_state::tests::v16_actor_failure_performs_zero_causal_counter_work","property":"CAUSAL_STAGE_BEFORE_ACTOR_SUCCESS","expected":"fail"},
+    {"id":"duplicate_start_comparison","test":"graph::actor_state::tests::v16_candidate_start_counter_is_compared_once","property":"DUPLICATE_CAUSAL_START_COMPARISON","expected":"fail"},
+    {"id":"semantic_charge_boundary","test":"graph::actor_state::tests::v16_actor_semantic_comparison_has_an_immediate_charge_boundary","property":"CHARGE_AFTER_OPERATION","expected":"fail"}
+  ],
+  "closure_evidence": false,
+  "result": "pass"
+}

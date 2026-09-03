@@ -17,6 +17,7 @@ REPORT = ROOT / "reports/causal_projection_proof_catalog_v15.json"
 SCHEMA = ROOT / "tools/validation/causal_projection_proof_catalog_v15.schema.json"
 SOURCE = ROOT / "crates/nostr_automerge/src/graph/actor_state.rs"
 IMPLEMENTATION_CANDIDATE = "76edcdf12821060c4bc80179f009e0848463a533"
+PROOF_SOURCE_CANDIDATE = "af63c193f6588dc3768053fecdef16858a41a0e8"
 PROOF_SOURCE_SHA256 = "dd9f56235cf918ed91f4f4294aa56c1b4dba0c90b10278eb0c1a725520197727"
 TOP_FIELDS = ["schema","status","implementation_candidate","proof_source_sha256","row_count","proof_contract","rows","global_proofs","result_identity_sha256","result"]
 ROW_FIELDS = ["id","family","phase","counter","reachability_count","test","command","artifact_sha256","result"]
@@ -198,7 +199,14 @@ def main() -> int:
         return 0
     if args.write_report:
         REPORT.write_text(json.dumps(expected_report(), ensure_ascii=True, indent=2) + "\n")
-    report=json.loads(REPORT.read_text()); schema=json.loads(SCHEMA.read_text()); source=SOURCE.read_text()
+    committed = subprocess.run(
+        ["git", "show", f"{PROOF_SOURCE_CANDIDATE}:crates/nostr_automerge/src/graph/actor_state.rs"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    report=json.loads(REPORT.read_text()); schema=json.loads(SCHEMA.read_text()); source=committed.stdout
     validate(report,schema,source); mutations=self_test(report,schema,source)
     if args.run_proofs: run_proofs(report)
     print(f"PASS: causal projection proof catalog rows=43 mutations={mutations} proofs={43 if args.run_proofs else 0}")

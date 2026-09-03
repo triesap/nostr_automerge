@@ -361,7 +361,14 @@ def self_test(report: dict, schema: dict, source: str, catalog: dict) -> int:
 
 def main() -> int:
     parser=argparse.ArgumentParser(); parser.add_argument("--write-report",action="store_true"); args=parser.parse_args()
-    source=SOURCE.read_text(); catalog=json.loads(CATALOG.read_text()); expected=structural_report(source,catalog)
+    committed = subprocess.run(
+        ["git", "show", f"{SOURCE_CANDIDATE}:crates/nostr_automerge/src/graph/actor_state.rs"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    source=committed.stdout; catalog=json.loads(CATALOG.read_text()); expected=structural_report(source,catalog)
     if args.write_report:
         REPORT.write_text(json.dumps(expected,ensure_ascii=True,indent=2)+"\n")
     report=json.loads(REPORT.read_text()); schema=json.loads(SCHEMA.read_text())
