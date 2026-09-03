@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.github.io/nostr-automerge/schemas/causal_projection_final_inventory_v17.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema", "status", "authority", "row_contract", "rows", "counts", "source_candidate", "proof_candidate", "mutation_candidate", "source_sha256", "proof_report_sha256", "mutation_report_sha256", "self_candidate", "result_identity_sha256", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_final_inventory.v17.v1"}, "status": {"const": "final"},
+    "authority": {"const": "spec/causal_projection_contracts_v17.json"},
+    "row_contract": {"type": "array", "minItems": 20, "maxItems": 20},
+    "rows": {"type": "array", "minItems": 68, "maxItems": 68}, "counts": {"type": "object"},
+    "source_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "proof_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "mutation_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "proof_report_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "mutation_report_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "self_candidate": {"type": "null"}, "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "result": {"const": "pass"}
+  }
+}
