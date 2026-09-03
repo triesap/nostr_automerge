@@ -16,6 +16,7 @@ REPORT=ROOT/"reports/rust_conformance_v15.json"
 SCHEMA=ROOT/"tools/validation/rust_conformance_v15.schema.json"
 MANIFEST="fixtures/distribution/manifest_v15.json"
 SOURCE_CANDIDATE="10ce03d6a2cf9d7f0e1a006694f248713109a66d"
+EVIDENCE_CANDIDATE="e4d418249585adcabaf1a94f4e6a31a1ce0ffb55"
 FIELDS=["schema","status","source_candidate","manifest_sha256","manifest_lock_sha256","distribution_schema_sha256","lock_schema_sha256","generator_sha256","fixture_generator_sha256","runner_sha256","cargo_lock_sha256","rust_toolchain_sha256","scenario_count","fixture_rebinding_count","unaffected_fixture_count","process_count","delivery_order_count","canonical_process_bytes","canonical_output_sha256","serialized_run_sha256","deliberate_expectation_mismatch","result_identity_sha256"]
 SOURCES={
     "manifest_sha256":"fixtures/distribution/manifest_v15.json","manifest_lock_sha256":"fixtures/distribution/manifest_v15.lock.json",
@@ -37,7 +38,9 @@ def canonical(value: object) -> bytes:
 
 
 def digest(relative: str) -> str:
-    return hashlib.sha256((ROOT/relative).read_bytes()).hexdigest()
+    completed=subprocess.run(["git","show",f"{EVIDENCE_CANDIDATE}:{relative}"],cwd=ROOT,capture_output=True,check=False)
+    require(completed.returncode == 0,"source:evidence:"+relative)
+    return hashlib.sha256(completed.stdout).hexdigest()
 
 
 def expected_report() -> dict[str, object]:
@@ -56,6 +59,8 @@ def validate(report: object, schema: object) -> None:
     expected=expected_report(); require(type(report) is dict and list(report) == FIELDS and report == expected,"report:value")
     resolved=subprocess.run(["git","rev-parse","--verify",SOURCE_CANDIDATE+"^{commit}"],cwd=ROOT,capture_output=True,text=True,check=False)
     require(resolved.returncode == 0 and resolved.stdout.strip() == SOURCE_CANDIDATE,"report:candidate")
+    parent=subprocess.run(["git","rev-parse","--verify",EVIDENCE_CANDIDATE+"^"],cwd=ROOT,capture_output=True,text=True,check=False)
+    require(parent.returncode == 0 and parent.stdout.strip() == SOURCE_CANDIDATE,"report:evidence_parent")
     require(type(schema) is dict and schema.get("additionalProperties") is False and schema.get("required") == FIELDS and list(schema.get("properties",{})) == FIELDS,"schema:closed")
 
 

@@ -101,29 +101,27 @@ pub(crate) struct TrustedEpochProjection<'a> {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct TrustedEpochView {
-    branch_member: bool,
-    accepted_member: bool,
-    predecessor: Option<ChangeHash>,
-    predecessor_is_direct_dependency: bool,
-    actor_identity_matches: bool,
-    expected_sequence: u64,
-    sequence_matches: bool,
-    causal_next_op: u64,
-    expected_next_matches: bool,
+enum ActorDecisionOperation {
+    ActorStateRead,
+    PredecessorCandidateRead,
+    ActorIdentityDecision,
+    SequenceRelationDecision,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum ProjectionLookupOperation {
-    BranchMembership,
-    AcceptedMembership,
-    ActorState,
-    DirectDependency,
-    PredecessorCandidate,
-    ActorIdentityComparison,
-    ExpectedSequence,
-    SequenceComparison,
-    ExpectedNextComparison,
+enum ActorIdentityRelation {
+    NoPredecessor,
+    Matches,
+    InvalidPredecessor,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum SequenceRelation {
+    ValidGenesis,
+    ExpectedSuccessor,
+    Rollback,
+    GapOrMissingPredecessor,
+    ArithmeticOverflow,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -216,44 +214,6 @@ pub(crate) type AcceptedEpochStateParts = (
     BTreeMap<ActorId, ChangeHash>,
 );
 
-impl TrustedEpochView {
-    pub(crate) const fn is_branch_member(self) -> bool {
-        self.branch_member
-    }
-
-    pub(crate) const fn is_accepted_member(self) -> bool {
-        self.accepted_member
-    }
-
-    pub(crate) const fn predecessor(self) -> Option<ChangeHash> {
-        self.predecessor
-    }
-
-    pub(crate) const fn predecessor_is_direct_dependency(self) -> bool {
-        self.predecessor_is_direct_dependency
-    }
-
-    pub(crate) const fn actor_identity_matches(self) -> bool {
-        self.actor_identity_matches
-    }
-
-    pub(crate) const fn expected_sequence(self) -> u64 {
-        self.expected_sequence
-    }
-
-    pub(crate) const fn sequence_matches(self) -> bool {
-        self.sequence_matches
-    }
-
-    pub(crate) const fn causal_next_op(self) -> u64 {
-        self.causal_next_op
-    }
-
-    pub(crate) const fn expected_next_matches(self) -> bool {
-        self.expected_next_matches
-    }
-}
-
 impl TrustedEpochProjection<'_> {
     /// Applies the complete actor/counter/frontier decision in protocol order.
     ///
@@ -293,24 +253,76 @@ impl TrustedEpochProjection<'_> {
         candidate: &ChangeCandidate,
         charge: impl FnMut(WorkCounter) -> Result<(), E>,
     ) -> Result<(), MeteredActorStateError<E>> {
-        let view = self.candidate_metered(candidate, charge)?;
-        if !view.actor_identity_matches() {
+        self.actor_sequence_decision_metered_observed(candidate, charge, |_| {})
+    }
+
+    fn actor_sequence_decision_metered_observed<E>(
+        &self,
+        candidate: &ChangeCandidate,
+        mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
+        mut observed: impl FnMut(ActorDecisionOperation),
+    ) -> Result<(), MeteredActorStateError<E>> {
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+        let actor_state = self.actor_states.get(&candidate.actor).copied();
+        observed(ActorDecisionOperation::ActorStateRead);
+
+        let predecessor = if let Some(state) = actor_state {
+            charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+            let predecessor = self.branch_membership.get(&state.highest_change);
+            observed(ActorDecisionOperation::PredecessorCandidateRead);
+            predecessor
+        } else {
+            None
+        };
+
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+        let actor_relation = match (actor_state, predecessor) {
+            (None, None) => ActorIdentityRelation::NoPredecessor,
+            (Some(_), Some(value)) if value.actor == candidate.actor => {
+                ActorIdentityRelation::Matches
+            }
+            _ => ActorIdentityRelation::InvalidPredecessor,
+        };
+        observed(ActorDecisionOperation::ActorIdentityDecision);
+        if actor_relation == ActorIdentityRelation::InvalidPredecessor {
             return Err(MeteredActorStateError::State(
                 ActorStateError::MissingPredecessor,
             ));
         }
-        match view.predecessor() {
-            None if candidate.sequence == 1 => Ok(()),
-            None => Err(MeteredActorStateError::State(
+
+        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+        let sequence_relation = match (actor_relation, actor_state) {
+            (ActorIdentityRelation::NoPredecessor, None) if candidate.sequence == 1 => {
+                SequenceRelation::ValidGenesis
+            }
+            (ActorIdentityRelation::NoPredecessor, None) => {
+                SequenceRelation::GapOrMissingPredecessor
+            }
+            (ActorIdentityRelation::Matches, Some(state)) => {
+                match state.last_sequence.checked_add(1) {
+                    Some(expected) if candidate.sequence < expected => SequenceRelation::Rollback,
+                    Some(expected) if candidate.sequence == expected => {
+                        SequenceRelation::ExpectedSuccessor
+                    }
+                    Some(_) => SequenceRelation::GapOrMissingPredecessor,
+                    None => SequenceRelation::ArithmeticOverflow,
+                }
+            }
+            _ => SequenceRelation::GapOrMissingPredecessor,
+        };
+        observed(ActorDecisionOperation::SequenceRelationDecision);
+
+        match sequence_relation {
+            SequenceRelation::ValidGenesis | SequenceRelation::ExpectedSuccessor => Ok(()),
+            SequenceRelation::Rollback => Err(MeteredActorStateError::State(
+                ActorStateError::SequenceRollback,
+            )),
+            SequenceRelation::GapOrMissingPredecessor => Err(MeteredActorStateError::State(
                 ActorStateError::MissingPredecessor,
             )),
-            Some(_) if candidate.sequence < view.expected_sequence() => Err(
-                MeteredActorStateError::State(ActorStateError::SequenceRollback),
-            ),
-            Some(_) if !view.sequence_matches() => Err(MeteredActorStateError::State(
-                ActorStateError::MissingPredecessor,
-            )),
-            Some(_) => Ok(()),
+            SequenceRelation::ArithmeticOverflow => {
+                Err(MeteredActorStateError::State(ActorStateError::SequenceGap))
+            }
         }
     }
 
@@ -349,81 +361,6 @@ impl TrustedEpochProjection<'_> {
         advanced.ok_or(MeteredActorStateError::State(
             ActorStateError::OperationCounter,
         ))
-    }
-
-    pub(crate) fn candidate_metered<E>(
-        &self,
-        candidate: &ChangeCandidate,
-        charge: impl FnMut(WorkCounter) -> Result<(), E>,
-    ) -> Result<TrustedEpochView, MeteredActorStateError<E>> {
-        self.candidate_metered_observed(candidate, charge, |_| {})
-    }
-
-    fn candidate_metered_observed<E>(
-        &self,
-        candidate: &ChangeCandidate,
-        mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
-        mut observed: impl FnMut(ProjectionLookupOperation),
-    ) -> Result<TrustedEpochView, MeteredActorStateError<E>> {
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        let branch_member = self.branch_membership.contains_key(&candidate.change_hash);
-        observed(ProjectionLookupOperation::BranchMembership);
-
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        let accepted_member = self.accepted_closure.contains(&candidate.change_hash);
-        observed(ProjectionLookupOperation::AcceptedMembership);
-
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        let actor = self.actor_states.get(&candidate.actor).copied();
-        observed(ProjectionLookupOperation::ActorState);
-
-        let (predecessor, predecessor_is_direct_dependency, actor_identity_matches) =
-            if let Some(state) = actor {
-                charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
-                let direct = candidate
-                    .dependencies
-                    .binary_search(&state.highest_change)
-                    .is_ok();
-                observed(ProjectionLookupOperation::DirectDependency);
-
-                charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-                let predecessor_candidate = self.branch_membership.get(&state.highest_change);
-                observed(ProjectionLookupOperation::PredecessorCandidate);
-
-                charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-                let actor_matches = predecessor_candidate
-                    .is_some_and(|predecessor| predecessor.actor == candidate.actor);
-                observed(ProjectionLookupOperation::ActorIdentityComparison);
-                (Some(state.highest_change), direct, actor_matches)
-            } else {
-                (None, false, true)
-            };
-
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        let expected_sequence = actor.map_or(Some(1), |state| state.last_sequence.checked_add(1));
-        observed(ProjectionLookupOperation::ExpectedSequence);
-        let expected_sequence =
-            expected_sequence.ok_or(MeteredActorStateError::State(ActorStateError::SequenceGap))?;
-
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        let sequence_matches = candidate.sequence == expected_sequence;
-        observed(ProjectionLookupOperation::SequenceComparison);
-
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        let expected_next_matches = candidate.start_op == self.causal_next_op;
-        observed(ProjectionLookupOperation::ExpectedNextComparison);
-
-        Ok(TrustedEpochView {
-            branch_member,
-            accepted_member,
-            predecessor,
-            predecessor_is_direct_dependency,
-            actor_identity_matches,
-            expected_sequence,
-            sequence_matches,
-            causal_next_op: self.causal_next_op,
-            expected_next_matches,
-        })
     }
 
     pub(crate) fn dependencies(
@@ -1419,10 +1356,10 @@ pub(crate) mod tests {
     use std::rc::Rc;
 
     use super::{
-        ActorStateError, CandidateSemanticStage, CanonicalEpochProjectionSource,
-        CausalNextOperation, EpochActorState, EpochProjectionSource, FrontierComparisonOperation,
-        MeteredActorStateError, ProjectionBuildOperation, ProjectionLookupOperation,
-        ProjectionPublicationOperation, TrustedEpochProjection, TrustedEpochView,
+        ActorDecisionOperation, ActorStateError, CandidateSemanticStage,
+        CanonicalEpochProjectionSource, CausalNextOperation, EpochActorState,
+        EpochProjectionSource, FrontierComparisonOperation, MeteredActorStateError,
+        ProjectionBuildOperation, ProjectionPublicationOperation, TrustedEpochProjection,
         build_trusted_epoch_projection, build_trusted_epoch_projection_observed,
         initialize_actor_states, initialize_actor_states_metered,
         perform_projection_build_operation, reference_apply_empty_counter,
@@ -1431,6 +1368,148 @@ pub(crate) mod tests {
     use crate::graph::change_candidate::ChangeCandidate;
     use crate::{ActorId, ChangeHash, Completion, DevicePublicKey, EventId, WorkCounter};
     use std::collections::BTreeMap;
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    struct TrustedEpochView {
+        branch_member: bool,
+        accepted_member: bool,
+        predecessor: Option<ChangeHash>,
+        predecessor_is_direct_dependency: bool,
+        actor_identity_matches: bool,
+        expected_sequence: u64,
+        sequence_matches: bool,
+        causal_next_op: u64,
+        expected_next_matches: bool,
+    }
+
+    impl TrustedEpochView {
+        const fn is_branch_member(self) -> bool {
+            self.branch_member
+        }
+
+        const fn is_accepted_member(self) -> bool {
+            self.accepted_member
+        }
+
+        const fn predecessor(self) -> Option<ChangeHash> {
+            self.predecessor
+        }
+
+        const fn predecessor_is_direct_dependency(self) -> bool {
+            self.predecessor_is_direct_dependency
+        }
+
+        const fn actor_identity_matches(self) -> bool {
+            self.actor_identity_matches
+        }
+
+        const fn expected_sequence(self) -> u64 {
+            self.expected_sequence
+        }
+
+        const fn sequence_matches(self) -> bool {
+            self.sequence_matches
+        }
+
+        const fn causal_next_op(self) -> u64 {
+            self.causal_next_op
+        }
+
+        const fn expected_next_matches(self) -> bool {
+            self.expected_next_matches
+        }
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum ProjectionLookupOperation {
+        BranchMembership,
+        AcceptedMembership,
+        ActorState,
+        DirectDependency,
+        PredecessorCandidate,
+        ActorIdentityComparison,
+        ExpectedSequence,
+        SequenceComparison,
+        ExpectedNextComparison,
+    }
+
+    impl TrustedEpochProjection<'_> {
+        fn candidate_metered<E>(
+            &self,
+            candidate: &ChangeCandidate,
+            charge: impl FnMut(WorkCounter) -> Result<(), E>,
+        ) -> Result<TrustedEpochView, MeteredActorStateError<E>> {
+            self.candidate_metered_observed(candidate, charge, |_| {})
+        }
+
+        fn candidate_metered_observed<E>(
+            &self,
+            candidate: &ChangeCandidate,
+            mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
+            mut observed: impl FnMut(ProjectionLookupOperation),
+        ) -> Result<TrustedEpochView, MeteredActorStateError<E>> {
+            charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+            let branch_member = self.branch_membership.contains_key(&candidate.change_hash);
+            observed(ProjectionLookupOperation::BranchMembership);
+
+            charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+            let accepted_member = self.accepted_closure.contains(&candidate.change_hash);
+            observed(ProjectionLookupOperation::AcceptedMembership);
+
+            charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+            let actor = self.actor_states.get(&candidate.actor).copied();
+            observed(ProjectionLookupOperation::ActorState);
+
+            let (predecessor, predecessor_is_direct_dependency, actor_identity_matches) =
+                if let Some(state) = actor {
+                    charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;
+                    let direct = candidate
+                        .dependencies
+                        .binary_search(&state.highest_change)
+                        .is_ok();
+                    observed(ProjectionLookupOperation::DirectDependency);
+
+                    charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+                    let predecessor_candidate = self.branch_membership.get(&state.highest_change);
+                    observed(ProjectionLookupOperation::PredecessorCandidate);
+
+                    charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+                    let actor_matches = predecessor_candidate
+                        .is_some_and(|predecessor| predecessor.actor == candidate.actor);
+                    observed(ProjectionLookupOperation::ActorIdentityComparison);
+                    (Some(state.highest_change), direct, actor_matches)
+                } else {
+                    (None, false, true)
+                };
+
+            charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+            let expected_sequence =
+                actor.map_or(Some(1), |state| state.last_sequence.checked_add(1));
+            observed(ProjectionLookupOperation::ExpectedSequence);
+            let expected_sequence = expected_sequence
+                .ok_or(MeteredActorStateError::State(ActorStateError::SequenceGap))?;
+
+            charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+            let sequence_matches = candidate.sequence == expected_sequence;
+            observed(ProjectionLookupOperation::SequenceComparison);
+
+            charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
+            let expected_next_matches = candidate.start_op == self.causal_next_op;
+            observed(ProjectionLookupOperation::ExpectedNextComparison);
+
+            Ok(TrustedEpochView {
+                branch_member,
+                accepted_member,
+                predecessor,
+                predecessor_is_direct_dependency,
+                actor_identity_matches,
+                expected_sequence,
+                sequence_matches,
+                causal_next_op: self.causal_next_op,
+                expected_next_matches,
+            })
+        }
+    }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     enum SourceOperation {
@@ -1534,6 +1613,12 @@ pub(crate) mod tests {
     enum LookupTrace {
         Charge(WorkCounter),
         Operation(ProjectionLookupOperation),
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum ActorDecisionTrace {
+        Charge(WorkCounter),
+        Operation(ActorDecisionOperation),
     }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1803,6 +1888,38 @@ pub(crate) mod tests {
             },
             |operation| {
                 trace.borrow_mut().push(LookupTrace::Operation(operation));
+            },
+        );
+        let observed = trace.borrow().clone();
+        (result, observed)
+    }
+
+    fn observed_actor_sequence<E: Copy>(
+        projection: &TrustedEpochProjection<'_>,
+        candidate: &ChangeCandidate,
+        successful_limit: usize,
+        stopped: E,
+    ) -> (
+        Result<(), MeteredActorStateError<E>>,
+        Vec<ActorDecisionTrace>,
+    ) {
+        let trace = Rc::new(RefCell::new(Vec::new()));
+        let successful = Cell::new(0_usize);
+        let result = projection.actor_sequence_decision_metered_observed(
+            candidate,
+            |counter| {
+                trace.borrow_mut().push(ActorDecisionTrace::Charge(counter));
+                if successful.get() == successful_limit {
+                    Err(stopped)
+                } else {
+                    successful.set(successful.get().saturating_add(1));
+                    Ok(())
+                }
+            },
+            |operation| {
+                trace
+                    .borrow_mut()
+                    .push(ActorDecisionTrace::Operation(operation));
             },
         );
         let observed = trace.borrow().clone();
@@ -3049,7 +3166,7 @@ pub(crate) mod tests {
             Err(MeteredActorStateError::State(ActorStateError::SequenceGap))
         ));
 
-        const LOOKUP_CHARGES: usize = 9;
+        const LOOKUP_CHARGES: usize = 4;
         for successful in 0..LOOKUP_CHARGES {
             for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
                 let observed = Cell::new(0_usize);
@@ -3081,6 +3198,102 @@ pub(crate) mod tests {
             assert!(result.is_ok());
             assert_eq!(observed.get(), LOOKUP_CHARGES);
         }
+    }
+
+    #[test]
+    fn actor_identity_and_sequence_relations_are_owned_immediate_and_short_circuiting() {
+        let first = candidate(1, 1, 1, 1);
+        let closure = BTreeSet::from([first.change_hash]);
+        let changes = BTreeMap::from([(first.change_hash, first.clone())]);
+        let projection = initialize_actor_states_metered(&closure, &changes, |_| Ok::<_, ()>(()));
+        assert!(projection.is_ok());
+        let Some(projection) = projection.ok() else {
+            return;
+        };
+        let mut next = candidate(1, 2, 2, 1);
+        next.change_hash = ChangeHash::from_bytes([2; 32]);
+        next.dependencies = vec![first.change_hash].into();
+        let expected = [
+            ActorDecisionOperation::ActorStateRead,
+            ActorDecisionOperation::PredecessorCandidateRead,
+            ActorDecisionOperation::ActorIdentityDecision,
+            ActorDecisionOperation::SequenceRelationDecision,
+        ]
+        .into_iter()
+        .flat_map(|operation| {
+            [
+                ActorDecisionTrace::Charge(WorkCounter::GraphNode),
+                ActorDecisionTrace::Operation(operation),
+            ]
+        })
+        .collect::<Vec<_>>();
+        let (complete, trace) =
+            observed_actor_sequence(&projection, &next, usize::MAX, Completion::BudgetExhausted);
+        assert_eq!(complete, Ok(()));
+        assert_eq!(trace, expected);
+
+        for successful in 0..4 {
+            for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
+                let (result, trace) =
+                    observed_actor_sequence(&projection, &next, successful, stopped);
+                assert_eq!(result, Err(MeteredActorStateError::Work(stopped)));
+                assert_eq!(
+                    trace
+                        .iter()
+                        .filter(|entry| matches!(entry, ActorDecisionTrace::Operation(_)))
+                        .count(),
+                    successful
+                );
+            }
+        }
+        for allowance in [4, 5] {
+            let (result, trace) =
+                observed_actor_sequence(&projection, &next, allowance, Completion::BudgetExhausted);
+            assert_eq!(result, Ok(()));
+            assert_eq!(trace, expected);
+        }
+
+        let wrong_actor = candidate(2, 2, 2, 1);
+        let mut invalid_projection = focused_causal_consumer_projection(&changes, &closure, 2);
+        invalid_projection.actor_states = BTreeMap::from([(
+            wrong_actor.actor,
+            EpochActorState {
+                last_sequence: 1,
+                next_op: 2,
+                highest_change: first.change_hash,
+            },
+        )]);
+        let (invalid, invalid_trace) = observed_actor_sequence(
+            &invalid_projection,
+            &wrong_actor,
+            usize::MAX,
+            Completion::BudgetExhausted,
+        );
+        assert_eq!(
+            invalid,
+            Err(MeteredActorStateError::State(
+                ActorStateError::MissingPredecessor
+            ))
+        );
+        assert_eq!(
+            invalid_trace.last(),
+            Some(&ActorDecisionTrace::Operation(
+                ActorDecisionOperation::ActorIdentityDecision
+            ))
+        );
+        assert!(!invalid_trace.iter().any(|entry| matches!(
+            entry,
+            ActorDecisionTrace::Operation(ActorDecisionOperation::SequenceRelationDecision)
+        )));
+
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        struct Injected;
+        let injected = Injected;
+        let result = projection.actor_sequence_decision_metered(&next, |_| Err(&injected));
+        assert!(matches!(
+            result,
+            Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
+        ));
     }
 
     #[test]
@@ -3662,7 +3875,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[ignore = "expected FINDING_116 defect until step_1473"]
     fn v16_actor_relation_is_not_classified_outside_owned_stage() {
         let source = include_str!("actor_state.rs");
         let method = source
@@ -3676,7 +3888,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[ignore = "expected FINDING_116 defect until step_1473"]
     fn v16_actor_failure_performs_zero_causal_counter_work() {
         let first = candidate(1, 1, 1, 1);
         let closure = BTreeSet::from([first.change_hash]);
@@ -3707,21 +3918,37 @@ pub(crate) mod tests {
             );
             assert!(successful.get() < 8);
         }
+        let mut stages = Vec::new();
+        let result = projection.candidate_semantics_decision_metered_observed(
+            &invalid,
+            &BTreeSet::new(),
+            |_| Ok::<_, Completion>(()),
+            |stage| stages.push(stage),
+        );
+        assert_eq!(
+            result,
+            Err(MeteredActorStateError::State(
+                ActorStateError::MissingPredecessor
+            ))
+        );
+        assert!(stages.is_empty());
     }
 
     #[test]
-    #[ignore = "expected FINDING_116 defect until step_1473"]
     fn v16_candidate_start_counter_is_compared_once() {
         let source = include_str!("actor_state.rs");
-        let actor = source
-            .split_once("fn candidate_metered_observed")
+        let production = source
+            .split_once("#[cfg(test)]\npub(crate) mod tests")
+            .map_or(source, |item| item.0);
+        let actor = production
+            .split_once("fn actor_sequence_decision_metered_observed")
             .map(|item| item.1)
-            .and_then(|body| body.split_once("pub(crate) fn dependencies"))
+            .and_then(|body| body.split_once("pub(crate) fn causal_next_decision_metered"))
             .map_or("", |item| item.0);
-        let causal = source
+        let causal = production
             .split_once("fn causal_next_decision_metered_observed")
             .map(|item| item.1)
-            .and_then(|body| body.split_once("pub(crate) fn candidate_metered"))
+            .and_then(|body| body.split_once("pub(crate) fn dependencies"))
             .map_or("", |item| item.0);
         assert_eq!(
             actor.matches("candidate.start_op ==").count()
@@ -3731,7 +3958,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[ignore = "expected FINDING_116 defect until step_1473"]
     fn v16_actor_semantic_comparison_has_an_immediate_charge_boundary() {
         let source = include_str!("actor_state.rs");
         let method = source
@@ -4735,7 +4961,7 @@ pub(crate) mod tests {
     fn trusted_epoch_projection_shape_and_construction_are_sealed() {
         fn assert_shape<T: Send + Sync>() {}
         assert_shape::<super::TrustedEpochProjection<'static>>();
-        assert_shape::<super::TrustedEpochView>();
+        assert_shape::<TrustedEpochView>();
 
         let source = include_str!("actor_state.rs");
         let production = source

@@ -29,3 +29,13 @@ independent structural and identity validation, exact failure codes and
 mutation transcripts, and the leak-free private opaque boundary. The actor
 and counter-oracle reports remain expected-defect inputs rather than closure
 evidence. The next checkpoint is `step_1473`.
+
+`step_1473` replaces the production generic candidate-view path with owned
+actor-state, predecessor, actor-identity, and sequence-relation operations.
+An identity failure now stops before sequence classification, actor failure
+stops before causal and frontier stages, and successful candidates perform
+the sole start-counter comparison in the causal stage. Four historical defect
+tests are enabled and pass; the immutable reproduction report remains bound
+to its historical failing source. The v12 exact-budget predecessor moved by
+eight operations while ample semantic and conformance output remains
+unchanged. The next checkpoint is `step_1474`.

@@ -16,6 +16,7 @@ REPORT_PATH = ROOT / "reports/causal_projection_actor_reproductions_v16.json"
 SCHEMA_PATH = ROOT / "tools/validation/causal_projection_actor_reproductions_v16.schema.json"
 SOURCE_PATH = ROOT / "crates/nostr_automerge/src/graph/actor_state.rs"
 SOURCE_CANDIDATE = "16a8ca3e3d4fe7f4ead60ba5c32ebd018c703856"
+TEST_CANDIDATE = "dc5c93e94a1ee79cd9f10c5ae1c8cc74ebc331a9"
 PRODUCTION_SHA256 = "3dc491772a2e052de0782b169445307633261dde6814b7c6a9cc823c1da4bb7e"
 CASE_IDS = [
     "outer_actor_classification",
@@ -91,16 +92,6 @@ def validate(report: Any, schema: Any) -> None:
     cases = row["cases"]
     require(type(cases) is list and [case["id"] for case in cases] == CASE_IDS, "cases:order")
     require([case["property"] for case in cases] == PROPERTIES, "cases:properties")
-    source = SOURCE_PATH.read_text()
-    for index, case in enumerate(cases):
-        exact(case, ["id", "test", "property", "expected"], f"case:{index}")
-        require(case["expected"] == "fail", f"case:{index}:expected")
-        short_name = case["test"].rsplit("::", 1)[-1]
-        declaration = f'#[ignore = "expected FINDING_116 defect until step_1473"]\n    fn {short_name}()'
-        require(source.count(declaration) == 1, f"case:{index}:ignored_test")
-
-    current_prefix = production_prefix(SOURCE_PATH.read_bytes())
-    require(hashlib.sha256(current_prefix).hexdigest() == PRODUCTION_SHA256, "source:production_hash")
     candidate = subprocess.run(
         ["git", "show", f"{SOURCE_CANDIDATE}:crates/nostr_automerge/src/graph/actor_state.rs"],
         cwd=ROOT,
@@ -108,7 +99,30 @@ def validate(report: Any, schema: Any) -> None:
         check=False,
     )
     require(candidate.returncode == 0, "source:candidate")
-    require(production_prefix(candidate.stdout) == current_prefix, "source:production_unchanged")
+    test_candidate = subprocess.run(
+        ["git", "show", f"{TEST_CANDIDATE}:crates/nostr_automerge/src/graph/actor_state.rs"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    require(test_candidate.returncode == 0, "source:test_candidate")
+    historical_source = test_candidate.stdout
+    current_source = SOURCE_PATH.read_text()
+    for index, case in enumerate(cases):
+        exact(case, ["id", "test", "property", "expected"], f"case:{index}")
+        require(case["expected"] == "fail", f"case:{index}:expected")
+        short_name = case["test"].rsplit("::", 1)[-1]
+        declaration = f'#[ignore = "expected FINDING_116 defect until step_1473"]\n    fn {short_name}()'
+        require(historical_source.count(declaration) == 1, f"case:{index}:historical_test")
+        require(declaration not in current_source, f"case:{index}:current_still_ignored")
+        require(current_source.count(f"fn {short_name}()") == 1, f"case:{index}:current_test")
+
+    historical_prefix = production_prefix(candidate.stdout)
+    require(
+        hashlib.sha256(historical_prefix).hexdigest() == PRODUCTION_SHA256,
+        "source:production_hash",
+    )
 
     schema_row = exact(schema, ["$schema", "type", "additionalProperties", "required", "properties"], "schema")
     require(schema_row["type"] == "object" and schema_row["additionalProperties"] is False, "schema:closed")
@@ -123,6 +137,15 @@ def exact_failure(test: str, result: subprocess.CompletedProcess[str]) -> bool:
         result.returncode != 0
         and f"test {test} ... FAILED" in output
         and "0 passed; 1 failed; 0 ignored" in output
+    )
+
+
+def exact_success(test: str, result: subprocess.CompletedProcess[str]) -> bool:
+    output = result.stdout + result.stderr
+    return (
+        result.returncode == 0
+        and f"test {test} ... ok" in output
+        and "1 passed; 0 failed; 0 ignored" in output
     )
 
 
@@ -142,6 +165,23 @@ def run_cases(report: dict[str, Any]) -> None:
         ]
         result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, check=False)
         require(exact_failure(case["test"], result), "run:not_exact:" + case["id"])
+
+
+def run_fixed_cases(report: dict[str, Any]) -> None:
+    for case in report["cases"]:
+        command = [
+            "cargo",
+            "test",
+            "-p",
+            "nostr_automerge",
+            "--lib",
+            case["test"],
+            "--locked",
+            "--",
+            "--exact",
+        ]
+        result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, check=False)
+        require(exact_success(case["test"], result), "run:not_fixed:" + case["id"])
 
 
 def self_test(report: Any, schema: Any) -> int:
@@ -173,6 +213,7 @@ def self_test(report: Any, schema: Any) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run-open", action="store_true")
+    parser.add_argument("--run-fixed", action="store_true")
     args = parser.parse_args()
     report = load(REPORT_PATH)
     schema = load(SCHEMA_PATH)
@@ -180,6 +221,8 @@ def main() -> int:
     mutations = self_test(report, schema)
     if args.run_open:
         run_cases(report)
+    if args.run_fixed:
+        run_fixed_cases(report)
     print(
         "PASS: causal projection actor reproductions v16 "
         f"cases={len(report['cases'])} expected_failures={len(report['cases'])} mutations={mutations}"
