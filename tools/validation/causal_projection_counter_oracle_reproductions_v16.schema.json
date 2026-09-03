@@ -1,0 +1,26 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema","status","source_candidate","actor_reproduction_sha256","cases","closure_evidence","result"],
+  "properties":{
+    "schema":{"const":"nostr_automerge.causal_projection_counter_oracle_reproductions.v16.v1"},
+    "status":{"const":"expected_defects_reproduced"},
+    "source_candidate":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "actor_reproduction_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "cases":{
+      "type":"array","minItems":2,"maxItems":2,
+      "items":{
+        "type":"object","additionalProperties":false,
+        "required":["id","finding","abstract_operation","runtime_counter","evidence_counter","property","expected"],
+        "properties":{
+          "id":{"type":"string"},"finding":{"enum":["FINDING_117","FINDING_118"]},
+          "abstract_operation":{"type":"string"},"runtime_counter":{"type":["string","null"]},
+          "evidence_counter":{"type":["string","null"]},"property":{"type":"string"},"expected":{"type":"string"}
+        }
+      }
+    },
+    "closure_evidence":{"const":false},
+    "result":{"const":"pass"}
+  }
+}

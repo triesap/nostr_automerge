@@ -284,6 +284,10 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "scripts/reproduce_remediation_v16.py",
     ),
     (
+        "causal_projection_counter_oracle_reproductions_v16",
+        "scripts/validate_causal_projection_counter_oracle_reproductions_v16.py",
+    ),
+    (
         "causal_projection_operation_discovery_v15",
         "scripts/validate_causal_projection_operation_discovery_v15.py",
     ),

@@ -1,0 +1,12 @@
+{
+  "schema": "nostr_automerge.causal_projection_counter_oracle_reproductions.v16.v1",
+  "status": "expected_defects_reproduced",
+  "source_candidate": "dc5c93e94a1ee79cd9f10c5ae1c8cc74ebc331a9",
+  "actor_reproduction_sha256": "40b898367a3bdf376bca9f4863680b5bda0e1d409c1f5f895d80e6aacb165a45",
+  "cases": [
+    {"id":"dependency_count_counter","finding":"FINDING_117","abstract_operation":"DependencyCountRead","runtime_counter":"GraphNode","evidence_counter":"graph_edge","property":"COUNTER_MISMATCH","expected":"mismatch"},
+    {"id":"structural_identity_oracle","finding":"FINDING_118","abstract_operation":"OwnershipValidation","runtime_counter":null,"evidence_counter":null,"property":"IDENTITY_ONLY_FAILURE","expected":"structural_pass_identity_fail"}
+  ],
+  "closure_evidence": false,
+  "result": "pass"
+}

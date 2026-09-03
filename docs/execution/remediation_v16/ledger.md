@@ -13,3 +13,10 @@ failure can reach the eager causal start comparison, the start counter is
 compared twice, and budget or cancellation can stop at that premature work.
 The report is expected-defect evidence and does not claim closure. Production
 behavior is unchanged. The next checkpoint is `step_1471`.
+
+`step_1471` adds the separate counter and validation-oracle reproduction. It
+proves that Rust executes `DependencyCountRead` with `GraphNode` while the v15
+catalog declares `graph_edge`, and that a neutral comment passes the v15
+structural derivation but fails its combined validator only at `source:sha256`.
+The artifact depends on the committed actor report without rewriting it. Both
+defects remain open. The next checkpoint is `step_1472`.
