@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.github.io/nostr-automerge/schemas/causal_projection_inventory_v17.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "authority", "source_candidate", "source_path", "source_production_sha256", "row_contract", "rows", "counts", "derivation", "result_identity_sha256", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_inventory.v17.v1"},
+    "status": {"const": "provisional"},
+    "authority": {"const": "spec/causal_projection_contracts_v17.json"},
+    "source_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "source_path": {"type": "string"},
+    "source_production_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "row_contract": {"type": "array", "minItems": 17, "maxItems": 17, "items": {"type": "string"}},
+    "rows": {
+      "type": "array",
+      "minItems": 68,
+      "maxItems": 68,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "phase", "site_id", "operation", "language", "applicability", "source_path", "source_symbol", "owner_mode", "counter", "abstract_owner_class", "reachability_artifact", "proof_test", "proof_command", "proof_status", "source_candidate", "result"],
+        "properties": {
+          "id": {"type": "string"}, "phase": {"type": "string"}, "site_id": {"type": "string"},
+          "operation": {"type": "string"}, "language": {"const": "rust"}, "applicability": {"const": "required"},
+          "source_path": {"type": "string"}, "source_symbol": {"type": "string"}, "owner_mode": {"const": "item_metered"},
+          "counter": {"enum": ["graph_node", "graph_edge"]}, "abstract_owner_class": {"type": "string"},
+          "reachability_artifact": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "proof_test": {"type": "string"},
+          "proof_command": {"type": "string"}, "proof_status": {"const": "pending_actual_execution"},
+          "source_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "result": {"const": "pass"}
+        }
+      }
+    },
+    "counts": {"type": "object"}, "derivation": {"type": "object"},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "result": {"const": "pass"}
+  }
+}
