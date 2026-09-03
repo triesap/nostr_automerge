@@ -6025,6 +6025,115 @@ pub(crate) mod tests {
         ));
     }
 
+    fn assert_v17_actor_site(site: ActorDecisionSite) {
+        let (changes, closure, next) = actor_site_fixture();
+        let projection = initialize_actor_states_metered(&closure, &changes, |_| Ok::<_, ()>(()));
+        assert!(projection.is_ok(), "actor fixture");
+        let Ok(projection) = projection else { return };
+        let (_, trace) =
+            observed_actor_sequence(&projection, &next, usize::MAX, Completion::BudgetExhausted);
+        let mut charges = 0_usize;
+        let target = trace.iter().find_map(|entry| match entry {
+            ActorDecisionTrace::Attempt(_) => None,
+            ActorDecisionTrace::Charge(_) => {
+                charges = charges.saturating_add(1);
+                None
+            }
+            ActorDecisionTrace::Operation(descriptor) if descriptor.site == site => Some(charges),
+            ActorDecisionTrace::Operation(_) => None,
+        });
+        assert!(target.is_some_and(|value| value > 0));
+        let Some(target) = target else { return };
+        for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
+            let (result, blocked) =
+                observed_actor_sequence(&projection, &next, target - 1, stopped);
+            assert_eq!(result, Err(MeteredActorStateError::Work(stopped)));
+            assert!(!blocked.iter().any(
+                |entry| matches!(entry, ActorDecisionTrace::Operation(descriptor) if descriptor.site == site)
+            ));
+        }
+        for allowance in [target, target + 1] {
+            let (_, admitted) =
+                observed_actor_sequence(&projection, &next, allowance, Completion::BudgetExhausted);
+            assert!(admitted.iter().any(
+                |entry| matches!(entry, ActorDecisionTrace::Operation(descriptor) if descriptor.site == site)
+            ));
+        }
+        let injected = (site, "unexpected");
+        let (result, blocked) = observed_actor_sequence(&projection, &next, target - 1, &injected);
+        assert!(matches!(
+            result,
+            Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
+        ));
+        assert!(!blocked.iter().any(
+            |entry| matches!(entry, ActorDecisionTrace::Operation(descriptor) if descriptor.site == site)
+        ));
+        let descriptor = site.descriptor();
+        println!(
+            "v17-proof site={} family={:?} counter={:?} n_minus_one=blocked n=observed n_plus_one=observed cancellation=exact unexpected_error=exact target_after_stop=0 observation_after_stop=0",
+            descriptor.site_id, descriptor.operation, descriptor.counter,
+        );
+    }
+
+    fn assert_v17_causal_site(site: CausalNextSite) {
+        let branch = BTreeMap::new();
+        let closure = BTreeSet::new();
+        let projection = focused_causal_consumer_projection(&branch, &closure, 7);
+        let candidate = candidate(1, 1, 7, 1);
+        let (_, trace) = observed_causal_next(
+            &projection,
+            &candidate,
+            usize::MAX,
+            Completion::BudgetExhausted,
+        );
+        let mut charges = 0_usize;
+        let target = trace.iter().find_map(|entry| match entry {
+            CausalNextTrace::Attempt(_) => None,
+            CausalNextTrace::Charge(_) => {
+                charges = charges.saturating_add(1);
+                None
+            }
+            CausalNextTrace::Operation(descriptor) if descriptor.site == site => Some(charges),
+            CausalNextTrace::Operation(_) => None,
+        });
+        assert!(target.is_some_and(|value| value > 0));
+        let Some(target) = target else { return };
+        for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
+            let (result, blocked) =
+                observed_causal_next(&projection, &candidate, target - 1, stopped);
+            assert!(matches!(result, Err(MeteredActorStateError::Work(value)) if value == stopped));
+            assert!(!blocked.iter().any(
+                |entry| matches!(entry, CausalNextTrace::Operation(descriptor) if descriptor.site == site)
+            ));
+        }
+        for allowance in [target, target + 1] {
+            let (_, admitted) = observed_causal_next(
+                &projection,
+                &candidate,
+                allowance,
+                Completion::BudgetExhausted,
+            );
+            assert!(admitted.iter().any(
+                |entry| matches!(entry, CausalNextTrace::Operation(descriptor) if descriptor.site == site)
+            ));
+        }
+        let injected = (site, "unexpected");
+        let (result, blocked) =
+            observed_causal_next(&projection, &candidate, target - 1, &injected);
+        assert!(matches!(
+            result,
+            Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
+        ));
+        assert!(!blocked.iter().any(
+            |entry| matches!(entry, CausalNextTrace::Operation(descriptor) if descriptor.site == site)
+        ));
+        let descriptor = site.descriptor();
+        println!(
+            "v17-proof site={} family={:?} counter={:?} n_minus_one=blocked n=observed n_plus_one=observed cancellation=exact unexpected_error=exact target_after_stop=0 observation_after_stop=0",
+            descriptor.site_id, descriptor.operation, descriptor.counter,
+        );
+    }
+
     fn assert_v16_causal_site(
         family: CausalNextOperation,
         variant: &str,
@@ -6258,6 +6367,41 @@ pub(crate) mod tests {
             ProjectionPublish
         ),
     );
+
+    #[test]
+    fn causal_projection_v17_site_actor_sequence_actor_state_read() {
+        assert_v17_actor_site(ActorDecisionSite::ActorStateRead);
+    }
+
+    #[test]
+    fn causal_projection_v17_site_actor_sequence_predecessor_candidate_read() {
+        assert_v17_actor_site(ActorDecisionSite::PredecessorCandidateRead);
+    }
+
+    #[test]
+    fn causal_projection_v17_site_actor_sequence_actor_identity_decision() {
+        assert_v17_actor_site(ActorDecisionSite::ActorIdentityDecision);
+    }
+
+    #[test]
+    fn causal_projection_v17_site_actor_sequence_sequence_relation_decision() {
+        assert_v17_actor_site(ActorDecisionSite::SequenceRelationDecision);
+    }
+
+    #[test]
+    fn causal_projection_v17_site_causal_counter_stored_counter_read() {
+        assert_v17_causal_site(CausalNextSite::StoredCounterRead);
+    }
+
+    #[test]
+    fn causal_projection_v17_site_causal_counter_expected_start_comparison() {
+        assert_v17_causal_site(CausalNextSite::ExpectedStartComparison);
+    }
+
+    #[test]
+    fn causal_projection_v17_site_causal_counter_checked_advance() {
+        assert_v17_causal_site(CausalNextSite::CheckedAdvance);
+    }
 
     macro_rules! v16_projection_build_site_proofs {
         ($(($test:ident, $family:ident, $occurrence:expr, $counter:ident)),+ $(,)?) => {
