@@ -200,6 +200,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/causal_projection_structural_assurance_v16.schema.json",
     "reports/causal_projection_mutations_v16.json",
     "tools/validation/causal_projection_mutations_v16.schema.json",
+    "reports/causal_projection_rust_assurance_v16.json",
+    "tools/validation/causal_projection_rust_assurance_v16.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -351,6 +353,7 @@ PYTHON_SURFACES = (
     "scripts/validate_causal_projection_proof_catalog_v16.py",
     "scripts/validate_causal_projection_structural_assurance_v16.py",
     "scripts/run_causal_projection_mutations_v16.py",
+    "scripts/validate_causal_projection_rust_assurance_v16.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -601,6 +604,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/run_causal_projection_mutations_v16.py",
         "reports/causal_projection_mutations_v16.json",
         "tools/validation/causal_projection_mutations_v16.schema.json",
+        "scripts/validate_causal_projection_rust_assurance_v16.py",
+        "reports/causal_projection_rust_assurance_v16.json",
+        "tools/validation/causal_projection_rust_assurance_v16.schema.json",
         "ython3 scripts/validate_causal_projection_structural_assurance_v16.py --mode structural",
         "ython3 scripts/validate_causal_projection_structural_assurance_v16.py ",
         "argo test -p nostr_automerge --lib graph::actor_state::tests::projection_causal_maximum_is_charged_once_per_accepted_change --locked -- --exact",
@@ -1316,6 +1322,11 @@ def validate_source_surfaces() -> None:
                             value == "git"
                             or value.startswith(chr(99) + "argo test")
                         )
+                    )
+                    or (
+                        relative
+                        == "scripts/validate_causal_projection_rust_assurance_v16.py"
+                        and value in {"cargo", "git"}
                     )
                     or (
                         relative == "scripts/run_causal_projection_mutations_v16.py"

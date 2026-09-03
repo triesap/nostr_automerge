@@ -1,0 +1,102 @@
+{
+  "schema": "nostr_automerge.causal_projection_rust_assurance.v16.v1",
+  "status": "pass",
+  "candidate": "f52fdb9da47ccb6cb9dbc25c7b50954679d972b2",
+  "parent_candidate": "a696e41dbc6eb966b3657a47331f1ed072308a0b",
+  "source_bindings": [
+    {
+      "role": "actor",
+      "path": "crates/nostr_automerge/src/graph/actor_state.rs",
+      "sha256": "101e9502101d7c08d11dadafc46c679a084bfe88b8ea8614c79682565c3bbc0e"
+    },
+    {
+      "role": "control",
+      "path": "crates/nostr_automerge/src/control/epoch_state.rs",
+      "sha256": "734f70b9eed8f4281d719b0581153db1175bbe1401c11fcd0c0ef59b36343221"
+    },
+    {
+      "role": "consumer",
+      "path": "crates/nostr_automerge/src/reference/epoch_engine.rs",
+      "sha256": "0f7e948b27b6cc0d7b921596bde5bba496ef72fca43c6f4e485a68a1919c4315"
+    }
+  ],
+  "imports": {
+    "operation_inventory_sha256": "95562a0f032c6fcedf3e397f82f42072fa2179b30a48b7424e38c2bf39403de1",
+    "proof_catalog_sha256": "486dd1f70a108166a5380ef533f707f1aeebac6b4f5b2d1f20708a9a4e0f4ca0",
+    "structural_assurance_sha256": "fbd2b12e558f54d161dc778e189cccacd391c51db1ecbb89e0c58a535076c9d1",
+    "mutation_qualification_sha256": "d4d88b74b5de2f73a46f17436c62aa185519ecaed04bf5868dcf93ebd5e9e490",
+    "contracts_sha256": "bbd58073a7dab83d7a96541ba7d1a90e0ceb5c4876bb4533d7b196058b5e7b3b",
+    "distribution_manifest_v15_sha256": "862d0c1ad6ae14cd54b75f88742fa3b584c6c3981195bfeb988818403bee689c",
+    "distribution_lock_v15_sha256": "a511c18a540aaa5de5a7ef23cf6b360108a74e0e178c1e1025907ae880d78da7",
+    "rust_conformance_v15_sha256": "7ce224864f269e2818bc837d8252e6eeca8ee299a98604d4dd2d228d5c0ea6f5"
+  },
+  "counts": {
+    "operation_sites": 68,
+    "operation_families": 38,
+    "proofs": 68,
+    "property_codes": 10,
+    "behavioral_mutations": 13,
+    "mutation_survivors": 0,
+    "consumer_bindings": 3,
+    "scenarios": 204,
+    "signed_events": 771,
+    "delivery_orders": 8,
+    "processes": 2
+  },
+  "phase_counts": {
+    "projection_construction": 50,
+    "actor_sequence": 4,
+    "causal_counter_consumer": 3,
+    "frontier_comparison": 11
+  },
+  "property_codes": [
+    "UNWRAPPED_ACTOR_SEQUENCE_DECISION",
+    "CAUSAL_STAGE_BEFORE_ACTOR_SUCCESS",
+    "DUPLICATE_CAUSAL_START_COMPARISON",
+    "UNMETERED_FINAL_TRAVERSAL",
+    "STATE_WRITE_BEFORE_CHARGE",
+    "CHARGE_AFTER_OPERATION",
+    "POST_STOP_TARGET_WORK",
+    "PUBLICATION_BEFORE_CHARGE",
+    "ALTERNATE_CONSUMER_BYPASS",
+    "COUNTER_MISMATCH"
+  ],
+  "consumer_bindings": [
+    {
+      "source": "control.new_metered",
+      "target": "initialize_actor_states_metered",
+      "count": 1
+    },
+    {
+      "source": "reference.evaluate_epoch",
+      "target": "initialize_actor_states_metered",
+      "count": 1
+    },
+    {
+      "source": "reference.evaluate_epoch",
+      "target": "candidate_semantics_decision_metered",
+      "count": 1
+    }
+  ],
+  "conformance": {
+    "manifest": "fixtures/distribution/manifest_v15.json",
+    "canonical_process_bytes": "identical",
+    "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+    "serialized_run_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344"
+  },
+  "assurance": {
+    "inventory": "complete",
+    "proofs": "complete",
+    "structure": "complete",
+    "identity": "complete",
+    "mutations": "zero_survivors",
+    "consumers": "closed",
+    "dependency_count_counter": "GraphNode",
+    "applicability": "source_derived"
+  },
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result_identity_sha256": "1c7379e4ed1840433d08d7933f76f9d5f2481a711102bc34a82db6c12abfd901",
+  "result": "pass"
+}

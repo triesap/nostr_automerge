@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Nostr Automerge causal projection Rust assurance v16",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema","status","candidate","parent_candidate","source_bindings","imports","counts","phase_counts","property_codes","consumer_bindings","conformance","assurance","release_claimed","publication_claimed","remote_actions","result_identity_sha256","result"],
+  "properties": {
+    "schema": {"const":"nostr_automerge.causal_projection_rust_assurance.v16.v1"},
+    "status": {"const":"pass"},
+    "candidate": {"$ref":"#/$defs/commit"},
+    "parent_candidate": {"$ref":"#/$defs/commit"},
+    "source_bindings": {"type":"array","minItems":3,"maxItems":3,"items":{"$ref":"#/$defs/source_binding"}},
+    "imports": {"$ref":"#/$defs/imports"},
+    "counts": {"$ref":"#/$defs/counts"},
+    "phase_counts": {"$ref":"#/$defs/phases"},
+    "property_codes": {"type":"array","minItems":10,"maxItems":10,"uniqueItems":true,"items":{"type":"string"}},
+    "consumer_bindings": {"type":"array","minItems":3,"maxItems":3,"items":{"$ref":"#/$defs/consumer"}},
+    "conformance": {"$ref":"#/$defs/conformance"},
+    "assurance": {"$ref":"#/$defs/assurance"},
+    "release_claimed": {"const":false},
+    "publication_claimed": {"const":false},
+    "remote_actions": {"const":0},
+    "result_identity_sha256": {"$ref":"#/$defs/hash"},
+    "result": {"const":"pass"}
+  },
+  "$defs": {
+    "hash": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "commit": {"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "source_binding": {"type":"object","additionalProperties":false,"required":["role","path","sha256"],"properties":{"role":{"enum":["actor","control","consumer"]},"path":{"type":"string"},"sha256":{"$ref":"#/$defs/hash"}}},
+    "imports": {"type":"object","additionalProperties":false,"required":["operation_inventory_sha256","proof_catalog_sha256","structural_assurance_sha256","mutation_qualification_sha256","contracts_sha256","distribution_manifest_v15_sha256","distribution_lock_v15_sha256","rust_conformance_v15_sha256"],"properties":{"operation_inventory_sha256":{"$ref":"#/$defs/hash"},"proof_catalog_sha256":{"$ref":"#/$defs/hash"},"structural_assurance_sha256":{"$ref":"#/$defs/hash"},"mutation_qualification_sha256":{"$ref":"#/$defs/hash"},"contracts_sha256":{"$ref":"#/$defs/hash"},"distribution_manifest_v15_sha256":{"$ref":"#/$defs/hash"},"distribution_lock_v15_sha256":{"$ref":"#/$defs/hash"},"rust_conformance_v15_sha256":{"$ref":"#/$defs/hash"}}},
+    "counts": {"type":"object","additionalProperties":false,"required":["operation_sites","operation_families","proofs","property_codes","behavioral_mutations","mutation_survivors","consumer_bindings","scenarios","signed_events","delivery_orders","processes"],"properties":{"operation_sites":{"const":68},"operation_families":{"const":38},"proofs":{"const":68},"property_codes":{"const":10},"behavioral_mutations":{"const":13},"mutation_survivors":{"const":0},"consumer_bindings":{"const":3},"scenarios":{"const":204},"signed_events":{"const":771},"delivery_orders":{"const":8},"processes":{"const":2}}},
+    "phases": {"type":"object","additionalProperties":false,"required":["projection_construction","actor_sequence","causal_counter_consumer","frontier_comparison"],"properties":{"projection_construction":{"const":50},"actor_sequence":{"const":4},"causal_counter_consumer":{"const":3},"frontier_comparison":{"const":11}}},
+    "consumer": {"type":"object","additionalProperties":false,"required":["source","target","count"],"properties":{"source":{"type":"string"},"target":{"type":"string"},"count":{"const":1}}},
+    "conformance": {"type":"object","additionalProperties":false,"required":["manifest","canonical_process_bytes","canonical_output_sha256","serialized_run_sha256"],"properties":{"manifest":{"const":"fixtures/distribution/manifest_v15.json"},"canonical_process_bytes":{"const":"identical"},"canonical_output_sha256":{"$ref":"#/$defs/hash"},"serialized_run_sha256":{"$ref":"#/$defs/hash"}}},
+    "assurance": {"type":"object","additionalProperties":false,"required":["inventory","proofs","structure","identity","mutations","consumers","dependency_count_counter","applicability"],"properties":{"inventory":{"const":"complete"},"proofs":{"const":"complete"},"structure":{"const":"complete"},"identity":{"const":"complete"},"mutations":{"const":"zero_survivors"},"consumers":{"const":"closed"},"dependency_count_counter":{"const":"GraphNode"},"applicability":{"const":"source_derived"}}}
+  }
+}

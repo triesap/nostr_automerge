@@ -76,3 +76,13 @@ traversal, state writes, charge order, typed stops, post-stop work,
 publication, alternate consumers, repeated pulls, and the retained v15 causal
 maximum semantic mutation. A neutral identity-only edit is explicitly rejected
 as nonbehavioral evidence. The next checkpoint is `step_1478`.
+
+`step_1478` closes the Rust-only assurance boundary at committed candidate
+`f52fdb9da47ccb6cb9dbc25c7b50954679d972b2`. The canonical record binds all
+68 source sites across 38 operation families, all 68 focused proofs, ten
+structural failure codes, 13 compile-passing behavioral mutations with zero
+survivors, three exact consumer bindings, the corrected `GraphNode`
+dependency-count counter, and the immutable 204-scenario v15 conformance
+identity. Structural and identity validation remain independently invokable,
+and the complete assurance is now routed through repository, boundary,
+runtime, and specification gates. The next checkpoint is `step_1479`.

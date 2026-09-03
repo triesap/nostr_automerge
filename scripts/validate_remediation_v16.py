@@ -29,18 +29,17 @@ HOLDS = [
     "release",
     "remote_mutation",
 ]
-STEP_1477_SCOPE = [
+STEP_1478_SCOPE = [
     "docs/execution/remediation_v16/ledger.md",
     "implementation/runtime_ledger_v16.json",
-    "reports/causal_projection_mutations_v16.json",
+    "reports/causal_projection_rust_assurance_v16.json",
     "reports/spec_baseline.txt",
-    "scripts/run_causal_projection_mutations_v16.py",
-    "scripts/validate_causal_projection_structural_assurance_v16.py",
+    "scripts/validate_causal_projection_rust_assurance_v16.py",
     "scripts/validate_private_reproduction_boundary_v9.py",
     "scripts/validate_remediation_v16.py",
     "scripts/validate_spec.py",
     "tools/nostr_automerge_xtask/src/validate.rs",
-    "tools/validation/causal_projection_mutations_v16.schema.json",
+    "tools/validation/causal_projection_rust_assurance_v16.schema.json",
 ]
 HISTORICAL_V15 = {
     "authority_sha256": "063e70835b18cfda959b8153b3d5e9ade3b28fa5fb5b3311ce49c9474a157c46",
@@ -257,10 +256,10 @@ def validate(authority: Any, findings: Any, ledger: Any, schema: Any) -> None:
         l["cursor"]
         == {
             "active_rcld": 127,
-            "active_step": "step_1477",
-            "next_step": "step_1478",
+            "active_step": "step_1478",
+            "next_step": "step_1479",
             "last_planned_step": "step_1482",
-            "remaining_checkpoint_count": 5,
+            "remaining_checkpoint_count": 4,
             "remaining_rcld_count": 2,
         },
         "ledger:cursor",
@@ -277,9 +276,9 @@ def validate(authority: Any, findings: Any, ledger: Any, schema: Any) -> None:
         "ledger:independent",
     )
     require(
-        l["active_checkpoint_scope"] == STEP_1477_SCOPE
-        and STEP_1477_SCOPE == sorted(STEP_1477_SCOPE)
-        and all((ROOT / path).exists() for path in STEP_1477_SCOPE),
+        l["active_checkpoint_scope"] == STEP_1478_SCOPE
+        and STEP_1478_SCOPE == sorted(STEP_1478_SCOPE)
+        and all((ROOT / path).exists() for path in STEP_1478_SCOPE),
         "ledger:scope",
     )
     require(
@@ -339,6 +338,12 @@ def validate(authority: Any, findings: Any, ledger: Any, schema: Any) -> None:
                 "owner_class": "public",
                 "result": "pass",
             },
+            {
+                "step": "step_1477",
+                "candidate": "f52fdb9da47ccb6cb9dbc25c7b50954679d972b2",
+                "owner_class": "public",
+                "result": "pass",
+            },
         ],
         "ledger:predecessors",
     )
@@ -365,7 +370,7 @@ def self_test(authority: Any, findings: Any, ledger: Any, schema: Any) -> int:
         ("remote", "authority", lambda value: value.update(remote_actions=1)),
         ("finding_order", "findings", lambda value: value["findings"].reverse()),
         ("finding_status", "findings", lambda value: value["findings"][0].update(status="closed")),
-        ("cursor", "ledger", lambda value: value["cursor"].update(next_step="step_1479")),
+        ("cursor", "ledger", lambda value: value["cursor"].update(next_step="step_1480")),
         ("private_scope", "ledger", lambda value: value["independent"].update(target_scope_policy="whole_worktree")),
         ("scope", "ledger", lambda value: value["active_checkpoint_scope"].pop()),
         ("predecessor", "ledger", lambda value: value["predecessors"][0].update(candidate="0" * 40)),
@@ -397,7 +402,7 @@ def main() -> int:
     validate(authority, findings, ledger, schema)
     mutations = self_test(authority, findings, ledger, schema)
     print(
-        "PASS: remediation-v16 active=step_1477 next=step_1478 "
+        "PASS: remediation-v16 active=step_1478 next=step_1479 "
         f"mutations={mutations} remote_actions=0"
     )
     return 0
