@@ -311,6 +311,83 @@ enum FrontierComparisonOperation {
     FrontierEqualityComparison,
 }
 
+macro_rules! frontier_comparison_sites {
+    ($( $site:ident => ($operation:ident, $counter:ident) ),+ $(,)?) => {
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        enum FrontierComparisonSite {
+            $( $site, )+
+        }
+
+        impl FrontierComparisonSite {
+            const fn descriptor(self) -> FrontierComparisonDescriptor {
+                FrontierComparisonDescriptor {
+                    site: self,
+                    site_id: match self {
+                        $( Self::$site => stringify!($site), )+
+                    },
+                    phase: "frontier_comparison",
+                    operation: match self {
+                        $( Self::$site => FrontierComparisonOperation::$operation, )+
+                    },
+                    counter: match self {
+                        $( Self::$site => WorkCounter::$counter, )+
+                    },
+                    abstract_owner_class: "direct_operation",
+                    applicability: "public_rust",
+                }
+            }
+
+            #[cfg(test)]
+            const fn all() -> &'static [Self] {
+                &[$( Self::$site, )+]
+            }
+        }
+    };
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct FrontierComparisonDescriptor {
+    site: FrontierComparisonSite,
+    site_id: &'static str,
+    phase: &'static str,
+    operation: FrontierComparisonOperation,
+    counter: WorkCounter,
+    abstract_owner_class: &'static str,
+    applicability: &'static str,
+}
+
+impl FrontierComparisonDescriptor {
+    const fn operation(self) -> FrontierComparisonOperation {
+        self.operation
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum FrontierComparisonObservationKind {
+    ChargeAttempt,
+    TargetCompleted,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct FrontierComparisonObservation {
+    descriptor: FrontierComparisonDescriptor,
+    kind: FrontierComparisonObservationKind,
+}
+
+frontier_comparison_sites! {
+    CandidateKindComparison => (CandidateKindComparison, GraphNode),
+    CandidateCountRead => (CandidateCount, GraphNode),
+    ProjectionCountRead => (ProjectionCount, GraphNode),
+    BaseCountRead => (BaseCount, GraphNode),
+    CandidatePull => (CandidatePull, GraphEdge),
+    CandidateOrderCompare => (CandidateOrderComparison, GraphEdge),
+    ProjectionPull => (ProjectionPull, GraphNode),
+    BasePull => (BasePull, GraphNode),
+    BaseAcceptedLookup => (BaseAcceptedLookup, GraphNode),
+    ExpectedSourceCompare => (ExpectedSourceComparison, GraphNode),
+    FrontierEqualityCompare => (FrontierEqualityComparison, GraphEdge),
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum CandidateSemanticStage {
     ActorSequence,
@@ -733,13 +810,12 @@ impl TrustedEpochProjection<'_> {
         candidate: &ChangeCandidate,
         base_frontier: &BTreeSet<ChangeHash>,
         mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
-        mut observed: impl FnMut(FrontierComparisonOperation),
+        mut observed: impl FnMut(FrontierComparisonObservation),
     ) -> Result<(), MeteredActorStateError<E>> {
         let nonempty = metered_frontier_operation(
+            FrontierComparisonSite::CandidateKindComparison,
             &mut charge,
             &mut observed,
-            WorkCounter::GraphNode,
-            FrontierComparisonOperation::CandidateKindComparison,
             || candidate.operation_count != 0,
         )?;
         if nonempty {
@@ -747,24 +823,21 @@ impl TrustedEpochProjection<'_> {
         }
 
         let dependency_count = metered_frontier_operation(
+            FrontierComparisonSite::CandidateCountRead,
             &mut charge,
             &mut observed,
-            WorkCounter::GraphNode,
-            FrontierComparisonOperation::CandidateCount,
             || candidate.dependencies.len(),
         )?;
         let projection_count = metered_frontier_operation(
+            FrontierComparisonSite::ProjectionCountRead,
             &mut charge,
             &mut observed,
-            WorkCounter::GraphNode,
-            FrontierComparisonOperation::ProjectionCount,
             || self.frontier_heads.len(),
         )?;
         let base_count = metered_frontier_operation(
+            FrontierComparisonSite::BaseCountRead,
             &mut charge,
             &mut observed,
-            WorkCounter::GraphNode,
-            FrontierComparisonOperation::BaseCount,
             || base_frontier.len(),
         )?;
 
@@ -781,10 +854,9 @@ impl TrustedEpochProjection<'_> {
         loop {
             if dependency.is_none() && dependency_index < dependency_count {
                 let pulled = metered_frontier_operation(
+                    FrontierComparisonSite::CandidatePull,
                     &mut charge,
                     &mut observed,
-                    WorkCounter::GraphEdge,
-                    FrontierComparisonOperation::CandidatePull,
                     || candidate.dependencies.get(dependency_index).copied(),
                 )?
                 .ok_or(MeteredActorStateError::State(
@@ -793,10 +865,9 @@ impl TrustedEpochProjection<'_> {
                 dependency_index = dependency_index.saturating_add(1);
                 if let Some(previous) = previous_dependency {
                     let ordered = metered_frontier_operation(
+                        FrontierComparisonSite::CandidateOrderCompare,
                         &mut charge,
                         &mut observed,
-                        WorkCounter::GraphEdge,
-                        FrontierComparisonOperation::CandidateOrderComparison,
                         || previous < pulled,
                     )?;
                     if !ordered {
@@ -812,10 +883,9 @@ impl TrustedEpochProjection<'_> {
             if projection.is_none() && projection_remaining > 0 {
                 projection = Some(
                     metered_frontier_operation(
+                        FrontierComparisonSite::ProjectionPull,
                         &mut charge,
                         &mut observed,
-                        WorkCounter::GraphNode,
-                        FrontierComparisonOperation::ProjectionPull,
                         || projection_iter.next().copied(),
                     )?
                     .ok_or(MeteredActorStateError::State(
@@ -827,10 +897,9 @@ impl TrustedEpochProjection<'_> {
 
             while base.is_none() && base_remaining > 0 {
                 let pulled = metered_frontier_operation(
+                    FrontierComparisonSite::BasePull,
                     &mut charge,
                     &mut observed,
-                    WorkCounter::GraphNode,
-                    FrontierComparisonOperation::BasePull,
                     || base_iter.next().copied(),
                 )?
                 .ok_or(MeteredActorStateError::State(
@@ -838,10 +907,9 @@ impl TrustedEpochProjection<'_> {
                 ))?;
                 base_remaining = base_remaining.saturating_sub(1);
                 let accepted = metered_frontier_operation(
+                    FrontierComparisonSite::BaseAcceptedLookup,
                     &mut charge,
                     &mut observed,
-                    WorkCounter::GraphNode,
-                    FrontierComparisonOperation::BaseAcceptedLookup,
                     || self.accepted_closure.contains(&pulled),
                 )?;
                 if !accepted {
@@ -852,10 +920,9 @@ impl TrustedEpochProjection<'_> {
             let (expected, consume_projection, consume_base) = match (projection, base) {
                 (Some(projected), Some(base_head)) => {
                     let ordering = metered_frontier_operation(
+                        FrontierComparisonSite::ExpectedSourceCompare,
                         &mut charge,
                         &mut observed,
-                        WorkCounter::GraphNode,
-                        FrontierComparisonOperation::ExpectedSourceComparison,
                         || projected.cmp(&base_head),
                     )?;
                     match ordering {
@@ -877,10 +944,9 @@ impl TrustedEpochProjection<'_> {
                 (None, None) => return Ok(()),
                 (Some(actual), Some(expected)) => {
                     let equal = metered_frontier_operation(
+                        FrontierComparisonSite::FrontierEqualityCompare,
                         &mut charge,
                         &mut observed,
-                        WorkCounter::GraphEdge,
-                        FrontierComparisonOperation::FrontierEqualityComparison,
                         || actual == expected,
                     )?;
                     if !equal {
@@ -916,15 +982,22 @@ impl TrustedEpochProjection<'_> {
 }
 
 fn metered_frontier_operation<E, T>(
+    site: FrontierComparisonSite,
     charge: &mut impl FnMut(WorkCounter) -> Result<(), E>,
-    observed: &mut impl FnMut(FrontierComparisonOperation),
-    counter: WorkCounter,
-    operation: FrontierComparisonOperation,
+    observed: &mut impl FnMut(FrontierComparisonObservation),
     target: impl FnOnce() -> T,
 ) -> Result<T, MeteredActorStateError<E>> {
-    charge(counter).map_err(MeteredActorStateError::Work)?;
+    let descriptor = site.descriptor();
+    observed(FrontierComparisonObservation {
+        descriptor,
+        kind: FrontierComparisonObservationKind::ChargeAttempt,
+    });
+    charge(descriptor.counter).map_err(MeteredActorStateError::Work)?;
     let result = target();
-    observed(operation);
+    observed(FrontierComparisonObservation {
+        descriptor,
+        kind: FrontierComparisonObservationKind::TargetCompleted,
+    });
     Ok(result)
 }
 
@@ -1639,7 +1712,8 @@ pub(crate) mod tests {
         ActorDecisionDescriptor, ActorDecisionObservationKind, ActorDecisionOperation,
         ActorDecisionSite, ActorStateError, CandidateSemanticStage, CanonicalEpochProjectionSource,
         CausalNextDescriptor, CausalNextObservationKind, CausalNextOperation, CausalNextSite,
-        EpochActorState, EpochProjectionSource, FrontierComparisonOperation,
+        EpochActorState, EpochProjectionSource, FrontierComparisonDescriptor,
+        FrontierComparisonObservationKind, FrontierComparisonOperation, FrontierComparisonSite,
         MeteredActorStateError, ProjectionBuildDescriptor, ProjectionBuildObservation,
         ProjectionBuildObservationKind, ProjectionBuildOperation, ProjectionBuildSite,
         ProjectionPublicationOperation, TrustedEpochProjection, build_trusted_epoch_projection,
@@ -1922,8 +1996,9 @@ pub(crate) mod tests {
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     enum FrontierTrace {
+        Attempt(FrontierComparisonDescriptor),
         Charge(WorkCounter),
-        Operation(FrontierComparisonOperation),
+        Operation(FrontierComparisonDescriptor),
     }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -2279,8 +2354,15 @@ pub(crate) mod tests {
                     Ok(())
                 }
             },
-            |operation| {
-                trace.borrow_mut().push(FrontierTrace::Operation(operation));
+            |observation| {
+                trace.borrow_mut().push(match observation.kind {
+                    FrontierComparisonObservationKind::ChargeAttempt => {
+                        FrontierTrace::Attempt(observation.descriptor)
+                    }
+                    FrontierComparisonObservationKind::TargetCompleted => {
+                        FrontierTrace::Operation(observation.descriptor)
+                    }
+                });
             },
         );
         let observed = trace.borrow().clone();
@@ -2704,7 +2786,7 @@ pub(crate) mod tests {
         ));
     }
 
-    fn assert_frontier_family_exact(family: FrontierComparisonOperation) {
+    fn assert_frontier_site_exact(site: FrontierComparisonSite) {
         let projected_first = ChangeHash::from_bytes([10; 32]);
         let base_only = ChangeHash::from_bytes([20; 32]);
         let projected_last = ChangeHash::from_bytes([30; 32]);
@@ -2733,9 +2815,11 @@ pub(crate) mod tests {
         let target = trace
             .iter()
             .filter(|entry| matches!(entry, FrontierTrace::Operation(_)))
-            .position(|entry| matches!(entry, FrontierTrace::Operation(value) if *value == family))
+            .position(
+                |entry| matches!(entry, FrontierTrace::Operation(value) if value.site == site),
+            )
             .map(|index| index + 1);
-        assert!(target.is_some(), "missing frontier operation {family:?}");
+        assert!(target.is_some(), "missing frontier site {site:?}");
         let Some(target) = target else { return };
         for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
             let (blocked, blocked_trace) =
@@ -2744,11 +2828,9 @@ pub(crate) mod tests {
                 blocked,
                 Err(MeteredActorStateError::Work(value)) if value == stopped
             ));
-            assert!(
-                !blocked_trace.iter().any(
-                    |entry| matches!(entry, FrontierTrace::Operation(value) if *value == family)
-                )
-            );
+            assert!(!blocked_trace.iter().any(
+                |entry| matches!(entry, FrontierTrace::Operation(value) if value.site == site)
+            ));
         }
         for allowance in [target, target + 1] {
             let (_, admitted_trace) = observed_empty_frontier(
@@ -2758,19 +2840,32 @@ pub(crate) mod tests {
                 allowance,
                 Completion::BudgetExhausted,
             );
-            assert!(
-                admitted_trace.iter().any(
-                    |entry| matches!(entry, FrontierTrace::Operation(value) if *value == family)
-                )
-            );
+            assert!(admitted_trace.iter().any(
+                |entry| matches!(entry, FrontierTrace::Operation(value) if value.site == site)
+            ));
         }
-        let injected = family;
+        let injected = (site, "unexpected");
         let (failed, _) =
             observed_empty_frontier(&projection, &exact, &base_frontier, target - 1, &injected);
         assert!(matches!(
             failed,
             Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
         ));
+        let descriptor = site.descriptor();
+        println!(
+            "v17-proof site={} family={:?} counter={:?} n_minus_one=blocked n=observed n_plus_one=observed cancellation=exact unexpected_error=exact target_after_stop=0 observation_after_stop=0",
+            descriptor.site_id, descriptor.operation, descriptor.counter,
+        );
+    }
+
+    fn assert_frontier_family_exact(family: FrontierComparisonOperation) {
+        let site = FrontierComparisonSite::all()
+            .iter()
+            .copied()
+            .find(|site| site.descriptor().operation == family);
+        assert!(site.is_some());
+        let Some(site) = site else { return };
+        assert_frontier_site_exact(site);
     }
 
     macro_rules! frontier_family_proofs {
@@ -2822,6 +2917,61 @@ pub(crate) mod tests {
         (
             causal_projection_proof_frontier_frontier_equality_comparison,
             FrontierEqualityComparison
+        ),
+    );
+
+    macro_rules! v17_frontier_site_proofs {
+        ($(($test:ident, $site:ident)),+ $(,)?) => {
+            $(
+                #[test]
+                fn $test() {
+                    assert_frontier_site_exact(FrontierComparisonSite::$site);
+                }
+            )+
+        };
+    }
+
+    v17_frontier_site_proofs!(
+        (
+            causal_projection_v17_site_frontier_candidate_kind_comparison,
+            CandidateKindComparison
+        ),
+        (
+            causal_projection_v17_site_frontier_candidate_count_read,
+            CandidateCountRead
+        ),
+        (
+            causal_projection_v17_site_frontier_projection_count_read,
+            ProjectionCountRead
+        ),
+        (
+            causal_projection_v17_site_frontier_base_count_read,
+            BaseCountRead
+        ),
+        (
+            causal_projection_v17_site_frontier_candidate_pull,
+            CandidatePull
+        ),
+        (
+            causal_projection_v17_site_frontier_candidate_order_compare,
+            CandidateOrderCompare
+        ),
+        (
+            causal_projection_v17_site_frontier_projection_pull,
+            ProjectionPull
+        ),
+        (causal_projection_v17_site_frontier_base_pull, BasePull),
+        (
+            causal_projection_v17_site_frontier_base_accepted_lookup,
+            BaseAcceptedLookup
+        ),
+        (
+            causal_projection_v17_site_frontier_expected_source_compare,
+            ExpectedSourceCompare
+        ),
+        (
+            causal_projection_v17_site_frontier_equality_compare,
+            FrontierEqualityCompare
         ),
     );
 
@@ -4027,8 +4177,13 @@ pub(crate) mod tests {
         assert_eq!(
             nonempty_trace,
             vec![
+                FrontierTrace::Attempt(
+                    FrontierComparisonSite::CandidateKindComparison.descriptor()
+                ),
                 FrontierTrace::Charge(WorkCounter::GraphNode),
-                FrontierTrace::Operation(FrontierComparisonOperation::CandidateKindComparison),
+                FrontierTrace::Operation(
+                    FrontierComparisonSite::CandidateKindComparison.descriptor()
+                ),
             ]
         );
 
@@ -4066,11 +4221,12 @@ pub(crate) mod tests {
             Completion::BudgetExhausted,
         );
         assert_eq!(ample, Ok(()));
-        assert!(trace.chunks_exact(2).all(|pair| {
-            matches!(pair[0], FrontierTrace::Charge(_))
-                && matches!(pair[1], FrontierTrace::Operation(_))
+        assert!(trace.chunks_exact(3).all(|events| {
+            matches!(events[0], FrontierTrace::Attempt(_))
+                && matches!(events[1], FrontierTrace::Charge(_))
+                && matches!(events[2], FrontierTrace::Operation(_))
         }));
-        let operation_count = trace.len() / 2;
+        let operation_count = trace.len() / 3;
         assert!(operation_count > 3);
 
         for successful in 0..operation_count {
@@ -5881,6 +6037,27 @@ pub(crate) mod tests {
         if operation_enum == "ProjectionBuildOperation" {
             let registry = production
                 .split_once("projection_build_sites! {")
+                .map(|item| item.1)
+                .and_then(|body| body.split_once("\n}"))
+                .map_or("", |item| item.0);
+            let needle = format!("=> ({variant}, ");
+            let site = registry.match_indices(&needle).nth(occurrence - 1);
+            assert!(
+                site.is_some(),
+                "missing descriptor site {operation_enum}::{variant}#{occurrence}"
+            );
+            let Some((offset, _)) = site else { return };
+            let suffix = &registry[offset + needle.len()..];
+            let counter = suffix
+                .chars()
+                .take_while(|value| value.is_ascii_alphanumeric())
+                .collect::<String>();
+            assert_eq!(counter, format!("{expected:?}"));
+            return;
+        }
+        if operation_enum == "FrontierComparisonOperation" {
+            let registry = production
+                .split_once("frontier_comparison_sites! {")
                 .map(|item| item.1)
                 .and_then(|body| body.split_once("\n}"))
                 .map_or("", |item| item.0);
