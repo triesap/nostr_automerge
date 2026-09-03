@@ -1,0 +1,5 @@
+command=cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_candidate_count_read --locked -- --exact --nocapture
+requested_site=CandidateCountRead
+observed=v17-proof site=CandidateCountRead family=CandidateCount counter=GraphNode n_minus_one=blocked n=observed n_plus_one=observed cancellation=exact unexpected_error=exact target_after_stop=0 observation_after_stop=0
+exit_status=0
+test_result=passed

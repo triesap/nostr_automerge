@@ -1,0 +1,5 @@
+command=cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_base_accepted_lookup --locked -- --exact --nocapture
+requested_site=BaseAcceptedLookup
+observed=v17-proof site=BaseAcceptedLookup family=BaseAcceptedLookup counter=GraphNode n_minus_one=blocked n=observed n_plus_one=observed cancellation=exact unexpected_error=exact target_after_stop=0 observation_after_stop=0
+exit_status=0
+test_result=passed

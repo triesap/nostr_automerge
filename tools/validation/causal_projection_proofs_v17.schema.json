@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.github.io/nostr-automerge/schemas/causal_projection_proofs_v17.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "authority", "source_candidate", "inventory_candidate", "proof_candidate", "inventory_path", "inventory_sha256", "row_contract", "rows", "counts", "execution", "result_identity_sha256", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_proofs.v17.v1"},
+    "status": {"const": "actual_execution"},
+    "authority": {"const": "spec/causal_projection_contracts_v17.json"},
+    "source_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "inventory_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "proof_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "inventory_path": {"type": "string"}, "inventory_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "row_contract": {"type": "array", "minItems": 19, "maxItems": 19, "items": {"type": "string"}},
+    "rows": {
+      "type": "array", "minItems": 68, "maxItems": 68,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["proof_row_id", "inventory_row_id", "site_id", "command", "requested_site", "observed_site", "counter", "n_minus_one", "n", "n_plus_one", "cancellation_identity", "unexpected_error_identity", "target_after_stop", "observation_after_stop", "transcript_artifact", "transcript_sha256", "source_candidate", "proof_candidate", "result"],
+        "properties": {
+          "proof_row_id": {"type": "string"}, "inventory_row_id": {"type": "string"}, "site_id": {"type": "string"},
+          "command": {"type": "string"}, "requested_site": {"type": "string"}, "observed_site": {"type": "string"},
+          "counter": {"enum": ["graph_node", "graph_edge"]}, "n_minus_one": {"const": "typed_budget_exhausted"},
+          "n": {"const": "observed"}, "n_plus_one": {"const": "observed"}, "cancellation_identity": {"const": "exact"},
+          "unexpected_error_identity": {"const": "exact"}, "target_after_stop": {"const": 0}, "observation_after_stop": {"const": 0},
+          "transcript_artifact": {"type": "string"}, "transcript_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "source_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "proof_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "result": {"const": "pass"}
+        }
+      }
+    },
+    "counts": {"type": "object"}, "execution": {"type": "object"},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "result": {"const": "pass"}
+  }
+}
