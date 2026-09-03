@@ -57,3 +57,13 @@ N-minus-one, N, N-plus-one, cancellation, typed-stop, exact unexpected-error,
 and zero-post-stop boundaries. Repeated families retain distinct site tests,
 and three independent global proofs retain semantic precedence and complete
 pipeline ordering. The next checkpoint is `step_1476`.
+
+`step_1476` adds independently invokable structural, identity, and full
+ownership validation. Structural validation derives the 68 active rows and
+checks actor sequencing, stage order, the single causal comparison, charged
+traversal and publication, consumer closure, and exact counters without using
+source hashes. Identity validation separately pins the committed source,
+inventory, proof catalog, and frozen contract. All ten closed defect classes
+are rejected with their exact property code; neutral and lexical-comment edits
+pass structural validation while failing identity only. The next checkpoint
+is `step_1477`.

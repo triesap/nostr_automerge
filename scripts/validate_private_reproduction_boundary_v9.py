@@ -196,6 +196,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/causal_projection_operation_inventory_v16.schema.json",
     "reports/causal_projection_proof_catalog_v16.json",
     "tools/validation/causal_projection_proof_catalog_v16.schema.json",
+    "reports/causal_projection_structural_assurance_v16.json",
+    "tools/validation/causal_projection_structural_assurance_v16.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -345,6 +347,7 @@ PYTHON_SURFACES = (
     "scripts/validate_causal_projection_contracts_v16.py",
     "scripts/validate_causal_projection_operation_inventory_v16.py",
     "scripts/validate_causal_projection_proof_catalog_v16.py",
+    "scripts/validate_causal_projection_structural_assurance_v16.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -589,6 +592,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_causal_projection_proof_catalog_v16.py",
         "reports/causal_projection_proof_catalog_v16.json",
         "tools/validation/causal_projection_proof_catalog_v16.schema.json",
+        "scripts/validate_causal_projection_structural_assurance_v16.py",
+        "reports/causal_projection_structural_assurance_v16.json",
+        "tools/validation/causal_projection_structural_assurance_v16.schema.json",
         "scripts/validate_causal_projection_operation_discovery_v15.py",
         "scripts/validate_causal_projection_discovery_v15.py",
         "scripts/validate_causal_projection_consumer_v15.py",
@@ -636,6 +642,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "spec/remediation_findings_v13.json",
         "spec/distribution_v13_compatibility_contract.json",
         "crates/nostr_automerge/src/control/authorize.rs",
+        "crates/nostr_automerge/src/control/epoch_state.rs",
         "crates/nostr_automerge/src/graph/actor_state.rs",
         "crates/nostr_automerge/src/graph/closure.rs",
         "crates/nostr_automerge/src/graph/epoch.rs",
@@ -1277,6 +1284,7 @@ def validate_source_surfaces() -> None:
                         in {
                             "scripts/validate_causal_projection_operation_inventory_v16.py",
                             "scripts/validate_causal_projection_proof_catalog_v16.py",
+                            "scripts/validate_causal_projection_structural_assurance_v16.py",
                         }
                         and (
                             value == "git"

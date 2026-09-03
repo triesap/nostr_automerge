@@ -1,0 +1,28 @@
+{
+  "title": "Nostr Automerge causal projection structural assurance v16",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema","status","source_candidate","source_bindings","inventory_sha256","proof_catalog_sha256","contracts_sha256","modes","full_order","property_codes","structural_summary","neutral_comment_result","result_identity_sha256","result"],
+  "properties": {
+    "schema": {"const":"nostr_automerge.causal_projection_structural_assurance.v16.v1"},
+    "status": {"const":"pass"},
+    "source_candidate": {"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "source_bindings": {"type":"array","minItems":3,"maxItems":3,"items":{"$ref":"#/$defs/source_binding"}},
+    "inventory_sha256": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "proof_catalog_sha256": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "contracts_sha256": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "modes": {"type":"array","prefixItems":[{"const":"structural"},{"const":"identity"},{"const":"full"}],"minItems":3,"maxItems":3},
+    "full_order": {"type":"array","prefixItems":[{"const":"structural"},{"const":"identity"}],"minItems":2,"maxItems":2},
+    "property_codes": {"type":"array","minItems":10,"maxItems":10,"uniqueItems":true,"items":{"type":"string"}},
+    "structural_summary": {"$ref":"#/$defs/structural_summary"},
+    "neutral_comment_result": {"type":"array","prefixItems":[{"const":"structural_pass"},{"const":"identity_fail"}],"minItems":2,"maxItems":2},
+    "result_identity_sha256": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "result": {"const":"pass"}
+  },
+  "$defs": {
+    "source_binding": {"type":"object","additionalProperties":false,"required":["role","path","sha256"],"properties":{"role":{"enum":["actor","control","consumer"]},"path":{"type":"string"},"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"}}},
+    "phase_counts": {"type":"object","additionalProperties":false,"required":["projection_construction","actor_sequence","causal_counter_consumer","frontier_comparison"],"properties":{"projection_construction":{"const":50},"actor_sequence":{"const":4},"causal_counter_consumer":{"const":3},"frontier_comparison":{"const":11}}},
+    "check": {"type":"object","additionalProperties":false,"required":["code","result"],"properties":{"code":{"type":"string"},"result":{"const":"pass"}}},
+    "structural_summary": {"type":"object","additionalProperties":false,"required":["rows","phases","consumer_bindings","checks"],"properties":{"rows":{"const":68},"phases":{"$ref":"#/$defs/phase_counts"},"consumer_bindings":{"const":3},"checks":{"type":"array","minItems":10,"maxItems":10,"items":{"$ref":"#/$defs/check"}}}}
+  }
+}

@@ -118,6 +118,7 @@ VALIDATORS = [
     "validate_causal_projection_contracts_v16.py",
     "validate_causal_projection_operation_inventory_v16.py",
     "validate_causal_projection_proof_catalog_v16.py",
+    "validate_causal_projection_structural_assurance_v16.py",
     "validate_causal_projection_operation_discovery_v15.py",
     "validate_causal_projection_discovery_v15.py",
     "validate_causal_projection_consumer_v15.py",

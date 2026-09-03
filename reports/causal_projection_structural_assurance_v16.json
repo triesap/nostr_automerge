@@ -1,0 +1,104 @@
+{
+  "schema": "nostr_automerge.causal_projection_structural_assurance.v16.v1",
+  "status": "pass",
+  "source_candidate": "bbb17083b4110e912a672f30b329f7799e2df1a5",
+  "source_bindings": [
+    {
+      "role": "actor",
+      "path": "crates/nostr_automerge/src/graph/actor_state.rs",
+      "sha256": "101e9502101d7c08d11dadafc46c679a084bfe88b8ea8614c79682565c3bbc0e"
+    },
+    {
+      "role": "control",
+      "path": "crates/nostr_automerge/src/control/epoch_state.rs",
+      "sha256": "734f70b9eed8f4281d719b0581153db1175bbe1401c11fcd0c0ef59b36343221"
+    },
+    {
+      "role": "consumer",
+      "path": "crates/nostr_automerge/src/reference/epoch_engine.rs",
+      "sha256": "0f7e948b27b6cc0d7b921596bde5bba496ef72fca43c6f4e485a68a1919c4315"
+    }
+  ],
+  "inventory_sha256": "95562a0f032c6fcedf3e397f82f42072fa2179b30a48b7424e38c2bf39403de1",
+  "proof_catalog_sha256": "486dd1f70a108166a5380ef533f707f1aeebac6b4f5b2d1f20708a9a4e0f4ca0",
+  "contracts_sha256": "bbd58073a7dab83d7a96541ba7d1a90e0ceb5c4876bb4533d7b196058b5e7b3b",
+  "modes": [
+    "structural",
+    "identity",
+    "full"
+  ],
+  "full_order": [
+    "structural",
+    "identity"
+  ],
+  "property_codes": [
+    "UNWRAPPED_ACTOR_SEQUENCE_DECISION",
+    "CAUSAL_STAGE_BEFORE_ACTOR_SUCCESS",
+    "DUPLICATE_CAUSAL_START_COMPARISON",
+    "UNMETERED_FINAL_TRAVERSAL",
+    "STATE_WRITE_BEFORE_CHARGE",
+    "CHARGE_AFTER_OPERATION",
+    "POST_STOP_TARGET_WORK",
+    "PUBLICATION_BEFORE_CHARGE",
+    "ALTERNATE_CONSUMER_BYPASS",
+    "COUNTER_MISMATCH"
+  ],
+  "structural_summary": {
+    "rows": 68,
+    "phases": {
+      "projection_construction": 50,
+      "actor_sequence": 4,
+      "causal_counter_consumer": 3,
+      "frontier_comparison": 11
+    },
+    "consumer_bindings": 3,
+    "checks": [
+      {
+        "code": "UNWRAPPED_ACTOR_SEQUENCE_DECISION",
+        "result": "pass"
+      },
+      {
+        "code": "CAUSAL_STAGE_BEFORE_ACTOR_SUCCESS",
+        "result": "pass"
+      },
+      {
+        "code": "DUPLICATE_CAUSAL_START_COMPARISON",
+        "result": "pass"
+      },
+      {
+        "code": "UNMETERED_FINAL_TRAVERSAL",
+        "result": "pass"
+      },
+      {
+        "code": "STATE_WRITE_BEFORE_CHARGE",
+        "result": "pass"
+      },
+      {
+        "code": "CHARGE_AFTER_OPERATION",
+        "result": "pass"
+      },
+      {
+        "code": "POST_STOP_TARGET_WORK",
+        "result": "pass"
+      },
+      {
+        "code": "PUBLICATION_BEFORE_CHARGE",
+        "result": "pass"
+      },
+      {
+        "code": "ALTERNATE_CONSUMER_BYPASS",
+        "result": "pass"
+      },
+      {
+        "code": "COUNTER_MISMATCH",
+        "result": "pass"
+      }
+    ]
+  },
+  "neutral_comment_result": [
+    "structural_pass",
+    "identity_fail"
+  ],
+  "result_identity_sha256": "e056e9ff8750b78c83f4409cdd6bbb7c08aa98ec088f000a632ae9181e595d29",
+  "result": "pass"
+}
