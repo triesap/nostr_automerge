@@ -393,6 +393,11 @@ macro_rules! projection_build_sites {
                 }
             }
 
+            #[cfg(test)]
+            const fn all() -> &'static [Self] {
+                &[$( Self::$site, )+]
+            }
+
             const fn descriptor(self) -> ProjectionBuildDescriptor {
                 ProjectionBuildDescriptor {
                     site: self,
@@ -2347,8 +2352,15 @@ pub(crate) mod tests {
         let mut second = candidate(1, 2, 2, 1);
         second.change_hash = ChangeHash::from_bytes([2; 32]);
         second.dependencies = vec![first.change_hash].into();
-        let accepted = BTreeSet::from([first.change_hash, second.change_hash]);
-        let changes = BTreeMap::from([(first.change_hash, first), (second.change_hash, second)]);
+        let mut third = candidate(1, 3, 3, 1);
+        third.change_hash = ChangeHash::from_bytes([3; 32]);
+        third.dependencies = vec![first.change_hash, second.change_hash].into();
+        let accepted = BTreeSet::from([first.change_hash, second.change_hash, third.change_hash]);
+        let changes = BTreeMap::from([
+            (first.change_hash, first),
+            (second.change_hash, second),
+            (third.change_hash, third),
+        ]);
         let (complete, trace) = observed_projection_build_operations(
             &accepted,
             &changes,
@@ -2412,6 +2424,12 @@ pub(crate) mod tests {
         assert!(!blocked_trace.iter().any(
             |entry| matches!(entry, BuildTrace::Operation(descriptor) if descriptor.site == site)
         ));
+        println!(
+            "v17-proof site={} family={:?} counter={:?} n_minus_one=blocked n=observed n_plus_one=observed cancellation=exact unexpected_error=exact target_after_stop=0 observation_after_stop=0",
+            site.id(),
+            site.operation(),
+            site.counter(),
+        );
     }
 
     fn assert_projection_build_family_exact(family: ProjectionBuildOperation) {
@@ -5937,30 +5955,11 @@ pub(crate) mod tests {
     ) {
         assert_v16_source_site_counter("ProjectionBuildOperation", variant, occurrence, counter);
 
-        let first = candidate(1, 1, 1, 1);
-        let mut second = candidate(1, 2, 2, 1);
-        second.change_hash = ChangeHash::from_bytes([2; 32]);
-        second.dependencies = vec![first.change_hash].into();
-        let accepted = BTreeSet::from([first.change_hash, second.change_hash]);
-        let changes = BTreeMap::from([(first.change_hash, first), (second.change_hash, second)]);
-        let (_, trace) = observed_projection_build_operations(
-            &accepted,
-            &changes,
-            usize::MAX,
-            Completion::BudgetExhausted,
-        );
-        let mut exact_sites = Vec::new();
-        for descriptor in trace.iter().filter_map(|entry| match entry {
-            BuildTrace::Operation(descriptor) if descriptor.operation == family => {
-                Some(*descriptor)
-            }
-            _ => None,
-        }) {
-            if !exact_sites.contains(&descriptor.site) {
-                exact_sites.push(descriptor.site);
-            }
-        }
-        let site = exact_sites.get(occurrence - 1).copied();
+        let site = ProjectionBuildSite::all()
+            .iter()
+            .copied()
+            .filter(|site| site.operation() == family)
+            .nth(occurrence - 1);
         assert!(site.is_some(), "unreachable exact build site");
         let Some(site) = site else { return };
         assert_eq!(site.descriptor().counter, counter);
@@ -6045,6 +6044,220 @@ pub(crate) mod tests {
         assert_v16_source_site_counter("FrontierComparisonOperation", variant, occurrence, counter);
         assert_frontier_family_exact(family);
     }
+
+    macro_rules! v17_projection_build_site_proofs {
+        ($(($test:ident, $site:ident)),+ $(,)?) => {
+            $(
+                #[test]
+                fn $test() {
+                    assert_projection_build_site_exact(ProjectionBuildSite::$site);
+                }
+            )+
+        };
+    }
+
+    v17_projection_build_site_proofs!(
+        (
+            causal_projection_v17_site_projection_construction_member_count_read,
+            MemberCountRead
+        ),
+        (
+            causal_projection_v17_site_projection_construction_accepted_count_matches,
+            AcceptedCountMatches
+        ),
+        (
+            causal_projection_v17_site_projection_construction_next_member_pull,
+            NextMemberPull
+        ),
+        (
+            causal_projection_v17_site_projection_construction_member_order_compare,
+            MemberOrderCompare
+        ),
+        (
+            causal_projection_v17_site_projection_construction_accepted_member_lookup,
+            AcceptedMemberLookup
+        ),
+        (
+            causal_projection_v17_site_projection_construction_candidate_lookup,
+            CandidateLookup
+        ),
+        (
+            causal_projection_v17_site_projection_construction_candidate_identity_compare,
+            CandidateIdentityCompare
+        ),
+        (
+            causal_projection_v17_site_projection_construction_dependency_count_read,
+            DependencyCountRead
+        ),
+        (
+            causal_projection_v17_site_projection_construction_dependency_pull,
+            DependencyPull
+        ),
+        (
+            causal_projection_v17_site_projection_construction_dependency_order_compare,
+            DependencyOrderCompare
+        ),
+        (
+            causal_projection_v17_site_projection_construction_accepted_dependency_lookup,
+            AcceptedDependencyLookup
+        ),
+        (
+            causal_projection_v17_site_projection_construction_candidate_dependency_insert,
+            CandidateDependencyInsert
+        ),
+        (
+            causal_projection_v17_site_projection_construction_depended_on_insert,
+            DependedOnInsert
+        ),
+        (
+            causal_projection_v17_site_projection_construction_dependant_bucket_insert,
+            DependantBucketInsert
+        ),
+        (
+            causal_projection_v17_site_projection_construction_dependant_insert,
+            DependantInsert
+        ),
+        (
+            causal_projection_v17_site_projection_construction_candidate_ready_compare,
+            CandidateReadyCompare
+        ),
+        (
+            causal_projection_v17_site_projection_construction_initial_ready_insert,
+            InitialReadyInsert
+        ),
+        (
+            causal_projection_v17_site_projection_construction_remaining_dependencies_insert,
+            RemainingDependenciesInsert
+        ),
+        (
+            causal_projection_v17_site_projection_construction_dependencies_insert,
+            DependenciesInsert
+        ),
+        (
+            causal_projection_v17_site_projection_construction_ready_nonempty_compare,
+            ReadyNonemptyCompare
+        ),
+        (
+            causal_projection_v17_site_projection_construction_ready_candidate_pull,
+            ReadyCandidatePull
+        ),
+        (
+            causal_projection_v17_site_projection_construction_ready_candidate_lookup,
+            ReadyCandidateLookup
+        ),
+        (
+            causal_projection_v17_site_projection_construction_depended_on_lookup,
+            DependedOnLookup
+        ),
+        (
+            causal_projection_v17_site_projection_construction_frontier_head_insert,
+            FrontierHeadInsert
+        ),
+        (
+            causal_projection_v17_site_projection_construction_actor_state_lookup,
+            ActorStateLookup
+        ),
+        (
+            causal_projection_v17_site_projection_construction_expected_sequence_advance,
+            ExpectedSequenceAdvance
+        ),
+        (
+            causal_projection_v17_site_projection_construction_sequence_precedes_compare,
+            SequencePrecedesCompare
+        ),
+        (
+            causal_projection_v17_site_projection_construction_sequence_matches_compare,
+            SequenceMatchesCompare
+        ),
+        (
+            causal_projection_v17_site_projection_construction_causal_next_lookup,
+            CausalNextLookup
+        ),
+        (
+            causal_projection_v17_site_projection_construction_start_operation_compare,
+            StartOperationCompare
+        ),
+        (
+            causal_projection_v17_site_projection_construction_candidate_empty_compare,
+            CandidateEmptyCompare
+        ),
+        (
+            causal_projection_v17_site_projection_construction_candidate_causal_advance,
+            CandidateCausalAdvance
+        ),
+        (
+            causal_projection_v17_site_projection_construction_global_causal_maximum,
+            GlobalCausalMaximum
+        ),
+        (
+            causal_projection_v17_site_projection_construction_actor_state_insert,
+            ActorStateInsert
+        ),
+        (
+            causal_projection_v17_site_projection_construction_writer_contribution_insert,
+            WriterContributionInsert
+        ),
+        (
+            causal_projection_v17_site_projection_construction_causal_counter_insert,
+            CausalCounterInsert
+        ),
+        (
+            causal_projection_v17_site_projection_construction_processed_count_advance,
+            ProcessedCountAdvance
+        ),
+        (
+            causal_projection_v17_site_projection_construction_dependants_lookup,
+            DependantsLookup
+        ),
+        (
+            causal_projection_v17_site_projection_construction_child_count_read,
+            ChildCountRead
+        ),
+        (
+            causal_projection_v17_site_projection_construction_child_pull,
+            ChildPull
+        ),
+        (
+            causal_projection_v17_site_projection_construction_remaining_dependency_lookup,
+            RemainingDependencyLookup
+        ),
+        (
+            causal_projection_v17_site_projection_construction_remaining_dependency_decrement,
+            RemainingDependencyDecrement
+        ),
+        (
+            causal_projection_v17_site_projection_construction_remaining_dependency_write,
+            RemainingDependencyWrite
+        ),
+        (
+            causal_projection_v17_site_projection_construction_prior_causal_lookup,
+            PriorCausalLookup
+        ),
+        (
+            causal_projection_v17_site_projection_construction_propagated_causal_maximum,
+            PropagatedCausalMaximum
+        ),
+        (
+            causal_projection_v17_site_projection_construction_child_causal_insert,
+            ChildCausalInsert
+        ),
+        (
+            causal_projection_v17_site_projection_construction_child_ready_compare,
+            ChildReadyCompare
+        ),
+        (
+            causal_projection_v17_site_projection_construction_ready_dependant_insert,
+            ReadyDependantInsert
+        ),
+        (
+            causal_projection_v17_site_projection_construction_completion_compare,
+            CompletionCompare
+        ),
+        (
+            causal_projection_v17_site_projection_construction_projection_publish,
+            ProjectionPublish
+        ),
+    );
 
     macro_rules! v16_projection_build_site_proofs {
         ($(($test:ident, $family:ident, $occurrence:expr, $counter:ident)),+ $(,)?) => {
