@@ -39,3 +39,13 @@ tests are enabled and pass; the immutable reproduction report remains bound
 to its historical failing source. The v12 exact-budget predecessor moved by
 eight operations while ample semantic and conformance output remains
 unchanged. The next checkpoint is `step_1474`.
+
+`step_1474` derives the provisional Rust operation inventory directly from
+the committed production source. The inventory contains 68 reachable source
+sites across 38 operation families: 50 projection-construction sites, four
+actor-sequence sites, three causal-counter sites, and 11 frontier-comparison
+sites. Every repeated family has a separate row and planned proof identity.
+The reachable dependency-count read is bound to `GraphNode`, correcting the
+historical v15 evidence without changing runtime behavior. Source-only,
+evidence-only, coordinated-counter, ordering, lexical-shadow, and identity
+mutations all fail closed. The next checkpoint is `step_1475`.

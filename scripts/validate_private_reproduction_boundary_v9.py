@@ -192,6 +192,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/causal_projection_counter_oracle_reproductions_v16.schema.json",
     "spec/causal_projection_contracts_v16.json",
     "tools/validation/causal_projection_contracts_v16.schema.json",
+    "reports/causal_projection_operation_inventory_v16.json",
+    "tools/validation/causal_projection_operation_inventory_v16.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -339,6 +341,7 @@ PYTHON_SURFACES = (
     "scripts/reproduce_remediation_v16.py",
     "scripts/validate_causal_projection_counter_oracle_reproductions_v16.py",
     "scripts/validate_causal_projection_contracts_v16.py",
+    "scripts/validate_causal_projection_operation_inventory_v16.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -577,6 +580,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_causal_projection_contracts_v16.py",
         "spec/causal_projection_contracts_v16.json",
         "tools/validation/causal_projection_contracts_v16.schema.json",
+        "scripts/validate_causal_projection_operation_inventory_v16.py",
+        "reports/causal_projection_operation_inventory_v16.json",
+        "tools/validation/causal_projection_operation_inventory_v16.schema.json",
         "scripts/validate_causal_projection_operation_discovery_v15.py",
         "scripts/validate_causal_projection_discovery_v15.py",
         "scripts/validate_causal_projection_consumer_v15.py",
@@ -919,9 +925,16 @@ def validate_public_record(value: Any, diagnostic: str) -> None:
             if (
                 key == "command"
                 and isinstance(child, str)
-                and re.fullmatch(
-                    chr(99) + r"argo test -p nostr_automerge --lib [a-z0-9_]+ --locked",
-                    child,
+                and (
+                    re.fullmatch(
+                        chr(99) + r"argo test -p nostr_automerge --lib [a-z0-9_]+ --locked",
+                        child,
+                    )
+                    or re.fullmatch(
+                        chr(99)
+                        + r"argo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v16_site_[a-z0-9_]+ --locked -- --exact",
+                        child,
+                    )
                 )
             ):
                 validate_source_literal(
@@ -1252,6 +1265,16 @@ def validate_source_surfaces() -> None:
                         value == "git"
                         and relative
                         == "scripts/validate_causal_projection_counter_oracle_reproductions_v16.py"
+                    )
+                    or (
+                        relative
+                        == "scripts/validate_causal_projection_operation_inventory_v16.py"
+                        and (
+                            value == "git"
+                            or value.startswith(
+                                chr(99) + "argo test -p nostr_automerge --lib"
+                            )
+                        )
                     )
                     or (
                         value in {"cargo", "git", CAUSAL_EVIDENCE_COMMAND}

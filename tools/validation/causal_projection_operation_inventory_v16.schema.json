@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema","status","authority","source_candidate","source_path","source_production_sha256","row_contract","rows","counts","counter_correction","result_identity_sha256","result"],
+  "properties": {
+    "schema": {"const":"nostr_automerge.causal_projection_operation_inventory.v16.v1"},
+    "status": {"const":"provisional_complete"},
+    "authority": {"const":"spec/causal_projection_contracts_v16.json"},
+    "source_candidate": {"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "source_path": {"const":"crates/nostr_automerge/src/graph/actor_state.rs"},
+    "source_production_sha256": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "row_contract": {"type":"array","minItems":18,"maxItems":18,"uniqueItems":true},
+    "rows": {"type":"array","minItems":68,"maxItems":68,"items":{"$ref":"#/$defs/row"}},
+    "counts": {"type":"object","additionalProperties":false,"required":["rows","families","phases"]},
+    "counter_correction": {"type":"object","additionalProperties":false,"required":["family","rust_counter","historical_v15_evidence","status"]},
+    "result_identity_sha256": {"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "result": {"const":"pass"}
+  },
+  "$defs": {
+    "row": {
+      "type":"object",
+      "additionalProperties":false,
+      "required":["id","abstract_family","phase","language","applicability","source_path","source_symbol","source_site","owner_mode","counter","abstract_owner_class","reachability","proof","test","command","candidate","artifact_sha256","mutation"]
+    }
+  }
+}
