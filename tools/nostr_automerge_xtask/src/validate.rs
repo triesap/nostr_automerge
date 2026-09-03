@@ -292,24 +292,8 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "scripts/validate_causal_projection_contracts_v16.py",
     ),
     (
-        "causal_projection_operation_inventory_v16",
-        "scripts/validate_causal_projection_operation_inventory_v16.py",
-    ),
-    (
-        "causal_projection_proof_catalog_v16",
-        "scripts/validate_causal_projection_proof_catalog_v16.py",
-    ),
-    (
-        "causal_projection_structural_assurance_v16",
-        "scripts/validate_causal_projection_structural_assurance_v16.py",
-    ),
-    (
         "causal_projection_mutations_v16",
         "scripts/run_causal_projection_mutations_v16.py",
-    ),
-    (
-        "causal_projection_rust_assurance_v16",
-        "scripts/validate_causal_projection_rust_assurance_v16.py",
     ),
     (
         "opaque_causal_projection_v16",
@@ -323,6 +307,15 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "causal_projection_final_decision_v16",
         "scripts/validate_causal_projection_final_decision_v16.py",
     ),
+    ("remediation_v17", "scripts/validate_remediation_v17.py"),
+    (
+        "causal_projection_contracts_v17",
+        "scripts/validate_causal_projection_contracts_v17.py",
+    ),
+    (
+        "causal_projection_properties_v17",
+        "scripts/validate_causal_projection_properties_v17.py",
+    ),
     (
         "causal_projection_operation_discovery_v15",
         "scripts/validate_causal_projection_operation_discovery_v15.py",
@@ -330,10 +323,6 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
     (
         "causal_projection_discovery_v15",
         "scripts/validate_causal_projection_discovery_v15.py",
-    ),
-    (
-        "causal_projection_consumer_v15",
-        "scripts/validate_causal_projection_consumer_v15.py",
     ),
     (
         "causal_projection_proof_catalog_v15",
@@ -595,6 +584,14 @@ mod tests {
         assert!(names.contains(&"remediation_v11"));
         assert!(names.contains(&"remediation_v12"));
         assert!(names.contains(&"remediation_v13"));
+        assert!(names.contains(&"remediation_v17"));
+        assert!(names.contains(&"causal_projection_contracts_v17"));
+        assert!(names.contains(&"causal_projection_properties_v17"));
+        assert!(!names.contains(&"causal_projection_operation_inventory_v16"));
+        assert!(!names.contains(&"causal_projection_proof_catalog_v16"));
+        assert!(!names.contains(&"causal_projection_structural_assurance_v16"));
+        assert!(!names.contains(&"causal_projection_rust_assurance_v16"));
+        assert!(!names.contains(&"causal_projection_consumer_v15"));
         assert!(names.contains(&"causal_projection_operations_v13"));
         assert!(names.contains(&"trusted_epoch_projection_gate_v12"));
         assert!(names.contains(&"remediation_v12_actor_gate"));

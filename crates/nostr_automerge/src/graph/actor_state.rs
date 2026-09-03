@@ -5728,6 +5728,52 @@ pub(crate) mod tests {
         let production = source
             .split_once("#[cfg(test)]\npub(crate) mod tests")
             .map_or(source, |item| item.0);
+        if operation_enum == "ProjectionBuildOperation" {
+            let registry = production
+                .split_once("projection_build_sites! {")
+                .map(|item| item.1)
+                .and_then(|body| body.split_once("\n}"))
+                .map_or("", |item| item.0);
+            let needle = format!("=> ({variant}, ");
+            let site = registry.match_indices(&needle).nth(occurrence - 1);
+            assert!(
+                site.is_some(),
+                "missing descriptor site {operation_enum}::{variant}#{occurrence}"
+            );
+            let Some((offset, _)) = site else { return };
+            let suffix = &registry[offset + needle.len()..];
+            let counter = suffix
+                .chars()
+                .take_while(|value| value.is_ascii_alphanumeric())
+                .collect::<String>();
+            assert_eq!(counter, format!("{expected:?}"));
+            return;
+        }
+        if matches!(
+            operation_enum,
+            "ActorDecisionOperation" | "CausalNextOperation"
+        ) {
+            let registry_name = if operation_enum == "ActorDecisionOperation" {
+                "actor_decision_sites! {"
+            } else {
+                "causal_next_sites! {"
+            };
+            let registry = production
+                .split_once(registry_name)
+                .map(|item| item.1)
+                .and_then(|body| body.split_once("\n}"))
+                .map_or("", |item| item.0);
+            let needle = format!("=> {variant}");
+            assert!(
+                registry
+                    .match_indices(&needle)
+                    .nth(occurrence - 1)
+                    .is_some(),
+                "missing descriptor site {operation_enum}::{variant}#{occurrence}"
+            );
+            assert_eq!(expected, WorkCounter::GraphNode);
+            return;
+        }
         let needle = format!("{operation_enum}::{variant}");
         let site = production.match_indices(&needle).nth(occurrence - 1);
         assert!(

@@ -20,41 +20,39 @@ fn projection_builder() -> &'static str {
 
 #[test]
 fn f113_candidate_identity_comparison_is_owned() {
-    assert!(projection_builder().contains("ProjectionBuildOperation::CandidateIdentityComparison"));
+    assert!(projection_builder().contains("ProjectionBuildSite::CandidateIdentityCompare"));
 }
 
 #[test]
 fn f113_dependency_count_read_is_owned() {
-    assert!(projection_builder().contains("ProjectionBuildOperation::DependencyCountRead"));
+    assert!(projection_builder().contains("ProjectionBuildSite::DependencyCountRead"));
 }
 
 #[test]
 fn f113_candidate_readiness_comparison_is_owned() {
-    assert!(
-        projection_builder().contains("ProjectionBuildOperation::CandidateReadinessComparison")
-    );
+    assert!(projection_builder().contains("ProjectionBuildSite::CandidateReadyCompare"));
 }
 
 #[test]
 fn f113_candidate_kind_comparison_is_owned() {
-    assert!(projection_builder().contains("ProjectionBuildOperation::CandidateKindComparison"));
+    assert!(projection_builder().contains("ProjectionBuildSite::CandidateEmptyCompare"));
 }
 
 #[test]
 fn f113_remaining_state_write_is_owned() {
-    assert!(projection_builder().contains("ProjectionBuildOperation::RemainingStateWrite"));
+    assert!(projection_builder().contains("ProjectionBuildSite::RemainingDependencyWrite"));
 }
 
 #[test]
 fn f113_terminal_completion_comparison_is_owned() {
-    assert!(projection_builder().contains("ProjectionBuildOperation::CompletionComparison"));
+    assert!(projection_builder().contains("ProjectionBuildSite::CompletionCompare"));
 }
 
 #[test]
 fn f113_initial_count_read_and_comparison_are_separate() {
     let builder = projection_builder();
-    assert!(builder.contains("ProjectionBuildOperation::SourceCountRead"));
-    assert!(builder.contains("ProjectionBuildOperation::ExpectedCountComparison"));
+    assert!(builder.contains("ProjectionBuildSite::MemberCountRead"));
+    assert!(builder.contains("ProjectionBuildSite::AcceptedCountMatches"));
 }
 
 #[test]

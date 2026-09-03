@@ -124,6 +124,9 @@ VALIDATORS = [
     "validate_opaque_causal_projection_v16.py",
     "validate_causal_projection_combined_assurance_v16.py",
     "validate_causal_projection_final_decision_v16.py",
+    "validate_remediation_v17.py",
+    "validate_causal_projection_contracts_v17.py",
+    "validate_causal_projection_properties_v17.py",
     "validate_causal_projection_operation_discovery_v15.py",
     "validate_causal_projection_discovery_v15.py",
     "validate_causal_projection_consumer_v15.py",
@@ -232,6 +235,13 @@ V13_HISTORICAL_VALIDATORS = {
     "validate_remediation_v12_finding_closure.py",
     "validate_remediation_v12_final_decision.py",
 }
+V17_HISTORICAL_VALIDATORS = {
+    "validate_causal_projection_consumer_v15.py",
+    "validate_causal_projection_operation_inventory_v16.py",
+    "validate_causal_projection_proof_catalog_v16.py",
+    "validate_causal_projection_structural_assurance_v16.py",
+    "validate_causal_projection_rust_assurance_v16.py",
+}
 
 
 def transition_stage() -> str:
@@ -246,6 +256,7 @@ def transition_stage() -> str:
 def active_validators(stage: str) -> list[str]:
     v12_active = (ROOT / "spec/remediation_v12_authority.json").is_file()
     v13_active = (ROOT / "spec/remediation_v13_authority.json").is_file()
+    v17_active = (ROOT / "spec/remediation_v17_authority.json").is_file()
     if (ROOT / "spec/resource_followup_authority_v10.json").is_file():
         return [
             validator
@@ -254,6 +265,7 @@ def active_validators(stage: str) -> list[str]:
             and validator not in FOLLOWUP_HISTORICAL_VALIDATORS
             and (not v12_active or validator not in V12_HISTORICAL_VALIDATORS)
             and (not v13_active or validator not in V13_HISTORICAL_VALIDATORS)
+            and (not v17_active or validator not in V17_HISTORICAL_VALIDATORS)
         ]
     if stage == "transition_installed":
         return VALIDATORS

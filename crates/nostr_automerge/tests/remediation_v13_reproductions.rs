@@ -23,7 +23,7 @@ fn finding_108_projection_operations_use_one_closed_boundary() {
     let source = projection_builder_source();
     assert!(source.is_some(), "reviewed projection source boundary");
     let Some(source) = source else { return };
-    assert!(source.contains("ProjectionBuildOperation"));
+    assert!(source.contains("ProjectionBuildSite"));
     assert!(source.contains("perform_projection_build_operation"));
     assert!(!source.contains("while !ready.is_empty()"));
     assert!(!source.contains("charge(WorkCounter::"));
