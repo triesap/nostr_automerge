@@ -95,3 +95,14 @@ Events, eight delivery orders, expected reports, and canonical output remain
 unchanged. The manifest, lock, transition, generator, validators, and two-run
 Rust conformance evidence fail closed on inventory, checksum, derivation, or
 expected-output drift. The next checkpoint is `step_1480`.
+
+`step_1480` imports the independently committed TypeScript v16 assurance through
+a closed source-only public record. The import binds the five private
+checkpoints, 142 independently discovered source sites, 40 concrete operation
+families, 142 source-site proofs, 40 runtime-family proofs, ten behavioral
+mutations with zero survivors, eight private budget changes, and the unchanged
+204-scenario, 771-Event, eight-order, two-process canonical output. It
+cross-binds the public 68-site and 38-family Rust evidence and distribution v16
+without exposing private paths, source, commands, logs, layout, or unrelated
+operator state. Findings 116 through 118 remain open until combined assurance.
+The next checkpoint is `step_1481`.

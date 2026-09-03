@@ -1,0 +1,81 @@
+{
+  "title": "nostr_automerge opaque causal projection v16",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "independent_candidate", "opaque_record_sha256", "assurance", "public_bindings", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": { "const": "nostr_automerge.opaque_causal_projection_import.v16.v1" },
+    "status": { "const": "code_complete_publication_held" },
+    "independent_candidate": { "const": "f931df45c070b7617df61205963bbbd46d07618c" },
+    "opaque_record_sha256": { "const": "61a47214c7cbf48da9d3773fb10c459a6d1fa38e1b85c0adb05a98054ac225fb" },
+    "assurance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "status", "candidate_chain", "public_distribution_candidate", "evidence_sha256", "counts", "applicability_classes", "result_classes", "canonical_output_sha256", "clean_scope", "standalone_identity_assumed", "release_claimed", "publication_claimed", "remote_actions", "result", "opaque_identity_sha256", "identity_sha256"],
+      "properties": {
+        "schema": { "const": "nostr_automerge.opaque_causal_projection.v16.public.v1" },
+        "status": { "const": "code_complete_publication_held" },
+        "candidate_chain": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "string", "pattern": "^[0-9a-f]{40}$" }, "uniqueItems": true },
+        "public_distribution_candidate": { "const": "18cd91d8b69a57c1304ffc5d29490185401cc42d" },
+        "evidence_sha256": { "type": "array", "minItems": 5, "maxItems": 5, "items": { "type": "string", "pattern": "^[0-9a-f]{64}$" }, "uniqueItems": true },
+        "counts": { "$ref": "#/$defs/counts" },
+        "applicability_classes": { "const": ["projection_construction", "actor_sequence", "causal_counter_consumer", "frontier_comparison"] },
+        "result_classes": { "const": ["actor_stage_isolated", "counter_binding_exact", "structural_mutations_caught", "signed_distribution_byte_identical", "typed_stops_preserved", "independent_implementation_boundary"] },
+        "canonical_output_sha256": { "const": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415" },
+        "clean_scope": { "const": true },
+        "standalone_identity_assumed": { "const": false },
+        "release_claimed": { "const": false },
+        "publication_claimed": { "const": false },
+        "remote_actions": { "const": 0 },
+        "result": { "const": "pass" },
+        "opaque_identity_sha256": { "const": "659adb0ec14959e649adb9212ef7e8d0b079a500432e9da7c9afe9b1b063c498" },
+        "identity_sha256": { "const": "9e3856536b461a5d8e1641ad701c6bf425e0fc6b0ee235f1a866f01798ca39b8" }
+      }
+    },
+    "public_bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["distribution_candidate", "operation_contract_sha256", "rust_inventory_sha256", "rust_proof_catalog_sha256", "rust_structural_assurance_sha256", "rust_mutation_sha256", "rust_assurance_sha256", "rust_conformance_sha256", "distribution_manifest_sha256", "distribution_lock_sha256", "canonical_output_sha256", "rust_operation_sites", "rust_operation_families", "independent_operation_sites", "independent_operation_families"],
+      "properties": {
+        "distribution_candidate": { "const": "18cd91d8b69a57c1304ffc5d29490185401cc42d" },
+        "operation_contract_sha256": { "const": "bbd58073a7dab83d7a96541ba7d1a90e0ceb5c4876bb4533d7b196058b5e7b3b" },
+        "rust_inventory_sha256": { "const": "95562a0f032c6fcedf3e397f82f42072fa2179b30a48b7424e38c2bf39403de1" },
+        "rust_proof_catalog_sha256": { "const": "486dd1f70a108166a5380ef533f707f1aeebac6b4f5b2d1f20708a9a4e0f4ca0" },
+        "rust_structural_assurance_sha256": { "const": "fbd2b12e558f54d161dc778e189cccacd391c51db1ecbb89e0c58a535076c9d1" },
+        "rust_mutation_sha256": { "const": "d4d88b74b5de2f73a46f17436c62aa185519ecaed04bf5868dcf93ebd5e9e490" },
+        "rust_assurance_sha256": { "const": "a1dfc1f97adf35529b2a25ebb7b12f2d39df27ef0db42c522f6ed91b45b55b33" },
+        "rust_conformance_sha256": { "const": "f77dc5b45496fff16e726c9ec4705b45bee3515992fc89ed9563bb18eb4000d8" },
+        "distribution_manifest_sha256": { "const": "7890fe2532da48ca84e54f5b1b883a38fd1a60ff58bb2999a056025335a4b5d3" },
+        "distribution_lock_sha256": { "const": "9e09dfd2de706d320c3bcd7cfe45b2f9a7560d5e9354809d2a41e5f52a2fba90" },
+        "canonical_output_sha256": { "const": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415" },
+        "rust_operation_sites": { "const": 68 },
+        "rust_operation_families": { "const": 38 },
+        "independent_operation_sites": { "const": 142 },
+        "independent_operation_families": { "const": 40 }
+      }
+    },
+    "result": { "const": "pass" },
+    "result_identity_sha256": { "const": "3940df56fc353cf47611448556052061edf691d7773f123b7bd8448cb44e6c87" }
+  },
+  "$defs": {
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation_sites", "operation_families", "site_proofs", "runtime_family_proofs", "behavior_mutations", "mutation_survivors", "scenarios", "signed_events", "delivery_orders", "processes", "public_budget_rebindings", "private_budget_changes"],
+      "properties": {
+        "operation_sites": { "const": 142 },
+        "operation_families": { "const": 40 },
+        "site_proofs": { "const": 142 },
+        "runtime_family_proofs": { "const": 40 },
+        "behavior_mutations": { "const": 10 },
+        "mutation_survivors": { "const": 0 },
+        "scenarios": { "const": 204 },
+        "signed_events": { "const": 771 },
+        "delivery_orders": { "const": 8 },
+        "processes": { "const": 2 },
+        "public_budget_rebindings": { "const": 8 },
+        "private_budget_changes": { "const": 8 }
+      }
+    }
+  }
+}

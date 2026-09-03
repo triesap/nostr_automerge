@@ -77,6 +77,18 @@ STEP_1479_SCOPE = [
     "tools/validation/distribution_v16_transition.schema.json",
     "tools/validation/rust_conformance_v16.schema.json",
 ]
+STEP_1480_SCOPE = [
+    "docs/execution/remediation_v16/ledger.md",
+    "implementation/runtime_ledger_v16.json",
+    "reports/opaque_causal_projection_v16.json",
+    "reports/spec_baseline.txt",
+    "scripts/validate_opaque_causal_projection_v16.py",
+    "scripts/validate_private_reproduction_boundary_v9.py",
+    "scripts/validate_remediation_v16.py",
+    "scripts/validate_spec.py",
+    "tools/nostr_automerge_xtask/src/validate.rs",
+    "tools/validation/opaque_causal_projection_v16.schema.json",
+]
 HISTORICAL_V15 = {
     "authority_sha256": "063e70835b18cfda959b8153b3d5e9ade3b28fa5fb5b3311ce49c9474a157c46",
     "findings_sha256": "a43379224ec0811cbafd27fb69a82ec47bfb1914b22167157c22d944b771d202",
@@ -291,12 +303,12 @@ def validate(authority: Any, findings: Any, ledger: Any, schema: Any) -> None:
     require(
         l["cursor"]
         == {
-            "active_rcld": 127,
-            "active_step": "step_1479",
-            "next_step": "step_1480",
+            "active_rcld": 128,
+            "active_step": "step_1480",
+            "next_step": "step_1481",
             "last_planned_step": "step_1482",
-            "remaining_checkpoint_count": 3,
-            "remaining_rcld_count": 2,
+            "remaining_checkpoint_count": 2,
+            "remaining_rcld_count": 0,
         },
         "ledger:cursor",
     )
@@ -305,16 +317,16 @@ def validate(authority: Any, findings: Any, ledger: Any, schema: Any) -> None:
         l["independent"]
         == {
             "checkpoints": ["P01", "P02", "P03", "P04", "P05"],
-            "completed": [],
-            "remaining": 5,
+            "completed": ["P01", "P02", "P03", "P04", "P05"],
+            "remaining": 0,
             "target_scope_policy": "owning_private_history_scope_only",
         },
         "ledger:independent",
     )
     require(
-        l["active_checkpoint_scope"] == STEP_1479_SCOPE
-        and STEP_1479_SCOPE == sorted(STEP_1479_SCOPE)
-        and all((ROOT / path).exists() for path in STEP_1479_SCOPE),
+        l["active_checkpoint_scope"] == STEP_1480_SCOPE
+        and STEP_1480_SCOPE == sorted(STEP_1480_SCOPE)
+        and all((ROOT / path).exists() for path in STEP_1480_SCOPE),
         "ledger:scope",
     )
     require(
@@ -386,6 +398,12 @@ def validate(authority: Any, findings: Any, ledger: Any, schema: Any) -> None:
                 "owner_class": "public",
                 "result": "pass",
             },
+            {
+                "step": "step_1479",
+                "candidate": "18cd91d8b69a57c1304ffc5d29490185401cc42d",
+                "owner_class": "public",
+                "result": "pass",
+            },
         ],
         "ledger:predecessors",
     )
@@ -412,7 +430,7 @@ def self_test(authority: Any, findings: Any, ledger: Any, schema: Any) -> int:
         ("remote", "authority", lambda value: value.update(remote_actions=1)),
         ("finding_order", "findings", lambda value: value["findings"].reverse()),
         ("finding_status", "findings", lambda value: value["findings"][0].update(status="closed")),
-        ("cursor", "ledger", lambda value: value["cursor"].update(next_step="step_1481")),
+        ("cursor", "ledger", lambda value: value["cursor"].update(next_step="step_1482")),
         ("private_scope", "ledger", lambda value: value["independent"].update(target_scope_policy="whole_worktree")),
         ("scope", "ledger", lambda value: value["active_checkpoint_scope"].pop()),
         ("predecessor", "ledger", lambda value: value["predecessors"][0].update(candidate="0" * 40)),
@@ -444,7 +462,7 @@ def main() -> int:
     validate(authority, findings, ledger, schema)
     mutations = self_test(authority, findings, ledger, schema)
     print(
-        "PASS: remediation-v16 active=step_1479 next=step_1480 "
+        "PASS: remediation-v16 active=step_1480 next=step_1481 "
         f"mutations={mutations} remote_actions=0"
     )
     return 0
