@@ -1,0 +1,6 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema","status","source_candidate","inventory_sha256","assurance_sha256","inventory_status","row_count","planned_proof_count","planned_mutation_count","terminal_rejects_provisional","terminal_rejects_planned","closure_evidence","result"]
+}

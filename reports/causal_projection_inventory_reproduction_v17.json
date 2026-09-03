@@ -1,0 +1,15 @@
+{
+  "schema": "nostr_automerge.causal_projection_inventory_reproduction.v17.v1",
+  "status": "expected_defect",
+  "source_candidate": "0a0ce4d4ee8723bbec8473f8e6c984be6aa93df1",
+  "inventory_sha256": "95562a0f032c6fcedf3e397f82f42072fa2179b30a48b7424e38c2bf39403de1",
+  "assurance_sha256": "a1dfc1f97adf35529b2a25ebb7b12f2d39df27ef0db42c522f6ed91b45b55b33",
+  "inventory_status": "provisional_complete",
+  "row_count": 68,
+  "planned_proof_count": 68,
+  "planned_mutation_count": 68,
+  "terminal_rejects_provisional": false,
+  "terminal_rejects_planned": false,
+  "closure_evidence": false,
+  "result": "reproduced"
+}
