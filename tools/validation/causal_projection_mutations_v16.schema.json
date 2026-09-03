@@ -1,0 +1,21 @@
+{
+  "title":"Nostr Automerge causal projection mutations v16",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema","status","candidate","targets","mutation_count","compile_failures","identity_only_rejections","survivors","retained_v15_classes","mutations","mutation_identity_sha256","result"],
+  "properties":{
+    "schema":{"const":"nostr_automerge.causal_projection_mutations.v16.v1"},
+    "status":{"const":"pass"},
+    "candidate":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "targets":{"type":"array","minItems":2,"maxItems":2,"uniqueItems":true,"items":{"type":"string"}},
+    "mutation_count":{"const":13},
+    "compile_failures":{"const":0},
+    "identity_only_rejections":{"const":1},
+    "survivors":{"const":0},
+    "retained_v15_classes":{"type":"array","minItems":8,"maxItems":8,"uniqueItems":true,"items":{"type":"string"}},
+    "mutations":{"type":"array","minItems":13,"maxItems":13,"items":{"$ref":"#/$defs/mutation"}},
+    "mutation_identity_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "result":{"const":"pass"}
+  },
+  "$defs":{"mutation":{"type":"object","additionalProperties":false,"required":["mutation_id","mutation_class","source_site","row_id","patch_sha256","command","compile_result","expected_property_code","actual_property_code","transcript_sha256","result"],"properties":{"mutation_id":{"type":"string"},"mutation_class":{"type":"string"},"source_site":{"type":"string"},"row_id":{"type":"string"},"patch_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},"command":{"type":"string"},"compile_result":{"const":"pass"},"expected_property_code":{"type":"string"},"actual_property_code":{"type":"string"},"transcript_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},"result":{"const":"killed"}}}}
+}

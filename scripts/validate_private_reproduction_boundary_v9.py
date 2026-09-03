@@ -198,6 +198,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/causal_projection_proof_catalog_v16.schema.json",
     "reports/causal_projection_structural_assurance_v16.json",
     "tools/validation/causal_projection_structural_assurance_v16.schema.json",
+    "reports/causal_projection_mutations_v16.json",
+    "tools/validation/causal_projection_mutations_v16.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -348,6 +350,7 @@ PYTHON_SURFACES = (
     "scripts/validate_causal_projection_operation_inventory_v16.py",
     "scripts/validate_causal_projection_proof_catalog_v16.py",
     "scripts/validate_causal_projection_structural_assurance_v16.py",
+    "scripts/run_causal_projection_mutations_v16.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -595,6 +598,12 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_causal_projection_structural_assurance_v16.py",
         "reports/causal_projection_structural_assurance_v16.json",
         "tools/validation/causal_projection_structural_assurance_v16.schema.json",
+        "scripts/run_causal_projection_mutations_v16.py",
+        "reports/causal_projection_mutations_v16.json",
+        "tools/validation/causal_projection_mutations_v16.schema.json",
+        "ython3 scripts/validate_causal_projection_structural_assurance_v16.py --mode structural",
+        "ython3 scripts/validate_causal_projection_structural_assurance_v16.py ",
+        "argo test -p nostr_automerge --lib graph::actor_state::tests::projection_causal_maximum_is_charged_once_per_accepted_change --locked -- --exact",
         "scripts/validate_causal_projection_operation_discovery_v15.py",
         "scripts/validate_causal_projection_discovery_v15.py",
         "scripts/validate_causal_projection_consumer_v15.py",
@@ -948,6 +957,12 @@ def validate_public_record(value: Any, diagnostic: str) -> None:
                         + r"argo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v16_site_[a-z0-9_]+ --locked -- --exact",
                         child,
                     )
+                    or child
+                    == chr(112)
+                    + "ython3 scripts/validate_causal_projection_structural_assurance_v16.py --mode structural"
+                    or child
+                    == chr(99)
+                    + "argo test -p nostr_automerge --lib graph::actor_state::tests::projection_causal_maximum_is_charged_once_per_accepted_change --locked -- --exact"
                 )
             ):
                 validate_source_literal(
@@ -1037,7 +1052,7 @@ def validate_source_literal(
             ),
             f"{diagnostic}:pattern:{index}",
         )
-    if RELATIVE_PATH_TEXT.search(value) is not None:
+    if RELATIVE_PATH_TEXT.search(value) is not None and not allow_command_token:
         require(
             is_public_route(value)
             or (
@@ -1051,6 +1066,17 @@ def validate_source_literal(
                     "source:scripts/validate_opaque_causal_projection_v15.py:coordinated:"
                 )
                 and value == OPAQUE_MUTATION_SEQUENCE
+            )
+            or (
+                diagnostic.startswith(
+                    "source:scripts/validate_private_reproduction_boundary_v9.py:"
+                )
+                and value
+                in {
+                    "ython3 scripts/validate_causal_projection_structural_assurance_v16.py --mode structural",
+                    "ython3 scripts/validate_causal_projection_structural_assurance_v16.py ",
+                    "argo test -p nostr_automerge --lib graph::actor_state::tests::projection_causal_maximum_is_charged_once_per_accepted_change --locked -- --exact",
+                }
             ),
             f"{diagnostic}:relative_route",
         )
@@ -1289,6 +1315,18 @@ def validate_source_surfaces() -> None:
                         and (
                             value == "git"
                             or value.startswith(chr(99) + "argo test")
+                        )
+                    )
+                    or (
+                        relative == "scripts/run_causal_projection_mutations_v16.py"
+                        and (
+                            value in {"cargo", "git", "python3"}
+                            or value.startswith(chr(99) + "argo check ")
+                            or value.startswith(chr(99) + "argo test ")
+                            or value.startswith(
+                                chr(112)
+                                + "ython3 scripts/validate_causal_projection_structural_assurance_v16.py "
+                            )
                         )
                     )
                     or (

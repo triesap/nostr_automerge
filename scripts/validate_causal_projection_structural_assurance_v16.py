@@ -195,12 +195,23 @@ def validate_wrapper(actor: str) -> None:
 def validate_build_ownership(actor: str) -> None:
     value = body(actor, "build_trusted_epoch_projection_observed", "UNMETERED_FINAL_TRAVERSAL")
     spans = call_spans(value, "perform_projection_build_operation")
+    source_calls = {
+        "member_count": 1,
+        "next_member": 1,
+        "accepted_member": 2,
+        "candidate": 2,
+        "dependency_count": 1,
+        "dependency": 1,
+    }
+    for symbol, count in source_calls.items():
+        require(value.count(f"source.{symbol}(") == count, "UNMETERED_FINAL_TRAVERSAL")
     outside = masked(value, spans)
     require(len(spans) == 50, "UNMETERED_FINAL_TRAVERSAL")
     require(
         re.search(r"\bsource\.(?:member_count|next_member|accepted_member|candidate|dependency_count|dependency)\s*\(", outside) is None,
         "UNMETERED_FINAL_TRAVERSAL",
     )
+    require("states.values()" not in outside, "UNMETERED_FINAL_TRAVERSAL")
     writes = re.compile(
         r"\b(?:dependencies|depended_on|remaining_dependencies|dependants|ready|states|frontier_heads|writer_contributions|causal_next_by_change)"
         r"\s*\.(?:entry|insert|remove|pop_first|get_mut)\s*\(|\*\s*remaining\s*="
@@ -452,18 +463,32 @@ def self_test(report: dict[str, Any], schema: dict[str, Any], sources: dict[str,
         caught += 1
     else:
         raise OwnershipError("SELF_TEST_SCHEMA_SURVIVED")
-    require(caught == 14, "SELF_TEST_COUNT")
+    doubled = dict(sources)
+    doubled["actor"] = replace_once(
+        doubled["actor"],
+        "|| source.next_member(),",
+        "|| { let member = source.next_member(); let _ = source.next_member(); member },",
+    )
+    try:
+        validate_structural(doubled, contract, inventory, proofs)
+    except OwnershipError as error:
+        require(error.code == "UNMETERED_FINAL_TRAVERSAL", "SELF_TEST_DOUBLE_OPERATION")
+        caught += 1
+    else:
+        raise OwnershipError("SELF_TEST_DOUBLE_OPERATION_SURVIVED")
+    require(caught == 15, "SELF_TEST_COUNT")
     return caught
 
 
-def load_sources() -> dict[str, str]:
-    return {role: (ROOT / path).read_text() for role, path in SOURCE_PATHS.items()}
+def load_sources(source_root: Path = ROOT) -> dict[str, str]:
+    return {role: (source_root / path).read_text() for role, path in SOURCE_PATHS.items()}
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["structural", "identity", "full"], default="full")
     parser.add_argument("--write-report", action="store_true")
+    parser.add_argument("--source-root", type=Path, default=ROOT)
     args = parser.parse_args()
     if args.write_report:
         REPORT.write_text(json.dumps(expected_report(), ensure_ascii=True, indent=2) + "\n")
@@ -472,7 +497,7 @@ def main() -> int:
     contract = json.loads(CONTRACT.read_text())
     inventory = json.loads(INVENTORY.read_text())
     proofs = json.loads(PROOFS.read_text())
-    sources = load_sources()
+    sources = load_sources(args.source_root.resolve())
     try:
         if args.mode in {"structural", "full"}:
             validate_structural(sources, contract, inventory, proofs)

@@ -67,3 +67,12 @@ inventory, proof catalog, and frozen contract. All ten closed defect classes
 are rejected with their exact property code; neutral and lexical-comment edits
 pass structural validation while failing identity only. The next checkpoint
 is `step_1477`.
+
+`step_1477` executes 13 localized mutations in a detached worktree. Every
+mutation compiles, is rejected by its exact structural or behavioral property
+code, restores both source files, and leaves no survivor. The campaign covers
+actor ownership, stage order, the sole causal comparison, counters, final
+traversal, state writes, charge order, typed stops, post-stop work,
+publication, alternate consumers, repeated pulls, and the retained v15 causal
+maximum semantic mutation. A neutral identity-only edit is explicitly rejected
+as nonbehavioral evidence. The next checkpoint is `step_1478`.
