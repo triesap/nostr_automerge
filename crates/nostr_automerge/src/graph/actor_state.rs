@@ -213,8 +213,55 @@ macro_rules! projection_build_sites {
                     $( Self::$site => WorkCounter::$counter, )+
                 }
             }
+
+            const fn id(self) -> &'static str {
+                match self {
+                    $( Self::$site => stringify!($site), )+
+                }
+            }
+
+            const fn descriptor(self) -> ProjectionBuildDescriptor {
+                ProjectionBuildDescriptor {
+                    site: self,
+                    site_id: self.id(),
+                    phase: "construction",
+                    operation: self.operation(),
+                    counter: self.counter(),
+                    abstract_owner_class: "source_operation",
+                    applicability: "public_rust",
+                }
+            }
         }
     };
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct ProjectionBuildDescriptor {
+    site: ProjectionBuildSite,
+    site_id: &'static str,
+    phase: &'static str,
+    operation: ProjectionBuildOperation,
+    counter: WorkCounter,
+    abstract_owner_class: &'static str,
+    applicability: &'static str,
+}
+
+impl ProjectionBuildDescriptor {
+    const fn operation(self) -> ProjectionBuildOperation {
+        self.operation
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ProjectionBuildObservationKind {
+    ChargeAttempt,
+    TargetCompleted,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct ProjectionBuildObservation {
+    descriptor: ProjectionBuildDescriptor,
+    kind: ProjectionBuildObservationKind,
 }
 
 projection_build_sites! {
@@ -273,12 +320,20 @@ projection_build_sites! {
 fn perform_projection_build_operation<T, E>(
     site: ProjectionBuildSite,
     charge: &mut impl FnMut(WorkCounter) -> Result<(), E>,
-    observed: &mut impl FnMut(ProjectionBuildOperation),
+    observed: &mut impl FnMut(ProjectionBuildObservation),
     perform: impl FnOnce() -> T,
 ) -> Result<T, MeteredActorStateError<E>> {
-    charge(site.counter()).map_err(MeteredActorStateError::Work)?;
+    let descriptor = site.descriptor();
+    observed(ProjectionBuildObservation {
+        descriptor,
+        kind: ProjectionBuildObservationKind::ChargeAttempt,
+    });
+    charge(descriptor.counter).map_err(MeteredActorStateError::Work)?;
     let result = perform();
-    observed(site.operation());
+    observed(ProjectionBuildObservation {
+        descriptor,
+        kind: ProjectionBuildObservationKind::TargetCompleted,
+    });
     Ok(result)
 }
 
@@ -894,7 +949,7 @@ fn build_trusted_epoch_projection_observed<'a, E>(
     changes: &'a BTreeMap<ChangeHash, ChangeCandidate>,
     source: &mut impl EpochProjectionSource<'a>,
     mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
-    mut built: impl FnMut(ProjectionBuildOperation),
+    mut built: impl FnMut(ProjectionBuildObservation),
     mut published: impl FnMut(ProjectionPublicationOperation),
 ) -> Result<TrustedEpochProjection<'a>, MeteredActorStateError<E>> {
     let member_count = perform_projection_build_operation(
@@ -1384,6 +1439,7 @@ pub(crate) mod tests {
         ActorDecisionOperation, ActorStateError, CandidateSemanticStage,
         CanonicalEpochProjectionSource, CausalNextOperation, EpochActorState,
         EpochProjectionSource, FrontierComparisonOperation, MeteredActorStateError,
+        ProjectionBuildDescriptor, ProjectionBuildObservation, ProjectionBuildObservationKind,
         ProjectionBuildOperation, ProjectionBuildSite, ProjectionPublicationOperation,
         TrustedEpochProjection, build_trusted_epoch_projection,
         build_trusted_epoch_projection_observed, initialize_actor_states,
@@ -1575,10 +1631,15 @@ pub(crate) mod tests {
             events.borrow_mut().push(("charge", Some(counter), None));
             Ok::<_, Completion>(())
         };
-        let mut observed = |operation| {
-            events
-                .borrow_mut()
-                .push(("observed", None, Some(operation)));
+        let mut observed = |observation: ProjectionBuildObservation| {
+            events.borrow_mut().push((
+                match observation.kind {
+                    ProjectionBuildObservationKind::ChargeAttempt => "attempt",
+                    ProjectionBuildObservationKind::TargetCompleted => "observed",
+                },
+                Some(observation.descriptor.counter),
+                Some(observation.descriptor.site),
+            ));
         };
         let result = perform_projection_build_operation(
             ProjectionBuildSite::NextMemberPull,
@@ -1593,12 +1654,17 @@ pub(crate) mod tests {
         assert_eq!(
             events.into_inner(),
             [
+                (
+                    "attempt",
+                    Some(WorkCounter::GraphNode),
+                    Some(ProjectionBuildSite::NextMemberPull),
+                ),
                 ("charge", Some(WorkCounter::GraphNode), None),
                 ("operation", None, None),
                 (
                     "observed",
-                    None,
-                    Some(ProjectionBuildOperation::CanonicalSourcePull)
+                    Some(WorkCounter::GraphNode),
+                    Some(ProjectionBuildSite::NextMemberPull),
                 ),
             ]
         );
@@ -1617,7 +1683,7 @@ pub(crate) mod tests {
             Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
         ));
         assert!(!performed.get());
-        assert_eq!(observations.get(), 0);
+        assert_eq!(observations.get(), 1);
     }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1628,8 +1694,9 @@ pub(crate) mod tests {
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     enum BuildTrace {
+        Attempt(ProjectionBuildDescriptor),
         Charge(WorkCounter),
-        Operation(ProjectionBuildOperation),
+        Operation(ProjectionBuildDescriptor),
     }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -2059,11 +2126,12 @@ pub(crate) mod tests {
         assert!(complete.is_ok());
         let mut charges = 0_usize;
         let target_charge = trace.iter().find_map(|entry| match entry {
+            BuildTrace::Attempt(_) => None,
             BuildTrace::Charge(_) => {
                 charges = charges.saturating_add(1);
                 None
             }
-            BuildTrace::Operation(operation) if *operation == family => Some(charges),
+            BuildTrace::Operation(site) if site.operation() == family => Some(charges),
             BuildTrace::Operation(_) => None,
         });
         assert!(target_charge.is_some_and(|value| value > 0));
@@ -2085,7 +2153,7 @@ pub(crate) mod tests {
                 blocked_trace
                     .iter()
                     .filter(
-                        |entry| matches!(entry, BuildTrace::Operation(value) if *value == family)
+                        |entry| matches!(entry, BuildTrace::Operation(site) if site.operation() == family)
                     )
                     .count(),
                 0
@@ -2098,11 +2166,9 @@ pub(crate) mod tests {
                 allowance,
                 Completion::BudgetExhausted,
             );
-            assert!(
-                admitted_trace
-                    .iter()
-                    .any(|entry| matches!(entry, BuildTrace::Operation(value) if *value == family))
-            );
+            assert!(admitted_trace.iter().any(
+                |entry| matches!(entry, BuildTrace::Operation(site) if site.operation() == family)
+            ));
         }
     }
 
@@ -4389,11 +4455,76 @@ pub(crate) mod tests {
                     Ok(())
                 }
             },
-            |operation| trace.borrow_mut().push(BuildTrace::Operation(operation)),
+            |observation| {
+                trace.borrow_mut().push(match observation.kind {
+                    ProjectionBuildObservationKind::ChargeAttempt => {
+                        BuildTrace::Attempt(observation.descriptor)
+                    }
+                    ProjectionBuildObservationKind::TargetCompleted => {
+                        BuildTrace::Operation(observation.descriptor)
+                    }
+                });
+            },
             |_| {},
         );
         let observed = trace.borrow().clone();
         (result, observed)
+    }
+
+    #[test]
+    fn projection_build_trace_records_exact_attempt_and_completion_descriptors() {
+        let first = candidate(1, 1, 1, 1);
+        let accepted = BTreeSet::from([first.change_hash]);
+        let changes = BTreeMap::from([(first.change_hash, first)]);
+        let (result, trace) = observed_projection_build_operations(
+            &accepted,
+            &changes,
+            usize::MAX,
+            Completion::BudgetExhausted,
+        );
+        assert!(result.is_ok());
+        assert!(!trace.is_empty());
+        assert_eq!(trace.len() % 3, 0);
+        for events in trace.chunks_exact(3) {
+            assert!(matches!(
+                events,
+                [
+                    BuildTrace::Attempt(_),
+                    BuildTrace::Charge(_),
+                    BuildTrace::Operation(_),
+                ]
+            ));
+            let [
+                BuildTrace::Attempt(attempt),
+                BuildTrace::Charge(counter),
+                BuildTrace::Operation(completed),
+            ] = events
+            else {
+                return;
+            };
+            assert_eq!(attempt, completed);
+            assert_eq!(*counter, attempt.counter);
+            assert_eq!(attempt.site_id, attempt.site.id());
+            assert_eq!(attempt.operation, attempt.site.operation());
+            assert_eq!(attempt.phase, "construction");
+            assert_eq!(attempt.abstract_owner_class, "source_operation");
+            assert_eq!(attempt.applicability, "public_rust");
+        }
+
+        let injected = Completion::Cancelled;
+        let (blocked, blocked_trace) =
+            observed_projection_build_operations(&accepted, &changes, 0, injected);
+        assert!(matches!(
+            blocked,
+            Err(MeteredActorStateError::Work(error)) if error == injected
+        ));
+        assert_eq!(
+            blocked_trace,
+            [
+                BuildTrace::Attempt(ProjectionBuildSite::MemberCountRead.descriptor()),
+                BuildTrace::Charge(WorkCounter::GraphNode),
+            ]
+        );
     }
 
     #[test]
@@ -4413,28 +4544,7 @@ pub(crate) mod tests {
         let owned = full_trace
             .iter()
             .filter_map(|entry| match entry {
-                BuildTrace::Operation(
-                    operation @ (ProjectionBuildOperation::SourceCountRead
-                    | ProjectionBuildOperation::ExpectedCountComparison
-                    | ProjectionBuildOperation::CanonicalSourcePull
-                    | ProjectionBuildOperation::CanonicalOrderCompare
-                    | ProjectionBuildOperation::MembershipLookup
-                    | ProjectionBuildOperation::CandidateLookup
-                    | ProjectionBuildOperation::CandidateIdentityComparison
-                    | ProjectionBuildOperation::DependencyCountRead
-                    | ProjectionBuildOperation::DependencyLookup
-                    | ProjectionBuildOperation::CandidateReadinessComparison
-                    | ProjectionBuildOperation::StateLookup
-                    | ProjectionBuildOperation::ReadinessTransition
-                    | ProjectionBuildOperation::CandidateKindComparison
-                    | ProjectionBuildOperation::CheckedArithmetic
-                    | ProjectionBuildOperation::RemainingStateWrite
-                    | ProjectionBuildOperation::MapInsertion
-                    | ProjectionBuildOperation::SetInsertion
-                    | ProjectionBuildOperation::CausalMaximumCompare
-                    | ProjectionBuildOperation::CompletionComparison
-                    | ProjectionBuildOperation::ResultPublication),
-                ) => Some(*operation),
+                BuildTrace::Operation(site) => Some(site.operation()),
                 _ => None,
             })
             .collect::<Vec<_>>();
@@ -4585,7 +4695,7 @@ pub(crate) mod tests {
             .iter()
             .enumerate()
             .filter_map(|(index, entry)| match entry {
-                BuildTrace::Operation(operation) if owned.contains(operation) => {
+                BuildTrace::Operation(site) if owned.contains(&site.operation()) => {
                     assert!(matches!(
                         index.checked_sub(1).and_then(|prior| full_trace.get(prior)),
                         Some(BuildTrace::Charge(_))
@@ -4668,7 +4778,9 @@ pub(crate) mod tests {
                     .filter(|entry| {
                         matches!(
                             entry,
-                            BuildTrace::Operation(ProjectionBuildOperation::CausalMaximumCompare)
+                            BuildTrace::Operation(site)
+                                if site.operation()
+                                    == ProjectionBuildOperation::CausalMaximumCompare
                         )
                     })
                     .count(),
@@ -4695,8 +4807,8 @@ pub(crate) mod tests {
         let operations = trace
             .iter()
             .filter_map(|entry| match entry {
-                BuildTrace::Operation(operation) => Some(*operation),
-                BuildTrace::Charge(_) => None,
+                BuildTrace::Operation(site) => Some(site.operation()),
+                BuildTrace::Attempt(_) | BuildTrace::Charge(_) => None,
             })
             .collect::<Vec<_>>();
         assert_eq!(operations.len(), 74);
@@ -4736,6 +4848,7 @@ pub(crate) mod tests {
         let mut successful_charges = 0_usize;
         for entry in &trace {
             match entry {
+                BuildTrace::Attempt(_) => {}
                 BuildTrace::Charge(_) => successful_charges += 1,
                 BuildTrace::Operation(expected) => {
                     operation_ordinal += 1;
@@ -4768,7 +4881,7 @@ pub(crate) mod tests {
                                 .iter()
                                 .filter_map(|entry| match entry {
                                     BuildTrace::Operation(operation) => Some(*operation),
-                                    BuildTrace::Charge(_) => None,
+                                    BuildTrace::Attempt(_) | BuildTrace::Charge(_) => None,
                                 })
                                 .collect::<Vec<_>>();
                             assert_eq!(
@@ -5452,11 +5565,12 @@ pub(crate) mod tests {
         );
         let mut charges = 0_usize;
         let target = trace.iter().find_map(|entry| match entry {
+            BuildTrace::Attempt(_) => None,
             BuildTrace::Charge(_) => {
                 charges = charges.saturating_add(1);
                 None
             }
-            BuildTrace::Operation(operation) if *operation == family => Some(charges),
+            BuildTrace::Operation(site) if site.operation() == family => Some(charges),
             BuildTrace::Operation(_) => None,
         });
         assert!(target.is_some(), "unreachable build family");
@@ -5469,7 +5583,7 @@ pub(crate) mod tests {
             Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
         ));
         assert!(!blocked.iter().any(
-            |entry| matches!(entry, BuildTrace::Operation(operation) if *operation == family)
+            |entry| matches!(entry, BuildTrace::Operation(site) if site.operation() == family)
         ));
     }
 
