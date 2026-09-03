@@ -1311,8 +1311,8 @@
       "counter": "graph_edge",
       "abstract_owner_class": "direct_operation",
       "reachability_artifact": "e7aaa7d1454602fb7644466187a260f19f556454d4f7f9659f2cc130cdda7cc6",
-      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_frontier_equality_compare",
-      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_frontier_equality_compare --locked -- --exact --nocapture",
+      "proof_test": "graph::actor_state::tests::causal_projection_v17_site_frontier_equality_compare",
+      "proof_command": "cargo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v17_site_frontier_equality_compare --locked -- --exact --nocapture",
       "proof_status": "pending_actual_execution",
       "source_candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
       "result": "pass"
@@ -1332,6 +1332,6 @@
     "planned_counts": false,
     "proof_evidence_terminal": false
   },
-  "result_identity_sha256": "e8e21f025b626bf9b95c2a3b01ca5bc775f0cd9e390ea5e5cf64c43c2f5fe4c1",
+  "result_identity_sha256": "781b6f4a6ebc77cf3137dc21aac6ea439104713171b301b092ad6f1a699acccc",
   "result": "pass"
 }

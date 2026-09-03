@@ -97,7 +97,10 @@ def registry(source: str, macro: str, with_counter: bool) -> tuple[list[tuple[st
 
 def exact_test(phase: str, site: str) -> str:
     test_phase = "frontier" if phase == "frontier_comparison" else phase
-    return f"graph::actor_state::tests::causal_projection_v17_site_{test_phase}_{snake(site)}"
+    site_suffix = snake(site)
+    if test_phase == "frontier" and site_suffix.startswith("frontier_"):
+        site_suffix = site_suffix.removeprefix("frontier_")
+    return f"graph::actor_state::tests::causal_projection_v17_site_{test_phase}_{site_suffix}"
 
 
 def derive_rows(source: str) -> list[dict[str, Any]]:
@@ -168,6 +171,7 @@ def validate(report: object, schema: object, candidate_source: str, current_sour
     require(report["status"] == "provisional", "STATUS_NOT_PROVISIONAL")
     require(report["counts"] == {"rows": 68, "phases": {"projection_construction": 50, "actor_sequence": 4, "causal_counter": 3, "frontier_comparison": 11}}, "COUNT_MISMATCH")
     require(all(list(row) == ROW_FIELDS for row in report["rows"]), "ROW_SHAPE")
+    require(all(candidate_source.count(row["proof_test"].rsplit("::", 1)[-1]) == 1 for row in report["rows"]), "PROOF_TEST_MISSING")
     require(type(schema) is dict and schema.get("additionalProperties") is False, "SCHEMA_OPEN")
     require(schema.get("required") == TOP_FIELDS, "SCHEMA_REQUIRED_MISMATCH")
     require(schema["properties"]["rows"].get("minItems") == schema["properties"]["rows"].get("maxItems") == 68, "SCHEMA_ROW_COUNT")
