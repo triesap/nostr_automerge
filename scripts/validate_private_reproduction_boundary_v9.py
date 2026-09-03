@@ -75,6 +75,7 @@ JSON_RECORDS = (
     "reports/opaque_causal_projection_v14.json",
     "reports/opaque_causal_projection_v15.json",
     "reports/opaque_causal_projection_v16.json",
+    "reports/causal_projection_combined_assurance_v16.json",
     "reports/causal_projection_combined_assurance_v15.json",
     "reports/causal_projection_final_decision_v15.json",
     "implementation/runtime_ledger_v9.json",
@@ -98,6 +99,7 @@ JSON_RECORDS = (
     "tools/validation/opaque_causal_projection_v14.schema.json",
     "tools/validation/opaque_causal_projection_v15.schema.json",
     "tools/validation/opaque_causal_projection_v16.schema.json",
+    "tools/validation/causal_projection_combined_assurance_v16.schema.json",
     "tools/validation/causal_projection_combined_assurance_v15.schema.json",
     "tools/validation/causal_projection_final_decision_v15.schema.json",
     "tools/validation/distribution_v13_parity.schema.json",
@@ -355,6 +357,7 @@ PYTHON_SURFACES = (
     "scripts/validate_rust_conformance_v15.py",
     "scripts/validate_opaque_causal_projection_v15.py",
     "scripts/validate_opaque_causal_projection_v16.py",
+    "scripts/validate_causal_projection_combined_assurance_v16.py",
     "scripts/validate_causal_projection_combined_assurance_v15.py",
     "scripts/validate_causal_projection_final_decision_v15.py",
     "scripts/validate_remediation_v16.py",
@@ -593,6 +596,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_opaque_causal_projection_v16.py",
         "reports/opaque_causal_projection_v16.json",
         "tools/validation/opaque_causal_projection_v16.schema.json",
+        "scripts/validate_causal_projection_combined_assurance_v16.py",
+        "reports/causal_projection_combined_assurance_v16.json",
+        "tools/validation/causal_projection_combined_assurance_v16.schema.json",
         "scripts/validate_causal_projection_combined_assurance_v15.py",
         "reports/causal_projection_combined_assurance_v15.json",
         "tools/validation/causal_projection_combined_assurance_v15.schema.json",
@@ -1306,6 +1312,7 @@ def validate_source_surfaces() -> None:
                             "scripts/validate_remediation_v12_ancestry_authorization_gate.py",
                             "scripts/validate_remediation_v16.py",
                             "scripts/validate_opaque_causal_projection_v16.py",
+                            "scripts/validate_causal_projection_combined_assurance_v16.py",
                             "scripts/reproduce_remediation_v16.py",
                             "scripts/generate_distribution_v13.py",
                             "scripts/generate_distribution_v14.py",
@@ -1390,6 +1397,11 @@ def validate_source_surfaces() -> None:
                         value in {"cargo", "git"}
                         and relative
                         == "scripts/validate_causal_projection_combined_assurance_v14.py"
+                    )
+                    or (
+                        value in {"cargo", "git"}
+                        and relative
+                        == "scripts/validate_causal_projection_combined_assurance_v16.py"
                     )
                     or (
                         value in {"cargo", "git"}

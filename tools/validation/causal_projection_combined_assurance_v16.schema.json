@@ -1,0 +1,33 @@
+{
+  "title": "nostr_automerge causal projection combined assurance v16",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "candidate", "imports", "implementation_candidates", "counts", "applicability", "identities", "finding_closure", "result_classes", "canonical_process_bytes", "release_claimed", "publication_claimed", "remote_actions", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": { "const": "nostr_automerge.causal_projection_combined_assurance.v16.v1" },
+    "status": { "const": "verified" },
+    "candidate": { "const": "ef4bf8b561500d82db305d2180ec5df3a2d3e8b7" },
+    "imports": { "$ref": "#/$defs/imports" },
+    "implementation_candidates": { "$ref": "#/$defs/candidates" },
+    "counts": { "$ref": "#/$defs/counts" },
+    "applicability": { "$ref": "#/$defs/applicability" },
+    "identities": { "$ref": "#/$defs/identities" },
+    "finding_closure": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "$ref": "#/$defs/finding" } },
+    "result_classes": { "const": ["actor_sequence_ownership", "language_specific_counter_binding", "property_specific_mutation_qualification", "cross_implementation_parity", "distribution_byte_identity"] },
+    "canonical_process_bytes": { "const": "identical" },
+    "release_claimed": { "const": false },
+    "publication_claimed": { "const": false },
+    "remote_actions": { "const": 0 },
+    "result": { "const": "pass" },
+    "result_identity_sha256": { "const": "ed9cfabc4e5ecbfbad415c63da92e510901f930add68f37cdcb7acec9c994323" }
+  },
+  "$defs": {
+    "imports": { "type": "object", "additionalProperties": false, "required": ["operation_contract_sha256", "rust_inventory_sha256", "rust_proof_catalog_sha256", "rust_structural_assurance_sha256", "rust_mutation_sha256", "rust_assurance_sha256", "rust_conformance_sha256", "opaque_import_sha256", "distribution_manifest_sha256", "distribution_lock_sha256"], "properties": { "operation_contract_sha256": { "type": "string" }, "rust_inventory_sha256": { "type": "string" }, "rust_proof_catalog_sha256": { "type": "string" }, "rust_structural_assurance_sha256": { "type": "string" }, "rust_mutation_sha256": { "type": "string" }, "rust_assurance_sha256": { "type": "string" }, "rust_conformance_sha256": { "type": "string" }, "opaque_import_sha256": { "type": "string" }, "distribution_manifest_sha256": { "type": "string" }, "distribution_lock_sha256": { "type": "string" } } },
+    "candidates": { "type": "object", "additionalProperties": false, "required": ["public_import", "public_rust_assurance", "public_distribution", "independent_assurance", "independent_implementation"], "properties": { "public_import": { "type": "string" }, "public_rust_assurance": { "type": "string" }, "public_distribution": { "type": "string" }, "independent_assurance": { "type": "string" }, "independent_implementation": { "type": "string" } } },
+    "counts": { "type": "object", "additionalProperties": false, "required": ["rust_operation_sites", "rust_operation_families", "rust_site_proofs", "independent_operation_sites", "independent_operation_families", "independent_site_proofs", "independent_family_proofs", "rust_behavioral_mutations", "independent_behavioral_mutations", "combined_behavioral_mutations", "mutation_survivors", "scenarios", "signed_events", "delivery_orders", "processes", "public_budget_rebindings", "independent_budget_changes"], "properties": { "rust_operation_sites": { "const": 68 }, "rust_operation_families": { "const": 38 }, "rust_site_proofs": { "const": 68 }, "independent_operation_sites": { "const": 142 }, "independent_operation_families": { "const": 40 }, "independent_site_proofs": { "const": 142 }, "independent_family_proofs": { "const": 40 }, "rust_behavioral_mutations": { "const": 13 }, "independent_behavioral_mutations": { "const": 10 }, "combined_behavioral_mutations": { "const": 23 }, "mutation_survivors": { "const": 0 }, "scenarios": { "const": 204 }, "signed_events": { "const": 771 }, "delivery_orders": { "const": 8 }, "processes": { "const": 2 }, "public_budget_rebindings": { "const": 8 }, "independent_budget_changes": { "const": 8 } } },
+    "applicability": { "type": "object", "additionalProperties": false, "required": ["shared_abstract_classes", "rust_concrete_counter", "independent_counter_result", "binding_rule"], "properties": { "shared_abstract_classes": { "const": ["projection_construction", "actor_sequence", "causal_counter_consumer", "frontier_comparison"] }, "rust_concrete_counter": { "const": "GraphNode" }, "independent_counter_result": { "const": "counter_binding_exact" }, "binding_rule": { "const": "shared_abstract_owner_language_specific_concrete_counter" } } },
+    "identities": { "type": "object", "additionalProperties": false, "required": ["operation_contract_sha256", "distribution_identity_sha256", "canonical_output_sha256", "serialized_run_sha256", "rust_assurance_identity_sha256", "opaque_assurance_identity_sha256", "opaque_projection_identity_sha256", "opaque_import_identity_sha256"], "properties": { "operation_contract_sha256": { "type": "string" }, "distribution_identity_sha256": { "type": "string" }, "canonical_output_sha256": { "type": "string" }, "serialized_run_sha256": { "type": "string" }, "rust_assurance_identity_sha256": { "type": "string" }, "opaque_assurance_identity_sha256": { "type": "string" }, "opaque_projection_identity_sha256": { "type": "string" }, "opaque_import_identity_sha256": { "type": "string" } } },
+    "finding": { "type": "object", "additionalProperties": false, "required": ["id", "status", "evidence"], "properties": { "id": { "enum": ["FINDING_116", "FINDING_117", "FINDING_118"] }, "status": { "const": "closed" }, "evidence": { "type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true, "items": { "type": "string" } } }
+  }
+}
+}

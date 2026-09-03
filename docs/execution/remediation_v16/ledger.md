@@ -106,3 +106,12 @@ cross-binds the public 68-site and 38-family Rust evidence and distribution v16
 without exposing private paths, source, commands, logs, layout, or unrelated
 operator state. Findings 116 through 118 remain open until combined assurance.
 The next checkpoint is `step_1481`.
+
+`step_1481` combines the independently committed TypeScript assurance with the
+public Rust assurance and distribution v16. The closed record binds the shared
+actor-sequence, causal-counter, and frontier-comparison owner classes to each
+implementation's concrete counters, proves 23 independently qualified behavior
+mutations with zero survivors, and preserves byte-identical output for all 204
+scenarios, 771 signed Events, and eight delivery orders across two processes.
+Findings 116 through 118 are closed. External assurance and publication remain
+held. The next checkpoint is `step_1482`.

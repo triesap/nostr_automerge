@@ -1,0 +1,94 @@
+{
+  "schema": "nostr_automerge.causal_projection_combined_assurance.v16.v1",
+  "status": "verified",
+  "candidate": "ef4bf8b561500d82db305d2180ec5df3a2d3e8b7",
+  "imports": {
+    "operation_contract_sha256": "bbd58073a7dab83d7a96541ba7d1a90e0ceb5c4876bb4533d7b196058b5e7b3b",
+    "rust_inventory_sha256": "95562a0f032c6fcedf3e397f82f42072fa2179b30a48b7424e38c2bf39403de1",
+    "rust_proof_catalog_sha256": "486dd1f70a108166a5380ef533f707f1aeebac6b4f5b2d1f20708a9a4e0f4ca0",
+    "rust_structural_assurance_sha256": "fbd2b12e558f54d161dc778e189cccacd391c51db1ecbb89e0c58a535076c9d1",
+    "rust_mutation_sha256": "d4d88b74b5de2f73a46f17436c62aa185519ecaed04bf5868dcf93ebd5e9e490",
+    "rust_assurance_sha256": "a1dfc1f97adf35529b2a25ebb7b12f2d39df27ef0db42c522f6ed91b45b55b33",
+    "rust_conformance_sha256": "f77dc5b45496fff16e726c9ec4705b45bee3515992fc89ed9563bb18eb4000d8",
+    "opaque_import_sha256": "6f9aa02dd558b755343d259f645cc5a2ac3f3481aad5d1d463fa1927b0b5e23c",
+    "distribution_manifest_sha256": "7890fe2532da48ca84e54f5b1b883a38fd1a60ff58bb2999a056025335a4b5d3",
+    "distribution_lock_sha256": "9e09dfd2de706d320c3bcd7cfe45b2f9a7560d5e9354809d2a41e5f52a2fba90"
+  },
+  "implementation_candidates": {
+    "public_import": "ef4bf8b561500d82db305d2180ec5df3a2d3e8b7",
+    "public_rust_assurance": "f52fdb9da47ccb6cb9dbc25c7b50954679d972b2",
+    "public_distribution": "18cd91d8b69a57c1304ffc5d29490185401cc42d",
+    "independent_assurance": "f931df45c070b7617df61205963bbbd46d07618c",
+    "independent_implementation": "b15c703d5956024f9500647b4446d057227a0ebb"
+  },
+  "counts": {
+    "rust_operation_sites": 68,
+    "rust_operation_families": 38,
+    "rust_site_proofs": 68,
+    "independent_operation_sites": 142,
+    "independent_operation_families": 40,
+    "independent_site_proofs": 142,
+    "independent_family_proofs": 40,
+    "rust_behavioral_mutations": 13,
+    "independent_behavioral_mutations": 10,
+    "combined_behavioral_mutations": 23,
+    "mutation_survivors": 0,
+    "scenarios": 204,
+    "signed_events": 771,
+    "delivery_orders": 8,
+    "processes": 2,
+    "public_budget_rebindings": 8,
+    "independent_budget_changes": 8
+  },
+  "applicability": {
+    "shared_abstract_classes": [
+      "projection_construction",
+      "actor_sequence",
+      "causal_counter_consumer",
+      "frontier_comparison"
+    ],
+    "rust_concrete_counter": "GraphNode",
+    "independent_counter_result": "counter_binding_exact",
+    "binding_rule": "shared_abstract_owner_language_specific_concrete_counter"
+  },
+  "identities": {
+    "operation_contract_sha256": "bbd58073a7dab83d7a96541ba7d1a90e0ceb5c4876bb4533d7b196058b5e7b3b",
+    "distribution_identity_sha256": "3b360ceab9d24c2baacf9cd4fd594ebf65a62717b1799a080db6b0c0b4e81318",
+    "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+    "serialized_run_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344",
+    "rust_assurance_identity_sha256": "1c7379e4ed1840433d08d7933f76f9d5f2481a711102bc34a82db6c12abfd901",
+    "opaque_assurance_identity_sha256": "659adb0ec14959e649adb9212ef7e8d0b079a500432e9da7c9afe9b1b063c498",
+    "opaque_projection_identity_sha256": "9e3856536b461a5d8e1641ad701c6bf425e0fc6b0ee235f1a866f01798ca39b8",
+    "opaque_import_identity_sha256": "3940df56fc353cf47611448556052061edf691d7773f123b7bd8448cb44e6c87"
+  },
+  "finding_closure": [
+    {
+      "id": "FINDING_116",
+      "status": "closed",
+      "evidence": ["actor_stage_contract", "rust_assurance", "independent_assurance", "distribution_v16"]
+    },
+    {
+      "id": "FINDING_117",
+      "status": "closed",
+      "evidence": ["counter_contract", "rust_counter_binding", "independent_counter_binding", "coordinated_drift_rejection"]
+    },
+    {
+      "id": "FINDING_118",
+      "status": "closed",
+      "evidence": ["rust_mutations", "independent_mutations", "structural_identity_split", "zero_survivors"]
+    }
+  ],
+  "result_classes": [
+    "actor_sequence_ownership",
+    "language_specific_counter_binding",
+    "property_specific_mutation_qualification",
+    "cross_implementation_parity",
+    "distribution_byte_identity"
+  ],
+  "canonical_process_bytes": "identical",
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "ed9cfabc4e5ecbfbad415c63da92e510901f930add68f37cdcb7acec9c994323"
+}
