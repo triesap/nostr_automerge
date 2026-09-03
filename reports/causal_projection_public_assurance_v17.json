@@ -1,0 +1,200 @@
+{
+  "schema": "nostr_automerge.causal_projection_public_assurance.v17.v1",
+  "status": "final",
+  "execution_mode": "actual_twice",
+  "evidence_graph": {
+    "path": "reports/causal_projection_evidence_graph_v17.json",
+    "candidate": "e74dcdb3fdaa30aeeb59bab53126bbee82a64557",
+    "sha256": "283224879f13a69840e7222523649cc9639d73ae3cbe99464127b78f0121c527"
+  },
+  "commands": [
+    {
+      "name": "format",
+      "command": "cargo extbuild run -- cargo fmt --all -- --check"
+    },
+    {
+      "name": "check",
+      "command": "cargo extbuild run -- cargo check --workspace --all-targets --locked"
+    },
+    {
+      "name": "test",
+      "command": "cargo extbuild run -- cargo test --workspace --all-targets --locked"
+    },
+    {
+      "name": "clippy",
+      "command": "cargo extbuild run -- cargo clippy --workspace --all-targets --all-features --locked -- -D warnings"
+    },
+    {
+      "name": "rustdoc",
+      "command": "cargo extbuild run -- cargo doc --workspace --no-deps --locked"
+    },
+    {
+      "name": "xtask",
+      "command": "cargo extbuild run -- cargo run -p nostr_automerge_xtask -- validate"
+    },
+    {
+      "name": "specification",
+      "command": "cargo extbuild run -- python3 scripts/validate_spec.py"
+    },
+    {
+      "name": "diff",
+      "command": "git diff --check"
+    }
+  ],
+  "runs": [
+    {
+      "ordinal": 1,
+      "commands": [
+        {
+          "name": "format",
+          "command": "cargo extbuild run -- cargo fmt --all -- --check",
+          "exit_status": 0,
+          "test_result_ok_count": 0,
+          "pass_marker_count": 0,
+          "result": "pass"
+        },
+        {
+          "name": "check",
+          "command": "cargo extbuild run -- cargo check --workspace --all-targets --locked",
+          "exit_status": 0,
+          "test_result_ok_count": 0,
+          "pass_marker_count": 0,
+          "result": "pass"
+        },
+        {
+          "name": "test",
+          "command": "cargo extbuild run -- cargo test --workspace --all-targets --locked",
+          "exit_status": 0,
+          "test_result_ok_count": 25,
+          "pass_marker_count": 0,
+          "result": "pass"
+        },
+        {
+          "name": "clippy",
+          "command": "cargo extbuild run -- cargo clippy --workspace --all-targets --all-features --locked -- -D warnings",
+          "exit_status": 0,
+          "test_result_ok_count": 0,
+          "pass_marker_count": 0,
+          "result": "pass"
+        },
+        {
+          "name": "rustdoc",
+          "command": "cargo extbuild run -- cargo doc --workspace --no-deps --locked",
+          "exit_status": 0,
+          "test_result_ok_count": 0,
+          "pass_marker_count": 0,
+          "result": "pass"
+        },
+        {
+          "name": "xtask",
+          "command": "cargo extbuild run -- cargo run -p nostr_automerge_xtask -- validate",
+          "exit_status": 0,
+          "test_result_ok_count": 0,
+          "pass_marker_count": 1,
+          "result": "pass"
+        },
+        {
+          "name": "specification",
+          "command": "cargo extbuild run -- python3 scripts/validate_spec.py",
+          "exit_status": 0,
+          "test_result_ok_count": 0,
+          "pass_marker_count": 1,
+          "result": "pass"
+        },
+        {
+          "name": "diff",
+          "command": "git diff --check",
+          "exit_status": 0,
+          "test_result_ok_count": 0,
+          "pass_marker_count": 0,
+          "result": "pass"
+        }
+      ],
+      "normalized_identity_sha256": "5d5e9759a32834d2e48637f4cd5ace6af1b6b9966359d1dce80d31a0fa44d3ac",
+      "result": "pass"
+    },
+    {
+      "ordinal": 2,
+      "commands": [
+        {
+          "name": "format",
+          "command": "cargo extbuild run -- cargo fmt --all -- --check",
+          "exit_status": 0,
+          "test_result_ok_count": 0,
+          "pass_marker_count": 0,
+          "result": "pass"
+        },
+        {
+          "name": "check",
+          "command": "cargo extbuild run -- cargo check --workspace --all-targets --locked",
+          "exit_status": 0,
+          "test_result_ok_count": 0,
+          "pass_marker_count": 0,
+          "result": "pass"
+        },
+        {
+          "name": "test",
+          "command": "cargo extbuild run -- cargo test --workspace --all-targets --locked",
+          "exit_status": 0,
+          "test_result_ok_count": 25,
+          "pass_marker_count": 0,
+          "result": "pass"
+        },
+        {
+          "name": "clippy",
+          "command": "cargo extbuild run -- cargo clippy --workspace --all-targets --all-features --locked -- -D warnings",
+          "exit_status": 0,
+          "test_result_ok_count": 0,
+          "pass_marker_count": 0,
+          "result": "pass"
+        },
+        {
+          "name": "rustdoc",
+          "command": "cargo extbuild run -- cargo doc --workspace --no-deps --locked",
+          "exit_status": 0,
+          "test_result_ok_count": 0,
+          "pass_marker_count": 0,
+          "result": "pass"
+        },
+        {
+          "name": "xtask",
+          "command": "cargo extbuild run -- cargo run -p nostr_automerge_xtask -- validate",
+          "exit_status": 0,
+          "test_result_ok_count": 0,
+          "pass_marker_count": 1,
+          "result": "pass"
+        },
+        {
+          "name": "specification",
+          "command": "cargo extbuild run -- python3 scripts/validate_spec.py",
+          "exit_status": 0,
+          "test_result_ok_count": 0,
+          "pass_marker_count": 1,
+          "result": "pass"
+        },
+        {
+          "name": "diff",
+          "command": "git diff --check",
+          "exit_status": 0,
+          "test_result_ok_count": 0,
+          "pass_marker_count": 0,
+          "result": "pass"
+        }
+      ],
+      "normalized_identity_sha256": "5d5e9759a32834d2e48637f4cd5ace6af1b6b9966359d1dce80d31a0fa44d3ac",
+      "result": "pass"
+    }
+  ],
+  "canonical_output": {
+    "signed_events": 771,
+    "sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+    "changed": false
+  },
+  "terminal_inputs": {
+    "final_inventory": true,
+    "evidence_graph": true,
+    "provisional": false,
+    "planned": false
+  },
+  "result": "pass"
+}
