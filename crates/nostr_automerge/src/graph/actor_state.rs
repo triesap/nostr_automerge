@@ -108,6 +108,89 @@ enum ActorDecisionOperation {
     SequenceRelationDecision,
 }
 
+macro_rules! actor_decision_sites {
+    ($( $site:ident => $operation:ident ),+ $(,)?) => {
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        enum ActorDecisionSite {
+            $( $site, )+
+        }
+
+        impl ActorDecisionSite {
+            const fn descriptor(self) -> ActorDecisionDescriptor {
+                ActorDecisionDescriptor {
+                    site: self,
+                    site_id: match self {
+                        $( Self::$site => stringify!($site), )+
+                    },
+                    phase: "actor_sequence",
+                    operation: match self {
+                        $( Self::$site => ActorDecisionOperation::$operation, )+
+                    },
+                    counter: WorkCounter::GraphNode,
+                    abstract_owner_class: "direct_operation",
+                    applicability: "public_rust",
+                }
+            }
+        }
+    };
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct ActorDecisionDescriptor {
+    site: ActorDecisionSite,
+    site_id: &'static str,
+    phase: &'static str,
+    operation: ActorDecisionOperation,
+    counter: WorkCounter,
+    abstract_owner_class: &'static str,
+    applicability: &'static str,
+}
+
+impl ActorDecisionDescriptor {
+    const fn operation(self) -> ActorDecisionOperation {
+        self.operation
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ActorDecisionObservationKind {
+    ChargeAttempt,
+    TargetCompleted,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct ActorDecisionObservation {
+    descriptor: ActorDecisionDescriptor,
+    kind: ActorDecisionObservationKind,
+}
+
+actor_decision_sites! {
+    ActorStateRead => ActorStateRead,
+    PredecessorCandidateRead => PredecessorCandidateRead,
+    ActorIdentityDecision => ActorIdentityDecision,
+    SequenceRelationDecision => SequenceRelationDecision,
+}
+
+fn perform_actor_decision_operation<T, E>(
+    site: ActorDecisionSite,
+    charge: &mut impl FnMut(WorkCounter) -> Result<(), E>,
+    observed: &mut impl FnMut(ActorDecisionObservation),
+    perform: impl FnOnce() -> T,
+) -> Result<T, MeteredActorStateError<E>> {
+    let descriptor = site.descriptor();
+    observed(ActorDecisionObservation {
+        descriptor,
+        kind: ActorDecisionObservationKind::ChargeAttempt,
+    });
+    charge(descriptor.counter).map_err(MeteredActorStateError::Work)?;
+    let result = perform();
+    observed(ActorDecisionObservation {
+        descriptor,
+        kind: ActorDecisionObservationKind::TargetCompleted,
+    });
+    Ok(result)
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ActorIdentityRelation {
     NoPredecessor,
@@ -390,57 +473,70 @@ impl TrustedEpochProjection<'_> {
         &self,
         candidate: &ChangeCandidate,
         mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
-        mut observed: impl FnMut(ActorDecisionOperation),
+        mut observed: impl FnMut(ActorDecisionObservation),
     ) -> Result<(), MeteredActorStateError<E>> {
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        let actor_state = self.actor_states.get(&candidate.actor).copied();
-        observed(ActorDecisionOperation::ActorStateRead);
+        let actor_state = perform_actor_decision_operation(
+            ActorDecisionSite::ActorStateRead,
+            &mut charge,
+            &mut observed,
+            || self.actor_states.get(&candidate.actor).copied(),
+        )?;
 
         let predecessor = if let Some(state) = actor_state {
-            charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-            let predecessor = self.branch_membership.get(&state.highest_change);
-            observed(ActorDecisionOperation::PredecessorCandidateRead);
-            predecessor
+            perform_actor_decision_operation(
+                ActorDecisionSite::PredecessorCandidateRead,
+                &mut charge,
+                &mut observed,
+                || self.branch_membership.get(&state.highest_change),
+            )?
         } else {
             None
         };
 
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        let actor_relation = match (actor_state, predecessor) {
-            (None, None) => ActorIdentityRelation::NoPredecessor,
-            (Some(_), Some(value)) if value.actor == candidate.actor => {
-                ActorIdentityRelation::Matches
-            }
-            _ => ActorIdentityRelation::InvalidPredecessor,
-        };
-        observed(ActorDecisionOperation::ActorIdentityDecision);
+        let actor_relation = perform_actor_decision_operation(
+            ActorDecisionSite::ActorIdentityDecision,
+            &mut charge,
+            &mut observed,
+            || match (actor_state, predecessor) {
+                (None, None) => ActorIdentityRelation::NoPredecessor,
+                (Some(_), Some(value)) if value.actor == candidate.actor => {
+                    ActorIdentityRelation::Matches
+                }
+                _ => ActorIdentityRelation::InvalidPredecessor,
+            },
+        )?;
         if actor_relation == ActorIdentityRelation::InvalidPredecessor {
             return Err(MeteredActorStateError::State(
                 ActorStateError::MissingPredecessor,
             ));
         }
 
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        let sequence_relation = match (actor_relation, actor_state) {
-            (ActorIdentityRelation::NoPredecessor, None) if candidate.sequence == 1 => {
-                SequenceRelation::ValidGenesis
-            }
-            (ActorIdentityRelation::NoPredecessor, None) => {
-                SequenceRelation::GapOrMissingPredecessor
-            }
-            (ActorIdentityRelation::Matches, Some(state)) => {
-                match state.last_sequence.checked_add(1) {
-                    Some(expected) if candidate.sequence < expected => SequenceRelation::Rollback,
-                    Some(expected) if candidate.sequence == expected => {
-                        SequenceRelation::ExpectedSuccessor
-                    }
-                    Some(_) => SequenceRelation::GapOrMissingPredecessor,
-                    None => SequenceRelation::ArithmeticOverflow,
+        let sequence_relation = perform_actor_decision_operation(
+            ActorDecisionSite::SequenceRelationDecision,
+            &mut charge,
+            &mut observed,
+            || match (actor_relation, actor_state) {
+                (ActorIdentityRelation::NoPredecessor, None) if candidate.sequence == 1 => {
+                    SequenceRelation::ValidGenesis
                 }
-            }
-            _ => SequenceRelation::GapOrMissingPredecessor,
-        };
-        observed(ActorDecisionOperation::SequenceRelationDecision);
+                (ActorIdentityRelation::NoPredecessor, None) => {
+                    SequenceRelation::GapOrMissingPredecessor
+                }
+                (ActorIdentityRelation::Matches, Some(state)) => {
+                    match state.last_sequence.checked_add(1) {
+                        Some(expected) if candidate.sequence < expected => {
+                            SequenceRelation::Rollback
+                        }
+                        Some(expected) if candidate.sequence == expected => {
+                            SequenceRelation::ExpectedSuccessor
+                        }
+                        Some(_) => SequenceRelation::GapOrMissingPredecessor,
+                        None => SequenceRelation::ArithmeticOverflow,
+                    }
+                }
+                _ => SequenceRelation::GapOrMissingPredecessor,
+            },
+        )?;
 
         match sequence_relation {
             SequenceRelation::ValidGenesis | SequenceRelation::ExpectedSuccessor => Ok(()),
@@ -1436,12 +1532,12 @@ pub(crate) mod tests {
     use std::rc::Rc;
 
     use super::{
-        ActorDecisionOperation, ActorStateError, CandidateSemanticStage,
-        CanonicalEpochProjectionSource, CausalNextOperation, EpochActorState,
-        EpochProjectionSource, FrontierComparisonOperation, MeteredActorStateError,
-        ProjectionBuildDescriptor, ProjectionBuildObservation, ProjectionBuildObservationKind,
-        ProjectionBuildOperation, ProjectionBuildSite, ProjectionPublicationOperation,
-        TrustedEpochProjection, build_trusted_epoch_projection,
+        ActorDecisionDescriptor, ActorDecisionObservationKind, ActorDecisionOperation,
+        ActorDecisionSite, ActorStateError, CandidateSemanticStage, CanonicalEpochProjectionSource,
+        CausalNextOperation, EpochActorState, EpochProjectionSource, FrontierComparisonOperation,
+        MeteredActorStateError, ProjectionBuildDescriptor, ProjectionBuildObservation,
+        ProjectionBuildObservationKind, ProjectionBuildOperation, ProjectionBuildSite,
+        ProjectionPublicationOperation, TrustedEpochProjection, build_trusted_epoch_projection,
         build_trusted_epoch_projection_observed, initialize_actor_states,
         initialize_actor_states_metered, perform_projection_build_operation,
         reference_apply_empty_counter, reference_apply_nonempty_counter,
@@ -1707,8 +1803,9 @@ pub(crate) mod tests {
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     enum ActorDecisionTrace {
+        Attempt(ActorDecisionDescriptor),
         Charge(WorkCounter),
-        Operation(ActorDecisionOperation),
+        Operation(ActorDecisionDescriptor),
     }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -2006,10 +2103,15 @@ pub(crate) mod tests {
                     Ok(())
                 }
             },
-            |operation| {
-                trace
-                    .borrow_mut()
-                    .push(ActorDecisionTrace::Operation(operation));
+            |observation| {
+                trace.borrow_mut().push(match observation.kind {
+                    ActorDecisionObservationKind::ChargeAttempt => {
+                        ActorDecisionTrace::Attempt(observation.descriptor)
+                    }
+                    ActorDecisionObservationKind::TargetCompleted => {
+                        ActorDecisionTrace::Operation(observation.descriptor)
+                    }
+                });
             },
         );
         let observed = trace.borrow().clone();
@@ -3316,16 +3418,18 @@ pub(crate) mod tests {
         next.change_hash = ChangeHash::from_bytes([2; 32]);
         next.dependencies = vec![first.change_hash].into();
         let expected = [
-            ActorDecisionOperation::ActorStateRead,
-            ActorDecisionOperation::PredecessorCandidateRead,
-            ActorDecisionOperation::ActorIdentityDecision,
-            ActorDecisionOperation::SequenceRelationDecision,
+            ActorDecisionSite::ActorStateRead,
+            ActorDecisionSite::PredecessorCandidateRead,
+            ActorDecisionSite::ActorIdentityDecision,
+            ActorDecisionSite::SequenceRelationDecision,
         ]
         .into_iter()
-        .flat_map(|operation| {
+        .flat_map(|site| {
+            let descriptor = site.descriptor();
             [
+                ActorDecisionTrace::Attempt(descriptor),
                 ActorDecisionTrace::Charge(WorkCounter::GraphNode),
-                ActorDecisionTrace::Operation(operation),
+                ActorDecisionTrace::Operation(descriptor),
             ]
         })
         .collect::<Vec<_>>();
@@ -3380,12 +3484,13 @@ pub(crate) mod tests {
         assert_eq!(
             invalid_trace.last(),
             Some(&ActorDecisionTrace::Operation(
-                ActorDecisionOperation::ActorIdentityDecision
+                ActorDecisionSite::ActorIdentityDecision.descriptor()
             ))
         );
         assert!(!invalid_trace.iter().any(|entry| matches!(
             entry,
-            ActorDecisionTrace::Operation(ActorDecisionOperation::SequenceRelationDecision)
+            ActorDecisionTrace::Operation(descriptor)
+                if descriptor.site == ActorDecisionSite::SequenceRelationDecision
         )));
 
         #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -5618,7 +5723,7 @@ pub(crate) mod tests {
             .iter()
             .filter(|entry| matches!(entry, ActorDecisionTrace::Operation(_)))
             .position(
-                |entry| matches!(entry, ActorDecisionTrace::Operation(value) if *value == family),
+                |entry| matches!(entry, ActorDecisionTrace::Operation(value) if value.operation() == family),
             )
             .map(|index| index + 1);
         assert!(target.is_some(), "unreachable actor family");
@@ -5628,14 +5733,14 @@ pub(crate) mod tests {
                 observed_actor_sequence(&projection, &next, target - 1, stopped);
             assert_eq!(result, Err(MeteredActorStateError::Work(stopped)));
             assert!(!blocked.iter().any(
-                |entry| matches!(entry, ActorDecisionTrace::Operation(value) if *value == family)
+                |entry| matches!(entry, ActorDecisionTrace::Operation(value) if value.operation() == family)
             ));
         }
         for allowance in [target, target + 1] {
             let (_, admitted) =
                 observed_actor_sequence(&projection, &next, allowance, Completion::BudgetExhausted);
             assert!(admitted.iter().any(
-                |entry| matches!(entry, ActorDecisionTrace::Operation(value) if *value == family)
+                |entry| matches!(entry, ActorDecisionTrace::Operation(value) if value.operation() == family)
             ));
         }
         let injected = (variant, occurrence);
