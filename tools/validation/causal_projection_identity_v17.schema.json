@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.github.io/nostr-automerge/schemas/causal_projection_identity_v17.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "modes", "candidate_graph", "source_production_sha256", "inventory_sha256", "proof_report_sha256", "structure_report_sha256", "proof_commands_sha256", "proof_artifacts", "proof_artifacts_sha256", "attack_matrix", "neutral_comment", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_identity.v17.v1"},
+    "status": {"const": "candidate_bound"}, "modes": {"type": "array", "minItems": 2, "maxItems": 2},
+    "candidate_graph": {"type": "array", "minItems": 4, "maxItems": 4},
+    "source_production_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "inventory_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "proof_report_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "structure_report_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "proof_commands_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "proof_artifacts": {"type": "array", "minItems": 68, "maxItems": 68},
+    "proof_artifacts_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "attack_matrix": {"type": "array", "minItems": 8, "maxItems": 8},
+    "neutral_comment": {"type": "object"}, "result": {"const": "pass"}
+  }
+}

@@ -1,0 +1,353 @@
+{
+  "schema": "nostr_automerge.causal_projection_identity.v17.v1",
+  "status": "candidate_bound",
+  "modes": [
+    "identity",
+    "full_structural_first"
+  ],
+  "candidate_graph": [
+    {
+      "node": "runtime_source",
+      "candidate": "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9"
+    },
+    {
+      "node": "provisional_inventory",
+      "candidate": "6f8ee840b7be41a32ad6b46392b75aae921df3cb"
+    },
+    {
+      "node": "actual_proofs",
+      "candidate": "12f824659e055354779bb65b99f475c2ec109c43"
+    },
+    {
+      "node": "structural_assurance",
+      "candidate": "4be00cb4570e6aaa41c57be24fb7cae61433512d"
+    }
+  ],
+  "source_production_sha256": "e3fb80d62b3566ecbd97bfc917e8716b25ca0107bb0f8e98fa6887fccc30a288",
+  "inventory_sha256": "802fb3c3b75bb915a0f765b70f0eb9fc4d9eb72d97bc4f5f6ed4f8f400208551",
+  "proof_report_sha256": "a0a9bce072af6422f10d77d73a6381ad28143eac30bcd405c02ec2d93886fcae",
+  "structure_report_sha256": "1cc3c116c0b41049b9819b2a57c6d9d7254e59668a69e5312d8cef03467d638c",
+  "proof_commands_sha256": "1095f7e8eb708dc5e677d963e800ecfdb6249a46f735acff73a583892e6706c7",
+  "proof_artifacts": [
+    {
+      "path": "reports/evidence/v17/proofs/rust_actor_sequence_actor_identity_decision.txt",
+      "sha256": "fa9d12228c28be80abedca5ee91ff9fbf8150d7473f7357eca96631f89b8c11a"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_actor_sequence_actor_state_read.txt",
+      "sha256": "598686fde7287114d23411225ef3e52d55fcd3bc80adda79f6788756519913dc"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_actor_sequence_predecessor_candidate_read.txt",
+      "sha256": "ee024c77e4b7868643ab6a9c1680451e40ca2e1e334dd0be8f4c331f49fbdf8e"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_actor_sequence_sequence_relation_decision.txt",
+      "sha256": "fdb2ab6c480896a9d107f3dc804c526fd1a73488ae8562ba20cdc1eda0ce4e85"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_causal_counter_checked_advance.txt",
+      "sha256": "e75ab6ad2d73e4a1f01511dde6820d9984f3a2b09792126ab7944efff72ee62a"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_causal_counter_expected_start_comparison.txt",
+      "sha256": "72af751ebce72288dd97564f79578b74aae730aaefc274eaab41afd232a8d601"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_causal_counter_stored_counter_read.txt",
+      "sha256": "bb722f3cd0eadef4b12e76e1e874568a797db667f3ae984e05215d8f350e1d51"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_frontier_comparison_base_accepted_lookup.txt",
+      "sha256": "4ec5bffe6e7caf68f830441b756e3e521bf2b74ebb0bbcce309622f5adf8c310"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_frontier_comparison_base_count_read.txt",
+      "sha256": "ab28d8d946bd01c2947a745d0a37a0c78de0c4d2bd278db8327501f8e2fab7c0"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_frontier_comparison_base_pull.txt",
+      "sha256": "f3002273f9bf74d60fb421ee6340a794c3eac899e9dffe27c5f0cac994464c21"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_frontier_comparison_candidate_count_read.txt",
+      "sha256": "2ec9dc605ec225a44a18ff857a561b0f4593cffcbb6c8f52ed1b4cfa36570984"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_frontier_comparison_candidate_kind_comparison.txt",
+      "sha256": "7b9a34cfaa5fba43d09ca26caa1e6c42f13090b90cd6536a19e44f9438b5ae98"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_frontier_comparison_candidate_order_compare.txt",
+      "sha256": "2abc5fb810b7fb35ddd4e8eed672e747501da2a21c437d275a42cd49db170468"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_frontier_comparison_candidate_pull.txt",
+      "sha256": "8e8e1532b2ccf0ca6132da9b4969a680d37cc917acd4c75d6d766004bd60a31d"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_frontier_comparison_expected_source_compare.txt",
+      "sha256": "f4a3d1bc357ea4990c336715f700391617975f61578675a9fb3943b0f67e3317"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_frontier_comparison_frontier_equality_compare.txt",
+      "sha256": "889fe0bbd163e79c66c8db0d371f60034b760cf172c9c49ac232e721852106ac"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_frontier_comparison_projection_count_read.txt",
+      "sha256": "925b90eaecd8f7e17f5ac449e7061858148efe99cfa7ff7e331f88272dc8712a"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_frontier_comparison_projection_pull.txt",
+      "sha256": "0d303483157994bf3fcc6957bda682bffd32fe2eb5147ea519f60089ae52dd27"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_accepted_count_matches.txt",
+      "sha256": "8242555d20ba2f52f5da1d548a740f6def22aab48d726f041093c58e8e5d293a"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_accepted_dependency_lookup.txt",
+      "sha256": "d59d089039ac4ec288c247dc7278646dc0e7b6acd57d6b94d94b97cd265e2291"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_accepted_member_lookup.txt",
+      "sha256": "49a7f1ac975653bc4546ce8817bf11dac259e6a0ba4e2e07bd954bcbafba7223"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_actor_state_insert.txt",
+      "sha256": "aeefccbf429791313e8c03ee50ba8ad5807be8327014ade7665a6fb24ea8e956"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_actor_state_lookup.txt",
+      "sha256": "021bd485200c1a940d8bdd47595339449cbcd90bf598e5da7eabff68f3517056"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_candidate_causal_advance.txt",
+      "sha256": "51ead839b4dd856e3a5ec3e5be787c87ffaa2076f16d2612b4ca2dfc48eec879"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_candidate_dependency_insert.txt",
+      "sha256": "618c456133cbb26418861579e07c5013fd5ceba269f5cd6d244f53ba995dd583"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_candidate_empty_compare.txt",
+      "sha256": "9c95ca85e98c1c0948791d050e8c615a625584d863f7e9eef2b5a92431a33c19"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_candidate_identity_compare.txt",
+      "sha256": "080e98cd9d2225300444dc458e4b381f1850e671000bb7c399717b9d2ae28b00"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_candidate_lookup.txt",
+      "sha256": "5637147d5b234c16793c00e62e5dfe5a140c2cb924f42338495d6a6b38cc360a"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_candidate_ready_compare.txt",
+      "sha256": "74fe3fbdaf9153f5ddfef76efa155be073abce4cd54d39f14bb0c62f2e71c97f"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_causal_counter_insert.txt",
+      "sha256": "8d547cac34d0cfe6911e8b4b5f659b37e3461da93d6db52d08993cd4165262a4"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_causal_next_lookup.txt",
+      "sha256": "36327e4ff033e42ce7c49ee32dab7d167312d634f69f4abf5106e01e20316735"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_child_causal_insert.txt",
+      "sha256": "24cf08dbdf9a2c61703afa9fbbc21b38c0e70bb4c64eb75fad7f81730200fc60"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_child_count_read.txt",
+      "sha256": "34f4b903b4b250fd7b5360e81000a0d7d1dab7cd2856daa41876f81c6d091a65"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_child_pull.txt",
+      "sha256": "5d9e43cacb5c62c9aecc5c95d8ea721fe9b2874a760f638140fe531b831e3283"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_child_ready_compare.txt",
+      "sha256": "6620179b2c5a14f5b07908c1cb99dd0994785b15e98c6744a0280aed1b89847d"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_completion_compare.txt",
+      "sha256": "2fff0a1fa828b2c7b558af2785acfe4e3b2698a6f719bed4a475193344e14816"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_dependant_bucket_insert.txt",
+      "sha256": "5c8cb67127fe6eeace554f3518450585866fec58b6854c7df607e6a6e0288c8f"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_dependant_insert.txt",
+      "sha256": "40983e361364d0ab26dffb391d66ebbf63ee1579a46a6415e651d5359ede1bd9"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_dependants_lookup.txt",
+      "sha256": "a8fbb9b3ba63cd1452104e87071229208a6d3bc394d139a1cf87b8386e975400"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_depended_on_insert.txt",
+      "sha256": "fe976273fe294ef9dc520260eda37d115d5d6bee6a4e09994f454377399de87f"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_depended_on_lookup.txt",
+      "sha256": "9f9c8bcd175525b0eca0f9bcad19c52d97997d17467fac794c826a6ac0226bcb"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_dependencies_insert.txt",
+      "sha256": "f9af80fd250965b251114b7a28d3a154f7aaab793c09ffbd985bf6cb94ed17d7"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_dependency_count_read.txt",
+      "sha256": "7b3203939b0897cccb7740ca7af6ad75d204ea9a793a3b75897b654da1553f21"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_dependency_order_compare.txt",
+      "sha256": "43db98071bdf3fea5a460168195665e02beb9999f9e6b58ea29d4eae37ae9318"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_dependency_pull.txt",
+      "sha256": "5efcc2b0cf4dd9c62f7253c86f6c79c1fe837564ae1379eed54e3f75899869c6"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_expected_sequence_advance.txt",
+      "sha256": "cc8c8e9ad4379abdefbb2868ac25d5a364598551b66d5249277918493c742164"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_frontier_head_insert.txt",
+      "sha256": "955bc5a05d5071c5a75c16760af82f6b25f431b300881a968c307ea34e3d6ccf"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_global_causal_maximum.txt",
+      "sha256": "14e38cbb770ac935145add288c560e9b08d346aa3542aae15be2c1635d59b0d0"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_initial_ready_insert.txt",
+      "sha256": "ec3da558573651bf5e68ac3df071b5cf4fdf23a447e80215f59e054b4244e49f"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_member_count_read.txt",
+      "sha256": "554ddd86ba4fb072fa6bfe46d0d71e7f45c96dfdde474a9dba5abe8c78da1220"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_member_order_compare.txt",
+      "sha256": "6a7c651e0cd96df346d0fb6bc90cf94dedf619de3a624b319a59fc3e29743a30"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_next_member_pull.txt",
+      "sha256": "71a586e827818697e6918903fd7912cd2cb5952017f718f0ddfb63480e159f8a"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_prior_causal_lookup.txt",
+      "sha256": "fff4a1515a57c0f0878edf1b855792fd413f53d8d8d0d2258a2650858e8e73ca"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_processed_count_advance.txt",
+      "sha256": "0f685b9776b48530c48a67c52facfbc1203aed5ed6d555d439946b2a86b2668f"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_projection_publish.txt",
+      "sha256": "6fe8f6f37cf8885beb8d9aee6c6bcf2b023647e3d47c55355d563792f9660edb"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_propagated_causal_maximum.txt",
+      "sha256": "d65f72ba38423792d815aca99f1dddab83f6d068a33d14cd03dddb51bc27b1ae"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_ready_candidate_lookup.txt",
+      "sha256": "964ba07392f762aab3cf553784a38566cc9d183fa9016b16ecc80cc9695cf384"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_ready_candidate_pull.txt",
+      "sha256": "aeeee1dc55522fd09afc7d7022810eed85a588b0a1503af6d1b8cc8e48a6496a"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_ready_dependant_insert.txt",
+      "sha256": "56c99020284df7f2de2f33cafc34cf55d66a1f50f7c02c6be915fa24bb42ee39"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_ready_nonempty_compare.txt",
+      "sha256": "94888fff20d3c87b2b7e33c86d7c7f2fb5df96a6e59cdbb475daba89cdf06e09"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_remaining_dependencies_insert.txt",
+      "sha256": "559ed7be8ad0df4239fde92a4562e0ca980e379fc89a69dcdac28f9f33c534d8"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_remaining_dependency_decrement.txt",
+      "sha256": "bf28ddaf64d5b511999d3d334e43acf82c46716af5b8304e4d9a65b919223d28"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_remaining_dependency_lookup.txt",
+      "sha256": "6450f960c9c6f5a6d48cad7828c65e6e5e33138cfaf5d8d1c690dbf64f092f22"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_remaining_dependency_write.txt",
+      "sha256": "8304256a1fb1d5ef43425da4576335260c02faa587b5088df1b5b41eb83958cd"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_sequence_matches_compare.txt",
+      "sha256": "243a6194eac309f951733d554768e4a5572e1f7d4f92a9a7f060cf651cc9f714"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_sequence_precedes_compare.txt",
+      "sha256": "4a41eece783c5b6b68b8fa97106e3d2121d487925227f5804ddd16e65eca5343"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_start_operation_compare.txt",
+      "sha256": "0fd84bd6efc07dfe17ec91593350f99839dfb3f35189435202efbe9a99ee159d"
+    },
+    {
+      "path": "reports/evidence/v17/proofs/rust_projection_construction_writer_contribution_insert.txt",
+      "sha256": "576ed686fb939dcc6e4b7255b0f5a33cfa0bc08a78267d43b67ae478d623ca12"
+    }
+  ],
+  "proof_artifacts_sha256": "b476d93feeaaa6895cc031690157099b4b712cefc3e7fb19714faa97af7b8519",
+  "attack_matrix": [
+    {
+      "attack": "stale_source",
+      "code": "IDENTITY_SOURCE",
+      "result": "killed"
+    },
+    {
+      "attack": "stale_candidate",
+      "code": "IDENTITY_INVENTORY",
+      "result": "killed"
+    },
+    {
+      "attack": "stale_command",
+      "code": "IDENTITY_PROOF_REPORT",
+      "result": "killed"
+    },
+    {
+      "attack": "stale_artifact",
+      "code": "IDENTITY_PROOF_ARTIFACT",
+      "result": "killed"
+    },
+    {
+      "attack": "stale_report",
+      "code": "IDENTITY_STRUCTURE_REPORT",
+      "result": "killed"
+    },
+    {
+      "attack": "coordinated_rehash",
+      "code": "IDENTITY_REPORT",
+      "result": "killed"
+    },
+    {
+      "attack": "graph_order",
+      "code": "IDENTITY_REPORT",
+      "result": "killed"
+    },
+    {
+      "attack": "structural_first",
+      "code": "ALTERNATE_CONSUMER_BYPASS",
+      "result": "killed"
+    }
+  ],
+  "neutral_comment": {
+    "structural": "pass",
+    "identity": "IDENTITY_SOURCE"
+  },
+  "result": "pass"
+}
