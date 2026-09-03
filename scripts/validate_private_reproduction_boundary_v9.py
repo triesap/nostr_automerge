@@ -218,6 +218,8 @@ PUBLIC_JSON_RECORDS = (
     "reports/rust_conformance_v17.json",
     "tools/validation/distribution_v17_transition.schema.json",
     "tools/validation/rust_conformance_v17.schema.json",
+    "reports/opaque_causal_projection_v17.json",
+    "tools/validation/opaque_causal_projection_v17.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -382,6 +384,7 @@ PYTHON_SURFACES = (
     "scripts/validate_distribution_v16.py",
     "scripts/validate_rust_conformance_v16.py",
     "scripts/validate_rust_conformance_v17.py",
+    "scripts/validate_opaque_causal_projection_v17.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -711,6 +714,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_rust_conformance_v17.py",
         "reports/rust_conformance_v17.json",
         "tools/validation/rust_conformance_v17.schema.json",
+        "scripts/validate_opaque_causal_projection_v17.py",
+        "reports/opaque_causal_projection_v17.json",
+        "tools/validation/opaque_causal_projection_v17.schema.json",
         "tools/nostr_automerge_conformance/src/main.rs",
         "tools/nostr_automerge_conformance/src/runner.rs",
         "ython3 scripts/validate_causal_projection_structural_assurance_v16.py --mode structural",
@@ -1379,6 +1385,7 @@ def validate_source_surfaces() -> None:
                             "scripts/validate_remediation_v12_ancestry_authorization_gate.py",
                             "scripts/validate_remediation_v16.py",
                             "scripts/validate_opaque_causal_projection_v16.py",
+                            "scripts/validate_opaque_causal_projection_v17.py",
                             "scripts/validate_causal_projection_combined_assurance_v16.py",
                             "scripts/validate_causal_projection_final_decision_v16.py",
                             "scripts/reproduce_remediation_v16.py",

@@ -1,0 +1,122 @@
+{
+  "title": "nostr_automerge opaque causal projection v17",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "status",
+    "independent_candidate",
+    "opaque_record_sha256",
+    "assurance",
+    "public_bindings",
+    "result",
+    "result_identity_sha256"
+  ],
+  "properties": {
+    "schema": { "const": "nostr_automerge.opaque_causal_projection_import.v17.v1" },
+    "status": { "const": "code_complete_publication_held" },
+    "independent_candidate": { "const": "b4c5474d16a9da877bb36ba2ea7e22f707bd0e9e" },
+    "opaque_record_sha256": { "const": "e9c5ce06366c68171cfa5693aeeed8ce9e59121220e94a825959dbbbfa0b1704" },
+    "assurance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "status",
+        "private_candidates",
+        "public_candidates",
+        "evidence_sha256",
+        "counts",
+        "applicability_classes",
+        "result_classes",
+        "canonical_output_sha256",
+        "clean_target_scope",
+        "standalone_git_identity_assumed",
+        "release_claimed",
+        "publication_claimed",
+        "remote_actions",
+        "result",
+        "identity_sha256"
+      ],
+      "properties": {
+        "schema": { "const": "nostr_automerge.opaque_causal_projection.v17.v1" },
+        "status": { "const": "code_complete_publication_held" },
+        "private_candidates": { "type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true, "items": { "type": "string", "pattern": "^[0-9a-f]{40}$" } },
+        "public_candidates": { "const": ["4d25f76277ad02547f36658d45a5ef1d28689f2d", "10be9bc3d9a5bf653338c3b30195d0c8299c2dac"] },
+        "evidence_sha256": { "type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true, "items": { "type": "string", "pattern": "^[0-9a-f]{64}$" } },
+        "counts": { "$ref": "#/$defs/counts" },
+        "applicability_classes": { "const": ["projection_construction", "actor_sequence", "causal_counter", "frontier_comparison"] },
+        "result_classes": { "const": ["site_identity_exact", "sealed_charge_target_observe", "typed_stop_identity_exact", "bidirectional_evidence_complete", "structural_mutations_caught", "identity_drift_rejected", "distribution_byte_identical", "independent_implementation_boundary"] },
+        "canonical_output_sha256": { "const": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415" },
+        "clean_target_scope": { "const": true },
+        "standalone_git_identity_assumed": { "const": false },
+        "release_claimed": { "const": false },
+        "publication_claimed": { "const": false },
+        "remote_actions": { "const": 0 },
+        "result": { "const": "pass" },
+        "identity_sha256": { "const": "251d4d1d57ddbcf2f770fcf27a4afba481f308916405d8a146edb1d88bed43cc" }
+      }
+    },
+    "public_bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_candidate",
+        "transition_candidate",
+        "conformance_candidate",
+        "operation_contract_sha256",
+        "rust_final_inventory_sha256",
+        "rust_evidence_graph_sha256",
+        "distribution_transition_sha256",
+        "rust_conformance_sha256",
+        "distribution_manifest_sha256",
+        "distribution_lock_sha256",
+        "canonical_output_sha256",
+        "rust_operation_sites",
+        "rust_operation_families",
+        "independent_operation_sites",
+        "independent_operation_families",
+        "transition_affected_count"
+      ],
+      "properties": {
+        "contract_candidate": { "const": "4d25f76277ad02547f36658d45a5ef1d28689f2d" },
+        "transition_candidate": { "const": "10be9bc3d9a5bf653338c3b30195d0c8299c2dac" },
+        "conformance_candidate": { "const": "844a904ada74f1d2bac90fa8c67290a7f05807af" },
+        "operation_contract_sha256": { "const": "4770199ae28c4b18e114c250f9f2010ffe2668ef63dea10274fd22eae01bdfde" },
+        "rust_final_inventory_sha256": { "const": "f2212c183d009d146663116322ec4640db8812f66b6d09570115a3535a7603a2" },
+        "rust_evidence_graph_sha256": { "const": "283224879f13a69840e7222523649cc9639d73ae3cbe99464127b78f0121c527" },
+        "distribution_transition_sha256": { "const": "9c4e3758d67ac76fa7f270ce92db676271eb822e2ff75141a617836fd92dd6d4" },
+        "rust_conformance_sha256": { "const": "e9cdcc625745514d4c98968947379b554e99c9819049eceff2a20a724b356f2b" },
+        "distribution_manifest_sha256": { "const": "7890fe2532da48ca84e54f5b1b883a38fd1a60ff58bb2999a056025335a4b5d3" },
+        "distribution_lock_sha256": { "const": "9e09dfd2de706d320c3bcd7cfe45b2f9a7560d5e9354809d2a41e5f52a2fba90" },
+        "canonical_output_sha256": { "const": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415" },
+        "rust_operation_sites": { "const": 68 },
+        "rust_operation_families": { "const": 38 },
+        "independent_operation_sites": { "const": 142 },
+        "independent_operation_families": { "const": 40 },
+        "transition_affected_count": { "const": 0 }
+      }
+    },
+    "result": { "const": "pass" },
+    "result_identity_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  },
+  "$defs": {
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_sites", "operation_families", "proofs", "mutations", "scenarios", "signed_events", "delivery_orders", "processes", "affected", "mutation_survivors"],
+      "properties": {
+        "source_sites": { "const": 142 },
+        "operation_families": { "const": 40 },
+        "proofs": { "const": 142 },
+        "mutations": { "const": 14 },
+        "scenarios": { "const": 204 },
+        "signed_events": { "const": 771 },
+        "delivery_orders": { "const": 8 },
+        "processes": { "const": 2 },
+        "affected": { "const": 0 },
+        "mutation_survivors": { "const": 0 }
+      }
+    }
+  }
+}

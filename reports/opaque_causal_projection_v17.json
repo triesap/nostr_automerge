@@ -1,0 +1,88 @@
+{
+  "schema": "nostr_automerge.opaque_causal_projection_import.v17.v1",
+  "status": "code_complete_publication_held",
+  "independent_candidate": "b4c5474d16a9da877bb36ba2ea7e22f707bd0e9e",
+  "opaque_record_sha256": "e9c5ce06366c68171cfa5693aeeed8ce9e59121220e94a825959dbbbfa0b1704",
+  "assurance": {
+    "schema": "nostr_automerge.opaque_causal_projection.v17.v1",
+    "status": "code_complete_publication_held",
+    "private_candidates": [
+      "5666571c74b98329a72c55d08690aa217f68d424",
+      "b8f817cc334328d334a529300a6230079e50c9b7",
+      "420dcfa3320b33575bcc35dd3598cdfd6a70fb93",
+      "e231659ddc2d67c1ebc47211d13510e384c230c6",
+      "970b3d70c1fcdf9865d93fc9cb87553b04929652",
+      "eacf7821985667daf62549259ce61de01f784749",
+      "0c0e92ba63ca07da0de2d991720ca4efb511db17"
+    ],
+    "public_candidates": [
+      "4d25f76277ad02547f36658d45a5ef1d28689f2d",
+      "10be9bc3d9a5bf653338c3b30195d0c8299c2dac"
+    ],
+    "evidence_sha256": [
+      "06dc90c29fff0f750f6585ff3a3034d0bf3e846583d872b219aa37593bd2fd09",
+      "199b10d2327097adc2af55d742dde1961945159ab35199ee4394d816d7c68b54",
+      "575336f8052682c5e71970385d2d5f4a4e4b1c27033e3feff0d3f163ef596bbe",
+      "a6ba13177b6926ac05f8242bea96367f29d5827c9a0f92960238c295fec30b39",
+      "72c254f356075f97e965669e534c2fc166093ecfe70ebff9e708beea448e3d3d",
+      "dc636295f6f9b757b1d8e5dad5ac7ff6c0bf84beff0e06fa24b60b48fcfe1693",
+      "08ec6fa7c7304bd64fbaa9ee7e4f5cf04b99ab23713b033307418f1e51f49ba1"
+    ],
+    "counts": {
+      "source_sites": 142,
+      "operation_families": 40,
+      "proofs": 142,
+      "mutations": 14,
+      "scenarios": 204,
+      "signed_events": 771,
+      "delivery_orders": 8,
+      "processes": 2,
+      "affected": 0,
+      "mutation_survivors": 0
+    },
+    "applicability_classes": [
+      "projection_construction",
+      "actor_sequence",
+      "causal_counter",
+      "frontier_comparison"
+    ],
+    "result_classes": [
+      "site_identity_exact",
+      "sealed_charge_target_observe",
+      "typed_stop_identity_exact",
+      "bidirectional_evidence_complete",
+      "structural_mutations_caught",
+      "identity_drift_rejected",
+      "distribution_byte_identical",
+      "independent_implementation_boundary"
+    ],
+    "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+    "clean_target_scope": true,
+    "standalone_git_identity_assumed": false,
+    "release_claimed": false,
+    "publication_claimed": false,
+    "remote_actions": 0,
+    "result": "pass",
+    "identity_sha256": "251d4d1d57ddbcf2f770fcf27a4afba481f308916405d8a146edb1d88bed43cc"
+  },
+  "public_bindings": {
+    "contract_candidate": "4d25f76277ad02547f36658d45a5ef1d28689f2d",
+    "transition_candidate": "10be9bc3d9a5bf653338c3b30195d0c8299c2dac",
+    "conformance_candidate": "844a904ada74f1d2bac90fa8c67290a7f05807af",
+    "operation_contract_sha256": "4770199ae28c4b18e114c250f9f2010ffe2668ef63dea10274fd22eae01bdfde",
+    "rust_final_inventory_sha256": "f2212c183d009d146663116322ec4640db8812f66b6d09570115a3535a7603a2",
+    "rust_evidence_graph_sha256": "283224879f13a69840e7222523649cc9639d73ae3cbe99464127b78f0121c527",
+    "distribution_transition_sha256": "9c4e3758d67ac76fa7f270ce92db676271eb822e2ff75141a617836fd92dd6d4",
+    "rust_conformance_sha256": "e9cdcc625745514d4c98968947379b554e99c9819049eceff2a20a724b356f2b",
+    "distribution_manifest_sha256": "7890fe2532da48ca84e54f5b1b883a38fd1a60ff58bb2999a056025335a4b5d3",
+    "distribution_lock_sha256": "9e09dfd2de706d320c3bcd7cfe45b2f9a7560d5e9354809d2a41e5f52a2fba90",
+    "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+    "rust_operation_sites": 68,
+    "rust_operation_families": 38,
+    "independent_operation_sites": 142,
+    "independent_operation_families": 40,
+    "transition_affected_count": 0
+  },
+  "result": "pass",
+  "result_identity_sha256": "44307f565c812372b8d8dc6513f923ffa93ae8a50abf1d39219a257e49939f8b"
+}
