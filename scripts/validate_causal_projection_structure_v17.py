@@ -78,6 +78,8 @@ def helper_structure(source: str, name: str) -> None:
     returned = body.find("Ok(result)")
     require(min(descriptor, attempt, charge, returned) >= 0, "ALTERNATE_CONSUMER_BYPASS")
     require(target >= 0, "TARGET_AFTER_STOP")
+    target_call = "target();" if name == "metered_frontier_operation" else "perform();"
+    require(body.count(target_call) == 1, "TARGET_AFTER_STOP")
     require(completion >= 0, "OBSERVATION_AFTER_STOP")
     require(descriptor < attempt < charge, "CHARGE_AFTER_OPERATION")
     require(charge < target, "CHARGE_AFTER_OPERATION")
@@ -90,6 +92,7 @@ def helper_structure(source: str, name: str) -> None:
 
 def validate_structure(source: str, consumer: str, inventory: dict[str, Any], properties: dict[str, Any]) -> None:
     source = production(source)
+    require("_uncharged_second_result" not in source, "TARGET_AFTER_STOP")
     try:
         current = derive_rows(source)
     except Exception as error:

@@ -1,0 +1,9 @@
+mutation_id=construction.ReadyDependantInsert.double_target
+inventory_row_id=rust.projection_construction.ready_dependant_insert
+command=cargo check -p nostr_automerge --lib --locked
+compile_expected=pass
+compile_actual=pass
+expected_property=TARGET_AFTER_STOP
+actual_property=TARGET_AFTER_STOP
+survivor=false
+restoration=pass

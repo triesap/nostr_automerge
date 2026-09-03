@@ -1,0 +1,4 @@
+{
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 04c0a304..be11ff6e 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -1429,7 +1429,7 @@ fn build_trusted_epoch_projection_observed<'a, E>(\n             break;\n         }\n         let Some(hash) = perform_projection_build_operation(\n-            ProjectionBuildSite::ReadyCandidatePull,\n+            ProjectionBuildSite::NextMemberPull,\n             &mut charge,\n             &mut built,\n             || ready.pop_first(),\n@@ -1702,6 +1702,7 @@ fn build_trusted_epoch_projection_observed<'a, E>(\n     Ok(projection)\n }\n \n+// v17 mutation ReadyCandidatePull:same_family_site_swap\n #[cfg(test)]\n pub(crate) mod tests {\n     use std::cell::{Cell, RefCell};\n"
+}

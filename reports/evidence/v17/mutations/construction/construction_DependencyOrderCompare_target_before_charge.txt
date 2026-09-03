@@ -1,0 +1,9 @@
+mutation_id=construction.DependencyOrderCompare.target_before_charge
+inventory_row_id=rust.projection_construction.dependency_order_compare
+command=cargo check -p nostr_automerge --lib --locked
+compile_expected=pass
+compile_actual=pass
+expected_property=CHARGE_AFTER_OPERATION
+actual_property=CHARGE_AFTER_OPERATION
+survivor=false
+restoration=pass

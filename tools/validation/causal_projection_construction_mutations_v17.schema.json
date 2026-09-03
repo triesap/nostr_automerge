@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.github.io/nostr-automerge/schemas/causal_projection_construction_mutations_v17.schema.json",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema", "status", "base_candidate", "campaign", "rows", "counts", "worktree", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_construction_mutations.v17.v1"},
+    "status": {"const": "actual_execution"}, "base_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "campaign": {"const": "three_non_first_repeated_construction_sites"},
+    "rows": {"type": "array", "minItems": 12, "maxItems": 12},
+    "counts": {"type": "object"}, "worktree": {"type": "object"}, "result": {"const": "pass"}
+  }
+}

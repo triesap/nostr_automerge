@@ -1,0 +1,9 @@
+mutation_id=construction.ReadyCandidatePull.same_family_site_swap
+inventory_row_id=rust.projection_construction.ready_candidate_pull
+command=cargo check -p nostr_automerge --lib --locked
+compile_expected=pass
+compile_actual=pass
+expected_property=SITE_ID_MISMATCH
+actual_property=SITE_ID_MISMATCH
+survivor=false
+restoration=pass

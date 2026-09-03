@@ -131,6 +131,7 @@ VALIDATORS = [
     "validate_causal_projection_proofs_v17.py",
     "validate_causal_projection_structure_v17.py",
     "validate_causal_projection_identity_v17.py",
+    "run_causal_projection_mutations_v17.py",
     "validate_causal_projection_operation_discovery_v15.py",
     "validate_causal_projection_discovery_v15.py",
     "validate_causal_projection_consumer_v15.py",
@@ -277,7 +278,7 @@ def active_validators(stage: str) -> list[str]:
 
 
 def controlled_files() -> list[pathlib.Path]:
-    roots = ("AGENTS.md", "README.md", "CONTRIBUTING.md", "SECURITY.md", "CODEOWNERS", "spec", "fixtures/README.md", "fixtures/examples", "fixtures/schema", "fixtures/v15", "docs/provenance", "reports/evidence/v17/proofs")
+    roots = ("AGENTS.md", "README.md", "CONTRIBUTING.md", "SECURITY.md", "CODEOWNERS", "spec", "fixtures/README.md", "fixtures/examples", "fixtures/schema", "fixtures/v15", "docs/provenance", "reports/evidence/v17/proofs", "reports/evidence/v17/mutations")
     files = []
     for name in roots:
         path = ROOT / name
@@ -378,6 +379,7 @@ def controlled_files() -> list[pathlib.Path]:
             "reports/causal_projection_proofs_v17.json",
             "reports/causal_projection_structure_v17.json",
             "reports/causal_projection_identity_v17.json",
+            "reports/causal_projection_construction_mutations_v17.json",
             "reports/causal_projection_proof_catalog_v16.json",
             "reports/causal_projection_rust_assurance_v16.json",
             "reports/opaque_causal_projection_v16.json",
@@ -436,6 +438,7 @@ def controlled_files() -> list[pathlib.Path]:
             "tools/validation/causal_projection_proofs_v17.schema.json",
             "tools/validation/causal_projection_structure_v17.schema.json",
             "tools/validation/causal_projection_identity_v17.schema.json",
+            "tools/validation/causal_projection_construction_mutations_v17.schema.json",
             "tools/validation/causal_projection_proof_catalog_v16.schema.json",
             "tools/validation/causal_projection_contracts_v16.schema.json",
             "tools/validation/causal_projection_rust_assurance_v16.schema.json",

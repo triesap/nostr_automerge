@@ -1,0 +1,9 @@
+mutation_id=construction.ReadyCandidatePull.wrapper_bypass
+inventory_row_id=rust.projection_construction.ready_candidate_pull
+command=cargo check -p nostr_automerge --lib --locked
+compile_expected=fail
+compile_actual=fail
+expected_property=ALTERNATE_CONSUMER_BYPASS
+actual_property=ALTERNATE_CONSUMER_BYPASS
+survivor=false
+restoration=pass
