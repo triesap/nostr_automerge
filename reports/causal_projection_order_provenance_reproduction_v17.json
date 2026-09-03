@@ -1,0 +1,14 @@
+{
+  "schema":"nostr_automerge.causal_projection_order_provenance_reproduction.v17.v1",
+  "status":"expected_defect",
+  "source_candidate":"0a0ce4d4ee8723bbec8473f8e6c984be6aa93df1",
+  "manual_actor_sites":4,
+  "manual_causal_sites":3,
+  "direct_target_position_validated":false,
+  "typed_stop_mutation":"typed_stop_collapsed",
+  "typed_stop_expected_code":"POST_STOP_TARGET_WORK",
+  "typed_stop_executes_post_stop_target":false,
+  "provenance_oracle_distinct":false,
+  "closure_evidence":false,
+  "result":"reproduced"
+}

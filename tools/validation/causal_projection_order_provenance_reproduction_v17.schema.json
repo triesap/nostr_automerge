@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,"required":["schema","status","source_candidate","manual_actor_sites","manual_causal_sites","direct_target_position_validated","typed_stop_mutation","typed_stop_expected_code","typed_stop_executes_post_stop_target","provenance_oracle_distinct","closure_evidence","result"]}
