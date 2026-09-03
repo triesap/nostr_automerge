@@ -1,0 +1,24 @@
+{
+  "schema": "nostr_automerge.runtime_ledger.v17.v1",
+  "status": "active",
+  "authority": "spec/remediation_v17_authority.json",
+  "cursor": {
+    "active_rcld": 129,
+    "active_step": "step_1483",
+    "next_step": "step_1484",
+    "last_planned_step": "step_1513",
+    "remaining_checkpoint_count": 30,
+    "remaining_rcld_count": 4
+  },
+  "findings": {"open": ["FINDING_119","FINDING_120","FINDING_121","FINDING_122"],"held": ["FINDING_080"]},
+  "independent": {
+    "checkpoints": ["P01","P02","P03","P04","P05","P06","P07"],
+    "completed": [],
+    "remaining": 7,
+    "contract_barrier": "step_1487",
+    "distribution_barrier": "step_1509",
+    "target_scope_policy": "owning_private_history_scope_only"
+  },
+  "active_checkpoint_scope": ["AGENTS.md","docs/execution/rcl/nostr_automerge_v1_multi_rcld_v17.md","docs/execution/remediation_v17/baseline.md","docs/execution/remediation_v17/ledger.md","implementation/COMMIT_SEQUENCE.md","implementation/runtime_ledger_v17.json","scripts/validate_remediation_v17.py","spec/EVIDENCE_POLICY.md","spec/remediation_findings_v17.json","spec/remediation_v17_authority.json","tools/validation/runtime_ledger_v17.schema.json"],
+  "predecessors": [{"step":"step_1482","candidate":"0a0ce4d4ee8723bbec8473f8e6c984be6aa93df1","owner_class":"public","result":"pass"}]
+}

@@ -1,0 +1,52 @@
+{
+  "schema": "nostr_automerge.remediation_v17_authority.v1",
+  "status": "active",
+  "reviewed_public": {
+    "candidate": "0a0ce4d4ee8723bbec8473f8e6c984be6aa93df1",
+    "tree": "01211cccdcbf91dc0764e28c08661c746e91f226",
+    "actor_source_sha256": "101e9502101d7c08d11dadafc46c679a084bfe88b8ea8614c79682565c3bbc0e"
+  },
+  "governing_plan": {
+    "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v17.md",
+    "sha256": "7b8b705b517190bae5ef6e9a17c921e838598e68ef89d7d019445af1c539b871"
+  },
+  "historical_v16": {
+    "authority_sha256": "0709482eb91145af05e25b18ab2904a2427a2db311f6a63a011427ef13221950",
+    "findings_sha256": "d1fbfce7d09e118f158626801f59f1283b3b261fd674f6f927580f84e5a45107",
+    "runtime_ledger_sha256": "6abb4f7ce34e63eb723e800d8de55586080013737952dd5c431d6e475e0b30b4",
+    "final_decision_sha256": "71b4bf38e16816e84656acf9bac735421f099e067c5209503ab7481b399aa704",
+    "status": "immutable_history"
+  },
+  "active_sequence": {
+    "rcld_first": 129,
+    "rcld_last": 133,
+    "step_first": "step_1483",
+    "step_last": "step_1513",
+    "public_step_count": 31,
+    "independent_step_count": 7
+  },
+  "requirement_mapping": {
+    "FINDING_119": ["NCRDT-EVIDENCE-007"],
+    "FINDING_120": ["NCRDT-RESOURCE-016","NCRDT-RESOURCE-017","NCRDT-EVIDENCE-007"],
+    "FINDING_121": ["NCRDT-RESOURCE-016","NCRDT-RESOURCE-017"],
+    "FINDING_122": ["NCRDT-RESOURCE-016","NCRDT-EVIDENCE-007"]
+  },
+  "approved_decisions": {
+    "site_identity": "closed_semantic_descriptor",
+    "descriptor_arguments": "site_only",
+    "proof_artifacts": "actual_execution_transcripts",
+    "mutation_coverage": "bidirectional_explicit_records",
+    "candidate_lifecycle": "acyclic_later_attestation",
+    "distribution_input": "transition_selected_manifest",
+    "public_symbols_changed": false,
+    "final_source_site_count": null
+  },
+  "frozen_sha256": {
+    "nip": "8262bf32cb70b7c0e46210441120652e52504fb73839641ac19dddfed840acf8",
+    "requirements": "a8926ae4610b4855294f769871e87a14dee73d05ed201419de35711a8a781974",
+    "report_contract": "0135f6a484388e95ac4f6fe6f8ff4ea7690c58deadcee5818257e9483c9335cf"
+  },
+  "holds": ["external_assurance","event_kind_allocation","nip_submission","production_qualification","publication","release","remote_mutation"],
+  "remote_actions": 0,
+  "result": "pass"
+}

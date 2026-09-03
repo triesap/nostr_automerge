@@ -8928,3 +8928,43 @@ separately; historical v15 records remain immutable.
 12. `step_1480` imports the opaque independent assurance.
 13. `step_1481` closes combined assurance and Findings 116 through 118.
 14. `step_1482` records the held terminal decision.
+
+## Causal-projection evidence closure v17
+
+The append-only v17 continuation is governed by
+`docs/execution/rcl/nostr_automerge_v1_multi_rcld_v17.md`. Its public sequence
+is `step_1483` through `step_1513` across RCLD 129 through RCLD 133. Seven
+independent checkpoints, `P01` through `P07`, run only at the barriers defined
+by that plan. Historical v16 records remain immutable.
+
+1. `step_1483` adopts v17 authority and runtime routing.
+2. `step_1484` reproduces provisional evidence acceptance.
+3. `step_1485` reproduces repeated-site proof aliasing.
+4. `step_1486` reproduces direct-order and provenance-oracle gaps.
+5. `step_1487` freezes v17 evidence and site contracts.
+6. `step_1488` introduces stable construction site descriptors.
+7. `step_1489` records exact site-aware runtime observations.
+8. `step_1490` seals direct actor operations.
+9. `step_1491` seals direct causal-counter operations.
+10. `step_1492` implements exact provenance result classes.
+11. `step_1493` closes runtime stage and first-stop regression coverage.
+12. `step_1494` replaces family-first proof targeting.
+13. `step_1495` proves every construction site independently.
+14. `step_1496` proves every direct actor and causal site.
+15. `step_1497` requalifies frontier, publication, and consumer sites.
+16. `step_1498` derives the provisional v17 source inventory.
+17. `step_1499` executes and records the exact proof catalog.
+18. `step_1500` validates structural ownership independently.
+19. `step_1501` validates committed identity independently.
+20. `step_1502` executes later repeated-site mutations.
+21. `step_1503` executes every direct-site mutation.
+22. `step_1504` executes typed-stop and error-provenance mutations.
+23. `step_1505` closes mutation coverage with zero survivors.
+24. `step_1506` generates the non-self-referential final inventory.
+25. `step_1507` validates the bidirectional evidence graph.
+26. `step_1508` closes public Rust v17 assurance.
+27. `step_1509` derives the immutable distribution transition.
+28. `step_1510` runs Rust conformance through the selected manifest.
+29. `step_1511` imports opaque independent v17 parity.
+30. `step_1512` closes combined assurance and Findings 119 through 122.
+31. `step_1513` records the held terminal decision.

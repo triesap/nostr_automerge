@@ -59,3 +59,21 @@ independent no-bypass proof for every call site. Identity-only failures do not
 qualify as structural mutation kills. V16 evidence may also be committed under
 `docs/execution/remediation_v16`. The v16 extension does not alter the frozen
 v12 requirement text or the preceding evidence-policy bytes.
+
+## V17 append-only extension
+
+Findings 119 through 122 require stable semantic runtime site identities,
+sealed direct charge-target-observe operations, actual exact-site execution
+transcripts, property-specific mutation results, and a final bidirectional
+evidence graph. Positional line or occurrence identities, expected-only proof
+hashes, and aggregate count substitution cannot close a site.
+
+The final inventory is generated only after committed proof and mutation
+evidence. It contains no provisional or `planned:` values. Its rows bind
+already-existing source, proof, and mutation candidates; a later evidence-graph
+candidate binds the final inventory so no artifact names its own commit.
+
+V17 evidence may also be committed under `docs/execution/remediation_v17`.
+Independent compatibility evidence remains opaque and leak-free. This
+extension does not alter the NIP, registered requirement text, wire semantics,
+signed Events, or historical evidence.

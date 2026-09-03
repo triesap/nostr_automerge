@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema","status","authority","cursor","findings","independent","active_checkpoint_scope","predecessors"],
+  "properties": {
+    "schema": {"const":"nostr_automerge.runtime_ledger.v17.v1"},
+    "status": {"enum":["active","code_complete_publication_held"]},
+    "authority": {"const":"spec/remediation_v17_authority.json"},
+    "cursor": {"type":"object","additionalProperties":false,"required":["active_rcld","active_step","next_step","last_planned_step","remaining_checkpoint_count","remaining_rcld_count"],"properties":{"active_rcld":{"type":"integer","minimum":129,"maximum":133},"active_step":{"type":"string","pattern":"^step_1(48[3-9]|49[0-9]|50[0-9]|51[0-3])$"},"next_step":{"type":["string","null"]},"last_planned_step":{"const":"step_1513"},"remaining_checkpoint_count":{"type":"integer","minimum":0,"maximum":30},"remaining_rcld_count":{"type":"integer","minimum":0,"maximum":4}}},
+    "findings": {"type":"object","additionalProperties":false,"required":["open","held"],"properties":{"open":{"type":"array","items":{"type":"string"},"uniqueItems":true},"held":{"const":["FINDING_080"]}}},
+    "independent": {"type":"object","additionalProperties":false,"required":["checkpoints","completed","remaining","contract_barrier","distribution_barrier","target_scope_policy"],"properties":{"checkpoints":{"const":["P01","P02","P03","P04","P05","P06","P07"]},"completed":{"type":"array","items":{"type":"string"},"uniqueItems":true},"remaining":{"type":"integer","minimum":0,"maximum":7},"contract_barrier":{"const":"step_1487"},"distribution_barrier":{"const":"step_1509"},"target_scope_policy":{"const":"owning_private_history_scope_only"}}},
+    "active_checkpoint_scope":{"type":"array","items":{"type":"string"},"uniqueItems":true},
+    "predecessors":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["step","candidate","owner_class","result"],"properties":{"step":{"type":"string"},"candidate":{"type":"string","pattern":"^[0-9a-f]{40}$"},"owner_class":{"enum":["public","independent"]},"result":{"const":"pass"}}}}
+  }
+}
