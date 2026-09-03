@@ -1,6 +1,6 @@
 # Nostr Automerge causal-projection stage ownership v16
 
-Status: approved plan; implementation active
+Status: complete — `code_complete_publication_held`
 
 Initial cursor: RCLD 125 / `step_1469`
 
@@ -339,3 +339,8 @@ five independent TypeScript checkpoints are committed and verified. Findings
 116–118 close only from validated v16 evidence. Until `step_1482` is green and
 committed, RCLDs 125–128 remain unfinished and the v15 terminal conclusion is
 historical rather than current implementation authority.
+
+All fourteen public checkpoints and all five independent checkpoints are now
+committed and verified. Findings 116 through 118 are closed. RCLDs 125 through
+128 are complete. `FINDING_080`, release, publication, and every external action
+remain held. No RCLD in this sequence remains unfinished.

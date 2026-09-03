@@ -1,0 +1,89 @@
+{
+  "title": "nostr_automerge causal projection final decision v16",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "checkpoint", "candidate", "imports", "completion", "findings", "gates", "holds", "release_claimed", "publication_claimed", "remote_actions", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_final_decision.v16.v1"},
+    "status": {"const": "code_complete_publication_held"},
+    "checkpoint": {"const": "step_1482"},
+    "candidate": {"$ref": "#/$defs/commit"},
+    "imports": {"$ref": "#/$defs/imports"},
+    "completion": {"$ref": "#/$defs/completion"},
+    "findings": {"$ref": "#/$defs/findings"},
+    "gates": {"type": "array", "minItems": 12, "maxItems": 12, "items": {"$ref": "#/$defs/gate"}},
+    "holds": {"const": ["external_assurance", "event_kind_allocation", "nip_submission", "production_qualification", "publication", "release", "remote_mutation"]},
+    "release_claimed": {"const": false},
+    "publication_claimed": {"const": false},
+    "remote_actions": {"const": 0},
+    "result": {"const": "pass"},
+    "result_identity_sha256": {"$ref": "#/$defs/hash"}
+  },
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "imports": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority_sha256", "finding_registry_sha256", "combined_assurance_sha256", "opaque_assurance_sha256", "rust_assurance_sha256", "rust_conformance_sha256", "distribution_lock_sha256", "operation_contract_sha256"],
+      "properties": {
+        "authority_sha256": {"$ref": "#/$defs/hash"},
+        "finding_registry_sha256": {"$ref": "#/$defs/hash"},
+        "combined_assurance_sha256": {"$ref": "#/$defs/hash"},
+        "opaque_assurance_sha256": {"$ref": "#/$defs/hash"},
+        "rust_assurance_sha256": {"$ref": "#/$defs/hash"},
+        "rust_conformance_sha256": {"$ref": "#/$defs/hash"},
+        "distribution_lock_sha256": {"$ref": "#/$defs/hash"},
+        "operation_contract_sha256": {"$ref": "#/$defs/hash"}
+      }
+    },
+    "completion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rclds", "public_checkpoints", "independent_checkpoints", "unfinished_rclds", "public_candidate", "independent_assurance_candidate", "independent_implementation_candidate", "rust_operation_sites", "rust_operation_families", "independent_operation_sites", "independent_operation_families", "rust_site_proofs", "independent_site_proofs", "independent_family_proofs", "behavioral_mutations", "mutation_survivors", "scenarios", "signed_events", "delivery_orders", "processes", "canonical_output_sha256", "serialized_run_sha256"],
+      "properties": {
+        "rclds": {"const": [125, 126, 127, 128]},
+        "public_checkpoints": {"const": 14},
+        "independent_checkpoints": {"const": 5},
+        "unfinished_rclds": {"const": []},
+        "public_candidate": {"$ref": "#/$defs/commit"},
+        "independent_assurance_candidate": {"$ref": "#/$defs/commit"},
+        "independent_implementation_candidate": {"$ref": "#/$defs/commit"},
+        "rust_operation_sites": {"const": 68},
+        "rust_operation_families": {"const": 38},
+        "independent_operation_sites": {"const": 142},
+        "independent_operation_families": {"const": 40},
+        "rust_site_proofs": {"const": 68},
+        "independent_site_proofs": {"const": 142},
+        "independent_family_proofs": {"const": 40},
+        "behavioral_mutations": {"const": 23},
+        "mutation_survivors": {"const": 0},
+        "scenarios": {"const": 204},
+        "signed_events": {"const": 771},
+        "delivery_orders": {"const": 8},
+        "processes": {"const": 2},
+        "canonical_output_sha256": {"$ref": "#/$defs/hash"},
+        "serialized_run_sha256": {"$ref": "#/$defs/hash"}
+      }
+    },
+    "findings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["closed", "held", "open"],
+      "properties": {
+        "closed": {"const": ["FINDING_116", "FINDING_117", "FINDING_118"]},
+        "held": {"const": ["FINDING_080"]},
+        "open": {"const": []}
+      }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "result"],
+      "properties": {
+        "name": {"type": "string"},
+        "result": {"const": "pass"}
+      }
+    }
+  }
+}

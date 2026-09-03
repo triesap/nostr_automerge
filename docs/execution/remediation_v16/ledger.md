@@ -115,3 +115,10 @@ mutations with zero survivors, and preserves byte-identical output for all 204
 scenarios, 771 signed Events, and eight delivery orders across two processes.
 Findings 116 through 118 are closed. External assurance and publication remain
 held. The next checkpoint is `step_1482`.
+
+`step_1482` records the terminal v16 decision at the committed combined-
+assurance candidate. It closes RCLDs 125 through 128 with all fourteen public
+checkpoints and five independent checkpoints verified, no unfinished RCLD, no
+open local finding, and zero mutation survivors. The local result is
+`code_complete_publication_held`; `FINDING_080`, release, publication, and every
+external action remain held, and `remote_actions=0`.

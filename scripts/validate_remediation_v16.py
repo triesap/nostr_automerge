@@ -19,7 +19,7 @@ SCHEMA_PATH = ROOT / "tools/validation/runtime_ledger_v16.schema.json"
 BASE_CANDIDATE = "1d44643af3031de52cc0bc398f06f9174b846ab9"
 BASE_TREE = "9d6686f1143e0e61110dc34bf474beed33f8a198"
 ACTOR_SOURCE_SHA256 = "dd9f56235cf918ed91f4f4294aa56c1b4dba0c90b10278eb0c1a725520197727"
-PLAN_SHA256 = "4fb7b60ade8a11cbf1e60647e7558d0bc9721f85469abac08e1b559bc2899a18"
+PLAN_SHA256 = "12ed295c187e92ce2771ce1efa82cbe96167129fff2d8dabd444035e8da9e15c"
 HOLDS = [
     "external_assurance",
     "event_kind_allocation",
@@ -102,6 +102,21 @@ STEP_1481_SCOPE = [
     "tools/nostr_automerge_xtask/src/validate.rs",
     "tools/validation/causal_projection_combined_assurance_v16.schema.json",
 ]
+STEP_1482_SCOPE = [
+    "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v16.md",
+    "docs/execution/remediation_v16/ledger.md",
+    "implementation/runtime_ledger_v16.json",
+    "reports/causal_projection_final_decision_v16.json",
+    "reports/spec_baseline.txt",
+    "scripts/validate_causal_projection_final_decision_v16.py",
+    "scripts/validate_private_reproduction_boundary_v9.py",
+    "scripts/validate_remediation_v16.py",
+    "scripts/validate_spec.py",
+    "spec/remediation_findings_v16.json",
+    "spec/remediation_v16_authority.json",
+    "tools/nostr_automerge_xtask/src/validate.rs",
+    "tools/validation/causal_projection_final_decision_v16.schema.json",
+]
 HISTORICAL_V15 = {
     "authority_sha256": "063e70835b18cfda959b8153b3d5e9ade3b28fa5fb5b3311ce49c9474a157c46",
     "findings_sha256": "a43379224ec0811cbafd27fb69a82ec47bfb1914b22167157c22d944b771d202",
@@ -181,7 +196,7 @@ def validate(authority: Any, findings: Any, ledger: Any, schema: Any) -> None:
     )
     require(
         a["schema"] == "nostr_automerge.remediation_v16_authority.v1"
-        and a["status"] == "active"
+        and a["status"] == "code_complete_publication_held"
         and a["result"] == "pass",
         "authority:state",
     )
@@ -287,7 +302,7 @@ def validate(authority: Any, findings: Any, ledger: Any, schema: Any) -> None:
     f = exact(findings, ["schema", "status", "findings", "result"], "findings")
     require(
         f["schema"] == "nostr_automerge.remediation_findings.v16.v1"
-        and f["status"] == "active"
+        and f["status"] == "code_complete_publication_held"
         and f["result"] == "pass",
         "findings:state",
     )
@@ -309,7 +324,7 @@ def validate(authority: Any, findings: Any, ledger: Any, schema: Any) -> None:
     )
     require(
         l["schema"] == "nostr_automerge.runtime_ledger.v16.v1"
-        and l["status"] == "active"
+        and l["status"] == "code_complete_publication_held"
         and l["authority"] == "spec/remediation_v16_authority.json",
         "ledger:state",
     )
@@ -317,10 +332,10 @@ def validate(authority: Any, findings: Any, ledger: Any, schema: Any) -> None:
         l["cursor"]
         == {
             "active_rcld": 128,
-            "active_step": "step_1481",
-            "next_step": "step_1482",
+            "active_step": "step_1482",
+            "next_step": None,
             "last_planned_step": "step_1482",
-            "remaining_checkpoint_count": 1,
+            "remaining_checkpoint_count": 0,
             "remaining_rcld_count": 0,
         },
         "ledger:cursor",
@@ -337,9 +352,9 @@ def validate(authority: Any, findings: Any, ledger: Any, schema: Any) -> None:
         "ledger:independent",
     )
     require(
-        l["active_checkpoint_scope"] == STEP_1481_SCOPE
-        and STEP_1481_SCOPE == sorted(STEP_1481_SCOPE)
-        and all((ROOT / path).exists() for path in STEP_1481_SCOPE),
+        l["active_checkpoint_scope"] == STEP_1482_SCOPE
+        and STEP_1482_SCOPE == sorted(STEP_1482_SCOPE)
+        and all((ROOT / path).exists() for path in STEP_1482_SCOPE),
         "ledger:scope",
     )
     require(
@@ -423,6 +438,12 @@ def validate(authority: Any, findings: Any, ledger: Any, schema: Any) -> None:
                 "owner_class": "public",
                 "result": "pass",
             },
+            {
+                "step": "step_1481",
+                "candidate": "34da987a27044fd5dd59bc525b9051eb33128deb",
+                "owner_class": "public",
+                "result": "pass",
+            },
         ],
         "ledger:predecessors",
     )
@@ -449,7 +470,7 @@ def self_test(authority: Any, findings: Any, ledger: Any, schema: Any) -> int:
         ("remote", "authority", lambda value: value.update(remote_actions=1)),
         ("finding_order", "findings", lambda value: value["findings"].reverse()),
         ("finding_status", "findings", lambda value: value["findings"][0].update(status="open")),
-        ("cursor", "ledger", lambda value: value["cursor"].update(next_step=None)),
+        ("cursor", "ledger", lambda value: value["cursor"].update(next_step="step_1483")),
         ("private_scope", "ledger", lambda value: value["independent"].update(target_scope_policy="whole_worktree")),
         ("scope", "ledger", lambda value: value["active_checkpoint_scope"].pop()),
         ("predecessor", "ledger", lambda value: value["predecessors"][0].update(candidate="0" * 40)),
@@ -481,7 +502,7 @@ def main() -> int:
     validate(authority, findings, ledger, schema)
     mutations = self_test(authority, findings, ledger, schema)
     print(
-        "PASS: remediation-v16 active=step_1481 next=step_1482 "
+        "PASS: remediation-v16 active=step_1482 next=None "
         f"mutations={mutations} remote_actions=0"
     )
     return 0

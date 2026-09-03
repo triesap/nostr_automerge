@@ -1,6 +1,6 @@
 {
   "schema": "nostr_automerge.remediation_v16_authority.v1",
-  "status": "active",
+  "status": "code_complete_publication_held",
   "reviewed_public": {
     "candidate": "1d44643af3031de52cc0bc398f06f9174b846ab9",
     "tree": "9d6686f1143e0e61110dc34bf474beed33f8a198",
@@ -8,7 +8,7 @@
   },
   "governing_plan": {
     "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v16.md",
-    "sha256": "4fb7b60ade8a11cbf1e60647e7558d0bc9721f85469abac08e1b559bc2899a18"
+    "sha256": "12ed295c187e92ce2771ce1efa82cbe96167129fff2d8dabd444035e8da9e15c"
   },
   "historical_v15": {
     "authority_sha256": "063e70835b18cfda959b8153b3d5e9ade3b28fa5fb5b3311ce49c9474a157c46",
