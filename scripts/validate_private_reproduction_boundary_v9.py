@@ -220,6 +220,10 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/rust_conformance_v17.schema.json",
     "reports/opaque_causal_projection_v17.json",
     "tools/validation/opaque_causal_projection_v17.schema.json",
+    "reports/causal_projection_combined_assurance_v17.json",
+    "tools/validation/causal_projection_combined_assurance_v17.schema.json",
+    "reports/causal_projection_finding_closure_v17.json",
+    "tools/validation/causal_projection_finding_closure_v17.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -385,6 +389,8 @@ PYTHON_SURFACES = (
     "scripts/validate_rust_conformance_v16.py",
     "scripts/validate_rust_conformance_v17.py",
     "scripts/validate_opaque_causal_projection_v17.py",
+    "scripts/validate_causal_projection_combined_assurance_v17.py",
+    "scripts/validate_causal_projection_finding_closure_v17.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -717,6 +723,12 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_opaque_causal_projection_v17.py",
         "reports/opaque_causal_projection_v17.json",
         "tools/validation/opaque_causal_projection_v17.schema.json",
+        "scripts/validate_causal_projection_combined_assurance_v17.py",
+        "reports/causal_projection_combined_assurance_v17.json",
+        "tools/validation/causal_projection_combined_assurance_v17.schema.json",
+        "scripts/validate_causal_projection_finding_closure_v17.py",
+        "reports/causal_projection_finding_closure_v17.json",
+        "tools/validation/causal_projection_finding_closure_v17.schema.json",
         "tools/nostr_automerge_conformance/src/main.rs",
         "tools/nostr_automerge_conformance/src/runner.rs",
         "ython3 scripts/validate_causal_projection_structural_assurance_v16.py --mode structural",
@@ -1386,6 +1398,8 @@ def validate_source_surfaces() -> None:
                             "scripts/validate_remediation_v16.py",
                             "scripts/validate_opaque_causal_projection_v16.py",
                             "scripts/validate_opaque_causal_projection_v17.py",
+                            "scripts/validate_causal_projection_combined_assurance_v17.py",
+                            "scripts/validate_causal_projection_finding_closure_v17.py",
                             "scripts/validate_causal_projection_combined_assurance_v16.py",
                             "scripts/validate_causal_projection_final_decision_v16.py",
                             "scripts/reproduce_remediation_v16.py",

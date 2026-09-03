@@ -1,0 +1,34 @@
+{
+  "title": "nostr_automerge causal projection combined assurance v17",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "checkpoint", "candidate", "imports", "implementation_candidates", "counts", "applicability", "identities", "finding_closure", "result_classes", "canonical_process_bytes", "release_claimed", "publication_claimed", "remote_actions", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": { "const": "nostr_automerge.causal_projection_combined_assurance.v17.v1" },
+    "status": { "const": "verified" },
+    "checkpoint": { "const": "step_1512" },
+    "candidate": { "const": "75453b48e4e19851b1d7480f7e4c7af817bd300a" },
+    "imports": { "$ref": "#/$defs/imports" },
+    "implementation_candidates": { "$ref": "#/$defs/candidates" },
+    "counts": { "$ref": "#/$defs/counts" },
+    "applicability": { "$ref": "#/$defs/applicability" },
+    "identities": { "$ref": "#/$defs/identities" },
+    "finding_closure": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "$ref": "#/$defs/finding" } },
+    "result_classes": { "const": ["exact_site_identity", "sealed_charge_target_observe", "bidirectional_evidence", "property_specific_mutation_qualification", "cross_implementation_parity", "distribution_byte_identity"] },
+    "canonical_process_bytes": { "const": "identical" },
+    "release_claimed": { "const": false },
+    "publication_claimed": { "const": false },
+    "remote_actions": { "const": 0 },
+    "result": { "const": "pass" },
+    "result_identity_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  },
+  "$defs": {
+    "imports": { "type": "object", "additionalProperties": false, "required": ["operation_contract_sha256", "rust_final_inventory_sha256", "rust_evidence_graph_sha256", "rust_mutation_sha256", "rust_public_assurance_sha256", "distribution_transition_sha256", "rust_conformance_sha256", "opaque_import_sha256", "distribution_manifest_sha256", "distribution_lock_sha256", "finding_registry_sha256"], "properties": { "operation_contract_sha256": { "type": "string" }, "rust_final_inventory_sha256": { "type": "string" }, "rust_evidence_graph_sha256": { "type": "string" }, "rust_mutation_sha256": { "type": "string" }, "rust_public_assurance_sha256": { "type": "string" }, "distribution_transition_sha256": { "type": "string" }, "rust_conformance_sha256": { "type": "string" }, "opaque_import_sha256": { "type": "string" }, "distribution_manifest_sha256": { "type": "string" }, "distribution_lock_sha256": { "type": "string" }, "finding_registry_sha256": { "type": "string" } } },
+    "candidates": { "type": "object", "additionalProperties": false, "required": ["public_contract", "public_inventory", "public_evidence_graph", "public_assurance", "public_transition", "public_conformance", "public_opaque_import", "independent_assurance", "independent_implementation"], "properties": { "public_contract": { "type": "string" }, "public_inventory": { "type": "string" }, "public_evidence_graph": { "type": "string" }, "public_assurance": { "type": "string" }, "public_transition": { "type": "string" }, "public_conformance": { "type": "string" }, "public_opaque_import": { "type": "string" }, "independent_assurance": { "type": "string" }, "independent_implementation": { "type": "string" } } },
+    "counts": { "type": "object", "additionalProperties": false, "required": ["rust_operation_sites", "rust_operation_families", "rust_site_proofs", "independent_operation_sites", "independent_operation_families", "independent_site_proofs", "rust_behavioral_mutations", "independent_behavioral_mutations", "combined_behavioral_mutations", "mutation_survivors", "scenarios", "signed_events", "delivery_orders", "processes", "transition_affected"], "properties": { "rust_operation_sites": { "const": 68 }, "rust_operation_families": { "const": 38 }, "rust_site_proofs": { "const": 68 }, "independent_operation_sites": { "const": 142 }, "independent_operation_families": { "const": 40 }, "independent_site_proofs": { "const": 142 }, "rust_behavioral_mutations": { "const": 31 }, "independent_behavioral_mutations": { "const": 14 }, "combined_behavioral_mutations": { "const": 45 }, "mutation_survivors": { "const": 0 }, "scenarios": { "const": 204 }, "signed_events": { "const": 771 }, "delivery_orders": { "const": 8 }, "processes": { "const": 2 }, "transition_affected": { "const": 0 } } },
+    "applicability": { "type": "object", "additionalProperties": false, "required": ["shared_abstract_classes", "rust_concrete_counters", "independent_counter_result", "binding_rule"], "properties": { "shared_abstract_classes": { "const": ["projection_construction", "actor_sequence", "causal_counter", "frontier_comparison"] }, "rust_concrete_counters": { "const": ["graph_node", "graph_edge"] }, "independent_counter_result": { "const": "site_identity_exact" }, "binding_rule": { "const": "shared_abstract_owner_language_specific_sites_and_counters" } } },
+    "identities": { "type": "object", "additionalProperties": false, "required": ["operation_contract_sha256", "public_evidence_graph_identity_sha256", "opaque_source_identity_sha256", "opaque_import_identity_sha256", "rust_conformance_identity_sha256", "canonical_output_sha256", "serialized_run_sha256"], "properties": { "operation_contract_sha256": { "type": "string" }, "public_evidence_graph_identity_sha256": { "type": "string" }, "opaque_source_identity_sha256": { "type": "string" }, "opaque_import_identity_sha256": { "type": "string" }, "rust_conformance_identity_sha256": { "type": "string" }, "canonical_output_sha256": { "type": "string" }, "serialized_run_sha256": { "type": "string" } } },
+    "finding": { "type": "object", "additionalProperties": false, "required": ["id", "status", "evidence"], "properties": { "id": { "enum": ["FINDING_119", "FINDING_120", "FINDING_121", "FINDING_122"] }, "status": { "const": "closed" }, "evidence": { "type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true, "items": { "type": "string" } } }
+  }
+}
+}

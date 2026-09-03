@@ -1,0 +1,29 @@
+{
+  "title": "nostr_automerge causal projection finding closure v17",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "checkpoint", "candidate", "imports", "history", "findings", "counts", "holds", "release_claimed", "publication_claimed", "remote_actions", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": { "const": "nostr_automerge.causal_projection_finding_closure.v17.v1" },
+    "status": { "const": "code_complete_publication_held" },
+    "checkpoint": { "const": "step_1512" },
+    "candidate": { "const": "75453b48e4e19851b1d7480f7e4c7af817bd300a" },
+    "imports": { "$ref": "#/$defs/imports" },
+    "history": { "$ref": "#/$defs/history" },
+    "findings": { "type": "array", "minItems": 5, "maxItems": 5, "items": { "$ref": "#/$defs/finding" } },
+    "counts": { "$ref": "#/$defs/counts" },
+    "holds": { "type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true, "items": { "type": "string" } },
+    "release_claimed": { "const": false },
+    "publication_claimed": { "const": false },
+    "remote_actions": { "const": 0 },
+    "result": { "const": "pass" },
+    "result_identity_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  },
+  "$defs": {
+    "imports": { "type": "object", "additionalProperties": false, "required": ["combined_assurance_sha256", "opaque_import_sha256", "evidence_graph_sha256", "finding_registry_sha256", "authority_sha256"], "properties": { "combined_assurance_sha256": { "type": "string" }, "opaque_import_sha256": { "type": "string" }, "evidence_graph_sha256": { "type": "string" }, "finding_registry_sha256": { "type": "string" }, "authority_sha256": { "type": "string" } } },
+    "history": { "type": "object", "additionalProperties": false, "required": ["v16_final_decision_sha256", "v16_runtime_ledger_sha256", "relationship"], "properties": { "v16_final_decision_sha256": { "type": "string" }, "v16_runtime_ledger_sha256": { "type": "string" }, "relationship": { "const": "supersedes_without_rewriting_history" } } },
+    "counts": { "type": "object", "additionalProperties": false, "required": ["findings", "closed", "held", "open"], "properties": { "findings": { "const": 5 }, "closed": { "const": 4 }, "held": { "const": 1 }, "open": { "const": 0 } } },
+    "finding": { "type": "object", "additionalProperties": false, "required": ["id", "status", "evidence"], "properties": { "id": { "enum": ["FINDING_119", "FINDING_120", "FINDING_121", "FINDING_122", "FINDING_080"] }, "status": { "enum": ["closed", "held"] }, "evidence": { "type": "array", "minItems": 1, "maxItems": 4, "uniqueItems": true, "items": { "type": "string" } } }
+  }
+}
+}

@@ -1,0 +1,87 @@
+{
+  "schema": "nostr_automerge.causal_projection_finding_closure.v17.v1",
+  "status": "code_complete_publication_held",
+  "checkpoint": "step_1512",
+  "candidate": "75453b48e4e19851b1d7480f7e4c7af817bd300a",
+  "imports": {
+    "combined_assurance_sha256": "271463576243408ea9d43fb9f1b5c4b904c2ae63b1342871aea72b50f913b508",
+    "opaque_import_sha256": "54907c6123cb719d8089976daa5e2c3c0440ba3e5d0d4a24116431a3974c8471",
+    "evidence_graph_sha256": "283224879f13a69840e7222523649cc9639d73ae3cbe99464127b78f0121c527",
+    "finding_registry_sha256": "017593a11a9e348958c9293976f52e7cd2d778198710c622a28cd94e1e44a3d1",
+    "authority_sha256": "ed00008a45c6524ce974a6a6315cb2dd45f84fa71da824905b3bb55fd448f32e"
+  },
+  "history": {
+    "v16_final_decision_sha256": "71b4bf38e16816e84656acf9bac735421f099e067c5209503ab7481b399aa704",
+    "v16_runtime_ledger_sha256": "6abb4f7ce34e63eb723e800d8de55586080013737952dd5c431d6e475e0b30b4",
+    "relationship": "supersedes_without_rewriting_history"
+  },
+  "findings": [
+    {
+      "id": "FINDING_119",
+      "status": "closed",
+      "evidence": [
+        "combined_assurance",
+        "final_inventory",
+        "bidirectional_graph",
+        "planned_values_zero"
+      ]
+    },
+    {
+      "id": "FINDING_120",
+      "status": "closed",
+      "evidence": [
+        "rust_site_proofs",
+        "independent_site_proofs",
+        "exact_site_identity",
+        "same_family_swap_rejected"
+      ]
+    },
+    {
+      "id": "FINDING_121",
+      "status": "closed",
+      "evidence": [
+        "sealed_site_boundary",
+        "direct_site_coverage",
+        "target_order_mutations",
+        "zero_survivors"
+      ]
+    },
+    {
+      "id": "FINDING_122",
+      "status": "closed",
+      "evidence": [
+        "distinct_property_codes",
+        "typed_stop_mutations",
+        "unexpected_identity_mutations",
+        "post_stop_mutations"
+      ]
+    },
+    {
+      "id": "FINDING_080",
+      "status": "held",
+      "evidence": [
+        "external_authority_required"
+      ]
+    }
+  ],
+  "counts": {
+    "findings": 5,
+    "closed": 4,
+    "held": 1,
+    "open": 0
+  },
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "remote_mutation"
+  ],
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "1d167798a48e3b3a2f6a1e9103785212f6a9b548b9b4439dc19cf2aba2906da4"
+}
