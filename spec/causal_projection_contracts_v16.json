@@ -1,0 +1,65 @@
+{
+  "schema": "nostr_automerge.causal_projection_contracts.v16.v1",
+  "status": "frozen_before_implementation",
+  "authority": "spec/remediation_v16_authority.json",
+  "source_candidate": "6d6cfedd64c62fc1a427e3b966dc79474ff652ba",
+  "requirements": ["NCRDT-RESOURCE-016","NCRDT-RESOURCE-017","NCRDT-RESOURCE-018","NCRDT-RESOURCE-019","NCRDT-EVIDENCE-007"],
+  "operation_discovery": {
+    "inventory_order": "source_sites_before_proofs",
+    "final_family_count": null,
+    "row_fields": ["id","abstract_family","phase","language","applicability","source_path","source_symbol","source_site","owner_mode","counter","abstract_owner_class","reachability","proof","test","command","candidate","artifact_sha256","mutation"],
+    "repeated_family_rule": "every_site_or_shared_wrapper_plus_each_site_no_bypass",
+    "prohibited": ["preset_final_family_count","dead_family_retention","first_occurrence_only_proof","independent_counter_table","unowned_target_operation"]
+  },
+  "actor_stage": {
+    "owned_operations": ["ActorIdentityDecision","SequenceRelationDecision"],
+    "sequence_relations": ["valid_genesis","expected_successor","rollback","gap_or_missing_predecessor","invalid_predecessor"],
+    "stage_order": ["actor_identity","actor_sequence","causal_counter","frontier"],
+    "actor_failure_causal_operations": 0,
+    "actor_failure_frontier_operations": 0,
+    "causal_failure_frontier_operations": 0,
+    "successful_start_comparisons": 1,
+    "prohibited_actor_facts": ["branch_membership","accepted_membership","direct_dependency_membership","copied_causal_counter","copied_expected_start_boolean"]
+  },
+  "counter_binding": {
+    "abstract_operation": "DependencyCountRead",
+    "abstract_owner_class": "dependency_count_read",
+    "rust": "GraphNode",
+    "typescript": "source_derived_after_private_refactor",
+    "cross_language_rule": "shared_abstract_owner_language_specific_concrete_counter",
+    "drift_failures": ["source_only","evidence_only","coordinated"]
+  },
+  "structural_identity": {
+    "modes": ["structural","identity","full"],
+    "full_order": ["structural","identity"],
+    "neutral_comment_result": ["structural_pass","identity_fail"],
+    "property_codes": ["UNWRAPPED_ACTOR_SEQUENCE_DECISION","CAUSAL_STAGE_BEFORE_ACTOR_SUCCESS","DUPLICATE_CAUSAL_START_COMPARISON","UNMETERED_FINAL_TRAVERSAL","STATE_WRITE_BEFORE_CHARGE","CHARGE_AFTER_OPERATION","POST_STOP_TARGET_WORK","PUBLICATION_BEFORE_CHARGE","ALTERNATE_CONSUMER_BYPASS","COUNTER_MISMATCH"],
+    "identity_only_codes_do_not_qualify_behavior": true
+  },
+  "failure_contract": {
+    "typed_stops": ["BudgetExhausted","Cancelled"],
+    "unexpected_error": "exact_identity_rethrow",
+    "charge_order": "charge_cancel_then_operation_then_observation",
+    "after_first_stop": "zero_target_work",
+    "forbidden": ["catch_and_normalize","retroactive_bulk_charge","post_stop_callback","post_stop_invariant_work"]
+  },
+  "mutation_transcript": {
+    "fields": ["mutation_id","mutation_class","source_site","row_id","patch_sha256","command","compile_result","expected_property_code","actual_property_code","transcript_sha256","result"],
+    "qualifying_result": "exact_expected_property_code",
+    "compile_failure_rule": "qualifies_only_when_explicitly_authorized",
+    "source_restoration": "required",
+    "survivors": 0
+  },
+  "private_opaque_boundary": {
+    "allowed": ["candidate","counts","hashes","applicability_classes","normalized_result_classes","clean_source_scope"],
+    "prohibited": ["paths","source","package_layout","commands","logs","urls","credentials","unrelated_operator_state"],
+    "source_assumption": "no_standalone_git_identity_required",
+    "cleanliness_scope": "approved_private_source_scope_only"
+  },
+  "reproduction_dependencies": {
+    "actor_sha256": "40b898367a3bdf376bca9f4863680b5bda0e1d409c1f5f895d80e6aacb165a45",
+    "counter_oracle_sha256": "3a33e15a3262d7cd7b8ea20410dc5699e81f1f02f6d96d84c508e3d453b40503",
+    "closure_evidence": false
+  },
+  "result": "pass"
+}

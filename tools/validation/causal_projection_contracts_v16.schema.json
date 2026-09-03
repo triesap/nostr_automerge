@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema","status","authority","source_candidate","requirements","operation_discovery","actor_stage","counter_binding","structural_identity","failure_contract","mutation_transcript","private_opaque_boundary","reproduction_dependencies","result"],
+  "properties": {
+    "schema": {"const":"nostr_automerge.causal_projection_contracts.v16.v1"},
+    "status": {"const":"frozen_before_implementation"},
+    "authority": {"const":"spec/remediation_v16_authority.json"},
+    "source_candidate": {"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "requirements": {"type":"array","minItems":5,"maxItems":5,"uniqueItems":true},
+    "operation_discovery": {"type":"object","additionalProperties":false,"required":["inventory_order","final_family_count","row_fields","repeated_family_rule","prohibited"],"properties":{"inventory_order":{"type":"string"},"final_family_count":{"type":"null"},"row_fields":{"type":"array","minItems":18,"maxItems":18,"uniqueItems":true},"repeated_family_rule":{"type":"string"},"prohibited":{"type":"array","minItems":5,"maxItems":5,"uniqueItems":true}}},
+    "actor_stage": {"type":"object","additionalProperties":false,"required":["owned_operations","sequence_relations","stage_order","actor_failure_causal_operations","actor_failure_frontier_operations","causal_failure_frontier_operations","successful_start_comparisons","prohibited_actor_facts"],"properties":{"owned_operations":{"type":"array"},"sequence_relations":{"type":"array"},"stage_order":{"type":"array"},"actor_failure_causal_operations":{"const":0},"actor_failure_frontier_operations":{"const":0},"causal_failure_frontier_operations":{"const":0},"successful_start_comparisons":{"const":1},"prohibited_actor_facts":{"type":"array"}}},
+    "counter_binding": {"type":"object","additionalProperties":false,"required":["abstract_operation","abstract_owner_class","rust","typescript","cross_language_rule","drift_failures"],"properties":{"abstract_operation":{"type":"string"},"abstract_owner_class":{"type":"string"},"rust":{"const":"GraphNode"},"typescript":{"type":"string"},"cross_language_rule":{"type":"string"},"drift_failures":{"type":"array"}}},
+    "structural_identity": {"type":"object","additionalProperties":false,"required":["modes","full_order","neutral_comment_result","property_codes","identity_only_codes_do_not_qualify_behavior"],"properties":{"modes":{"type":"array"},"full_order":{"type":"array"},"neutral_comment_result":{"type":"array"},"property_codes":{"type":"array","minItems":10,"maxItems":10,"uniqueItems":true},"identity_only_codes_do_not_qualify_behavior":{"const":true}}},
+    "failure_contract": {"type":"object","additionalProperties":false,"required":["typed_stops","unexpected_error","charge_order","after_first_stop","forbidden"],"properties":{"typed_stops":{"type":"array"},"unexpected_error":{"type":"string"},"charge_order":{"type":"string"},"after_first_stop":{"type":"string"},"forbidden":{"type":"array"}}},
+    "mutation_transcript": {"type":"object","additionalProperties":false,"required":["fields","qualifying_result","compile_failure_rule","source_restoration","survivors"],"properties":{"fields":{"type":"array","minItems":11,"maxItems":11,"uniqueItems":true},"qualifying_result":{"type":"string"},"compile_failure_rule":{"type":"string"},"source_restoration":{"type":"string"},"survivors":{"const":0}}},
+    "private_opaque_boundary": {"type":"object","additionalProperties":false,"required":["allowed","prohibited","source_assumption","cleanliness_scope"],"properties":{"allowed":{"type":"array"},"prohibited":{"type":"array"},"source_assumption":{"type":"string"},"cleanliness_scope":{"type":"string"}}},
+    "reproduction_dependencies": {"type":"object","additionalProperties":false,"required":["actor_sha256","counter_oracle_sha256","closure_evidence"],"properties":{"actor_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},"counter_oracle_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},"closure_evidence":{"const":false}}},
+    "result": {"const":"pass"}
+  }
+}

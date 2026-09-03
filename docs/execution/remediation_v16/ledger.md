@@ -20,3 +20,12 @@ catalog declares `graph_edge`, and that a neutral comment passes the v15
 structural derivation but fails its combined validator only at `source:sha256`.
 The artifact depends on the committed actor report without rewriting it. Both
 defects remain open. The next checkpoint is `step_1472`.
+
+`step_1472` freezes the implementation barrier before production changes. The
+closed contract defines actor identity and sequence ownership, strict stage
+ordering, Rust `DependencyCountRead=GraphNode`, independent language-specific
+counters, source-site-first discovery without a preset family count,
+independent structural and identity validation, exact failure codes and
+mutation transcripts, and the leak-free private opaque boundary. The actor
+and counter-oracle reports remain expected-defect inputs rather than closure
+evidence. The next checkpoint is `step_1473`.
