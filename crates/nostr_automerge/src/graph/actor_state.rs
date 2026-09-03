@@ -385,6 +385,14 @@ macro_rules! projection_build_sites {
                 }
             }
 
+            #[cfg(test)]
+            fn from_id(id: &str) -> Option<Self> {
+                match id {
+                    $( stringify!($site) => Some(Self::$site), )+
+                    _ => None,
+                }
+            }
+
             const fn descriptor(self) -> ProjectionBuildDescriptor {
                 ProjectionBuildDescriptor {
                     site: self,
@@ -2310,7 +2318,31 @@ pub(crate) mod tests {
         (result, observed)
     }
 
-    fn assert_projection_build_family_exact(family: ProjectionBuildOperation) {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum ProjectionSiteResolutionError {
+        UnknownSite,
+        FamilyMismatch,
+        CounterMismatch,
+    }
+
+    fn resolve_projection_build_site(
+        site_id: &str,
+        family: ProjectionBuildOperation,
+        counter: WorkCounter,
+    ) -> Result<ProjectionBuildSite, ProjectionSiteResolutionError> {
+        let site = ProjectionBuildSite::from_id(site_id)
+            .ok_or(ProjectionSiteResolutionError::UnknownSite)?;
+        let descriptor = site.descriptor();
+        if descriptor.operation != family {
+            return Err(ProjectionSiteResolutionError::FamilyMismatch);
+        }
+        if descriptor.counter != counter {
+            return Err(ProjectionSiteResolutionError::CounterMismatch);
+        }
+        Ok(site)
+    }
+
+    fn assert_projection_build_site_exact(site: ProjectionBuildSite) {
         let first = candidate(1, 1, 1, 1);
         let mut second = candidate(1, 2, 2, 1);
         second.change_hash = ChangeHash::from_bytes([2; 32]);
@@ -2331,7 +2363,7 @@ pub(crate) mod tests {
                 charges = charges.saturating_add(1);
                 None
             }
-            BuildTrace::Operation(site) if site.operation() == family => Some(charges),
+            BuildTrace::Operation(descriptor) if descriptor.site == site => Some(charges),
             BuildTrace::Operation(_) => None,
         });
         assert!(target_charge.is_some_and(|value| value > 0));
@@ -2353,7 +2385,7 @@ pub(crate) mod tests {
                 blocked_trace
                     .iter()
                     .filter(
-                        |entry| matches!(entry, BuildTrace::Operation(site) if site.operation() == family)
+                        |entry| matches!(entry, BuildTrace::Operation(descriptor) if descriptor.site == site)
                     )
                     .count(),
                 0
@@ -2367,9 +2399,43 @@ pub(crate) mod tests {
                 Completion::BudgetExhausted,
             );
             assert!(admitted_trace.iter().any(
-                |entry| matches!(entry, BuildTrace::Operation(site) if site.operation() == family)
+                |entry| matches!(entry, BuildTrace::Operation(descriptor) if descriptor.site == site)
             ));
         }
+        let injected = (site, "unexpected");
+        let (failed, blocked_trace) =
+            observed_projection_build_operations(&accepted, &changes, target_charge - 1, &injected);
+        assert!(matches!(
+            failed,
+            Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
+        ));
+        assert!(!blocked_trace.iter().any(
+            |entry| matches!(entry, BuildTrace::Operation(descriptor) if descriptor.site == site)
+        ));
+    }
+
+    fn assert_projection_build_family_exact(family: ProjectionBuildOperation) {
+        let first = candidate(1, 1, 1, 1);
+        let mut second = candidate(1, 2, 2, 1);
+        second.change_hash = ChangeHash::from_bytes([2; 32]);
+        second.dependencies = vec![first.change_hash].into();
+        let accepted = BTreeSet::from([first.change_hash, second.change_hash]);
+        let changes = BTreeMap::from([(first.change_hash, first), (second.change_hash, second)]);
+        let (_, trace) = observed_projection_build_operations(
+            &accepted,
+            &changes,
+            usize::MAX,
+            Completion::BudgetExhausted,
+        );
+        let site = trace.iter().find_map(|entry| match entry {
+            BuildTrace::Operation(descriptor) if descriptor.operation == family => {
+                Some(descriptor.site)
+            }
+            _ => None,
+        });
+        assert!(site.is_some());
+        let Some(site) = site else { return };
+        assert_projection_build_site_exact(site);
     }
 
     macro_rules! projection_build_family_proofs {
@@ -4737,6 +4803,72 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn projection_build_exact_targeting_rejects_aliases_and_descriptor_drift() {
+        assert_eq!(
+            resolve_projection_build_site(
+                "ReadyCandidatePull",
+                ProjectionBuildOperation::CanonicalSourcePull,
+                WorkCounter::GraphNode,
+            ),
+            Ok(ProjectionBuildSite::ReadyCandidatePull)
+        );
+        assert_eq!(
+            resolve_projection_build_site(
+                "not_a_site",
+                ProjectionBuildOperation::CanonicalSourcePull,
+                WorkCounter::GraphNode,
+            ),
+            Err(ProjectionSiteResolutionError::UnknownSite)
+        );
+        assert_eq!(
+            resolve_projection_build_site(
+                "ReadyCandidatePull",
+                ProjectionBuildOperation::StateLookup,
+                WorkCounter::GraphNode,
+            ),
+            Err(ProjectionSiteResolutionError::FamilyMismatch)
+        );
+        assert_eq!(
+            resolve_projection_build_site(
+                "ReadyCandidatePull",
+                ProjectionBuildOperation::CanonicalSourcePull,
+                WorkCounter::GraphEdge,
+            ),
+            Err(ProjectionSiteResolutionError::CounterMismatch)
+        );
+
+        let first = candidate(1, 1, 1, 1);
+        let mut second = candidate(1, 2, 2, 1);
+        second.change_hash = ChangeHash::from_bytes([2; 32]);
+        second.dependencies = vec![first.change_hash].into();
+        let accepted = BTreeSet::from([first.change_hash, second.change_hash]);
+        let changes = BTreeMap::from([(first.change_hash, first), (second.change_hash, second)]);
+        let (_, trace) = observed_projection_build_operations(
+            &accepted,
+            &changes,
+            usize::MAX,
+            Completion::BudgetExhausted,
+        );
+        let completed = trace
+            .iter()
+            .filter_map(|entry| match entry {
+                BuildTrace::Operation(descriptor) => Some(descriptor.site),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        let member_pull = completed
+            .iter()
+            .position(|site| *site == ProjectionBuildSite::NextMemberPull);
+        let ready_pull = completed
+            .iter()
+            .position(|site| *site == ProjectionBuildSite::ReadyCandidatePull);
+        assert!(member_pull.is_some() && ready_pull.is_some());
+        assert_ne!(member_pull, ready_pull);
+        assert_projection_build_site_exact(ProjectionBuildSite::NextMemberPull);
+        assert_projection_build_site_exact(ProjectionBuildSite::ReadyCandidatePull);
+    }
+
+    #[test]
     fn projection_source_operations_use_the_sealed_boundary() {
         let first = candidate(1, 1, 1, 1);
         let mut second = candidate(1, 2, 2, 1);
@@ -5804,7 +5936,6 @@ pub(crate) mod tests {
         counter: WorkCounter,
     ) {
         assert_v16_source_site_counter("ProjectionBuildOperation", variant, occurrence, counter);
-        assert_projection_build_family_exact(family);
 
         let first = candidate(1, 1, 1, 1);
         let mut second = candidate(1, 2, 2, 1);
@@ -5818,28 +5949,22 @@ pub(crate) mod tests {
             usize::MAX,
             Completion::BudgetExhausted,
         );
-        let mut charges = 0_usize;
-        let target = trace.iter().find_map(|entry| match entry {
-            BuildTrace::Attempt(_) => None,
-            BuildTrace::Charge(_) => {
-                charges = charges.saturating_add(1);
-                None
+        let mut exact_sites = Vec::new();
+        for descriptor in trace.iter().filter_map(|entry| match entry {
+            BuildTrace::Operation(descriptor) if descriptor.operation == family => {
+                Some(*descriptor)
             }
-            BuildTrace::Operation(site) if site.operation() == family => Some(charges),
-            BuildTrace::Operation(_) => None,
-        });
-        assert!(target.is_some(), "unreachable build family");
-        let Some(target) = target else { return };
-        let injected = (variant, occurrence);
-        let (result, blocked) =
-            observed_projection_build_operations(&accepted, &changes, target - 1, &injected);
-        assert!(matches!(
-            result,
-            Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
-        ));
-        assert!(!blocked.iter().any(
-            |entry| matches!(entry, BuildTrace::Operation(site) if site.operation() == family)
-        ));
+            _ => None,
+        }) {
+            if !exact_sites.contains(&descriptor.site) {
+                exact_sites.push(descriptor.site);
+            }
+        }
+        let site = exact_sites.get(occurrence - 1).copied();
+        assert!(site.is_some(), "unreachable exact build site");
+        let Some(site) = site else { return };
+        assert_eq!(site.descriptor().counter, counter);
+        assert_projection_build_site_exact(site);
     }
 
     fn actor_site_fixture() -> (
