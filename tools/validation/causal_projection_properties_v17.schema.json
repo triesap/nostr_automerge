@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.github.io/nostr-automerge/schemas/causal_projection_properties_v17.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "property_codes", "result_classes", "interfaces", "positive_case", "negative_cases", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_properties.v17.v1"},
+    "status": {"const": "implemented"},
+    "property_codes": {"type": "array", "minItems": 10, "maxItems": 10, "uniqueItems": true, "items": {"type": "string"}},
+    "result_classes": {"type": "object", "additionalProperties": {"type": "string"}},
+    "interfaces": {"type": "array", "minItems": 3, "uniqueItems": true, "items": {"type": "string"}},
+    "positive_case": {"type": "object", "additionalProperties": false, "required": ["failures", "result"], "properties": {"failures": {"const": []}, "result": {"const": "pass"}}},
+    "negative_cases": {"type": "array", "minItems": 10, "maxItems": 10, "items": {"type": "object", "additionalProperties": false, "required": ["requested_code", "actual_code", "result"], "properties": {"requested_code": {"type": "string"}, "actual_code": {"type": "string"}, "result": {"const": "detected"}}}},
+    "result": {"const": "pass"}
+  }
+}

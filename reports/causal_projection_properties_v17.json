@@ -1,0 +1,47 @@
+{
+  "schema": "nostr_automerge.causal_projection_properties.v17.v1",
+  "status": "implemented",
+  "property_codes": [
+    "TYPED_BUDGET_EXHAUSTED_IDENTITY",
+    "TYPED_CANCELLED_IDENTITY",
+    "UNEXPECTED_WORK_ERROR_IDENTITY",
+    "CHARGE_AFTER_OPERATION",
+    "TARGET_AFTER_STOP",
+    "OBSERVATION_AFTER_STOP",
+    "PUBLICATION_AFTER_STOP",
+    "SITE_ID_MISMATCH",
+    "COUNTER_MISMATCH",
+    "ALTERNATE_CONSUMER_BYPASS"
+  ],
+  "result_classes": {
+    "TYPED_BUDGET_EXHAUSTED_IDENTITY": "typed_stop_provenance",
+    "TYPED_CANCELLED_IDENTITY": "typed_stop_provenance",
+    "UNEXPECTED_WORK_ERROR_IDENTITY": "unexpected_error_provenance",
+    "CHARGE_AFTER_OPERATION": "sealed_order",
+    "TARGET_AFTER_STOP": "post_stop_work",
+    "OBSERVATION_AFTER_STOP": "post_stop_work",
+    "PUBLICATION_AFTER_STOP": "post_stop_work",
+    "SITE_ID_MISMATCH": "descriptor_identity",
+    "COUNTER_MISMATCH": "descriptor_identity",
+    "ALTERNATE_CONSUMER_BYPASS": "consumer_ownership"
+  },
+  "interfaces": [
+    "classify_runtime_observation",
+    "validate_structural_observation",
+    "validate_full_observation"
+  ],
+  "positive_case": {"failures": [], "result": "pass"},
+  "negative_cases": [
+    {"requested_code": "TYPED_BUDGET_EXHAUSTED_IDENTITY", "actual_code": "TYPED_BUDGET_EXHAUSTED_IDENTITY", "result": "detected"},
+    {"requested_code": "TYPED_CANCELLED_IDENTITY", "actual_code": "TYPED_CANCELLED_IDENTITY", "result": "detected"},
+    {"requested_code": "UNEXPECTED_WORK_ERROR_IDENTITY", "actual_code": "UNEXPECTED_WORK_ERROR_IDENTITY", "result": "detected"},
+    {"requested_code": "CHARGE_AFTER_OPERATION", "actual_code": "CHARGE_AFTER_OPERATION", "result": "detected"},
+    {"requested_code": "TARGET_AFTER_STOP", "actual_code": "TARGET_AFTER_STOP", "result": "detected"},
+    {"requested_code": "OBSERVATION_AFTER_STOP", "actual_code": "OBSERVATION_AFTER_STOP", "result": "detected"},
+    {"requested_code": "PUBLICATION_AFTER_STOP", "actual_code": "PUBLICATION_AFTER_STOP", "result": "detected"},
+    {"requested_code": "SITE_ID_MISMATCH", "actual_code": "SITE_ID_MISMATCH", "result": "detected"},
+    {"requested_code": "COUNTER_MISMATCH", "actual_code": "COUNTER_MISMATCH", "result": "detected"},
+    {"requested_code": "ALTERNATE_CONSUMER_BYPASS", "actual_code": "ALTERNATE_CONSUMER_BYPASS", "result": "detected"}
+  ],
+  "result": "pass"
+}
