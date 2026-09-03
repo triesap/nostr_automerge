@@ -681,6 +681,8 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/causal_projection_construction_mutations_v17.json",
         "reports/evidence/v17/mutations",
         "tools/validation/causal_projection_construction_mutations_v17.schema.json",
+        "reports/causal_projection_direct_mutations_v17.json",
+        "tools/validation/causal_projection_direct_mutations_v17.schema.json",
         "tools/nostr_automerge_conformance/src/main.rs",
         "tools/nostr_automerge_conformance/src/runner.rs",
         "ython3 scripts/validate_causal_projection_structural_assurance_v16.py --mode structural",

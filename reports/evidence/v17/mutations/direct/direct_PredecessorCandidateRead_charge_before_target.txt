@@ -1,0 +1,9 @@
+mutation_id=direct.PredecessorCandidateRead.charge_before_target
+inventory_row_id=rust.actor_sequence.predecessor_candidate_read
+command=cargo check -p nostr_automerge --lib --locked
+compile_expected=pass
+compile_actual=pass
+expected_property=CHARGE_AFTER_OPERATION
+actual_property=CHARGE_AFTER_OPERATION
+survivor=false
+restoration=pass

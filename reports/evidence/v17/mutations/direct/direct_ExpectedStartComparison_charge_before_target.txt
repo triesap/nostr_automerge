@@ -1,0 +1,9 @@
+mutation_id=direct.ExpectedStartComparison.charge_before_target
+inventory_row_id=rust.causal_counter.expected_start_comparison
+command=cargo check -p nostr_automerge --lib --locked
+compile_expected=pass
+compile_actual=pass
+expected_property=CHARGE_AFTER_OPERATION
+actual_property=CHARGE_AFTER_OPERATION
+survivor=false
+restoration=pass

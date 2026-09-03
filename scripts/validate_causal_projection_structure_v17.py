@@ -93,6 +93,7 @@ def helper_structure(source: str, name: str) -> None:
 def validate_structure(source: str, consumer: str, inventory: dict[str, Any], properties: dict[str, Any]) -> None:
     source = production(source)
     require("_uncharged_second_result" not in source, "TARGET_AFTER_STOP")
+    require("_v17_charge_removed" not in source, "CHARGE_AFTER_OPERATION")
     try:
         current = derive_rows(source)
     except Exception as error:
