@@ -1,0 +1,55 @@
+{
+  "schema": "nostr_automerge.remediation_v16_authority.v1",
+  "status": "active",
+  "reviewed_public": {
+    "candidate": "1d44643af3031de52cc0bc398f06f9174b846ab9",
+    "tree": "9d6686f1143e0e61110dc34bf474beed33f8a198",
+    "actor_source_sha256": "dd9f56235cf918ed91f4f4294aa56c1b4dba0c90b10278eb0c1a725520197727"
+  },
+  "governing_plan": {
+    "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v16.md",
+    "sha256": "86a0d84680712627fa4670544d22eef9f8b1b53af70e234701120ceb540c550a"
+  },
+  "historical_v15": {
+    "authority_sha256": "063e70835b18cfda959b8153b3d5e9ade3b28fa5fb5b3311ce49c9474a157c46",
+    "findings_sha256": "a43379224ec0811cbafd27fb69a82ec47bfb1914b22167157c22d944b771d202",
+    "runtime_ledger_sha256": "354f18bc851014402376c84dd9f9c39c9b82d8cba3eb1696464173dc5bec371a",
+    "final_decision_sha256": "8115c567807c792c73322ee135b813a143f72be53a271c9bd56d9a3440f88bb8",
+    "combined_assurance_sha256": "503618a729bb9f17c858746ba110c36079cab5d4c8059e4c28542cf0d4e9cc81",
+    "opaque_assurance_sha256": "c2885e24c1042a386eb20d27c3176715c83707f009d314a8c243e7d79b91af28",
+    "distribution_manifest_sha256": "862d0c1ad6ae14cd54b75f88742fa3b584c6c3981195bfeb988818403bee689c",
+    "distribution_lock_sha256": "a511c18a540aaa5de5a7ef23cf6b360108a74e0e178c1e1025907ae880d78da7",
+    "status": "immutable_history"
+  },
+  "active_sequence": {
+    "rcld_first": 125,
+    "rcld_last": 128,
+    "step_first": "step_1469",
+    "step_last": "step_1482",
+    "public_step_count": 14,
+    "private_step_count": 5
+  },
+  "requirement_mapping": {
+    "FINDING_116": ["NCRDT-RESOURCE-016","NCRDT-RESOURCE-017","NCRDT-RESOURCE-018"],
+    "FINDING_117": ["NCRDT-RESOURCE-017","NCRDT-EVIDENCE-007"],
+    "FINDING_118": ["NCRDT-EVIDENCE-007"]
+  },
+  "runtime_decisions": {
+    "actor_identity_owner": "ActorIdentityDecision",
+    "sequence_relation_owner": "SequenceRelationDecision",
+    "rust_dependency_count_counter": "GraphNode",
+    "cross_language_counter_binding": "abstract_owner_plus_language_concrete_counter",
+    "source_site_inventory_precedes_proofs": true,
+    "structural_identity_modes_are_independent": true,
+    "private_target_scope": "owning_private_history_scope_only",
+    "final_operation_family_count": null
+  },
+  "frozen_sha256": {
+    "nip": "8262bf32cb70b7c0e46210441120652e52504fb73839641ac19dddfed840acf8",
+    "requirements": "a8926ae4610b4855294f769871e87a14dee73d05ed201419de35711a8a781974",
+    "report_contract": "0135f6a484388e95ac4f6fe6f8ff4ea7690c58deadcee5818257e9483c9335cf"
+  },
+  "holds": ["external_assurance","event_kind_allocation","nip_submission","production_qualification","publication","release","remote_mutation"],
+  "remote_actions": 0,
+  "result": "pass"
+}

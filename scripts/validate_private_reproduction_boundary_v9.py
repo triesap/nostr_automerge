@@ -182,6 +182,10 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/distribution_v15.schema.json",
     "tools/validation/distribution_v15_lock.schema.json",
     "tools/validation/rust_conformance_v15.schema.json",
+    "spec/remediation_v16_authority.json",
+    "spec/remediation_findings_v16.json",
+    "implementation/runtime_ledger_v16.json",
+    "tools/validation/runtime_ledger_v16.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -220,6 +224,8 @@ PUBLIC_SCHEMA_URIS = frozenset(
 TEXT_RECORDS = (
     "docs/execution/remediation_v9/ledger.md",
     "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v11.md",
+    "docs/execution/remediation_v16/baseline.md",
+    "docs/execution/remediation_v16/ledger.md",
 )
 LEGITIMATE_PUBLIC_COMMANDS = frozenset(
     {
@@ -323,6 +329,7 @@ PYTHON_SURFACES = (
     "scripts/validate_opaque_causal_projection_v15.py",
     "scripts/validate_causal_projection_combined_assurance_v15.py",
     "scripts/validate_causal_projection_final_decision_v15.py",
+    "scripts/validate_remediation_v16.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -532,6 +539,8 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "spec/causal_projection_operation_discovery_v15.json",
         "spec/remediation_v15_authority.json",
         "spec/remediation_findings_v15.json",
+        "spec/remediation_v16_authority.json",
+        "spec/remediation_findings_v16.json",
         "reports/rust_conformance_v15.json",
         "tools/validation/distribution_v15.schema.json",
         "tools/validation/distribution_v15_lock.schema.json",
@@ -549,6 +558,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/causal_projection_final_decision_v15.json",
         "tools/validation/causal_projection_final_decision_v15.schema.json",
         "scripts/validate_remediation_v15.py",
+        "scripts/validate_remediation_v16.py",
         "scripts/validate_causal_projection_operation_discovery_v15.py",
         "scripts/validate_causal_projection_discovery_v15.py",
         "scripts/validate_causal_projection_consumer_v15.py",
@@ -571,6 +581,26 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "docs/execution/remediation_v15/baseline.md",
         "docs/execution/remediation_v15/ledger.md",
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v15.md",
+        "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v16.md",
+        "docs/execution/remediation_v16/baseline.md",
+        "docs/execution/remediation_v16/ledger.md",
+        "implementation/COMMIT_SEQUENCE.md",
+        "implementation/runtime_ledger_v16.json",
+        "scripts/validate_import.py",
+        "scripts/validate_private_reproduction_boundary_v9.py",
+        "scripts/validate_requirements.py",
+        "scripts/validate_remediation_v16.py",
+        "scripts/validate_spec.py",
+        "spec/EVIDENCE_POLICY.md",
+        "spec/remediation_findings_v16.json",
+        "spec/remediation_v16_authority.json",
+        "tools/nostr_automerge_xtask/src/validate.rs",
+        "tools/validation/runtime_ledger_v16.schema.json",
+        "tools/validation/runtime_ledger_v16.schema.json",
+        "implementation/runtime_ledger_v16.json",
+        "docs/execution/remediation_v16/baseline.md",
+        "docs/execution/remediation_v16/ledger.md",
+        "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v16.md",
         "spec/distribution_v13_transition.json",
         "spec/distribution_v14_transition.json",
         "spec/remediation_findings_v13.json",
@@ -1164,6 +1194,7 @@ def validate_source_surfaces() -> None:
                             "scripts/validate_trusted_epoch_projection_gate_v12.py",
                             "scripts/validate_remediation_v12_actor_gate.py",
                             "scripts/validate_remediation_v12_ancestry_authorization_gate.py",
+                            "scripts/validate_remediation_v16.py",
                             "scripts/generate_distribution_v13.py",
                             "scripts/generate_distribution_v14.py",
                             "scripts/generate_distribution_v15.py",

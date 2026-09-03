@@ -93,6 +93,8 @@ V12_SOURCE_SHA256 = {
     "spec/REPORT_CONTRACT.md": "0135f6a484388e95ac4f6fe6f8ff4ea7690c58deadcee5818257e9483c9335cf",
     "spec/EVIDENCE_POLICY.md": "e85d423580f1959a7bbe54f6222dd8dd552300f99223f2b138c600902385d545",
 }
+V12_EVIDENCE_POLICY_PREFIX_LENGTH = 2257
+V12_EVIDENCE_POLICY_PREFIX_SHA256 = "e85d423580f1959a7bbe54f6222dd8dd552300f99223f2b138c600902385d545"
 
 
 class RegistryError(Exception):
@@ -156,7 +158,20 @@ def validate_v12_prose() -> None:
         if normative.count(f"**{identifier}**") != 1 or text not in normative:
             raise AssertionError(f"v12 normative prose:{identifier}")
     for path, expected in V12_SOURCE_SHA256.items():
-        if hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != expected:
+        contents = (ROOT / path).read_bytes()
+        if path == "spec/EVIDENCE_POLICY.md":
+            prefix = contents[:V12_EVIDENCE_POLICY_PREFIX_LENGTH]
+            valid = (
+                len(contents) > V12_EVIDENCE_POLICY_PREFIX_LENGTH
+                and hashlib.sha256(prefix).hexdigest()
+                == V12_EVIDENCE_POLICY_PREFIX_SHA256
+                and contents[V12_EVIDENCE_POLICY_PREFIX_LENGTH:].startswith(
+                    b"\n## V16 append-only extension\n"
+                )
+            )
+        else:
+            valid = hashlib.sha256(contents).hexdigest() == expected
+        if not valid:
             raise AssertionError(f"v12 source authority:{path}")
     validate_v12_policy(load_json(ROOT / "spec/remediation_v13_evidence_policy.json"))
 

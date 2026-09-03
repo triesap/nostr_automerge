@@ -83,7 +83,14 @@ def validate(authority: object, findings: object, ledger: object, schema: object
     require("nostr_automerge_v1_multi_rcld_v13.md" in (ROOT / "AGENTS.md").read_text(), "instructions:plan")
     e = keys(evidence,["schema","status","authority","policy","requirements","owner_modes","required_row_fields","approved_roots","opaque_allowed_fields","opaque_prohibited_fields","result"],"evidence")
     require(e["schema"] == "nostr_automerge.remediation_v13_evidence_policy.v1" and e["status"] == "approved_active" and e["result"] == "pass", "evidence:state")
-    require(e["policy"] == {"path":"spec/EVIDENCE_POLICY.md","sha256":"e85d423580f1959a7bbe54f6222dd8dd552300f99223f2b138c600902385d545"} and sha(ROOT / e["policy"]["path"]) == e["policy"]["sha256"], "evidence:policy")
+    policy_bytes = (ROOT / e["policy"]["path"]).read_bytes()
+    require(
+        e["policy"] == {"path":"spec/EVIDENCE_POLICY.md","sha256":"e85d423580f1959a7bbe54f6222dd8dd552300f99223f2b138c600902385d545"}
+        and len(policy_bytes) > 2257
+        and hashlib.sha256(policy_bytes[:2257]).hexdigest() == e["policy"]["sha256"]
+        and policy_bytes[2257:].startswith(b"\n## V16 append-only extension\n"),
+        "evidence:policy",
+    )
     require(e["requirements"] == ["NCRDT-RESOURCE-017","NCRDT-RESOURCE-018","NCRDT-RESOURCE-019","NCRDT-EVIDENCE-007"], "evidence:requirements")
     require(e["owner_modes"] == ["item_metered","exact_reserved","sealed_constant_time"] and e["required_row_fields"] == ROW_FIELDS, "evidence:rows")
     require(type(evidence_schema) is dict and evidence_schema.get("additionalProperties") is False and evidence_schema.get("required") == ["schema","status","authority","policy","requirements","owner_modes","required_row_fields","approved_roots","opaque_allowed_fields","opaque_prohibited_fields","result"], "evidence:schema")

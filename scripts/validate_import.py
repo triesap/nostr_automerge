@@ -39,6 +39,13 @@ AUTHORIZED_POST_IMPORT_COMPANION_DELTAS = {
     "spec/NIP_DRAFT.md",
     "spec/NOSTR_AUTOMERGE_V1_SPEC.md",
 }
+APPEND_ONLY_IMPORTED_PREFIXES = {
+    "implementation/COMMIT_SEQUENCE.md": (
+        332088,
+        "8cbb87ffbeb90ba15a1c808c5d4eab5e74dc107358813aa00c4c23b1c5892cc2",
+        b"\n## Causal-projection stage ownership v16\n",
+    ),
+}
 FORBIDDEN_PUBLIC_TEXT = (
     "/" + "Users/",
     "docs/" + "handoff/",
@@ -212,7 +219,18 @@ def validate_adaptation() -> list[str]:
         actual = sha256(path)
         imported_target = item.get("target_sha256")
         if actual != imported_target:
-            if post_import and relative in AUTHORIZED_POST_IMPORT_COMPANION_DELTAS:
+            append_only = APPEND_ONLY_IMPORTED_PREFIXES.get(relative)
+            if append_only is not None:
+                prefix_length, prefix_sha256, required_suffix = append_only
+                contents = path.read_bytes()
+                if (
+                    len(contents) <= prefix_length
+                    or hashlib.sha256(contents[:prefix_length]).hexdigest()
+                    != prefix_sha256
+                    or not contents[prefix_length:].startswith(required_suffix)
+                ):
+                    fail(f"invalid append-only imported continuation: {relative}")
+            elif post_import and relative in AUTHORIZED_POST_IMPORT_COMPANION_DELTAS:
                 if relative == "spec/NIP_DRAFT.md":
                     binding = authority.get("nip_authority")
                     if (
@@ -252,7 +270,11 @@ def validate_adaptation() -> list[str]:
             fail(f"adapted flag must be boolean: {relative}")
         if adapted:
             adapted_count += 1
-        elif relative not in permitted_deltas and actual != item.get("source_sha256"):
+        elif (
+            relative not in permitted_deltas
+            and relative not in APPEND_ONLY_IMPORTED_PREFIXES
+            and actual != item.get("source_sha256")
+        ):
             fail(f"unrecorded adaptation: {relative}")
 
     expected_deltas: set[str] = set()
@@ -260,6 +282,7 @@ def validate_adaptation() -> list[str]:
         expected_deltas.update(AUTHORIZED_POST_IMPORT_COMPANION_DELTAS & seen_paths)
     if requirements_appended:
         expected_deltas.add("spec/requirements.json")
+    expected_deltas.update(APPEND_ONLY_IMPORTED_PREFIXES.keys() & seen_paths)
     if permitted_deltas != expected_deltas:
         fail("post-import companion delta inventory mismatch")
 

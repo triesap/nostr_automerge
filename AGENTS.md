@@ -9,17 +9,21 @@ Read and follow, in order:
 1. `spec/NIP_DRAFT.md`;
 2. `spec/NOSTR_AUTOMERGE_V1_SPEC.md` and focused contracts under `spec/`;
 3. `spec/requirements.json`, approved ADRs, and fixture expectations;
-4. `docs/execution/rcl/nostr_automerge_v1_multi_rcld_v13.md`;
+4. `docs/execution/rcl/nostr_automerge_v1_multi_rcld_v16.md`;
 5. the active RCLD and checkpoint in that governing document;
 6. `implementation/COMMIT_SEQUENCE.md`.
 
-For the active causal-projection resource-accounting follow-up, also read
-`spec/remediation_v13_authority.json`,
-`implementation/runtime_ledger_v13.json`, and
-`docs/execution/remediation_v13/baseline.md`. RCLD 116 through RCLD 120 append
-to the completed RCLD 109 through RCLD 115 history and supersede its terminal
+For the active causal-projection stage-ownership follow-up, also read
+`spec/remediation_v16_authority.json`,
+`implementation/runtime_ledger_v16.json`, and
+`docs/execution/remediation_v16/baseline.md`. RCLD 125 through RCLD 128 append
+to the completed RCLD 121 through RCLD 124 history and supersede its terminal
 decision only for current implementation status. Historical evidence remains
 immutable.
+
+The completed historical plan
+`docs/execution/rcl/nostr_automerge_v1_multi_rcld_v13.md` remains an immutable
+source for its own validators and records.
 
 Code does not silently redefine the specification. When normative prose and a
 fixture disagree, the NIP controls until the consensus change process updates
@@ -37,10 +41,10 @@ all affected authority and implementations.
 - Preserve unrelated work and inspect the complete diff before committing.
 - Do not push, publish, release, tag, deploy, or mutate another repository
   without separate authority.
-- Cross-repository checkpoints preserve independent histories. Commit an
-  authorized TypeScript source slice in its own repository before committing
-  the corresponding Rust coordination or attestation slice.
-- Do not edit the NIP document during RCLDs 116 through 120.
+- Cross-implementation checkpoints preserve their owning histories. Commit an
+  authorized TypeScript source slice in its owning private history before
+  committing the corresponding Rust coordination or attestation slice.
+- Do not edit the NIP document during RCLDs 125 through 128.
 
 ## Naming
 

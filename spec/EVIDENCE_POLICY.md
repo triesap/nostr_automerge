@@ -44,3 +44,18 @@ source, SBOM, leak, artifact, boundary, and clean-tree results. Finding 080 and
 external assurance remain held. No local record may claim release,
 publication, submission, allocation, deployment, production qualification, or
 remote action.
+
+## V16 append-only extension
+
+Findings 116 through 118 require exact source-site proof IDs and a complete
+runtime-operation inventory. Every active row binds its row ID, abstract
+family, phase, implementation applicability, exact source path, symbol and
+site, owner mode, concrete runtime counter, abstract owner class, nonzero
+reachability, proof, enabled test, repository-owned command, candidate,
+artifact SHA-256, and property-specific mutation.
+
+A repeated family needs per-site evidence or a shared-wrapper proof plus an
+independent no-bypass proof for every call site. Identity-only failures do not
+qualify as structural mutation kills. V16 evidence may also be committed under
+`docs/execution/remediation_v16`. The v16 extension does not alter the frozen
+v12 requirement text or the preceding evidence-policy bytes.

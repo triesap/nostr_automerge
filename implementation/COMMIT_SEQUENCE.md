@@ -8904,3 +8904,27 @@ perf(readiness): complete local implementation program
 **Required completion report**
 
 Report the step ID, commit SHA, files changed, requirements covered, tests and commands run with results, self-review findings, unverified items, deviations, and whether the next step is safe.
+
+## Causal-projection stage ownership v16
+
+The append-only v16 continuation is governed by
+`docs/execution/rcl/nostr_automerge_v1_multi_rcld_v16.md`. Its public sequence
+is `step_1469` through `step_1482` across RCLD 125 through RCLD 128. Five
+independent TypeScript checkpoints, `P01` through `P05`, run at the barriers
+defined by that plan. Each public checkpoint is committed and verified
+separately; historical v15 records remain immutable.
+
+1. `step_1469` opens v16 authority and runtime routing.
+2. `step_1470` records the actor-stage expected defects.
+3. `step_1471` records the counter and identity-oracle expected defects.
+4. `step_1472` freezes the v16 discovery and assurance contracts.
+5. `step_1473` performs the atomic actor/causal runtime refactor.
+6. `step_1474` derives the source-site inventory and concrete counters.
+7. `step_1475` derives and executes the per-site proof catalog.
+8. `step_1476` separates structural and identity validation.
+9. `step_1477` executes property-specific source mutations.
+10. `step_1478` closes the public Rust assurance artifacts and routes.
+11. `step_1479` locks and validates distribution v16.
+12. `step_1480` imports the opaque independent assurance.
+13. `step_1481` closes combined assurance and Findings 116 through 118.
+14. `step_1482` records the held terminal decision.

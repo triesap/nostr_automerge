@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema","status","authority","cursor","findings","independent","active_checkpoint_scope","predecessors"],
+  "properties": {
+    "schema": {"const":"nostr_automerge.runtime_ledger.v16.v1"},
+    "status": {"enum":["active","code_complete_publication_held"]},
+    "authority": {"const":"spec/remediation_v16_authority.json"},
+    "cursor": {
+      "type":"object",
+      "additionalProperties":false,
+      "required":["active_rcld","active_step","next_step","last_planned_step","remaining_checkpoint_count","remaining_rcld_count"],
+      "properties": {
+        "active_rcld":{"type":"integer","minimum":125,"maximum":128},
+        "active_step":{"type":"string","pattern":"^step_14(6[9]|7[0-9]|8[0-2])$"},
+        "next_step":{"type":["string","null"]},
+        "last_planned_step":{"const":"step_1482"},
+        "remaining_checkpoint_count":{"type":"integer","minimum":0,"maximum":13},
+        "remaining_rcld_count":{"type":"integer","minimum":0,"maximum":3}
+      }
+    },
+    "findings": {
+      "type":"object",
+      "additionalProperties":false,
+      "required":["open","held"],
+      "properties": {
+        "open":{"type":"array","items":{"type":"string"},"uniqueItems":true},
+        "held":{"const":["FINDING_080"]}
+      }
+    },
+    "independent": {
+      "type":"object",
+      "additionalProperties":false,
+      "required":["checkpoints","completed","remaining","target_scope_policy"],
+      "properties": {
+        "checkpoints":{"const":["P01","P02","P03","P04","P05"]},
+        "completed":{"type":"array","items":{"type":"string"},"uniqueItems":true},
+        "remaining":{"type":"integer","minimum":0,"maximum":5},
+        "target_scope_policy":{"const":"owning_private_history_scope_only"}
+      }
+    },
+    "active_checkpoint_scope": {"type":"array","items":{"type":"string"},"uniqueItems":true},
+    "predecessors": {
+      "type":"array",
+      "items":{
+        "type":"object",
+        "additionalProperties":false,
+        "required":["step","candidate","owner_class","result"],
+        "properties":{
+          "step":{"type":"string"},
+          "candidate":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+          "owner_class":{"enum":["public","independent"]},
+          "result":{"const":"pass"}
+        }
+      }
+    }
+  }
+}
