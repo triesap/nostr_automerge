@@ -214,6 +214,88 @@ enum CausalNextOperation {
     CheckedAdvance,
 }
 
+macro_rules! causal_next_sites {
+    ($( $site:ident => $operation:ident ),+ $(,)?) => {
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        enum CausalNextSite {
+            $( $site, )+
+        }
+
+        impl CausalNextSite {
+            const fn descriptor(self) -> CausalNextDescriptor {
+                CausalNextDescriptor {
+                    site: self,
+                    site_id: match self {
+                        $( Self::$site => stringify!($site), )+
+                    },
+                    phase: "causal_counter",
+                    operation: match self {
+                        $( Self::$site => CausalNextOperation::$operation, )+
+                    },
+                    counter: WorkCounter::GraphNode,
+                    abstract_owner_class: "direct_operation",
+                    applicability: "public_rust",
+                }
+            }
+        }
+    };
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct CausalNextDescriptor {
+    site: CausalNextSite,
+    site_id: &'static str,
+    phase: &'static str,
+    operation: CausalNextOperation,
+    counter: WorkCounter,
+    abstract_owner_class: &'static str,
+    applicability: &'static str,
+}
+
+impl CausalNextDescriptor {
+    const fn operation(self) -> CausalNextOperation {
+        self.operation
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum CausalNextObservationKind {
+    ChargeAttempt,
+    TargetCompleted,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct CausalNextObservation {
+    descriptor: CausalNextDescriptor,
+    kind: CausalNextObservationKind,
+}
+
+causal_next_sites! {
+    StoredCounterRead => StoredCounterRead,
+    ExpectedStartComparison => ExpectedStartComparison,
+    CheckedAdvance => CheckedAdvance,
+}
+
+fn perform_causal_next_operation<T, E>(
+    site: CausalNextSite,
+    charge: &mut impl FnMut(WorkCounter) -> Result<(), E>,
+    observed: &mut impl FnMut(CausalNextObservation),
+    perform: impl FnOnce() -> T,
+) -> Result<T, MeteredActorStateError<E>> {
+    let descriptor = site.descriptor();
+    observed(CausalNextObservation {
+        descriptor,
+        kind: CausalNextObservationKind::ChargeAttempt,
+    });
+    charge(descriptor.counter).map_err(MeteredActorStateError::Work)?;
+    let result = perform();
+    observed(CausalNextObservation {
+        descriptor,
+        kind: CausalNextObservationKind::TargetCompleted,
+    });
+    Ok(result)
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum FrontierComparisonOperation {
     CandidateKindComparison,
@@ -566,24 +648,33 @@ impl TrustedEpochProjection<'_> {
         &self,
         candidate: &ChangeCandidate,
         mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
-        mut observed: impl FnMut(CausalNextOperation),
+        mut observed: impl FnMut(CausalNextObservation),
     ) -> Result<u64, MeteredActorStateError<E>> {
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        let causal_next_op = self.causal_next_op;
-        observed(CausalNextOperation::StoredCounterRead);
+        let causal_next_op = perform_causal_next_operation(
+            CausalNextSite::StoredCounterRead,
+            &mut charge,
+            &mut observed,
+            || self.causal_next_op,
+        )?;
 
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        let start_matches = candidate.start_op == causal_next_op;
-        observed(CausalNextOperation::ExpectedStartComparison);
+        let start_matches = perform_causal_next_operation(
+            CausalNextSite::ExpectedStartComparison,
+            &mut charge,
+            &mut observed,
+            || candidate.start_op == causal_next_op,
+        )?;
         if !start_matches {
             return Err(MeteredActorStateError::State(
                 ActorStateError::OperationCounter,
             ));
         }
 
-        charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;
-        let advanced = causal_next_op.checked_add(candidate.operation_count);
-        observed(CausalNextOperation::CheckedAdvance);
+        let advanced = perform_causal_next_operation(
+            CausalNextSite::CheckedAdvance,
+            &mut charge,
+            &mut observed,
+            || causal_next_op.checked_add(candidate.operation_count),
+        )?;
         advanced.ok_or(MeteredActorStateError::State(
             ActorStateError::OperationCounter,
         ))
@@ -1534,7 +1625,8 @@ pub(crate) mod tests {
     use super::{
         ActorDecisionDescriptor, ActorDecisionObservationKind, ActorDecisionOperation,
         ActorDecisionSite, ActorStateError, CandidateSemanticStage, CanonicalEpochProjectionSource,
-        CausalNextOperation, EpochActorState, EpochProjectionSource, FrontierComparisonOperation,
+        CausalNextDescriptor, CausalNextObservationKind, CausalNextOperation, CausalNextSite,
+        EpochActorState, EpochProjectionSource, FrontierComparisonOperation,
         MeteredActorStateError, ProjectionBuildDescriptor, ProjectionBuildObservation,
         ProjectionBuildObservationKind, ProjectionBuildOperation, ProjectionBuildSite,
         ProjectionPublicationOperation, TrustedEpochProjection, build_trusted_epoch_projection,
@@ -1810,8 +1902,9 @@ pub(crate) mod tests {
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     enum CausalNextTrace {
+        Attempt(CausalNextDescriptor),
         Charge(WorkCounter),
-        Operation(CausalNextOperation),
+        Operation(CausalNextDescriptor),
     }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -2137,10 +2230,15 @@ pub(crate) mod tests {
                     Ok(())
                 }
             },
-            |operation| {
-                trace
-                    .borrow_mut()
-                    .push(CausalNextTrace::Operation(operation));
+            |observation| {
+                trace.borrow_mut().push(match observation.kind {
+                    CausalNextObservationKind::ChargeAttempt => {
+                        CausalNextTrace::Attempt(observation.descriptor)
+                    }
+                    CausalNextObservationKind::TargetCompleted => {
+                        CausalNextTrace::Operation(observation.descriptor)
+                    }
+                });
             },
         );
         let observed = trace.borrow().clone();
@@ -2487,7 +2585,7 @@ pub(crate) mod tests {
             .iter()
             .filter(|entry| matches!(entry, CausalNextTrace::Operation(_)))
             .position(
-                |entry| matches!(entry, CausalNextTrace::Operation(value) if *value == family),
+                |entry| matches!(entry, CausalNextTrace::Operation(value) if value.operation() == family),
             )
             .map(|index| index + 1);
         assert!(target.is_some());
@@ -2500,7 +2598,7 @@ pub(crate) mod tests {
                 Err(MeteredActorStateError::Work(value)) if value == stopped
             ));
             assert!(!blocked_trace.iter().any(
-                |entry| matches!(entry, CausalNextTrace::Operation(value) if *value == family)
+                |entry| matches!(entry, CausalNextTrace::Operation(value) if value.operation() == family)
             ));
         }
         for allowance in [target, target + 1] {
@@ -2511,7 +2609,7 @@ pub(crate) mod tests {
                 Completion::BudgetExhausted,
             );
             assert!(admitted_trace.iter().any(
-                |entry| matches!(entry, CausalNextTrace::Operation(value) if *value == family)
+                |entry| matches!(entry, CausalNextTrace::Operation(value) if value.operation() == family)
             ));
         }
         let injected = family;
@@ -3606,15 +3704,17 @@ pub(crate) mod tests {
         );
 
         let expected_trace = [
-            CausalNextOperation::StoredCounterRead,
-            CausalNextOperation::ExpectedStartComparison,
-            CausalNextOperation::CheckedAdvance,
+            CausalNextSite::StoredCounterRead,
+            CausalNextSite::ExpectedStartComparison,
+            CausalNextSite::CheckedAdvance,
         ]
         .into_iter()
-        .flat_map(|operation| {
+        .flat_map(|site| {
+            let descriptor = site.descriptor();
             [
+                CausalNextTrace::Attempt(descriptor),
                 CausalNextTrace::Charge(WorkCounter::GraphNode),
-                CausalNextTrace::Operation(operation),
+                CausalNextTrace::Operation(descriptor),
             ]
         })
         .collect::<Vec<_>>();
@@ -3685,7 +3785,10 @@ pub(crate) mod tests {
         );
         assert_eq!(
             blocked_trace,
-            [CausalNextTrace::Charge(WorkCounter::GraphNode)]
+            [
+                CausalNextTrace::Attempt(CausalNextSite::StoredCounterRead.descriptor()),
+                CausalNextTrace::Charge(WorkCounter::GraphNode),
+            ]
         );
 
         let (admitted, admitted_trace) =
@@ -3697,8 +3800,10 @@ pub(crate) mod tests {
         assert_eq!(
             admitted_trace,
             [
+                CausalNextTrace::Attempt(CausalNextSite::StoredCounterRead.descriptor()),
                 CausalNextTrace::Charge(WorkCounter::GraphNode),
-                CausalNextTrace::Operation(CausalNextOperation::StoredCounterRead),
+                CausalNextTrace::Operation(CausalNextSite::StoredCounterRead.descriptor()),
+                CausalNextTrace::Attempt(CausalNextSite::ExpectedStartComparison.descriptor()),
                 CausalNextTrace::Charge(WorkCounter::GraphNode),
             ]
         );
@@ -3743,9 +3848,8 @@ pub(crate) mod tests {
         );
         assert!(matches!(
             admitted_trace.last(),
-            Some(CausalNextTrace::Operation(
-                CausalNextOperation::ExpectedStartComparison
-            ))
+            Some(CausalNextTrace::Operation(descriptor))
+                if descriptor.site == CausalNextSite::ExpectedStartComparison
         ));
     }
 
@@ -3776,7 +3880,7 @@ pub(crate) mod tests {
         assert_eq!(
             admitted_trace.last(),
             Some(&CausalNextTrace::Operation(
-                CausalNextOperation::CheckedAdvance
+                CausalNextSite::CheckedAdvance.descriptor()
             ))
         );
     }
