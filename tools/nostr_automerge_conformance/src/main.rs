@@ -17,7 +17,7 @@ mod report_json;
 mod runner;
 mod scenario;
 
-const HELP: &str = "nostr_automerge_conformance\n\nUSAGE:\n    nostr_automerge_conformance run_fixture <path>\n    nostr_automerge_conformance run_corpus <directory> [--family <name>] [--requirement <id>]\n    nostr_automerge_conformance run_distribution <manifest>\n    nostr_automerge_conformance generate_signed_profile <profile>\n    nostr_automerge_conformance --help";
+const HELP: &str = "nostr_automerge_conformance\n\nUSAGE:\n    nostr_automerge_conformance run_fixture <path>\n    nostr_automerge_conformance run_corpus <directory> [--family <name>] [--requirement <id>]\n    nostr_automerge_conformance run_distribution <manifest>\n    nostr_automerge_conformance derive_distribution_items <manifest>\n    nostr_automerge_conformance generate_signed_profile <profile>\n    nostr_automerge_conformance --help";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct CliOutput {
@@ -55,6 +55,25 @@ fn run(args: impl IntoIterator<Item = String>) -> CliOutput {
                     stderr: String::new(),
                     code: 0,
                 },
+                Err(error) => CliOutput {
+                    stdout: String::new(),
+                    stderr: format!("{}\n", error.message()),
+                    code: error.exit_code(),
+                },
+            }
+        }
+        [command, path] if command == "derive_distribution_items" => {
+            match runner::derive_distribution_items(Path::new(path))
+                .and_then(|run| serde_json::to_vec(&run).map_err(|_| runner::RunError::Input))
+            {
+                Ok(mut bytes) => {
+                    bytes.push(b'\n');
+                    CliOutput {
+                        stdout: String::from_utf8(bytes).unwrap_or_default(),
+                        stderr: String::new(),
+                        code: 0,
+                    }
+                }
                 Err(error) => CliOutput {
                     stdout: String::new(),
                     stderr: format!("{}\n", error.message()),

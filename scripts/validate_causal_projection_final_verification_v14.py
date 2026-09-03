@@ -9,6 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 REPORT=ROOT/"reports/causal_projection_final_verification_v14.json"
 SCHEMA=ROOT/"tools/validation/causal_projection_final_verification_v14.schema.json"
 PUBLIC="ec9c8d7d40242eeec1bcabd2ea484d25268f3f9a";INDEPENDENT="2ff0a9d4bbbd32cc07cecbda3fbb1abef8a1b95e"
+GATE_CANDIDATE="bc0ac22fe4645c3acb5d25730e6be16045813f27"
 COUNTS={"operation_families":14,"proofs":14,"public_mutations":144,"independent_mutations":17,"mutation_survivors":0,"scenarios":204,"signed_events":771,"delivery_orders":8,"processes":2}
 OUTPUTS={"canonical_output_sha256":"e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415","distribution_manifest_sha256":"c76cd24bc91308b0e615bd837d69b72fe145b7713a544fb325f7f054275c485d","rust_conformance_sha256":"1a3788359da325ddecfa7d9d9f9c0031503b6530ed21f7998854f9c39911f7d3","combined_assurance_sha256":"d0557d5f3427b07e1edfa8b6cf2badda93b99203604995d3e058c2996b724ea3","finding_closure_sha256":"112c63d0e58de5aa229548aedb6ad0401a840405c63ea18fd7fcdd0beb8d301c","opaque_import_sha256":"2afc2c53e1653f5db53309e7f506e7b08f585cb4d69ab51cfee872a30f47a881","independent_gate_identity_sha256":"4ca522e7ef5f2571ddc365f5eb0ef42092da9fb6c792e1d5b16c6d9639e14fa8"}
 PATHS={"distribution_manifest_sha256":"fixtures/distribution/manifest_v14.json","rust_conformance_sha256":"reports/rust_conformance_v14.json","combined_assurance_sha256":"reports/causal_projection_combined_assurance_v14.json","finding_closure_sha256":"reports/causal_projection_finding_closure_v14.json","opaque_import_sha256":"reports/opaque_causal_projection_v14.json"}
@@ -38,7 +39,9 @@ def validate(record:object,schema:object)->None:
     projection={key:record[key] for key in FIELDS[:-1]}
     require(record["result_identity_sha256"]==IDENTITY==hashlib.sha256(canonical(projection)).hexdigest(),"record:identity")
     require(type(schema)is dict and list(schema)==["$schema","$id","type","additionalProperties","required","properties"] and schema["additionalProperties"]is False and schema["required"]==FIELDS and list(schema["properties"])==FIELDS,"schema:closed")
-    gate=(ROOT/"scripts/local_gate.py").read_text();require("manifest_v14.json" in gate and "rust_distribution_v14.json" in gate and "manifest_v13.json" not in gate[gate.index("def conformance"):],"gate:v14")
+    historical_gate=subprocess.run(["git","show",f"{GATE_CANDIDATE}:scripts/local_gate.py"],cwd=ROOT,capture_output=True,text=True,check=False)
+    require(historical_gate.returncode==0,"gate:history")
+    gate=historical_gate.stdout;require("manifest_v14.json" in gate and "rust_distribution_v14.json" in gate and "manifest_v13.json" not in gate[gate.index("def conformance"):],"gate:v14")
 def self_test(record:dict[str,Any],schema:dict[str,Any])->int:
     attacks=[(lambda r:r["candidates"].update(public="0"*40),lambda s:None),(lambda r:r["candidates"].update(independent="0"*40),lambda s:None),(lambda r:r["counts"].update(scenarios=203),lambda s:None),(lambda r:r["counts"].update(mutation_survivors=1),lambda s:None),(lambda r:r["outputs"].update(canonical_output_sha256="0"*64),lambda s:None),(lambda r:r["outputs"].update(independent_gate_identity_sha256="0"*64),lambda s:None),(lambda r:r["gates"].reverse(),lambda s:None),(lambda r:r["gates"][0].update(result="fail"),lambda s:None),(lambda r:r["audits"].update(independent_clean=False),lambda s:None),(lambda r:r["holds"].pop(),lambda s:None),(lambda r:r.update(release_claimed=True),lambda s:None),(lambda r:r.update(remote_actions=1),lambda s:None),(lambda r:r.update(result_identity_sha256="0"*64),lambda s:None),(lambda r:r.update(extra=False),lambda s:None),(lambda r:None,lambda s:s.update(additionalProperties=True))]
     for index,(mutate_record,mutate_schema) in enumerate(attacks):

@@ -1,0 +1,31 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v16.schema.json",
+  "title":"nostr_automerge distribution v16",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["authorized_v15_fixture_rebindings","base_manifest_sha256","complete","derivation_measurement_sha256","distribution_id","distribution_schema","files","fixture_count","fixtures","missing_v16_rebindings","planned_v16_rebindings","preserved_v15_file_count","preserved_v15_files_sha256","preserved_v15_fixture_count","profiles","protocol_revision","requirements_sha256","status","supersedes","target_fixture_count","transition_stage"],
+  "properties":{
+    "authorized_v15_fixture_rebindings":{"type":"array","minItems":9,"maxItems":9},
+    "base_manifest_sha256":{"const":"862d0c1ad6ae14cd54b75f88742fa3b584c6c3981195bfeb988818403bee689c"},
+    "complete":{"const":true},
+    "derivation_measurement_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "distribution_id":{"const":"draft_2026_08_signed_neutral_16"},
+    "distribution_schema":{"const":"nostr_automerge.fixture_distribution.v16"},
+    "files":{"type":"array","minItems":752,"maxItems":752},
+    "fixture_count":{"const":204},
+    "fixtures":{"type":"array","minItems":204,"maxItems":204},
+    "missing_v16_rebindings":{"type":"array","maxItems":0},
+    "planned_v16_rebindings":{"type":"array","minItems":9,"maxItems":9,"uniqueItems":true},
+    "preserved_v15_file_count":{"const":725},
+    "preserved_v15_files_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "preserved_v15_fixture_count":{"const":204},
+    "profiles":{"type":"object"},
+    "protocol_revision":{"const":"draft_2026_08"},
+    "requirements_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "status":{"const":"canonical_signed_neutral_corpus"},
+    "supersedes":{"const":"fixtures/distribution/manifest_v15.json"},
+    "target_fixture_count":{"const":204},
+    "transition_stage":{"const":"distribution_complete"}
+  }
+}

@@ -202,6 +202,12 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/causal_projection_mutations_v16.schema.json",
     "reports/causal_projection_rust_assurance_v16.json",
     "tools/validation/causal_projection_rust_assurance_v16.schema.json",
+    "spec/distribution_v16_transition.json",
+    "reports/rust_conformance_v16.json",
+    "tools/validation/distribution_v16_transition.schema.json",
+    "tools/validation/distribution_v16.schema.json",
+    "tools/validation/distribution_v16_lock.schema.json",
+    "tools/validation/rust_conformance_v16.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -235,6 +241,9 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://github.com/triesap/nostr_automerge/tools/validation/causal_projection_final_decision_v14.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v15.schema.json",
         b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v15_lock.schema.json",
+        b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v16.schema.json",
+        b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v16_lock.schema.json",
+        b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v16_transition.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -354,6 +363,9 @@ PYTHON_SURFACES = (
     "scripts/validate_causal_projection_structural_assurance_v16.py",
     "scripts/run_causal_projection_mutations_v16.py",
     "scripts/validate_causal_projection_rust_assurance_v16.py",
+    "scripts/generate_distribution_v16.py",
+    "scripts/validate_distribution_v16.py",
+    "scripts/validate_rust_conformance_v16.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -607,6 +619,21 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_causal_projection_rust_assurance_v16.py",
         "reports/causal_projection_rust_assurance_v16.json",
         "tools/validation/causal_projection_rust_assurance_v16.schema.json",
+        "fixtures/v16",
+        "fixtures/v16/rebindings/causal_projection",
+        "fixtures/distribution/manifest_v16.json",
+        "fixtures/distribution/manifest_v16.lock.json",
+        "spec/distribution_v16_transition.json",
+        "reports/rust_conformance_v16.json",
+        "tools/validation/distribution_v16_transition.schema.json",
+        "tools/validation/distribution_v16.schema.json",
+        "tools/validation/distribution_v16_lock.schema.json",
+        "tools/validation/rust_conformance_v16.schema.json",
+        "scripts/generate_distribution_v16.py",
+        "scripts/validate_distribution_v16.py",
+        "scripts/validate_rust_conformance_v16.py",
+        "tools/nostr_automerge_conformance/src/main.rs",
+        "tools/nostr_automerge_conformance/src/runner.rs",
         "ython3 scripts/validate_causal_projection_structural_assurance_v16.py --mode structural",
         "ython3 scripts/validate_causal_projection_structural_assurance_v16.py ",
         "argo test -p nostr_automerge --lib graph::actor_state::tests::projection_causal_maximum_is_charged_once_per_accepted_change --locked -- --exact",
@@ -1101,6 +1128,7 @@ def is_public_route(value: str) -> bool:
         or value.startswith("fixtures/v12/scenarios/resource_followup/")
         or value.startswith("fixtures/v14/rebindings/causal_projection/")
         or value.startswith("fixtures/v15/rebindings/causal_projection/")
+        or value.startswith("fixtures/v16/rebindings/causal_projection/")
         or value.startswith("fixtures/v1_draft/scenarios/scope/")
         or value.startswith("fixtures/v1_draft/checkpoints/")
         or value in {row["value"] for row in APPROVED_WIRE_DOMAINS}
@@ -1275,6 +1303,7 @@ def validate_source_surfaces() -> None:
                             "scripts/generate_distribution_v13.py",
                             "scripts/generate_distribution_v14.py",
                             "scripts/generate_distribution_v15.py",
+                            "scripts/generate_distribution_v16.py",
                             "scripts/validate_distribution_v13.py",
                             "scripts/validate_distribution_v14.py",
                             "scripts/validate_distribution_v15.py",
@@ -1423,6 +1452,14 @@ def validate_source_surfaces() -> None:
                     or (
                         value in {"cargo", "git"}
                         and relative == "scripts/validate_rust_conformance_v15.py"
+                    )
+                    or (
+                        value in {"cargo", "git"}
+                        and relative
+                        in {
+                            "scripts/validate_distribution_v16.py",
+                            "scripts/validate_rust_conformance_v16.py",
+                        }
                     )
                     or (
                         value in {"cargo", "git"}

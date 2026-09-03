@@ -1,0 +1,30 @@
+{
+  "schema": "nostr_automerge.distribution_v16_transition.v1",
+  "current_stage": "distribution_complete",
+  "stage_order": ["authority_defined", "distribution_complete"],
+  "base_manifest": "fixtures/distribution/manifest_v15.json",
+  "base_manifest_sha256": "862d0c1ad6ae14cd54b75f88742fa3b584c6c3981195bfeb988818403bee689c",
+  "source_candidate": "d2653edc718b002b7fe13b18d01bfe09df1fa02d",
+  "measurement_manifest": "fixtures/distribution/manifest_v15.json",
+  "measurement_count": 204,
+  "measurement_sha256": "d8b16aa333f870d8a500da99e414d990077310be16b333669805cfa000f80e1f",
+  "scenario_count": 204,
+  "signed_event_count": 771,
+  "delivery_order_count": 8,
+  "changed_budget_rows": [
+    {"fixture_id":"deep_actor_predecessor_exact_budget","prior_max_items":2158,"required_max_items":2147},
+    {"fixture_id":"deep_delta_absent_lookup_exact_budget","prior_max_items":10501,"required_max_items":10463},
+    {"fixture_id":"deep_delta_extend_exact_budget","prior_max_items":10720,"required_max_items":10682},
+    {"fixture_id":"deep_delta_root_lookup_exact_budget","prior_max_items":11333,"required_max_items":11295},
+    {"fixture_id":"empty_merge_frontier_exact_budget","prior_max_items":2069,"required_max_items":2054},
+    {"fixture_id":"epoch_writer_authorization_exact_budget","prior_max_items":38183,"required_max_items":38177},
+    {"fixture_id":"many_actor_causal_next_op_exact_budget","prior_max_items":5520,"required_max_items":5496},
+    {"fixture_id":"wide_epoch_ancestry_exact_budget","prior_max_items":15544,"required_max_items":15490}
+  ],
+  "affected_fixture_count": 8,
+  "unaffected_fixture_count": 196,
+  "signed_events_preserved": true,
+  "ample_work_reports_preserved": true,
+  "v15_files_preserved": true,
+  "result": "pass"
+}

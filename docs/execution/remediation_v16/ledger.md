@@ -86,3 +86,12 @@ dependency-count counter, and the immutable 204-scenario v15 conformance
 identity. Structural and identity validation remain independently invokable,
 and the complete assurance is now routed through repository, boundary,
 runtime, and specification gates. The next checkpoint is `step_1479`.
+
+`step_1479` creates immutable distribution v16 from a source-derived minimum
+item-budget measurement over the exact v15 authority. Eight of the nine
+authorized exact-budget scenarios require rebinding; the canonical-derivation
+scenario remains correctly bound at 457 items. The 204 scenarios, 771 signed
+Events, eight delivery orders, expected reports, and canonical output remain
+unchanged. The manifest, lock, transition, generator, validators, and two-run
+Rust conformance evidence fail closed on inventory, checksum, derivation, or
+expected-output drift. The next checkpoint is `step_1480`.

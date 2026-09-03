@@ -307,6 +307,12 @@ pub(crate) fn generic_report(
 }
 
 pub(crate) fn evaluate_scenario(scenario: ScenarioInput) -> Result<EvaluationReport, RunError> {
+    evaluate_scenario_measured(scenario).map(|(report, _)| report)
+}
+
+fn evaluate_scenario_measured(
+    scenario: ScenarioInput,
+) -> Result<(EvaluationReport, u64), RunError> {
     let coordinate = scenario.coordinate.parse().map_err(|_| RunError::Input)?;
     let mut builder = CorpusBuilder::new();
     for raw in scenario.raw_events {
@@ -315,7 +321,8 @@ pub(crate) fn evaluate_scenario(scenario: ScenarioInput) -> Result<EvaluationRep
     }
     let corpus = builder.finish();
     let mut budget = WorkBudget::new(scenario.budget.max_bytes, scenario.budget.max_items);
-    if let Some(cancel_after) = scenario.cancel_after {
+    let maximum_items = scenario.budget.max_items;
+    let report = if let Some(cancel_after) = scenario.cancel_after {
         let calls = std::cell::Cell::new(0_u64);
         ReferenceEvaluator::new(ProtocolRevision::draft_v1()).evaluate(
             &corpus,
@@ -335,7 +342,11 @@ pub(crate) fn evaluate_scenario(scenario: ScenarioInput) -> Result<EvaluationRep
             &NeverCancelled,
         )
     }
-    .map_err(|_| RunError::Evaluation)
+    .map_err(|_| RunError::Evaluation)?;
+    let consumed_items = maximum_items
+        .checked_sub(budget.remaining().1)
+        .ok_or(RunError::Evaluation)?;
+    Ok((report, consumed_items))
 }
 
 fn materialized_state_assertions(
@@ -663,8 +674,27 @@ pub(crate) struct DistributionReport {
     pub(crate) report_sha256: String,
 }
 
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+pub(crate) struct DistributionItemDerivation {
+    pub(crate) delivery_order_count: u64,
+    pub(crate) measurements: Vec<DistributionItemMeasurement>,
+    pub(crate) scenario_count: u64,
+    pub(crate) schema: &'static str,
+    pub(crate) signed_event_count: u64,
+    pub(crate) status: &'static str,
+}
+
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+pub(crate) struct DistributionItemMeasurement {
+    pub(crate) configured_max_items: u64,
+    pub(crate) fixture_id: String,
+    pub(crate) required_max_items: u64,
+}
+
 #[derive(Deserialize)]
 struct DistributionManifest {
+    #[serde(default)]
+    authorized_v14_fixture_rebindings: Vec<DistributionRebinding>,
     complete: bool,
     distribution_schema: String,
     fixture_count: u64,
@@ -673,6 +703,11 @@ struct DistributionManifest {
     target_fixture_count: u64,
     #[serde(default)]
     transition_stage: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct DistributionRebinding {
+    fixture_id: String,
 }
 
 #[derive(Deserialize)]
@@ -706,6 +741,11 @@ fn validate_distribution_authority(manifest: &DistributionManifest) -> Result<()
             204
         }
         "nostr_automerge.fixture_distribution.v15"
+            if manifest.transition_stage.as_deref() == Some("distribution_complete") =>
+        {
+            204
+        }
+        "nostr_automerge.fixture_distribution.v16"
             if manifest.transition_stage.as_deref() == Some("distribution_complete") =>
         {
             204
@@ -759,6 +799,131 @@ pub(crate) fn run_distribution(path: &Path) -> Result<DistributionRun, RunError>
         fixture_count: reports.len() as u64,
         reports,
         schema: "nostr_automerge.distribution_run.v1",
+        status: "pass",
+    })
+}
+
+pub(crate) fn derive_distribution_items(
+    path: &Path,
+) -> Result<DistributionItemDerivation, RunError> {
+    let bytes = fs::read(path).map_err(|_| RunError::Fixture)?;
+    let manifest: DistributionManifest =
+        serde_json::from_slice(&bytes).map_err(|_| RunError::Fixture)?;
+    validate_distribution_authority(&manifest)?;
+    if manifest.distribution_schema != "nostr_automerge.fixture_distribution.v15" {
+        return Err(RunError::Fixture);
+    }
+    let authority_ids = manifest
+        .authorized_v14_fixture_rebindings
+        .iter()
+        .map(|row| row.fixture_id.as_str())
+        .collect::<Vec<_>>();
+    if authority_ids.len() != 9
+        || authority_ids
+            .windows(2)
+            .any(|pair| pair[0].as_bytes() >= pair[1].as_bytes())
+    {
+        return Err(RunError::Fixture);
+    }
+    let root = path
+        .parent()
+        .and_then(Path::parent)
+        .and_then(Path::parent)
+        .ok_or(RunError::Fixture)?;
+    let mut fixtures = manifest.fixtures;
+    fixtures.sort_by(|left, right| left.fixture_id.cmp(&right.fixture_id));
+    if fixtures
+        .windows(2)
+        .any(|pair| pair[0].fixture_id == pair[1].fixture_id)
+    {
+        return Err(RunError::Fixture);
+    }
+    let mut signed_event_count = 0_u64;
+    let mut measurements = Vec::with_capacity(fixtures.len());
+    for fixture_entry in fixtures {
+        let metadata_path = root.join(&fixture_entry.metadata_path);
+        let fixture = load_fixture(&metadata_path).map_err(|_| RunError::Fixture)?;
+        let base = metadata_path.parent().ok_or(RunError::Fixture)?;
+        verify_fixture_files(&fixture, base).map_err(|_| RunError::Checksum)?;
+        if fixture.inputs.len() != 1 || fixture.fixture_id != fixture_entry.fixture_id {
+            return Err(RunError::Input);
+        }
+        let input = fs::read(base.join(&fixture.inputs[0].path)).map_err(|_| RunError::Input)?;
+        let signed = SignedScenarioInput::parse(&input).map_err(|_| RunError::Input)?;
+        if signed.fixture_id != fixture.fixture_id {
+            return Err(RunError::Input);
+        }
+        signed_event_count = signed_event_count
+            .checked_add(u64::try_from(signed.raw_events.len()).map_err(|_| RunError::Input)?)
+            .ok_or(RunError::Input)?;
+        let configured_max_items = signed.budget.max_items;
+        let permutations = required_delivery_permutations(
+            &signed.raw_events,
+            |event| event_kind(event) == Some(1624),
+            |event| event_kind(event) == Some(1625),
+            raw_event_is_invalid,
+        );
+        if permutations.len() != 8 {
+            return Err(RunError::Input);
+        }
+        if authority_ids
+            .binary_search_by(|candidate| candidate.as_bytes().cmp(fixture.fixture_id.as_bytes()))
+            .is_err()
+        {
+            measurements.push(DistributionItemMeasurement {
+                configured_max_items,
+                fixture_id: fixture.fixture_id,
+                required_max_items: configured_max_items,
+            });
+            continue;
+        }
+        let mut required_max_items = 0_u64;
+        for permutation in permutations {
+            let mut scenario = signed
+                .clone()
+                .with_raw_events(permutation.events)
+                .into_scenario();
+            scenario.budget.max_items = 1_000_000;
+            scenario.cancel_after = None;
+            let (report, consumed_items) = evaluate_scenario_measured(scenario.clone())?;
+            if report.completion() != Completion::Complete {
+                return Err(RunError::Evaluation);
+            }
+            let mut lower = consumed_items;
+            let mut upper = configured_max_items;
+            if lower > upper {
+                return Err(RunError::Evaluation);
+            }
+            while lower < upper {
+                let middle = lower + (upper - lower) / 2;
+                scenario.budget.max_items = middle;
+                if evaluate_scenario(scenario.clone())
+                    .is_ok_and(|candidate| candidate.completion() == Completion::Complete)
+                {
+                    upper = middle;
+                } else {
+                    lower = middle.checked_add(1).ok_or(RunError::Evaluation)?;
+                }
+            }
+            scenario.budget.max_items = lower;
+            if evaluate_scenario(scenario)?.completion() != Completion::Complete {
+                return Err(RunError::Evaluation);
+            }
+            let completing_items = lower;
+            required_max_items = required_max_items.max(completing_items);
+        }
+        measurements.push(DistributionItemMeasurement {
+            configured_max_items,
+            fixture_id: fixture.fixture_id,
+            required_max_items,
+        });
+    }
+    Ok(DistributionItemDerivation {
+        delivery_order_count: 8,
+        scenario_count: u64::try_from(measurements.len()).map_err(|_| RunError::Input)?,
+        measurements,
+        schema: "nostr_automerge.distribution_item_derivation.v1",
+        signed_event_count,
         status: "pass",
     })
 }
@@ -1378,6 +1543,7 @@ mod tests {
             })
             .collect::<Vec<_>>();
         let manifest = super::DistributionManifest {
+            authorized_v14_fixture_rebindings: Vec::new(),
             complete: true,
             distribution_schema: "nostr_automerge.fixture_distribution.v10".to_owned(),
             fixture_count: 192,
@@ -1416,6 +1582,7 @@ mod tests {
             })
             .collect::<Vec<_>>();
         let manifest = super::DistributionManifest {
+            authorized_v14_fixture_rebindings: Vec::new(),
             complete: true,
             distribution_schema: "nostr_automerge.fixture_distribution.v11".to_owned(),
             fixture_count: 193,
@@ -1442,6 +1609,7 @@ mod tests {
             })
             .collect::<Vec<_>>();
         let manifest = super::DistributionManifest {
+            authorized_v14_fixture_rebindings: Vec::new(),
             complete: true,
             distribution_schema: "nostr_automerge.fixture_distribution.v12".to_owned(),
             fixture_count: 198,
@@ -1468,6 +1636,7 @@ mod tests {
             })
             .collect::<Vec<_>>();
         let manifest = super::DistributionManifest {
+            authorized_v14_fixture_rebindings: Vec::new(),
             complete: true,
             distribution_schema: "nostr_automerge.fixture_distribution.v14".to_owned(),
             fixture_count: 204,
@@ -1494,8 +1663,36 @@ mod tests {
             })
             .collect::<Vec<_>>();
         let manifest = super::DistributionManifest {
+            authorized_v14_fixture_rebindings: Vec::new(),
             complete: true,
             distribution_schema: "nostr_automerge.fixture_distribution.v15".to_owned(),
+            fixture_count: 204,
+            fixtures,
+            status: "canonical_signed_neutral_corpus".to_owned(),
+            target_fixture_count: 204,
+            transition_stage: Some("distribution_complete".to_owned()),
+        };
+        assert!(super::validate_distribution_authority(&manifest).is_ok());
+        let mut missing = manifest;
+        missing.fixtures.pop();
+        assert_eq!(
+            super::validate_distribution_authority(&missing),
+            Err(super::RunError::Fixture)
+        );
+    }
+
+    #[test]
+    fn derived_distribution_authority_requires_exact_v16_inventory() {
+        let fixtures = (0..204)
+            .map(|index| super::DistributionFixture {
+                fixture_id: format!("fixture_{index:03}"),
+                metadata_path: format!("fixture_{index:03}.fixture.json"),
+            })
+            .collect::<Vec<_>>();
+        let manifest = super::DistributionManifest {
+            authorized_v14_fixture_rebindings: Vec::new(),
+            complete: true,
+            distribution_schema: "nostr_automerge.fixture_distribution.v16".to_owned(),
             fixture_count: 204,
             fixtures,
             status: "canonical_signed_neutral_corpus".to_owned(),

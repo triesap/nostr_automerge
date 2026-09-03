@@ -1,0 +1,30 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v16_transition.schema.json",
+  "title":"nostr_automerge distribution v16 transition",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema","current_stage","stage_order","base_manifest","base_manifest_sha256","source_candidate","measurement_manifest","measurement_count","measurement_sha256","scenario_count","signed_event_count","delivery_order_count","changed_budget_rows","affected_fixture_count","unaffected_fixture_count","signed_events_preserved","ample_work_reports_preserved","v15_files_preserved","result"],
+  "properties":{
+    "schema":{"const":"nostr_automerge.distribution_v16_transition.v1"},
+    "current_stage":{"const":"distribution_complete"},
+    "stage_order":{"const":["authority_defined","distribution_complete"]},
+    "base_manifest":{"const":"fixtures/distribution/manifest_v15.json"},
+    "base_manifest_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "source_candidate":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "measurement_manifest":{"const":"fixtures/distribution/manifest_v15.json"},
+    "measurement_count":{"const":204},
+    "measurement_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "scenario_count":{"const":204},
+    "signed_event_count":{"const":771},
+    "delivery_order_count":{"const":8},
+    "changed_budget_rows":{"type":"array","minItems":9,"maxItems":9,"items":{"$ref":"#/$defs/rebinding"}},
+    "affected_fixture_count":{"const":9},
+    "unaffected_fixture_count":{"const":195},
+    "signed_events_preserved":{"const":true},
+    "ample_work_reports_preserved":{"const":true},
+    "v15_files_preserved":{"const":true},
+    "result":{"const":"pass"}
+  },
+  "$defs":{"rebinding":{"type":"object","additionalProperties":false,"required":["fixture_id","prior_max_items","required_max_items"],"properties":{"fixture_id":{"type":"string"},"prior_max_items":{"type":"integer","minimum":0},"required_max_items":{"type":"integer","minimum":0}}}}
+}
