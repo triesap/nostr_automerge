@@ -2323,6 +2323,12 @@ pub(crate) mod tests {
                 |entry| matches!(entry, CausalNextTrace::Operation(value) if *value == family)
             ));
         }
+        let injected = family;
+        let (failed, _) = observed_causal_next(&projection, &candidate, target - 1, &injected);
+        assert!(matches!(
+            failed,
+            Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
+        ));
     }
 
     fn assert_frontier_family_exact(family: FrontierComparisonOperation) {
@@ -2385,6 +2391,13 @@ pub(crate) mod tests {
                 )
             );
         }
+        let injected = family;
+        let (failed, _) =
+            observed_empty_frontier(&projection, &exact, &base_frontier, target - 1, &injected);
+        assert!(matches!(
+            failed,
+            Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
+        ));
     }
 
     macro_rules! frontier_family_proofs {
@@ -4328,13 +4341,13 @@ pub(crate) mod tests {
         (result, observed)
     }
 
-    fn observed_projection_build_operations<'a>(
+    fn observed_projection_build_operations<'a, E: Copy>(
         accepted_closure: &'a BTreeSet<ChangeHash>,
         changes: &'a BTreeMap<ChangeHash, ChangeCandidate>,
         successful_limit: usize,
-        stopped: Completion,
+        stopped: E,
     ) -> (
-        Result<TrustedEpochProjection<'a>, MeteredActorStateError<Completion>>,
+        Result<TrustedEpochProjection<'a>, MeteredActorStateError<E>>,
         Vec<BuildTrace>,
     ) {
         let trace = Rc::new(RefCell::new(Vec::new()));
@@ -5359,4 +5372,521 @@ pub(crate) mod tests {
             "unmetered empty-frontier allocation remains"
         );
     }
+
+    fn assert_v16_source_site_counter(
+        operation_enum: &str,
+        variant: &str,
+        occurrence: usize,
+        expected: WorkCounter,
+    ) {
+        let source = include_str!("actor_state.rs");
+        let production = source
+            .split_once("#[cfg(test)]\npub(crate) mod tests")
+            .map_or(source, |item| item.0);
+        let needle = format!("{operation_enum}::{variant}");
+        let site = production.match_indices(&needle).nth(occurrence - 1);
+        assert!(
+            site.is_some(),
+            "missing source site {operation_enum}::{variant}#{occurrence}"
+        );
+        let Some((offset, _)) = site else { return };
+        let prefix = &production[..offset];
+        let counter_offset = prefix.rfind("WorkCounter::");
+        assert!(
+            counter_offset.is_some(),
+            "missing source counter for {operation_enum}::{variant}#{occurrence}"
+        );
+        let Some(counter_offset) = counter_offset else {
+            return;
+        };
+        let counter = prefix[counter_offset + "WorkCounter::".len()..]
+            .chars()
+            .take_while(|value| value.is_ascii_alphanumeric())
+            .collect::<String>();
+        assert_eq!(counter, format!("{expected:?}"));
+    }
+
+    fn assert_v16_projection_build_site(
+        family: ProjectionBuildOperation,
+        variant: &str,
+        occurrence: usize,
+        counter: WorkCounter,
+    ) {
+        assert_v16_source_site_counter("ProjectionBuildOperation", variant, occurrence, counter);
+        assert_projection_build_family_exact(family);
+
+        let first = candidate(1, 1, 1, 1);
+        let mut second = candidate(1, 2, 2, 1);
+        second.change_hash = ChangeHash::from_bytes([2; 32]);
+        second.dependencies = vec![first.change_hash].into();
+        let accepted = BTreeSet::from([first.change_hash, second.change_hash]);
+        let changes = BTreeMap::from([(first.change_hash, first), (second.change_hash, second)]);
+        let (_, trace) = observed_projection_build_operations(
+            &accepted,
+            &changes,
+            usize::MAX,
+            Completion::BudgetExhausted,
+        );
+        let mut charges = 0_usize;
+        let target = trace.iter().find_map(|entry| match entry {
+            BuildTrace::Charge(_) => {
+                charges = charges.saturating_add(1);
+                None
+            }
+            BuildTrace::Operation(operation) if *operation == family => Some(charges),
+            BuildTrace::Operation(_) => None,
+        });
+        assert!(target.is_some(), "unreachable build family");
+        let Some(target) = target else { return };
+        let injected = (variant, occurrence);
+        let (result, blocked) =
+            observed_projection_build_operations(&accepted, &changes, target - 1, &injected);
+        assert!(matches!(
+            result,
+            Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
+        ));
+        assert!(!blocked.iter().any(
+            |entry| matches!(entry, BuildTrace::Operation(operation) if *operation == family)
+        ));
+    }
+
+    fn actor_site_fixture() -> (
+        BTreeMap<ChangeHash, ChangeCandidate>,
+        BTreeSet<ChangeHash>,
+        ChangeCandidate,
+    ) {
+        let first = candidate(1, 1, 1, 1);
+        let closure = BTreeSet::from([first.change_hash]);
+        let changes = BTreeMap::from([(first.change_hash, first.clone())]);
+        let mut next = candidate(1, 2, 2, 1);
+        next.change_hash = ChangeHash::from_bytes([2; 32]);
+        next.dependencies = vec![first.change_hash].into();
+        (changes, closure, next)
+    }
+
+    fn assert_v16_actor_site(
+        family: ActorDecisionOperation,
+        variant: &str,
+        occurrence: usize,
+        counter: WorkCounter,
+    ) {
+        assert_v16_source_site_counter("ActorDecisionOperation", variant, occurrence, counter);
+        let (changes, closure, next) = actor_site_fixture();
+        let projection = initialize_actor_states_metered(&closure, &changes, |_| Ok::<_, ()>(()));
+        assert!(projection.is_ok(), "actor fixture");
+        let Ok(projection) = projection else { return };
+        let (_, trace) =
+            observed_actor_sequence(&projection, &next, usize::MAX, Completion::BudgetExhausted);
+        let target = trace
+            .iter()
+            .filter(|entry| matches!(entry, ActorDecisionTrace::Operation(_)))
+            .position(
+                |entry| matches!(entry, ActorDecisionTrace::Operation(value) if *value == family),
+            )
+            .map(|index| index + 1);
+        assert!(target.is_some(), "unreachable actor family");
+        let Some(target) = target else { return };
+        for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
+            let (result, blocked) =
+                observed_actor_sequence(&projection, &next, target - 1, stopped);
+            assert_eq!(result, Err(MeteredActorStateError::Work(stopped)));
+            assert!(!blocked.iter().any(
+                |entry| matches!(entry, ActorDecisionTrace::Operation(value) if *value == family)
+            ));
+        }
+        for allowance in [target, target + 1] {
+            let (_, admitted) =
+                observed_actor_sequence(&projection, &next, allowance, Completion::BudgetExhausted);
+            assert!(admitted.iter().any(
+                |entry| matches!(entry, ActorDecisionTrace::Operation(value) if *value == family)
+            ));
+        }
+        let injected = (variant, occurrence);
+        let (result, _) = observed_actor_sequence(&projection, &next, target - 1, &injected);
+        assert!(matches!(
+            result,
+            Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
+        ));
+    }
+
+    fn assert_v16_causal_site(
+        family: CausalNextOperation,
+        variant: &str,
+        occurrence: usize,
+        counter: WorkCounter,
+    ) {
+        assert_v16_source_site_counter("CausalNextOperation", variant, occurrence, counter);
+        assert_causal_consumer_family_exact(family);
+    }
+
+    fn assert_v16_frontier_site(
+        family: FrontierComparisonOperation,
+        variant: &str,
+        occurrence: usize,
+        counter: WorkCounter,
+    ) {
+        assert_v16_source_site_counter("FrontierComparisonOperation", variant, occurrence, counter);
+        assert_frontier_family_exact(family);
+    }
+
+    macro_rules! v16_projection_build_site_proofs {
+        ($(($test:ident, $family:ident, $occurrence:expr, $counter:ident)),+ $(,)?) => {
+            $(
+                #[test]
+                fn $test() {
+                    assert_v16_projection_build_site(
+                        ProjectionBuildOperation::$family,
+                        stringify!($family),
+                        $occurrence,
+                        WorkCounter::$counter,
+                    );
+                }
+            )+
+        };
+    }
+
+    v16_projection_build_site_proofs!(
+        (
+            causal_projection_v16_site_projection_construction_source_count_read_01,
+            SourceCountRead,
+            1,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_expected_count_comparison_01,
+            ExpectedCountComparison,
+            1,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_canonical_source_pull_01,
+            CanonicalSourcePull,
+            1,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_canonical_order_compare_01,
+            CanonicalOrderCompare,
+            1,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_membership_lookup_01,
+            MembershipLookup,
+            1,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_candidate_lookup_01,
+            CandidateLookup,
+            1,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_candidate_identity_comparison_01,
+            CandidateIdentityComparison,
+            1,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_dependency_count_read_01,
+            DependencyCountRead,
+            1,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_dependency_lookup_01,
+            DependencyLookup,
+            1,
+            GraphEdge
+        ),
+        (
+            causal_projection_v16_site_projection_construction_canonical_order_compare_02,
+            CanonicalOrderCompare,
+            2,
+            GraphEdge
+        ),
+        (
+            causal_projection_v16_site_projection_construction_membership_lookup_02,
+            MembershipLookup,
+            2,
+            GraphEdge
+        ),
+        (
+            causal_projection_v16_site_projection_construction_set_insertion_01,
+            SetInsertion,
+            1,
+            GraphEdge
+        ),
+        (
+            causal_projection_v16_site_projection_construction_set_insertion_02,
+            SetInsertion,
+            2,
+            GraphEdge
+        ),
+        (
+            causal_projection_v16_site_projection_construction_map_insertion_01,
+            MapInsertion,
+            1,
+            GraphEdge
+        ),
+        (
+            causal_projection_v16_site_projection_construction_set_insertion_03,
+            SetInsertion,
+            3,
+            GraphEdge
+        ),
+        (
+            causal_projection_v16_site_projection_construction_candidate_readiness_comparison_01,
+            CandidateReadinessComparison,
+            1,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_readiness_transition_01,
+            ReadinessTransition,
+            1,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_map_insertion_02,
+            MapInsertion,
+            2,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_map_insertion_03,
+            MapInsertion,
+            3,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_readiness_transition_02,
+            ReadinessTransition,
+            2,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_canonical_source_pull_02,
+            CanonicalSourcePull,
+            2,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_candidate_lookup_02,
+            CandidateLookup,
+            2,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_state_lookup_01,
+            StateLookup,
+            1,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_set_insertion_04,
+            SetInsertion,
+            4,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_state_lookup_02,
+            StateLookup,
+            2,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_checked_arithmetic_01,
+            CheckedArithmetic,
+            1,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_canonical_order_compare_03,
+            CanonicalOrderCompare,
+            3,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_canonical_order_compare_04,
+            CanonicalOrderCompare,
+            4,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_state_lookup_03,
+            StateLookup,
+            3,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_canonical_order_compare_05,
+            CanonicalOrderCompare,
+            5,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_candidate_kind_comparison_01,
+            CandidateKindComparison,
+            1,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_checked_arithmetic_02,
+            CheckedArithmetic,
+            2,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_causal_maximum_compare_01,
+            CausalMaximumCompare,
+            1,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_map_insertion_04,
+            MapInsertion,
+            4,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_map_insertion_05,
+            MapInsertion,
+            5,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_map_insertion_06,
+            MapInsertion,
+            6,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_checked_arithmetic_03,
+            CheckedArithmetic,
+            3,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_state_lookup_04,
+            StateLookup,
+            4,
+            GraphEdge
+        ),
+        (
+            causal_projection_v16_site_projection_construction_state_lookup_05,
+            StateLookup,
+            5,
+            GraphEdge
+        ),
+        (
+            causal_projection_v16_site_projection_construction_dependency_lookup_02,
+            DependencyLookup,
+            2,
+            GraphEdge
+        ),
+        (
+            causal_projection_v16_site_projection_construction_state_lookup_06,
+            StateLookup,
+            6,
+            GraphEdge
+        ),
+        (
+            causal_projection_v16_site_projection_construction_checked_arithmetic_04,
+            CheckedArithmetic,
+            4,
+            GraphEdge
+        ),
+        (
+            causal_projection_v16_site_projection_construction_remaining_state_write_01,
+            RemainingStateWrite,
+            1,
+            GraphEdge
+        ),
+        (
+            causal_projection_v16_site_projection_construction_state_lookup_07,
+            StateLookup,
+            7,
+            GraphEdge
+        ),
+        (
+            causal_projection_v16_site_projection_construction_causal_maximum_compare_02,
+            CausalMaximumCompare,
+            2,
+            GraphEdge
+        ),
+        (
+            causal_projection_v16_site_projection_construction_map_insertion_07,
+            MapInsertion,
+            7,
+            GraphEdge
+        ),
+        (
+            causal_projection_v16_site_projection_construction_readiness_transition_03,
+            ReadinessTransition,
+            3,
+            GraphEdge
+        ),
+        (
+            causal_projection_v16_site_projection_construction_readiness_transition_04,
+            ReadinessTransition,
+            4,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_completion_comparison_01,
+            CompletionComparison,
+            1,
+            GraphNode
+        ),
+        (
+            causal_projection_v16_site_projection_construction_result_publication_01,
+            ResultPublication,
+            1,
+            GraphNode
+        ),
+    );
+
+    macro_rules! v16_direct_site_proofs {
+        ($assertion:ident, $operation:ident; $(($test:ident, $family:ident, $counter:ident)),+ $(,)?) => {
+            $(
+                #[test]
+                fn $test() {
+                    $assertion($operation::$family, stringify!($family), 1, WorkCounter::$counter);
+                }
+            )+
+        };
+    }
+
+    v16_direct_site_proofs!(
+        assert_v16_actor_site,
+        ActorDecisionOperation;
+        (causal_projection_v16_site_actor_sequence_actor_state_read_01, ActorStateRead, GraphNode),
+        (causal_projection_v16_site_actor_sequence_predecessor_candidate_read_01, PredecessorCandidateRead, GraphNode),
+        (causal_projection_v16_site_actor_sequence_actor_identity_decision_01, ActorIdentityDecision, GraphNode),
+        (causal_projection_v16_site_actor_sequence_sequence_relation_decision_01, SequenceRelationDecision, GraphNode),
+    );
+    v16_direct_site_proofs!(
+        assert_v16_causal_site,
+        CausalNextOperation;
+        (causal_projection_v16_site_causal_counter_consumer_stored_counter_read_01, StoredCounterRead, GraphNode),
+        (causal_projection_v16_site_causal_counter_consumer_expected_start_comparison_01, ExpectedStartComparison, GraphNode),
+        (causal_projection_v16_site_causal_counter_consumer_checked_advance_01, CheckedAdvance, GraphNode),
+    );
+    v16_direct_site_proofs!(
+        assert_v16_frontier_site,
+        FrontierComparisonOperation;
+        (causal_projection_v16_site_frontier_comparison_candidate_kind_comparison_01, CandidateKindComparison, GraphNode),
+        (causal_projection_v16_site_frontier_comparison_candidate_count_01, CandidateCount, GraphNode),
+        (causal_projection_v16_site_frontier_comparison_projection_count_01, ProjectionCount, GraphNode),
+        (causal_projection_v16_site_frontier_comparison_base_count_01, BaseCount, GraphNode),
+        (causal_projection_v16_site_frontier_comparison_candidate_pull_01, CandidatePull, GraphEdge),
+        (causal_projection_v16_site_frontier_comparison_candidate_order_comparison_01, CandidateOrderComparison, GraphEdge),
+        (causal_projection_v16_site_frontier_comparison_projection_pull_01, ProjectionPull, GraphNode),
+        (causal_projection_v16_site_frontier_comparison_base_pull_01, BasePull, GraphNode),
+        (causal_projection_v16_site_frontier_comparison_base_accepted_lookup_01, BaseAcceptedLookup, GraphNode),
+        (causal_projection_v16_site_frontier_comparison_expected_source_comparison_01, ExpectedSourceComparison, GraphNode),
+        (causal_projection_v16_site_frontier_comparison_frontier_equality_comparison_01, FrontierEqualityComparison, GraphEdge),
+    );
 }

@@ -49,3 +49,11 @@ The reachable dependency-count read is bound to `GraphNode`, correcting the
 historical v15 evidence without changing runtime behavior. Source-only,
 evidence-only, coordinated-counter, ordering, lexical-shadow, and identity
 mutations all fail closed. The next checkpoint is `step_1475`.
+
+`step_1475` derives a proof catalog from all 68 inventory rows and adds one
+exact enabled Rust test for every source site. Each row binds its concrete
+counter and source occurrence, then exercises the shared metered operation at
+N-minus-one, N, N-plus-one, cancellation, typed-stop, exact unexpected-error,
+and zero-post-stop boundaries. Repeated families retain distinct site tests,
+and three independent global proofs retain semantic precedence and complete
+pipeline ordering. The next checkpoint is `step_1476`.

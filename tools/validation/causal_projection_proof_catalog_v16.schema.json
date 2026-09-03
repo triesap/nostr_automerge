@@ -1,0 +1,20 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema","status","inventory_candidate","inventory_sha256","proof_source_sha256","proof_contract","row_count","rows","global_proofs","result_identity_sha256","result"],
+  "properties":{
+    "schema":{"const":"nostr_automerge.causal_projection_proof_catalog.v16.v1"},
+    "status":{"const":"pass"},
+    "inventory_candidate":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "inventory_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "proof_source_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "proof_contract":{"type":"object","additionalProperties":false,"required":["source_site","budget","cancellation","typed_stop","unexpected_error","post_stop_target_work","repeated_family"]},
+    "row_count":{"const":68},
+    "rows":{"type":"array","minItems":68,"maxItems":68,"items":{"$ref":"#/$defs/row"}},
+    "global_proofs":{"type":"array","minItems":3,"maxItems":3,"uniqueItems":true},
+    "result_identity_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "result":{"const":"pass"}
+  },
+  "$defs":{"row":{"type":"object","additionalProperties":false,"required":["id","inventory_artifact_sha256","source_site","counter","test","command","proof_mode","artifact_sha256","result"]}}
+}

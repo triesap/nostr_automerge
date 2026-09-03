@@ -194,6 +194,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/causal_projection_contracts_v16.schema.json",
     "reports/causal_projection_operation_inventory_v16.json",
     "tools/validation/causal_projection_operation_inventory_v16.schema.json",
+    "reports/causal_projection_proof_catalog_v16.json",
+    "tools/validation/causal_projection_proof_catalog_v16.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -342,6 +344,7 @@ PYTHON_SURFACES = (
     "scripts/validate_causal_projection_counter_oracle_reproductions_v16.py",
     "scripts/validate_causal_projection_contracts_v16.py",
     "scripts/validate_causal_projection_operation_inventory_v16.py",
+    "scripts/validate_causal_projection_proof_catalog_v16.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -583,6 +586,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_causal_projection_operation_inventory_v16.py",
         "reports/causal_projection_operation_inventory_v16.json",
         "tools/validation/causal_projection_operation_inventory_v16.schema.json",
+        "scripts/validate_causal_projection_proof_catalog_v16.py",
+        "reports/causal_projection_proof_catalog_v16.json",
+        "tools/validation/causal_projection_proof_catalog_v16.schema.json",
         "scripts/validate_causal_projection_operation_discovery_v15.py",
         "scripts/validate_causal_projection_discovery_v15.py",
         "scripts/validate_causal_projection_consumer_v15.py",
@@ -1268,12 +1274,13 @@ def validate_source_surfaces() -> None:
                     )
                     or (
                         relative
-                        == "scripts/validate_causal_projection_operation_inventory_v16.py"
+                        in {
+                            "scripts/validate_causal_projection_operation_inventory_v16.py",
+                            "scripts/validate_causal_projection_proof_catalog_v16.py",
+                        }
                         and (
                             value == "git"
-                            or value.startswith(
-                                chr(99) + "argo test -p nostr_automerge --lib"
-                            )
+                            or value.startswith(chr(99) + "argo test")
                         )
                     )
                     or (
