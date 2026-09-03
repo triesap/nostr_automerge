@@ -1,0 +1,1360 @@
+{
+  "schema": "nostr_automerge.causal_projection_evidence_graph.v17.v1",
+  "status": "final",
+  "final_inventory": {
+    "path": "reports/causal_projection_final_inventory_v17.json",
+    "candidate": "ad02b6ee407d6f5958c480f7f1b1c447eecc6f26",
+    "sha256": "f2212c183d009d146663116322ec4640db8812f66b6d09570115a3535a7603a2"
+  },
+  "candidate_order": [
+    "789eae3c6e0994f71420f49fe51fe3ab7cb75ca9",
+    "12f824659e055354779bb65b99f475c2ec109c43",
+    "eb760b20499792364624f24990deb35a3e8f54dd",
+    "ad02b6ee407d6f5958c480f7f1b1c447eecc6f26"
+  ],
+  "forward": [
+    {
+      "inventory_row_id": "rust.projection_construction.member_count_read",
+      "proof_row_id": "proof.rust.projection_construction.member_count_read",
+      "proof_artifact_sha256": "554ddd86ba4fb072fa6bfe46d0d71e7f45c96dfdde474a9dba5abe8c78da1220",
+      "mutation_coverage_id": "coverage.rust.projection_construction.member_count_read",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.accepted_count_matches",
+      "proof_row_id": "proof.rust.projection_construction.accepted_count_matches",
+      "proof_artifact_sha256": "8242555d20ba2f52f5da1d548a740f6def22aab48d726f041093c58e8e5d293a",
+      "mutation_coverage_id": "coverage.rust.projection_construction.accepted_count_matches",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.next_member_pull",
+      "proof_row_id": "proof.rust.projection_construction.next_member_pull",
+      "proof_artifact_sha256": "71a586e827818697e6918903fd7912cd2cb5952017f718f0ddfb63480e159f8a",
+      "mutation_coverage_id": "coverage.rust.projection_construction.next_member_pull",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.member_order_compare",
+      "proof_row_id": "proof.rust.projection_construction.member_order_compare",
+      "proof_artifact_sha256": "6a7c651e0cd96df346d0fb6bc90cf94dedf619de3a624b319a59fc3e29743a30",
+      "mutation_coverage_id": "coverage.rust.projection_construction.member_order_compare",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.accepted_member_lookup",
+      "proof_row_id": "proof.rust.projection_construction.accepted_member_lookup",
+      "proof_artifact_sha256": "49a7f1ac975653bc4546ce8817bf11dac259e6a0ba4e2e07bd954bcbafba7223",
+      "mutation_coverage_id": "coverage.rust.projection_construction.accepted_member_lookup",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.candidate_lookup",
+      "proof_row_id": "proof.rust.projection_construction.candidate_lookup",
+      "proof_artifact_sha256": "5637147d5b234c16793c00e62e5dfe5a140c2cb924f42338495d6a6b38cc360a",
+      "mutation_coverage_id": "coverage.rust.projection_construction.candidate_lookup",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.candidate_identity_compare",
+      "proof_row_id": "proof.rust.projection_construction.candidate_identity_compare",
+      "proof_artifact_sha256": "080e98cd9d2225300444dc458e4b381f1850e671000bb7c399717b9d2ae28b00",
+      "mutation_coverage_id": "coverage.rust.projection_construction.candidate_identity_compare",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.dependency_count_read",
+      "proof_row_id": "proof.rust.projection_construction.dependency_count_read",
+      "proof_artifact_sha256": "7b3203939b0897cccb7740ca7af6ad75d204ea9a793a3b75897b654da1553f21",
+      "mutation_coverage_id": "coverage.rust.projection_construction.dependency_count_read",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.dependency_pull",
+      "proof_row_id": "proof.rust.projection_construction.dependency_pull",
+      "proof_artifact_sha256": "5efcc2b0cf4dd9c62f7253c86f6c79c1fe837564ae1379eed54e3f75899869c6",
+      "mutation_coverage_id": "coverage.rust.projection_construction.dependency_pull",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.dependency_order_compare",
+      "proof_row_id": "proof.rust.projection_construction.dependency_order_compare",
+      "proof_artifact_sha256": "43db98071bdf3fea5a460168195665e02beb9999f9e6b58ea29d4eae37ae9318",
+      "mutation_coverage_id": "coverage.rust.projection_construction.dependency_order_compare",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.accepted_dependency_lookup",
+      "proof_row_id": "proof.rust.projection_construction.accepted_dependency_lookup",
+      "proof_artifact_sha256": "d59d089039ac4ec288c247dc7278646dc0e7b6acd57d6b94d94b97cd265e2291",
+      "mutation_coverage_id": "coverage.rust.projection_construction.accepted_dependency_lookup",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.candidate_dependency_insert",
+      "proof_row_id": "proof.rust.projection_construction.candidate_dependency_insert",
+      "proof_artifact_sha256": "618c456133cbb26418861579e07c5013fd5ceba269f5cd6d244f53ba995dd583",
+      "mutation_coverage_id": "coverage.rust.projection_construction.candidate_dependency_insert",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.depended_on_insert",
+      "proof_row_id": "proof.rust.projection_construction.depended_on_insert",
+      "proof_artifact_sha256": "fe976273fe294ef9dc520260eda37d115d5d6bee6a4e09994f454377399de87f",
+      "mutation_coverage_id": "coverage.rust.projection_construction.depended_on_insert",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.dependant_bucket_insert",
+      "proof_row_id": "proof.rust.projection_construction.dependant_bucket_insert",
+      "proof_artifact_sha256": "5c8cb67127fe6eeace554f3518450585866fec58b6854c7df607e6a6e0288c8f",
+      "mutation_coverage_id": "coverage.rust.projection_construction.dependant_bucket_insert",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.dependant_insert",
+      "proof_row_id": "proof.rust.projection_construction.dependant_insert",
+      "proof_artifact_sha256": "40983e361364d0ab26dffb391d66ebbf63ee1579a46a6415e651d5359ede1bd9",
+      "mutation_coverage_id": "coverage.rust.projection_construction.dependant_insert",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.candidate_ready_compare",
+      "proof_row_id": "proof.rust.projection_construction.candidate_ready_compare",
+      "proof_artifact_sha256": "74fe3fbdaf9153f5ddfef76efa155be073abce4cd54d39f14bb0c62f2e71c97f",
+      "mutation_coverage_id": "coverage.rust.projection_construction.candidate_ready_compare",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.initial_ready_insert",
+      "proof_row_id": "proof.rust.projection_construction.initial_ready_insert",
+      "proof_artifact_sha256": "ec3da558573651bf5e68ac3df071b5cf4fdf23a447e80215f59e054b4244e49f",
+      "mutation_coverage_id": "coverage.rust.projection_construction.initial_ready_insert",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.remaining_dependencies_insert",
+      "proof_row_id": "proof.rust.projection_construction.remaining_dependencies_insert",
+      "proof_artifact_sha256": "559ed7be8ad0df4239fde92a4562e0ca980e379fc89a69dcdac28f9f33c534d8",
+      "mutation_coverage_id": "coverage.rust.projection_construction.remaining_dependencies_insert",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.dependencies_insert",
+      "proof_row_id": "proof.rust.projection_construction.dependencies_insert",
+      "proof_artifact_sha256": "f9af80fd250965b251114b7a28d3a154f7aaab793c09ffbd985bf6cb94ed17d7",
+      "mutation_coverage_id": "coverage.rust.projection_construction.dependencies_insert",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.ready_nonempty_compare",
+      "proof_row_id": "proof.rust.projection_construction.ready_nonempty_compare",
+      "proof_artifact_sha256": "94888fff20d3c87b2b7e33c86d7c7f2fb5df96a6e59cdbb475daba89cdf06e09",
+      "mutation_coverage_id": "coverage.rust.projection_construction.ready_nonempty_compare",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.ready_candidate_pull",
+      "proof_row_id": "proof.rust.projection_construction.ready_candidate_pull",
+      "proof_artifact_sha256": "aeeee1dc55522fd09afc7d7022810eed85a588b0a1503af6d1b8cc8e48a6496a",
+      "mutation_coverage_id": "coverage.rust.projection_construction.ready_candidate_pull",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.ready_candidate_lookup",
+      "proof_row_id": "proof.rust.projection_construction.ready_candidate_lookup",
+      "proof_artifact_sha256": "964ba07392f762aab3cf553784a38566cc9d183fa9016b16ecc80cc9695cf384",
+      "mutation_coverage_id": "coverage.rust.projection_construction.ready_candidate_lookup",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.depended_on_lookup",
+      "proof_row_id": "proof.rust.projection_construction.depended_on_lookup",
+      "proof_artifact_sha256": "9f9c8bcd175525b0eca0f9bcad19c52d97997d17467fac794c826a6ac0226bcb",
+      "mutation_coverage_id": "coverage.rust.projection_construction.depended_on_lookup",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.frontier_head_insert",
+      "proof_row_id": "proof.rust.projection_construction.frontier_head_insert",
+      "proof_artifact_sha256": "955bc5a05d5071c5a75c16760af82f6b25f431b300881a968c307ea34e3d6ccf",
+      "mutation_coverage_id": "coverage.rust.projection_construction.frontier_head_insert",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.actor_state_lookup",
+      "proof_row_id": "proof.rust.projection_construction.actor_state_lookup",
+      "proof_artifact_sha256": "021bd485200c1a940d8bdd47595339449cbcd90bf598e5da7eabff68f3517056",
+      "mutation_coverage_id": "coverage.rust.projection_construction.actor_state_lookup",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.expected_sequence_advance",
+      "proof_row_id": "proof.rust.projection_construction.expected_sequence_advance",
+      "proof_artifact_sha256": "cc8c8e9ad4379abdefbb2868ac25d5a364598551b66d5249277918493c742164",
+      "mutation_coverage_id": "coverage.rust.projection_construction.expected_sequence_advance",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.sequence_precedes_compare",
+      "proof_row_id": "proof.rust.projection_construction.sequence_precedes_compare",
+      "proof_artifact_sha256": "4a41eece783c5b6b68b8fa97106e3d2121d487925227f5804ddd16e65eca5343",
+      "mutation_coverage_id": "coverage.rust.projection_construction.sequence_precedes_compare",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.sequence_matches_compare",
+      "proof_row_id": "proof.rust.projection_construction.sequence_matches_compare",
+      "proof_artifact_sha256": "243a6194eac309f951733d554768e4a5572e1f7d4f92a9a7f060cf651cc9f714",
+      "mutation_coverage_id": "coverage.rust.projection_construction.sequence_matches_compare",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.causal_next_lookup",
+      "proof_row_id": "proof.rust.projection_construction.causal_next_lookup",
+      "proof_artifact_sha256": "36327e4ff033e42ce7c49ee32dab7d167312d634f69f4abf5106e01e20316735",
+      "mutation_coverage_id": "coverage.rust.projection_construction.causal_next_lookup",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.start_operation_compare",
+      "proof_row_id": "proof.rust.projection_construction.start_operation_compare",
+      "proof_artifact_sha256": "0fd84bd6efc07dfe17ec91593350f99839dfb3f35189435202efbe9a99ee159d",
+      "mutation_coverage_id": "coverage.rust.projection_construction.start_operation_compare",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.candidate_empty_compare",
+      "proof_row_id": "proof.rust.projection_construction.candidate_empty_compare",
+      "proof_artifact_sha256": "9c95ca85e98c1c0948791d050e8c615a625584d863f7e9eef2b5a92431a33c19",
+      "mutation_coverage_id": "coverage.rust.projection_construction.candidate_empty_compare",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.candidate_causal_advance",
+      "proof_row_id": "proof.rust.projection_construction.candidate_causal_advance",
+      "proof_artifact_sha256": "51ead839b4dd856e3a5ec3e5be787c87ffaa2076f16d2612b4ca2dfc48eec879",
+      "mutation_coverage_id": "coverage.rust.projection_construction.candidate_causal_advance",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.global_causal_maximum",
+      "proof_row_id": "proof.rust.projection_construction.global_causal_maximum",
+      "proof_artifact_sha256": "14e38cbb770ac935145add288c560e9b08d346aa3542aae15be2c1635d59b0d0",
+      "mutation_coverage_id": "coverage.rust.projection_construction.global_causal_maximum",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.actor_state_insert",
+      "proof_row_id": "proof.rust.projection_construction.actor_state_insert",
+      "proof_artifact_sha256": "aeefccbf429791313e8c03ee50ba8ad5807be8327014ade7665a6fb24ea8e956",
+      "mutation_coverage_id": "coverage.rust.projection_construction.actor_state_insert",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.writer_contribution_insert",
+      "proof_row_id": "proof.rust.projection_construction.writer_contribution_insert",
+      "proof_artifact_sha256": "576ed686fb939dcc6e4b7255b0f5a33cfa0bc08a78267d43b67ae478d623ca12",
+      "mutation_coverage_id": "coverage.rust.projection_construction.writer_contribution_insert",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.causal_counter_insert",
+      "proof_row_id": "proof.rust.projection_construction.causal_counter_insert",
+      "proof_artifact_sha256": "8d547cac34d0cfe6911e8b4b5f659b37e3461da93d6db52d08993cd4165262a4",
+      "mutation_coverage_id": "coverage.rust.projection_construction.causal_counter_insert",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.processed_count_advance",
+      "proof_row_id": "proof.rust.projection_construction.processed_count_advance",
+      "proof_artifact_sha256": "0f685b9776b48530c48a67c52facfbc1203aed5ed6d555d439946b2a86b2668f",
+      "mutation_coverage_id": "coverage.rust.projection_construction.processed_count_advance",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.dependants_lookup",
+      "proof_row_id": "proof.rust.projection_construction.dependants_lookup",
+      "proof_artifact_sha256": "a8fbb9b3ba63cd1452104e87071229208a6d3bc394d139a1cf87b8386e975400",
+      "mutation_coverage_id": "coverage.rust.projection_construction.dependants_lookup",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.child_count_read",
+      "proof_row_id": "proof.rust.projection_construction.child_count_read",
+      "proof_artifact_sha256": "34f4b903b4b250fd7b5360e81000a0d7d1dab7cd2856daa41876f81c6d091a65",
+      "mutation_coverage_id": "coverage.rust.projection_construction.child_count_read",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.child_pull",
+      "proof_row_id": "proof.rust.projection_construction.child_pull",
+      "proof_artifact_sha256": "5d9e43cacb5c62c9aecc5c95d8ea721fe9b2874a760f638140fe531b831e3283",
+      "mutation_coverage_id": "coverage.rust.projection_construction.child_pull",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.remaining_dependency_lookup",
+      "proof_row_id": "proof.rust.projection_construction.remaining_dependency_lookup",
+      "proof_artifact_sha256": "6450f960c9c6f5a6d48cad7828c65e6e5e33138cfaf5d8d1c690dbf64f092f22",
+      "mutation_coverage_id": "coverage.rust.projection_construction.remaining_dependency_lookup",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.remaining_dependency_decrement",
+      "proof_row_id": "proof.rust.projection_construction.remaining_dependency_decrement",
+      "proof_artifact_sha256": "bf28ddaf64d5b511999d3d334e43acf82c46716af5b8304e4d9a65b919223d28",
+      "mutation_coverage_id": "coverage.rust.projection_construction.remaining_dependency_decrement",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.remaining_dependency_write",
+      "proof_row_id": "proof.rust.projection_construction.remaining_dependency_write",
+      "proof_artifact_sha256": "8304256a1fb1d5ef43425da4576335260c02faa587b5088df1b5b41eb83958cd",
+      "mutation_coverage_id": "coverage.rust.projection_construction.remaining_dependency_write",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.prior_causal_lookup",
+      "proof_row_id": "proof.rust.projection_construction.prior_causal_lookup",
+      "proof_artifact_sha256": "fff4a1515a57c0f0878edf1b855792fd413f53d8d8d0d2258a2650858e8e73ca",
+      "mutation_coverage_id": "coverage.rust.projection_construction.prior_causal_lookup",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.propagated_causal_maximum",
+      "proof_row_id": "proof.rust.projection_construction.propagated_causal_maximum",
+      "proof_artifact_sha256": "d65f72ba38423792d815aca99f1dddab83f6d068a33d14cd03dddb51bc27b1ae",
+      "mutation_coverage_id": "coverage.rust.projection_construction.propagated_causal_maximum",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.child_causal_insert",
+      "proof_row_id": "proof.rust.projection_construction.child_causal_insert",
+      "proof_artifact_sha256": "24cf08dbdf9a2c61703afa9fbbc21b38c0e70bb4c64eb75fad7f81730200fc60",
+      "mutation_coverage_id": "coverage.rust.projection_construction.child_causal_insert",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.child_ready_compare",
+      "proof_row_id": "proof.rust.projection_construction.child_ready_compare",
+      "proof_artifact_sha256": "6620179b2c5a14f5b07908c1cb99dd0994785b15e98c6744a0280aed1b89847d",
+      "mutation_coverage_id": "coverage.rust.projection_construction.child_ready_compare",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.ready_dependant_insert",
+      "proof_row_id": "proof.rust.projection_construction.ready_dependant_insert",
+      "proof_artifact_sha256": "56c99020284df7f2de2f33cafc34cf55d66a1f50f7c02c6be915fa24bb42ee39",
+      "mutation_coverage_id": "coverage.rust.projection_construction.ready_dependant_insert",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.completion_compare",
+      "proof_row_id": "proof.rust.projection_construction.completion_compare",
+      "proof_artifact_sha256": "2fff0a1fa828b2c7b558af2785acfe4e3b2698a6f719bed4a475193344e14816",
+      "mutation_coverage_id": "coverage.rust.projection_construction.completion_compare",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.projection_publish",
+      "proof_row_id": "proof.rust.projection_construction.projection_publish",
+      "proof_artifact_sha256": "6fe8f6f37cf8885beb8d9aee6c6bcf2b023647e3d47c55355d563792f9660edb",
+      "mutation_coverage_id": "coverage.rust.projection_construction.projection_publish",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "proof_row_id": "proof.rust.actor_sequence.actor_state_read",
+      "proof_artifact_sha256": "598686fde7287114d23411225ef3e52d55fcd3bc80adda79f6788756519913dc",
+      "mutation_coverage_id": "coverage.rust.actor_sequence.actor_state_read",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.actor_sequence.predecessor_candidate_read",
+      "proof_row_id": "proof.rust.actor_sequence.predecessor_candidate_read",
+      "proof_artifact_sha256": "ee024c77e4b7868643ab6a9c1680451e40ca2e1e334dd0be8f4c331f49fbdf8e",
+      "mutation_coverage_id": "coverage.rust.actor_sequence.predecessor_candidate_read",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.actor_sequence.actor_identity_decision",
+      "proof_row_id": "proof.rust.actor_sequence.actor_identity_decision",
+      "proof_artifact_sha256": "fa9d12228c28be80abedca5ee91ff9fbf8150d7473f7357eca96631f89b8c11a",
+      "mutation_coverage_id": "coverage.rust.actor_sequence.actor_identity_decision",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.actor_sequence.sequence_relation_decision",
+      "proof_row_id": "proof.rust.actor_sequence.sequence_relation_decision",
+      "proof_artifact_sha256": "fdb2ab6c480896a9d107f3dc804c526fd1a73488ae8562ba20cdc1eda0ce4e85",
+      "mutation_coverage_id": "coverage.rust.actor_sequence.sequence_relation_decision",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.causal_counter.stored_counter_read",
+      "proof_row_id": "proof.rust.causal_counter.stored_counter_read",
+      "proof_artifact_sha256": "bb722f3cd0eadef4b12e76e1e874568a797db667f3ae984e05215d8f350e1d51",
+      "mutation_coverage_id": "coverage.rust.causal_counter.stored_counter_read",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.causal_counter.expected_start_comparison",
+      "proof_row_id": "proof.rust.causal_counter.expected_start_comparison",
+      "proof_artifact_sha256": "72af751ebce72288dd97564f79578b74aae730aaefc274eaab41afd232a8d601",
+      "mutation_coverage_id": "coverage.rust.causal_counter.expected_start_comparison",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.causal_counter.checked_advance",
+      "proof_row_id": "proof.rust.causal_counter.checked_advance",
+      "proof_artifact_sha256": "e75ab6ad2d73e4a1f01511dde6820d9984f3a2b09792126ab7944efff72ee62a",
+      "mutation_coverage_id": "coverage.rust.causal_counter.checked_advance",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.candidate_kind_comparison",
+      "proof_row_id": "proof.rust.frontier_comparison.candidate_kind_comparison",
+      "proof_artifact_sha256": "7b9a34cfaa5fba43d09ca26caa1e6c42f13090b90cd6536a19e44f9438b5ae98",
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.candidate_kind_comparison",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.candidate_count_read",
+      "proof_row_id": "proof.rust.frontier_comparison.candidate_count_read",
+      "proof_artifact_sha256": "2ec9dc605ec225a44a18ff857a561b0f4593cffcbb6c8f52ed1b4cfa36570984",
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.candidate_count_read",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.projection_count_read",
+      "proof_row_id": "proof.rust.frontier_comparison.projection_count_read",
+      "proof_artifact_sha256": "925b90eaecd8f7e17f5ac449e7061858148efe99cfa7ff7e331f88272dc8712a",
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.projection_count_read",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.base_count_read",
+      "proof_row_id": "proof.rust.frontier_comparison.base_count_read",
+      "proof_artifact_sha256": "ab28d8d946bd01c2947a745d0a37a0c78de0c4d2bd278db8327501f8e2fab7c0",
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.base_count_read",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.candidate_pull",
+      "proof_row_id": "proof.rust.frontier_comparison.candidate_pull",
+      "proof_artifact_sha256": "8e8e1532b2ccf0ca6132da9b4969a680d37cc917acd4c75d6d766004bd60a31d",
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.candidate_pull",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.candidate_order_compare",
+      "proof_row_id": "proof.rust.frontier_comparison.candidate_order_compare",
+      "proof_artifact_sha256": "2abc5fb810b7fb35ddd4e8eed672e747501da2a21c437d275a42cd49db170468",
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.candidate_order_compare",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.projection_pull",
+      "proof_row_id": "proof.rust.frontier_comparison.projection_pull",
+      "proof_artifact_sha256": "0d303483157994bf3fcc6957bda682bffd32fe2eb5147ea519f60089ae52dd27",
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.projection_pull",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.base_pull",
+      "proof_row_id": "proof.rust.frontier_comparison.base_pull",
+      "proof_artifact_sha256": "f3002273f9bf74d60fb421ee6340a794c3eac899e9dffe27c5f0cac994464c21",
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.base_pull",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.base_accepted_lookup",
+      "proof_row_id": "proof.rust.frontier_comparison.base_accepted_lookup",
+      "proof_artifact_sha256": "4ec5bffe6e7caf68f830441b756e3e521bf2b74ebb0bbcce309622f5adf8c310",
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.base_accepted_lookup",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.expected_source_compare",
+      "proof_row_id": "proof.rust.frontier_comparison.expected_source_compare",
+      "proof_artifact_sha256": "f4a3d1bc357ea4990c336715f700391617975f61578675a9fb3943b0f67e3317",
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.expected_source_compare",
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.frontier_equality_compare",
+      "proof_row_id": "proof.rust.frontier_comparison.frontier_equality_compare",
+      "proof_artifact_sha256": "889fe0bbd163e79c66c8db0d371f60034b760cf172c9c49ac232e721852106ac",
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.frontier_equality_compare",
+      "result": "pass"
+    }
+  ],
+  "reverse_proofs": [
+    {
+      "proof_row_id": "proof.rust.projection_construction.member_count_read",
+      "inventory_row_ids": [
+        "rust.projection_construction.member_count_read"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.accepted_count_matches",
+      "inventory_row_ids": [
+        "rust.projection_construction.accepted_count_matches"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.next_member_pull",
+      "inventory_row_ids": [
+        "rust.projection_construction.next_member_pull"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.member_order_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.member_order_compare"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.accepted_member_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.accepted_member_lookup"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.candidate_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_lookup"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.candidate_identity_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_identity_compare"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.dependency_count_read",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependency_count_read"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.dependency_pull",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependency_pull"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.dependency_order_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependency_order_compare"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.accepted_dependency_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.accepted_dependency_lookup"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.candidate_dependency_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_dependency_insert"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.depended_on_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.depended_on_insert"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.dependant_bucket_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependant_bucket_insert"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.dependant_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependant_insert"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.candidate_ready_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_ready_compare"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.initial_ready_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.initial_ready_insert"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.remaining_dependencies_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.remaining_dependencies_insert"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.dependencies_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependencies_insert"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.ready_nonempty_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.ready_nonempty_compare"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.ready_candidate_pull",
+      "inventory_row_ids": [
+        "rust.projection_construction.ready_candidate_pull"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.ready_candidate_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.ready_candidate_lookup"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.depended_on_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.depended_on_lookup"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.frontier_head_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.frontier_head_insert"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.actor_state_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.actor_state_lookup"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.expected_sequence_advance",
+      "inventory_row_ids": [
+        "rust.projection_construction.expected_sequence_advance"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.sequence_precedes_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.sequence_precedes_compare"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.sequence_matches_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.sequence_matches_compare"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.causal_next_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.causal_next_lookup"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.start_operation_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.start_operation_compare"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.candidate_empty_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_empty_compare"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.candidate_causal_advance",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_causal_advance"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.global_causal_maximum",
+      "inventory_row_ids": [
+        "rust.projection_construction.global_causal_maximum"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.actor_state_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.actor_state_insert"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.writer_contribution_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.writer_contribution_insert"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.causal_counter_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.causal_counter_insert"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.processed_count_advance",
+      "inventory_row_ids": [
+        "rust.projection_construction.processed_count_advance"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.dependants_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependants_lookup"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.child_count_read",
+      "inventory_row_ids": [
+        "rust.projection_construction.child_count_read"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.child_pull",
+      "inventory_row_ids": [
+        "rust.projection_construction.child_pull"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.remaining_dependency_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.remaining_dependency_lookup"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.remaining_dependency_decrement",
+      "inventory_row_ids": [
+        "rust.projection_construction.remaining_dependency_decrement"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.remaining_dependency_write",
+      "inventory_row_ids": [
+        "rust.projection_construction.remaining_dependency_write"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.prior_causal_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.prior_causal_lookup"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.propagated_causal_maximum",
+      "inventory_row_ids": [
+        "rust.projection_construction.propagated_causal_maximum"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.child_causal_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.child_causal_insert"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.child_ready_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.child_ready_compare"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.ready_dependant_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.ready_dependant_insert"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.completion_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.completion_compare"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.projection_construction.projection_publish",
+      "inventory_row_ids": [
+        "rust.projection_construction.projection_publish"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.actor_sequence.actor_state_read",
+      "inventory_row_ids": [
+        "rust.actor_sequence.actor_state_read"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.actor_sequence.predecessor_candidate_read",
+      "inventory_row_ids": [
+        "rust.actor_sequence.predecessor_candidate_read"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.actor_sequence.actor_identity_decision",
+      "inventory_row_ids": [
+        "rust.actor_sequence.actor_identity_decision"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.actor_sequence.sequence_relation_decision",
+      "inventory_row_ids": [
+        "rust.actor_sequence.sequence_relation_decision"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.causal_counter.stored_counter_read",
+      "inventory_row_ids": [
+        "rust.causal_counter.stored_counter_read"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.causal_counter.expected_start_comparison",
+      "inventory_row_ids": [
+        "rust.causal_counter.expected_start_comparison"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.causal_counter.checked_advance",
+      "inventory_row_ids": [
+        "rust.causal_counter.checked_advance"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.frontier_comparison.candidate_kind_comparison",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.candidate_kind_comparison"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.frontier_comparison.candidate_count_read",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.candidate_count_read"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.frontier_comparison.projection_count_read",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.projection_count_read"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.frontier_comparison.base_count_read",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.base_count_read"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.frontier_comparison.candidate_pull",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.candidate_pull"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.frontier_comparison.candidate_order_compare",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.candidate_order_compare"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.frontier_comparison.projection_pull",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.projection_pull"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.frontier_comparison.base_pull",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.base_pull"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.frontier_comparison.base_accepted_lookup",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.base_accepted_lookup"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.frontier_comparison.expected_source_compare",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.expected_source_compare"
+      ]
+    },
+    {
+      "proof_row_id": "proof.rust.frontier_comparison.frontier_equality_compare",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.frontier_equality_compare"
+      ]
+    }
+  ],
+  "reverse_coverage": [
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.member_count_read",
+      "inventory_row_ids": [
+        "rust.projection_construction.member_count_read"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.accepted_count_matches",
+      "inventory_row_ids": [
+        "rust.projection_construction.accepted_count_matches"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.next_member_pull",
+      "inventory_row_ids": [
+        "rust.projection_construction.next_member_pull"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.member_order_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.member_order_compare"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.accepted_member_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.accepted_member_lookup"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.candidate_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_lookup"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.candidate_identity_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_identity_compare"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.dependency_count_read",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependency_count_read"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.dependency_pull",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependency_pull"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.dependency_order_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependency_order_compare"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.accepted_dependency_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.accepted_dependency_lookup"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.candidate_dependency_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_dependency_insert"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.depended_on_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.depended_on_insert"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.dependant_bucket_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependant_bucket_insert"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.dependant_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependant_insert"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.candidate_ready_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_ready_compare"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.initial_ready_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.initial_ready_insert"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.remaining_dependencies_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.remaining_dependencies_insert"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.dependencies_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependencies_insert"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.ready_nonempty_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.ready_nonempty_compare"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.ready_candidate_pull",
+      "inventory_row_ids": [
+        "rust.projection_construction.ready_candidate_pull"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.ready_candidate_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.ready_candidate_lookup"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.depended_on_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.depended_on_lookup"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.frontier_head_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.frontier_head_insert"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.actor_state_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.actor_state_lookup"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.expected_sequence_advance",
+      "inventory_row_ids": [
+        "rust.projection_construction.expected_sequence_advance"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.sequence_precedes_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.sequence_precedes_compare"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.sequence_matches_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.sequence_matches_compare"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.causal_next_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.causal_next_lookup"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.start_operation_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.start_operation_compare"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.candidate_empty_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_empty_compare"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.candidate_causal_advance",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_causal_advance"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.global_causal_maximum",
+      "inventory_row_ids": [
+        "rust.projection_construction.global_causal_maximum"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.actor_state_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.actor_state_insert"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.writer_contribution_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.writer_contribution_insert"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.causal_counter_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.causal_counter_insert"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.processed_count_advance",
+      "inventory_row_ids": [
+        "rust.projection_construction.processed_count_advance"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.dependants_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependants_lookup"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.child_count_read",
+      "inventory_row_ids": [
+        "rust.projection_construction.child_count_read"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.child_pull",
+      "inventory_row_ids": [
+        "rust.projection_construction.child_pull"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.remaining_dependency_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.remaining_dependency_lookup"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.remaining_dependency_decrement",
+      "inventory_row_ids": [
+        "rust.projection_construction.remaining_dependency_decrement"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.remaining_dependency_write",
+      "inventory_row_ids": [
+        "rust.projection_construction.remaining_dependency_write"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.prior_causal_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.prior_causal_lookup"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.propagated_causal_maximum",
+      "inventory_row_ids": [
+        "rust.projection_construction.propagated_causal_maximum"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.child_causal_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.child_causal_insert"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.child_ready_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.child_ready_compare"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.ready_dependant_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.ready_dependant_insert"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.completion_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.completion_compare"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.projection_construction.projection_publish",
+      "inventory_row_ids": [
+        "rust.projection_construction.projection_publish"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.actor_sequence.actor_state_read",
+      "inventory_row_ids": [
+        "rust.actor_sequence.actor_state_read"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.actor_sequence.predecessor_candidate_read",
+      "inventory_row_ids": [
+        "rust.actor_sequence.predecessor_candidate_read"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.actor_sequence.actor_identity_decision",
+      "inventory_row_ids": [
+        "rust.actor_sequence.actor_identity_decision"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.actor_sequence.sequence_relation_decision",
+      "inventory_row_ids": [
+        "rust.actor_sequence.sequence_relation_decision"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.causal_counter.stored_counter_read",
+      "inventory_row_ids": [
+        "rust.causal_counter.stored_counter_read"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.causal_counter.expected_start_comparison",
+      "inventory_row_ids": [
+        "rust.causal_counter.expected_start_comparison"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.causal_counter.checked_advance",
+      "inventory_row_ids": [
+        "rust.causal_counter.checked_advance"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.candidate_kind_comparison",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.candidate_kind_comparison"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.candidate_count_read",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.candidate_count_read"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.projection_count_read",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.projection_count_read"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.base_count_read",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.base_count_read"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.candidate_pull",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.candidate_pull"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.candidate_order_compare",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.candidate_order_compare"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.projection_pull",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.projection_pull"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.base_pull",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.base_pull"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.base_accepted_lookup",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.base_accepted_lookup"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.expected_source_compare",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.expected_source_compare"
+      ]
+    },
+    {
+      "mutation_coverage_id": "coverage.rust.frontier_comparison.frontier_equality_compare",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.frontier_equality_compare"
+      ]
+    }
+  ],
+  "counts": {
+    "inventory_rows": 68,
+    "proof_edges": 68,
+    "coverage_edges": 68,
+    "dangling": 0,
+    "extra": 0
+  },
+  "attack_matrix": [
+    {
+      "attack": "dangling",
+      "result": "killed"
+    },
+    {
+      "attack": "duplicate",
+      "result": "killed"
+    },
+    {
+      "attack": "extra",
+      "result": "killed"
+    },
+    {
+      "attack": "stale",
+      "result": "killed"
+    },
+    {
+      "attack": "mismatched",
+      "result": "killed"
+    },
+    {
+      "attack": "reordered",
+      "result": "killed"
+    },
+    {
+      "attack": "planned",
+      "result": "killed"
+    },
+    {
+      "attack": "self_referential",
+      "result": "killed"
+    },
+    {
+      "attack": "coordinated",
+      "result": "killed"
+    }
+  ],
+  "result_identity_sha256": "bf0ef7f4d82cce29ddf9aa43b8949664ed4a1e55858e50d446a282f1fa278a66",
+  "result": "pass"
+}
