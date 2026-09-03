@@ -1,0 +1,16 @@
+{
+  "schema":"nostr_automerge.causal_projection_site_alias_reproduction.v17.v1",
+  "status":"expected_defect",
+  "source_candidate":"0a0ce4d4ee8723bbec8473f8e6c984be6aa93df1",
+  "actor_source_sha256":"101e9502101d7c08d11dadafc46c679a084bfe88b8ea8614c79682565c3bbc0e",
+  "opaque_assurance_sha256":"6f9aa02dd558b755343d259f645cc5a2ac3f3481aad5d1d463fa1927b0b5e23c",
+  "rust_source_sites":68,
+  "rust_repeated_families":11,
+  "rust_later_repeated_sites":30,
+  "source_selector":"textual_occurrence",
+  "runtime_selector":"first_family_observation",
+  "independent_site_claim_mode":"opaque_aggregate_count",
+  "exact_later_site_proven":false,
+  "closure_evidence":false,
+  "result":"reproduced"
+}
