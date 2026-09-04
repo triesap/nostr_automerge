@@ -1,0 +1,99 @@
+{
+  "schema": "nostr_automerge.causal_projection_final_decision.v17.v1",
+  "status": "code_complete_publication_held",
+  "checkpoint": "step_1513",
+  "candidate": "07479bee4fc75ac809e75588ca2bb568b35b38e4",
+  "imports": {
+    "completion_sha256": "1dc1801cc6cfe0d6e8de0c1d30238eb87edcc9f3093a561f17531d45c4aac8a4",
+    "authority_sha256": "bfe0e02ad8708b0869d76eb736dfde48a3894a63cfaac2a7fcbd054ce88807bd",
+    "finding_registry_sha256": "c00de5c6cfbf4ac768f77b3351d50bf4f0c283ff8ee3d665d36bafc8c06f3704",
+    "runtime_ledger_sha256": "9363f464367f5c930801dd3b168b436942de96eb0bb9498598fa6147ade8b16d",
+    "combined_assurance_sha256": "271463576243408ea9d43fb9f1b5c4b904c2ae63b1342871aea72b50f913b508",
+    "finding_closure_sha256": "2907785eaf8b7fd01a6c1b2f306b227d039740ca6d99df587c87d78fa6984997"
+  },
+  "decision": {
+    "code_complete": true,
+    "local_findings_closed": true,
+    "public_checkpoint_count": 31,
+    "independent_checkpoint_count": 7,
+    "unfinished_rclds": [],
+    "clean_candidate_attestation": "required_later",
+    "candidate_lifecycle": "acyclic_later_attestation"
+  },
+  "gates": [
+    {
+      "name": "authority",
+      "result": "pass"
+    },
+    {
+      "name": "operation_contract",
+      "result": "pass"
+    },
+    {
+      "name": "source_inventory",
+      "result": "pass"
+    },
+    {
+      "name": "proof_catalog",
+      "result": "pass"
+    },
+    {
+      "name": "structural_identity",
+      "result": "pass"
+    },
+    {
+      "name": "behavioral_mutations",
+      "result": "pass"
+    },
+    {
+      "name": "final_inventory",
+      "result": "pass"
+    },
+    {
+      "name": "evidence_graph",
+      "result": "pass"
+    },
+    {
+      "name": "public_assurance",
+      "result": "pass"
+    },
+    {
+      "name": "distribution_transition",
+      "result": "pass"
+    },
+    {
+      "name": "rust_conformance",
+      "result": "pass"
+    },
+    {
+      "name": "opaque_assurance",
+      "result": "pass"
+    },
+    {
+      "name": "combined_assurance",
+      "result": "pass"
+    },
+    {
+      "name": "finding_closure",
+      "result": "pass"
+    },
+    {
+      "name": "complete_specification",
+      "result": "pass"
+    }
+  ],
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "remote_mutation"
+  ],
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "ecb5144e6ec8e20b2f2b202d50fd99ad8965fdd7b5c7490230664e313b717a84"
+}

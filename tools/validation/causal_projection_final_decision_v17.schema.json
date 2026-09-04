@@ -1,0 +1,26 @@
+{
+  "title": "nostr_automerge causal projection final decision v17",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "checkpoint", "candidate", "imports", "decision", "gates", "holds", "release_claimed", "publication_claimed", "remote_actions", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_final_decision.v17.v1"},
+    "status": {"const": "code_complete_publication_held"},
+    "checkpoint": {"const": "step_1513"},
+    "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "imports": {"$ref": "#/$defs/imports"},
+    "decision": {"$ref": "#/$defs/decision"},
+    "gates": {"type": "array", "minItems": 15, "maxItems": 15, "items": {"$ref": "#/$defs/gate"}},
+    "holds": {"type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true, "items": {"type": "string"}},
+    "release_claimed": {"const": false},
+    "publication_claimed": {"const": false},
+    "remote_actions": {"const": 0},
+    "result": {"const": "pass"},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "$defs": {
+    "imports": {"type": "object", "additionalProperties": false, "required": ["completion_sha256", "authority_sha256", "finding_registry_sha256", "runtime_ledger_sha256", "combined_assurance_sha256", "finding_closure_sha256"], "properties": {"completion_sha256": {"type": "string"}, "authority_sha256": {"type": "string"}, "finding_registry_sha256": {"type": "string"}, "runtime_ledger_sha256": {"type": "string"}, "combined_assurance_sha256": {"type": "string"}, "finding_closure_sha256": {"type": "string"}}},
+    "decision": {"type": "object", "additionalProperties": false, "required": ["code_complete", "local_findings_closed", "public_checkpoint_count", "independent_checkpoint_count", "unfinished_rclds", "clean_candidate_attestation", "candidate_lifecycle"], "properties": {"code_complete": {"const": true}, "local_findings_closed": {"const": true}, "public_checkpoint_count": {"const": 31}, "independent_checkpoint_count": {"const": 7}, "unfinished_rclds": {"type": "array", "maxItems": 0}, "clean_candidate_attestation": {"const": "required_later"}, "candidate_lifecycle": {"const": "acyclic_later_attestation"}}},
+    "gate": {"type": "object", "additionalProperties": false, "required": ["name", "result"], "properties": {"name": {"type": "string"}, "result": {"const": "pass"}}}
+  }
+}

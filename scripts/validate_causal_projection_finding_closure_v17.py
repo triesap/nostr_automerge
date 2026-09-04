@@ -80,6 +80,12 @@ def sha(path: str) -> str:
     return hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
 
 
+def committed(candidate: str, path: str) -> bytes:
+    result = subprocess.run(["git", "show", f"{candidate}:{path}"], cwd=ROOT, capture_output=True, check=False)
+    require(result.returncode == 0, "record:candidate_source")
+    return result.stdout
+
+
 def canonical(value: Any) -> bytes:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
 
@@ -114,10 +120,21 @@ def validate(record: Any, schema: Any) -> None:
     require(type(record) is dict and list(record) == FIELDS and record == expected(), "record:value")
     resolved = subprocess.run(["git", "rev-parse", "--verify", CANDIDATE + "^{commit}"], cwd=ROOT, capture_output=True, text=True, check=False)
     require(resolved.returncode == 0 and resolved.stdout.strip() == CANDIDATE, "record:candidate")
-    require(all(sha(path) == IMPORTS[key] for key, path in IMPORT_PATHS.items()), "record:imports")
+    require(
+        all(
+            sha(path) == IMPORTS[key]
+            for key, path in IMPORT_PATHS.items()
+            if key not in {"finding_registry_sha256", "authority_sha256"}
+        )
+        and hashlib.sha256(committed(CANDIDATE, IMPORT_PATHS["finding_registry_sha256"])).hexdigest()
+        == IMPORTS["finding_registry_sha256"]
+        and hashlib.sha256(committed(CANDIDATE, IMPORT_PATHS["authority_sha256"])).hexdigest()
+        == IMPORTS["authority_sha256"],
+        "record:imports",
+    )
     require(all(sha(path) == HISTORY[key] for key, path in HISTORY_PATHS.items()), "record:history")
-    registry = load(ROOT / "spec/remediation_findings_v17.json")
-    authority = load(ROOT / "spec/remediation_v17_authority.json")
+    registry = json.loads(committed(CANDIDATE, "spec/remediation_findings_v17.json"))
+    authority = json.loads(committed(CANDIDATE, "spec/remediation_v17_authority.json"))
     combined = load(ROOT / "reports/causal_projection_combined_assurance_v17.json")
     require(
         [(row["id"], row["status"]) for row in registry["findings"]]

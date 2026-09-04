@@ -1,0 +1,35 @@
+{
+  "title": "nostr_automerge causal projection completion v17",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "checkpoint", "candidate", "imports", "sequence", "counts", "findings", "verification", "self_review", "unverified_items", "deviations", "repository_status", "next_checkpoint", "holds", "release_claimed", "publication_claimed", "remote_actions", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_completion.v17.v1"},
+    "status": {"const": "code_complete_publication_held"},
+    "checkpoint": {"const": "step_1513"},
+    "candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "imports": {"$ref": "#/$defs/imports"},
+    "sequence": {"$ref": "#/$defs/sequence"},
+    "counts": {"$ref": "#/$defs/counts"},
+    "findings": {"$ref": "#/$defs/findings"},
+    "verification": {"$ref": "#/$defs/verification"},
+    "self_review": {"const": "pass"},
+    "unverified_items": {"type": "array", "maxItems": 0},
+    "deviations": {"type": "array", "maxItems": 0},
+    "repository_status": {"const": "clean_candidate_attestation_required_later"},
+    "next_checkpoint": {"const": "clean_candidate_attestation"},
+    "holds": {"type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true, "items": {"type": "string"}},
+    "release_claimed": {"const": false},
+    "publication_claimed": {"const": false},
+    "remote_actions": {"const": 0},
+    "result": {"const": "pass"},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "$defs": {
+    "imports": {"type": "object", "additionalProperties": false, "required": ["plan_sha256", "authority_sha256", "finding_registry_sha256", "runtime_ledger_sha256", "combined_assurance_sha256", "finding_closure_sha256", "opaque_import_sha256", "rust_conformance_sha256", "distribution_transition_sha256", "evidence_graph_sha256"], "properties": {"plan_sha256": {"type": "string"}, "authority_sha256": {"type": "string"}, "finding_registry_sha256": {"type": "string"}, "runtime_ledger_sha256": {"type": "string"}, "combined_assurance_sha256": {"type": "string"}, "finding_closure_sha256": {"type": "string"}, "opaque_import_sha256": {"type": "string"}, "rust_conformance_sha256": {"type": "string"}, "distribution_transition_sha256": {"type": "string"}, "evidence_graph_sha256": {"type": "string"}}},
+    "sequence": {"type": "object", "additionalProperties": false, "required": ["rclds", "public_checkpoints", "independent_checkpoints", "unfinished_rclds", "public_first_candidate", "public_evidence_candidate", "independent_first_candidate", "independent_assurance_candidate", "candidate_lifecycle"], "properties": {"rclds": {"type": "array"}, "public_checkpoints": {"const": 31}, "independent_checkpoints": {"const": 7}, "unfinished_rclds": {"type": "array", "maxItems": 0}, "public_first_candidate": {"type": "string"}, "public_evidence_candidate": {"type": "string"}, "independent_first_candidate": {"type": "string"}, "independent_assurance_candidate": {"type": "string"}, "candidate_lifecycle": {"const": "acyclic_later_attestation"}}},
+    "counts": {"type": "object", "additionalProperties": false, "required": ["rust_operation_sites", "rust_operation_families", "rust_site_proofs", "independent_operation_sites", "independent_operation_families", "independent_site_proofs", "rust_behavioral_mutations", "independent_behavioral_mutations", "combined_behavioral_mutations", "mutation_survivors", "scenarios", "signed_events", "delivery_orders", "processes", "transition_affected"], "properties": {"rust_operation_sites": {"const": 68}, "rust_operation_families": {"const": 38}, "rust_site_proofs": {"const": 68}, "independent_operation_sites": {"const": 142}, "independent_operation_families": {"const": 40}, "independent_site_proofs": {"const": 142}, "rust_behavioral_mutations": {"const": 31}, "independent_behavioral_mutations": {"const": 14}, "combined_behavioral_mutations": {"const": 45}, "mutation_survivors": {"const": 0}, "scenarios": {"const": 204}, "signed_events": {"const": 771}, "delivery_orders": {"const": 8}, "processes": {"const": 2}, "transition_affected": {"const": 0}}},
+    "findings": {"type": "object", "additionalProperties": false, "required": ["closed", "held", "open"], "properties": {"closed": {"type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true}, "held": {"type": "array", "minItems": 1, "maxItems": 1}, "open": {"type": "array", "maxItems": 0}}},
+    "verification": {"type": "object", "additionalProperties": false, "required": ["execution_mode", "standard_runs", "conformance_runs", "canonical_process_bytes", "deliberate_expectation_mismatch", "canonical_output_sha256", "serialized_run_sha256"], "properties": {"execution_mode": {"const": "actual_twice"}, "standard_runs": {"const": 2}, "conformance_runs": {"const": 2}, "canonical_process_bytes": {"const": "identical"}, "deliberate_expectation_mismatch": {"const": "rejected"}, "canonical_output_sha256": {"type": "string"}, "serialized_run_sha256": {"type": "string"}}}
+  }
+}

@@ -1,6 +1,6 @@
 # Nostr Automerge causal-projection evidence closure v17
 
-Status: planned — `step_1483` is the only active checkpoint
+Status: complete — `code_complete_publication_held`
 
 Initial cursor: RCLD 129 / `step_1483`
 
@@ -336,6 +336,7 @@ rewritten to make rollback appear green.
 
 This sequence is complete only after all 31 public checkpoints and all seven
 independent checkpoints are committed and verified in dependency order.
-Findings 119-122 close only from final bidirectional v17 evidence. Until
-`step_1513` is green and committed, RCLDs 129-133 remain unfinished and the v16
-terminal conclusion remains historical implementation authority.
+Findings 119-122 close only from final bidirectional v17 evidence. All 31
+public checkpoints and all seven independent checkpoints are green. No RCLD in
+this sequence remains unfinished. `FINDING_080` and every external hold remain
+held, and `remote_actions=0` remains unchanged.

@@ -377,6 +377,14 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "scripts/validate_causal_projection_finding_closure_v17.py",
     ),
     (
+        "causal_projection_completion_v17",
+        "scripts/validate_causal_projection_completion_v17.py",
+    ),
+    (
+        "causal_projection_final_decision_v17",
+        "scripts/validate_causal_projection_final_decision_v17.py",
+    ),
+    (
         "causal_projection_operation_discovery_v15",
         "scripts/validate_causal_projection_operation_discovery_v15.py",
     ),

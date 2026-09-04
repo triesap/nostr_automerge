@@ -1,0 +1,92 @@
+{
+  "schema": "nostr_automerge.causal_projection_completion.v17.v1",
+  "status": "code_complete_publication_held",
+  "checkpoint": "step_1513",
+  "candidate": "07479bee4fc75ac809e75588ca2bb568b35b38e4",
+  "imports": {
+    "plan_sha256": "a5be949823024fc454a697982f1b363a12560ff2c76abd6841d1587f9e83d5bb",
+    "authority_sha256": "bfe0e02ad8708b0869d76eb736dfde48a3894a63cfaac2a7fcbd054ce88807bd",
+    "finding_registry_sha256": "c00de5c6cfbf4ac768f77b3351d50bf4f0c283ff8ee3d665d36bafc8c06f3704",
+    "runtime_ledger_sha256": "9363f464367f5c930801dd3b168b436942de96eb0bb9498598fa6147ade8b16d",
+    "combined_assurance_sha256": "271463576243408ea9d43fb9f1b5c4b904c2ae63b1342871aea72b50f913b508",
+    "finding_closure_sha256": "2907785eaf8b7fd01a6c1b2f306b227d039740ca6d99df587c87d78fa6984997",
+    "opaque_import_sha256": "54907c6123cb719d8089976daa5e2c3c0440ba3e5d0d4a24116431a3974c8471",
+    "rust_conformance_sha256": "e9cdcc625745514d4c98968947379b554e99c9819049eceff2a20a724b356f2b",
+    "distribution_transition_sha256": "9c4e3758d67ac76fa7f270ce92db676271eb822e2ff75141a617836fd92dd6d4",
+    "evidence_graph_sha256": "283224879f13a69840e7222523649cc9639d73ae3cbe99464127b78f0121c527"
+  },
+  "sequence": {
+    "rclds": [
+      129,
+      130,
+      131,
+      132,
+      133
+    ],
+    "public_checkpoints": 31,
+    "independent_checkpoints": 7,
+    "unfinished_rclds": [],
+    "public_first_candidate": "1920f7851b518db86da25aadd96e3ab9cc26fb92",
+    "public_evidence_candidate": "07479bee4fc75ac809e75588ca2bb568b35b38e4",
+    "independent_first_candidate": "5666571c74b98329a72c55d08690aa217f68d424",
+    "independent_assurance_candidate": "b4c5474d16a9da877bb36ba2ea7e22f707bd0e9e",
+    "candidate_lifecycle": "acyclic_later_attestation"
+  },
+  "counts": {
+    "rust_operation_sites": 68,
+    "rust_operation_families": 38,
+    "rust_site_proofs": 68,
+    "independent_operation_sites": 142,
+    "independent_operation_families": 40,
+    "independent_site_proofs": 142,
+    "rust_behavioral_mutations": 31,
+    "independent_behavioral_mutations": 14,
+    "combined_behavioral_mutations": 45,
+    "mutation_survivors": 0,
+    "scenarios": 204,
+    "signed_events": 771,
+    "delivery_orders": 8,
+    "processes": 2,
+    "transition_affected": 0
+  },
+  "findings": {
+    "closed": [
+      "FINDING_119",
+      "FINDING_120",
+      "FINDING_121",
+      "FINDING_122"
+    ],
+    "held": [
+      "FINDING_080"
+    ],
+    "open": []
+  },
+  "verification": {
+    "execution_mode": "actual_twice",
+    "standard_runs": 2,
+    "conformance_runs": 2,
+    "canonical_process_bytes": "identical",
+    "deliberate_expectation_mismatch": "rejected",
+    "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+    "serialized_run_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344"
+  },
+  "self_review": "pass",
+  "unverified_items": [],
+  "deviations": [],
+  "repository_status": "clean_candidate_attestation_required_later",
+  "next_checkpoint": "clean_candidate_attestation",
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "remote_mutation"
+  ],
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "26eef30d641210c326bb4625f8858bcfb55cf147acf55349366edf45426a353b"
+}

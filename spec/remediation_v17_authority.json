@@ -1,6 +1,6 @@
 {
   "schema": "nostr_automerge.remediation_v17_authority.v1",
-  "status": "active",
+  "status": "code_complete_publication_held",
   "reviewed_public": {
     "candidate": "0a0ce4d4ee8723bbec8473f8e6c984be6aa93df1",
     "tree": "01211cccdcbf91dc0764e28c08661c746e91f226",
@@ -8,7 +8,7 @@
   },
   "governing_plan": {
     "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v17.md",
-    "sha256": "7b8b705b517190bae5ef6e9a17c921e838598e68ef89d7d019445af1c539b871"
+    "sha256": "a5be949823024fc454a697982f1b363a12560ff2c76abd6841d1587f9e83d5bb"
   },
   "historical_v16": {
     "authority_sha256": "0709482eb91145af05e25b18ab2904a2427a2db311f6a63a011427ef13221950",
@@ -39,7 +39,7 @@
     "candidate_lifecycle": "acyclic_later_attestation",
     "distribution_input": "transition_selected_manifest",
     "public_symbols_changed": false,
-    "final_source_site_count": null
+    "final_source_site_count": 68
   },
   "frozen_sha256": {
     "nip": "8262bf32cb70b7c0e46210441120652e52504fb73839641ac19dddfed840acf8",

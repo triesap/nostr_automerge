@@ -1,11 +1,11 @@
 {
   "schema": "nostr_automerge.remediation_findings.v17.v1",
-  "status": "active",
+  "status": "code_complete_publication_held",
   "findings": [
-    {"id":"FINDING_119","severity":"high","class":"evidence_closure","title":"Provisional evidence is presented as terminally complete","requirements":["NCRDT-EVIDENCE-007"],"owner":"public_assurance","closure":"Generate a final inventory after committed proof and mutation evidence and validate all edges bidirectionally.","status":"open"},
-    {"id":"FINDING_120","severity":"high","class":"site_identity","title":"Repeated source sites alias the first runtime family observation","requirements":["NCRDT-RESOURCE-016","NCRDT-RESOURCE-017","NCRDT-EVIDENCE-007"],"owner":"public_rust","closure":"Give every operation a stable runtime site identity and prove every site independently.","status":"open"},
-    {"id":"FINDING_121","severity":"high","class":"resource_accounting","title":"Direct operation target order is not mechanically sealed","requirements":["NCRDT-RESOURCE-016","NCRDT-RESOURCE-017"],"owner":"public_rust","closure":"Route every actor and causal target through a sealed site-aware charge-target-observe boundary.","status":"open"},
-    {"id":"FINDING_122","severity":"high","class":"mutation_assurance","title":"Typed-stop provenance shares the post-stop-work oracle","requirements":["NCRDT-RESOURCE-016","NCRDT-EVIDENCE-007"],"owner":"public_assurance","closure":"Use distinct property codes and mutations for stop provenance, unexpected error identity, and post-stop work.","status":"open"},
+    {"id":"FINDING_119","severity":"high","class":"evidence_closure","title":"Provisional evidence is presented as terminally complete","requirements":["NCRDT-EVIDENCE-007"],"owner":"public_assurance","closure":"Generate a final inventory after committed proof and mutation evidence and validate all edges bidirectionally.","status":"closed"},
+    {"id":"FINDING_120","severity":"high","class":"site_identity","title":"Repeated source sites alias the first runtime family observation","requirements":["NCRDT-RESOURCE-016","NCRDT-RESOURCE-017","NCRDT-EVIDENCE-007"],"owner":"public_rust","closure":"Give every operation a stable runtime site identity and prove every site independently.","status":"closed"},
+    {"id":"FINDING_121","severity":"high","class":"resource_accounting","title":"Direct operation target order is not mechanically sealed","requirements":["NCRDT-RESOURCE-016","NCRDT-RESOURCE-017"],"owner":"public_rust","closure":"Route every actor and causal target through a sealed site-aware charge-target-observe boundary.","status":"closed"},
+    {"id":"FINDING_122","severity":"high","class":"mutation_assurance","title":"Typed-stop provenance shares the post-stop-work oracle","requirements":["NCRDT-RESOURCE-016","NCRDT-EVIDENCE-007"],"owner":"public_assurance","closure":"Use distinct property codes and mutations for stop provenance, unexpected error identity, and post-stop work.","status":"closed"},
     {"id":"FINDING_080","severity":"hold","class":"external_assurance","title":"External assurance and publication authority remain held","requirements":[],"owner":"external","closure":"Preserve the hold; local work cannot close it.","status":"held"}
   ],
   "result": "pass"

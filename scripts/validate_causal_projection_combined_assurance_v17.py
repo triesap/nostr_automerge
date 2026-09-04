@@ -130,6 +130,12 @@ def sha(path: str) -> str:
     return hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
 
 
+def committed(candidate: str, path: str) -> bytes:
+    result = subprocess.run(["git", "show", f"{candidate}:{path}"], cwd=ROOT, capture_output=True, check=False)
+    require(result.returncode == 0, "evidence:candidate")
+    return result.stdout
+
+
 def canonical(value: Any) -> bytes:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
 
@@ -164,13 +170,18 @@ def expected() -> dict[str, Any]:
 
 
 def validate_evidence(record: dict[str, Any]) -> None:
-    require(all(sha(path) == IMPORTS[key] for key, path in PATHS.items()), "evidence:hash")
+    require(
+        all(sha(path) == IMPORTS[key] for key, path in PATHS.items() if key != "finding_registry_sha256")
+        and hashlib.sha256(committed(CANDIDATE, PATHS["finding_registry_sha256"])).hexdigest()
+        == IMPORTS["finding_registry_sha256"],
+        "evidence:hash",
+    )
     inventory = load(ROOT / PATHS["rust_final_inventory_sha256"])
     graph = load(ROOT / PATHS["rust_evidence_graph_sha256"])
     mutations = load(ROOT / PATHS["rust_mutation_sha256"])
     conformance = load(ROOT / PATHS["rust_conformance_sha256"])
     opaque = load(ROOT / PATHS["opaque_import_sha256"])
-    registry = load(ROOT / PATHS["finding_registry_sha256"])
+    registry = json.loads(committed(CANDIDATE, PATHS["finding_registry_sha256"]))
     require(inventory["counts"] == {"rows": 68, "proofs": 68, "coverage": 68, "planned_values": 0}, "evidence:inventory")
     require(graph["counts"] == {"inventory_rows": 68, "proof_edges": 68, "coverage_edges": 68, "dangling": 0, "extra": 0}, "evidence:graph")
     require(mutations["counts"] == {"inventory_rows": 68, "mutations": 31, "coverage_records": 68, "uncovered_rows": 0, "unreferenced_mutations": 0, "survivors": 0}, "evidence:mutations")
