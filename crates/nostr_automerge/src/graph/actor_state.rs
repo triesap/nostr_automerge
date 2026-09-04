@@ -2047,6 +2047,14 @@ pub(crate) mod tests {
     }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum BuildProofTrace {
+        ChargeAttempt(ProjectionBuildDescriptor),
+        ChargeAccepted(ProjectionBuildDescriptor),
+        TargetCompleted(ProjectionBuildDescriptor),
+        PublicationCompleted(ProjectionPublicationOperation),
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     enum LookupTrace {
         Charge(WorkCounter),
         Operation(ProjectionLookupOperation),
@@ -2074,6 +2082,107 @@ pub(crate) mod tests {
     }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum ExactProofEvent {
+        ChargeAttempt {
+            site_id: &'static str,
+            counter: WorkCounter,
+        },
+        ChargeInvocation,
+        TargetCompleted(&'static str),
+        PublicationCompleted,
+    }
+
+    fn actor_proof_events(trace: &[ActorDecisionTrace]) -> Vec<ExactProofEvent> {
+        trace
+            .iter()
+            .map(|entry| match entry {
+                ActorDecisionTrace::Attempt(descriptor) => ExactProofEvent::ChargeAttempt {
+                    site_id: descriptor.site_id,
+                    counter: descriptor.counter,
+                },
+                ActorDecisionTrace::Charge(_) => ExactProofEvent::ChargeInvocation,
+                ActorDecisionTrace::Operation(descriptor) => {
+                    ExactProofEvent::TargetCompleted(descriptor.site_id)
+                }
+            })
+            .collect()
+    }
+
+    fn causal_proof_events(trace: &[CausalNextTrace]) -> Vec<ExactProofEvent> {
+        trace
+            .iter()
+            .map(|entry| match entry {
+                CausalNextTrace::Attempt(descriptor) => ExactProofEvent::ChargeAttempt {
+                    site_id: descriptor.site_id,
+                    counter: descriptor.counter,
+                },
+                CausalNextTrace::Charge(_) => ExactProofEvent::ChargeInvocation,
+                CausalNextTrace::Operation(descriptor) => {
+                    ExactProofEvent::TargetCompleted(descriptor.site_id)
+                }
+            })
+            .collect()
+    }
+
+    fn frontier_proof_events(trace: &[FrontierTrace]) -> Vec<ExactProofEvent> {
+        trace
+            .iter()
+            .map(|entry| match entry {
+                FrontierTrace::Attempt(descriptor) => ExactProofEvent::ChargeAttempt {
+                    site_id: descriptor.site_id,
+                    counter: descriptor.counter,
+                },
+                FrontierTrace::Charge(_) => ExactProofEvent::ChargeInvocation,
+                FrontierTrace::Operation(descriptor) => {
+                    ExactProofEvent::TargetCompleted(descriptor.site_id)
+                }
+            })
+            .collect()
+    }
+
+    fn exact_proof_counts(
+        trace: &[ExactProofEvent],
+        site_id: &str,
+        counter: WorkCounter,
+    ) -> Option<(usize, usize, usize, usize)> {
+        let suffix_start = trace.iter().position(
+            |entry| matches!(entry, ExactProofEvent::ChargeAttempt { site_id: observed, counter: observed_counter } if *observed == site_id && *observed_counter == counter),
+        )?;
+        let suffix = &trace[suffix_start..];
+        let attempts = suffix
+            .iter()
+            .filter(|entry| matches!(entry, ExactProofEvent::ChargeAttempt { site_id: observed, counter: observed_counter } if *observed == site_id && *observed_counter == counter))
+            .count();
+        let targets = suffix
+            .iter()
+            .filter(|entry| matches!(entry, ExactProofEvent::TargetCompleted(observed) if *observed == site_id))
+            .count();
+        let completions = targets;
+        let publications = suffix
+            .iter()
+            .filter(|entry| matches!(entry, ExactProofEvent::PublicationCompleted))
+            .count();
+        Some((attempts, targets, completions, publications))
+    }
+
+    fn build_proof_events(trace: &[BuildProofTrace]) -> Vec<ExactProofEvent> {
+        trace
+            .iter()
+            .map(|entry| match entry {
+                BuildProofTrace::ChargeAttempt(descriptor) => ExactProofEvent::ChargeAttempt {
+                    site_id: descriptor.site_id,
+                    counter: descriptor.counter,
+                },
+                BuildProofTrace::ChargeAccepted(_) => ExactProofEvent::ChargeInvocation,
+                BuildProofTrace::TargetCompleted(descriptor) => {
+                    ExactProofEvent::TargetCompleted(descriptor.site_id)
+                }
+                BuildProofTrace::PublicationCompleted(_) => ExactProofEvent::PublicationCompleted,
+            })
+            .collect()
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     enum PublicationTrace {
         Charge(WorkCounter),
         Publication(ProjectionPublicationOperation),
@@ -2083,6 +2192,47 @@ pub(crate) mod tests {
     enum ProjectionWorkTrace {
         Charge(WorkCounter),
         Target,
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn emit_v18_exact_proof(
+        site_id: &str,
+        phase: &str,
+        family: &str,
+        counter: WorkCounter,
+        observed_completed_site: &str,
+        n_minus_one_result: &str,
+        n_result: &str,
+        n_plus_one_result: &str,
+        cancelled_result: &str,
+        unexpected_error_exact: bool,
+        target_count: usize,
+        completion_observation_count: usize,
+        publication_count: usize,
+        charge_attempt_count: usize,
+    ) {
+        println!(
+            "v18-proof-json={{\"site_id\":\"{}\",\"phase\":\"{}\",\"family\":\"{}\",\"counter\":\"{:?}\",\"requested_site\":\"{}\",\"observed_completed_site\":\"{}\",\"n_minus_one_result\":\"{}\",\"n_result\":\"{}\",\"n_plus_one_result\":\"{}\",\"cancelled_result\":\"{}\",\"unexpected_error_identity\":\"{}\",\"target_count_at_n_minus_one\":{},\"completion_observation_count_at_n_minus_one\":{},\"publication_count_at_n_minus_one\":{},\"charge_attempt_count_at_n_minus_one\":{},\"count_scope\":\"post_failed_charge_suffix\"}}",
+            site_id,
+            phase,
+            family,
+            counter,
+            site_id,
+            observed_completed_site,
+            n_minus_one_result,
+            n_result,
+            n_plus_one_result,
+            cancelled_result,
+            if unexpected_error_exact {
+                "exact"
+            } else {
+                "mismatch"
+            },
+            target_count,
+            completion_observation_count,
+            publication_count,
+            charge_attempt_count,
+        );
     }
 
     struct ObservedEpochProjectionSource<'a> {
@@ -2524,7 +2674,7 @@ pub(crate) mod tests {
             (second.change_hash, second),
             (third.change_hash, third),
         ]);
-        let (complete, trace) = observed_projection_build_operations(
+        let (complete, trace) = observed_projection_build_proof(
             &accepted,
             &changes,
             usize::MAX,
@@ -2533,65 +2683,137 @@ pub(crate) mod tests {
         assert!(complete.is_ok());
         let mut charges = 0_usize;
         let target_charge = trace.iter().find_map(|entry| match entry {
-            BuildTrace::Attempt(_) => None,
-            BuildTrace::Charge(_) => {
+            BuildProofTrace::ChargeAttempt(_) => {
                 charges = charges.saturating_add(1);
                 None
             }
-            BuildTrace::Operation(descriptor) if descriptor.site == site => Some(charges),
-            BuildTrace::Operation(_) => None,
+            BuildProofTrace::TargetCompleted(descriptor) if descriptor.site == site => {
+                Some(charges)
+            }
+            BuildProofTrace::ChargeAccepted(_)
+            | BuildProofTrace::TargetCompleted(_)
+            | BuildProofTrace::PublicationCompleted(_) => None,
         });
         assert!(target_charge.is_some_and(|value| value > 0));
         let Some(target_charge) = target_charge else {
             return;
         };
-        for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
-            let (blocked, blocked_trace) = observed_projection_build_operations(
-                &accepted,
-                &changes,
-                target_charge - 1,
-                stopped,
-            );
-            assert!(matches!(
-                blocked,
-                Err(MeteredActorStateError::Work(value)) if value == stopped
-            ));
-            assert_eq!(
-                blocked_trace
-                    .iter()
-                    .filter(
-                        |entry| matches!(entry, BuildTrace::Operation(descriptor) if descriptor.site == site)
-                    )
-                    .count(),
-                0
-            );
-        }
-        for allowance in [target_charge, target_charge + 1] {
-            let (_, admitted_trace) = observed_projection_build_operations(
-                &accepted,
-                &changes,
-                allowance,
-                Completion::BudgetExhausted,
-            );
-            assert!(admitted_trace.iter().any(
-                |entry| matches!(entry, BuildTrace::Operation(descriptor) if descriptor.site == site)
-            ));
-        }
+
+        let (budget_result, budget_trace) = observed_projection_build_proof(
+            &accepted,
+            &changes,
+            target_charge - 1,
+            Completion::BudgetExhausted,
+        );
+        let n_minus_one_result = match budget_result {
+            Err(MeteredActorStateError::Work(Completion::BudgetExhausted)) => "BudgetExhausted",
+            _ => "mismatch",
+        };
+        let budget_events = build_proof_events(&budget_trace);
+        let counts = exact_proof_counts(&budget_events, site.id(), site.counter());
+        assert!(counts.is_some());
+        let Some((
+            charge_attempt_count,
+            target_count,
+            completion_observation_count,
+            publication_count,
+        )) = counts
+        else {
+            return;
+        };
+
+        let (cancelled, cancelled_trace) = observed_projection_build_proof(
+            &accepted,
+            &changes,
+            target_charge - 1,
+            Completion::Cancelled,
+        );
+        let cancelled_result = match cancelled {
+            Err(MeteredActorStateError::Work(Completion::Cancelled)) => "Cancelled",
+            _ => "mismatch",
+        };
+        let cancelled_target_count = cancelled_trace
+            .iter()
+            .skip_while(|entry| !matches!(entry, BuildProofTrace::ChargeAttempt(descriptor) if descriptor.site == site))
+            .filter(|entry| matches!(entry, BuildProofTrace::TargetCompleted(descriptor) if descriptor.site == site))
+            .count();
+
+        let (_, n_trace) = observed_projection_build_proof(
+            &accepted,
+            &changes,
+            target_charge,
+            Completion::BudgetExhausted,
+        );
+        let n_target_count = n_trace
+            .iter()
+            .filter(|entry| matches!(entry, BuildProofTrace::TargetCompleted(descriptor) if descriptor.site == site))
+            .count();
+        let observed_completed_site = n_trace.iter().find_map(|entry| match entry {
+            BuildProofTrace::TargetCompleted(descriptor) if descriptor.site == site => {
+                Some(descriptor.site_id)
+            }
+            _ => None,
+        });
+        let (_, n_plus_one_trace) = observed_projection_build_proof(
+            &accepted,
+            &changes,
+            target_charge + 1,
+            Completion::BudgetExhausted,
+        );
+        let n_plus_one_target_count = n_plus_one_trace
+            .iter()
+            .filter(|entry| matches!(entry, BuildProofTrace::TargetCompleted(descriptor) if descriptor.site == site))
+            .count();
+
         let injected = (site, "unexpected");
         let (failed, blocked_trace) =
-            observed_projection_build_operations(&accepted, &changes, target_charge - 1, &injected);
-        assert!(matches!(
+            observed_projection_build_proof(&accepted, &changes, target_charge - 1, &injected);
+        let unexpected_error_exact = matches!(
             failed,
             Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
-        ));
-        assert!(!blocked_trace.iter().any(
-            |entry| matches!(entry, BuildTrace::Operation(descriptor) if descriptor.site == site)
-        ));
-        println!(
-            "v17-proof site={} family={:?} counter={:?} n_minus_one=blocked n=observed n_plus_one=observed cancellation=exact unexpected_error=exact target_after_stop=0 observation_after_stop=0",
-            site.id(),
-            site.operation(),
-            site.counter(),
+        );
+        let unexpected_target_count = blocked_trace
+            .iter()
+            .skip_while(|entry| !matches!(entry, BuildProofTrace::ChargeAttempt(descriptor) if descriptor.site == site))
+            .filter(|entry| matches!(entry, BuildProofTrace::TargetCompleted(descriptor) if descriptor.site == site))
+            .count();
+
+        assert_eq!(n_minus_one_result, "BudgetExhausted");
+        assert_eq!(cancelled_result, "Cancelled");
+        assert_eq!(charge_attempt_count, 1);
+        assert_eq!(target_count, 0);
+        assert_eq!(completion_observation_count, 0);
+        assert_eq!(publication_count, 0);
+        assert_eq!(cancelled_target_count, 0);
+        assert!(n_target_count >= 1);
+        assert!(n_plus_one_target_count >= 1);
+        assert!(unexpected_error_exact);
+        assert_eq!(unexpected_target_count, 0);
+        let descriptor = site.descriptor();
+        let family = format!("{:?}", descriptor.operation);
+        emit_v18_exact_proof(
+            descriptor.site_id,
+            descriptor.phase,
+            &family,
+            descriptor.counter,
+            observed_completed_site.unwrap_or("missing"),
+            n_minus_one_result,
+            if n_target_count >= 1 {
+                "requested_site_completed"
+            } else {
+                "mismatch"
+            },
+            if n_plus_one_target_count >= 1 {
+                "requested_site_completed"
+            } else {
+                "mismatch"
+            },
+            cancelled_result,
+            unexpected_error_exact,
+            target_count,
+            completion_observation_count,
+            publication_count,
+            charge_attempt_count,
         );
     }
 
@@ -2893,6 +3115,7 @@ pub(crate) mod tests {
             Completion::BudgetExhausted,
         );
         assert_eq!(complete, Ok(()));
+        let descriptor = site.descriptor();
         let target = trace
             .iter()
             .filter(|entry| matches!(entry, FrontierTrace::Operation(_)))
@@ -2902,40 +3125,131 @@ pub(crate) mod tests {
             .map(|index| index + 1);
         assert!(target.is_some(), "missing frontier site {site:?}");
         let Some(target) = target else { return };
-        for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
-            let (blocked, blocked_trace) =
-                observed_empty_frontier(&projection, &exact, &base_frontier, target - 1, stopped);
-            assert!(matches!(
-                blocked,
-                Err(MeteredActorStateError::Work(value)) if value == stopped
-            ));
-            assert!(!blocked_trace.iter().any(
-                |entry| matches!(entry, FrontierTrace::Operation(value) if value.site == site)
-            ));
-        }
-        for allowance in [target, target + 1] {
-            let (_, admitted_trace) = observed_empty_frontier(
-                &projection,
-                &exact,
-                &base_frontier,
-                allowance,
-                Completion::BudgetExhausted,
-            );
-            assert!(admitted_trace.iter().any(
-                |entry| matches!(entry, FrontierTrace::Operation(value) if value.site == site)
-            ));
-        }
+
+        let (budget_result, budget_trace) = observed_empty_frontier(
+            &projection,
+            &exact,
+            &base_frontier,
+            target - 1,
+            Completion::BudgetExhausted,
+        );
+        let n_minus_one_result = match budget_result {
+            Err(MeteredActorStateError::Work(Completion::BudgetExhausted)) => "BudgetExhausted",
+            _ => "mismatch",
+        };
+        let budget_events = frontier_proof_events(&budget_trace);
+        let counts = exact_proof_counts(&budget_events, descriptor.site_id, descriptor.counter);
+        assert!(counts.is_some());
+        let Some((
+            charge_attempt_count,
+            target_count,
+            completion_observation_count,
+            publication_count,
+        )) = counts
+        else {
+            return;
+        };
+
+        let (cancelled, cancelled_trace) = observed_empty_frontier(
+            &projection,
+            &exact,
+            &base_frontier,
+            target - 1,
+            Completion::Cancelled,
+        );
+        let cancelled_result = match cancelled {
+            Err(MeteredActorStateError::Work(Completion::Cancelled)) => "Cancelled",
+            _ => "mismatch",
+        };
+        let cancelled_counts = exact_proof_counts(
+            &frontier_proof_events(&cancelled_trace),
+            descriptor.site_id,
+            descriptor.counter,
+        );
+
+        let (_, n_trace) = observed_empty_frontier(
+            &projection,
+            &exact,
+            &base_frontier,
+            target,
+            Completion::BudgetExhausted,
+        );
+        let n_events = frontier_proof_events(&n_trace);
+        let n_target_count = n_events
+            .iter()
+            .filter(|entry| matches!(entry, ExactProofEvent::TargetCompleted(observed) if *observed == descriptor.site_id))
+            .count();
+        let observed_completed_site = n_events.iter().find_map(|entry| match entry {
+            ExactProofEvent::TargetCompleted(observed) if *observed == descriptor.site_id => {
+                Some(*observed)
+            }
+            _ => None,
+        });
+        let (_, n_plus_one_trace) = observed_empty_frontier(
+            &projection,
+            &exact,
+            &base_frontier,
+            target + 1,
+            Completion::BudgetExhausted,
+        );
+        let n_plus_one_target_count = frontier_proof_events(&n_plus_one_trace)
+            .iter()
+            .filter(|entry| matches!(entry, ExactProofEvent::TargetCompleted(observed) if *observed == descriptor.site_id))
+            .count();
+
         let injected = (site, "unexpected");
-        let (failed, _) =
+        let (failed, unexpected_trace) =
             observed_empty_frontier(&projection, &exact, &base_frontier, target - 1, &injected);
-        assert!(matches!(
+        let unexpected_error_exact = matches!(
             failed,
             Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
-        ));
-        let descriptor = site.descriptor();
-        println!(
-            "v17-proof site={} family={:?} counter={:?} n_minus_one=blocked n=observed n_plus_one=observed cancellation=exact unexpected_error=exact target_after_stop=0 observation_after_stop=0",
-            descriptor.site_id, descriptor.operation, descriptor.counter,
+        );
+        let unexpected_counts = exact_proof_counts(
+            &frontier_proof_events(&unexpected_trace),
+            descriptor.site_id,
+            descriptor.counter,
+        );
+
+        assert_eq!(n_minus_one_result, "BudgetExhausted");
+        assert_eq!(cancelled_result, "Cancelled");
+        assert_eq!(
+            (
+                charge_attempt_count,
+                target_count,
+                completion_observation_count,
+                publication_count
+            ),
+            (1, 0, 0, 0)
+        );
+        assert!(cancelled_counts.is_some_and(|value| value == (1, 0, 0, 0)));
+        assert!(n_target_count >= 1);
+        assert!(n_plus_one_target_count >= 1);
+        assert!(unexpected_error_exact);
+        assert!(unexpected_counts.is_some_and(|value| value == (1, 0, 0, 0)));
+        let family = format!("{:?}", descriptor.operation);
+        emit_v18_exact_proof(
+            descriptor.site_id,
+            descriptor.phase,
+            &family,
+            descriptor.counter,
+            observed_completed_site.unwrap_or("missing"),
+            n_minus_one_result,
+            if n_target_count >= 1 {
+                "requested_site_completed"
+            } else {
+                "mismatch"
+            },
+            if n_plus_one_target_count >= 1 {
+                "requested_site_completed"
+            } else {
+                "mismatch"
+            },
+            cancelled_result,
+            unexpected_error_exact,
+            target_count,
+            completion_observation_count,
+            publication_count,
+            charge_attempt_count,
         );
     }
 
@@ -5014,6 +5328,55 @@ pub(crate) mod tests {
         (result, observed)
     }
 
+    fn observed_projection_build_proof<'a, E: Copy>(
+        accepted_closure: &'a BTreeSet<ChangeHash>,
+        changes: &'a BTreeMap<ChangeHash, ChangeCandidate>,
+        successful_limit: usize,
+        stopped: E,
+    ) -> (
+        Result<TrustedEpochProjection<'a>, MeteredActorStateError<E>>,
+        Vec<BuildProofTrace>,
+    ) {
+        let trace = Rc::new(RefCell::new(Vec::new()));
+        let successful = Cell::new(0_usize);
+        let mut source = CanonicalEpochProjectionSource::new(accepted_closure, changes);
+        let result = build_trusted_epoch_projection_observed(
+            accepted_closure,
+            changes,
+            &mut source,
+            |descriptor| {
+                trace
+                    .borrow_mut()
+                    .push(BuildProofTrace::ChargeAttempt(descriptor));
+                if successful.get() == successful_limit {
+                    Err(stopped)
+                } else {
+                    successful.set(successful.get().saturating_add(1));
+                    trace
+                        .borrow_mut()
+                        .push(BuildProofTrace::ChargeAccepted(descriptor));
+                    Ok(())
+                }
+            },
+            |observation| {
+                assert_eq!(
+                    observation.kind,
+                    ProjectionBuildObservationKind::TargetCompleted
+                );
+                trace
+                    .borrow_mut()
+                    .push(BuildProofTrace::TargetCompleted(observation.descriptor));
+            },
+            |publication| {
+                trace
+                    .borrow_mut()
+                    .push(BuildProofTrace::PublicationCompleted(publication));
+            },
+        );
+        let observed = trace.borrow().clone();
+        (result, observed)
+    }
+
     #[test]
     fn projection_build_trace_records_exact_attempt_and_completion_descriptors() {
         let first = candidate(1, 1, 1, 1);
@@ -6315,34 +6678,114 @@ pub(crate) mod tests {
         });
         assert!(target.is_some_and(|value| value > 0));
         let Some(target) = target else { return };
-        for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
-            let (result, blocked) =
-                observed_actor_sequence(&projection, &next, target - 1, stopped);
-            assert_eq!(result, Err(MeteredActorStateError::Work(stopped)));
-            assert!(!blocked.iter().any(
-                |entry| matches!(entry, ActorDecisionTrace::Operation(descriptor) if descriptor.site == site)
-            ));
-        }
-        for allowance in [target, target + 1] {
-            let (_, admitted) =
-                observed_actor_sequence(&projection, &next, allowance, Completion::BudgetExhausted);
-            assert!(admitted.iter().any(
-                |entry| matches!(entry, ActorDecisionTrace::Operation(descriptor) if descriptor.site == site)
-            ));
-        }
+
+        let descriptor = site.descriptor();
+        let (budget_result, budget_trace) =
+            observed_actor_sequence(&projection, &next, target - 1, Completion::BudgetExhausted);
+        let n_minus_one_result = match budget_result {
+            Err(MeteredActorStateError::Work(Completion::BudgetExhausted)) => "BudgetExhausted",
+            _ => "mismatch",
+        };
+        let counts = exact_proof_counts(
+            &actor_proof_events(&budget_trace),
+            descriptor.site_id,
+            descriptor.counter,
+        );
+        assert!(counts.is_some());
+        let Some((
+            charge_attempt_count,
+            target_count,
+            completion_observation_count,
+            publication_count,
+        )) = counts
+        else {
+            return;
+        };
+
+        let (cancelled, cancelled_trace) =
+            observed_actor_sequence(&projection, &next, target - 1, Completion::Cancelled);
+        let cancelled_result = match cancelled {
+            Err(MeteredActorStateError::Work(Completion::Cancelled)) => "Cancelled",
+            _ => "mismatch",
+        };
+        let cancelled_counts = exact_proof_counts(
+            &actor_proof_events(&cancelled_trace),
+            descriptor.site_id,
+            descriptor.counter,
+        );
+
+        let (_, n_trace) =
+            observed_actor_sequence(&projection, &next, target, Completion::BudgetExhausted);
+        let n_events = actor_proof_events(&n_trace);
+        let n_target_count = n_events
+            .iter()
+            .filter(|entry| matches!(entry, ExactProofEvent::TargetCompleted(observed) if *observed == descriptor.site_id))
+            .count();
+        let observed_completed_site = n_events.iter().find_map(|entry| match entry {
+            ExactProofEvent::TargetCompleted(observed) if *observed == descriptor.site_id => {
+                Some(*observed)
+            }
+            _ => None,
+        });
+        let (_, n_plus_one_trace) =
+            observed_actor_sequence(&projection, &next, target + 1, Completion::BudgetExhausted);
+        let n_plus_one_target_count = actor_proof_events(&n_plus_one_trace)
+            .iter()
+            .filter(|entry| matches!(entry, ExactProofEvent::TargetCompleted(observed) if *observed == descriptor.site_id))
+            .count();
+
         let injected = (site, "unexpected");
         let (result, blocked) = observed_actor_sequence(&projection, &next, target - 1, &injected);
-        assert!(matches!(
+        let unexpected_error_exact = matches!(
             result,
             Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
-        ));
-        assert!(!blocked.iter().any(
-            |entry| matches!(entry, ActorDecisionTrace::Operation(descriptor) if descriptor.site == site)
-        ));
-        let descriptor = site.descriptor();
-        println!(
-            "v17-proof site={} family={:?} counter={:?} n_minus_one=blocked n=observed n_plus_one=observed cancellation=exact unexpected_error=exact target_after_stop=0 observation_after_stop=0",
-            descriptor.site_id, descriptor.operation, descriptor.counter,
+        );
+        let unexpected_counts = exact_proof_counts(
+            &actor_proof_events(&blocked),
+            descriptor.site_id,
+            descriptor.counter,
+        );
+
+        assert_eq!(n_minus_one_result, "BudgetExhausted");
+        assert_eq!(cancelled_result, "Cancelled");
+        assert_eq!(
+            (
+                charge_attempt_count,
+                target_count,
+                completion_observation_count,
+                publication_count
+            ),
+            (1, 0, 0, 0)
+        );
+        assert!(cancelled_counts.is_some_and(|value| value == (1, 0, 0, 0)));
+        assert!(n_target_count >= 1);
+        assert!(n_plus_one_target_count >= 1);
+        assert!(unexpected_error_exact);
+        assert!(unexpected_counts.is_some_and(|value| value == (1, 0, 0, 0)));
+        let family = format!("{:?}", descriptor.operation);
+        emit_v18_exact_proof(
+            descriptor.site_id,
+            descriptor.phase,
+            &family,
+            descriptor.counter,
+            observed_completed_site.unwrap_or("missing"),
+            n_minus_one_result,
+            if n_target_count >= 1 {
+                "requested_site_completed"
+            } else {
+                "mismatch"
+            },
+            if n_plus_one_target_count >= 1 {
+                "requested_site_completed"
+            } else {
+                "mismatch"
+            },
+            cancelled_result,
+            unexpected_error_exact,
+            target_count,
+            completion_observation_count,
+            publication_count,
+            charge_attempt_count,
         );
     }
 
@@ -6369,39 +6812,123 @@ pub(crate) mod tests {
         });
         assert!(target.is_some_and(|value| value > 0));
         let Some(target) = target else { return };
-        for stopped in [Completion::BudgetExhausted, Completion::Cancelled] {
-            let (result, blocked) =
-                observed_causal_next(&projection, &candidate, target - 1, stopped);
-            assert!(matches!(result, Err(MeteredActorStateError::Work(value)) if value == stopped));
-            assert!(!blocked.iter().any(
-                |entry| matches!(entry, CausalNextTrace::Operation(descriptor) if descriptor.site == site)
-            ));
-        }
-        for allowance in [target, target + 1] {
-            let (_, admitted) = observed_causal_next(
-                &projection,
-                &candidate,
-                allowance,
-                Completion::BudgetExhausted,
-            );
-            assert!(admitted.iter().any(
-                |entry| matches!(entry, CausalNextTrace::Operation(descriptor) if descriptor.site == site)
-            ));
-        }
+
+        let descriptor = site.descriptor();
+        let (budget_result, budget_trace) = observed_causal_next(
+            &projection,
+            &candidate,
+            target - 1,
+            Completion::BudgetExhausted,
+        );
+        let n_minus_one_result = match budget_result {
+            Err(MeteredActorStateError::Work(Completion::BudgetExhausted)) => "BudgetExhausted",
+            _ => "mismatch",
+        };
+        let counts = exact_proof_counts(
+            &causal_proof_events(&budget_trace),
+            descriptor.site_id,
+            descriptor.counter,
+        );
+        assert!(counts.is_some());
+        let Some((
+            charge_attempt_count,
+            target_count,
+            completion_observation_count,
+            publication_count,
+        )) = counts
+        else {
+            return;
+        };
+
+        let (cancelled, cancelled_trace) =
+            observed_causal_next(&projection, &candidate, target - 1, Completion::Cancelled);
+        let cancelled_result = match cancelled {
+            Err(MeteredActorStateError::Work(Completion::Cancelled)) => "Cancelled",
+            _ => "mismatch",
+        };
+        let cancelled_counts = exact_proof_counts(
+            &causal_proof_events(&cancelled_trace),
+            descriptor.site_id,
+            descriptor.counter,
+        );
+
+        let (_, n_trace) =
+            observed_causal_next(&projection, &candidate, target, Completion::BudgetExhausted);
+        let n_events = causal_proof_events(&n_trace);
+        let n_target_count = n_events
+            .iter()
+            .filter(|entry| matches!(entry, ExactProofEvent::TargetCompleted(observed) if *observed == descriptor.site_id))
+            .count();
+        let observed_completed_site = n_events.iter().find_map(|entry| match entry {
+            ExactProofEvent::TargetCompleted(observed) if *observed == descriptor.site_id => {
+                Some(*observed)
+            }
+            _ => None,
+        });
+        let (_, n_plus_one_trace) = observed_causal_next(
+            &projection,
+            &candidate,
+            target + 1,
+            Completion::BudgetExhausted,
+        );
+        let n_plus_one_target_count = causal_proof_events(&n_plus_one_trace)
+            .iter()
+            .filter(|entry| matches!(entry, ExactProofEvent::TargetCompleted(observed) if *observed == descriptor.site_id))
+            .count();
+
         let injected = (site, "unexpected");
         let (result, blocked) =
             observed_causal_next(&projection, &candidate, target - 1, &injected);
-        assert!(matches!(
+        let unexpected_error_exact = matches!(
             result,
             Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
-        ));
-        assert!(!blocked.iter().any(
-            |entry| matches!(entry, CausalNextTrace::Operation(descriptor) if descriptor.site == site)
-        ));
-        let descriptor = site.descriptor();
-        println!(
-            "v17-proof site={} family={:?} counter={:?} n_minus_one=blocked n=observed n_plus_one=observed cancellation=exact unexpected_error=exact target_after_stop=0 observation_after_stop=0",
-            descriptor.site_id, descriptor.operation, descriptor.counter,
+        );
+        let unexpected_counts = exact_proof_counts(
+            &causal_proof_events(&blocked),
+            descriptor.site_id,
+            descriptor.counter,
+        );
+
+        assert_eq!(n_minus_one_result, "BudgetExhausted");
+        assert_eq!(cancelled_result, "Cancelled");
+        assert_eq!(
+            (
+                charge_attempt_count,
+                target_count,
+                completion_observation_count,
+                publication_count
+            ),
+            (1, 0, 0, 0)
+        );
+        assert!(cancelled_counts.is_some_and(|value| value == (1, 0, 0, 0)));
+        assert!(n_target_count >= 1);
+        assert!(n_plus_one_target_count >= 1);
+        assert!(unexpected_error_exact);
+        assert!(unexpected_counts.is_some_and(|value| value == (1, 0, 0, 0)));
+        let family = format!("{:?}", descriptor.operation);
+        emit_v18_exact_proof(
+            descriptor.site_id,
+            descriptor.phase,
+            &family,
+            descriptor.counter,
+            observed_completed_site.unwrap_or("missing"),
+            n_minus_one_result,
+            if n_target_count >= 1 {
+                "requested_site_completed"
+            } else {
+                "mismatch"
+            },
+            if n_plus_one_target_count >= 1 {
+                "requested_site_completed"
+            } else {
+                "mismatch"
+            },
+            cancelled_result,
+            unexpected_error_exact,
+            target_count,
+            completion_observation_count,
+            publication_count,
+            charge_attempt_count,
         );
     }
 

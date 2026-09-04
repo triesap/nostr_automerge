@@ -14,7 +14,7 @@
     "held": ["FINDING_080"]
   },
   "candidate_roles": {
-    "source_candidate": null,
+    "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
     "execution_base_candidate": "8673ff8546b9e9d57218c15a4b81890d82137184",
     "proof_artifact_commit": null,
     "mutation_artifact_commit": null,
@@ -39,13 +39,16 @@
     "implementation/runtime_ledger_v18.json",
     "scripts/validate_causal_projection_contracts_v18.py",
     "scripts/validate_causal_projection_boundary_v18.py",
+    "scripts/validate_causal_projection_inventory_v18.py",
     "scripts/validate_remediation_v18.py",
     "scripts/validate_spec.py",
     "spec/causal_projection_contracts_v18.json",
     "spec/remediation_findings_v18.json",
     "spec/remediation_v18_authority.json",
+    "reports/causal_projection_inventory_v18.json",
     "tools/nostr_automerge_xtask/src/validate.rs",
     "tools/validation/causal_projection_contracts_v18.schema.json",
+    "tools/validation/causal_projection_inventory_v18.schema.json",
     "tools/validation/runtime_ledger_v18.schema.json"
   ],
   "predecessors": [

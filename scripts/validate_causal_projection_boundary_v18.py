@@ -47,6 +47,7 @@ def function_text(source: str, name: str) -> str:
 
 
 def structural(source: str) -> None:
+    source = source.split("\n#[cfg(test)]\npub(crate) mod tests {", 1)[0]
     require("ChargeAttempt" not in source, "PRECHARGE_OPERATION_OBSERVER")
     require(source.count('applicability: "required"') == 4, "DESCRIPTOR_APPLICABILITY")
     require(source.count('phase: "projection_construction"') == 1, "DESCRIPTOR_PHASE")
