@@ -50,7 +50,7 @@ def validate(value: Any, schema: Any) -> None:
 
     descriptor = value["descriptor"]
     require(descriptor["fields"] == ["site_id", "phase", "family", "counter", "abstract_owner_class", "applicability"], "descriptor:fields")
-    require("projection_construction" in descriptor["phase_vocabulary"], "descriptor:phase")
+    require(descriptor["phase_vocabulary"] == ["actor_sequence", "causal_counter", "projection_construction", "frontier_comparison"], "descriptor:phase")
     require(descriptor["applicability"] == "required" and descriptor["counts"] == "source_derived", "descriptor:vocabulary")
 
     sealed = value["sealed_operation"]

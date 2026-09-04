@@ -128,7 +128,7 @@ macro_rules! actor_decision_sites {
                     },
                     counter: WorkCounter::GraphNode,
                     abstract_owner_class: "direct_operation",
-                    applicability: "public_rust",
+                    applicability: "required",
                 }
             }
         }
@@ -154,7 +154,6 @@ impl ActorDecisionDescriptor {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ActorDecisionObservationKind {
-    ChargeAttempt,
     TargetCompleted,
 }
 
@@ -173,16 +172,12 @@ actor_decision_sites! {
 
 fn perform_actor_decision_operation<T, E>(
     site: ActorDecisionSite,
-    charge: &mut impl FnMut(WorkCounter) -> Result<(), E>,
+    charge: &mut impl FnMut(ActorDecisionDescriptor) -> Result<(), E>,
     observed: &mut impl FnMut(ActorDecisionObservation),
     perform: impl FnOnce() -> T,
 ) -> Result<T, MeteredActorStateError<E>> {
     let descriptor = site.descriptor();
-    observed(ActorDecisionObservation {
-        descriptor,
-        kind: ActorDecisionObservationKind::ChargeAttempt,
-    });
-    charge(descriptor.counter).map_err(MeteredActorStateError::Work)?;
+    charge(descriptor).map_err(MeteredActorStateError::Work)?;
     let result = perform();
     observed(ActorDecisionObservation {
         descriptor,
@@ -234,7 +229,7 @@ macro_rules! causal_next_sites {
                     },
                     counter: WorkCounter::GraphNode,
                     abstract_owner_class: "direct_operation",
-                    applicability: "public_rust",
+                    applicability: "required",
                 }
             }
         }
@@ -260,7 +255,6 @@ impl CausalNextDescriptor {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum CausalNextObservationKind {
-    ChargeAttempt,
     TargetCompleted,
 }
 
@@ -278,16 +272,12 @@ causal_next_sites! {
 
 fn perform_causal_next_operation<T, E>(
     site: CausalNextSite,
-    charge: &mut impl FnMut(WorkCounter) -> Result<(), E>,
+    charge: &mut impl FnMut(CausalNextDescriptor) -> Result<(), E>,
     observed: &mut impl FnMut(CausalNextObservation),
     perform: impl FnOnce() -> T,
 ) -> Result<T, MeteredActorStateError<E>> {
     let descriptor = site.descriptor();
-    observed(CausalNextObservation {
-        descriptor,
-        kind: CausalNextObservationKind::ChargeAttempt,
-    });
-    charge(descriptor.counter).map_err(MeteredActorStateError::Work)?;
+    charge(descriptor).map_err(MeteredActorStateError::Work)?;
     let result = perform();
     observed(CausalNextObservation {
         descriptor,
@@ -333,7 +323,7 @@ macro_rules! frontier_comparison_sites {
                         $( Self::$site => WorkCounter::$counter, )+
                     },
                     abstract_owner_class: "direct_operation",
-                    applicability: "public_rust",
+                    applicability: "required",
                 }
             }
 
@@ -364,7 +354,6 @@ impl FrontierComparisonDescriptor {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum FrontierComparisonObservationKind {
-    ChargeAttempt,
     TargetCompleted,
 }
 
@@ -479,11 +468,11 @@ macro_rules! projection_build_sites {
                 ProjectionBuildDescriptor {
                     site: self,
                     site_id: self.id(),
-                    phase: "construction",
+                    phase: "projection_construction",
                     operation: self.operation(),
                     counter: self.counter(),
                     abstract_owner_class: "source_operation",
-                    applicability: "public_rust",
+                    applicability: "required",
                 }
             }
         }
@@ -509,7 +498,6 @@ impl ProjectionBuildDescriptor {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ProjectionBuildObservationKind {
-    ChargeAttempt,
     TargetCompleted,
 }
 
@@ -574,16 +562,12 @@ projection_build_sites! {
 
 fn perform_projection_build_operation<T, E>(
     site: ProjectionBuildSite,
-    charge: &mut impl FnMut(WorkCounter) -> Result<(), E>,
+    charge: &mut impl FnMut(ProjectionBuildDescriptor) -> Result<(), E>,
     observed: &mut impl FnMut(ProjectionBuildObservation),
     perform: impl FnOnce() -> T,
 ) -> Result<T, MeteredActorStateError<E>> {
     let descriptor = site.descriptor();
-    observed(ProjectionBuildObservation {
-        descriptor,
-        kind: ProjectionBuildObservationKind::ChargeAttempt,
-    });
-    charge(descriptor.counter).map_err(MeteredActorStateError::Work)?;
+    charge(descriptor).map_err(MeteredActorStateError::Work)?;
     let result = perform();
     observed(ProjectionBuildObservation {
         descriptor,
@@ -636,15 +620,19 @@ impl TrustedEpochProjection<'_> {
     pub(crate) fn actor_sequence_decision_metered<E>(
         &self,
         candidate: &ChangeCandidate,
-        charge: impl FnMut(WorkCounter) -> Result<(), E>,
+        mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
     ) -> Result<(), MeteredActorStateError<E>> {
-        self.actor_sequence_decision_metered_observed(candidate, charge, |_| {})
+        self.actor_sequence_decision_metered_observed(
+            candidate,
+            |descriptor| charge(descriptor.counter),
+            |_| {},
+        )
     }
 
     fn actor_sequence_decision_metered_observed<E>(
         &self,
         candidate: &ChangeCandidate,
-        mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
+        mut charge: impl FnMut(ActorDecisionDescriptor) -> Result<(), E>,
         mut observed: impl FnMut(ActorDecisionObservation),
     ) -> Result<(), MeteredActorStateError<E>> {
         let actor_state = perform_actor_decision_operation(
@@ -729,15 +717,19 @@ impl TrustedEpochProjection<'_> {
     pub(crate) fn causal_next_decision_metered<E>(
         &self,
         candidate: &ChangeCandidate,
-        charge: impl FnMut(WorkCounter) -> Result<(), E>,
+        mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
     ) -> Result<u64, MeteredActorStateError<E>> {
-        self.causal_next_decision_metered_observed(candidate, charge, |_| {})
+        self.causal_next_decision_metered_observed(
+            candidate,
+            |descriptor| charge(descriptor.counter),
+            |_| {},
+        )
     }
 
     fn causal_next_decision_metered_observed<E>(
         &self,
         candidate: &ChangeCandidate,
-        mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
+        mut charge: impl FnMut(CausalNextDescriptor) -> Result<(), E>,
         mut observed: impl FnMut(CausalNextObservation),
     ) -> Result<u64, MeteredActorStateError<E>> {
         let causal_next_op = perform_causal_next_operation(
@@ -800,16 +792,21 @@ impl TrustedEpochProjection<'_> {
         &self,
         candidate: &ChangeCandidate,
         base_frontier: &BTreeSet<ChangeHash>,
-        charge: impl FnMut(WorkCounter) -> Result<(), E>,
+        mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
     ) -> Result<(), MeteredActorStateError<E>> {
-        self.empty_frontier_decision_metered_observed(candidate, base_frontier, charge, |_| {})
+        self.empty_frontier_decision_metered_observed(
+            candidate,
+            base_frontier,
+            |descriptor| charge(descriptor.counter),
+            |_| {},
+        )
     }
 
     fn empty_frontier_decision_metered_observed<E>(
         &self,
         candidate: &ChangeCandidate,
         base_frontier: &BTreeSet<ChangeHash>,
-        mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
+        mut charge: impl FnMut(FrontierComparisonDescriptor) -> Result<(), E>,
         mut observed: impl FnMut(FrontierComparisonObservation),
     ) -> Result<(), MeteredActorStateError<E>> {
         let nonempty = metered_frontier_operation(
@@ -983,16 +980,12 @@ impl TrustedEpochProjection<'_> {
 
 fn metered_frontier_operation<E, T>(
     site: FrontierComparisonSite,
-    charge: &mut impl FnMut(WorkCounter) -> Result<(), E>,
+    charge: &mut impl FnMut(FrontierComparisonDescriptor) -> Result<(), E>,
     observed: &mut impl FnMut(FrontierComparisonObservation),
     target: impl FnOnce() -> T,
 ) -> Result<T, MeteredActorStateError<E>> {
     let descriptor = site.descriptor();
-    observed(FrontierComparisonObservation {
-        descriptor,
-        kind: FrontierComparisonObservationKind::ChargeAttempt,
-    });
-    charge(descriptor.counter).map_err(MeteredActorStateError::Work)?;
+    charge(descriptor).map_err(MeteredActorStateError::Work)?;
     let result = target();
     observed(FrontierComparisonObservation {
         descriptor,
@@ -1205,13 +1198,13 @@ fn build_trusted_epoch_projection<'a, E>(
     accepted_closure: &'a BTreeSet<ChangeHash>,
     changes: &'a BTreeMap<ChangeHash, ChangeCandidate>,
     source: &mut impl EpochProjectionSource<'a>,
-    charge: impl FnMut(WorkCounter) -> Result<(), E>,
+    mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
 ) -> Result<TrustedEpochProjection<'a>, MeteredActorStateError<E>> {
     build_trusted_epoch_projection_observed(
         accepted_closure,
         changes,
         source,
-        charge,
+        |descriptor| charge(descriptor.counter),
         |_| {},
         |_| {},
     )
@@ -1221,7 +1214,7 @@ fn build_trusted_epoch_projection_observed<'a, E>(
     accepted_closure: &'a BTreeSet<ChangeHash>,
     changes: &'a BTreeMap<ChangeHash, ChangeCandidate>,
     source: &mut impl EpochProjectionSource<'a>,
-    mut charge: impl FnMut(WorkCounter) -> Result<(), E>,
+    mut charge: impl FnMut(ProjectionBuildDescriptor) -> Result<(), E>,
     mut built: impl FnMut(ProjectionBuildObservation),
     mut published: impl FnMut(ProjectionPublicationOperation),
 ) -> Result<TrustedEpochProjection<'a>, MeteredActorStateError<E>> {
@@ -1718,8 +1711,10 @@ pub(crate) mod tests {
         ProjectionBuildObservationKind, ProjectionBuildOperation, ProjectionBuildSite,
         ProjectionPublicationOperation, TrustedEpochProjection, build_trusted_epoch_projection,
         build_trusted_epoch_projection_observed, initialize_actor_states,
-        initialize_actor_states_metered, perform_projection_build_operation,
-        reference_apply_empty_counter, reference_apply_nonempty_counter,
+        initialize_actor_states_metered, metered_frontier_operation,
+        perform_actor_decision_operation, perform_causal_next_operation,
+        perform_projection_build_operation, reference_apply_empty_counter,
+        reference_apply_nonempty_counter,
     };
     use crate::graph::change_candidate::ChangeCandidate;
     use crate::{ActorId, ChangeHash, Completion, DevicePublicKey, EventId, WorkCounter};
@@ -1902,16 +1897,22 @@ pub(crate) mod tests {
         assert_eq!(operations.len(), 20);
 
         let events = RefCell::new(Vec::new());
-        let mut charge = |counter| {
-            events.borrow_mut().push(("charge", Some(counter), None));
+        let mut charge = |descriptor: ProjectionBuildDescriptor| {
+            events
+                .borrow_mut()
+                .push(("attempt", Some(descriptor.counter), Some(descriptor.site)));
+            events
+                .borrow_mut()
+                .push(("charge", Some(descriptor.counter), None));
             Ok::<_, Completion>(())
         };
         let mut observed = |observation: ProjectionBuildObservation| {
+            assert_eq!(
+                observation.kind,
+                ProjectionBuildObservationKind::TargetCompleted
+            );
             events.borrow_mut().push((
-                match observation.kind {
-                    ProjectionBuildObservationKind::ChargeAttempt => "attempt",
-                    ProjectionBuildObservationKind::TargetCompleted => "observed",
-                },
+                "observed",
                 Some(observation.descriptor.counter),
                 Some(observation.descriptor.site),
             ));
@@ -1958,7 +1959,78 @@ pub(crate) mod tests {
             Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected)
         ));
         assert!(!performed.get());
-        assert_eq!(observations.get(), 1);
+        assert_eq!(observations.get(), 0);
+    }
+
+    #[test]
+    fn all_sealed_helpers_preserve_failed_charge_and_run_no_completion_callback() {
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        struct Injected;
+
+        let injected = Injected;
+        let targets = Cell::new(0_usize);
+        let completions = Cell::new(0_usize);
+
+        let actor = perform_actor_decision_operation(
+            ActorDecisionSite::ActorStateRead,
+            &mut |descriptor| {
+                assert_eq!(descriptor, ActorDecisionSite::ActorStateRead.descriptor());
+                Err(&injected)
+            },
+            &mut |_| completions.set(completions.get().saturating_add(1)),
+            || targets.set(targets.get().saturating_add(1)),
+        );
+        assert!(
+            matches!(actor, Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected))
+        );
+
+        let causal = perform_causal_next_operation(
+            CausalNextSite::StoredCounterRead,
+            &mut |descriptor| {
+                assert_eq!(descriptor, CausalNextSite::StoredCounterRead.descriptor());
+                Err(&injected)
+            },
+            &mut |_| completions.set(completions.get().saturating_add(1)),
+            || targets.set(targets.get().saturating_add(1)),
+        );
+        assert!(
+            matches!(causal, Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected))
+        );
+
+        let projection = perform_projection_build_operation(
+            ProjectionBuildSite::MemberCountRead,
+            &mut |descriptor| {
+                assert_eq!(
+                    descriptor,
+                    ProjectionBuildSite::MemberCountRead.descriptor()
+                );
+                Err(&injected)
+            },
+            &mut |_| completions.set(completions.get().saturating_add(1)),
+            || targets.set(targets.get().saturating_add(1)),
+        );
+        assert!(
+            matches!(projection, Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected))
+        );
+
+        let frontier = metered_frontier_operation(
+            FrontierComparisonSite::CandidateKindComparison,
+            &mut |descriptor| {
+                assert_eq!(
+                    descriptor,
+                    FrontierComparisonSite::CandidateKindComparison.descriptor()
+                );
+                Err(&injected)
+            },
+            &mut |_| completions.set(completions.get().saturating_add(1)),
+            || targets.set(targets.get().saturating_add(1)),
+        );
+        assert!(
+            matches!(frontier, Err(MeteredActorStateError::Work(error)) if core::ptr::eq(error, &injected))
+        );
+
+        assert_eq!(targets.get(), 0);
+        assert_eq!(completions.get(), 0);
     }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -2275,8 +2347,13 @@ pub(crate) mod tests {
         let successful = Cell::new(0_usize);
         let result = projection.actor_sequence_decision_metered_observed(
             candidate,
-            |counter| {
-                trace.borrow_mut().push(ActorDecisionTrace::Charge(counter));
+            |descriptor| {
+                trace
+                    .borrow_mut()
+                    .push(ActorDecisionTrace::Attempt(descriptor));
+                trace
+                    .borrow_mut()
+                    .push(ActorDecisionTrace::Charge(descriptor.counter));
                 if successful.get() == successful_limit {
                     Err(stopped)
                 } else {
@@ -2285,14 +2362,13 @@ pub(crate) mod tests {
                 }
             },
             |observation| {
-                trace.borrow_mut().push(match observation.kind {
-                    ActorDecisionObservationKind::ChargeAttempt => {
-                        ActorDecisionTrace::Attempt(observation.descriptor)
-                    }
-                    ActorDecisionObservationKind::TargetCompleted => {
-                        ActorDecisionTrace::Operation(observation.descriptor)
-                    }
-                });
+                assert_eq!(
+                    observation.kind,
+                    ActorDecisionObservationKind::TargetCompleted
+                );
+                trace
+                    .borrow_mut()
+                    .push(ActorDecisionTrace::Operation(observation.descriptor));
             },
         );
         let observed = trace.borrow().clone();
@@ -2309,8 +2385,13 @@ pub(crate) mod tests {
         let successful = Cell::new(0_usize);
         let result = projection.causal_next_decision_metered_observed(
             candidate,
-            |counter| {
-                trace.borrow_mut().push(CausalNextTrace::Charge(counter));
+            |descriptor| {
+                trace
+                    .borrow_mut()
+                    .push(CausalNextTrace::Attempt(descriptor));
+                trace
+                    .borrow_mut()
+                    .push(CausalNextTrace::Charge(descriptor.counter));
                 if successful.get() == successful_limit {
                     Err(stopped)
                 } else {
@@ -2319,14 +2400,10 @@ pub(crate) mod tests {
                 }
             },
             |observation| {
-                trace.borrow_mut().push(match observation.kind {
-                    CausalNextObservationKind::ChargeAttempt => {
-                        CausalNextTrace::Attempt(observation.descriptor)
-                    }
-                    CausalNextObservationKind::TargetCompleted => {
-                        CausalNextTrace::Operation(observation.descriptor)
-                    }
-                });
+                assert_eq!(observation.kind, CausalNextObservationKind::TargetCompleted);
+                trace
+                    .borrow_mut()
+                    .push(CausalNextTrace::Operation(observation.descriptor));
             },
         );
         let observed = trace.borrow().clone();
@@ -2345,8 +2422,11 @@ pub(crate) mod tests {
         let result = projection.empty_frontier_decision_metered_observed(
             candidate,
             base_frontier,
-            |counter| {
-                trace.borrow_mut().push(FrontierTrace::Charge(counter));
+            |descriptor| {
+                trace.borrow_mut().push(FrontierTrace::Attempt(descriptor));
+                trace
+                    .borrow_mut()
+                    .push(FrontierTrace::Charge(descriptor.counter));
                 if successful.get() == successful_limit {
                     Err(stopped)
                 } else {
@@ -2355,14 +2435,13 @@ pub(crate) mod tests {
                 }
             },
             |observation| {
-                trace.borrow_mut().push(match observation.kind {
-                    FrontierComparisonObservationKind::ChargeAttempt => {
-                        FrontierTrace::Attempt(observation.descriptor)
-                    }
-                    FrontierComparisonObservationKind::TargetCompleted => {
-                        FrontierTrace::Operation(observation.descriptor)
-                    }
-                });
+                assert_eq!(
+                    observation.kind,
+                    FrontierComparisonObservationKind::TargetCompleted
+                );
+                trace
+                    .borrow_mut()
+                    .push(FrontierTrace::Operation(observation.descriptor));
             },
         );
         let observed = trace.borrow().clone();
@@ -2385,8 +2464,10 @@ pub(crate) mod tests {
             accepted_closure,
             changes,
             &mut source,
-            |counter| {
-                trace.borrow_mut().push(PublicationTrace::Charge(counter));
+            |descriptor| {
+                trace
+                    .borrow_mut()
+                    .push(PublicationTrace::Charge(descriptor.counter));
                 if successful.get() == successful_limit {
                     Err(stopped)
                 } else {
@@ -4666,17 +4747,6 @@ pub(crate) mod tests {
     ) {
         let trace = Rc::new(RefCell::new(Vec::new()));
         let successful = Cell::new(0_usize);
-        let mut charge = |counter| {
-            trace
-                .borrow_mut()
-                .push(ProjectionWorkTrace::Charge(counter));
-            if successful.get() == successful_limit {
-                Err(stopped)
-            } else {
-                successful.set(successful.get().saturating_add(1));
-                Ok(())
-            }
-        };
         let mut source = WorkContractEpochProjectionSource {
             members: accepted_closure.iter(),
             accepted_closure,
@@ -4687,15 +4757,37 @@ pub(crate) mod tests {
             accepted_closure,
             changes,
             &mut source,
-            &mut charge,
+            |descriptor| {
+                trace
+                    .borrow_mut()
+                    .push(ProjectionWorkTrace::Charge(descriptor.counter));
+                if successful.get() == successful_limit {
+                    Err(stopped)
+                } else {
+                    successful.set(successful.get().saturating_add(1));
+                    Ok(())
+                }
+            },
             |_| {},
             |_| trace.borrow_mut().push(ProjectionWorkTrace::Target),
         );
         let result = match projection {
             Ok(projection) => projection
-                .candidate_metered_observed(query, &mut charge, |_| {
-                    trace.borrow_mut().push(ProjectionWorkTrace::Target)
-                })
+                .candidate_metered_observed(
+                    query,
+                    |counter| {
+                        trace
+                            .borrow_mut()
+                            .push(ProjectionWorkTrace::Charge(counter));
+                        if successful.get() == successful_limit {
+                            Err(stopped)
+                        } else {
+                            successful.set(successful.get().saturating_add(1));
+                            Ok(())
+                        }
+                    },
+                    |_| trace.borrow_mut().push(ProjectionWorkTrace::Target),
+                )
                 .map(|view| (projection, view)),
             Err(error) => Err(error),
         };
@@ -4895,8 +4987,11 @@ pub(crate) mod tests {
             accepted_closure,
             changes,
             &mut source,
-            |counter| {
-                trace.borrow_mut().push(BuildTrace::Charge(counter));
+            |descriptor| {
+                trace.borrow_mut().push(BuildTrace::Attempt(descriptor));
+                trace
+                    .borrow_mut()
+                    .push(BuildTrace::Charge(descriptor.counter));
                 if successful.get() == successful_limit {
                     Err(stopped)
                 } else {
@@ -4905,14 +5000,13 @@ pub(crate) mod tests {
                 }
             },
             |observation| {
-                trace.borrow_mut().push(match observation.kind {
-                    ProjectionBuildObservationKind::ChargeAttempt => {
-                        BuildTrace::Attempt(observation.descriptor)
-                    }
-                    ProjectionBuildObservationKind::TargetCompleted => {
-                        BuildTrace::Operation(observation.descriptor)
-                    }
-                });
+                assert_eq!(
+                    observation.kind,
+                    ProjectionBuildObservationKind::TargetCompleted
+                );
+                trace
+                    .borrow_mut()
+                    .push(BuildTrace::Operation(observation.descriptor));
             },
             |_| {},
         );
@@ -4955,9 +5049,9 @@ pub(crate) mod tests {
             assert_eq!(*counter, attempt.counter);
             assert_eq!(attempt.site_id, attempt.site.id());
             assert_eq!(attempt.operation, attempt.site.operation());
-            assert_eq!(attempt.phase, "construction");
+            assert_eq!(attempt.phase, "projection_construction");
             assert_eq!(attempt.abstract_owner_class, "source_operation");
-            assert_eq!(attempt.applicability, "public_rust");
+            assert_eq!(attempt.applicability, "required");
         }
 
         let injected = Completion::Cancelled;

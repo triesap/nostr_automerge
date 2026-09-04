@@ -147,6 +147,7 @@ VALIDATORS = [
     "validate_causal_projection_clean_candidate_v17.py",
     "validate_remediation_v18.py",
     "validate_causal_projection_contracts_v18.py",
+    "validate_causal_projection_boundary_v18.py",
     "validate_causal_projection_operation_discovery_v15.py",
     "validate_causal_projection_discovery_v15.py",
     "validate_causal_projection_consumer_v15.py",

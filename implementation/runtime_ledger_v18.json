@@ -3,14 +3,14 @@
   "status": "active",
   "authority": "spec/remediation_v18_authority.json",
   "cursor": {
-    "completed_rclds": [134],
-    "active_rcld": 135,
-    "next_rcld": 135,
+    "completed_rclds": [134, 135],
+    "active_rcld": 136,
+    "next_rcld": 136,
     "last_planned_rcld": 140,
-    "remaining_rcld_count": 6
+    "remaining_rcld_count": 5
   },
   "findings": {
-    "open": ["FINDING_123", "FINDING_124", "FINDING_125", "FINDING_126", "FINDING_127", "FINDING_128", "FINDING_129"],
+    "open": ["FINDING_124", "FINDING_125", "FINDING_126", "FINDING_128", "FINDING_129"],
     "held": ["FINDING_080"]
   },
   "candidate_roles": {
@@ -38,6 +38,7 @@
     "implementation/COMMIT_SEQUENCE.md",
     "implementation/runtime_ledger_v18.json",
     "scripts/validate_causal_projection_contracts_v18.py",
+    "scripts/validate_causal_projection_boundary_v18.py",
     "scripts/validate_remediation_v18.py",
     "scripts/validate_spec.py",
     "spec/causal_projection_contracts_v18.json",

@@ -3,7 +3,7 @@
   "status": "frozen",
   "descriptor": {
     "fields": ["site_id", "phase", "family", "counter", "abstract_owner_class", "applicability"],
-    "phase_vocabulary": ["actor_validation", "causal_validation", "projection_construction", "frontier", "publication"],
+    "phase_vocabulary": ["actor_sequence", "causal_counter", "projection_construction", "frontier_comparison"],
     "applicability": "required",
     "counts": "source_derived"
   },

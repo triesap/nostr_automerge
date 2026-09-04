@@ -756,6 +756,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v18.md",
         "scripts/validate_remediation_v18.py",
         "scripts/validate_causal_projection_contracts_v18.py",
+        "scripts/validate_causal_projection_boundary_v18.py",
         "tools/validation/runtime_ledger_v18.schema.json",
         "tools/validation/causal_projection_contracts_v18.schema.json",
         "tools/nostr_automerge_conformance/src/main.rs",
