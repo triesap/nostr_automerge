@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.github.io/nostr-automerge/schemas/causal_projection_completion_v18.schema.json",
+  "title": "nostr_automerge causal projection completion v18",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "rcld", "candidate", "imports", "sequence", "counts", "findings", "verification", "self_review", "unverified_items", "deviations", "repository_status", "next_checkpoint", "holds", "release_claimed", "publication_claimed", "remote_actions", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": { "const": "nostr_automerge.causal_projection_completion.v18.v1" },
+    "status": { "const": "code_complete_publication_held" },
+    "rcld": { "const": 140 },
+    "candidate": { "$ref": "#/$defs/commit" },
+    "imports": { "$ref": "#/$defs/hashObject" },
+    "sequence": { "type": "object" },
+    "counts": { "type": "object" },
+    "findings": { "type": "object" },
+    "verification": { "type": "object" },
+    "self_review": { "const": "pass" },
+    "unverified_items": { "const": ["post_terminal_clean_descendant_double_gate"] },
+    "deviations": { "const": [] },
+    "repository_status": { "const": "clean_candidate_attestation_required_later" },
+    "next_checkpoint": { "const": "clean_candidate_attestation" },
+    "holds": { "type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true, "items": { "type": "string" } },
+    "release_claimed": { "const": false },
+    "publication_claimed": { "const": false },
+    "remote_actions": { "const": 0 },
+    "result": { "const": "pass" },
+    "result_identity_sha256": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "hashObject": { "type": "object", "minProperties": 1, "additionalProperties": { "$ref": "#/$defs/hash" } }
+  }
+}

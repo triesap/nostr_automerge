@@ -1,5 +1,7 @@
 # Nostr Automerge v18 sealed-boundary RCL program
 
+Status: code complete — `code_complete_publication_held`; clean descendant attestation follows the terminal checkpoint
+
 ## Authority and scope
 
 This append-only program continues the completed v17 history from public
@@ -122,3 +124,9 @@ run the narrowest credible focused checks plus its specified repository gate,
 and commit only when green. A failure blocks the next stage unless proven to be
 pre-existing and outside the active scope. Every stage records changed files,
 commands, results, deviations, residual risks, and next-stage safety.
+
+All seven RCLDs reached their local acceptance criteria in dependency order.
+Findings 123 through 129 are locally closed. `FINDING_080`, publication,
+release, deployment, and every other external hold remain held, with no remote
+action performed. The terminal decision is complete and must be followed by
+the separately committed clean-descendant attestation required above.

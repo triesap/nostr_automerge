@@ -1,0 +1,46 @@
+{
+  "schema": "nostr_automerge.causal_projection_final_decision.v18.v1",
+  "status": "code_complete_publication_held",
+  "rcld": 140,
+  "candidate": "7150c33febcd0227484af4d95b2decf1c83ef6f8",
+  "imports": {
+    "completion_sha256": "fabefed73f164db841dd587b239d374be20504c28d8c7da5aff9efa282a02e1a",
+    "authority_sha256": "c45b241c6a300ab3bb3a6120ba5fac3b53cb4a3589347ed4e1edda8b17923caa",
+    "finding_registry_sha256": "e7d39002597ae53c0cd1cd6a4247bd53903514682ccc709bdc11771faf51c76b",
+    "runtime_ledger_sha256": "1b8ad265fd9db38f809bec0b98869df44db6e1fc988a3bcbd65c6bb0e6b78e4f",
+    "combined_assurance_sha256": "44a6bdb0add32ff92dfd43d89339f5c6860ef4bc7e7e3497eb568aa36eed422a",
+    "finding_closure_sha256": "deb203c98556a3cc139652becd6d8d93291db47824625fc93f32fccccdc9d4b9"
+  },
+  "decision": {
+    "code_complete": true,
+    "local_findings_closed": true,
+    "rclds_complete": 7,
+    "public_checkpoint_count": 19,
+    "independent_checkpoint_count": 17,
+    "unfinished_rclds": [],
+    "clean_candidate_attestation": "required_later",
+    "candidate_lifecycle": "acyclic_later_attestation"
+  },
+  "gates": [
+    { "name": "authority", "result": "pass" },
+    { "name": "operation_contract", "result": "pass" },
+    { "name": "source_inventory", "result": "pass" },
+    { "name": "trace_proofs", "result": "pass" },
+    { "name": "structural_identity", "result": "pass" },
+    { "name": "site_local_mutations", "result": "pass" },
+    { "name": "final_inventory", "result": "pass" },
+    { "name": "evidence_graph", "result": "pass" },
+    { "name": "public_qualification", "result": "pass" },
+    { "name": "distribution_transition", "result": "pass" },
+    { "name": "opaque_assurance", "result": "pass" },
+    { "name": "combined_assurance", "result": "pass" },
+    { "name": "finding_closure", "result": "pass" },
+    { "name": "complete_specification", "result": "pass" }
+  ],
+  "holds": ["external_assurance", "event_kind_allocation", "nip_submission", "production_qualification", "publication", "release", "remote_mutation"],
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "f42e3457b34e7dca2ed313fa83711823c0731731c016c3fab0f02b3cb4e239e5"
+}

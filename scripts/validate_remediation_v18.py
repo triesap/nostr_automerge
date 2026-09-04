@@ -20,7 +20,7 @@ FINAL_INVENTORY_CANDIDATE = "c90d61810bcf378eee9e6577428082a31aec1b5c"
 EVIDENCE_GRAPH_CANDIDATE = "6b73727be798e152aa3afbb98bf3683c7e52a393"
 TREE = "f6b6d044553d06e71d7c48f4a30d41922e99a2f0"
 ACTOR_SHA = "4d825c9126b609bdb1c7ebc8580a901bc3e78bbd373086e5c0e0c2d945cbc3d6"
-PLAN_SHA = "3c85951fa8af77f4faa5cfaae5b8dbecce959a8ecd1a695f9458a6744ae79d68"
+PLAN_SHA = "68be685d23c90641f58a3f3fa50c7b836b2febd2bf156fb9bb2c45958079b596"
 HOLDS = [
     "external_assurance", "event_kind_allocation", "nip_submission",
     "production_qualification", "publication", "release", "remote_mutation",
@@ -173,7 +173,7 @@ def self_test(values: list[Any]) -> int:
         lambda a, _f, _l, _s: a["approved_decisions"].update(proof_count_scope="whole_trace"),
         lambda a, _f, _l, _s: a["approved_decisions"].update(site_local_property="CHARGE_AFTER_OPERATION"),
         lambda _a, f, _l, _s: f["findings"][-1].update(status="closed"),
-        lambda _a, _f, l, _s: l["cursor"].update(remaining_rcld_count=0),
+        lambda _a, _f, l, _s: l["cursor"].update(remaining_rcld_count=1),
         lambda _a, _f, l, _s: l["candidate_roles"].pop("clean_attestation_commit"),
         lambda _a, _f, _l, s: s.update(additionalProperties=True),
     ]

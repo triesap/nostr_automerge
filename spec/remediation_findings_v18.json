@@ -1,6 +1,6 @@
 {
   "schema": "nostr_automerge.remediation_findings.v18.v1",
-  "status": "active",
+  "status": "code_complete_publication_held",
   "findings": [
     {"id":"FINDING_123","severity":"high","class":"runtime_boundary","title":"Completion observers execute before charge approval","requirements":["NCRDT-RESOURCE-016","NCRDT-RESOURCE-017"],"owner":"public_rust","closure":"Make descriptor-aware charge the sole pre-approval callback and observe only after target completion.","status":"closed"},
     {"id":"FINDING_124","severity":"high","class":"exact_proof","title":"Exact proofs certify fixed labels instead of captured behavior","requirements":["NCRDT-EVIDENCE-007"],"owner":"public_assurance","closure":"Derive every exact result and scoped count from structured production-path traces.","status":"closed"},
@@ -8,7 +8,7 @@
     {"id":"FINDING_126","severity":"high","class":"mutation_provenance","title":"Mutation transcripts omit the property-producing subprocess","requirements":["NCRDT-EVIDENCE-007"],"owner":"public_assurance","closure":"Record replayable compile and isolated-root property commands and exact outcomes separately.","status":"closed"},
     {"id":"FINDING_127","severity":"medium","class":"descriptor_vocabulary","title":"Rust descriptor phase and applicability disagree with evidence vocabulary","requirements":["NCRDT-EVIDENCE-007"],"owner":"public_rust","closure":"Normalize runtime descriptors to projection_construction and required.","status":"closed"},
     {"id":"FINDING_128","severity":"high","class":"trace_scope","title":"Whole-trace counts can attribute earlier work to a later requested site","requirements":["NCRDT-EVIDENCE-007"],"owner":"public_assurance","closure":"Scope counts to the requested site or the suffix beginning at its failed charge attempt.","status":"closed"},
-    {"id":"FINDING_129","severity":"high","class":"independent_assurance","title":"Independent exact proofs probe a shared helper instead of production paths","requirements":["NCRDT-EVIDENCE-007"],"owner":"independent","closure":"Instrument actual production execution and classify helper probes as supplemental only.","status":"open"},
+    {"id":"FINDING_129","severity":"high","class":"independent_assurance","title":"Independent exact proofs probe a shared helper instead of production paths","requirements":["NCRDT-EVIDENCE-007"],"owner":"independent","closure":"Instrument actual production execution and classify helper probes as supplemental only.","status":"closed"},
     {"id":"FINDING_080","severity":"hold","class":"external_assurance","title":"External assurance and publication authority remain held","requirements":[],"owner":"external","closure":"Preserve the hold; local work cannot close it.","status":"held"}
   ],
   "result": "pass"

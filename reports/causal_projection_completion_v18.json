@@ -1,0 +1,72 @@
+{
+  "schema": "nostr_automerge.causal_projection_completion.v18.v1",
+  "status": "code_complete_publication_held",
+  "rcld": 140,
+  "candidate": "7150c33febcd0227484af4d95b2decf1c83ef6f8",
+  "imports": {
+    "plan_sha256": "68be685d23c90641f58a3f3fa50c7b836b2febd2bf156fb9bb2c45958079b596",
+    "authority_sha256": "c45b241c6a300ab3bb3a6120ba5fac3b53cb4a3589347ed4e1edda8b17923caa",
+    "finding_registry_sha256": "e7d39002597ae53c0cd1cd6a4247bd53903514682ccc709bdc11771faf51c76b",
+    "runtime_ledger_sha256": "1b8ad265fd9db38f809bec0b98869df44db6e1fc988a3bcbd65c6bb0e6b78e4f",
+    "combined_assurance_sha256": "44a6bdb0add32ff92dfd43d89339f5c6860ef4bc7e7e3497eb568aa36eed422a",
+    "finding_closure_sha256": "deb203c98556a3cc139652becd6d8d93291db47824625fc93f32fccccdc9d4b9",
+    "opaque_import_sha256": "7c65ac14d8fa4a1ef72c5a26ddac50c0b6629d0839be2ca6e459348143f6d8b6",
+    "public_qualification_sha256": "943622deb233fe3f597f71b159b58f23349bd5c4b3f156c7306c7cf8282f3bcc",
+    "distribution_transition_sha256": "1408b71c6e7ee31a99e6e0436c4ed290467675a67f517bc0be082b10149a5153",
+    "evidence_graph_sha256": "48a82ead9b1baf911638651191e2592df3f6ce259077ffc77642c39d8636a9e5"
+  },
+  "sequence": {
+    "rclds": [134, 135, 136, 137, 138, 139, 140],
+    "public_checkpoints": 19,
+    "independent_checkpoints": 17,
+    "unfinished_rclds": [],
+    "public_first_candidate": "7156f309ef0ffa5d0b73ba050a81ebf3046acf0d",
+    "public_terminal_base_candidate": "7150c33febcd0227484af4d95b2decf1c83ef6f8",
+    "independent_first_candidate": "ab98f134278ec62c6bafa9fb5f4019a990c97e11",
+    "independent_assurance_candidate": "5ecb65582555ac27c89bbed5f7d551b69b68b04a",
+    "candidate_lifecycle": "acyclic_later_attestation"
+  },
+  "counts": {
+    "public_operation_sites": 68,
+    "public_site_proofs": 68,
+    "independent_operation_sites": 142,
+    "independent_site_proofs": 142,
+    "public_mutations": 21,
+    "independent_mutations": 19,
+    "combined_mutations": 40,
+    "mutation_survivors": 0,
+    "scenarios": 204,
+    "signed_events": 771,
+    "delivery_orders": 8,
+    "processes_per_implementation": 2,
+    "transition_affected": 0
+  },
+  "findings": {
+    "closed": ["FINDING_123", "FINDING_124", "FINDING_125", "FINDING_126", "FINDING_127", "FINDING_128", "FINDING_129"],
+    "held": ["FINDING_080"],
+    "open": []
+  },
+  "verification": {
+    "qualification_status": "pass",
+    "qualification_gate_jobs": 9,
+    "qualification_processes": 2,
+    "post_terminal_standard_runs_required": 2,
+    "post_terminal_conformance_runs_required": 2,
+    "post_terminal_runs_completed": 0,
+    "canonical_process_bytes": "identical",
+    "deliberate_expectation_mismatch": "rejected",
+    "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+    "serialized_run_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344"
+  },
+  "self_review": "pass",
+  "unverified_items": ["post_terminal_clean_descendant_double_gate"],
+  "deviations": [],
+  "repository_status": "clean_candidate_attestation_required_later",
+  "next_checkpoint": "clean_candidate_attestation",
+  "holds": ["external_assurance", "event_kind_allocation", "nip_submission", "production_qualification", "publication", "release", "remote_mutation"],
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "d3127f957ec593af63cd6cfb7232053f341db756dade7ab2472e31d95a6751c8"
+}
