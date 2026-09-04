@@ -142,11 +142,15 @@ METERED_SOURCE_ANCHORS = (
     ),
     (
         "crates/nostr_automerge/src/graph/actor_state.rs",
-        "charge(WorkCounter::GraphNode).map_err(MeteredActorStateError::Work)?;\n        let Some(hash) = source.next_member()",
+        "NextMemberPull => (CanonicalSourcePull, GraphNode),",
     ),
     (
         "crates/nostr_automerge/src/graph/actor_state.rs",
-        "charge(WorkCounter::GraphEdge).map_err(MeteredActorStateError::Work)?;\n            let Some(dependency) = source.dependency(candidate, index)",
+        "DependencyPull => (DependencyLookup, GraphEdge),",
+    ),
+    (
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "charge(descriptor).map_err(MeteredActorStateError::Work)?;\n    let result = perform();\n    observed(ProjectionBuildObservation {",
     ),
     (
         "crates/nostr_automerge/src/graph/dependency_graph.rs",
@@ -215,9 +219,9 @@ PROJECTION_WORK_CONTRACT_TEST = (
     "projection_work_contract_preserves_first_stop_and_predecessor_output"
 )
 PROJECTION_WORK_CONTRACT_ANCHORS = (
-    "const TOTAL_CHARGES: usize = 41;",
-    "const GRAPH_NODES: usize = 32;",
-    "const GRAPH_EDGES: usize = 9;",
+    "const TOTAL_CHARGES: usize = 83;",
+    "const GRAPH_NODES: usize = 66;",
+    "const GRAPH_EDGES: usize = 17;",
     "for successful_limit in 0..TOTAL_CHARGES",
     "for stopped in [Completion::BudgetExhausted, Completion::Cancelled]",
     "successful_limit + 1",
@@ -340,12 +344,20 @@ def source_mutation_self_test() -> int:
         mutations.append(candidate)
     for anchor in PROJECTION_WORK_CONTRACT_ANCHORS:
         candidate = dict(sources)
-        before, separator, after = candidate[PROJECTION_WORK_CONTRACT_PATH].rpartition(
-            anchor
-        )
-        if not separator:
+        declaration = f"fn {PROJECTION_WORK_CONTRACT_TEST}()"
+        before, separator, body_and_after = candidate[
+            PROJECTION_WORK_CONTRACT_PATH
+        ].partition(declaration)
+        body, next_test, after = body_and_after.partition("\n    #[test]")
+        if not separator or not next_test or body.count(anchor) != 1:
             raise InventoryError(f"source_mutation_anchor:{anchor[:24]}")
-        candidate[PROJECTION_WORK_CONTRACT_PATH] = before + after
+        candidate[PROJECTION_WORK_CONTRACT_PATH] = (
+            before
+            + declaration
+            + body.replace(anchor, "", 1)
+            + next_test
+            + after
+        )
         mutations.append(candidate)
     for index, mutation in enumerate(mutations):
         try:
