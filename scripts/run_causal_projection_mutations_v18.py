@@ -308,7 +308,11 @@ def execute() -> tuple[str, list[dict[str, Any]], dict[str, Any]]:
     campaign = definitions(contract)
     require(not OUT.exists() or not any(OUT.iterdir()), "ARTIFACT_DIRECTORY_NOT_EMPTY")
     OUT.mkdir(parents=True, exist_ok=True)
-    temp_root = Path(tempfile.mkdtemp(prefix="nostr-automerge-v18-mutations-"))
+    temp_root = Path(
+        tempfile.mkdtemp(
+            prefix="nostr-automerge-v18-mutations-", dir=ROOT.parents[2]
+        )
+    )
     worktree = temp_root / "worktree"
     added = run(["git", "worktree", "add", "--detach", str(worktree), execution_base], ROOT)
     require(added.returncode == 0, "WORKTREE_ADD")
