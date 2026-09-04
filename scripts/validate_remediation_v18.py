@@ -16,6 +16,8 @@ BASE = "8673ff8546b9e9d57218c15a4b81890d82137184"
 SOURCE_CANDIDATE = "076221ad7f03e67d89ac4b2fcfc8f2586b97f182"
 PROOF_EXECUTION_BASE = "94348cf0f92c8eded557d67ec9c933e647d73f6b"
 MUTATION_EXECUTION_BASE = "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640"
+FINAL_INVENTORY_CANDIDATE = "c90d61810bcf378eee9e6577428082a31aec1b5c"
+EVIDENCE_GRAPH_CANDIDATE = "6b73727be798e152aa3afbb98bf3683c7e52a393"
 TREE = "f6b6d044553d06e71d7c48f4a30d41922e99a2f0"
 ACTOR_SHA = "4d825c9126b609bdb1c7ebc8580a901bc3e78bbd373086e5c0e0c2d945cbc3d6"
 PLAN_SHA = "3c85951fa8af77f4faa5cfaae5b8dbecce959a8ecd1a695f9458a6744ae79d68"
@@ -148,7 +150,8 @@ def validate(authority: Any, findings: Any, ledger: Any, schema: Any) -> None:
         require(roles["execution_base_candidate"] == MUTATION_EXECUTION_BASE, "ledger:execution_base")
         require(roles["proof_artifact_commit"] == "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444", "ledger:proof_artifact")
         require(roles["mutation_artifact_commit"] == "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7", "ledger:mutation_artifact")
-        require(roles["final_inventory_commit"] in {None, "c90d61810bcf378eee9e6577428082a31aec1b5c"}, "ledger:final_inventory")
+        require(roles["final_inventory_commit"] == FINAL_INVENTORY_CANDIDATE, "ledger:final_inventory")
+        require(roles["evidence_graph_commit"] in {None, EVIDENCE_GRAPH_CANDIDATE}, "ledger:evidence_graph")
     elif 136 in completed:
         require(roles["source_candidate"] == SOURCE_CANDIDATE, "ledger:source_candidate")
         require(roles["execution_base_candidate"] == PROOF_EXECUTION_BASE, "ledger:execution_base")

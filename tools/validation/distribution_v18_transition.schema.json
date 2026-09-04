@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.github.io/nostr-automerge/schemas/distribution_v18_transition.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "evidence_graph", "prior_transition", "selected_manifest", "selected_lock", "affected_fixture_ids", "counts", "identity", "derivation", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.distribution_v18_transition.v1"},
+    "status": {"const": "immutable_reuse"},
+    "evidence_graph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "candidate", "sha256"],
+      "properties": {
+        "path": {"const": "reports/causal_projection_evidence_graph_v18.json"},
+        "candidate": {"const": "6b73727be798e152aa3afbb98bf3683c7e52a393"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "prior_transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"const": "spec/distribution_v17_transition.json"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "selected_manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"const": "fixtures/distribution/manifest_v16.json"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "selected_lock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"const": "fixtures/distribution/manifest_v16.lock.json"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "affected_fixture_ids": {"const": []},
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scenarios", "signed_events", "delivery_orders", "processes_required", "affected"],
+      "properties": {
+        "scenarios": {"const": 204},
+        "signed_events": {"const": 771},
+        "delivery_orders": {"const": 8},
+        "processes_required": {"const": 2},
+        "affected": {"const": 0}
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["signed_events_byte_identical", "ample_reports_byte_identical", "canonical_output_sha256", "serialized_run_sha256"],
+      "properties": {
+        "signed_events_byte_identical": {"const": true},
+        "ample_reports_byte_identical": {"const": true},
+        "canonical_output_sha256": {"const": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415"},
+        "serialized_run_sha256": {"const": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344"}
+      }
+    },
+    "derivation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtime_contract_changed", "runtime_budget_change", "observer_position_only", "synthetic_version_rebinding", "new_manifest_created"],
+      "properties": {
+        "runtime_contract_changed": {"const": true},
+        "runtime_budget_change": {"const": false},
+        "observer_position_only": {"const": true},
+        "synthetic_version_rebinding": {"const": false},
+        "new_manifest_created": {"const": false}
+      }
+    },
+    "result": {"const": "pass"}
+  }
+}

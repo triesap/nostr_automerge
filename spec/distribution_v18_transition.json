@@ -1,0 +1,43 @@
+{
+  "schema": "nostr_automerge.distribution_v18_transition.v1",
+  "status": "immutable_reuse",
+  "evidence_graph": {
+    "path": "reports/causal_projection_evidence_graph_v18.json",
+    "candidate": "6b73727be798e152aa3afbb98bf3683c7e52a393",
+    "sha256": "48a82ead9b1baf911638651191e2592df3f6ce259077ffc77642c39d8636a9e5"
+  },
+  "prior_transition": {
+    "path": "spec/distribution_v17_transition.json",
+    "sha256": "9c4e3758d67ac76fa7f270ce92db676271eb822e2ff75141a617836fd92dd6d4"
+  },
+  "selected_manifest": {
+    "path": "fixtures/distribution/manifest_v16.json",
+    "sha256": "7890fe2532da48ca84e54f5b1b883a38fd1a60ff58bb2999a056025335a4b5d3"
+  },
+  "selected_lock": {
+    "path": "fixtures/distribution/manifest_v16.lock.json",
+    "sha256": "9e09dfd2de706d320c3bcd7cfe45b2f9a7560d5e9354809d2a41e5f52a2fba90"
+  },
+  "affected_fixture_ids": [],
+  "counts": {
+    "scenarios": 204,
+    "signed_events": 771,
+    "delivery_orders": 8,
+    "processes_required": 2,
+    "affected": 0
+  },
+  "identity": {
+    "signed_events_byte_identical": true,
+    "ample_reports_byte_identical": true,
+    "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+    "serialized_run_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344"
+  },
+  "derivation": {
+    "runtime_contract_changed": true,
+    "runtime_budget_change": false,
+    "observer_position_only": true,
+    "synthetic_version_rebinding": false,
+    "new_manifest_created": false
+  },
+  "result": "pass"
+}
