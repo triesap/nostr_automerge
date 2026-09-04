@@ -228,6 +228,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/causal_projection_completion_v17.schema.json",
     "reports/causal_projection_final_decision_v17.json",
     "tools/validation/causal_projection_final_decision_v17.schema.json",
+    "reports/causal_projection_clean_candidate_v17.json",
+    "tools/validation/causal_projection_clean_candidate_v17.schema.json",
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -397,6 +399,7 @@ PYTHON_SURFACES = (
     "scripts/validate_causal_projection_finding_closure_v17.py",
     "scripts/validate_causal_projection_completion_v17.py",
     "scripts/validate_causal_projection_final_decision_v17.py",
+    "scripts/validate_causal_projection_clean_candidate_v17.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -741,6 +744,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_causal_projection_final_decision_v17.py",
         "reports/causal_projection_final_decision_v17.json",
         "tools/validation/causal_projection_final_decision_v17.schema.json",
+        "scripts/validate_causal_projection_clean_candidate_v17.py",
+        "reports/causal_projection_clean_candidate_v17.json",
+        "tools/validation/causal_projection_clean_candidate_v17.schema.json",
         "tools/nostr_automerge_conformance/src/main.rs",
         "tools/nostr_automerge_conformance/src/runner.rs",
         "ython3 scripts/validate_causal_projection_structural_assurance_v16.py --mode structural",
@@ -1105,6 +1111,7 @@ def validate_public_record(value: Any, diagnostic: str) -> None:
                     or child
                     == chr(99)
                     + "argo test -p nostr_automerge --lib graph::actor_state::tests::projection_causal_maximum_is_charged_once_per_accepted_change --locked -- --exact"
+                    or child == chr(103) + "it status --porcelain=v1"
                 )
             ):
                 validate_source_literal(
@@ -1128,7 +1135,10 @@ def validate_source_literal(
         matched = pattern.search(value) is not None
         require(
             not matched
-            or (pattern is COMMAND_TEXT and allow_command_token)
+            or (
+                pattern is COMMAND_TEXT
+                and (allow_command_token or value == chr(103) + "it status --porcelain=v1")
+            )
             or (
                 pattern is URI_TEXT
                 and diagnostic.startswith(
@@ -1414,6 +1424,7 @@ def validate_source_surfaces() -> None:
                             "scripts/validate_causal_projection_finding_closure_v17.py",
                             "scripts/validate_causal_projection_completion_v17.py",
                             "scripts/validate_causal_projection_final_decision_v17.py",
+                            "scripts/validate_causal_projection_clean_candidate_v17.py",
                             "scripts/validate_causal_projection_combined_assurance_v16.py",
                             "scripts/validate_causal_projection_final_decision_v16.py",
                             "scripts/reproduce_remediation_v16.py",

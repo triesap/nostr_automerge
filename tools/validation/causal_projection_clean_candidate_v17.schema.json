@@ -1,0 +1,28 @@
+{
+  "title": "nostr_automerge causal projection clean candidate v17",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "checkpoint", "candidate", "candidate_tree", "parent_candidate", "observation", "terminal_artifacts", "lifecycle", "holds", "release_claimed", "publication_claimed", "remote_actions", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_clean_candidate.v17.v1"},
+    "status": {"const": "code_complete_publication_held"},
+    "checkpoint": {"const": "post_step_1513_clean_candidate_attestation"},
+    "candidate": {"const": "5599e7dc8a7658a3d7edbdd189599e69b57136f1"},
+    "candidate_tree": {"const": "6a798683347d9100345a9e0c0c323ec70e2f64eb"},
+    "parent_candidate": {"const": "07479bee4fc75ac809e75588ca2bb568b35b38e4"},
+    "observation": {"$ref": "#/$defs/observation"},
+    "terminal_artifacts": {"type": "array", "minItems": 7, "maxItems": 7, "items": {"$ref": "#/$defs/artifact"}},
+    "lifecycle": {"$ref": "#/$defs/lifecycle"},
+    "holds": {"type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true, "items": {"type": "string"}},
+    "release_claimed": {"const": false},
+    "publication_claimed": {"const": false},
+    "remote_actions": {"const": 0},
+    "result": {"const": "pass"},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "$defs": {
+    "observation": {"type": "object", "additionalProperties": false, "required": ["command", "output_sha256", "tracked_changes", "staged_changes", "untracked_paths", "terminal_commit_path_count", "result"], "properties": {"command": {"const": "git status --porcelain=v1"}, "output_sha256": {"const": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}, "tracked_changes": {"const": 0}, "staged_changes": {"const": 0}, "untracked_paths": {"const": 0}, "terminal_commit_path_count": {"const": 17}, "result": {"const": "clean"}}},
+    "artifact": {"type": "object", "additionalProperties": false, "required": ["path", "sha256"], "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}},
+    "lifecycle": {"type": "object", "additionalProperties": false, "required": ["policy", "terminal_artifact_commit", "attestation_relationship", "self_reference", "terminal_artifacts_mutated"], "properties": {"policy": {"const": "acyclic_later_attestation"}, "terminal_artifact_commit": {"const": "5599e7dc8a7658a3d7edbdd189599e69b57136f1"}, "attestation_relationship": {"const": "strict_descendant"}, "self_reference": {"const": false}, "terminal_artifacts_mutated": {"const": false}}}
+  }
+}

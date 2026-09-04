@@ -1,0 +1,68 @@
+{
+  "schema": "nostr_automerge.causal_projection_clean_candidate.v17.v1",
+  "status": "code_complete_publication_held",
+  "checkpoint": "post_step_1513_clean_candidate_attestation",
+  "candidate": "5599e7dc8a7658a3d7edbdd189599e69b57136f1",
+  "candidate_tree": "6a798683347d9100345a9e0c0c323ec70e2f64eb",
+  "parent_candidate": "07479bee4fc75ac809e75588ca2bb568b35b38e4",
+  "observation": {
+    "command": "git status --porcelain=v1",
+    "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tracked_changes": 0,
+    "staged_changes": 0,
+    "untracked_paths": 0,
+    "terminal_commit_path_count": 17,
+    "result": "clean"
+  },
+  "terminal_artifacts": [
+    {
+      "path": "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v17.md",
+      "sha256": "a5be949823024fc454a697982f1b363a12560ff2c76abd6841d1587f9e83d5bb"
+    },
+    {
+      "path": "spec/remediation_v17_authority.json",
+      "sha256": "bfe0e02ad8708b0869d76eb736dfde48a3894a63cfaac2a7fcbd054ce88807bd"
+    },
+    {
+      "path": "spec/remediation_findings_v17.json",
+      "sha256": "c00de5c6cfbf4ac768f77b3351d50bf4f0c283ff8ee3d665d36bafc8c06f3704"
+    },
+    {
+      "path": "implementation/runtime_ledger_v17.json",
+      "sha256": "9363f464367f5c930801dd3b168b436942de96eb0bb9498598fa6147ade8b16d"
+    },
+    {
+      "path": "reports/causal_projection_completion_v17.json",
+      "sha256": "1dc1801cc6cfe0d6e8de0c1d30238eb87edcc9f3093a561f17531d45c4aac8a4"
+    },
+    {
+      "path": "reports/causal_projection_final_decision_v17.json",
+      "sha256": "8711108bdecb857cd11962f414c48d2b77a51a2a1204c54c9cc958f5405efdb8"
+    },
+    {
+      "path": "reports/spec_baseline.txt",
+      "sha256": "a5b9974f496cc3f8a34640e6d644c60f6a16c169c4326d514c7c32b64963cd33"
+    }
+  ],
+  "lifecycle": {
+    "policy": "acyclic_later_attestation",
+    "terminal_artifact_commit": "5599e7dc8a7658a3d7edbdd189599e69b57136f1",
+    "attestation_relationship": "strict_descendant",
+    "self_reference": false,
+    "terminal_artifacts_mutated": false
+  },
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "remote_mutation"
+  ],
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "18c030a06d319f29ebdef0528d5d59c79ec59ac53f87dc273558ea260dea71fa"
+}
