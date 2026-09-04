@@ -16,8 +16,8 @@
   "candidate_roles": {
     "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
     "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
-    "proof_artifact_commit": null,
-    "mutation_artifact_commit": null,
+    "proof_artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+    "mutation_artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
     "final_inventory_commit": null,
     "evidence_graph_commit": null,
     "terminal_artifact_commit": null,
@@ -43,6 +43,7 @@
     "scripts/validate_causal_projection_proofs_v18.py",
     "scripts/validate_causal_projection_properties_v18.py",
     "scripts/run_causal_projection_mutations_v18.py",
+    "scripts/validate_causal_projection_catalogs_v18.py",
     "scripts/validate_remediation_v18.py",
     "scripts/validate_spec.py",
     "spec/causal_projection_contracts_v18.json",
@@ -53,11 +54,13 @@
     "reports/evidence/v18/proofs",
     "reports/causal_projection_mutations_v18.json",
     "reports/evidence/v18/mutations",
+    "reports/causal_projection_catalogs_v18.json",
     "tools/nostr_automerge_xtask/src/validate.rs",
     "tools/validation/causal_projection_contracts_v18.schema.json",
     "tools/validation/causal_projection_inventory_v18.schema.json",
     "tools/validation/causal_projection_proofs_v18.schema.json",
     "tools/validation/causal_projection_mutations_v18.schema.json",
+    "tools/validation/causal_projection_catalogs_v18.schema.json",
     "tools/validation/runtime_ledger_v18.schema.json"
   ],
   "predecessors": [

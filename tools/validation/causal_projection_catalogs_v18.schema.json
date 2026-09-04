@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.github.io/nostr-automerge/schemas/causal_projection_catalogs_v18.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "status",
+    "authority",
+    "source_candidate",
+    "proof_artifact_commit",
+    "mutation_artifact_commit",
+    "proof_catalog",
+    "mutation_catalog",
+    "candidate_order",
+    "counts",
+    "binding",
+    "result_identity_sha256",
+    "result"
+  ],
+  "properties": {
+    "schema": {
+      "const": "nostr_automerge.causal_projection_catalogs.v18.v1"
+    },
+    "status": {
+      "const": "committed_later_binding"
+    },
+    "authority": {
+      "const": "spec/causal_projection_contracts_v18.json"
+    },
+    "source_candidate": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "proof_artifact_commit": {
+      "const": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444"
+    },
+    "mutation_artifact_commit": {
+      "const": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7"
+    },
+    "proof_catalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "report_path",
+        "report_sha256",
+        "artifact_commit",
+        "rows",
+        "result"
+      ],
+      "properties": {
+        "report_path": {
+          "type": "string"
+        },
+        "report_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "artifact_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "inventory_row_id",
+              "trace_artifact",
+              "trace_sha256",
+              "artifact_commit",
+              "result"
+            ]
+          }
+        },
+        "result": {
+          "const": "pass"
+        }
+      }
+    },
+    "mutation_catalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "report_path",
+        "report_sha256",
+        "artifact_commit",
+        "rows",
+        "result"
+      ],
+      "properties": {
+        "report_path": {
+          "type": "string"
+        },
+        "report_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "artifact_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "inventory_row_id",
+              "patch_artifact",
+              "patch_sha256",
+              "transcript_artifact",
+              "transcript_sha256",
+              "artifact_commit",
+              "result"
+            ]
+          }
+        },
+        "result": {
+          "const": "pass"
+        }
+      }
+    },
+    "candidate_order": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "counts": {
+      "type": "object"
+    },
+    "binding": {
+      "type": "object"
+    },
+    "result_identity_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "result": {
+      "const": "pass"
+    }
+  }
+}

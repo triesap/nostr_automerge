@@ -1,0 +1,797 @@
+{
+  "schema": "nostr_automerge.causal_projection_catalogs.v18.v1",
+  "status": "committed_later_binding",
+  "authority": "spec/causal_projection_contracts_v18.json",
+  "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+  "proof_artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+  "mutation_artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+  "proof_catalog": {
+    "report_path": "reports/causal_projection_proofs_v18.json",
+    "report_sha256": "f01fa208d9d7fe9df522ec2d62d4c189861e713ff070fb8e6b973944d5582946",
+    "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+    "rows": [
+      {
+        "id": "catalog.proof.rust.projection_construction.member_count_read",
+        "inventory_row_id": "rust.projection_construction.member_count_read",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_member_count_read.json",
+        "trace_sha256": "7a62fb37fd7bdc13d0f65d7d83848e128b4ae9c1d0d3fc0d000ece4cb3950713",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.accepted_count_matches",
+        "inventory_row_id": "rust.projection_construction.accepted_count_matches",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_accepted_count_matches.json",
+        "trace_sha256": "c19fb5658ff13ae0b2b260f226a9f41a2806abc1288144a3ba1073f39c983d6b",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.next_member_pull",
+        "inventory_row_id": "rust.projection_construction.next_member_pull",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_next_member_pull.json",
+        "trace_sha256": "3adf583dc693f9e5dbf7d1c3cf3fac53d862451961dad1f7099620d1fabbc790",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.member_order_compare",
+        "inventory_row_id": "rust.projection_construction.member_order_compare",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_member_order_compare.json",
+        "trace_sha256": "5f7d93ed0655ce40c9af095e0912cc34a27ad9dbb12eff2c6ca052bc45dff116",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.accepted_member_lookup",
+        "inventory_row_id": "rust.projection_construction.accepted_member_lookup",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_accepted_member_lookup.json",
+        "trace_sha256": "62308b000c7accafe2ed636696a471cccbe3f8af4ee358c325df6aaf75358ea5",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.candidate_lookup",
+        "inventory_row_id": "rust.projection_construction.candidate_lookup",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_candidate_lookup.json",
+        "trace_sha256": "0924746a026a24130e207c1e242c8820dc65e1a5894e44fd0f67e3653dbffe9a",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.candidate_identity_compare",
+        "inventory_row_id": "rust.projection_construction.candidate_identity_compare",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_candidate_identity_compare.json",
+        "trace_sha256": "74dd1c85e98c667d709048d6b7abc781e18506eb19519022939aac4afa760b75",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.dependency_count_read",
+        "inventory_row_id": "rust.projection_construction.dependency_count_read",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_dependency_count_read.json",
+        "trace_sha256": "b1f98dd51a556e2c02a5f6d52b83a04455624827a3bf0cf7ce88303d2dfd5278",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.dependency_pull",
+        "inventory_row_id": "rust.projection_construction.dependency_pull",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_dependency_pull.json",
+        "trace_sha256": "1eba60bcab66d1d54b87ea3c7afcbdeb7c8644fa6a7e9fb3262695915f11a018",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.dependency_order_compare",
+        "inventory_row_id": "rust.projection_construction.dependency_order_compare",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_dependency_order_compare.json",
+        "trace_sha256": "9250013fd56cbd2b00274b4b34b5b5c1734a112ef7577c8fac638b8709b9c108",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.accepted_dependency_lookup",
+        "inventory_row_id": "rust.projection_construction.accepted_dependency_lookup",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_accepted_dependency_lookup.json",
+        "trace_sha256": "2d1270648b923f06797a42fe50a6faa86a9c76cef72864361f7fc9774303a9fe",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.candidate_dependency_insert",
+        "inventory_row_id": "rust.projection_construction.candidate_dependency_insert",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_candidate_dependency_insert.json",
+        "trace_sha256": "0caee5f7ff5dcdc88c80c4fb8f9b4dbd961fef6af2ff51cc13b81c51747675a5",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.depended_on_insert",
+        "inventory_row_id": "rust.projection_construction.depended_on_insert",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_depended_on_insert.json",
+        "trace_sha256": "8ff186661c8005ed4146ba60273f2ca25c247b88aa0f430d80dffb8a4d330fd4",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.dependant_bucket_insert",
+        "inventory_row_id": "rust.projection_construction.dependant_bucket_insert",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_dependant_bucket_insert.json",
+        "trace_sha256": "b62e6d09914e730e751185c8787b2358cff5ad208fb79dab58e40acb00311d98",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.dependant_insert",
+        "inventory_row_id": "rust.projection_construction.dependant_insert",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_dependant_insert.json",
+        "trace_sha256": "b4ce7857de0fb3cd58f1539eece4e39b1eca4cd6c90020afbee09d5d7cb9a70b",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.candidate_ready_compare",
+        "inventory_row_id": "rust.projection_construction.candidate_ready_compare",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_candidate_ready_compare.json",
+        "trace_sha256": "b60e36fd6dd5a717739952f6572750fef735d6bfa407eebb3456f44d2dc30594",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.initial_ready_insert",
+        "inventory_row_id": "rust.projection_construction.initial_ready_insert",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_initial_ready_insert.json",
+        "trace_sha256": "3b7ab700e2f4b0e707a4da81760baa597703459f6b2bfac53e4a55e6f67338c2",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.remaining_dependencies_insert",
+        "inventory_row_id": "rust.projection_construction.remaining_dependencies_insert",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_remaining_dependencies_insert.json",
+        "trace_sha256": "b909eebccd64bc69727ba658d71ee829766bd95633dc50006bf94908e2534c68",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.dependencies_insert",
+        "inventory_row_id": "rust.projection_construction.dependencies_insert",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_dependencies_insert.json",
+        "trace_sha256": "86135f08d42d653589c558cbae9a15a3eb3d1b4458f3f8055460f08c460af5ac",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.ready_nonempty_compare",
+        "inventory_row_id": "rust.projection_construction.ready_nonempty_compare",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_ready_nonempty_compare.json",
+        "trace_sha256": "930344f0a402e697063e4ad4fe60a0e34b69f46f185c1b5dacf1f4615c1494be",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.ready_candidate_pull",
+        "inventory_row_id": "rust.projection_construction.ready_candidate_pull",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_ready_candidate_pull.json",
+        "trace_sha256": "2dac6c2baa5358aeae9e61459398397dca4d05db77d8fe248bf00a3afd9d9f04",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.ready_candidate_lookup",
+        "inventory_row_id": "rust.projection_construction.ready_candidate_lookup",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_ready_candidate_lookup.json",
+        "trace_sha256": "ef1bfb40acb7e8dc655380cfde2a54d59bdc5d1ad2c3d6d735c0637933cf407f",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.depended_on_lookup",
+        "inventory_row_id": "rust.projection_construction.depended_on_lookup",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_depended_on_lookup.json",
+        "trace_sha256": "1e18b8ba78762f73bfbf5afc0b279ca233cf9a092d1a36738870696b96c461fb",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.frontier_head_insert",
+        "inventory_row_id": "rust.projection_construction.frontier_head_insert",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_frontier_head_insert.json",
+        "trace_sha256": "b662b5d8886192f364ec91bff07cf622a5273b2734e6bc464d61cf5a228d19ec",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.actor_state_lookup",
+        "inventory_row_id": "rust.projection_construction.actor_state_lookup",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_actor_state_lookup.json",
+        "trace_sha256": "af35d0bf9216574e8cda7c445a1140b1e94f3ad3d4c5ac55b5e2d412ea3a8157",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.expected_sequence_advance",
+        "inventory_row_id": "rust.projection_construction.expected_sequence_advance",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_expected_sequence_advance.json",
+        "trace_sha256": "6c3dbd2aa38cda01b600925e4d93a991b3e2dd7c76bda450d32bc02f498983af",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.sequence_precedes_compare",
+        "inventory_row_id": "rust.projection_construction.sequence_precedes_compare",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_sequence_precedes_compare.json",
+        "trace_sha256": "194b1949341539f2dc36a5f02e647e1c1224d6fe6d4756019629aaaec5cac6f7",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.sequence_matches_compare",
+        "inventory_row_id": "rust.projection_construction.sequence_matches_compare",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_sequence_matches_compare.json",
+        "trace_sha256": "9675adee5cda29cacc9154898f0ccef13b7178343639af3b6c0bee56b5e3fa8e",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.causal_next_lookup",
+        "inventory_row_id": "rust.projection_construction.causal_next_lookup",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_causal_next_lookup.json",
+        "trace_sha256": "38b287b1d6e1ffa980ec21cc8531aac1175877ce4cbed660b35c381d5e2fcefe",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.start_operation_compare",
+        "inventory_row_id": "rust.projection_construction.start_operation_compare",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_start_operation_compare.json",
+        "trace_sha256": "4201131e8e8b8922435be3721a539d97b7da21c62482e03beee2448a8ac23bc4",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.candidate_empty_compare",
+        "inventory_row_id": "rust.projection_construction.candidate_empty_compare",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_candidate_empty_compare.json",
+        "trace_sha256": "20fdafd159133cb35b4e5096b6f15f03bc111f05078e1a596ae17f87c92ba1f1",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.candidate_causal_advance",
+        "inventory_row_id": "rust.projection_construction.candidate_causal_advance",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_candidate_causal_advance.json",
+        "trace_sha256": "fd9757fa2ee323ff5f18dfc51220543bb8ad88769cd1862aa973e9d306cb6ff6",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.global_causal_maximum",
+        "inventory_row_id": "rust.projection_construction.global_causal_maximum",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_global_causal_maximum.json",
+        "trace_sha256": "fa4b330f5e2e258fe188d9a7cb2ac7db6ec931471221645035d5576f79cb8baf",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.actor_state_insert",
+        "inventory_row_id": "rust.projection_construction.actor_state_insert",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_actor_state_insert.json",
+        "trace_sha256": "896d091947216f704e0e5fc6a63669b37d168ec8e73cbfa5c380c9505cfdcb60",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.writer_contribution_insert",
+        "inventory_row_id": "rust.projection_construction.writer_contribution_insert",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_writer_contribution_insert.json",
+        "trace_sha256": "754e879f1dd7ca08a3d3c17a0f64c608c7ee176b25fc859abdcfbe8429c110e7",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.causal_counter_insert",
+        "inventory_row_id": "rust.projection_construction.causal_counter_insert",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_causal_counter_insert.json",
+        "trace_sha256": "14cbe57dbfe278abf232a2c4e859d474de42a4e2d4a0bfb62a13057d54e12d60",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.processed_count_advance",
+        "inventory_row_id": "rust.projection_construction.processed_count_advance",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_processed_count_advance.json",
+        "trace_sha256": "b8ed215f6b7403d69101c948db6786fa17a772f4584198bd38b6082570279d06",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.dependants_lookup",
+        "inventory_row_id": "rust.projection_construction.dependants_lookup",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_dependants_lookup.json",
+        "trace_sha256": "c4b1464e2bff4a00e73c7a6418ee37192e6f8ba4a1a42764e1c823e1690c7473",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.child_count_read",
+        "inventory_row_id": "rust.projection_construction.child_count_read",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_child_count_read.json",
+        "trace_sha256": "a8cee6d8fe8ef8efb71d68a3e3765b5547dbb72b8a19617479f02cc8b680c5af",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.child_pull",
+        "inventory_row_id": "rust.projection_construction.child_pull",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_child_pull.json",
+        "trace_sha256": "4d7bde9922c2caf79b0d70846070fbd7f44bc03554ba15b606358be1dcdb6d91",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.remaining_dependency_lookup",
+        "inventory_row_id": "rust.projection_construction.remaining_dependency_lookup",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_remaining_dependency_lookup.json",
+        "trace_sha256": "9032a08ec49c592ce7e2a4e05dd54ece6d5b2f3996d16296a128500b44924d31",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.remaining_dependency_decrement",
+        "inventory_row_id": "rust.projection_construction.remaining_dependency_decrement",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_remaining_dependency_decrement.json",
+        "trace_sha256": "6fe6856f87bd31a25bcdbb0e56485a312855813c2a679a95ae72fa1d7bcfa65d",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.remaining_dependency_write",
+        "inventory_row_id": "rust.projection_construction.remaining_dependency_write",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_remaining_dependency_write.json",
+        "trace_sha256": "f16ac790ab42eacc35e481fdffd0e855abe19c5397802cafb700116d093e7cef",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.prior_causal_lookup",
+        "inventory_row_id": "rust.projection_construction.prior_causal_lookup",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_prior_causal_lookup.json",
+        "trace_sha256": "efbe7ba33469ac893b8ce6d1e2b8aa76bd105536c61b9fdf34737a1de371d9c5",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.propagated_causal_maximum",
+        "inventory_row_id": "rust.projection_construction.propagated_causal_maximum",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_propagated_causal_maximum.json",
+        "trace_sha256": "b1539fa3d3105928b9b1ff4223db9946e81de9335e67df80a45965f17b718ab7",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.child_causal_insert",
+        "inventory_row_id": "rust.projection_construction.child_causal_insert",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_child_causal_insert.json",
+        "trace_sha256": "bc0e2c4aa56c3b3e6d9182ddb9aed271f7c4f42dc14311d3073b1dc0c5cfe015",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.child_ready_compare",
+        "inventory_row_id": "rust.projection_construction.child_ready_compare",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_child_ready_compare.json",
+        "trace_sha256": "5f7e5e6ad8ec2da6e74d549c2f2cb973aac5349e0c23413cbb077b658a4814db",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.ready_dependant_insert",
+        "inventory_row_id": "rust.projection_construction.ready_dependant_insert",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_ready_dependant_insert.json",
+        "trace_sha256": "1730323aa769ccda4b6bdaa70b918a46e67d6885244ae479131446728c151dc5",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.completion_compare",
+        "inventory_row_id": "rust.projection_construction.completion_compare",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_completion_compare.json",
+        "trace_sha256": "8dd1767dc892ef5084db2b14420231d76d92d7fd72208a1b33990770b061246b",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.projection_construction.projection_publish",
+        "inventory_row_id": "rust.projection_construction.projection_publish",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_projection_construction_projection_publish.json",
+        "trace_sha256": "68726d6bc1bc7a276a8cbb562b286a4900e9ccaa550a96b6a54a55fe431b0f39",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.actor_sequence.actor_state_read",
+        "inventory_row_id": "rust.actor_sequence.actor_state_read",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_actor_sequence_actor_state_read.json",
+        "trace_sha256": "0f63401db1424ed7a95a24634aaaa86194340a0ee261c3283ae6834c9ab949bb",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.actor_sequence.predecessor_candidate_read",
+        "inventory_row_id": "rust.actor_sequence.predecessor_candidate_read",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_actor_sequence_predecessor_candidate_read.json",
+        "trace_sha256": "a04549090e478e2a410b3671b737cd4d2145c6ea5dff42664031601a6f4d9eb4",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.actor_sequence.actor_identity_decision",
+        "inventory_row_id": "rust.actor_sequence.actor_identity_decision",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_actor_sequence_actor_identity_decision.json",
+        "trace_sha256": "1422f44f757b41da9937521eeffdf37ea38b501b55bf543da4da4de13ec0fd78",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.actor_sequence.sequence_relation_decision",
+        "inventory_row_id": "rust.actor_sequence.sequence_relation_decision",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_actor_sequence_sequence_relation_decision.json",
+        "trace_sha256": "2712b0a2f2f7378ca20c1a9591241d5f305e9adf03fe9cdbde41a19da5ac708e",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.causal_counter.stored_counter_read",
+        "inventory_row_id": "rust.causal_counter.stored_counter_read",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_causal_counter_stored_counter_read.json",
+        "trace_sha256": "8ae4bcd96190a466d080b19ed09b426f30c6a026116a4921b13f84fc78a86c5d",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.causal_counter.expected_start_comparison",
+        "inventory_row_id": "rust.causal_counter.expected_start_comparison",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_causal_counter_expected_start_comparison.json",
+        "trace_sha256": "79ed6d3458569811b4743c58459662dc70d4efd8fa39ad9fc92a2d926bfed65c",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.causal_counter.checked_advance",
+        "inventory_row_id": "rust.causal_counter.checked_advance",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_causal_counter_checked_advance.json",
+        "trace_sha256": "5c394cb4837f8055980eae0ecd855f922576647e0fab7874e6703e68ae9abe48",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.frontier_comparison.candidate_kind_comparison",
+        "inventory_row_id": "rust.frontier_comparison.candidate_kind_comparison",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_frontier_comparison_candidate_kind_comparison.json",
+        "trace_sha256": "16486b6e791776f753673126a96ca1087305886a378358ac9fe83912cbd4d5a9",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.frontier_comparison.candidate_count_read",
+        "inventory_row_id": "rust.frontier_comparison.candidate_count_read",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_frontier_comparison_candidate_count_read.json",
+        "trace_sha256": "f28098cf6cb4886c7a51fba16e75f1334795b879b5367c657fee3a606668c94c",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.frontier_comparison.projection_count_read",
+        "inventory_row_id": "rust.frontier_comparison.projection_count_read",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_frontier_comparison_projection_count_read.json",
+        "trace_sha256": "5a5baf99335e88a4080e624029a22d0cb604a37a0f091da6ad266310385ac2d8",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.frontier_comparison.base_count_read",
+        "inventory_row_id": "rust.frontier_comparison.base_count_read",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_frontier_comparison_base_count_read.json",
+        "trace_sha256": "b7276ecef0b2afc0e97e184cd92dba033add517b69ae8a8f65654cc20c9ab52f",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.frontier_comparison.candidate_pull",
+        "inventory_row_id": "rust.frontier_comparison.candidate_pull",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_frontier_comparison_candidate_pull.json",
+        "trace_sha256": "07797017d4c863d7e71c1fc8455e12f9bc9621c7fc167be77d0ccad09353e244",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.frontier_comparison.candidate_order_compare",
+        "inventory_row_id": "rust.frontier_comparison.candidate_order_compare",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_frontier_comparison_candidate_order_compare.json",
+        "trace_sha256": "90b178f4706092c1ae81cd5085d08a364d75205192f8d0650e9237c4abc91fa8",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.frontier_comparison.projection_pull",
+        "inventory_row_id": "rust.frontier_comparison.projection_pull",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_frontier_comparison_projection_pull.json",
+        "trace_sha256": "084d8f90c144832f3d5d4528554884fb1ac6565524b644a4aaa8f497c672ba71",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.frontier_comparison.base_pull",
+        "inventory_row_id": "rust.frontier_comparison.base_pull",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_frontier_comparison_base_pull.json",
+        "trace_sha256": "f68cf67b6a7ffa49e00c59a1273ab1774097ea1864b0c77cd27dd6e5063085e9",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.frontier_comparison.base_accepted_lookup",
+        "inventory_row_id": "rust.frontier_comparison.base_accepted_lookup",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_frontier_comparison_base_accepted_lookup.json",
+        "trace_sha256": "978b29bd9ac20210769b954e6557d3777b03b1d99c94313dfc1721a9ef5c6ad4",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.frontier_comparison.expected_source_compare",
+        "inventory_row_id": "rust.frontier_comparison.expected_source_compare",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_frontier_comparison_expected_source_compare.json",
+        "trace_sha256": "9ea90b10038ec87798df94c44955791288f73ffa3ba76ee601309b1574e298bd",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.proof.rust.frontier_comparison.frontier_equality_compare",
+        "inventory_row_id": "rust.frontier_comparison.frontier_equality_compare",
+        "trace_artifact": "reports/evidence/v18/proofs/rust_frontier_comparison_frontier_equality_compare.json",
+        "trace_sha256": "dd0a8d1a6018b6eb6e4b125c030f35cd7ca7ada6bac7cbad195e1f1eb746b35d",
+        "artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+        "result": "pass"
+      }
+    ],
+    "result": "pass"
+  },
+  "mutation_catalog": {
+    "report_path": "reports/causal_projection_mutations_v18.json",
+    "report_sha256": "da9cb0416b9008daa504b6626c78387a494a6e154571cefbae2cf00de33baf67",
+    "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+    "rows": [
+      {
+        "id": "catalog.direct.ActorStateRead.target_hoist_and_cache",
+        "inventory_row_id": "rust.actor_sequence.actor_state_read",
+        "patch_artifact": "reports/evidence/v18/mutations/direct_ActorStateRead_target_hoist_and_cache.patch.json",
+        "patch_sha256": "9764e42190fc1f0cf5204930b953efbedbeb37b0b5be8f0cab7aea7a7f799619",
+        "transcript_artifact": "reports/evidence/v18/mutations/direct_ActorStateRead_target_hoist_and_cache.transcript.json",
+        "transcript_sha256": "44fce19d0fd996b244069576d43af8ce4a452b9fa90439055a66ff458ca93d27",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.direct.PredecessorCandidateRead.target_hoist_and_cache",
+        "inventory_row_id": "rust.actor_sequence.predecessor_candidate_read",
+        "patch_artifact": "reports/evidence/v18/mutations/direct_PredecessorCandidateRead_target_hoist_and_cache.patch.json",
+        "patch_sha256": "10fb6c85ef9b4b46a7228869aa7733d07a4ff02507e43ce6a88807d6ae2d3ef4",
+        "transcript_artifact": "reports/evidence/v18/mutations/direct_PredecessorCandidateRead_target_hoist_and_cache.transcript.json",
+        "transcript_sha256": "d712610652746b4e98eb5def6eaf857323bd95598048428df346c85f3c012b0c",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.direct.ActorIdentityDecision.target_hoist_and_cache",
+        "inventory_row_id": "rust.actor_sequence.actor_identity_decision",
+        "patch_artifact": "reports/evidence/v18/mutations/direct_ActorIdentityDecision_target_hoist_and_cache.patch.json",
+        "patch_sha256": "a9ea30d54ac7d6501309172ed9570a526d8c2d4caafb330bb33ce6777df000bd",
+        "transcript_artifact": "reports/evidence/v18/mutations/direct_ActorIdentityDecision_target_hoist_and_cache.transcript.json",
+        "transcript_sha256": "7cd82625418df1a353bc2ebc1832884762278d21cb6f13a55e77eb2a2861407c",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.direct.SequenceRelationDecision.target_hoist_and_cache",
+        "inventory_row_id": "rust.actor_sequence.sequence_relation_decision",
+        "patch_artifact": "reports/evidence/v18/mutations/direct_SequenceRelationDecision_target_hoist_and_cache.patch.json",
+        "patch_sha256": "463831154ccc233bf5989d4de9cbb1c1f70bb0111948e8ee28c0d3437387ef71",
+        "transcript_artifact": "reports/evidence/v18/mutations/direct_SequenceRelationDecision_target_hoist_and_cache.transcript.json",
+        "transcript_sha256": "910628940c832307939742a2b69faa63f5755841c2047349823b8552a78917b9",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.direct.StoredCounterRead.target_hoist_and_cache",
+        "inventory_row_id": "rust.causal_counter.stored_counter_read",
+        "patch_artifact": "reports/evidence/v18/mutations/direct_StoredCounterRead_target_hoist_and_cache.patch.json",
+        "patch_sha256": "59314ec3e30fc05391ce9f2fc4bc06f3233aca25acde885e20ddae5d07aea4ed",
+        "transcript_artifact": "reports/evidence/v18/mutations/direct_StoredCounterRead_target_hoist_and_cache.transcript.json",
+        "transcript_sha256": "79024db6dbc20180761faa4ffbd908014481d050c492628e1f3a35bbc8462a3f",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.direct.ExpectedStartComparison.target_hoist_and_cache",
+        "inventory_row_id": "rust.causal_counter.expected_start_comparison",
+        "patch_artifact": "reports/evidence/v18/mutations/direct_ExpectedStartComparison_target_hoist_and_cache.patch.json",
+        "patch_sha256": "0903b5e33e561690bb1151445f8a126869a9edc279d1ee4b4dd254efda4d9074",
+        "transcript_artifact": "reports/evidence/v18/mutations/direct_ExpectedStartComparison_target_hoist_and_cache.transcript.json",
+        "transcript_sha256": "ac028d625f7450c9473d8572dc5d8f464c6b408b457e8406e56a63f925aa211b",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.direct.CheckedAdvance.target_hoist_and_cache",
+        "inventory_row_id": "rust.causal_counter.checked_advance",
+        "patch_artifact": "reports/evidence/v18/mutations/direct_CheckedAdvance_target_hoist_and_cache.patch.json",
+        "patch_sha256": "63149d6c0bcee6d69f43e808931bc43a7bac1590aed365e0de3e186bb95718a7",
+        "transcript_artifact": "reports/evidence/v18/mutations/direct_CheckedAdvance_target_hoist_and_cache.transcript.json",
+        "transcript_sha256": "c9178bdf0cb6d67906c0b5078fa4e21ea1d79a8bde06210c0f0101ad250a2190",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.helper.projection_construction.target_before_charge",
+        "inventory_row_id": "rust.projection_construction.member_count_read",
+        "patch_artifact": "reports/evidence/v18/mutations/helper_projection_construction_target_before_charge.patch.json",
+        "patch_sha256": "bef623a950a67357f7f256c776a531346e188edc0b443876be52ef330bf67b4e",
+        "transcript_artifact": "reports/evidence/v18/mutations/helper_projection_construction_target_before_charge.transcript.json",
+        "transcript_sha256": "f703201a44589dffb2ab4a27ff4c68dd015791e7f0fbdc2135b22722fd5be19f",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.helper.actor_sequence.target_before_charge",
+        "inventory_row_id": "rust.actor_sequence.actor_state_read",
+        "patch_artifact": "reports/evidence/v18/mutations/helper_actor_sequence_target_before_charge.patch.json",
+        "patch_sha256": "b4fd5eee66e1ebaeac3d8ebcca4c14c317ba4497386cfbd8d2832be61287f839",
+        "transcript_artifact": "reports/evidence/v18/mutations/helper_actor_sequence_target_before_charge.transcript.json",
+        "transcript_sha256": "e45a9b57dc310f990bcf6a77dac1f391e4e2ea4033a0ebcf4c5244b226ac409d",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.helper.causal_counter.target_before_charge",
+        "inventory_row_id": "rust.causal_counter.stored_counter_read",
+        "patch_artifact": "reports/evidence/v18/mutations/helper_causal_counter_target_before_charge.patch.json",
+        "patch_sha256": "55aa5688bc88841036626547b67648b578f0519e250306e542624bb160f93c75",
+        "transcript_artifact": "reports/evidence/v18/mutations/helper_causal_counter_target_before_charge.transcript.json",
+        "transcript_sha256": "5e9a6b1a16bce12ae8e8f1ed671583bffa61ac673c049e035f13609ff6b28463",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.helper.frontier_comparison.target_before_charge",
+        "inventory_row_id": "rust.frontier_comparison.candidate_kind_comparison",
+        "patch_artifact": "reports/evidence/v18/mutations/helper_frontier_comparison_target_before_charge.patch.json",
+        "patch_sha256": "49b9d4453fb33631585f1521a837c4cee3bbcfcb5c305b42efebec20471fdbbb",
+        "transcript_artifact": "reports/evidence/v18/mutations/helper_frontier_comparison_target_before_charge.transcript.json",
+        "transcript_sha256": "1b244c821a9303aaf10d0846c1cccc7fd00f85073c2a7f7b41d3d5105e05ab60",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.provenance.typed_stop_collapse",
+        "inventory_row_id": "rust.actor_sequence.actor_state_read",
+        "patch_artifact": "reports/evidence/v18/mutations/provenance_typed_stop_collapse.patch.json",
+        "patch_sha256": "ed4fcb8f62435f4f1ae23ac4efda4cd1a1c97599ede92634eb7e97a4b3c3d260",
+        "transcript_artifact": "reports/evidence/v18/mutations/provenance_typed_stop_collapse.transcript.json",
+        "transcript_sha256": "9322c83d6f1c3e9b08ccd86a927ca1dcd0de2eab57cec738cb83201d82481c1e",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.provenance.cancellation_collapse",
+        "inventory_row_id": "rust.actor_sequence.actor_state_read",
+        "patch_artifact": "reports/evidence/v18/mutations/provenance_cancellation_collapse.patch.json",
+        "patch_sha256": "fa23033f431c03ac7d75d821d43546407ac0b2da31b85ccd784deb0616b49bbd",
+        "transcript_artifact": "reports/evidence/v18/mutations/provenance_cancellation_collapse.transcript.json",
+        "transcript_sha256": "c1f380fc609974f5e8d5e35c50f66eb3dd0094eb4fa2d0ed53a0eabcb12e1e78",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.provenance.unexpected_error_replacement",
+        "inventory_row_id": "rust.actor_sequence.actor_state_read",
+        "patch_artifact": "reports/evidence/v18/mutations/provenance_unexpected_error_replacement.patch.json",
+        "patch_sha256": "33f6c74554f65a3a3205e8109b4ba6deb9c610cf19a089f07481ebdc2656febd",
+        "transcript_artifact": "reports/evidence/v18/mutations/provenance_unexpected_error_replacement.transcript.json",
+        "transcript_sha256": "0a1898ddb064efefb6cb3106f0f84f77f3e3c192d75ff7b877b9259037432e9c",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.provenance.target_after_failed_charge",
+        "inventory_row_id": "rust.actor_sequence.actor_state_read",
+        "patch_artifact": "reports/evidence/v18/mutations/provenance_target_after_failed_charge.patch.json",
+        "patch_sha256": "7fec54e04aaf87dfcbca9914f730ba894e6e333ece6612ba886c7e7ec99753cd",
+        "transcript_artifact": "reports/evidence/v18/mutations/provenance_target_after_failed_charge.transcript.json",
+        "transcript_sha256": "28686b2eef7fe13705503f6ef289932d432027a71c9ab76361dc420d22147f31",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.provenance.observation_before_target",
+        "inventory_row_id": "rust.actor_sequence.actor_state_read",
+        "patch_artifact": "reports/evidence/v18/mutations/provenance_observation_before_target.patch.json",
+        "patch_sha256": "797a2cac1972dddaaf984b86edc96d02eabf1d036520845810e97c91cc5ca14e",
+        "transcript_artifact": "reports/evidence/v18/mutations/provenance_observation_before_target.transcript.json",
+        "transcript_sha256": "5ab43bd9711c70ce00af027bc15e9e606d7eaaab0281a3e2fafa40ff50499345",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.provenance.completion_after_return",
+        "inventory_row_id": "rust.actor_sequence.actor_state_read",
+        "patch_artifact": "reports/evidence/v18/mutations/provenance_completion_after_return.patch.json",
+        "patch_sha256": "72371e079f678bf15e503bae1a67360d4b7714421dbe6a7a7b5ab0576eead68e",
+        "transcript_artifact": "reports/evidence/v18/mutations/provenance_completion_after_return.transcript.json",
+        "transcript_sha256": "fa4010709f62611653e6fc50d1c25f08031c827a834407a87230f7f232e05613",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.provenance.publication_before_charge",
+        "inventory_row_id": "rust.projection_construction.projection_publish",
+        "patch_artifact": "reports/evidence/v18/mutations/provenance_publication_before_charge.patch.json",
+        "patch_sha256": "a0e958615f206f40f93aeb6ba68ad4128a462903b6c1ac3c0643825316f32945",
+        "transcript_artifact": "reports/evidence/v18/mutations/provenance_publication_before_charge.transcript.json",
+        "transcript_sha256": "7280086e0c66f0c882f8c962c97959ef58a2bba19d7d0083c64d0ef5cdb295ae",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.provenance.site_identity_mismatch",
+        "inventory_row_id": "rust.projection_construction.member_count_read",
+        "patch_artifact": "reports/evidence/v18/mutations/provenance_site_identity_mismatch.patch.json",
+        "patch_sha256": "cb422a13e9704461115842815b35b0edacd7f7af579f258b2b8507b31cc633bc",
+        "transcript_artifact": "reports/evidence/v18/mutations/provenance_site_identity_mismatch.transcript.json",
+        "transcript_sha256": "3ac35e9ea09f2f15ab2f3ec89cc3f81188e2be32273f4dd368434f5da53f3b41",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.provenance.counter_identity_mismatch",
+        "inventory_row_id": "rust.projection_construction.member_count_read",
+        "patch_artifact": "reports/evidence/v18/mutations/provenance_counter_identity_mismatch.patch.json",
+        "patch_sha256": "27058b4f85aa7b03d268e589a404b03fbe396ef26dfd7969c9ee70eed1881eda",
+        "transcript_artifact": "reports/evidence/v18/mutations/provenance_counter_identity_mismatch.transcript.json",
+        "transcript_sha256": "94a89fbf3ed906b7907ac29b410eb1e5864a896301caa0ec25eb8230f51465d5",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      },
+      {
+        "id": "catalog.provenance.alternate_consumer_bypass",
+        "inventory_row_id": "rust.projection_construction.member_count_read",
+        "patch_artifact": "reports/evidence/v18/mutations/provenance_alternate_consumer_bypass.patch.json",
+        "patch_sha256": "7206903469ddd308537667eba7c7f96f9b035b80e79337437404c205962e4536",
+        "transcript_artifact": "reports/evidence/v18/mutations/provenance_alternate_consumer_bypass.transcript.json",
+        "transcript_sha256": "ba8d70a8401e95c164e1bb9bdfa611b1fa961d70f8b836535a2ef3b4dd374900",
+        "artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+        "result": "pass"
+      }
+    ],
+    "result": "pass"
+  },
+  "candidate_order": [
+    "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+    "94348cf0f92c8eded557d67ec9c933e647d73f6b",
+    "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+    "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+    "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7"
+  ],
+  "counts": {
+    "proof_rows": 68,
+    "mutation_rows": 21,
+    "unbound_rows": 0
+  },
+  "binding": {
+    "mode": "later_catalog",
+    "raw_artifact_self_reference": false,
+    "catalog_self_reference": false
+  },
+  "result_identity_sha256": "3476836f84287fb47ff30da4bebdea9698845e32e7187d707ba9da184c49872b",
+  "result": "pass"
+}
