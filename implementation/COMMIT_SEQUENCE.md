@@ -8968,3 +8968,19 @@ by that plan. Historical v16 records remain immutable.
 29. `step_1511` imports opaque independent v17 parity.
 30. `step_1512` closes combined assurance and Findings 119 through 122.
 31. `step_1513` records the held terminal decision.
+
+## Causal-projection sealed-boundary closure v18
+
+The append-only v18 continuation is governed by
+`docs/execution/rcl/nostr_automerge_v1_multi_rcld_v18.md`. Its optimized
+sequence is RCLD 134 through RCLD 140. The independently owned compatibility
+stage is committed in its own history before the public opaque import.
+Historical v17 records remain immutable.
+
+1. RCLD 134 adopts authority, baseline reproductions, and corrected contracts.
+2. RCLD 135 repairs and tests the public Rust sealed boundary.
+3. RCLD 136 derives the inventory and structured exact proofs.
+4. RCLD 137 executes isolated site-local mutations with replayable transcripts.
+5. RCLD 138 binds committed evidence and completes public qualification.
+6. RCLD 139 completes independently owned compatibility evidence.
+7. RCLD 140 imports opaque evidence and records the held terminal state.

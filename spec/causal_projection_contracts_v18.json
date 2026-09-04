@@ -1,0 +1,64 @@
+{
+  "schema": "nostr_automerge.causal_projection_contracts.v18.v1",
+  "status": "frozen",
+  "descriptor": {
+    "fields": ["site_id", "phase", "family", "counter", "abstract_owner_class", "applicability"],
+    "phase_vocabulary": ["actor_validation", "causal_validation", "projection_construction", "frontier", "publication"],
+    "applicability": "required",
+    "counts": "source_derived"
+  },
+  "sealed_operation": {
+    "order": ["descriptor", "charge", "target", "completion_observation", "return"],
+    "sole_preapproval_callback": "descriptor_aware_charge",
+    "charge_attempt_telemetry": "inside_charge_invocation",
+    "target_after_failed_charge": 0,
+    "completion_observation_after_failed_charge": 0,
+    "publication_after_failed_charge": 0,
+    "target_execution_count_after_success": 1,
+    "completion_observation_count_after_success": 1,
+    "unexpected_error_identity": "exact"
+  },
+  "proof_record": {
+    "fields": ["proof_row_id", "inventory_row_id", "site_id", "phase", "family", "counter", "command", "requested_site", "observed_completed_site", "n_minus_one_result", "n_result", "n_plus_one_result", "cancelled_result", "unexpected_error_identity", "target_count_at_n_minus_one", "completion_observation_count_at_n_minus_one", "publication_count_at_n_minus_one", "charge_attempt_count_at_n_minus_one", "trace_artifact", "trace_sha256", "source_candidate", "execution_base_candidate", "result"],
+    "all_facts": "structured_trace_derived",
+    "count_scope": "requested_site_or_post_failed_charge_suffix",
+    "production_path_required": true,
+    "helper_probe_role": "supplemental"
+  },
+  "mutation": {
+    "mandatory_direct_sites": ["ActorStateRead", "PredecessorCandidateRead", "ActorIdentityDecision", "SequenceRelationDecision", "StoredCounterRead", "ExpectedStartComparison", "CheckedAdvance"],
+    "direct_kind": "site_local_target_hoist_and_cache",
+    "shared_helper_unchanged": true,
+    "site_local_property": "SITE_TARGET_BEFORE_CHARGE",
+    "shared_helper_role": "supplemental",
+    "execution": "isolated_root_subprocess",
+    "structural_identity_split": true,
+    "zero_survivors": true
+  },
+  "property_codes": ["TYPED_BUDGET_EXHAUSTED_IDENTITY", "TYPED_CANCELLED_IDENTITY", "UNEXPECTED_WORK_ERROR_IDENTITY", "CHARGE_AFTER_OPERATION", "OPERATION_OBSERVATION_BEFORE_TARGET", "SITE_TARGET_BEFORE_CHARGE", "TARGET_AFTER_STOP", "OBSERVATION_AFTER_STOP", "PUBLICATION_AFTER_STOP", "SITE_ID_MISMATCH", "COUNTER_MISMATCH", "ALTERNATE_CONSUMER_BYPASS"],
+  "transcript": {
+    "commands": ["compile_command", "property_command", "restoration_command"],
+    "outcomes": ["compile_exit_status", "compile_output_sha256", "property_exit_status", "property_output_sha256", "expected_property_code", "actual_property_code", "restoration_result"],
+    "execution_envelope": ["argv", "cwd", "environment"],
+    "artifact_commit_binding": "later_catalog"
+  },
+  "candidate_roles": {
+    "raw_artifact_fields": ["source_candidate", "execution_base_candidate"],
+    "catalog_fields": ["proof_artifact_commit", "mutation_artifact_commit"],
+    "terminal_fields": ["final_inventory_commit", "evidence_graph_commit", "terminal_artifact_commit", "clean_attestation_commit"],
+    "self_reference_allowed": false,
+    "ancestry": "strict_forward"
+  },
+  "distribution": {
+    "selection": "transition_record_pointer",
+    "zero_change": "reuse_existing_manifest",
+    "synthetic_rebinding_allowed": false
+  },
+  "independent": {
+    "owner_history": "separate",
+    "public_detail": "opaque_only",
+    "join_after_owner_commit": true
+  },
+  "remote_actions": 0,
+  "result": "pass"
+}

@@ -145,6 +145,8 @@ VALIDATORS = [
     "validate_causal_projection_completion_v17.py",
     "validate_causal_projection_final_decision_v17.py",
     "validate_causal_projection_clean_candidate_v17.py",
+    "validate_remediation_v18.py",
+    "validate_causal_projection_contracts_v18.py",
     "validate_causal_projection_operation_discovery_v15.py",
     "validate_causal_projection_discovery_v15.py",
     "validate_causal_projection_consumer_v15.py",
@@ -260,6 +262,28 @@ V17_HISTORICAL_VALIDATORS = {
     "validate_causal_projection_structural_assurance_v16.py",
     "validate_causal_projection_rust_assurance_v16.py",
 }
+V18_HISTORICAL_VALIDATORS = {
+    "validate_causal_projection_contracts_v17.py",
+    "validate_causal_projection_properties_v17.py",
+    "validate_causal_projection_inventory_v17.py",
+    "validate_causal_projection_proofs_v17.py",
+    "validate_causal_projection_structure_v17.py",
+    "validate_causal_projection_identity_v17.py",
+    "run_causal_projection_mutations_v17.py",
+    "run_causal_projection_provenance_mutations_v17.py",
+    "finalize_causal_projection_mutations_v17.py",
+    "validate_causal_projection_final_inventory_v17.py",
+    "validate_causal_projection_evidence_graph_v17.py",
+    "run_causal_projection_public_assurance_v17.py",
+    "validate_distribution_v17_transition.py",
+    "validate_rust_conformance_v17.py",
+    "validate_opaque_causal_projection_v17.py",
+    "validate_causal_projection_combined_assurance_v17.py",
+    "validate_causal_projection_finding_closure_v17.py",
+    "validate_causal_projection_completion_v17.py",
+    "validate_causal_projection_final_decision_v17.py",
+    "validate_causal_projection_clean_candidate_v17.py",
+}
 
 
 def transition_stage() -> str:
@@ -275,6 +299,7 @@ def active_validators(stage: str) -> list[str]:
     v12_active = (ROOT / "spec/remediation_v12_authority.json").is_file()
     v13_active = (ROOT / "spec/remediation_v13_authority.json").is_file()
     v17_active = (ROOT / "spec/remediation_v17_authority.json").is_file()
+    v18_active = (ROOT / "spec/remediation_v18_authority.json").is_file()
     if (ROOT / "spec/resource_followup_authority_v10.json").is_file():
         return [
             validator
@@ -284,6 +309,7 @@ def active_validators(stage: str) -> list[str]:
             and (not v12_active or validator not in V12_HISTORICAL_VALIDATORS)
             and (not v13_active or validator not in V13_HISTORICAL_VALIDATORS)
             and (not v17_active or validator not in V17_HISTORICAL_VALIDATORS)
+            and (not v18_active or validator not in V18_HISTORICAL_VALIDATORS)
         ]
     if stage == "transition_installed":
         return VALIDATORS
@@ -316,6 +342,9 @@ def controlled_files() -> list[pathlib.Path]:
             "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v13.md",
             "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v15.md",
             "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v16.md",
+            "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v18.md",
+            "docs/execution/remediation_v18/baseline.md",
+            "docs/execution/remediation_v18/ledger.md",
             "docs/execution/rcl/nostr_automerge_v1_multi_rcld_v10.md",
             "implementation/runtime_ledger_v9.json",
             "implementation/runtime_ledger_v10.json",
@@ -498,6 +527,8 @@ def controlled_files() -> list[pathlib.Path]:
             "tools/validation/distribution_v16_transition.schema.json",
             "tools/validation/runtime_ledger_v15.schema.json",
             "tools/validation/runtime_ledger_v16.schema.json",
+            "tools/validation/runtime_ledger_v18.schema.json",
+            "tools/validation/causal_projection_contracts_v18.schema.json",
             "tools/validation/rust_conformance_v15.schema.json",
             "tools/validation/rust_conformance_v16.schema.json",
             "tools/validation/opaque_causal_projection_v15.schema.json",

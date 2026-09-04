@@ -308,6 +308,11 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "scripts/validate_causal_projection_final_decision_v16.py",
     ),
     ("remediation_v17", "scripts/validate_remediation_v17.py"),
+    ("remediation_v18", "scripts/validate_remediation_v18.py"),
+    (
+        "causal_projection_contracts_v18",
+        "scripts/validate_causal_projection_contracts_v18.py",
+    ),
     (
         "causal_projection_contracts_v17",
         "scripts/validate_causal_projection_contracts_v17.py",
@@ -486,6 +491,7 @@ pub(crate) fn validate_repository(root: &Path) -> Result<ValidationReport, Strin
         .is_file();
     let v12_active = root.join("spec/remediation_v12_authority.json").is_file();
     let v13_active = root.join("spec/remediation_v13_authority.json").is_file();
+    let v18_active = root.join("spec/remediation_v18_authority.json").is_file();
     for (name, script) in PYTHON_VALIDATORS {
         if followup_active && followup_historical_validator(name) {
             continue;
@@ -494,6 +500,9 @@ pub(crate) fn validate_repository(root: &Path) -> Result<ValidationReport, Strin
             continue;
         }
         if v13_active && v13_historical_validator(name) {
+            continue;
+        }
+        if v18_active && v18_historical_validator(name) {
             continue;
         }
         let output = Command::new("python3")
@@ -616,6 +625,32 @@ fn v13_historical_validator(name: &str) -> bool {
     )
 }
 
+fn v18_historical_validator(name: &str) -> bool {
+    matches!(
+        name,
+        "causal_projection_contracts_v17"
+            | "causal_projection_properties_v17"
+            | "causal_projection_inventory_v17"
+            | "causal_projection_proofs_v17"
+            | "causal_projection_structure_v17"
+            | "causal_projection_identity_v17"
+            | "causal_projection_mutations_v17"
+            | "causal_projection_provenance_mutations_v17"
+            | "causal_projection_mutation_coverage_v17"
+            | "causal_projection_final_inventory_v17"
+            | "causal_projection_evidence_graph_v17"
+            | "causal_projection_public_assurance_v17"
+            | "distribution_v17_transition"
+            | "rust_conformance_v17"
+            | "opaque_causal_projection_v17"
+            | "causal_projection_combined_assurance_v17"
+            | "causal_projection_finding_closure_v17"
+            | "causal_projection_completion_v17"
+            | "causal_projection_final_decision_v17"
+            | "causal_projection_clean_candidate_v17"
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::Path;
@@ -657,6 +692,8 @@ mod tests {
         assert!(names.contains(&"remediation_v12"));
         assert!(names.contains(&"remediation_v13"));
         assert!(names.contains(&"remediation_v17"));
+        assert!(names.contains(&"remediation_v18"));
+        assert!(names.contains(&"causal_projection_contracts_v18"));
         assert!(names.contains(&"causal_projection_contracts_v17"));
         assert!(names.contains(&"causal_projection_properties_v17"));
         assert!(!names.contains(&"causal_projection_operation_inventory_v16"));

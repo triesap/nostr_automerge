@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "descriptor", "sealed_operation", "proof_record", "mutation", "property_codes", "transcript", "candidate_roles", "distribution", "independent", "remote_actions", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_contracts.v18.v1"},
+    "status": {"const": "frozen"},
+    "descriptor": {"type": "object"},
+    "sealed_operation": {"type": "object"},
+    "proof_record": {"type": "object"},
+    "mutation": {"type": "object"},
+    "property_codes": {"type": "array", "uniqueItems": true},
+    "transcript": {"type": "object"},
+    "candidate_roles": {"type": "object"},
+    "distribution": {"type": "object"},
+    "independent": {"type": "object"},
+    "remote_actions": {"const": 0},
+    "result": {"const": "pass"}
+  }
+}

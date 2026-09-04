@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "authority", "cursor", "findings", "candidate_roles", "independent", "active_checkpoint_scope", "predecessors"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.runtime_ledger.v18.v1"},
+    "status": {"enum": ["active", "code_complete_publication_held"]},
+    "authority": {"const": "spec/remediation_v18_authority.json"},
+    "cursor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["completed_rclds", "active_rcld", "next_rcld", "last_planned_rcld", "remaining_rcld_count"],
+      "properties": {
+        "completed_rclds": {"type": "array", "items": {"type": "integer", "minimum": 134, "maximum": 140}, "uniqueItems": true},
+        "active_rcld": {"type": "integer", "minimum": 134, "maximum": 140},
+        "next_rcld": {"type": ["integer", "null"]},
+        "last_planned_rcld": {"const": 140},
+        "remaining_rcld_count": {"type": "integer", "minimum": 0, "maximum": 7}
+      }
+    },
+    "findings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["open", "held"],
+      "properties": {
+        "open": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "held": {"const": ["FINDING_080"]}
+      }
+    },
+    "candidate_roles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_candidate", "execution_base_candidate", "proof_artifact_commit", "mutation_artifact_commit", "final_inventory_commit", "evidence_graph_commit", "terminal_artifact_commit", "clean_attestation_commit"]
+    },
+    "independent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rcld", "completed", "candidate", "public_detail", "target_scope_policy"]
+    },
+    "active_checkpoint_scope": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "predecessors": {"type": "array"}
+  }
+}
