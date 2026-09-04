@@ -1,0 +1,1326 @@
+{
+  "schema": "nostr_automerge.causal_projection_evidence_graph.v18.v1",
+  "status": "final_bidirectional",
+  "authority": "spec/causal_projection_contracts_v18.json",
+  "final_inventory": {
+    "path": "reports/causal_projection_final_inventory_v18.json",
+    "candidate": "c90d61810bcf378eee9e6577428082a31aec1b5c",
+    "sha256": "0bd686a2c743414a898669f88115a3e42063321142ae8093b2e9c97606e6c9e0"
+  },
+  "catalog": {
+    "path": "reports/causal_projection_catalogs_v18.json",
+    "candidate": "2f44ca464d2b39f01617e17fe7fa7f8624478c0c",
+    "sha256": "bbb263b45b7606637fe8a4f82775a6283d4fea3257a0087afc6b3a1b7572a9e1"
+  },
+  "candidate_order": [
+    "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+    "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+    "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+    "2f44ca464d2b39f01617e17fe7fa7f8624478c0c",
+    "c90d61810bcf378eee9e6577428082a31aec1b5c"
+  ],
+  "forward": [
+    {
+      "inventory_row_id": "rust.projection_construction.member_count_read",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.member_count_read",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge",
+        "catalog.provenance.site_identity_mismatch",
+        "catalog.provenance.counter_identity_mismatch",
+        "catalog.provenance.alternate_consumer_bypass"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.accepted_count_matches",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.accepted_count_matches",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.next_member_pull",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.next_member_pull",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.member_order_compare",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.member_order_compare",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.accepted_member_lookup",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.accepted_member_lookup",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.candidate_lookup",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.candidate_lookup",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.candidate_identity_compare",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.candidate_identity_compare",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.dependency_count_read",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.dependency_count_read",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.dependency_pull",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.dependency_pull",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.dependency_order_compare",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.dependency_order_compare",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.accepted_dependency_lookup",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.accepted_dependency_lookup",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.candidate_dependency_insert",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.candidate_dependency_insert",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.depended_on_insert",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.depended_on_insert",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.dependant_bucket_insert",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.dependant_bucket_insert",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.dependant_insert",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.dependant_insert",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.candidate_ready_compare",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.candidate_ready_compare",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.initial_ready_insert",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.initial_ready_insert",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.remaining_dependencies_insert",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.remaining_dependencies_insert",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.dependencies_insert",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.dependencies_insert",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.ready_nonempty_compare",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.ready_nonempty_compare",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.ready_candidate_pull",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.ready_candidate_pull",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.ready_candidate_lookup",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.ready_candidate_lookup",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.depended_on_lookup",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.depended_on_lookup",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.frontier_head_insert",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.frontier_head_insert",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.actor_state_lookup",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.actor_state_lookup",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.expected_sequence_advance",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.expected_sequence_advance",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.sequence_precedes_compare",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.sequence_precedes_compare",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.sequence_matches_compare",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.sequence_matches_compare",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.causal_next_lookup",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.causal_next_lookup",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.start_operation_compare",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.start_operation_compare",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.candidate_empty_compare",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.candidate_empty_compare",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.candidate_causal_advance",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.candidate_causal_advance",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.global_causal_maximum",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.global_causal_maximum",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.actor_state_insert",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.actor_state_insert",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.writer_contribution_insert",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.writer_contribution_insert",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.causal_counter_insert",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.causal_counter_insert",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.processed_count_advance",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.processed_count_advance",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.dependants_lookup",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.dependants_lookup",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.child_count_read",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.child_count_read",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.child_pull",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.child_pull",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.remaining_dependency_lookup",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.remaining_dependency_lookup",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.remaining_dependency_decrement",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.remaining_dependency_decrement",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.remaining_dependency_write",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.remaining_dependency_write",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.prior_causal_lookup",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.prior_causal_lookup",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.propagated_causal_maximum",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.propagated_causal_maximum",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.child_causal_insert",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.child_causal_insert",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.child_ready_compare",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.child_ready_compare",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.ready_dependant_insert",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.ready_dependant_insert",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.completion_compare",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.completion_compare",
+      "mutation_coverage_ids": [
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.projection_construction.projection_publish",
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.projection_publish",
+      "mutation_coverage_ids": [
+        "catalog.provenance.publication_before_charge",
+        "catalog.helper.projection_construction.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "proof_catalog_id": "catalog.proof.rust.actor_sequence.actor_state_read",
+      "mutation_coverage_ids": [
+        "catalog.direct.ActorStateRead.target_hoist_and_cache",
+        "catalog.helper.actor_sequence.target_before_charge",
+        "catalog.provenance.typed_stop_collapse",
+        "catalog.provenance.cancellation_collapse",
+        "catalog.provenance.unexpected_error_replacement",
+        "catalog.provenance.target_after_failed_charge",
+        "catalog.provenance.observation_before_target",
+        "catalog.provenance.completion_after_return"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.actor_sequence.predecessor_candidate_read",
+      "proof_catalog_id": "catalog.proof.rust.actor_sequence.predecessor_candidate_read",
+      "mutation_coverage_ids": [
+        "catalog.direct.PredecessorCandidateRead.target_hoist_and_cache",
+        "catalog.helper.actor_sequence.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.actor_sequence.actor_identity_decision",
+      "proof_catalog_id": "catalog.proof.rust.actor_sequence.actor_identity_decision",
+      "mutation_coverage_ids": [
+        "catalog.direct.ActorIdentityDecision.target_hoist_and_cache",
+        "catalog.helper.actor_sequence.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.actor_sequence.sequence_relation_decision",
+      "proof_catalog_id": "catalog.proof.rust.actor_sequence.sequence_relation_decision",
+      "mutation_coverage_ids": [
+        "catalog.direct.SequenceRelationDecision.target_hoist_and_cache",
+        "catalog.helper.actor_sequence.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.causal_counter.stored_counter_read",
+      "proof_catalog_id": "catalog.proof.rust.causal_counter.stored_counter_read",
+      "mutation_coverage_ids": [
+        "catalog.direct.StoredCounterRead.target_hoist_and_cache",
+        "catalog.helper.causal_counter.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.causal_counter.expected_start_comparison",
+      "proof_catalog_id": "catalog.proof.rust.causal_counter.expected_start_comparison",
+      "mutation_coverage_ids": [
+        "catalog.direct.ExpectedStartComparison.target_hoist_and_cache",
+        "catalog.helper.causal_counter.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.causal_counter.checked_advance",
+      "proof_catalog_id": "catalog.proof.rust.causal_counter.checked_advance",
+      "mutation_coverage_ids": [
+        "catalog.direct.CheckedAdvance.target_hoist_and_cache",
+        "catalog.helper.causal_counter.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.candidate_kind_comparison",
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.candidate_kind_comparison",
+      "mutation_coverage_ids": [
+        "catalog.helper.frontier_comparison.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.candidate_count_read",
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.candidate_count_read",
+      "mutation_coverage_ids": [
+        "catalog.helper.frontier_comparison.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.projection_count_read",
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.projection_count_read",
+      "mutation_coverage_ids": [
+        "catalog.helper.frontier_comparison.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.base_count_read",
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.base_count_read",
+      "mutation_coverage_ids": [
+        "catalog.helper.frontier_comparison.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.candidate_pull",
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.candidate_pull",
+      "mutation_coverage_ids": [
+        "catalog.helper.frontier_comparison.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.candidate_order_compare",
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.candidate_order_compare",
+      "mutation_coverage_ids": [
+        "catalog.helper.frontier_comparison.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.projection_pull",
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.projection_pull",
+      "mutation_coverage_ids": [
+        "catalog.helper.frontier_comparison.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.base_pull",
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.base_pull",
+      "mutation_coverage_ids": [
+        "catalog.helper.frontier_comparison.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.base_accepted_lookup",
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.base_accepted_lookup",
+      "mutation_coverage_ids": [
+        "catalog.helper.frontier_comparison.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.expected_source_compare",
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.expected_source_compare",
+      "mutation_coverage_ids": [
+        "catalog.helper.frontier_comparison.target_before_charge"
+      ],
+      "result": "pass"
+    },
+    {
+      "inventory_row_id": "rust.frontier_comparison.frontier_equality_compare",
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.frontier_equality_compare",
+      "mutation_coverage_ids": [
+        "catalog.helper.frontier_comparison.target_before_charge"
+      ],
+      "result": "pass"
+    }
+  ],
+  "reverse_proofs": [
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.member_count_read",
+      "inventory_row_ids": [
+        "rust.projection_construction.member_count_read"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.accepted_count_matches",
+      "inventory_row_ids": [
+        "rust.projection_construction.accepted_count_matches"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.next_member_pull",
+      "inventory_row_ids": [
+        "rust.projection_construction.next_member_pull"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.member_order_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.member_order_compare"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.accepted_member_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.accepted_member_lookup"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.candidate_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_lookup"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.candidate_identity_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_identity_compare"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.dependency_count_read",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependency_count_read"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.dependency_pull",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependency_pull"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.dependency_order_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependency_order_compare"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.accepted_dependency_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.accepted_dependency_lookup"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.candidate_dependency_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_dependency_insert"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.depended_on_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.depended_on_insert"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.dependant_bucket_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependant_bucket_insert"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.dependant_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependant_insert"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.candidate_ready_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_ready_compare"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.initial_ready_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.initial_ready_insert"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.remaining_dependencies_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.remaining_dependencies_insert"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.dependencies_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependencies_insert"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.ready_nonempty_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.ready_nonempty_compare"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.ready_candidate_pull",
+      "inventory_row_ids": [
+        "rust.projection_construction.ready_candidate_pull"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.ready_candidate_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.ready_candidate_lookup"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.depended_on_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.depended_on_lookup"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.frontier_head_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.frontier_head_insert"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.actor_state_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.actor_state_lookup"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.expected_sequence_advance",
+      "inventory_row_ids": [
+        "rust.projection_construction.expected_sequence_advance"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.sequence_precedes_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.sequence_precedes_compare"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.sequence_matches_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.sequence_matches_compare"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.causal_next_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.causal_next_lookup"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.start_operation_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.start_operation_compare"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.candidate_empty_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_empty_compare"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.candidate_causal_advance",
+      "inventory_row_ids": [
+        "rust.projection_construction.candidate_causal_advance"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.global_causal_maximum",
+      "inventory_row_ids": [
+        "rust.projection_construction.global_causal_maximum"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.actor_state_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.actor_state_insert"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.writer_contribution_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.writer_contribution_insert"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.causal_counter_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.causal_counter_insert"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.processed_count_advance",
+      "inventory_row_ids": [
+        "rust.projection_construction.processed_count_advance"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.dependants_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.dependants_lookup"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.child_count_read",
+      "inventory_row_ids": [
+        "rust.projection_construction.child_count_read"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.child_pull",
+      "inventory_row_ids": [
+        "rust.projection_construction.child_pull"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.remaining_dependency_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.remaining_dependency_lookup"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.remaining_dependency_decrement",
+      "inventory_row_ids": [
+        "rust.projection_construction.remaining_dependency_decrement"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.remaining_dependency_write",
+      "inventory_row_ids": [
+        "rust.projection_construction.remaining_dependency_write"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.prior_causal_lookup",
+      "inventory_row_ids": [
+        "rust.projection_construction.prior_causal_lookup"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.propagated_causal_maximum",
+      "inventory_row_ids": [
+        "rust.projection_construction.propagated_causal_maximum"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.child_causal_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.child_causal_insert"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.child_ready_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.child_ready_compare"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.ready_dependant_insert",
+      "inventory_row_ids": [
+        "rust.projection_construction.ready_dependant_insert"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.completion_compare",
+      "inventory_row_ids": [
+        "rust.projection_construction.completion_compare"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.projection_construction.projection_publish",
+      "inventory_row_ids": [
+        "rust.projection_construction.projection_publish"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.actor_sequence.actor_state_read",
+      "inventory_row_ids": [
+        "rust.actor_sequence.actor_state_read"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.actor_sequence.predecessor_candidate_read",
+      "inventory_row_ids": [
+        "rust.actor_sequence.predecessor_candidate_read"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.actor_sequence.actor_identity_decision",
+      "inventory_row_ids": [
+        "rust.actor_sequence.actor_identity_decision"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.actor_sequence.sequence_relation_decision",
+      "inventory_row_ids": [
+        "rust.actor_sequence.sequence_relation_decision"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.causal_counter.stored_counter_read",
+      "inventory_row_ids": [
+        "rust.causal_counter.stored_counter_read"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.causal_counter.expected_start_comparison",
+      "inventory_row_ids": [
+        "rust.causal_counter.expected_start_comparison"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.causal_counter.checked_advance",
+      "inventory_row_ids": [
+        "rust.causal_counter.checked_advance"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.candidate_kind_comparison",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.candidate_kind_comparison"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.candidate_count_read",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.candidate_count_read"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.projection_count_read",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.projection_count_read"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.base_count_read",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.base_count_read"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.candidate_pull",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.candidate_pull"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.candidate_order_compare",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.candidate_order_compare"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.projection_pull",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.projection_pull"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.base_pull",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.base_pull"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.base_accepted_lookup",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.base_accepted_lookup"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.expected_source_compare",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.expected_source_compare"
+      ],
+      "result": "pass"
+    },
+    {
+      "proof_catalog_id": "catalog.proof.rust.frontier_comparison.frontier_equality_compare",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.frontier_equality_compare"
+      ],
+      "result": "pass"
+    }
+  ],
+  "reverse_mutations": [
+    {
+      "mutation_catalog_id": "catalog.direct.ActorStateRead.target_hoist_and_cache",
+      "inventory_row_ids": [
+        "rust.actor_sequence.actor_state_read"
+      ],
+      "result": "pass"
+    },
+    {
+      "mutation_catalog_id": "catalog.direct.PredecessorCandidateRead.target_hoist_and_cache",
+      "inventory_row_ids": [
+        "rust.actor_sequence.predecessor_candidate_read"
+      ],
+      "result": "pass"
+    },
+    {
+      "mutation_catalog_id": "catalog.direct.ActorIdentityDecision.target_hoist_and_cache",
+      "inventory_row_ids": [
+        "rust.actor_sequence.actor_identity_decision"
+      ],
+      "result": "pass"
+    },
+    {
+      "mutation_catalog_id": "catalog.direct.SequenceRelationDecision.target_hoist_and_cache",
+      "inventory_row_ids": [
+        "rust.actor_sequence.sequence_relation_decision"
+      ],
+      "result": "pass"
+    },
+    {
+      "mutation_catalog_id": "catalog.direct.StoredCounterRead.target_hoist_and_cache",
+      "inventory_row_ids": [
+        "rust.causal_counter.stored_counter_read"
+      ],
+      "result": "pass"
+    },
+    {
+      "mutation_catalog_id": "catalog.direct.ExpectedStartComparison.target_hoist_and_cache",
+      "inventory_row_ids": [
+        "rust.causal_counter.expected_start_comparison"
+      ],
+      "result": "pass"
+    },
+    {
+      "mutation_catalog_id": "catalog.direct.CheckedAdvance.target_hoist_and_cache",
+      "inventory_row_ids": [
+        "rust.causal_counter.checked_advance"
+      ],
+      "result": "pass"
+    },
+    {
+      "mutation_catalog_id": "catalog.helper.projection_construction.target_before_charge",
+      "inventory_row_ids": [
+        "rust.projection_construction.member_count_read",
+        "rust.projection_construction.accepted_count_matches",
+        "rust.projection_construction.next_member_pull",
+        "rust.projection_construction.member_order_compare",
+        "rust.projection_construction.accepted_member_lookup",
+        "rust.projection_construction.candidate_lookup",
+        "rust.projection_construction.candidate_identity_compare",
+        "rust.projection_construction.dependency_count_read",
+        "rust.projection_construction.dependency_pull",
+        "rust.projection_construction.dependency_order_compare",
+        "rust.projection_construction.accepted_dependency_lookup",
+        "rust.projection_construction.candidate_dependency_insert",
+        "rust.projection_construction.depended_on_insert",
+        "rust.projection_construction.dependant_bucket_insert",
+        "rust.projection_construction.dependant_insert",
+        "rust.projection_construction.candidate_ready_compare",
+        "rust.projection_construction.initial_ready_insert",
+        "rust.projection_construction.remaining_dependencies_insert",
+        "rust.projection_construction.dependencies_insert",
+        "rust.projection_construction.ready_nonempty_compare",
+        "rust.projection_construction.ready_candidate_pull",
+        "rust.projection_construction.ready_candidate_lookup",
+        "rust.projection_construction.depended_on_lookup",
+        "rust.projection_construction.frontier_head_insert",
+        "rust.projection_construction.actor_state_lookup",
+        "rust.projection_construction.expected_sequence_advance",
+        "rust.projection_construction.sequence_precedes_compare",
+        "rust.projection_construction.sequence_matches_compare",
+        "rust.projection_construction.causal_next_lookup",
+        "rust.projection_construction.start_operation_compare",
+        "rust.projection_construction.candidate_empty_compare",
+        "rust.projection_construction.candidate_causal_advance",
+        "rust.projection_construction.global_causal_maximum",
+        "rust.projection_construction.actor_state_insert",
+        "rust.projection_construction.writer_contribution_insert",
+        "rust.projection_construction.causal_counter_insert",
+        "rust.projection_construction.processed_count_advance",
+        "rust.projection_construction.dependants_lookup",
+        "rust.projection_construction.child_count_read",
+        "rust.projection_construction.child_pull",
+        "rust.projection_construction.remaining_dependency_lookup",
+        "rust.projection_construction.remaining_dependency_decrement",
+        "rust.projection_construction.remaining_dependency_write",
+        "rust.projection_construction.prior_causal_lookup",
+        "rust.projection_construction.propagated_causal_maximum",
+        "rust.projection_construction.child_causal_insert",
+        "rust.projection_construction.child_ready_compare",
+        "rust.projection_construction.ready_dependant_insert",
+        "rust.projection_construction.completion_compare",
+        "rust.projection_construction.projection_publish"
+      ],
+      "result": "pass"
+    },
+    {
+      "mutation_catalog_id": "catalog.helper.actor_sequence.target_before_charge",
+      "inventory_row_ids": [
+        "rust.actor_sequence.actor_state_read",
+        "rust.actor_sequence.predecessor_candidate_read",
+        "rust.actor_sequence.actor_identity_decision",
+        "rust.actor_sequence.sequence_relation_decision"
+      ],
+      "result": "pass"
+    },
+    {
+      "mutation_catalog_id": "catalog.helper.causal_counter.target_before_charge",
+      "inventory_row_ids": [
+        "rust.causal_counter.stored_counter_read",
+        "rust.causal_counter.expected_start_comparison",
+        "rust.causal_counter.checked_advance"
+      ],
+      "result": "pass"
+    },
+    {
+      "mutation_catalog_id": "catalog.helper.frontier_comparison.target_before_charge",
+      "inventory_row_ids": [
+        "rust.frontier_comparison.candidate_kind_comparison",
+        "rust.frontier_comparison.candidate_count_read",
+        "rust.frontier_comparison.projection_count_read",
+        "rust.frontier_comparison.base_count_read",
+        "rust.frontier_comparison.candidate_pull",
+        "rust.frontier_comparison.candidate_order_compare",
+        "rust.frontier_comparison.projection_pull",
+        "rust.frontier_comparison.base_pull",
+        "rust.frontier_comparison.base_accepted_lookup",
+        "rust.frontier_comparison.expected_source_compare",
+        "rust.frontier_comparison.frontier_equality_compare"
+      ],
+      "result": "pass"
+    },
+    {
+      "mutation_catalog_id": "catalog.provenance.typed_stop_collapse",
+      "inventory_row_ids": [
+        "rust.actor_sequence.actor_state_read"
+      ],
+      "result": "pass"
+    },
+    {
+      "mutation_catalog_id": "catalog.provenance.cancellation_collapse",
+      "inventory_row_ids": [
+        "rust.actor_sequence.actor_state_read"
+      ],
+      "result": "pass"
+    },
+    {
+      "mutation_catalog_id": "catalog.provenance.unexpected_error_replacement",
+      "inventory_row_ids": [
+        "rust.actor_sequence.actor_state_read"
+      ],
+      "result": "pass"
+    },
+    {
+      "mutation_catalog_id": "catalog.provenance.target_after_failed_charge",
+      "inventory_row_ids": [
+        "rust.actor_sequence.actor_state_read"
+      ],
+      "result": "pass"
+    },
+    {
+      "mutation_catalog_id": "catalog.provenance.observation_before_target",
+      "inventory_row_ids": [
+        "rust.actor_sequence.actor_state_read"
+      ],
+      "result": "pass"
+    },
+    {
+      "mutation_catalog_id": "catalog.provenance.completion_after_return",
+      "inventory_row_ids": [
+        "rust.actor_sequence.actor_state_read"
+      ],
+      "result": "pass"
+    },
+    {
+      "mutation_catalog_id": "catalog.provenance.publication_before_charge",
+      "inventory_row_ids": [
+        "rust.projection_construction.projection_publish"
+      ],
+      "result": "pass"
+    },
+    {
+      "mutation_catalog_id": "catalog.provenance.site_identity_mismatch",
+      "inventory_row_ids": [
+        "rust.projection_construction.member_count_read"
+      ],
+      "result": "pass"
+    },
+    {
+      "mutation_catalog_id": "catalog.provenance.counter_identity_mismatch",
+      "inventory_row_ids": [
+        "rust.projection_construction.member_count_read"
+      ],
+      "result": "pass"
+    },
+    {
+      "mutation_catalog_id": "catalog.provenance.alternate_consumer_bypass",
+      "inventory_row_ids": [
+        "rust.projection_construction.member_count_read"
+      ],
+      "result": "pass"
+    }
+  ],
+  "counts": {
+    "inventory_rows": 68,
+    "proof_edges": 68,
+    "mutation_edges": 85,
+    "proof_catalog_rows": 68,
+    "mutation_catalog_rows": 21,
+    "dangling": 0,
+    "extra": 0
+  },
+  "attack_matrix": [
+    {
+      "attack": "dangling",
+      "result": "killed"
+    },
+    {
+      "attack": "duplicate",
+      "result": "killed"
+    },
+    {
+      "attack": "extra",
+      "result": "killed"
+    },
+    {
+      "attack": "stale",
+      "result": "killed"
+    },
+    {
+      "attack": "mismatched",
+      "result": "killed"
+    },
+    {
+      "attack": "reordered",
+      "result": "killed"
+    },
+    {
+      "attack": "planned",
+      "result": "killed"
+    },
+    {
+      "attack": "self_referential",
+      "result": "killed"
+    },
+    {
+      "attack": "coordinated",
+      "result": "killed"
+    }
+  ],
+  "self_candidate": null,
+  "result_identity_sha256": "d9d3e919b3beef383451200760060d6f835dc11f90073fa22252207c16e1e6ca",
+  "result": "pass"
+}
