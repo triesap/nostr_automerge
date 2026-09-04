@@ -68,6 +68,19 @@ V18_QUALIFICATION_CONFORMANCE_SUFFIX = b"argo extbuild run -- cargo run --quiet 
 V18_QUALIFICATION_GATE_SUFFIX_PATTERN = b"argo extbuild run -- python3 scripts/local_gate.py (?:remediation|policy|standard|conformance|coverage|supply_chain|robustness|resource|release_evidence)".decode(
     "ascii"
 )
+V18_CLEAN_STANDARD_COMMAND = b"python3 scripts/local_gate.py standard".decode("ascii")
+V18_CLEAN_CONFORMANCE_COMMAND = b"python3 scripts/local_gate.py conformance".decode(
+    "ascii"
+)
+V18_CLEAN_GATE_COMMANDS = frozenset(
+    (V18_CLEAN_STANDARD_COMMAND, V18_CLEAN_CONFORMANCE_COMMAND)
+)
+V18_CLEAN_GATE_COMMAND_FRAGMENTS = frozenset(
+    (
+        V18_CLEAN_STANDARD_COMMAND[1:],
+        V18_CLEAN_CONFORMANCE_COMMAND[1:],
+    )
+)
 PUBLIC_PATCH_BLOCKED = tuple(
     value.decode("ascii")
     for value in (
@@ -278,6 +291,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/causal_projection_completion_v18.schema.json",
     "reports/causal_projection_final_decision_v18.json",
     "tools/validation/causal_projection_final_decision_v18.schema.json",
+    "reports/causal_projection_clean_candidate_v18.json",
+    "tools/validation/causal_projection_clean_candidate_v18.schema.json",
 ) + tuple(
     path.relative_to(ROOT).as_posix()
     for path in sorted((ROOT / "reports/evidence/v18/proofs").glob("*.json"))
@@ -334,6 +349,7 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://triesap.github.io/nostr-automerge/schemas/causal_projection_finding_closure_v18.schema.json",
         b"https://triesap.github.io/nostr-automerge/schemas/causal_projection_completion_v18.schema.json",
         b"https://triesap.github.io/nostr-automerge/schemas/causal_projection_final_decision_v18.schema.json",
+        b"https://triesap.github.io/nostr-automerge/schemas/causal_projection_clean_candidate_v18.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -472,6 +488,7 @@ PYTHON_SURFACES = (
     "scripts/validate_causal_projection_finding_closure_v18.py",
     "scripts/validate_causal_projection_completion_v18.py",
     "scripts/validate_causal_projection_final_decision_v18.py",
+    "scripts/validate_causal_projection_clean_candidate_v18.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -861,6 +878,9 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_causal_projection_final_decision_v18.py",
         "reports/causal_projection_final_decision_v18.json",
         "tools/validation/causal_projection_final_decision_v18.schema.json",
+        "scripts/validate_causal_projection_clean_candidate_v18.py",
+        "reports/causal_projection_clean_candidate_v18.json",
+        "tools/validation/causal_projection_clean_candidate_v18.schema.json",
         "reports/evidence/v18/mutations",
         "tools/validation/causal_projection_inventory_v18.schema.json",
         "tools/validation/causal_projection_proofs_v18.schema.json",
@@ -1240,6 +1260,7 @@ def public_command(value: Any) -> str | None:
             chr(103)
             + "it diff --quiet -- crates/nostr_automerge/src/graph/actor_state.rs crates/nostr_automerge/src/reference/epoch_engine.rs",
         }
+        or command in V18_CLEAN_GATE_COMMANDS
         or command == chr(103) + "it status --porcelain=v1"
         or command == chr(99) + V18_QUALIFICATION_CONFORMANCE_SUFFIX
         or re.fullmatch(
@@ -1276,7 +1297,8 @@ def validate_public_record(value: Any, diagnostic: str) -> None:
                 if key
                 in {
                     "command", "compile_command", "property_command",
-                    "restoration_command", "argv",
+                    "restoration_command", "standard_command",
+                    "conformance_command", "argv",
                 }
                 else None
             )
@@ -1305,6 +1327,10 @@ def validate_source_literal(
             or (
                 pattern is COMMAND_TEXT
                 and (allow_command_token or value == chr(103) + "it status --porcelain=v1")
+            )
+            or (
+                pattern is COMMAND_TEXT
+                and value in V18_CLEAN_GATE_COMMANDS
             )
             or (
                 pattern is URI_TEXT
@@ -1386,6 +1412,7 @@ def validate_source_literal(
     if RELATIVE_PATH_TEXT.search(value) is not None and not allow_command_token:
         require(
             is_public_route(value)
+            or value in V18_CLEAN_GATE_COMMANDS
             or (
                 diagnostic.startswith(
                     "source:scripts/validate_opaque_causal_projection_v14.py:coordinated:"
@@ -1409,6 +1436,7 @@ def validate_source_literal(
                     "argo test -p nostr_automerge --lib graph::actor_state::tests::projection_causal_maximum_is_charged_once_per_accepted_change --locked -- --exact",
                 }
                 | V18_MUTATION_COMMAND_FRAGMENTS
+                | V18_CLEAN_GATE_COMMAND_FRAGMENTS
             )
             or (
                 diagnostic.startswith(
@@ -1613,6 +1641,7 @@ def validate_source_surfaces() -> None:
                             "scripts/validate_causal_projection_completion_v17.py",
                             "scripts/validate_causal_projection_final_decision_v17.py",
                             "scripts/validate_causal_projection_clean_candidate_v17.py",
+                            "scripts/validate_causal_projection_clean_candidate_v18.py",
                             "scripts/validate_causal_projection_combined_assurance_v16.py",
                             "scripts/validate_causal_projection_final_decision_v16.py",
                             "scripts/reproduce_remediation_v16.py",
@@ -1629,6 +1658,11 @@ def validate_source_surfaces() -> None:
                             "scripts/validate_causal_projection_assurance_v13.py",
                             "scripts/validate_runtime_ledger_v9.py",
                         }
+                    )
+                    or (
+                        relative
+                        == "scripts/validate_causal_projection_clean_candidate_v18.py"
+                        and value in V18_CLEAN_GATE_COMMANDS
                     )
                     or (
                         value in {"cargo", "git", "python3"}
