@@ -1,0 +1,7 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_patch.v18.v1",
+  "mutation_id": "helper.causal_counter.target_before_charge",
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 2f998637..9c7b830c 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -277,8 +277,8 @@ fn perform_causal_next_operation<T, E>(\n     perform: impl FnOnce() -> T,\n ) -> Result<T, MeteredActorStateError<E>> {\n     let descriptor = site.descriptor();\n-    charge(descriptor).map_err(MeteredActorStateError::Work)?;\n     let result = perform();\n+    charge(descriptor).map_err(MeteredActorStateError::Work)?;\n     observed(CausalNextObservation {\n         descriptor,\n         kind: CausalNextObservationKind::TargetCompleted,\n",
+  "result": "pass"
+}

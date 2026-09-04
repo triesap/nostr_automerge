@@ -1,0 +1,7 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_patch.v18.v1",
+  "mutation_id": "direct.ExpectedStartComparison.target_hoist_and_cache",
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 2f998637..cdd3d9ee 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -739,11 +739,12 @@ impl TrustedEpochProjection<'_> {\n             || self.causal_next_op,\n         )?;\n \n+        let _v18_hoisted_expected_start_comparison = candidate.start_op == causal_next_op;\n         let start_matches = perform_causal_next_operation(\n             CausalNextSite::ExpectedStartComparison,\n             &mut charge,\n             &mut observed,\n-            || candidate.start_op == causal_next_op,\n+            || _v18_hoisted_expected_start_comparison,\n         )?;\n         if !start_matches {\n             return Err(MeteredActorStateError::State(\n",
+  "result": "pass"
+}

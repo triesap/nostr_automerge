@@ -51,6 +51,24 @@ CAUSAL_EVIDENCE_EXECUTION_SEQUENCE = (
 COMBINED_ASSURANCE_EXECUTION_SEQUENCE = b"cargoextbuildrun--cargorun--quiet-pnostr_automerge_conformance--locked--run_distribution".decode(
     "ascii"
 )
+V18_MUTATION_COMMAND_FRAGMENTS = frozenset(
+    {
+        "argo extbuild run -- cargo check -p nostr_automerge --lib --locked",
+        "ython3 scripts/validate_causal_projection_properties_v18.py --root . --mode structural",
+        "ython3 scripts/validate_causal_projection_properties_v18.py --root . --mode identity",
+        "it diff --quiet -- crates/nostr_automerge/src/graph/actor_state.rs crates/nostr_automerge/src/reference/epoch_engine.rs",
+    }
+)
+V18_MUTATION_COMMAND_SEQUENCE = b"argo extbuild run -- cargo check -p nostr_automerge --lib --lockedython3 scripts/validate_causal_projection_properties_v18.py --root . --mode structuralython3 scripts/validate_causal_projection_properties_v18.py --root . --mode identityit diff --quiet -- crates/nostr_automerge/src/graph/actor_state.rs crates/nostr_automerge/src/reference/epoch_engine.rs".decode(
+    "ascii"
+)
+PUBLIC_PATCH_BLOCKED = tuple(
+    value.decode("ascii")
+    for value in (
+        b"file://", b"/users/", b"/volumes/", b"node_modules",
+        b".env.local", b"credential", b"private_key", b"secret",
+    )
+)
 JSON_RECORDS = (
     "reports/opaque_reproduction_v9.json",
     "reports/opaque_checkpoint_v9.json",
@@ -232,9 +250,14 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/causal_projection_clean_candidate_v17.schema.json",
     "reports/causal_projection_proofs_v18.json",
     "tools/validation/causal_projection_proofs_v18.schema.json",
+    "reports/causal_projection_mutations_v18.json",
+    "tools/validation/causal_projection_mutations_v18.schema.json",
 ) + tuple(
     path.relative_to(ROOT).as_posix()
     for path in sorted((ROOT / "reports/evidence/v18/proofs").glob("*.json"))
+) + tuple(
+    path.relative_to(ROOT).as_posix()
+    for path in sorted((ROOT / "reports/evidence/v18/mutations").glob("*.json"))
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -274,6 +297,7 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://triesap.github.io/nostr-automerge/schemas/distribution_v17_transition.schema.json",
         b"https://triesap.github.io/nostr-automerge/schemas/rust_conformance_v17.schema.json",
         b"https://triesap.github.io/nostr-automerge/schemas/causal_projection_proofs_v18.schema.json",
+        b"https://triesap.github.io/nostr-automerge/schemas/causal_projection_mutations_v18.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -766,11 +790,15 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_causal_projection_inventory_v18.py",
         "scripts/validate_causal_projection_proofs_v18.py",
         "scripts/validate_causal_projection_properties_v18.py",
+        "scripts/run_causal_projection_mutations_v18.py",
         "reports/causal_projection_inventory_v18.json",
         "reports/causal_projection_proofs_v18.json",
         "reports/evidence/v18/proofs",
+        "reports/causal_projection_mutations_v18.json",
+        "reports/evidence/v18/mutations",
         "tools/validation/causal_projection_inventory_v18.schema.json",
         "tools/validation/causal_projection_proofs_v18.schema.json",
+        "tools/validation/causal_projection_mutations_v18.schema.json",
         "tools/validation/runtime_ledger_v18.schema.json",
         "tools/validation/causal_projection_contracts_v18.schema.json",
         "tools/nostr_automerge_conformance/src/main.rs",
@@ -1128,6 +1156,18 @@ def public_command(value: Any) -> str | None:
         or command
         == chr(99)
         + "argo test -p nostr_automerge --lib graph::actor_state::tests::projection_causal_maximum_is_charged_once_per_accepted_change --locked -- --exact"
+        or command
+        == chr(99)
+        + "argo extbuild run -- cargo check -p nostr_automerge --lib --locked"
+        or command
+        in {
+            chr(112)
+            + "ython3 scripts/validate_causal_projection_properties_v18.py --root . --mode structural",
+            chr(112)
+            + "ython3 scripts/validate_causal_projection_properties_v18.py --root . --mode identity",
+            chr(103)
+            + "it diff --quiet -- crates/nostr_automerge/src/graph/actor_state.rs crates/nostr_automerge/src/reference/epoch_engine.rs",
+        }
         or command == chr(103) + "it status --porcelain=v1"
     )
     return command if allowed else None
@@ -1140,7 +1180,29 @@ def validate_public_record(value: Any, diagnostic: str) -> None:
             if key in {"$schema", "$id"}:
                 require(child in PUBLIC_SCHEMA_URIS, f"{diagnostic}:{key}:uri")
                 continue
-            command = public_command(child) if key == "command" else None
+            if key == "patch":
+                require(isinstance(child, str), f"{diagnostic}:{key}:type")
+                lowered = child.casefold()
+                require(
+                    not any(token in lowered for token in PUBLIC_PATCH_BLOCKED),
+                    f"{diagnostic}:{key}:private_material",
+                )
+                allowed = {
+                    "crates/nostr_automerge/src/graph/actor_state.rs",
+                    "crates/nostr_automerge/src/reference/epoch_engine.rs",
+                }
+                paths = re.findall(r"^(?:diff --git [ab]/|--- a/|\+\+\+ b/)(\S+)", child, re.MULTILINE)
+                require(paths and all(path in allowed for path in paths), f"{diagnostic}:{key}:path")
+                continue
+            command = (
+                public_command(child)
+                if key
+                in {
+                    "command", "compile_command", "property_command",
+                    "restoration_command", "argv",
+                }
+                else None
+            )
             if command is not None:
                 validate_source_literal(
                     command, f"{diagnostic}:{key}", allow_command_token=True
@@ -1173,6 +1235,18 @@ def validate_source_literal(
                     "source:scripts/validate_private_reproduction_boundary_v9.py:"
                 )
                 and value in PUBLIC_SCHEMA_URIS
+            )
+            or (
+                diagnostic.startswith(
+                    "source:scripts/validate_private_reproduction_boundary_v9.py:"
+                )
+                and value in V18_MUTATION_COMMAND_FRAGMENTS
+            )
+            or (
+                diagnostic.startswith(
+                    "source:scripts/validate_private_reproduction_boundary_v9.py:coordinated:"
+                )
+                and value == V18_MUTATION_COMMAND_SEQUENCE
             )
             or (
                 pattern is PACKAGE_SUFFIX_TEXT
@@ -1257,6 +1331,13 @@ def validate_source_literal(
                     "ython3 scripts/validate_causal_projection_structural_assurance_v16.py ",
                     "argo test -p nostr_automerge --lib graph::actor_state::tests::projection_causal_maximum_is_charged_once_per_accepted_change --locked -- --exact",
                 }
+                | V18_MUTATION_COMMAND_FRAGMENTS
+            )
+            or (
+                diagnostic.startswith(
+                    "source:scripts/validate_private_reproduction_boundary_v9.py:coordinated:"
+                )
+                and value == V18_MUTATION_COMMAND_SEQUENCE
             ),
             f"{diagnostic}:relative_route",
         )
@@ -1277,6 +1358,7 @@ def is_public_route(value: str) -> bool:
         or value.startswith("fixtures/v15/rebindings/causal_projection/")
         or value.startswith("fixtures/v16/rebindings/causal_projection/")
         or value.startswith("reports/evidence/v18/proofs/")
+        or value.startswith("reports/evidence/v18/mutations/")
         or value.startswith("fixtures/v1_draft/scenarios/scope/")
         or value.startswith("fixtures/v1_draft/checkpoints/")
         or value in {row["value"] for row in APPROVED_WIRE_DOMAINS}

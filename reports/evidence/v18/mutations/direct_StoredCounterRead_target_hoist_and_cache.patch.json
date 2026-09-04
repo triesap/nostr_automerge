@@ -1,0 +1,7 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_patch.v18.v1",
+  "mutation_id": "direct.StoredCounterRead.target_hoist_and_cache",
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 2f998637..60a8e997 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -732,11 +732,12 @@ impl TrustedEpochProjection<'_> {\n         mut charge: impl FnMut(CausalNextDescriptor) -> Result<(), E>,\n         mut observed: impl FnMut(CausalNextObservation),\n     ) -> Result<u64, MeteredActorStateError<E>> {\n+        let _v18_hoisted_stored_counter_read = self.causal_next_op;\n         let causal_next_op = perform_causal_next_operation(\n             CausalNextSite::StoredCounterRead,\n             &mut charge,\n             &mut observed,\n-            || self.causal_next_op,\n+            || _v18_hoisted_stored_counter_read,\n         )?;\n \n         let start_matches = perform_causal_next_operation(\n",
+  "result": "pass"
+}

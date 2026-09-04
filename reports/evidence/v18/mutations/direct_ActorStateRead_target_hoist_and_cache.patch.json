@@ -1,0 +1,7 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_patch.v18.v1",
+  "mutation_id": "direct.ActorStateRead.target_hoist_and_cache",
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 2f998637..b8cf0513 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -635,11 +635,12 @@ impl TrustedEpochProjection<'_> {\n         mut charge: impl FnMut(ActorDecisionDescriptor) -> Result<(), E>,\n         mut observed: impl FnMut(ActorDecisionObservation),\n     ) -> Result<(), MeteredActorStateError<E>> {\n+        let _v18_hoisted_actor_state_read = self.actor_states.get(&candidate.actor).copied();\n         let actor_state = perform_actor_decision_operation(\n             ActorDecisionSite::ActorStateRead,\n             &mut charge,\n             &mut observed,\n-            || self.actor_states.get(&candidate.actor).copied(),\n+            || _v18_hoisted_actor_state_read,\n         )?;\n \n         let predecessor = if let Some(state) = actor_state {\n",
+  "result": "pass"
+}

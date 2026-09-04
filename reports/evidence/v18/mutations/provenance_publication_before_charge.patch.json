@@ -1,0 +1,7 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_patch.v18.v1",
+  "mutation_id": "provenance.publication_before_charge",
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 2f998637..ee51fb7b 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -1677,6 +1677,7 @@ fn build_trusted_epoch_projection_observed<'a, E>(\n             ActorStateError::DependencyCycle,\n         ));\n     }\n+    published(ProjectionPublicationOperation::Projection);\n     let projection = perform_projection_build_operation(\n         ProjectionBuildSite::ProjectionPublish,\n         &mut charge,\n@@ -1691,7 +1692,6 @@ fn build_trusted_epoch_projection_observed<'a, E>(\n             causal_next_op,\n         },\n     )?;\n-    published(ProjectionPublicationOperation::Projection);\n     Ok(projection)\n }\n \n",
+  "result": "pass"
+}

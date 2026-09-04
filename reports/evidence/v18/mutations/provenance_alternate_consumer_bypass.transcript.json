@@ -1,0 +1,84 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_transcript.v18.v1",
+  "authority": "spec/causal_projection_contracts_v18.json",
+  "mutation_id": "provenance.alternate_consumer_bypass",
+  "campaign": "provenance",
+  "inventory_row_id": "rust.projection_construction.member_count_read",
+  "kind": "alternate_consumer_bypass",
+  "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+  "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+  "patch_artifact": "reports/evidence/v18/mutations/provenance_alternate_consumer_bypass.patch.json",
+  "patch_sha256": "7206903469ddd308537667eba7c7f96f9b035b80e79337437404c205962e4536",
+  "compile": {
+    "argv": [
+      "cargo",
+      "extbuild",
+      "run",
+      "--",
+      "cargo",
+      "check",
+      "-p",
+      "nostr_automerge",
+      "--lib",
+      "--locked"
+    ],
+    "cwd": ".",
+    "environment": {
+      "inherit": true,
+      "overrides": {
+        "PYTHONDONTWRITEBYTECODE": "1"
+      }
+    },
+    "exit_status": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_sha256": "75fe014fd1becb8bdc6936f9d7574ac2ae40c05f76f0c0dd6bbd0c2774c7434b",
+    "output_sha256": "c3dfb4e4cd59db2d8a78c768774c5b124ca2fc2ca53a90529bd74a6ad77faf10"
+  },
+  "property": {
+    "argv": [
+      "python3",
+      "scripts/validate_causal_projection_properties_v18.py",
+      "--root",
+      ".",
+      "--mode",
+      "structural"
+    ],
+    "cwd": ".",
+    "environment": {
+      "inherit": true,
+      "overrides": {
+        "PYTHONDONTWRITEBYTECODE": "1"
+      }
+    },
+    "exit_status": 1,
+    "stdout_sha256": "455bb22dad51c857802bb1087b5f829209132e0f212b6202b95299512c7c6715",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "output_sha256": "e5f39378fc64307b34ceb4a2a84fdb2a3668fa0553b59a5f3c072d04a8ff7845"
+  },
+  "restoration": {
+    "argv": [
+      "git",
+      "diff",
+      "--quiet",
+      "--",
+      "crates/nostr_automerge/src/graph/actor_state.rs",
+      "crates/nostr_automerge/src/reference/epoch_engine.rs"
+    ],
+    "cwd": ".",
+    "environment": {
+      "inherit": true,
+      "overrides": {
+        "PYTHONDONTWRITEBYTECODE": "1"
+      }
+    },
+    "exit_status": 0,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "output_sha256": "48aab84c105cb72cddf5b767497db3972bf1b8dc93c681794d48375aea79ab8e"
+  },
+  "expected_property_code": "ALTERNATE_CONSUMER_BYPASS",
+  "actual_property_code": "ALTERNATE_CONSUMER_BYPASS",
+  "shared_helper_unchanged": true,
+  "survivor": false,
+  "result": "killed"
+}

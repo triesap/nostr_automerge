@@ -1,0 +1,7 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_patch.v18.v1",
+  "mutation_id": "provenance.observation_before_target",
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 2f998637..0332a312 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -178,11 +178,11 @@ fn perform_actor_decision_operation<T, E>(\n ) -> Result<T, MeteredActorStateError<E>> {\n     let descriptor = site.descriptor();\n     charge(descriptor).map_err(MeteredActorStateError::Work)?;\n-    let result = perform();\n     observed(ActorDecisionObservation {\n         descriptor,\n         kind: ActorDecisionObservationKind::TargetCompleted,\n     });\n+    let result = perform();\n     Ok(result)\n }\n \n",
+  "result": "pass"
+}

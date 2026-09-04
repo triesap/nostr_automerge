@@ -1,0 +1,7 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_patch.v18.v1",
+  "mutation_id": "provenance.counter_identity_mismatch",
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 2f998637..dabb7efc 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -508,7 +508,7 @@ struct ProjectionBuildObservation {\n }\n \n projection_build_sites! {\n-    MemberCountRead => (SourceCountRead, GraphNode),\n+    MemberCountRead => (SourceCountRead, GraphEdge),\n     AcceptedCountMatches => (ExpectedCountComparison, GraphNode),\n     NextMemberPull => (CanonicalSourcePull, GraphNode),\n     MemberOrderCompare => (CanonicalOrderCompare, GraphNode),\n",
+  "result": "pass"
+}

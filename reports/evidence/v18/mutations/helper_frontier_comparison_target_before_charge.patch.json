@@ -1,0 +1,7 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_patch.v18.v1",
+  "mutation_id": "helper.frontier_comparison.target_before_charge",
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 2f998637..1e98c20c 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -985,8 +985,8 @@ fn metered_frontier_operation<E, T>(\n     target: impl FnOnce() -> T,\n ) -> Result<T, MeteredActorStateError<E>> {\n     let descriptor = site.descriptor();\n-    charge(descriptor).map_err(MeteredActorStateError::Work)?;\n     let result = target();\n+    charge(descriptor).map_err(MeteredActorStateError::Work)?;\n     observed(FrontierComparisonObservation {\n         descriptor,\n         kind: FrontierComparisonObservationKind::TargetCompleted,\n",
+  "result": "pass"
+}

@@ -1,0 +1,7 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_patch.v18.v1",
+  "mutation_id": "provenance.unexpected_error_replacement",
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 2f998637..3963c969 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -177,7 +177,9 @@ fn perform_actor_decision_operation<T, E>(\n     perform: impl FnOnce() -> T,\n ) -> Result<T, MeteredActorStateError<E>> {\n     let descriptor = site.descriptor();\n-    charge(descriptor).map_err(MeteredActorStateError::Work)?;\n+    let _v18_unexpected_error_replaced = ();\n+    charge(descriptor)\n+        .map_err(|_| MeteredActorStateError::State(ActorStateError::NoncanonicalInput))?;\n     let result = perform();\n     observed(ActorDecisionObservation {\n         descriptor,\n",
+  "result": "pass"
+}

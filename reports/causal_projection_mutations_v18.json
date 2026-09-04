@@ -1,0 +1,1340 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutations.v18.v1",
+  "status": "actual_execution_raw_unbound",
+  "authority": "spec/causal_projection_contracts_v18.json",
+  "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+  "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+  "row_contract": [
+    "mutation_id",
+    "campaign",
+    "inventory_row_id",
+    "kind",
+    "expected_property_code",
+    "actual_property_code",
+    "compile_command",
+    "compile_exit_status",
+    "compile_output_sha256",
+    "property_command",
+    "property_exit_status",
+    "property_output_sha256",
+    "restoration_command",
+    "restoration_result",
+    "execution_envelope",
+    "patch_artifact",
+    "patch_sha256",
+    "transcript_artifact",
+    "transcript_sha256",
+    "shared_helper_unchanged",
+    "source_candidate",
+    "execution_base_candidate",
+    "survivor",
+    "result"
+  ],
+  "rows": [
+    {
+      "mutation_id": "direct.ActorStateRead.target_hoist_and_cache",
+      "campaign": "direct",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "kind": "site_local_target_hoist_and_cache",
+      "expected_property_code": "SITE_TARGET_BEFORE_CHARGE",
+      "actual_property_code": "SITE_TARGET_BEFORE_CHARGE",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "9ba215af9c11728d3fa105de0ad1011319bcbe29414f99bb4e00ba91b6c70ce5",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "c6f45c4870374388aaa41e39001c8118a3501b756338ac4b25b2bbc29da078e1",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/direct_ActorStateRead_target_hoist_and_cache.patch.json",
+      "patch_sha256": "9764e42190fc1f0cf5204930b953efbedbeb37b0b5be8f0cab7aea7a7f799619",
+      "transcript_artifact": "reports/evidence/v18/mutations/direct_ActorStateRead_target_hoist_and_cache.transcript.json",
+      "transcript_sha256": "44fce19d0fd996b244069576d43af8ce4a452b9fa90439055a66ff458ca93d27",
+      "shared_helper_unchanged": true,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "direct.PredecessorCandidateRead.target_hoist_and_cache",
+      "campaign": "direct",
+      "inventory_row_id": "rust.actor_sequence.predecessor_candidate_read",
+      "kind": "site_local_target_hoist_and_cache",
+      "expected_property_code": "SITE_TARGET_BEFORE_CHARGE",
+      "actual_property_code": "SITE_TARGET_BEFORE_CHARGE",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "8aefd7a1ec6e5430ed42b954655d6c86176e62f2c2c17e1004d7001efe3d6f38",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "c6f45c4870374388aaa41e39001c8118a3501b756338ac4b25b2bbc29da078e1",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/direct_PredecessorCandidateRead_target_hoist_and_cache.patch.json",
+      "patch_sha256": "10fb6c85ef9b4b46a7228869aa7733d07a4ff02507e43ce6a88807d6ae2d3ef4",
+      "transcript_artifact": "reports/evidence/v18/mutations/direct_PredecessorCandidateRead_target_hoist_and_cache.transcript.json",
+      "transcript_sha256": "d712610652746b4e98eb5def6eaf857323bd95598048428df346c85f3c012b0c",
+      "shared_helper_unchanged": true,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "direct.ActorIdentityDecision.target_hoist_and_cache",
+      "campaign": "direct",
+      "inventory_row_id": "rust.actor_sequence.actor_identity_decision",
+      "kind": "site_local_target_hoist_and_cache",
+      "expected_property_code": "SITE_TARGET_BEFORE_CHARGE",
+      "actual_property_code": "SITE_TARGET_BEFORE_CHARGE",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "216e8a6220a9789494fffb8070145659812d5252b866b57bad257c1d0f32ce73",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "c6f45c4870374388aaa41e39001c8118a3501b756338ac4b25b2bbc29da078e1",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/direct_ActorIdentityDecision_target_hoist_and_cache.patch.json",
+      "patch_sha256": "a9ea30d54ac7d6501309172ed9570a526d8c2d4caafb330bb33ce6777df000bd",
+      "transcript_artifact": "reports/evidence/v18/mutations/direct_ActorIdentityDecision_target_hoist_and_cache.transcript.json",
+      "transcript_sha256": "7cd82625418df1a353bc2ebc1832884762278d21cb6f13a55e77eb2a2861407c",
+      "shared_helper_unchanged": true,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "direct.SequenceRelationDecision.target_hoist_and_cache",
+      "campaign": "direct",
+      "inventory_row_id": "rust.actor_sequence.sequence_relation_decision",
+      "kind": "site_local_target_hoist_and_cache",
+      "expected_property_code": "SITE_TARGET_BEFORE_CHARGE",
+      "actual_property_code": "SITE_TARGET_BEFORE_CHARGE",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "a16e520a11855df9778bcd9097086a226b73ae97b17bdc6314b826e1a3bcd69c",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "c6f45c4870374388aaa41e39001c8118a3501b756338ac4b25b2bbc29da078e1",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/direct_SequenceRelationDecision_target_hoist_and_cache.patch.json",
+      "patch_sha256": "463831154ccc233bf5989d4de9cbb1c1f70bb0111948e8ee28c0d3437387ef71",
+      "transcript_artifact": "reports/evidence/v18/mutations/direct_SequenceRelationDecision_target_hoist_and_cache.transcript.json",
+      "transcript_sha256": "910628940c832307939742a2b69faa63f5755841c2047349823b8552a78917b9",
+      "shared_helper_unchanged": true,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "direct.StoredCounterRead.target_hoist_and_cache",
+      "campaign": "direct",
+      "inventory_row_id": "rust.causal_counter.stored_counter_read",
+      "kind": "site_local_target_hoist_and_cache",
+      "expected_property_code": "SITE_TARGET_BEFORE_CHARGE",
+      "actual_property_code": "SITE_TARGET_BEFORE_CHARGE",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "f2e01e7bc4b8734a896ba21850d0701badc2c67524c3090cda2f299b01ef6aff",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "c6f45c4870374388aaa41e39001c8118a3501b756338ac4b25b2bbc29da078e1",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/direct_StoredCounterRead_target_hoist_and_cache.patch.json",
+      "patch_sha256": "59314ec3e30fc05391ce9f2fc4bc06f3233aca25acde885e20ddae5d07aea4ed",
+      "transcript_artifact": "reports/evidence/v18/mutations/direct_StoredCounterRead_target_hoist_and_cache.transcript.json",
+      "transcript_sha256": "79024db6dbc20180761faa4ffbd908014481d050c492628e1f3a35bbc8462a3f",
+      "shared_helper_unchanged": true,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "direct.ExpectedStartComparison.target_hoist_and_cache",
+      "campaign": "direct",
+      "inventory_row_id": "rust.causal_counter.expected_start_comparison",
+      "kind": "site_local_target_hoist_and_cache",
+      "expected_property_code": "SITE_TARGET_BEFORE_CHARGE",
+      "actual_property_code": "SITE_TARGET_BEFORE_CHARGE",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "bcff14ac305f3bfb4112641bf53273ea0f06e3e32d98ef4b21b87470dd92d9c3",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "c6f45c4870374388aaa41e39001c8118a3501b756338ac4b25b2bbc29da078e1",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/direct_ExpectedStartComparison_target_hoist_and_cache.patch.json",
+      "patch_sha256": "0903b5e33e561690bb1151445f8a126869a9edc279d1ee4b4dd254efda4d9074",
+      "transcript_artifact": "reports/evidence/v18/mutations/direct_ExpectedStartComparison_target_hoist_and_cache.transcript.json",
+      "transcript_sha256": "ac028d625f7450c9473d8572dc5d8f464c6b408b457e8406e56a63f925aa211b",
+      "shared_helper_unchanged": true,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "direct.CheckedAdvance.target_hoist_and_cache",
+      "campaign": "direct",
+      "inventory_row_id": "rust.causal_counter.checked_advance",
+      "kind": "site_local_target_hoist_and_cache",
+      "expected_property_code": "SITE_TARGET_BEFORE_CHARGE",
+      "actual_property_code": "SITE_TARGET_BEFORE_CHARGE",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "e57cc16fbaeb02ab65ecca86cdc4fc58972978d2c0c746009f2b2afac8293eb6",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "c6f45c4870374388aaa41e39001c8118a3501b756338ac4b25b2bbc29da078e1",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/direct_CheckedAdvance_target_hoist_and_cache.patch.json",
+      "patch_sha256": "63149d6c0bcee6d69f43e808931bc43a7bac1590aed365e0de3e186bb95718a7",
+      "transcript_artifact": "reports/evidence/v18/mutations/direct_CheckedAdvance_target_hoist_and_cache.transcript.json",
+      "transcript_sha256": "c9178bdf0cb6d67906c0b5078fa4e21ea1d79a8bde06210c0f0101ad250a2190",
+      "shared_helper_unchanged": true,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "helper.projection_construction.target_before_charge",
+      "campaign": "helper",
+      "inventory_row_id": "rust.projection_construction.member_count_read",
+      "kind": "helper_target_before_charge",
+      "expected_property_code": "CHARGE_AFTER_OPERATION",
+      "actual_property_code": "CHARGE_AFTER_OPERATION",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "38e86aa932bc789bb4c82b7c7c1709561de58432cf417729eb101ad72ec149e3",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "f819a19e53c59f6211902377d2817266a8098495f5c310a92e6f85372abbbd5b",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/helper_projection_construction_target_before_charge.patch.json",
+      "patch_sha256": "bef623a950a67357f7f256c776a531346e188edc0b443876be52ef330bf67b4e",
+      "transcript_artifact": "reports/evidence/v18/mutations/helper_projection_construction_target_before_charge.transcript.json",
+      "transcript_sha256": "f703201a44589dffb2ab4a27ff4c68dd015791e7f0fbdc2135b22722fd5be19f",
+      "shared_helper_unchanged": false,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "helper.actor_sequence.target_before_charge",
+      "campaign": "helper",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "kind": "helper_target_before_charge",
+      "expected_property_code": "CHARGE_AFTER_OPERATION",
+      "actual_property_code": "CHARGE_AFTER_OPERATION",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "e57cc16fbaeb02ab65ecca86cdc4fc58972978d2c0c746009f2b2afac8293eb6",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "f819a19e53c59f6211902377d2817266a8098495f5c310a92e6f85372abbbd5b",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/helper_actor_sequence_target_before_charge.patch.json",
+      "patch_sha256": "b4fd5eee66e1ebaeac3d8ebcca4c14c317ba4497386cfbd8d2832be61287f839",
+      "transcript_artifact": "reports/evidence/v18/mutations/helper_actor_sequence_target_before_charge.transcript.json",
+      "transcript_sha256": "e45a9b57dc310f990bcf6a77dac1f391e4e2ea4033a0ebcf4c5244b226ac409d",
+      "shared_helper_unchanged": false,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "helper.causal_counter.target_before_charge",
+      "campaign": "helper",
+      "inventory_row_id": "rust.causal_counter.stored_counter_read",
+      "kind": "helper_target_before_charge",
+      "expected_property_code": "CHARGE_AFTER_OPERATION",
+      "actual_property_code": "CHARGE_AFTER_OPERATION",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "a16e520a11855df9778bcd9097086a226b73ae97b17bdc6314b826e1a3bcd69c",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "f819a19e53c59f6211902377d2817266a8098495f5c310a92e6f85372abbbd5b",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/helper_causal_counter_target_before_charge.patch.json",
+      "patch_sha256": "55aa5688bc88841036626547b67648b578f0519e250306e542624bb160f93c75",
+      "transcript_artifact": "reports/evidence/v18/mutations/helper_causal_counter_target_before_charge.transcript.json",
+      "transcript_sha256": "5e9a6b1a16bce12ae8e8f1ed671583bffa61ac673c049e035f13609ff6b28463",
+      "shared_helper_unchanged": false,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "helper.frontier_comparison.target_before_charge",
+      "campaign": "helper",
+      "inventory_row_id": "rust.frontier_comparison.candidate_kind_comparison",
+      "kind": "helper_target_before_charge",
+      "expected_property_code": "CHARGE_AFTER_OPERATION",
+      "actual_property_code": "CHARGE_AFTER_OPERATION",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "a16e520a11855df9778bcd9097086a226b73ae97b17bdc6314b826e1a3bcd69c",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "f819a19e53c59f6211902377d2817266a8098495f5c310a92e6f85372abbbd5b",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/helper_frontier_comparison_target_before_charge.patch.json",
+      "patch_sha256": "49b9d4453fb33631585f1521a837c4cee3bbcfcb5c305b42efebec20471fdbbb",
+      "transcript_artifact": "reports/evidence/v18/mutations/helper_frontier_comparison_target_before_charge.transcript.json",
+      "transcript_sha256": "1b244c821a9303aaf10d0846c1cccc7fd00f85073c2a7f7b41d3d5105e05ab60",
+      "shared_helper_unchanged": false,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.typed_stop_collapse",
+      "campaign": "provenance",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "kind": "typed_stop_collapse",
+      "expected_property_code": "TYPED_BUDGET_EXHAUSTED_IDENTITY",
+      "actual_property_code": "TYPED_BUDGET_EXHAUSTED_IDENTITY",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "4e1065a64d053bb12be414294283bf0243304194aa3ab8912542a645136bf758",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "eaf969abb4d13ddeafb4f450eea73a82d11c80665069ed1645318bff0a29664e",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/provenance_typed_stop_collapse.patch.json",
+      "patch_sha256": "ed4fcb8f62435f4f1ae23ac4efda4cd1a1c97599ede92634eb7e97a4b3c3d260",
+      "transcript_artifact": "reports/evidence/v18/mutations/provenance_typed_stop_collapse.transcript.json",
+      "transcript_sha256": "9322c83d6f1c3e9b08ccd86a927ca1dcd0de2eab57cec738cb83201d82481c1e",
+      "shared_helper_unchanged": false,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.cancellation_collapse",
+      "campaign": "provenance",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "kind": "cancellation_collapse",
+      "expected_property_code": "TYPED_CANCELLED_IDENTITY",
+      "actual_property_code": "TYPED_CANCELLED_IDENTITY",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "bcff14ac305f3bfb4112641bf53273ea0f06e3e32d98ef4b21b87470dd92d9c3",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "6639f2b5b74b058523391be85442bfc61881f7561f2fadcbaa588659e1993699",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/provenance_cancellation_collapse.patch.json",
+      "patch_sha256": "fa23033f431c03ac7d75d821d43546407ac0b2da31b85ccd784deb0616b49bbd",
+      "transcript_artifact": "reports/evidence/v18/mutations/provenance_cancellation_collapse.transcript.json",
+      "transcript_sha256": "c1f380fc609974f5e8d5e35c50f66eb3dd0094eb4fa2d0ed53a0eabcb12e1e78",
+      "shared_helper_unchanged": false,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.unexpected_error_replacement",
+      "campaign": "provenance",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "kind": "unexpected_error_replacement",
+      "expected_property_code": "UNEXPECTED_WORK_ERROR_IDENTITY",
+      "actual_property_code": "UNEXPECTED_WORK_ERROR_IDENTITY",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "f2e01e7bc4b8734a896ba21850d0701badc2c67524c3090cda2f299b01ef6aff",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "3ccc50f2cd7d4106497062999104cea3a0e9151c3618d204e51b8bb05f3ef130",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/provenance_unexpected_error_replacement.patch.json",
+      "patch_sha256": "33f6c74554f65a3a3205e8109b4ba6deb9c610cf19a089f07481ebdc2656febd",
+      "transcript_artifact": "reports/evidence/v18/mutations/provenance_unexpected_error_replacement.transcript.json",
+      "transcript_sha256": "0a1898ddb064efefb6cb3106f0f84f77f3e3c192d75ff7b877b9259037432e9c",
+      "shared_helper_unchanged": false,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.target_after_failed_charge",
+      "campaign": "provenance",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "kind": "target_after_failed_charge",
+      "expected_property_code": "TARGET_AFTER_STOP",
+      "actual_property_code": "TARGET_AFTER_STOP",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "99a941654aa2f62fdbb843a53a19249545e8b6ac406ce4aaefba8b5c356a17bc",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "3a08cd963e902c3ee89c65e8afca1dd338d8ad3ceb8bbe48bb7209014ddcc4fe",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/provenance_target_after_failed_charge.patch.json",
+      "patch_sha256": "7fec54e04aaf87dfcbca9914f730ba894e6e333ece6612ba886c7e7ec99753cd",
+      "transcript_artifact": "reports/evidence/v18/mutations/provenance_target_after_failed_charge.transcript.json",
+      "transcript_sha256": "28686b2eef7fe13705503f6ef289932d432027a71c9ab76361dc420d22147f31",
+      "shared_helper_unchanged": false,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.observation_before_target",
+      "campaign": "provenance",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "kind": "observation_before_target",
+      "expected_property_code": "OPERATION_OBSERVATION_BEFORE_TARGET",
+      "actual_property_code": "OPERATION_OBSERVATION_BEFORE_TARGET",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "a16e520a11855df9778bcd9097086a226b73ae97b17bdc6314b826e1a3bcd69c",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "31c794b48162cc6f3c3dda777b2f1944a73a238645f7030dbd27dd3373ada1c7",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/provenance_observation_before_target.patch.json",
+      "patch_sha256": "797a2cac1972dddaaf984b86edc96d02eabf1d036520845810e97c91cc5ca14e",
+      "transcript_artifact": "reports/evidence/v18/mutations/provenance_observation_before_target.transcript.json",
+      "transcript_sha256": "5ab43bd9711c70ce00af027bc15e9e606d7eaaab0281a3e2fafa40ff50499345",
+      "shared_helper_unchanged": false,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.completion_after_return",
+      "campaign": "provenance",
+      "inventory_row_id": "rust.actor_sequence.actor_state_read",
+      "kind": "completion_after_return",
+      "expected_property_code": "OBSERVATION_AFTER_STOP",
+      "actual_property_code": "OBSERVATION_AFTER_STOP",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "5b7899af3efca8fbe255f32d963a09f4ca82edd2f8329d28bb8c751d8a16c8d7",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "c601a5ca0b70e76765b34fa63a0cea141d943b930ff438834239d75b577e0abd",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/provenance_completion_after_return.patch.json",
+      "patch_sha256": "72371e079f678bf15e503bae1a67360d4b7714421dbe6a7a7b5ab0576eead68e",
+      "transcript_artifact": "reports/evidence/v18/mutations/provenance_completion_after_return.transcript.json",
+      "transcript_sha256": "fa4010709f62611653e6fc50d1c25f08031c827a834407a87230f7f232e05613",
+      "shared_helper_unchanged": false,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.publication_before_charge",
+      "campaign": "provenance",
+      "inventory_row_id": "rust.projection_construction.projection_publish",
+      "kind": "publication_before_charge",
+      "expected_property_code": "PUBLICATION_AFTER_STOP",
+      "actual_property_code": "PUBLICATION_AFTER_STOP",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "4c4195aaca3bf7987f4941cdab206805a16bd884957e29d86ef7210c4a0e750e",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "1c65100705364b7b996574b1144fbc2cbb9254da800c731c3d95aecca59effa0",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/provenance_publication_before_charge.patch.json",
+      "patch_sha256": "a0e958615f206f40f93aeb6ba68ad4128a462903b6c1ac3c0643825316f32945",
+      "transcript_artifact": "reports/evidence/v18/mutations/provenance_publication_before_charge.transcript.json",
+      "transcript_sha256": "7280086e0c66f0c882f8c962c97959ef58a2bba19d7d0083c64d0ef5cdb295ae",
+      "shared_helper_unchanged": true,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.site_identity_mismatch",
+      "campaign": "provenance",
+      "inventory_row_id": "rust.projection_construction.member_count_read",
+      "kind": "site_identity_mismatch",
+      "expected_property_code": "SITE_ID_MISMATCH",
+      "actual_property_code": "SITE_ID_MISMATCH",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "38e86aa932bc789bb4c82b7c7c1709561de58432cf417729eb101ad72ec149e3",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "05adac7884855efff2813d396ede3f2af468fb2ab32901259c74316982715558",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/provenance_site_identity_mismatch.patch.json",
+      "patch_sha256": "cb422a13e9704461115842815b35b0edacd7f7af579f258b2b8507b31cc633bc",
+      "transcript_artifact": "reports/evidence/v18/mutations/provenance_site_identity_mismatch.transcript.json",
+      "transcript_sha256": "3ac35e9ea09f2f15ab2f3ec89cc3f81188e2be32273f4dd368434f5da53f3b41",
+      "shared_helper_unchanged": true,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.counter_identity_mismatch",
+      "campaign": "provenance",
+      "inventory_row_id": "rust.projection_construction.member_count_read",
+      "kind": "counter_identity_mismatch",
+      "expected_property_code": "COUNTER_MISMATCH",
+      "actual_property_code": "COUNTER_MISMATCH",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "a16e520a11855df9778bcd9097086a226b73ae97b17bdc6314b826e1a3bcd69c",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "a698199eab2b0297f136f2a0ba2af921593eab3ca23d99081b10e5689e96070c",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/provenance_counter_identity_mismatch.patch.json",
+      "patch_sha256": "27058b4f85aa7b03d268e589a404b03fbe396ef26dfd7969c9ee70eed1881eda",
+      "transcript_artifact": "reports/evidence/v18/mutations/provenance_counter_identity_mismatch.transcript.json",
+      "transcript_sha256": "94a89fbf3ed906b7907ac29b410eb1e5864a896301caa0ec25eb8230f51465d5",
+      "shared_helper_unchanged": true,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    },
+    {
+      "mutation_id": "provenance.alternate_consumer_bypass",
+      "campaign": "provenance",
+      "inventory_row_id": "rust.projection_construction.member_count_read",
+      "kind": "alternate_consumer_bypass",
+      "expected_property_code": "ALTERNATE_CONSUMER_BYPASS",
+      "actual_property_code": "ALTERNATE_CONSUMER_BYPASS",
+      "compile_command": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "check",
+        "-p",
+        "nostr_automerge",
+        "--lib",
+        "--locked"
+      ],
+      "compile_exit_status": 0,
+      "compile_output_sha256": "c3dfb4e4cd59db2d8a78c768774c5b124ca2fc2ca53a90529bd74a6ad77faf10",
+      "property_command": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "property_exit_status": 1,
+      "property_output_sha256": "e5f39378fc64307b34ceb4a2a84fdb2a3668fa0553b59a5f3c072d04a8ff7845",
+      "restoration_command": [
+        "git",
+        "diff",
+        "--quiet",
+        "--",
+        "crates/nostr_automerge/src/graph/actor_state.rs",
+        "crates/nostr_automerge/src/reference/epoch_engine.rs"
+      ],
+      "restoration_result": "pass",
+      "execution_envelope": {
+        "cwd": ".",
+        "environment": {
+          "inherit": true,
+          "overrides": {
+            "PYTHONDONTWRITEBYTECODE": "1"
+          }
+        }
+      },
+      "patch_artifact": "reports/evidence/v18/mutations/provenance_alternate_consumer_bypass.patch.json",
+      "patch_sha256": "7206903469ddd308537667eba7c7f96f9b035b80e79337437404c205962e4536",
+      "transcript_artifact": "reports/evidence/v18/mutations/provenance_alternate_consumer_bypass.transcript.json",
+      "transcript_sha256": "ba8d70a8401e95c164e1bb9bdfa611b1fa961d70f8b836535a2ef3b4dd374900",
+      "shared_helper_unchanged": true,
+      "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+      "survivor": false,
+      "result": "killed"
+    }
+  ],
+  "counts": {
+    "mutations": 21,
+    "campaigns": {
+      "direct": 7,
+      "helper": 4,
+      "provenance": 10
+    },
+    "compile_passed": 21,
+    "properties_killed": 21,
+    "survivors": 0
+  },
+  "execution": {
+    "worktree": "isolated_detached",
+    "property_process": "isolated_root_subprocess",
+    "structural_identity_split": true,
+    "compile_property_records": "separate",
+    "artifact_commit_binding": "later_catalog",
+    "restored": true
+  },
+  "preflight": {
+    "identity": {
+      "argv": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "identity"
+      ],
+      "cwd": ".",
+      "environment": {
+        "inherit": true,
+        "overrides": {
+          "PYTHONDONTWRITEBYTECODE": "1"
+        }
+      },
+      "exit_status": 0,
+      "stdout_sha256": "f614f4f6b259765ed204b968d17849fba1a4894020f74f948d61f15cd8ac6c59",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_sha256": "9dedfe8840a8dfb52d383800afed61d7011055ea2d583d15c0ad203d0eaa4235"
+    },
+    "structural": {
+      "argv": [
+        "python3",
+        "scripts/validate_causal_projection_properties_v18.py",
+        "--root",
+        ".",
+        "--mode",
+        "structural"
+      ],
+      "cwd": ".",
+      "environment": {
+        "inherit": true,
+        "overrides": {
+          "PYTHONDONTWRITEBYTECODE": "1"
+        }
+      },
+      "exit_status": 0,
+      "stdout_sha256": "70ee280cdc4e52182eb1bba8faf7bd15d084128751d5d8e975ba5f2385c68a46",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "output_sha256": "6fe61d1fd6a9518cdafb1bfecef069c3fab3d201cef7e7b6433f9552ee35137b"
+    },
+    "extbuild_doctor": "pass"
+  },
+  "result_identity_sha256": "9c5355694a3822bc8beed2edccbed040f279f349c71178c08c613d6eed9e80ad",
+  "result": "pass"
+}

@@ -1,0 +1,7 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_patch.v18.v1",
+  "mutation_id": "direct.PredecessorCandidateRead.target_hoist_and_cache",
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 2f998637..25508f7d 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -643,11 +643,12 @@ impl TrustedEpochProjection<'_> {\n         )?;\n \n         let predecessor = if let Some(state) = actor_state {\n+            let _v18_hoisted_predecessor_candidate_read = self.branch_membership.get(&state.highest_change);\n             perform_actor_decision_operation(\n                 ActorDecisionSite::PredecessorCandidateRead,\n                 &mut charge,\n                 &mut observed,\n-                || self.branch_membership.get(&state.highest_change),\n+                || _v18_hoisted_predecessor_candidate_read,\n             )?\n         } else {\n             None\n",
+  "result": "pass"
+}

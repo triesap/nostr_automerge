@@ -1,0 +1,7 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_patch.v18.v1",
+  "mutation_id": "direct.CheckedAdvance.target_hoist_and_cache",
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 2f998637..47d7e9c6 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -751,11 +751,12 @@ impl TrustedEpochProjection<'_> {\n             ));\n         }\n \n+        let _v18_hoisted_checked_advance = causal_next_op.checked_add(candidate.operation_count);\n         let advanced = perform_causal_next_operation(\n             CausalNextSite::CheckedAdvance,\n             &mut charge,\n             &mut observed,\n-            || causal_next_op.checked_add(candidate.operation_count),\n+            || _v18_hoisted_checked_advance,\n         )?;\n         advanced.ok_or(MeteredActorStateError::State(\n             ActorStateError::OperationCounter,\n",
+  "result": "pass"
+}
