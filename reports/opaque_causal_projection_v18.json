@@ -1,0 +1,109 @@
+{
+  "schema": "nostr_automerge.opaque_causal_projection_import.v18.v1",
+  "status": "code_complete_publication_held",
+  "independent_candidate": "5ecb65588d7b03ebdc007294d70200600d3b832c",
+  "opaque_record_sha256": "3eb379886b3ab1b5ed4de86652c977043ec64dde0964bf4c6d5f6f8cfdd54be4",
+  "assurance": {
+    "schema": "nostr_automerge.opaque_causal_projection.v18.v1",
+    "status": "code_complete_publication_held",
+    "candidate_roles": {
+      "authority_candidate": "ab98f134278ec62c6bafa9fb5f4019a990c97e11",
+      "source_candidate": "bea4f2a86127bdc4a9fbb6650aa0689cbe9b1218",
+      "execution_base_candidate": "6f992326ed2a50ba3c2c7651c55d4ab0d5dfb2c0",
+      "proof_artifact_commit": "51f3df617287ce83af7c7cdb58d65c5d8dbcf9e2",
+      "mutation_artifact_commit": "51f3df617287ce83af7c7cdb58d65c5d8dbcf9e2",
+      "final_inventory_commit": "fc1c3ec68052d5d575d1aa34fd811803d7cd1239",
+      "evidence_graph_commit": "a3571e3d63b7634f75e82b10bf4d79fa80e94c3d",
+      "qualification_base_candidate": "bb438641d8d41ed6583b66564ab8dcfbd011bdbe",
+      "qualification_artifact_commit": "816024eb64f0767e6992c076c73b734d1cf2202e"
+    },
+    "public_candidates": {
+      "contract_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+      "evidence_graph_candidate": "6b73727be798e152aa3afbb98bf3683c7e52a393",
+      "transition_candidate": "b1a960ae32aa95c4a978b401af1b46e1cd9a29a0",
+      "qualification_candidate": "67da17714ec97418950aff44e056badbe113b456"
+    },
+    "evidence_sha256": {
+      "authority": "662d7b3c97e206ed0faf971feeb0d7c13766ba09b262f27748b29d14e97e8974",
+      "proofs": "3cca44dfdc340f6e56e9cc58ce7aaed994697c75b90a32b72cd3e437f289fd09",
+      "mutations": "092653af974a156e01fa3e69e0d3bd7bdd8a5597dfd57e217b4288a401bb9869",
+      "inventory": "edee9af640ea91aa32e154f1cbbc403342a4615ff18e4c69d5dc2e9ceb02a322",
+      "graph": "e6601bbb0f52f27b0a20429cdc87f9e845bf9fdfa07612e720e12ee92575f058",
+      "qualification": "f1d4b7b30d50c61bec8870f2677449bdfbb55091f402b809a9820a16d2255e0b"
+    },
+    "distribution_sha256": {
+      "selected_manifest": "7890fe2532da48ca84e54f5b1b883a38fd1a60ff58bb2999a056025335a4b5d3",
+      "selected_lock": "9e09dfd2de706d320c3bcd7cfe45b2f9a7560d5e9354809d2a41e5f52a2fba90",
+      "implementation_manifest": "9594c85bb8fdd163ea1e58a8b4c06108ae0330ee48b27c7a4f80da24333fcc84",
+      "implementation_projection": "1edde3eb3fb543284a037088c84b1cb192cdf86f1d7390fd1cf37f333119b5ce"
+    },
+    "counts": {
+      "source_sites": 142,
+      "direct_sites": 7,
+      "helper_sites": 135,
+      "proofs": 142,
+      "direct_mutations": 7,
+      "helper_mutations": 9,
+      "provenance_mutations": 3,
+      "mutations": 19,
+      "mutation_survivors": 0,
+      "scenarios": 204,
+      "signed_events": 771,
+      "delivery_orders": 8,
+      "processes": 2,
+      "gates": 8,
+      "affected": 0
+    },
+    "applicability_classes": [
+      "projection_construction",
+      "actor_sequence",
+      "causal_counter",
+      "frontier_comparison"
+    ],
+    "result_classes": [
+      "descriptor_aware_charge",
+      "sealed_charge_target_observe",
+      "typed_stop_identity_exact",
+      "trace_derived_site_proofs",
+      "site_local_direct_mutations",
+      "replayable_mutation_evidence",
+      "bidirectional_evidence_complete",
+      "distribution_byte_identical",
+      "independent_implementation_boundary"
+    ],
+    "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+    "serialized_run_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344",
+    "clean_target_scope": true,
+    "independent_implementation": true,
+    "public_api_changed": false,
+    "protocol_changed": false,
+    "standalone_git_identity_assumed": false,
+    "release_claimed": false,
+    "publication_claimed": false,
+    "remote_actions": 0,
+    "result": "pass",
+    "identity_sha256": "d6b754335cfd0aa95a001af72ec4b10c154879a57b7a5580bec4db2418bf9372"
+  },
+  "public_bindings": {
+    "contract_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+    "contract_sha256": "5d3ec804f238e77e54b1db490207af7c7ec89a0a8511e740bfdd3611e52eaa4e",
+    "inventory_candidate": "c90d61810bcf378eee9e6577428082a31aec1b5c",
+    "inventory_sha256": "0bd686a2c743414a898669f88115a3e42063321142ae8093b2e9c97606e6c9e0",
+    "evidence_graph_candidate": "6b73727be798e152aa3afbb98bf3683c7e52a393",
+    "evidence_graph_sha256": "48a82ead9b1baf911638651191e2592df3f6ce259077ffc77642c39d8636a9e5",
+    "transition_candidate": "b1a960ae32aa95c4a978b401af1b46e1cd9a29a0",
+    "transition_sha256": "1408b71c6e7ee31a99e6e0436c4ed290467675a67f517bc0be082b10149a5153",
+    "qualification_candidate": "67da17714ec97418950aff44e056badbe113b456",
+    "qualification_sha256": "943622deb233fe3f597f71b159b58f23349bd5c4b3f156c7306c7cf8282f3bcc",
+    "distribution_manifest_sha256": "7890fe2532da48ca84e54f5b1b883a38fd1a60ff58bb2999a056025335a4b5d3",
+    "distribution_lock_sha256": "9e09dfd2de706d320c3bcd7cfe45b2f9a7560d5e9354809d2a41e5f52a2fba90",
+    "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+    "serialized_run_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344",
+    "public_operation_sites": 68,
+    "public_proofs": 68,
+    "public_mutations": 21,
+    "transition_affected_count": 0
+  },
+  "result": "pass",
+  "result_identity_sha256": "ace76e6cceeb6bc16294f56f1df67c18653449d94f011e1011f79d097357a803"
+}

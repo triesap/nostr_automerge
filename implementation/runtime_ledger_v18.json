@@ -3,11 +3,11 @@
   "status": "active",
   "authority": "spec/remediation_v18_authority.json",
   "cursor": {
-    "completed_rclds": [134, 135, 136, 137, 138],
-    "active_rcld": 139,
-    "next_rcld": 139,
+    "completed_rclds": [134, 135, 136, 137, 138, 139],
+    "active_rcld": 140,
+    "next_rcld": 140,
     "last_planned_rcld": 140,
-    "remaining_rcld_count": 2
+    "remaining_rcld_count": 1
   },
   "findings": {
     "open": ["FINDING_129"],
@@ -25,8 +25,8 @@
   },
   "independent": {
     "rcld": 139,
-    "completed": false,
-    "candidate": null,
+    "completed": true,
+    "candidate": "5ecb65588d7b03ebdc007294d70200600d3b832c",
     "public_detail": "opaque_only",
     "target_scope_policy": "owning_private_history_scope_only"
   },
@@ -63,6 +63,8 @@
     "reports/causal_projection_evidence_graph_v18.json",
     "spec/distribution_v18_transition.json",
     "reports/causal_projection_public_qualification_v18.json",
+    "scripts/validate_opaque_causal_projection_v18.py",
+    "reports/opaque_causal_projection_v18.json",
     "tools/nostr_automerge_xtask/src/validate.rs",
     "tools/validation/causal_projection_contracts_v18.schema.json",
     "tools/validation/causal_projection_inventory_v18.schema.json",
@@ -73,6 +75,7 @@
     "tools/validation/causal_projection_evidence_graph_v18.schema.json",
     "tools/validation/distribution_v18_transition.schema.json",
     "tools/validation/causal_projection_public_qualification_v18.schema.json",
+    "tools/validation/opaque_causal_projection_v18.schema.json",
     "tools/validation/runtime_ledger_v18.schema.json"
   ],
   "predecessors": [

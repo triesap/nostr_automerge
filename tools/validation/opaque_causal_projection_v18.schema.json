@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.github.io/nostr-automerge/schemas/opaque_causal_projection_v18.schema.json",
+  "title": "nostr_automerge opaque causal projection v18 import",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "status",
+    "independent_candidate",
+    "opaque_record_sha256",
+    "assurance",
+    "public_bindings",
+    "result",
+    "result_identity_sha256"
+  ],
+  "properties": {
+    "schema": { "const": "nostr_automerge.opaque_causal_projection_import.v18.v1" },
+    "status": { "const": "code_complete_publication_held" },
+    "independent_candidate": { "$ref": "#/$defs/commit" },
+    "opaque_record_sha256": { "$ref": "#/$defs/hash" },
+    "assurance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "status",
+        "candidate_roles",
+        "public_candidates",
+        "evidence_sha256",
+        "distribution_sha256",
+        "counts",
+        "applicability_classes",
+        "result_classes",
+        "canonical_output_sha256",
+        "serialized_run_sha256",
+        "clean_target_scope",
+        "independent_implementation",
+        "public_api_changed",
+        "protocol_changed",
+        "standalone_git_identity_assumed",
+        "release_claimed",
+        "publication_claimed",
+        "remote_actions",
+        "result",
+        "identity_sha256"
+      ],
+      "properties": {
+        "schema": { "const": "nostr_automerge.opaque_causal_projection.v18.v1" },
+        "status": { "const": "code_complete_publication_held" },
+        "candidate_roles": { "$ref": "#/$defs/candidateRoles" },
+        "public_candidates": { "$ref": "#/$defs/publicCandidates" },
+        "evidence_sha256": { "$ref": "#/$defs/evidenceHashes" },
+        "distribution_sha256": { "$ref": "#/$defs/distributionHashes" },
+        "counts": { "$ref": "#/$defs/counts" },
+        "applicability_classes": { "type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true, "items": { "type": "string" } },
+        "result_classes": { "type": "array", "minItems": 9, "maxItems": 9, "uniqueItems": true, "items": { "type": "string" } },
+        "canonical_output_sha256": { "$ref": "#/$defs/hash" },
+        "serialized_run_sha256": { "$ref": "#/$defs/hash" },
+        "clean_target_scope": { "const": true },
+        "independent_implementation": { "const": true },
+        "public_api_changed": { "const": false },
+        "protocol_changed": { "const": false },
+        "standalone_git_identity_assumed": { "const": false },
+        "release_claimed": { "const": false },
+        "publication_claimed": { "const": false },
+        "remote_actions": { "const": 0 },
+        "result": { "const": "pass" },
+        "identity_sha256": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "public_bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_candidate",
+        "contract_sha256",
+        "inventory_candidate",
+        "inventory_sha256",
+        "evidence_graph_candidate",
+        "evidence_graph_sha256",
+        "transition_candidate",
+        "transition_sha256",
+        "qualification_candidate",
+        "qualification_sha256",
+        "distribution_manifest_sha256",
+        "distribution_lock_sha256",
+        "canonical_output_sha256",
+        "serialized_run_sha256",
+        "public_operation_sites",
+        "public_proofs",
+        "public_mutations",
+        "transition_affected_count"
+      ],
+      "properties": {
+        "contract_candidate": { "$ref": "#/$defs/commit" },
+        "contract_sha256": { "$ref": "#/$defs/hash" },
+        "inventory_candidate": { "$ref": "#/$defs/commit" },
+        "inventory_sha256": { "$ref": "#/$defs/hash" },
+        "evidence_graph_candidate": { "$ref": "#/$defs/commit" },
+        "evidence_graph_sha256": { "$ref": "#/$defs/hash" },
+        "transition_candidate": { "$ref": "#/$defs/commit" },
+        "transition_sha256": { "$ref": "#/$defs/hash" },
+        "qualification_candidate": { "$ref": "#/$defs/commit" },
+        "qualification_sha256": { "$ref": "#/$defs/hash" },
+        "distribution_manifest_sha256": { "$ref": "#/$defs/hash" },
+        "distribution_lock_sha256": { "$ref": "#/$defs/hash" },
+        "canonical_output_sha256": { "$ref": "#/$defs/hash" },
+        "serialized_run_sha256": { "$ref": "#/$defs/hash" },
+        "public_operation_sites": { "const": 68 },
+        "public_proofs": { "const": 68 },
+        "public_mutations": { "const": 21 },
+        "transition_affected_count": { "const": 0 }
+      }
+    },
+    "result": { "const": "pass" },
+    "result_identity_sha256": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "candidateRoles": {
+      "type": "object",
+      "minProperties": 9,
+      "maxProperties": 9,
+      "additionalProperties": { "$ref": "#/$defs/commit" }
+    },
+    "publicCandidates": {
+      "type": "object",
+      "minProperties": 4,
+      "maxProperties": 4,
+      "additionalProperties": { "$ref": "#/$defs/commit" }
+    },
+    "evidenceHashes": {
+      "type": "object",
+      "minProperties": 6,
+      "maxProperties": 6,
+      "additionalProperties": { "$ref": "#/$defs/hash" }
+    },
+    "distributionHashes": {
+      "type": "object",
+      "minProperties": 4,
+      "maxProperties": 4,
+      "additionalProperties": { "$ref": "#/$defs/hash" }
+    },
+    "counts": {
+      "type": "object",
+      "minProperties": 15,
+      "maxProperties": 15,
+      "additionalProperties": { "type": "integer" }
+    }
+  }
+}
