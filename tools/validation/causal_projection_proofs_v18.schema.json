@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.github.io/nostr-automerge/schemas/causal_projection_proofs_v18.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "authority", "source_candidate", "execution_base_candidate", "inventory_path", "inventory_sha256", "row_contract", "rows", "counts", "execution", "result_identity_sha256", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_proofs.v18.v1"},
+    "status": {"const": "actual_execution_raw_unbound"},
+    "authority": {"const": "spec/causal_projection_contracts_v18.json"},
+    "source_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "execution_base_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "inventory_path": {"const": "reports/causal_projection_inventory_v18.json"},
+    "inventory_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "row_contract": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["proof_row_id", "inventory_row_id", "site_id", "phase", "family", "counter", "command", "requested_site", "observed_completed_site", "n_minus_one_result", "n_result", "n_plus_one_result", "cancelled_result", "unexpected_error_identity", "target_count_at_n_minus_one", "completion_observation_count_at_n_minus_one", "publication_count_at_n_minus_one", "charge_attempt_count_at_n_minus_one", "trace_artifact", "trace_sha256", "source_candidate", "execution_base_candidate", "result"]
+      }
+    },
+    "counts": {"type": "object"},
+    "execution": {"type": "object"},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "result": {"const": "pass"}
+  }
+}

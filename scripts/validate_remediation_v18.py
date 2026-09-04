@@ -13,6 +13,8 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = "8673ff8546b9e9d57218c15a4b81890d82137184"
+SOURCE_CANDIDATE = "076221ad7f03e67d89ac4b2fcfc8f2586b97f182"
+PROOF_EXECUTION_BASE = "94348cf0f92c8eded557d67ec9c933e647d73f6b"
 TREE = "f6b6d044553d06e71d7c48f4a30d41922e99a2f0"
 ACTOR_SHA = "4d825c9126b609bdb1c7ebc8580a901bc3e78bbd373086e5c0e0c2d945cbc3d6"
 PLAN_SHA = "3c85951fa8af77f4faa5cfaae5b8dbecce959a8ecd1a695f9458a6744ae79d68"
@@ -140,9 +142,13 @@ def validate(authority: Any, findings: Any, ledger: Any, schema: Any) -> None:
     require(ledger["findings"]["held"] == ["FINDING_080"], "ledger:held")
     roles = ledger["candidate_roles"]
     require(list(roles) == ["source_candidate", "execution_base_candidate", "proof_artifact_commit", "mutation_artifact_commit", "final_inventory_commit", "evidence_graph_commit", "terminal_artifact_commit", "clean_attestation_commit"], "ledger:roles")
-    require(roles["execution_base_candidate"] == BASE, "ledger:execution_base")
+    if 136 in completed:
+        require(roles["source_candidate"] == SOURCE_CANDIDATE, "ledger:source_candidate")
+        require(roles["execution_base_candidate"] == PROOF_EXECUTION_BASE, "ledger:execution_base")
+    else:
+        require(roles["execution_base_candidate"] == BASE, "ledger:execution_base")
     require(ledger["independent"]["rcld"] == 139 and ledger["independent"]["public_detail"] == "opaque_only", "ledger:independent")
-    require(all((ROOT / path).is_file() for path in ledger["active_checkpoint_scope"]), "ledger:scope")
+    require(all((ROOT / path).exists() for path in ledger["active_checkpoint_scope"]), "ledger:scope")
     require(ledger["predecessors"][0] == {"rcld": 133, "candidate": BASE, "owner_class": "public", "result": "pass"}, "ledger:predecessor")
     validate_reproductions()
 

@@ -3,19 +3,19 @@
   "status": "active",
   "authority": "spec/remediation_v18_authority.json",
   "cursor": {
-    "completed_rclds": [134, 135],
-    "active_rcld": 136,
-    "next_rcld": 136,
+    "completed_rclds": [134, 135, 136],
+    "active_rcld": 137,
+    "next_rcld": 137,
     "last_planned_rcld": 140,
-    "remaining_rcld_count": 5
+    "remaining_rcld_count": 4
   },
   "findings": {
-    "open": ["FINDING_124", "FINDING_125", "FINDING_126", "FINDING_128", "FINDING_129"],
+    "open": ["FINDING_125", "FINDING_126", "FINDING_129"],
     "held": ["FINDING_080"]
   },
   "candidate_roles": {
     "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
-    "execution_base_candidate": "8673ff8546b9e9d57218c15a4b81890d82137184",
+    "execution_base_candidate": "94348cf0f92c8eded557d67ec9c933e647d73f6b",
     "proof_artifact_commit": null,
     "mutation_artifact_commit": null,
     "final_inventory_commit": null,
@@ -40,15 +40,19 @@
     "scripts/validate_causal_projection_contracts_v18.py",
     "scripts/validate_causal_projection_boundary_v18.py",
     "scripts/validate_causal_projection_inventory_v18.py",
+    "scripts/validate_causal_projection_proofs_v18.py",
     "scripts/validate_remediation_v18.py",
     "scripts/validate_spec.py",
     "spec/causal_projection_contracts_v18.json",
     "spec/remediation_findings_v18.json",
     "spec/remediation_v18_authority.json",
     "reports/causal_projection_inventory_v18.json",
+    "reports/causal_projection_proofs_v18.json",
+    "reports/evidence/v18/proofs",
     "tools/nostr_automerge_xtask/src/validate.rs",
     "tools/validation/causal_projection_contracts_v18.schema.json",
     "tools/validation/causal_projection_inventory_v18.schema.json",
+    "tools/validation/causal_projection_proofs_v18.schema.json",
     "tools/validation/runtime_ledger_v18.schema.json"
   ],
   "predecessors": [

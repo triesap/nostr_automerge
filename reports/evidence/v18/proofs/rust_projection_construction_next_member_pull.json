@@ -1,0 +1,47 @@
+{
+  "schema": "nostr_automerge.causal_projection_proof_trace.v18.v1",
+  "authority": "spec/causal_projection_contracts_v18.json",
+  "inventory_row_id": "rust.projection_construction.next_member_pull",
+  "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+  "execution_base_candidate": "94348cf0f92c8eded557d67ec9c933e647d73f6b",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "nostr_automerge",
+    "--lib",
+    "graph::actor_state::tests::causal_projection_v17_site_projection_construction_next_member_pull",
+    "--locked",
+    "--",
+    "--exact",
+    "--nocapture"
+  ],
+  "cwd": ".",
+  "environment": {
+    "target_routing": "extbuild",
+    "output_capture": "stdout_and_stderr"
+  },
+  "exit_status": 0,
+  "test_result": "passed",
+  "stdout_sha256": "ed839cd766fced5bb3e74a7bfea79bcba124559c418077e5f19f1c3852474837",
+  "stderr_sha256": "98f4adaaa1e1cb0a7b1dda1be808144bdde98a4acb3f316e22affd33542479e9",
+  "trace": {
+    "site_id": "NextMemberPull",
+    "phase": "projection_construction",
+    "family": "CanonicalSourcePull",
+    "counter": "GraphNode",
+    "requested_site": "NextMemberPull",
+    "observed_completed_site": "NextMemberPull",
+    "n_minus_one_result": "BudgetExhausted",
+    "n_result": "requested_site_completed",
+    "n_plus_one_result": "requested_site_completed",
+    "cancelled_result": "Cancelled",
+    "unexpected_error_identity": "exact",
+    "target_count_at_n_minus_one": 0,
+    "completion_observation_count_at_n_minus_one": 0,
+    "publication_count_at_n_minus_one": 0,
+    "charge_attempt_count_at_n_minus_one": 1,
+    "count_scope": "post_failed_charge_suffix"
+  },
+  "result": "pass"
+}

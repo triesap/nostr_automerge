@@ -1,0 +1,47 @@
+{
+  "schema": "nostr_automerge.causal_projection_proof_trace.v18.v1",
+  "authority": "spec/causal_projection_contracts_v18.json",
+  "inventory_row_id": "rust.projection_construction.dependency_order_compare",
+  "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+  "execution_base_candidate": "94348cf0f92c8eded557d67ec9c933e647d73f6b",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "nostr_automerge",
+    "--lib",
+    "graph::actor_state::tests::causal_projection_v17_site_projection_construction_dependency_order_compare",
+    "--locked",
+    "--",
+    "--exact",
+    "--nocapture"
+  ],
+  "cwd": ".",
+  "environment": {
+    "target_routing": "extbuild",
+    "output_capture": "stdout_and_stderr"
+  },
+  "exit_status": 0,
+  "test_result": "passed",
+  "stdout_sha256": "a7167b7abfd86f255ef04ba2a978efce811a8394bb868eb0389fe4ad6e9529cb",
+  "stderr_sha256": "8ab3b86144c0d910e8ebab94682c689001843e0a63b1dd30a76ee6adf61e6d06",
+  "trace": {
+    "site_id": "DependencyOrderCompare",
+    "phase": "projection_construction",
+    "family": "CanonicalOrderCompare",
+    "counter": "GraphEdge",
+    "requested_site": "DependencyOrderCompare",
+    "observed_completed_site": "DependencyOrderCompare",
+    "n_minus_one_result": "BudgetExhausted",
+    "n_result": "requested_site_completed",
+    "n_plus_one_result": "requested_site_completed",
+    "cancelled_result": "Cancelled",
+    "unexpected_error_identity": "exact",
+    "target_count_at_n_minus_one": 0,
+    "completion_observation_count_at_n_minus_one": 0,
+    "publication_count_at_n_minus_one": 0,
+    "charge_attempt_count_at_n_minus_one": 1,
+    "count_scope": "post_failed_charge_suffix"
+  },
+  "result": "pass"
+}

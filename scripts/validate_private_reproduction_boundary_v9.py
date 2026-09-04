@@ -230,6 +230,11 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/causal_projection_final_decision_v17.schema.json",
     "reports/causal_projection_clean_candidate_v17.json",
     "tools/validation/causal_projection_clean_candidate_v17.schema.json",
+    "reports/causal_projection_proofs_v18.json",
+    "tools/validation/causal_projection_proofs_v18.schema.json",
+) + tuple(
+    path.relative_to(ROOT).as_posix()
+    for path in sorted((ROOT / "reports/evidence/v18/proofs").glob("*.json"))
 )
 PUBLIC_SCHEMA_URIS = frozenset(
     value.decode("ascii")
@@ -268,6 +273,7 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://github.com/triesap/nostr_automerge/tools/validation/distribution_v16_transition.schema.json",
         b"https://triesap.github.io/nostr-automerge/schemas/distribution_v17_transition.schema.json",
         b"https://triesap.github.io/nostr-automerge/schemas/rust_conformance_v17.schema.json",
+        b"https://triesap.github.io/nostr-automerge/schemas/causal_projection_proofs_v18.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -758,8 +764,12 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_causal_projection_contracts_v18.py",
         "scripts/validate_causal_projection_boundary_v18.py",
         "scripts/validate_causal_projection_inventory_v18.py",
+        "scripts/validate_causal_projection_proofs_v18.py",
         "reports/causal_projection_inventory_v18.json",
+        "reports/causal_projection_proofs_v18.json",
+        "reports/evidence/v18/proofs",
         "tools/validation/causal_projection_inventory_v18.schema.json",
+        "tools/validation/causal_projection_proofs_v18.schema.json",
         "tools/validation/runtime_ledger_v18.schema.json",
         "tools/validation/causal_projection_contracts_v18.schema.json",
         "tools/nostr_automerge_conformance/src/main.rs",
@@ -1100,6 +1110,28 @@ def validate_records(records: list[dict[str, Any]], text: list[str]) -> None:
         validate_no_leak(value, f"text_record:{index}")
 
 
+def public_command(value: Any) -> str | None:
+    command = " ".join(value) if isinstance(value, list) and all(isinstance(part, str) for part in value) else value
+    if not isinstance(command, str):
+        return None
+    allowed = (
+        re.fullmatch(chr(99) + r"argo test -p nostr_automerge --lib [a-z0-9_]+ --locked", command)
+        or re.fullmatch(
+            chr(99)
+            + r"argo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v(?:16|17)_site_[a-z0-9_]+ --locked -- --exact(?: --nocapture)?",
+            command,
+        )
+        or command
+        == chr(112)
+        + "ython3 scripts/validate_causal_projection_structural_assurance_v16.py --mode structural"
+        or command
+        == chr(99)
+        + "argo test -p nostr_automerge --lib graph::actor_state::tests::projection_causal_maximum_is_charged_once_per_accepted_change --locked -- --exact"
+        or command == chr(103) + "it status --porcelain=v1"
+    )
+    return command if allowed else None
+
+
 def validate_public_record(value: Any, diagnostic: str) -> None:
     if isinstance(value, dict):
         for key, child in value.items():
@@ -1107,30 +1139,10 @@ def validate_public_record(value: Any, diagnostic: str) -> None:
             if key in {"$schema", "$id"}:
                 require(child in PUBLIC_SCHEMA_URIS, f"{diagnostic}:{key}:uri")
                 continue
-            if (
-                key == "command"
-                and isinstance(child, str)
-                and (
-                    re.fullmatch(
-                        chr(99) + r"argo test -p nostr_automerge --lib [a-z0-9_]+ --locked",
-                        child,
-                    )
-                    or re.fullmatch(
-                        chr(99)
-                        + r"argo test -p nostr_automerge --lib graph::actor_state::tests::causal_projection_v16_site_[a-z0-9_]+ --locked -- --exact",
-                        child,
-                    )
-                    or child
-                    == chr(112)
-                    + "ython3 scripts/validate_causal_projection_structural_assurance_v16.py --mode structural"
-                    or child
-                    == chr(99)
-                    + "argo test -p nostr_automerge --lib graph::actor_state::tests::projection_causal_maximum_is_charged_once_per_accepted_change --locked -- --exact"
-                    or child == chr(103) + "it status --porcelain=v1"
-                )
-            ):
+            command = public_command(child) if key == "command" else None
+            if command is not None:
                 validate_source_literal(
-                    child, f"{diagnostic}:{key}", allow_command_token=True
+                    command, f"{diagnostic}:{key}", allow_command_token=True
                 )
                 continue
             validate_public_record(child, f"{diagnostic}:{key}")
@@ -1263,6 +1275,7 @@ def is_public_route(value: str) -> bool:
         or value.startswith("fixtures/v14/rebindings/causal_projection/")
         or value.startswith("fixtures/v15/rebindings/causal_projection/")
         or value.startswith("fixtures/v16/rebindings/causal_projection/")
+        or value.startswith("reports/evidence/v18/proofs/")
         or value.startswith("fixtures/v1_draft/scenarios/scope/")
         or value.startswith("fixtures/v1_draft/checkpoints/")
         or value in {row["value"] for row in APPROVED_WIRE_DOMAINS}
