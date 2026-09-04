@@ -150,6 +150,7 @@ VALIDATORS = [
     "validate_causal_projection_boundary_v18.py",
     "validate_causal_projection_inventory_v18.py",
     "validate_causal_projection_proofs_v18.py",
+    "validate_causal_projection_properties_v18.py",
     "validate_causal_projection_operation_discovery_v15.py",
     "validate_causal_projection_discovery_v15.py",
     "validate_causal_projection_consumer_v15.py",

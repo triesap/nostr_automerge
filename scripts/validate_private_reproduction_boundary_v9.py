@@ -765,6 +765,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_causal_projection_boundary_v18.py",
         "scripts/validate_causal_projection_inventory_v18.py",
         "scripts/validate_causal_projection_proofs_v18.py",
+        "scripts/validate_causal_projection_properties_v18.py",
         "reports/causal_projection_inventory_v18.json",
         "reports/causal_projection_proofs_v18.json",
         "reports/evidence/v18/proofs",
