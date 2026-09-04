@@ -92,7 +92,8 @@ def helper_structure(source: str, name: str) -> None:
     require(descriptor < charge, "CHARGE_AFTER_OPERATION")
     require(charge < target, "CHARGE_AFTER_OPERATION")
     require("?;" in body[charge:target], "TARGET_AFTER_STOP")
-    require(target < completion < returned, "OBSERVATION_AFTER_STOP")
+    require(target < completion, "OPERATION_OBSERVATION_BEFORE_TARGET")
+    require(completion < returned, "OBSERVATION_AFTER_STOP")
     signature_start = source.find(f"fn {name}")
     signature = code_view(source[signature_start:signature_start + 450])
     require("site:" in signature and "Descriptor) -> Result<(), E>" in signature, "SITE_ID_MISMATCH")
@@ -149,15 +150,22 @@ def validate_structure(
         current = derive_rows(source)
     except Exception as error:
         raise PropertyError("SITE_ID_MISMATCH") from error
-    expected = [
+    expected_identity = [
         (row["phase"], row["site_id"], row["family"], row["counter"])
         for row in inventory["rows"]
     ]
-    observed = [
+    observed_identity = [
         (row["phase"], row["site_id"], row["family"], row["counter"])
         for row in current
     ]
-    require(observed == expected, "SITE_ID_MISMATCH")
+    require(
+        [row[:3] for row in observed_identity] == [row[:3] for row in expected_identity],
+        "SITE_ID_MISMATCH",
+    )
+    require(
+        [row[3] for row in observed_identity] == [row[3] for row in expected_identity],
+        "COUNTER_MISMATCH",
+    )
     for phase, (enum, helper) in HELPERS.items():
         helper_structure(source, helper)
         for row in (row for row in inventory["rows"] if row["phase"] == phase):
