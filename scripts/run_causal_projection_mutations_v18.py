@@ -67,6 +67,7 @@ from validate_causal_projection_properties_v18 import (  # noqa: E402
     HELPERS,
     function_body,
     hoist_direct_target,
+    matching_call_end,
 )
 
 
@@ -247,10 +248,14 @@ def mutate_provenance(source: str, consumer: str, kind: str) -> tuple[str, str]:
             1,
         )
     elif kind == "alternate_consumer_bypass":
-        consumer = consumer.replace(
-            ".candidate_semantics_decision_metered(",
-            ".candidate_semantics_decision_unmetered(",
-            1,
+        marker = "projection.candidate_semantics_decision_metered("
+        start = consumer.find(marker)
+        require(start >= 0, "ALTERNATE_CONSUMER_PATCH")
+        end = matching_call_end(consumer, start)
+        consumer = (
+            consumer[:start]
+            + "Ok::<(), MeteredActorStateError<ScheduleError>>(())"
+            + consumer[end:]
         )
     else:
         raise MutationError(f"UNKNOWN_MUTATION:{kind}")
