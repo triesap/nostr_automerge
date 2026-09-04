@@ -15,15 +15,15 @@ ROOT = Path(__file__).resolve().parents[1]
 REPORT = ROOT / "reports/causal_projection_finding_closure_v18.json"
 SCHEMA = ROOT / "tools/validation/causal_projection_finding_closure_v18.schema.json"
 COMBINED = ROOT / "reports/causal_projection_combined_assurance_v18.json"
-CANDIDATE = "f7f198eebf2b598f4f95b9edb30f4384fc993c49"
+CANDIDATE = "272c254868efd2e936938e22cdbd764b7f8f527b"
 FIELDS = [
     "schema", "status", "rcld", "candidate", "imports", "history", "findings",
     "counts", "holds", "release_claimed", "publication_claimed", "remote_actions",
     "result", "result_identity_sha256",
 ]
 IMPORTS = {
-    "combined_assurance_sha256": "51c8e8932209eeba86b1e952a962406a84419706f0d47571223bbd859279886e",
-    "opaque_import_sha256": "2aaa6d3fb214b7076b78c82ca44c73097fdc35ba2ae9d8bbd33127c6697e134c",
+    "combined_assurance_sha256": "44a6bdb0add32ff92dfd43d89339f5c6860ef4bc7e7e3497eb568aa36eed422a",
+    "opaque_import_sha256": "7c65ac14d8fa4a1ef72c5a26ddac50c0b6629d0839be2ca6e459348143f6d8b6",
     "evidence_graph_sha256": "48a82ead9b1baf911638651191e2592df3f6ce259077ffc77642c39d8636a9e5",
     "finding_registry_sha256": "6cb9021b4fa827b7a1db50b0c2fb5d2951904c634c8ff1d678b374f8621e2725",
     "authority_sha256": "00e15eff444c2c407ce6d4fb632ecf7939f3c18ecfa95ba2cd0dad671f01a58a",

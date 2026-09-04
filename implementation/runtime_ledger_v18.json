@@ -26,7 +26,7 @@
   "independent": {
     "rcld": 139,
     "completed": true,
-    "candidate": "5ecb65588d7b03ebdc007294d70200600d3b832c",
+    "candidate": "5ecb65582555ac27c89bbed5f7d551b69b68b04a",
     "public_detail": "opaque_only",
     "target_scope_policy": "owning_private_history_scope_only"
   },

@@ -15,7 +15,7 @@ sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
 REPORT = ROOT / "reports/causal_projection_combined_assurance_v18.json"
 SCHEMA = ROOT / "tools/validation/causal_projection_combined_assurance_v18.schema.json"
-CANDIDATE = "f7f198eebf2b598f4f95b9edb30f4384fc993c49"
+CANDIDATE = "272c254868efd2e936938e22cdbd764b7f8f527b"
 CANONICAL = "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415"
 SERIALIZED = "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344"
 FIELDS = [
@@ -34,7 +34,7 @@ IMPORTS = {
     "public_evidence_graph_sha256": "48a82ead9b1baf911638651191e2592df3f6ce259077ffc77642c39d8636a9e5",
     "public_qualification_sha256": "943622deb233fe3f597f71b159b58f23349bd5c4b3f156c7306c7cf8282f3bcc",
     "distribution_transition_sha256": "1408b71c6e7ee31a99e6e0436c4ed290467675a67f517bc0be082b10149a5153",
-    "opaque_import_sha256": "2aaa6d3fb214b7076b78c82ca44c73097fdc35ba2ae9d8bbd33127c6697e134c",
+    "opaque_import_sha256": "7c65ac14d8fa4a1ef72c5a26ddac50c0b6629d0839be2ca6e459348143f6d8b6",
     "finding_registry_sha256": "6cb9021b4fa827b7a1db50b0c2fb5d2951904c634c8ff1d678b374f8621e2725",
 }
 ROLES = {
@@ -45,8 +45,8 @@ ROLES = {
     "final_inventory_commit": "c90d61810bcf378eee9e6577428082a31aec1b5c",
     "evidence_graph_commit": "6b73727be798e152aa3afbb98bf3683c7e52a393",
     "public_qualification_commit": "67da17714ec97418950aff44e056badbe113b456",
-    "opaque_import_commit": CANDIDATE,
-    "independent_assurance_commit": "5ecb65588d7b03ebdc007294d70200600d3b832c",
+    "opaque_import_commit": "f7f198eebf2b598f4f95b9edb30f4384fc993c49",
+    "independent_assurance_commit": "5ecb65582555ac27c89bbed5f7d551b69b68b04a",
 }
 COUNTS = {
     "public_operation_sites": 68, "public_site_proofs": 68, "public_mutations": 21,
@@ -65,7 +65,7 @@ APPLICABILITY = {
 IDENTITIES = {
     "public_evidence_graph_identity_sha256": "d9d3e919b3beef383451200760060d6f835dc11f90073fa22252207c16e1e6ca",
     "opaque_source_identity_sha256": "d6b754335cfd0aa95a001af72ec4b10c154879a57b7a5580bec4db2418bf9372",
-    "opaque_import_identity_sha256": "ace76e6cceeb6bc16294f56f1df67c18653449d94f011e1011f79d097357a803",
+    "opaque_import_identity_sha256": "13882d2057031b54c1a7dc0d1b07d0f6ecdbdffccf31fecacf25a9c578d25cef",
     "canonical_output_sha256": CANONICAL,
     "serialized_run_sha256": SERIALIZED,
 }
@@ -84,7 +84,6 @@ BINDINGS = {
     "public_evidence_graph_sha256": (ROLES["evidence_graph_commit"], "reports/causal_projection_evidence_graph_v18.json"),
     "public_qualification_sha256": (ROLES["public_qualification_commit"], "reports/causal_projection_public_qualification_v18.json"),
     "distribution_transition_sha256": ("b1a960ae32aa95c4a978b401af1b46e1cd9a29a0", "spec/distribution_v18_transition.json"),
-    "opaque_import_sha256": (ROLES["opaque_import_commit"], "reports/opaque_causal_projection_v18.json"),
     "finding_registry_sha256": (ROLES["opaque_import_commit"], "spec/remediation_findings_v18.json"),
 }
 
@@ -130,6 +129,11 @@ def validate(record: dict[str, Any], schema: dict[str, Any]) -> None:
     require(record["imports"] == IMPORTS, "imports")
     for name, (candidate, path) in BINDINGS.items():
         require(committed_sha(candidate, path) == IMPORTS[name], "binding:" + name)
+    require(
+        hashlib.sha256((ROOT / "reports/opaque_causal_projection_v18.json").read_bytes()).hexdigest()
+        == IMPORTS["opaque_import_sha256"],
+        "binding:opaque_import_sha256",
+    )
     require(record["candidate_roles"] == ROLES, "roles")
     public_chain = [
         ROLES["source_candidate"], ROLES["proof_artifact_commit"],

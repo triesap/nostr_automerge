@@ -1,7 +1,7 @@
 {
   "schema": "nostr_automerge.opaque_causal_projection_import.v18.v1",
   "status": "code_complete_publication_held",
-  "independent_candidate": "5ecb65588d7b03ebdc007294d70200600d3b832c",
+  "independent_candidate": "5ecb65582555ac27c89bbed5f7d551b69b68b04a",
   "opaque_record_sha256": "3eb379886b3ab1b5ed4de86652c977043ec64dde0964bf4c6d5f6f8cfdd54be4",
   "assurance": {
     "schema": "nostr_automerge.opaque_causal_projection.v18.v1",
@@ -105,5 +105,5 @@
     "transition_affected_count": 0
   },
   "result": "pass",
-  "result_identity_sha256": "ace76e6cceeb6bc16294f56f1df67c18653449d94f011e1011f79d097357a803"
+  "result_identity_sha256": "13882d2057031b54c1a7dc0d1b07d0f6ecdbdffccf31fecacf25a9c578d25cef"
 }

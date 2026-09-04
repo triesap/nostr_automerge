@@ -2,7 +2,7 @@
   "schema": "nostr_automerge.causal_projection_combined_assurance.v18.v1",
   "status": "verified",
   "rcld": 140,
-  "candidate": "f7f198eebf2b598f4f95b9edb30f4384fc993c49",
+  "candidate": "272c254868efd2e936938e22cdbd764b7f8f527b",
   "imports": {
     "operation_contract_sha256": "5d3ec804f238e77e54b1db490207af7c7ec89a0a8511e740bfdd3611e52eaa4e",
     "public_proofs_sha256": "f01fa208d9d7fe9df522ec2d62d4c189861e713ff070fb8e6b973944d5582946",
@@ -12,7 +12,7 @@
     "public_evidence_graph_sha256": "48a82ead9b1baf911638651191e2592df3f6ce259077ffc77642c39d8636a9e5",
     "public_qualification_sha256": "943622deb233fe3f597f71b159b58f23349bd5c4b3f156c7306c7cf8282f3bcc",
     "distribution_transition_sha256": "1408b71c6e7ee31a99e6e0436c4ed290467675a67f517bc0be082b10149a5153",
-    "opaque_import_sha256": "2aaa6d3fb214b7076b78c82ca44c73097fdc35ba2ae9d8bbd33127c6697e134c",
+    "opaque_import_sha256": "7c65ac14d8fa4a1ef72c5a26ddac50c0b6629d0839be2ca6e459348143f6d8b6",
     "finding_registry_sha256": "6cb9021b4fa827b7a1db50b0c2fb5d2951904c634c8ff1d678b374f8621e2725"
   },
   "candidate_roles": {
@@ -24,7 +24,7 @@
     "evidence_graph_commit": "6b73727be798e152aa3afbb98bf3683c7e52a393",
     "public_qualification_commit": "67da17714ec97418950aff44e056badbe113b456",
     "opaque_import_commit": "f7f198eebf2b598f4f95b9edb30f4384fc993c49",
-    "independent_assurance_commit": "5ecb65588d7b03ebdc007294d70200600d3b832c"
+    "independent_assurance_commit": "5ecb65582555ac27c89bbed5f7d551b69b68b04a"
   },
   "counts": {
     "public_operation_sites": 68,
@@ -54,7 +54,7 @@
   "identities": {
     "public_evidence_graph_identity_sha256": "d9d3e919b3beef383451200760060d6f835dc11f90073fa22252207c16e1e6ca",
     "opaque_source_identity_sha256": "d6b754335cfd0aa95a001af72ec4b10c154879a57b7a5580bec4db2418bf9372",
-    "opaque_import_identity_sha256": "ace76e6cceeb6bc16294f56f1df67c18653449d94f011e1011f79d097357a803",
+    "opaque_import_identity_sha256": "13882d2057031b54c1a7dc0d1b07d0f6ecdbdffccf31fecacf25a9c578d25cef",
     "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
     "serialized_run_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344"
   },
@@ -83,5 +83,5 @@
   "publication_claimed": false,
   "remote_actions": 0,
   "result": "pass",
-  "result_identity_sha256": "5f14065bfe2e40a5350065edc749dabd781bb3210ccce63d29b6e1a797cae295"
+  "result_identity_sha256": "fb3e5016b52104851b84b9ce634ba496979a4a2858f91f8bd9d91d53816538d1"
 }
