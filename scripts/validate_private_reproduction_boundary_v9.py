@@ -62,6 +62,12 @@ V18_MUTATION_COMMAND_FRAGMENTS = frozenset(
 V18_MUTATION_COMMAND_SEQUENCE = b"argo extbuild run -- cargo check -p nostr_automerge --lib --lockedython3 scripts/validate_causal_projection_properties_v18.py --root . --mode structuralython3 scripts/validate_causal_projection_properties_v18.py --root . --mode identityit diff --quiet -- crates/nostr_automerge/src/graph/actor_state.rs crates/nostr_automerge/src/reference/epoch_engine.rs".decode(
     "ascii"
 )
+V18_QUALIFICATION_CONFORMANCE_SUFFIX = b"argo extbuild run -- cargo run --quiet -p nostr_automerge_conformance --locked -- run_distribution fixtures/distribution/manifest_v16.json".decode(
+    "ascii"
+)
+V18_QUALIFICATION_GATE_SUFFIX_PATTERN = b"argo extbuild run -- python3 scripts/local_gate.py (?:remediation|policy|standard|conformance|coverage|supply_chain|robustness|resource|release_evidence)".decode(
+    "ascii"
+)
 PUBLIC_PATCH_BLOCKED = tuple(
     value.decode("ascii")
     for value in (
@@ -260,6 +266,8 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/causal_projection_evidence_graph_v18.schema.json",
     "spec/distribution_v18_transition.json",
     "tools/validation/distribution_v18_transition.schema.json",
+    "reports/causal_projection_public_qualification_v18.json",
+    "tools/validation/causal_projection_public_qualification_v18.schema.json",
 ) + tuple(
     path.relative_to(ROOT).as_posix()
     for path in sorted((ROOT / "reports/evidence/v18/proofs").glob("*.json"))
@@ -310,6 +318,7 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://triesap.github.io/nostr-automerge/schemas/causal_projection_final_inventory_v18.schema.json",
         b"https://triesap.github.io/nostr-automerge/schemas/causal_projection_evidence_graph_v18.schema.json",
         b"https://triesap.github.io/nostr-automerge/schemas/distribution_v18_transition.schema.json",
+        b"https://triesap.github.io/nostr-automerge/schemas/causal_projection_public_qualification_v18.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -442,6 +451,7 @@ PYTHON_SURFACES = (
     "scripts/validate_causal_projection_completion_v17.py",
     "scripts/validate_causal_projection_final_decision_v17.py",
     "scripts/validate_causal_projection_clean_candidate_v17.py",
+    "scripts/run_causal_projection_public_qualification_v18.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -807,6 +817,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "scripts/validate_causal_projection_final_inventory_v18.py",
         "scripts/validate_causal_projection_evidence_graph_v18.py",
         "scripts/validate_distribution_v18_transition.py",
+        "scripts/run_causal_projection_public_qualification_v18.py",
         "reports/causal_projection_inventory_v18.json",
         "reports/causal_projection_proofs_v18.json",
         "reports/evidence/v18/proofs",
@@ -815,6 +826,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/causal_projection_final_inventory_v18.json",
         "reports/causal_projection_evidence_graph_v18.json",
         "spec/distribution_v18_transition.json",
+        "reports/causal_projection_public_qualification_v18.json",
         "reports/evidence/v18/mutations",
         "tools/validation/causal_projection_inventory_v18.schema.json",
         "tools/validation/causal_projection_proofs_v18.schema.json",
@@ -823,6 +835,7 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "tools/validation/causal_projection_final_inventory_v18.schema.json",
         "tools/validation/causal_projection_evidence_graph_v18.schema.json",
         "tools/validation/distribution_v18_transition.schema.json",
+        "tools/validation/causal_projection_public_qualification_v18.schema.json",
         "tools/validation/runtime_ledger_v18.schema.json",
         "tools/validation/causal_projection_contracts_v18.schema.json",
         "tools/nostr_automerge_conformance/src/main.rs",
@@ -1193,6 +1206,11 @@ def public_command(value: Any) -> str | None:
             + "it diff --quiet -- crates/nostr_automerge/src/graph/actor_state.rs crates/nostr_automerge/src/reference/epoch_engine.rs",
         }
         or command == chr(103) + "it status --porcelain=v1"
+        or command == chr(99) + V18_QUALIFICATION_CONFORMANCE_SUFFIX
+        or re.fullmatch(
+            chr(99) + V18_QUALIFICATION_GATE_SUFFIX_PATTERN,
+            command,
+        )
     )
     return command if allowed else None
 
@@ -1760,7 +1778,11 @@ def validate_source_surfaces() -> None:
                     )
                     or (
                         value in {"cargo", "git", "python3"}
-                        and relative == "scripts/validate_resource_ancestry_gate_v10.py"
+                        and relative
+                        in {
+                            "scripts/validate_resource_ancestry_gate_v10.py",
+                            "scripts/run_causal_projection_public_qualification_v18.py",
+                        }
                     )
                     or (
                         value == "git"

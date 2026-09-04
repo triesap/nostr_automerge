@@ -151,7 +151,10 @@ def validate(authority: Any, findings: Any, ledger: Any, schema: Any) -> None:
         require(roles["proof_artifact_commit"] == "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444", "ledger:proof_artifact")
         require(roles["mutation_artifact_commit"] == "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7", "ledger:mutation_artifact")
         require(roles["final_inventory_commit"] == FINAL_INVENTORY_CANDIDATE, "ledger:final_inventory")
-        require(roles["evidence_graph_commit"] in {None, EVIDENCE_GRAPH_CANDIDATE}, "ledger:evidence_graph")
+        if 138 in completed:
+            require(roles["evidence_graph_commit"] == EVIDENCE_GRAPH_CANDIDATE, "ledger:evidence_graph")
+        else:
+            require(roles["evidence_graph_commit"] in {None, EVIDENCE_GRAPH_CANDIDATE}, "ledger:evidence_graph")
     elif 136 in completed:
         require(roles["source_candidate"] == SOURCE_CANDIDATE, "ledger:source_candidate")
         require(roles["execution_base_candidate"] == PROOF_EXECUTION_BASE, "ledger:execution_base")
