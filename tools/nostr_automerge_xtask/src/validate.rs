@@ -358,6 +358,14 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "scripts/validate_opaque_causal_projection_v18.py",
     ),
     (
+        "causal_projection_combined_assurance_v18",
+        "scripts/validate_causal_projection_combined_assurance_v18.py",
+    ),
+    (
+        "causal_projection_finding_closure_v18",
+        "scripts/validate_causal_projection_finding_closure_v18.py",
+    ),
+    (
         "causal_projection_contracts_v17",
         "scripts/validate_causal_projection_contracts_v17.py",
     ),
@@ -749,6 +757,8 @@ mod tests {
         assert!(names.contains(&"distribution_v18_transition"));
         assert!(names.contains(&"causal_projection_public_qualification_v18"));
         assert!(names.contains(&"opaque_causal_projection_v18"));
+        assert!(names.contains(&"causal_projection_combined_assurance_v18"));
+        assert!(names.contains(&"causal_projection_finding_closure_v18"));
         assert!(names.contains(&"causal_projection_contracts_v17"));
         assert!(names.contains(&"causal_projection_properties_v17"));
         assert!(!names.contains(&"causal_projection_operation_inventory_v16"));

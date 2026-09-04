@@ -1,0 +1,87 @@
+{
+  "schema": "nostr_automerge.causal_projection_combined_assurance.v18.v1",
+  "status": "verified",
+  "rcld": 140,
+  "candidate": "f7f198eebf2b598f4f95b9edb30f4384fc993c49",
+  "imports": {
+    "operation_contract_sha256": "5d3ec804f238e77e54b1db490207af7c7ec89a0a8511e740bfdd3611e52eaa4e",
+    "public_proofs_sha256": "f01fa208d9d7fe9df522ec2d62d4c189861e713ff070fb8e6b973944d5582946",
+    "public_mutations_sha256": "da9cb0416b9008daa504b6626c78387a494a6e154571cefbae2cf00de33baf67",
+    "public_catalogs_sha256": "bbb263b45b7606637fe8a4f82775a6283d4fea3257a0087afc6b3a1b7572a9e1",
+    "public_final_inventory_sha256": "0bd686a2c743414a898669f88115a3e42063321142ae8093b2e9c97606e6c9e0",
+    "public_evidence_graph_sha256": "48a82ead9b1baf911638651191e2592df3f6ce259077ffc77642c39d8636a9e5",
+    "public_qualification_sha256": "943622deb233fe3f597f71b159b58f23349bd5c4b3f156c7306c7cf8282f3bcc",
+    "distribution_transition_sha256": "1408b71c6e7ee31a99e6e0436c4ed290467675a67f517bc0be082b10149a5153",
+    "opaque_import_sha256": "2aaa6d3fb214b7076b78c82ca44c73097fdc35ba2ae9d8bbd33127c6697e134c",
+    "finding_registry_sha256": "6cb9021b4fa827b7a1db50b0c2fb5d2951904c634c8ff1d678b374f8621e2725"
+  },
+  "candidate_roles": {
+    "source_candidate": "076221ad7f03e67d89ac4b2fcfc8f2586b97f182",
+    "execution_base_candidate": "78a5b6e381a3a921fe18f9e7fcf0eb3084e01640",
+    "proof_artifact_commit": "9dda56c11e7f2376a21b0ad8c7b02105e3c9a444",
+    "mutation_artifact_commit": "3e101da1c0cabb6a2c5dd99279e8c3cf9f8eb0d7",
+    "final_inventory_commit": "c90d61810bcf378eee9e6577428082a31aec1b5c",
+    "evidence_graph_commit": "6b73727be798e152aa3afbb98bf3683c7e52a393",
+    "public_qualification_commit": "67da17714ec97418950aff44e056badbe113b456",
+    "opaque_import_commit": "f7f198eebf2b598f4f95b9edb30f4384fc993c49",
+    "independent_assurance_commit": "5ecb65588d7b03ebdc007294d70200600d3b832c"
+  },
+  "counts": {
+    "public_operation_sites": 68,
+    "public_site_proofs": 68,
+    "public_mutations": 21,
+    "independent_operation_sites": 142,
+    "independent_site_proofs": 142,
+    "independent_mutations": 19,
+    "combined_mutations": 40,
+    "mutation_survivors": 0,
+    "scenarios": 204,
+    "signed_events": 771,
+    "delivery_orders": 8,
+    "processes_per_implementation": 2,
+    "transition_affected": 0
+  },
+  "applicability": {
+    "shared_abstract_classes": [
+      "projection_construction",
+      "actor_sequence",
+      "causal_counter",
+      "frontier_comparison"
+    ],
+    "binding_rule": "shared_abstract_owner_language_specific_sites_and_counters",
+    "independence": "separate_implementation_and_evidence_histories"
+  },
+  "identities": {
+    "public_evidence_graph_identity_sha256": "d9d3e919b3beef383451200760060d6f835dc11f90073fa22252207c16e1e6ca",
+    "opaque_source_identity_sha256": "d6b754335cfd0aa95a001af72ec4b10c154879a57b7a5580bec4db2418bf9372",
+    "opaque_import_identity_sha256": "ace76e6cceeb6bc16294f56f1df67c18653449d94f011e1011f79d097357a803",
+    "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+    "serialized_run_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344"
+  },
+  "finding_closure": [
+    { "id": "FINDING_123", "status": "closed", "evidence": ["sealed_charge_boundary", "zero_precharge_completion_observation", "exact_stop_identity"] },
+    { "id": "FINDING_124", "status": "closed", "evidence": ["trace_derived_proofs", "scoped_counts", "production_path_observation"] },
+    { "id": "FINDING_125", "status": "closed", "evidence": ["seven_site_local_mutations", "supplemental_helpers_separate", "zero_survivors"] },
+    { "id": "FINDING_126", "status": "closed", "evidence": ["replayable_compile_evidence", "replayable_property_evidence", "exact_outputs"] },
+    { "id": "FINDING_127", "status": "closed", "evidence": ["normalized_phase", "required_applicability", "descriptor_identity"] },
+    { "id": "FINDING_128", "status": "closed", "evidence": ["requested_site_scope", "failed_charge_suffix", "nonaliased_repeated_sites"] },
+    { "id": "FINDING_129", "status": "closed", "evidence": ["independent_production_paths", "independent_helper_classification", "opaque_assurance"] }
+  ],
+  "result_classes": [
+    "exact_site_identity",
+    "sealed_charge_target_observe",
+    "trace_derived_proof_qualification",
+    "site_local_mutation_qualification",
+    "bidirectional_evidence",
+    "cross_implementation_parity",
+    "distribution_byte_identity"
+  ],
+  "canonical_process_bytes": "identical",
+  "public_api_changed": false,
+  "protocol_changed": false,
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "5f14065bfe2e40a5350065edc749dabd781bb3210ccce63d29b6e1a797cae295"
+}

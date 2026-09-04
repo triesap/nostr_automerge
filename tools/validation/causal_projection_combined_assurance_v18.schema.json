@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.github.io/nostr-automerge/schemas/causal_projection_combined_assurance_v18.schema.json",
+  "title": "nostr_automerge causal projection combined assurance v18",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "rcld", "candidate", "imports", "candidate_roles", "counts", "applicability", "identities", "finding_closure", "result_classes", "canonical_process_bytes", "public_api_changed", "protocol_changed", "release_claimed", "publication_claimed", "remote_actions", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": { "const": "nostr_automerge.causal_projection_combined_assurance.v18.v1" },
+    "status": { "const": "verified" },
+    "rcld": { "const": 140 },
+    "candidate": { "$ref": "#/$defs/commit" },
+    "imports": { "$ref": "#/$defs/hashObject" },
+    "candidate_roles": { "$ref": "#/$defs/commitObject" },
+    "counts": { "$ref": "#/$defs/countObject" },
+    "applicability": { "type": "object" },
+    "identities": { "$ref": "#/$defs/hashObject" },
+    "finding_closure": { "type": "array", "minItems": 7, "maxItems": 7, "items": { "$ref": "#/$defs/finding" } },
+    "result_classes": { "type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true, "items": { "type": "string" } },
+    "canonical_process_bytes": { "const": "identical" },
+    "public_api_changed": { "const": false },
+    "protocol_changed": { "const": false },
+    "release_claimed": { "const": false },
+    "publication_claimed": { "const": false },
+    "remote_actions": { "const": 0 },
+    "result": { "const": "pass" },
+    "result_identity_sha256": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "hashObject": { "type": "object", "minProperties": 1, "additionalProperties": { "$ref": "#/$defs/hash" } },
+    "commitObject": { "type": "object", "minProperties": 1, "additionalProperties": { "$ref": "#/$defs/commit" } },
+    "countObject": { "type": "object", "minProperties": 1, "additionalProperties": { "type": "integer" } },
+    "finding": { "type": "object", "additionalProperties": false, "required": ["id", "status", "evidence"], "properties": { "id": { "type": "string", "pattern": "^FINDING_12[3-9]$" }, "status": { "const": "closed" }, "evidence": { "type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": { "type": "string" } } } }
+  }
+}

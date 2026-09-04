@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.github.io/nostr-automerge/schemas/causal_projection_finding_closure_v18.schema.json",
+  "title": "nostr_automerge causal projection finding closure v18",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "rcld", "candidate", "imports", "history", "findings", "counts", "holds", "release_claimed", "publication_claimed", "remote_actions", "result", "result_identity_sha256"],
+  "properties": {
+    "schema": { "const": "nostr_automerge.causal_projection_finding_closure.v18.v1" },
+    "status": { "const": "code_complete_publication_held" },
+    "rcld": { "const": 140 },
+    "candidate": { "$ref": "#/$defs/commit" },
+    "imports": { "$ref": "#/$defs/hashObject" },
+    "history": { "type": "object" },
+    "findings": { "type": "array", "minItems": 8, "maxItems": 8, "items": { "$ref": "#/$defs/finding" } },
+    "counts": { "type": "object", "additionalProperties": false, "required": ["findings", "closed", "held", "open"], "properties": { "findings": { "const": 8 }, "closed": { "const": 7 }, "held": { "const": 1 }, "open": { "const": 0 } } },
+    "holds": { "type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true, "items": { "type": "string" } },
+    "release_claimed": { "const": false },
+    "publication_claimed": { "const": false },
+    "remote_actions": { "const": 0 },
+    "result": { "const": "pass" },
+    "result_identity_sha256": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "hashObject": { "type": "object", "minProperties": 1, "additionalProperties": { "$ref": "#/$defs/hash" } },
+    "finding": { "type": "object", "additionalProperties": false, "required": ["id", "status", "evidence"], "properties": { "id": { "type": "string", "pattern": "^FINDING_(?:080|12[3-9])$" }, "status": { "enum": ["closed", "held"] }, "evidence": { "type": "array", "minItems": 1, "maxItems": 3, "uniqueItems": true, "items": { "type": "string" } } } }
+  }
+}

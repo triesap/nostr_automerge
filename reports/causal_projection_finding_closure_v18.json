@@ -1,0 +1,43 @@
+{
+  "schema": "nostr_automerge.causal_projection_finding_closure.v18.v1",
+  "status": "code_complete_publication_held",
+  "rcld": 140,
+  "candidate": "f7f198eebf2b598f4f95b9edb30f4384fc993c49",
+  "imports": {
+    "combined_assurance_sha256": "51c8e8932209eeba86b1e952a962406a84419706f0d47571223bbd859279886e",
+    "opaque_import_sha256": "2aaa6d3fb214b7076b78c82ca44c73097fdc35ba2ae9d8bbd33127c6697e134c",
+    "evidence_graph_sha256": "48a82ead9b1baf911638651191e2592df3f6ce259077ffc77642c39d8636a9e5",
+    "finding_registry_sha256": "6cb9021b4fa827b7a1db50b0c2fb5d2951904c634c8ff1d678b374f8621e2725",
+    "authority_sha256": "00e15eff444c2c407ce6d4fb632ecf7939f3c18ecfa95ba2cd0dad671f01a58a"
+  },
+  "history": {
+    "v17_terminal_candidate": "5599e7dc8a7658a3d7edbdd189599e69b57136f1",
+    "v17_clean_attestation_candidate": "8673ff8546b9e9d57218c15a4b81890d82137184",
+    "relationship": "supersedes_without_rewriting_history"
+  },
+  "findings": [
+    { "id": "FINDING_123", "status": "closed", "evidence": ["combined_assurance", "sealed_charge_boundary", "exact_stop_identity"] },
+    { "id": "FINDING_124", "status": "closed", "evidence": ["combined_assurance", "trace_derived_proofs", "scoped_counts"] },
+    { "id": "FINDING_125", "status": "closed", "evidence": ["combined_assurance", "seven_site_local_mutations", "zero_survivors"] },
+    { "id": "FINDING_126", "status": "closed", "evidence": ["combined_assurance", "replayable_mutation_evidence", "exact_outputs"] },
+    { "id": "FINDING_127", "status": "closed", "evidence": ["combined_assurance", "normalized_descriptor_vocabulary"] },
+    { "id": "FINDING_128", "status": "closed", "evidence": ["combined_assurance", "site_scoped_trace_counts"] },
+    { "id": "FINDING_129", "status": "closed", "evidence": ["combined_assurance", "opaque_independent_production_paths"] },
+    { "id": "FINDING_080", "status": "held", "evidence": ["external_authority_required"] }
+  ],
+  "counts": { "findings": 8, "closed": 7, "held": 1, "open": 0 },
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "remote_mutation"
+  ],
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "ba9b1d7298afc6be4c84847d349529d2e52f190ef4d02c1b344111409e2f1c61"
+}

@@ -65,6 +65,10 @@
     "reports/causal_projection_public_qualification_v18.json",
     "scripts/validate_opaque_causal_projection_v18.py",
     "reports/opaque_causal_projection_v18.json",
+    "scripts/validate_causal_projection_combined_assurance_v18.py",
+    "reports/causal_projection_combined_assurance_v18.json",
+    "scripts/validate_causal_projection_finding_closure_v18.py",
+    "reports/causal_projection_finding_closure_v18.json",
     "tools/nostr_automerge_xtask/src/validate.rs",
     "tools/validation/causal_projection_contracts_v18.schema.json",
     "tools/validation/causal_projection_inventory_v18.schema.json",
@@ -76,6 +80,8 @@
     "tools/validation/distribution_v18_transition.schema.json",
     "tools/validation/causal_projection_public_qualification_v18.schema.json",
     "tools/validation/opaque_causal_projection_v18.schema.json",
+    "tools/validation/causal_projection_combined_assurance_v18.schema.json",
+    "tools/validation/causal_projection_finding_closure_v18.schema.json",
     "tools/validation/runtime_ledger_v18.schema.json"
   ],
   "predecessors": [

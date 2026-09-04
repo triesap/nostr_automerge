@@ -270,6 +270,10 @@ PUBLIC_JSON_RECORDS = (
     "tools/validation/causal_projection_public_qualification_v18.schema.json",
     "reports/opaque_causal_projection_v18.json",
     "tools/validation/opaque_causal_projection_v18.schema.json",
+    "reports/causal_projection_combined_assurance_v18.json",
+    "tools/validation/causal_projection_combined_assurance_v18.schema.json",
+    "reports/causal_projection_finding_closure_v18.json",
+    "tools/validation/causal_projection_finding_closure_v18.schema.json",
 ) + tuple(
     path.relative_to(ROOT).as_posix()
     for path in sorted((ROOT / "reports/evidence/v18/proofs").glob("*.json"))
@@ -322,6 +326,8 @@ PUBLIC_SCHEMA_URIS = frozenset(
         b"https://triesap.github.io/nostr-automerge/schemas/distribution_v18_transition.schema.json",
         b"https://triesap.github.io/nostr-automerge/schemas/causal_projection_public_qualification_v18.schema.json",
         b"https://triesap.github.io/nostr-automerge/schemas/opaque_causal_projection_v18.schema.json",
+        b"https://triesap.github.io/nostr-automerge/schemas/causal_projection_combined_assurance_v18.schema.json",
+        b"https://triesap.github.io/nostr-automerge/schemas/causal_projection_finding_closure_v18.schema.json",
     )
 )
 TEXT_RECORDS = (
@@ -456,6 +462,8 @@ PYTHON_SURFACES = (
     "scripts/validate_causal_projection_clean_candidate_v17.py",
     "scripts/run_causal_projection_public_qualification_v18.py",
     "scripts/validate_opaque_causal_projection_v18.py",
+    "scripts/validate_causal_projection_combined_assurance_v18.py",
+    "scripts/validate_causal_projection_finding_closure_v18.py",
 )
 OTHER_SURFACES = (
     "tools/nostr_automerge_xtask/src/validate.rs",
@@ -833,6 +841,12 @@ LEGITIMATE_PUBLIC_ROUTES = frozenset(
         "reports/causal_projection_public_qualification_v18.json",
         "scripts/validate_opaque_causal_projection_v18.py",
         "reports/opaque_causal_projection_v18.json",
+        "scripts/validate_causal_projection_combined_assurance_v18.py",
+        "reports/causal_projection_combined_assurance_v18.json",
+        "tools/validation/causal_projection_combined_assurance_v18.schema.json",
+        "scripts/validate_causal_projection_finding_closure_v18.py",
+        "reports/causal_projection_finding_closure_v18.json",
+        "tools/validation/causal_projection_finding_closure_v18.schema.json",
         "reports/evidence/v18/mutations",
         "tools/validation/causal_projection_inventory_v18.schema.json",
         "tools/validation/causal_projection_proofs_v18.schema.json",
