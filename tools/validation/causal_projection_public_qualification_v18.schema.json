@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.github.io/nostr-automerge/schemas/causal_projection_public_qualification_v18.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "execution_mode", "evidence_graph", "distribution_transition", "execution_base", "conformance", "gates", "frozen", "holds", "remote_actions", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_public_qualification.v18.v1"},
+    "status": {"const": "final"},
+    "execution_mode": {"const": "clean_committed_base"},
+    "evidence_graph": {"$ref": "#/$defs/artifact"},
+    "distribution_transition": {"$ref": "#/$defs/artifact"},
+    "execution_base": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate", "tree", "runner_sha256", "schema_sha256", "report_absent"],
+      "properties": {
+        "candidate": {"$ref": "#/$defs/sha1"},
+        "tree": {"$ref": "#/$defs/sha1"},
+        "runner_sha256": {"$ref": "#/$defs/sha256"},
+        "schema_sha256": {"$ref": "#/$defs/sha256"},
+        "report_absent": {"const": "true"}
+      }
+    },
+    "conformance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["process_count", "byte_identical", "serialized_run_sha256", "processes"],
+      "properties": {
+        "process_count": {"const": 2},
+        "byte_identical": {"const": true},
+        "serialized_run_sha256": {"const": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344"},
+        "processes": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/conformance_process"}}
+      }
+    },
+    "gates": {"type": "array", "minItems": 9, "maxItems": 9, "items": {"$ref": "#/$defs/gate"}},
+    "frozen": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirements", "scenarios", "signed_events", "delivery_orders", "canonical_output_sha256", "serialized_run_sha256", "changed"],
+      "properties": {
+        "requirements": {"const": 156},
+        "scenarios": {"const": 204},
+        "signed_events": {"const": 771},
+        "delivery_orders": {"const": 8},
+        "canonical_output_sha256": {"const": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415"},
+        "serialized_run_sha256": {"const": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344"},
+        "changed": {"const": false}
+      }
+    },
+    "holds": {"const": ["external_assurance", "event_kind_allocation", "nip_submission", "production_qualification", "publication", "release", "remote_mutation"]},
+    "remote_actions": {"const": 0},
+    "result": {"const": "pass"}
+  },
+  "$defs": {
+    "sha1": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "candidate", "sha256"],
+      "properties": {
+        "path": {"type": "string"},
+        "candidate": {"$ref": "#/$defs/sha1"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "overrides"],
+      "properties": {
+        "mode": {"const": "inherited"},
+        "overrides": {"const": {}}
+      }
+    },
+    "conformance_process": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ordinal", "argv", "cwd", "environment", "exit_status", "stdout_sha256", "stderr_sha256", "fixture_count", "delivery_permutations", "report_count", "canonical_output_sha256", "result"],
+      "properties": {
+        "ordinal": {"type": "integer", "minimum": 1, "maximum": 2},
+        "argv": {"type": "array", "minItems": 13, "maxItems": 13, "items": {"type": "string"}},
+        "cwd": {"const": "."},
+        "environment": {"$ref": "#/$defs/environment"},
+        "exit_status": {"const": 0},
+        "stdout_sha256": {"const": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "fixture_count": {"const": 204},
+        "delivery_permutations": {"const": 8},
+        "report_count": {"const": 204},
+        "canonical_output_sha256": {"const": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415"},
+        "result": {"const": "pass"}
+      }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["job", "argv", "cwd", "environment", "exit_status", "stdout_sha256", "stderr_sha256", "output_sha256", "result"],
+      "properties": {
+        "job": {"enum": ["remediation", "policy", "standard", "conformance", "coverage", "supply_chain", "robustness", "resource", "release_evidence"]},
+        "argv": {"type": "array", "minItems": 8, "maxItems": 8, "items": {"type": "string"}},
+        "cwd": {"const": "."},
+        "environment": {"$ref": "#/$defs/environment"},
+        "exit_status": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "output_sha256": {"$ref": "#/$defs/sha256"},
+        "result": {"const": "pass"}
+      }
+    }
+  }
+}
