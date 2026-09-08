@@ -1,0 +1,49 @@
+{
+  "schema": "nostr_automerge.v19_sequence_reconciliation.v1",
+  "status": "approved_consolidation",
+  "reviewed_step_first": 1557,
+  "reviewed_step_last": 1609,
+  "reviewed_step_count": 53,
+  "checkpoint_assignments": {
+    "141.1": [1557],
+    "141.2": [1558, 1559, 1560, 1561],
+    "141.3": [1562, 1591, 1592],
+    "141.4": [1563],
+    "142.1": [1564, 1565, 1566, 1567, 1568],
+    "142.2": [1569, 1570, 1571, 1572],
+    "142.3": [1573],
+    "142.4": [1594],
+    "143.1": [1583, 1584, 1585, 1586, 1587, 1588, 1589],
+    "143.2": [1574],
+    "143.3": [1575, 1576, 1577, 1578, 1579, 1580, 1581, 1582, 1590],
+    "143.4": [1595],
+    "144.1": [1596],
+    "144.2": [1593, 1597],
+    "144.3": [1598],
+    "144.4": [1599],
+    "145.1": [1600],
+    "145.2": [1601],
+    "145.3": [1602],
+    "145.4": [],
+    "145.5": [1603, 1604],
+    "146.1": [1605],
+    "146.2": [1606, 1607],
+    "146.3": [1608],
+    "146.4": [],
+    "146.5": [1609],
+    "146.6": []
+  },
+  "additional_checkpoints": {
+    "145.4": "Later private catalogs are required to bind raw artifacts without self-reference.",
+    "146.4": "A strict descendant execution base is required between terminal artifacts and attestation.",
+    "146.6": "The owning workspace records the final public repository identity separately."
+  },
+  "deviations": [
+    {"id":"v19-coherent-checkpoints","type":"consolidation","reason":"Closely coupled source changes and focused tests form one independently green checkpoint instead of one commit per helper or property."},
+    {"id":"v19-private-ownership","type":"repository_correction","reason":"Independent compatibility work remains in its owning history and crosses the public boundary only through opaque evidence."},
+    {"id":"v19-native-helper-matrix","type":"contract_clarification","reason":"The public campaign uses four physical helpers while independent qualification follows its native helper structure."},
+    {"id":"v19-artifact-order","type":"lifecycle_reorder","reason":"Raw artifacts precede later catalogs, which precede final inventory and graph generation."},
+    {"id":"v19-terminal-order","type":"lifecycle_split","reason":"Terminal artifacts, strict-descendant execution, committed attestation, and repository coordination use distinct forward-only commits."}
+  ],
+  "result": "pass"
+}

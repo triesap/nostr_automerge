@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "reviewed_step_first", "reviewed_step_last", "reviewed_step_count", "checkpoint_assignments", "additional_checkpoints", "deviations", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.v19_sequence_reconciliation.v1"},
+    "status": {"const": "approved_consolidation"},
+    "reviewed_step_first": {"const": 1557},
+    "reviewed_step_last": {"const": 1609},
+    "reviewed_step_count": {"const": 53},
+    "checkpoint_assignments": {"type": "object"},
+    "additional_checkpoints": {"type": "object"},
+    "deviations": {"type": "array", "minItems": 5, "maxItems": 5},
+    "result": {"const": "pass"}
+  }
+}

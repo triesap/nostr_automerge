@@ -3,11 +3,11 @@
   "status": "active",
   "authority": "spec/remediation_v19_authority.json",
   "cursor": {
-    "completed_rclds": [],
-    "active_rcld": 141,
-    "next_rcld": 141,
+    "completed_rclds": [141],
+    "active_rcld": 142,
+    "next_rcld": 142,
     "last_planned_rcld": 146,
-    "remaining_rcld_count": 6
+    "remaining_rcld_count": 5
   },
   "findings": {
     "open": ["FINDING_130", "FINDING_131", "FINDING_132", "FINDING_133"],

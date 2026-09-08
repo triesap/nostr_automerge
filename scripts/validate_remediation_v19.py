@@ -114,7 +114,7 @@ def self_test(values: list[dict[str, Any]]) -> int:
         lambda a, _f, _l, _s: a["approved_decisions"].update(public_minimum_mutations=21),
         lambda a, _f, _l, _s: a["frozen"].update(scenario_count=203),
         lambda _a, f, _l, _s: f["findings"][-1].update(status="closed"),
-        lambda _a, _f, l, _s: l["cursor"].update(remaining_rcld_count=5),
+        lambda _a, _f, l, _s: l["cursor"].update(remaining_rcld_count=99),
         lambda _a, _f, l, _s: l["candidate_roles"].pop("clean_attestation_commit"),
         lambda _a, _f, _l, s: s.update(additionalProperties=True),
     ]
