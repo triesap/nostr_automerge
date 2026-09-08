@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.github.io/nostr-automerge/schemas/causal_projection_mutations_v19.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "authority", "source_candidate", "execution_base_candidate", "matrix_path", "matrix_sha256", "row_contract", "rows", "counts", "execution", "result_identity_sha256", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_mutations.v19.v1"},
+    "status": {"const": "actual_execution_raw_unbound"},
+    "authority": {"const": "spec/causal_projection_contracts_v19.json"},
+    "source_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "execution_base_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "matrix_path": {"const": "reports/causal_projection_mutation_matrix_v19.json"},
+    "matrix_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "row_contract": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "rows": {"type": "array", "minItems": 40, "items": {"type": "object", "additionalProperties": false, "required": ["mutation_id", "campaign", "inventory_row_id", "helper", "kind", "expected_property_code", "actual_property_code", "compile", "owner_test", "property", "restoration", "patch_artifact", "patch_sha256", "transcript_artifact", "transcript_sha256", "source_candidate", "execution_base_candidate", "isolated_worktree", "shared_helper_unchanged", "survivor", "result"]}},
+    "counts": {"type": "object"},
+    "execution": {"type": "object"},
+    "result_identity_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "result": {"const": "pass"}
+  }
+}

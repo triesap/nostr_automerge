@@ -1,0 +1,246 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_matrix.v19.v1",
+  "status": "source_derived_closed",
+  "authority": "spec/causal_projection_contracts_v19.json",
+  "source_candidate": "a8f8651c26a0ac7822e1e5d61f3aafa3fec53d1f",
+  "row_contract": [
+    "mutation_id",
+    "phase",
+    "helper",
+    "representative_site",
+    "kind",
+    "expected_property_code"
+  ],
+  "rows": [
+    {
+      "mutation_id": "helper.projection_construction.target_before_charge",
+      "phase": "projection_construction",
+      "helper": "perform_projection_build_operation",
+      "representative_site": "MemberCountRead",
+      "kind": "target_before_charge",
+      "expected_property_code": "CHARGE_AFTER_OPERATION"
+    },
+    {
+      "mutation_id": "helper.projection_construction.completion_before_target",
+      "phase": "projection_construction",
+      "helper": "perform_projection_build_operation",
+      "representative_site": "MemberCountRead",
+      "kind": "completion_before_target",
+      "expected_property_code": "OPERATION_OBSERVATION_BEFORE_TARGET"
+    },
+    {
+      "mutation_id": "helper.projection_construction.target_after_failed_charge",
+      "phase": "projection_construction",
+      "helper": "perform_projection_build_operation",
+      "representative_site": "MemberCountRead",
+      "kind": "target_after_failed_charge",
+      "expected_property_code": "TARGET_AFTER_STOP"
+    },
+    {
+      "mutation_id": "helper.projection_construction.completion_after_failed_charge",
+      "phase": "projection_construction",
+      "helper": "perform_projection_build_operation",
+      "representative_site": "MemberCountRead",
+      "kind": "completion_after_failed_charge",
+      "expected_property_code": "OBSERVATION_AFTER_STOP"
+    },
+    {
+      "mutation_id": "helper.projection_construction.double_target",
+      "phase": "projection_construction",
+      "helper": "perform_projection_build_operation",
+      "representative_site": "MemberCountRead",
+      "kind": "double_target",
+      "expected_property_code": "TARGET_EXECUTION_COUNT_MISMATCH"
+    },
+    {
+      "mutation_id": "helper.projection_construction.site_swap",
+      "phase": "projection_construction",
+      "helper": "perform_projection_build_operation",
+      "representative_site": "MemberCountRead",
+      "kind": "site_swap",
+      "expected_property_code": "SITE_ID_MISMATCH"
+    },
+    {
+      "mutation_id": "helper.projection_construction.counter_mismatch",
+      "phase": "projection_construction",
+      "helper": "perform_projection_build_operation",
+      "representative_site": "MemberCountRead",
+      "kind": "counter_mismatch",
+      "expected_property_code": "COUNTER_MISMATCH"
+    },
+    {
+      "mutation_id": "helper.actor_sequence.target_before_charge",
+      "phase": "actor_sequence",
+      "helper": "perform_actor_decision_operation",
+      "representative_site": "ActorStateRead",
+      "kind": "target_before_charge",
+      "expected_property_code": "CHARGE_AFTER_OPERATION"
+    },
+    {
+      "mutation_id": "helper.actor_sequence.completion_before_target",
+      "phase": "actor_sequence",
+      "helper": "perform_actor_decision_operation",
+      "representative_site": "ActorStateRead",
+      "kind": "completion_before_target",
+      "expected_property_code": "OPERATION_OBSERVATION_BEFORE_TARGET"
+    },
+    {
+      "mutation_id": "helper.actor_sequence.target_after_failed_charge",
+      "phase": "actor_sequence",
+      "helper": "perform_actor_decision_operation",
+      "representative_site": "ActorStateRead",
+      "kind": "target_after_failed_charge",
+      "expected_property_code": "TARGET_AFTER_STOP"
+    },
+    {
+      "mutation_id": "helper.actor_sequence.completion_after_failed_charge",
+      "phase": "actor_sequence",
+      "helper": "perform_actor_decision_operation",
+      "representative_site": "ActorStateRead",
+      "kind": "completion_after_failed_charge",
+      "expected_property_code": "OBSERVATION_AFTER_STOP"
+    },
+    {
+      "mutation_id": "helper.actor_sequence.double_target",
+      "phase": "actor_sequence",
+      "helper": "perform_actor_decision_operation",
+      "representative_site": "ActorStateRead",
+      "kind": "double_target",
+      "expected_property_code": "TARGET_EXECUTION_COUNT_MISMATCH"
+    },
+    {
+      "mutation_id": "helper.actor_sequence.site_swap",
+      "phase": "actor_sequence",
+      "helper": "perform_actor_decision_operation",
+      "representative_site": "ActorStateRead",
+      "kind": "site_swap",
+      "expected_property_code": "SITE_ID_MISMATCH"
+    },
+    {
+      "mutation_id": "helper.actor_sequence.counter_mismatch",
+      "phase": "actor_sequence",
+      "helper": "perform_actor_decision_operation",
+      "representative_site": "ActorStateRead",
+      "kind": "counter_mismatch",
+      "expected_property_code": "COUNTER_MISMATCH"
+    },
+    {
+      "mutation_id": "helper.causal_counter.target_before_charge",
+      "phase": "causal_counter",
+      "helper": "perform_causal_next_operation",
+      "representative_site": "StoredCounterRead",
+      "kind": "target_before_charge",
+      "expected_property_code": "CHARGE_AFTER_OPERATION"
+    },
+    {
+      "mutation_id": "helper.causal_counter.completion_before_target",
+      "phase": "causal_counter",
+      "helper": "perform_causal_next_operation",
+      "representative_site": "StoredCounterRead",
+      "kind": "completion_before_target",
+      "expected_property_code": "OPERATION_OBSERVATION_BEFORE_TARGET"
+    },
+    {
+      "mutation_id": "helper.causal_counter.target_after_failed_charge",
+      "phase": "causal_counter",
+      "helper": "perform_causal_next_operation",
+      "representative_site": "StoredCounterRead",
+      "kind": "target_after_failed_charge",
+      "expected_property_code": "TARGET_AFTER_STOP"
+    },
+    {
+      "mutation_id": "helper.causal_counter.completion_after_failed_charge",
+      "phase": "causal_counter",
+      "helper": "perform_causal_next_operation",
+      "representative_site": "StoredCounterRead",
+      "kind": "completion_after_failed_charge",
+      "expected_property_code": "OBSERVATION_AFTER_STOP"
+    },
+    {
+      "mutation_id": "helper.causal_counter.double_target",
+      "phase": "causal_counter",
+      "helper": "perform_causal_next_operation",
+      "representative_site": "StoredCounterRead",
+      "kind": "double_target",
+      "expected_property_code": "TARGET_EXECUTION_COUNT_MISMATCH"
+    },
+    {
+      "mutation_id": "helper.causal_counter.site_swap",
+      "phase": "causal_counter",
+      "helper": "perform_causal_next_operation",
+      "representative_site": "StoredCounterRead",
+      "kind": "site_swap",
+      "expected_property_code": "SITE_ID_MISMATCH"
+    },
+    {
+      "mutation_id": "helper.causal_counter.counter_mismatch",
+      "phase": "causal_counter",
+      "helper": "perform_causal_next_operation",
+      "representative_site": "StoredCounterRead",
+      "kind": "counter_mismatch",
+      "expected_property_code": "COUNTER_MISMATCH"
+    },
+    {
+      "mutation_id": "helper.frontier_comparison.target_before_charge",
+      "phase": "frontier_comparison",
+      "helper": "metered_frontier_operation",
+      "representative_site": "CandidateKindComparison",
+      "kind": "target_before_charge",
+      "expected_property_code": "CHARGE_AFTER_OPERATION"
+    },
+    {
+      "mutation_id": "helper.frontier_comparison.completion_before_target",
+      "phase": "frontier_comparison",
+      "helper": "metered_frontier_operation",
+      "representative_site": "CandidateKindComparison",
+      "kind": "completion_before_target",
+      "expected_property_code": "OPERATION_OBSERVATION_BEFORE_TARGET"
+    },
+    {
+      "mutation_id": "helper.frontier_comparison.target_after_failed_charge",
+      "phase": "frontier_comparison",
+      "helper": "metered_frontier_operation",
+      "representative_site": "CandidateKindComparison",
+      "kind": "target_after_failed_charge",
+      "expected_property_code": "TARGET_AFTER_STOP"
+    },
+    {
+      "mutation_id": "helper.frontier_comparison.completion_after_failed_charge",
+      "phase": "frontier_comparison",
+      "helper": "metered_frontier_operation",
+      "representative_site": "CandidateKindComparison",
+      "kind": "completion_after_failed_charge",
+      "expected_property_code": "OBSERVATION_AFTER_STOP"
+    },
+    {
+      "mutation_id": "helper.frontier_comparison.double_target",
+      "phase": "frontier_comparison",
+      "helper": "metered_frontier_operation",
+      "representative_site": "CandidateKindComparison",
+      "kind": "double_target",
+      "expected_property_code": "TARGET_EXECUTION_COUNT_MISMATCH"
+    },
+    {
+      "mutation_id": "helper.frontier_comparison.site_swap",
+      "phase": "frontier_comparison",
+      "helper": "metered_frontier_operation",
+      "representative_site": "CandidateKindComparison",
+      "kind": "site_swap",
+      "expected_property_code": "SITE_ID_MISMATCH"
+    },
+    {
+      "mutation_id": "helper.frontier_comparison.counter_mismatch",
+      "phase": "frontier_comparison",
+      "helper": "metered_frontier_operation",
+      "representative_site": "CandidateKindComparison",
+      "kind": "counter_mismatch",
+      "expected_property_code": "COUNTER_MISMATCH"
+    }
+  ],
+  "counts": {
+    "helpers": 4,
+    "kinds_per_helper": 7,
+    "cells": 28
+  },
+  "result": "pass"
+}

@@ -45,6 +45,10 @@ def property_from_output(output: str) -> str:
     return matches[0]
 
 
+def public_transcript(output: str) -> str:
+    return re.sub(r"/(?:Users|Volumes)/[^\s)]+", "<local-path>", output)
+
+
 def command(property_code: str) -> list[str]:
     test = PROPERTY_TESTS[property_code]
     return [
@@ -60,6 +64,8 @@ def execute(root: Path, property_code: str, expect_failure: bool) -> None:
         command(property_code), cwd=root, capture_output=True, text=True, check=False
     )
     output = completed.stdout + completed.stderr
+    sys.stdout.write(public_transcript(completed.stdout))
+    sys.stderr.write(public_transcript(completed.stderr))
     if expect_failure:
         require(completed.returncode != 0, "RUNTIME_MUTANT_SURVIVED")
         actual = property_from_output(output)

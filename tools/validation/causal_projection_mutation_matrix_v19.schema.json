@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.github.io/nostr-automerge/schemas/causal_projection_mutation_matrix_v19.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "authority", "source_candidate", "row_contract", "rows", "counts", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_mutation_matrix.v19.v1"},
+    "status": {"const": "source_derived_closed"},
+    "authority": {"const": "spec/causal_projection_contracts_v19.json"},
+    "source_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "row_contract": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "rows": {"type": "array", "minItems": 28, "maxItems": 28, "items": {"type": "object", "additionalProperties": false, "required": ["mutation_id", "phase", "helper", "representative_site", "kind", "expected_property_code"]}},
+    "counts": {"type": "object"},
+    "result": {"const": "pass"}
+  }
+}
