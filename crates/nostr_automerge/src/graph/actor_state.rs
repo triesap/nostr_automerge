@@ -1001,7 +1001,11 @@ impl TrustedEpochProjection<'_> {
             FrontierComparisonSite::CandidateKindComparison,
             &mut charge,
             &mut observed,
-            || candidate.operation_count != 0,
+            || {
+                #[cfg(test)]
+                v19_record_direct_target("CandidateKindComparison");
+                candidate.operation_count != 0
+            },
         )?;
         if nonempty {
             return Ok(());
@@ -1420,7 +1424,11 @@ fn build_trusted_epoch_projection_observed<'a, E>(
         ProjectionBuildSite::MemberCountRead,
         &mut charge,
         &mut built,
-        || source.member_count(),
+        || {
+            #[cfg(test)]
+            v19_record_direct_target("MemberCountRead");
+            source.member_count()
+        },
     )?;
     let input_is_canonical = perform_projection_build_operation(
         ProjectionBuildSite::AcceptedCountMatches,
@@ -7799,6 +7807,75 @@ pub(crate) mod tests {
             &V19_BUDGET_STOP
         );
         println!("v19-runtime-property-oracle=PASS");
+    }
+
+    fn v19_require_one_target(guard: &V19DirectTargetTraceGuard, site_id: &str) {
+        if guard
+            .sites()
+            .iter()
+            .filter(|site| **site == site_id)
+            .count()
+            != 1
+        {
+            v19_fail_property("TARGET_EXECUTION_COUNT_MISMATCH");
+        }
+    }
+
+    #[test]
+    fn v19_runtime_target_count_oracle() {
+        let first = candidate(1, 1, 1, 1);
+        let accepted = BTreeSet::from([first.change_hash]);
+        let changes = BTreeMap::from([(first.change_hash, first)]);
+        let projection_guard = V19DirectTargetTraceGuard::install();
+        let (projection_result, _) = observed_projection_build_proof(
+            &accepted,
+            &changes,
+            usize::MAX,
+            Completion::BudgetExhausted,
+        );
+        assert!(projection_result.is_ok());
+        v19_require_one_target(&projection_guard, "MemberCountRead");
+        drop(projection_guard);
+
+        let (actor_changes, actor_closure, next) = actor_site_fixture();
+        let projection =
+            initialize_actor_states_metered(&actor_closure, &actor_changes, |_| Ok::<_, ()>(()));
+        let Ok(projection) = projection else {
+            v19_fail_property("TARGET_EXECUTION_COUNT_MISMATCH");
+        };
+        let actor_guard = V19DirectTargetTraceGuard::install();
+        let (actor_result, _) =
+            observed_actor_sequence(&projection, &next, usize::MAX, Completion::BudgetExhausted);
+        assert!(actor_result.is_ok());
+        v19_require_one_target(&actor_guard, "ActorStateRead");
+        drop(actor_guard);
+
+        let branch = BTreeMap::new();
+        let closure = BTreeSet::new();
+        let projection = focused_causal_consumer_projection(&branch, &closure, 7);
+        let causal = candidate(1, 1, 7, 1);
+        let causal_guard = V19DirectTargetTraceGuard::install();
+        let (causal_result, _) = observed_causal_next(
+            &projection,
+            &causal,
+            usize::MAX,
+            Completion::BudgetExhausted,
+        );
+        assert!(causal_result.is_ok());
+        v19_require_one_target(&causal_guard, "StoredCounterRead");
+        drop(causal_guard);
+
+        let frontier_guard = V19DirectTargetTraceGuard::install();
+        let (frontier_result, _) = observed_empty_frontier(
+            &projection,
+            &causal,
+            &BTreeSet::new(),
+            usize::MAX,
+            Completion::BudgetExhausted,
+        );
+        assert!(frontier_result.is_ok());
+        v19_require_one_target(&frontier_guard, "CandidateKindComparison");
+        println!("v19-runtime-target-count-oracle=PASS");
     }
 
     fn v19_direct_actor_target_before_charge(site: ActorDecisionSite) -> bool {

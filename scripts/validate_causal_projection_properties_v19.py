@@ -19,7 +19,7 @@ PROPERTY_TESTS = {
     "OPERATION_OBSERVATION_BEFORE_TARGET": "v19_runtime_helper_mutation_oracle",
     "TARGET_AFTER_STOP": "v19_runtime_helper_mutation_oracle",
     "OBSERVATION_AFTER_STOP": "v19_runtime_helper_mutation_oracle",
-    "TARGET_EXECUTION_COUNT_MISMATCH": "v19_runtime_helper_mutation_oracle",
+    "TARGET_EXECUTION_COUNT_MISMATCH": "v19_runtime_target_count_oracle",
     "SITE_ID_MISMATCH": "v19_runtime_helper_mutation_oracle",
     "COUNTER_MISMATCH": "v19_runtime_helper_mutation_oracle",
     "SITE_TARGET_BEFORE_CHARGE": "v19_runtime_direct_target_oracle",
@@ -94,7 +94,7 @@ def self_test() -> None:
             caught += 1
             continue
         raise PropertyError("SELF_ATTACK_SURVIVED")
-    require(len(set(PROPERTY_TESTS.values())) == 4, "ORACLE_TEST_SET")
+    require(len(set(PROPERTY_TESTS.values())) == 5, "ORACLE_TEST_SET")
     print(f"PASS: causal projection runtime property v19 codes={len(PROPERTY_TESTS)} attacks={caught}")
 
 

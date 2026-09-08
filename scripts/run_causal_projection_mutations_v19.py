@@ -207,25 +207,40 @@ def helper_blocks(phase: str) -> tuple[str, str, str]:
     return charge, target_block, observation_block
 
 
-def repeatable_projection_publish(source: str) -> str:
-    old = (
-        "        || TrustedEpochProjection {\n            branch_membership: changes,\n"
-        "            accepted_closure,\n            dependencies,\n            frontier_heads,\n"
-        "            actor_states: states,\n            writer_contributions,\n            causal_next_op,\n        },"
+def duplicate_representative_target(source: str, phase: str) -> str:
+    enum, _swap, _descriptor, _observation, _kind, _target = HELPER_METADATA[phase]
+    matrix_rows = json.loads(MATRIX.read_text())["rows"]
+    helper = next(row["helper"] for row in matrix_rows if row["phase"] == phase)
+    site = next(
+        row["representative_site"] for row in matrix_rows if row["phase"] == phase
     )
-    new = (
-        "        || TrustedEpochProjection {\n            branch_membership: changes,\n"
-        "            accepted_closure,\n            dependencies: dependencies.clone(),\n"
-        "            frontier_heads: frontier_heads.clone(),\n            actor_states: states.clone(),\n"
-        "            writer_contributions: writer_contributions.clone(),\n            causal_next_op,\n        },"
+    match = re.search(rf"\b{helper}\s*\(\s*{enum}::{site}\b", source)
+    require(match is not None, "DOUBLE_TARGET_CALL:" + phase)
+    end = matching_call_end(source, match.start())
+    call = source[match.start():end]
+    closure = call.find("||")
+    comma = call.rfind(",")
+    require(closure >= 0 and comma > closure, "DOUBLE_TARGET_CLOSURE:" + phase)
+    expression = call[closure + 2:comma].strip()
+    doubled = (
+        " { let first_result = "
+        + expression
+        + "; let _second_result = "
+        + expression
+        + "; first_result }"
     )
-    require(source.count(old) == 1, "PROJECTION_REPEATABLE")
-    return source.replace(old, new, 1)
+    return (
+        source[:match.start()]
+        + call[:closure + 2]
+        + doubled
+        + call[comma:]
+        + source[end:]
+    )
 
 
 def mutate_helper(source: str, definition: dict[str, Any]) -> str:
     phase, helper, kind = definition["phase"], definition["helper"], definition["kind"]
-    enum, swap, descriptor_type, _observation, _kind, target = HELPER_METADATA[phase]
+    enum, swap, descriptor_type, _observation, _kind, _target = HELPER_METADATA[phase]
     charge, target_block, observation_block = helper_blocks(phase)
     if kind == "target_before_charge":
         source = replace_in_function(source, helper, charge + "\n" + target_block, target_block + "\n" + charge)
@@ -241,18 +256,7 @@ def mutate_helper(source: str, definition: dict[str, Any]) -> str:
         )
         source = replace_in_function(source, helper, charge, replacement)
     elif kind == "double_target":
-        source = replace_in_function(source, helper, f"{target}: impl FnOnce() -> T", f"mut {target}: impl FnMut() -> T")
-        second = (
-            target_block
-            + "\n    #[cfg(test)]\n    v19_record_proof_event(V19ProofEvent::TargetDispatched {\n"
-            "        site_id: descriptor.site_id,\n        counter: descriptor.counter,\n    });\n"
-            f"    let _second_result = {target}();\n"
-            "    #[cfg(test)]\n    v19_record_proof_event(V19ProofEvent::TargetReturned {\n"
-            "        site_id: descriptor.site_id,\n        counter: descriptor.counter,\n    });"
-        )
-        source = replace_in_function(source, helper, target_block, second)
-        if phase == "projection_construction":
-            source = repeatable_projection_publish(source)
+        source = duplicate_representative_target(source, phase)
     elif kind == "site_swap":
         source = replace_in_function(source, helper, "    let descriptor = site.descriptor();", f"    let descriptor = {enum}::{swap}.descriptor();")
     elif kind == "counter_mismatch":
