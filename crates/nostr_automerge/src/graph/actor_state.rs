@@ -163,6 +163,59 @@ fn v19_record_proof_event(event: V19ProofEvent) {
     });
 }
 
+#[cfg(test)]
+type V19DirectTargetSink = std::rc::Rc<std::cell::RefCell<Vec<&'static str>>>;
+
+#[cfg(test)]
+std::thread_local! {
+    static V19_DIRECT_TARGET_SINKS: std::cell::RefCell<Vec<V19DirectTargetSink>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+}
+
+#[cfg(test)]
+struct V19DirectTargetTraceGuard {
+    sink: V19DirectTargetSink,
+}
+
+#[cfg(test)]
+impl V19DirectTargetTraceGuard {
+    fn install() -> Self {
+        let sink = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        V19_DIRECT_TARGET_SINKS.with(|sinks| {
+            sinks.borrow_mut().push(std::rc::Rc::clone(&sink));
+        });
+        Self { sink }
+    }
+
+    fn sites(&self) -> Vec<&'static str> {
+        self.sink.borrow().clone()
+    }
+}
+
+#[cfg(test)]
+impl Drop for V19DirectTargetTraceGuard {
+    fn drop(&mut self) {
+        V19_DIRECT_TARGET_SINKS.with(|sinks| {
+            let removed = sinks.borrow_mut().pop();
+            assert!(
+                removed
+                    .as_ref()
+                    .is_some_and(|sink| std::rc::Rc::ptr_eq(sink, &self.sink)),
+                "v19 direct target guards must be dropped in stack order"
+            );
+        });
+    }
+}
+
+#[cfg(test)]
+fn v19_record_direct_target(site_id: &'static str) {
+    V19_DIRECT_TARGET_SINKS.with(|sinks| {
+        if let Some(sink) = sinks.borrow().last() {
+            sink.borrow_mut().push(site_id);
+        }
+    });
+}
+
 /// Immutable accepted-closure facts used by authoritative epoch semantics.
 ///
 /// Construction is sealed in this module. Consumers receive only copied
@@ -746,7 +799,11 @@ impl TrustedEpochProjection<'_> {
             ActorDecisionSite::ActorStateRead,
             &mut charge,
             &mut observed,
-            || self.actor_states.get(&candidate.actor).copied(),
+            || {
+                #[cfg(test)]
+                v19_record_direct_target("ActorStateRead");
+                self.actor_states.get(&candidate.actor).copied()
+            },
         )?;
 
         let predecessor = if let Some(state) = actor_state {
@@ -754,7 +811,11 @@ impl TrustedEpochProjection<'_> {
                 ActorDecisionSite::PredecessorCandidateRead,
                 &mut charge,
                 &mut observed,
-                || self.branch_membership.get(&state.highest_change),
+                || {
+                    #[cfg(test)]
+                    v19_record_direct_target("PredecessorCandidateRead");
+                    self.branch_membership.get(&state.highest_change)
+                },
             )?
         } else {
             None
@@ -764,12 +825,16 @@ impl TrustedEpochProjection<'_> {
             ActorDecisionSite::ActorIdentityDecision,
             &mut charge,
             &mut observed,
-            || match (actor_state, predecessor) {
-                (None, None) => ActorIdentityRelation::NoPredecessor,
-                (Some(_), Some(value)) if value.actor == candidate.actor => {
-                    ActorIdentityRelation::Matches
+            || {
+                #[cfg(test)]
+                v19_record_direct_target("ActorIdentityDecision");
+                match (actor_state, predecessor) {
+                    (None, None) => ActorIdentityRelation::NoPredecessor,
+                    (Some(_), Some(value)) if value.actor == candidate.actor => {
+                        ActorIdentityRelation::Matches
+                    }
+                    _ => ActorIdentityRelation::InvalidPredecessor,
                 }
-                _ => ActorIdentityRelation::InvalidPredecessor,
             },
         )?;
         if actor_relation == ActorIdentityRelation::InvalidPredecessor {
@@ -782,26 +847,30 @@ impl TrustedEpochProjection<'_> {
             ActorDecisionSite::SequenceRelationDecision,
             &mut charge,
             &mut observed,
-            || match (actor_relation, actor_state) {
-                (ActorIdentityRelation::NoPredecessor, None) if candidate.sequence == 1 => {
-                    SequenceRelation::ValidGenesis
-                }
-                (ActorIdentityRelation::NoPredecessor, None) => {
-                    SequenceRelation::GapOrMissingPredecessor
-                }
-                (ActorIdentityRelation::Matches, Some(state)) => {
-                    match state.last_sequence.checked_add(1) {
-                        Some(expected) if candidate.sequence < expected => {
-                            SequenceRelation::Rollback
-                        }
-                        Some(expected) if candidate.sequence == expected => {
-                            SequenceRelation::ExpectedSuccessor
-                        }
-                        Some(_) => SequenceRelation::GapOrMissingPredecessor,
-                        None => SequenceRelation::ArithmeticOverflow,
+            || {
+                #[cfg(test)]
+                v19_record_direct_target("SequenceRelationDecision");
+                match (actor_relation, actor_state) {
+                    (ActorIdentityRelation::NoPredecessor, None) if candidate.sequence == 1 => {
+                        SequenceRelation::ValidGenesis
                     }
+                    (ActorIdentityRelation::NoPredecessor, None) => {
+                        SequenceRelation::GapOrMissingPredecessor
+                    }
+                    (ActorIdentityRelation::Matches, Some(state)) => {
+                        match state.last_sequence.checked_add(1) {
+                            Some(expected) if candidate.sequence < expected => {
+                                SequenceRelation::Rollback
+                            }
+                            Some(expected) if candidate.sequence == expected => {
+                                SequenceRelation::ExpectedSuccessor
+                            }
+                            Some(_) => SequenceRelation::GapOrMissingPredecessor,
+                            None => SequenceRelation::ArithmeticOverflow,
+                        }
+                    }
+                    _ => SequenceRelation::GapOrMissingPredecessor,
                 }
-                _ => SequenceRelation::GapOrMissingPredecessor,
             },
         )?;
 
@@ -843,14 +912,22 @@ impl TrustedEpochProjection<'_> {
             CausalNextSite::StoredCounterRead,
             &mut charge,
             &mut observed,
-            || self.causal_next_op,
+            || {
+                #[cfg(test)]
+                v19_record_direct_target("StoredCounterRead");
+                self.causal_next_op
+            },
         )?;
 
         let start_matches = perform_causal_next_operation(
             CausalNextSite::ExpectedStartComparison,
             &mut charge,
             &mut observed,
-            || candidate.start_op == causal_next_op,
+            || {
+                #[cfg(test)]
+                v19_record_direct_target("ExpectedStartComparison");
+                candidate.start_op == causal_next_op
+            },
         )?;
         if !start_matches {
             return Err(MeteredActorStateError::State(
@@ -862,7 +939,11 @@ impl TrustedEpochProjection<'_> {
             CausalNextSite::CheckedAdvance,
             &mut charge,
             &mut observed,
-            || causal_next_op.checked_add(candidate.operation_count),
+            || {
+                #[cfg(test)]
+                v19_record_direct_target("CheckedAdvance");
+                causal_next_op.checked_add(candidate.operation_count)
+            },
         )?;
         advanced.ok_or(MeteredActorStateError::State(
             ActorStateError::OperationCounter,
@@ -1826,9 +1907,10 @@ pub(crate) mod tests {
         FrontierComparisonObservationKind, FrontierComparisonOperation, FrontierComparisonSite,
         MeteredActorStateError, ProjectionBuildDescriptor, ProjectionBuildObservation,
         ProjectionBuildObservationKind, ProjectionBuildOperation, ProjectionBuildSite,
-        ProjectionPublicationOperation, TrustedEpochProjection, V19ProofEvent, V19ProofTraceGuard,
-        build_trusted_epoch_projection, build_trusted_epoch_projection_observed,
-        initialize_actor_states, initialize_actor_states_metered, metered_frontier_operation,
+        ProjectionPublicationOperation, TrustedEpochProjection, V19DirectTargetTraceGuard,
+        V19ProofEvent, V19ProofTraceGuard, build_trusted_epoch_projection,
+        build_trusted_epoch_projection_observed, initialize_actor_states,
+        initialize_actor_states_metered, metered_frontier_operation,
         perform_actor_decision_operation, perform_causal_next_operation,
         perform_projection_build_operation, reference_apply_empty_counter,
         reference_apply_nonempty_counter, v19_record_proof_event,
@@ -7548,6 +7630,320 @@ pub(crate) mod tests {
             unexpected_error_exact,
             &unexpected_window,
         );
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    struct V19OracleStop(&'static str);
+
+    static V19_BUDGET_STOP: V19OracleStop = V19OracleStop("BudgetExhausted");
+    static V19_CANCELLED_STOP: V19OracleStop = V19OracleStop("Cancelled");
+    static V19_UNEXPECTED_STOP: V19OracleStop = V19OracleStop("Unexpected");
+
+    fn v19_fail_property(code: &str) -> ! {
+        println!("v19-mutation-property={code}");
+        std::panic::resume_unwind(Box::new(format!(
+            "v19 runtime mutation property failed: {code}"
+        )))
+    }
+
+    fn v19_helper_property(
+        events: &[V19ProofEvent],
+        expected_site: &str,
+        expected_counter: WorkCounter,
+        target_count: usize,
+        observation_count: usize,
+        stop: Option<&V19OracleStop>,
+        result_exact: bool,
+    ) -> Option<&'static str> {
+        let names = events.iter().map(v19_event_name).collect::<Vec<_>>();
+        if let Some(stop) = stop {
+            if target_count != 0
+                || names
+                    .iter()
+                    .any(|name| matches!(*name, "TargetDispatched" | "TargetReturned"))
+            {
+                return Some("TARGET_AFTER_STOP");
+            }
+            if observation_count != 0 || names.contains(&"CompletionObserved") {
+                return Some("OBSERVATION_AFTER_STOP");
+            }
+            if !result_exact {
+                return Some(match stop.0 {
+                    "BudgetExhausted" => "TYPED_BUDGET_EXHAUSTED_IDENTITY",
+                    "Cancelled" => "TYPED_CANCELLED_IDENTITY",
+                    _ => "UNEXPECTED_WORK_ERROR_IDENTITY",
+                });
+            }
+            return None;
+        }
+
+        let descriptors = events
+            .iter()
+            .filter_map(v19_event_descriptor)
+            .collect::<Vec<_>>();
+        if descriptors.iter().any(|(site, _)| *site != expected_site) {
+            return Some("SITE_ID_MISMATCH");
+        }
+        if descriptors
+            .iter()
+            .any(|(_, counter)| *counter != expected_counter)
+        {
+            return Some("COUNTER_MISMATCH");
+        }
+        let accepted = names.iter().position(|name| *name == "ChargeAccepted");
+        let dispatched = names.iter().position(|name| *name == "TargetDispatched");
+        let returned = names.iter().position(|name| *name == "TargetReturned");
+        let completed = names.iter().position(|name| *name == "CompletionObserved");
+        if matches!((accepted, dispatched), (Some(accepted), Some(dispatched)) if dispatched < accepted)
+        {
+            return Some("CHARGE_AFTER_OPERATION");
+        }
+        if matches!((returned, completed), (Some(returned), Some(completed)) if completed < returned)
+        {
+            return Some("OPERATION_OBSERVATION_BEFORE_TARGET");
+        }
+        if target_count != 1
+            || names
+                .iter()
+                .filter(|name| **name == "TargetDispatched")
+                .count()
+                != 1
+            || names
+                .iter()
+                .filter(|name| **name == "TargetReturned")
+                .count()
+                != 1
+        {
+            return Some("TARGET_EXECUTION_COUNT_MISMATCH");
+        }
+        if observation_count != 1 || !result_exact {
+            return Some("OBSERVATION_AFTER_STOP");
+        }
+        None
+    }
+
+    macro_rules! v19_check_helper {
+        ($site:expr, $helper:ident, $stop:expr) => {{
+            let site = $site;
+            let expected = site.descriptor();
+            for stop in [None, Some($stop)] {
+                let guard = V19ProofTraceGuard::install();
+                let targets = Cell::new(0_usize);
+                let observations = Cell::new(0_usize);
+                let result = $helper(
+                    site,
+                    &mut |descriptor| {
+                        v19_record_proof_event(V19ProofEvent::ChargeAttempt {
+                            site_id: descriptor.site_id,
+                            counter: descriptor.counter,
+                        });
+                        if let Some(error) = stop {
+                            Err(error)
+                        } else {
+                            v19_record_proof_event(V19ProofEvent::ChargeAccepted {
+                                site_id: descriptor.site_id,
+                                counter: descriptor.counter,
+                            });
+                            Ok(())
+                        }
+                    },
+                    &mut |observation| {
+                        observations.set(observations.get().saturating_add(1));
+                        v19_record_proof_event(V19ProofEvent::CompletionObserved {
+                            site_id: observation.descriptor.site_id,
+                            counter: observation.descriptor.counter,
+                        });
+                    },
+                    || targets.set(targets.get().saturating_add(1)),
+                );
+                let result_exact = if let Some(error) = stop {
+                    matches!(result, Err(MeteredActorStateError::Work(actual)) if core::ptr::eq(actual, error))
+                } else {
+                    result == Ok(())
+                };
+                if let Some(code) = v19_helper_property(
+                    &guard.events(),
+                    expected.site_id,
+                    expected.counter,
+                    targets.get(),
+                    observations.get(),
+                    stop,
+                    result_exact,
+                ) {
+                    v19_fail_property(code);
+                }
+            }
+        }};
+    }
+
+    #[test]
+    fn v19_runtime_helper_mutation_oracle() {
+        v19_check_helper!(
+            ProjectionBuildSite::MemberCountRead,
+            perform_projection_build_operation,
+            &V19_BUDGET_STOP
+        );
+        v19_check_helper!(
+            ActorDecisionSite::ActorStateRead,
+            perform_actor_decision_operation,
+            &V19_CANCELLED_STOP
+        );
+        v19_check_helper!(
+            CausalNextSite::StoredCounterRead,
+            perform_causal_next_operation,
+            &V19_UNEXPECTED_STOP
+        );
+        v19_check_helper!(
+            FrontierComparisonSite::CandidateKindComparison,
+            metered_frontier_operation,
+            &V19_BUDGET_STOP
+        );
+        println!("v19-runtime-property-oracle=PASS");
+    }
+
+    fn v19_direct_actor_target_before_charge(site: ActorDecisionSite) -> bool {
+        let descriptor = site.descriptor();
+        let (changes, closure, next) = actor_site_fixture();
+        let projection = initialize_actor_states_metered(&closure, &changes, |_| Ok::<_, ()>(()));
+        let Ok(projection) = projection else {
+            return true;
+        };
+        let ((_, _), ample_events) = capture_v19_proof(|| {
+            observed_actor_sequence(&projection, &next, usize::MAX, Completion::BudgetExhausted)
+        });
+        let Some(target) = v19_target_charge(&ample_events, descriptor.site_id, descriptor.counter)
+        else {
+            return true;
+        };
+        let guard = V19DirectTargetTraceGuard::install();
+        let _ = observed_actor_sequence(
+            &projection,
+            &next,
+            target.saturating_sub(1),
+            Completion::BudgetExhausted,
+        );
+        guard.sites().contains(&descriptor.site_id)
+    }
+
+    fn v19_direct_causal_target_before_charge(site: CausalNextSite) -> bool {
+        let descriptor = site.descriptor();
+        let branch = BTreeMap::new();
+        let closure = BTreeSet::new();
+        let projection = focused_causal_consumer_projection(&branch, &closure, 7);
+        let candidate = candidate(1, 1, 7, 1);
+        let ((_, _), ample_events) = capture_v19_proof(|| {
+            observed_causal_next(
+                &projection,
+                &candidate,
+                usize::MAX,
+                Completion::BudgetExhausted,
+            )
+        });
+        let Some(target) = v19_target_charge(&ample_events, descriptor.site_id, descriptor.counter)
+        else {
+            return true;
+        };
+        let guard = V19DirectTargetTraceGuard::install();
+        let _ = observed_causal_next(
+            &projection,
+            &candidate,
+            target.saturating_sub(1),
+            Completion::BudgetExhausted,
+        );
+        guard.sites().contains(&descriptor.site_id)
+    }
+
+    #[test]
+    fn v19_runtime_direct_target_oracle() {
+        for site in [
+            ActorDecisionSite::ActorStateRead,
+            ActorDecisionSite::PredecessorCandidateRead,
+            ActorDecisionSite::ActorIdentityDecision,
+            ActorDecisionSite::SequenceRelationDecision,
+        ] {
+            if v19_direct_actor_target_before_charge(site) {
+                v19_fail_property("SITE_TARGET_BEFORE_CHARGE");
+            }
+        }
+        for site in [
+            CausalNextSite::StoredCounterRead,
+            CausalNextSite::ExpectedStartComparison,
+            CausalNextSite::CheckedAdvance,
+        ] {
+            if v19_direct_causal_target_before_charge(site) {
+                v19_fail_property("SITE_TARGET_BEFORE_CHARGE");
+            }
+        }
+        println!("v19-runtime-direct-oracle=PASS");
+    }
+
+    #[test]
+    fn v19_runtime_publication_after_stop_oracle() {
+        let first = candidate(1, 1, 1, 1);
+        let accepted = BTreeSet::from([first.change_hash]);
+        let changes = BTreeMap::from([(first.change_hash, first)]);
+        let descriptor = ProjectionBuildSite::ProjectionPublish.descriptor();
+        let ((_, _), ample_events) = capture_v19_proof(|| {
+            observed_projection_build_proof(
+                &accepted,
+                &changes,
+                usize::MAX,
+                Completion::BudgetExhausted,
+            )
+        });
+        let Some(target) = v19_target_charge(&ample_events, descriptor.site_id, descriptor.counter)
+        else {
+            v19_fail_property("PUBLICATION_AFTER_STOP");
+        };
+        let ((result, build_trace), _) = capture_v19_proof(|| {
+            observed_projection_build_proof(
+                &accepted,
+                &changes,
+                target.saturating_sub(1),
+                Completion::BudgetExhausted,
+            )
+        });
+        if build_trace.iter().any(|event| {
+            matches!(
+                event,
+                BuildProofTrace::PublicationCompleted(ProjectionPublicationOperation::Projection)
+            )
+        }) {
+            v19_fail_property("PUBLICATION_AFTER_STOP");
+        }
+        assert!(matches!(
+            result,
+            Err(MeteredActorStateError::Work(Completion::BudgetExhausted))
+        ));
+        println!("v19-runtime-publication-oracle=PASS");
+    }
+
+    #[test]
+    fn v19_runtime_alternate_consumer_oracle() {
+        let (changes, closure, next) = actor_site_fixture();
+        let projection = initialize_actor_states_metered(&closure, &changes, |_| Ok::<_, ()>(()));
+        let Ok(projection) = projection else {
+            v19_fail_property("ALTERNATE_CONSUMER_BYPASS");
+        };
+        let ((_, _), events) = capture_v19_proof(|| {
+            observed_actor_sequence(&projection, &next, usize::MAX, Completion::BudgetExhausted)
+        });
+        let actor_state_attempts = events
+            .iter()
+            .filter(|event| {
+                matches!(
+                    event,
+                    V19ProofEvent::ChargeAttempt {
+                        site_id: "ActorStateRead",
+                        ..
+                    }
+                )
+            })
+            .count();
+        if actor_state_attempts != 1 {
+            v19_fail_property("ALTERNATE_CONSUMER_BYPASS");
+        }
+        println!("v19-runtime-consumer-oracle=PASS");
     }
 
     fn assert_v16_causal_site(
