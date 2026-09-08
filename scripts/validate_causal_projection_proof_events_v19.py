@@ -7,6 +7,7 @@ import argparse
 import copy
 import hashlib
 import json
+import re
 import shlex
 import subprocess
 import sys
@@ -37,12 +38,14 @@ TRACE_FIELDS = [
 ARTIFACT_FIELDS = [
     "schema", "authority", "inventory_row_id", "source_candidate",
     "execution_base_candidate", "command", "cwd", "environment",
-    "exit_status", "test_result", "stdout", "stderr", "trace", "result",
+    "exit_status", "test_result", "stdout", "stderr", "raw_stdout_sha256",
+    "raw_stderr_sha256", "trace", "result",
 ]
 ROW_FIELDS = [
     "proof_row_id", "inventory_row_id", "site_id", "phase", "family",
     "counter", "command", "trace_artifact", "trace_sha256", "stdout_sha256",
-    "stderr_sha256", "source_candidate", "execution_base_candidate", "result",
+    "stderr_sha256", "raw_stdout_sha256", "raw_stderr_sha256",
+    "source_candidate", "execution_base_candidate", "result",
 ]
 TOP_FIELDS = [
     "schema", "status", "authority", "source_candidate",
@@ -71,6 +74,12 @@ def sha(data: bytes) -> str:
 
 def run(command: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(command, cwd=ROOT, capture_output=True, text=True, check=False)
+
+
+def public_transcript(output: str) -> str:
+    """Redact workstation paths while preserving complete diagnostic text."""
+
+    return re.sub(r"/(?:Users|Volumes)/[^\s)]+", "<local-path>", output)
 
 
 def git(*args: str) -> str:
@@ -152,13 +161,15 @@ def execute(rows: list[dict[str, Any]], source_candidate: str) -> str:
             "cwd": ".",
             "environment": {
                 "target_routing": "extbuild",
-                "output_capture": "complete_stdout_and_stderr",
+                "output_capture": "complete_redacted_stdout_and_stderr_with_raw_hashes",
                 "source_state": "clean_committed_base",
             },
             "exit_status": completed.returncode,
             "test_result": "passed",
-            "stdout": completed.stdout,
-            "stderr": completed.stderr,
+            "stdout": public_transcript(completed.stdout),
+            "stderr": public_transcript(completed.stderr),
+            "raw_stdout_sha256": sha(completed.stdout.encode()),
+            "raw_stderr_sha256": sha(completed.stderr.encode()),
             "trace": trace,
             "result": "pass",
         }
@@ -175,9 +186,13 @@ def load_artifact(row: dict[str, Any], source_candidate: str, execution_base: st
     require(artifact["source_candidate"] == source_candidate and artifact["execution_base_candidate"] == execution_base, "ARTIFACT_CANDIDATE:" + row["id"])
     require(artifact["command"] == shlex.split(row["proof_command"]), "ARTIFACT_COMMAND:" + row["id"])
     require(artifact["cwd"] == "." and artifact["environment"] == {
-        "target_routing": "extbuild", "output_capture": "complete_stdout_and_stderr",
+        "target_routing": "extbuild", "output_capture": "complete_redacted_stdout_and_stderr_with_raw_hashes",
         "source_state": "clean_committed_base",
     }, "ARTIFACT_ENVIRONMENT:" + row["id"])
+    transcript = artifact["stdout"] + artifact["stderr"]
+    private_roots = ("/" + "Users/", "/" + "Volumes/")
+    require(not any(root in transcript for root in private_roots), "ARTIFACT_PRIVATE_PATH:" + row["id"])
+    require(len(artifact["raw_stdout_sha256"]) == len(artifact["raw_stderr_sha256"]) == 64, "ARTIFACT_RAW_HASH:" + row["id"])
     require(artifact["exit_status"] == 0 and artifact["test_result"] == "passed" and artifact["result"] == "pass", "ARTIFACT_RESULT:" + row["id"])
     parsed = parse_trace(row, artifact["stdout"] + artifact["stderr"], artifact["exit_status"])
     require(parsed == artifact["trace"], "ARTIFACT_TRACE:" + row["id"])
@@ -201,6 +216,8 @@ def expected_report(inventory: dict[str, Any], execution_base: str) -> dict[str,
             "trace_sha256": sha(raw.encode()),
             "stdout_sha256": sha(artifact["stdout"].encode()),
             "stderr_sha256": sha(artifact["stderr"].encode()),
+            "raw_stdout_sha256": artifact["raw_stdout_sha256"],
+            "raw_stderr_sha256": artifact["raw_stderr_sha256"],
             "source_candidate": source_candidate,
             "execution_base_candidate": execution_base,
             "result": "pass",
@@ -218,7 +235,7 @@ def expected_report(inventory: dict[str, Any], execution_base: str) -> dict[str,
         "counts": {"requested": len(rows), "executed": len(rows), "passed": len(rows), "failed": 0},
         "execution": {
             "mode": "actual", "trace_facts": "independent_runtime_events",
-            "count_scope": "requested_operation_window", "raw_transcript": "embedded_complete",
+            "count_scope": "requested_operation_window", "raw_transcript": "embedded_redacted_with_raw_hashes",
             "artifact_commit_binding": "later_catalog",
         },
         "result_identity_sha256": "",
@@ -289,6 +306,8 @@ def parser_self_test(inventory: dict[str, Any]) -> int:
         lambda value: value.update(event_counts_derived=False),
     ]
     validate_trace(valid, row, "SELF_VALID")
+    redacted = public_transcript("from /" + "Users/example/project and /" + "Volumes/build/target)\n")
+    require(redacted == "from <local-path> and <local-path>)\n", "TRANSCRIPT_REDACTION")
     caught = 0
     for mutate in cases:
         changed = copy.deepcopy(valid)
