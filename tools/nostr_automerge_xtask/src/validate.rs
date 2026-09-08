@@ -331,6 +331,10 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
         "scripts/run_causal_projection_mutations_v19.py",
     ),
     (
+        "causal_projection_catalogs_v19",
+        "scripts/validate_causal_projection_catalogs_v19.py",
+    ),
+    (
         "causal_projection_release_boundary_v19",
         "scripts/validate_causal_projection_release_boundary_v19.py",
     ),
@@ -808,6 +812,7 @@ mod tests {
         assert!(names.contains(&"causal_projection_mutation_matrix_v19"));
         assert!(names.contains(&"causal_projection_proof_events_v19"));
         assert!(names.contains(&"causal_projection_mutations_v19"));
+        assert!(names.contains(&"causal_projection_catalogs_v19"));
         assert!(names.contains(&"causal_projection_release_boundary_v19"));
         assert!(names.contains(&"causal_projection_reproductions_v19"));
         assert!(names.contains(&"causal_projection_v18_execution_mapping_v19"));
