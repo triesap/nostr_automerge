@@ -57,6 +57,33 @@ class InventoryError(RuntimeError):
     pass
 
 
+def production_source(source: str) -> str:
+    """Remove cfg(test) items and statements before production anchor checks."""
+
+    marker = "\n#[cfg(test)]\npub(crate) mod tests {"
+    if marker not in source:
+        return source
+    lines = source.split(marker, 1)[0].splitlines(keepends=True)
+    kept: list[str] = []
+    index = 0
+    while index < len(lines):
+        if lines[index].strip() != "#[cfg(test)]":
+            kept.append(lines[index])
+            index += 1
+            continue
+        index += 1
+        braces = 0
+        saw_brace = False
+        while index < len(lines):
+            line = lines[index]
+            braces += line.count("{") - line.count("}")
+            saw_brace = saw_brace or "{" in line
+            index += 1
+            if (saw_brace and braces == 0) or (not saw_brace and ";" in line):
+                break
+    return "".join(kept)
+
+
 def sha256(path: pathlib.Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -245,6 +272,9 @@ def validate_projection_work_contract(source: str) -> None:
 
 
 def validate_metered_sources(sources: dict[str, str]) -> None:
+    sources = dict(sources)
+    actor_state_path = "crates/nostr_automerge/src/graph/actor_state.rs"
+    sources[actor_state_path] = production_source(sources[actor_state_path])
     if "fn charge_control_closures(" in sources[
         "crates/nostr_automerge/src/reference/evaluate.rs"
     ]:
@@ -309,6 +339,14 @@ def mutation_self_test() -> int:
 def source_mutation_self_test() -> int:
     paths = {path for path, _ in METERED_SOURCE_ANCHORS}
     sources = {path: (ROOT / path).read_text() for path in paths}
+    projection_source = sources[PROJECTION_WORK_CONTRACT_PATH]
+    test_marker = "\n#[cfg(test)]\npub(crate) mod tests {"
+    _, separator, test_body = projection_source.partition(test_marker)
+    if not separator:
+        raise InventoryError("source_mutation:test_module")
+    sources[PROJECTION_WORK_CONTRACT_PATH] = (
+        production_source(projection_source) + separator + test_body
+    )
     validate_metered_sources(sources)
     validate_projection_work_contract(sources[PROJECTION_WORK_CONTRACT_PATH])
     mutations = []
@@ -344,6 +382,7 @@ def source_mutation_self_test() -> int:
         mutations.append(candidate)
     for anchor in PROJECTION_WORK_CONTRACT_ANCHORS:
         candidate = dict(sources)
+        candidate[PROJECTION_WORK_CONTRACT_PATH] = projection_source
         declaration = f"fn {PROJECTION_WORK_CONTRACT_TEST}()"
         before, separator, body_and_after = candidate[
             PROJECTION_WORK_CONTRACT_PATH
