@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.github.io/nostr-automerge/schemas/causal_projection_release_boundary_v19.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "authority", "baseline", "evidence_candidate", "non_test_source", "test_only_instrumentation", "public_api", "package_surface", "protocol_surface", "holds", "remote_actions", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_release_boundary.v19.v1"},
+    "status": {"const": "actual_execution"},
+    "authority": {"const": "spec/remediation_v19_authority.json"},
+    "baseline": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "evidence_candidate": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "non_test_source": {"type": "object", "additionalProperties": false, "required": ["path", "baseline_sha256", "candidate_sha256", "identical"]},
+    "test_only_instrumentation": {"type": "object", "additionalProperties": false, "required": ["cfg", "symbols", "release_compiled_occurrences", "package_source_policy"]},
+    "public_api": {"type": "object", "additionalProperties": false, "required": ["command", "exit_status", "stdout_sha256", "stderr_sha256", "diff"]},
+    "package_surface": {"type": "object", "additionalProperties": false, "required": ["command", "baseline_exit_status", "candidate_exit_status", "path_count", "baseline_list_sha256", "candidate_list_sha256", "baseline_stderr_sha256", "candidate_stderr_sha256", "path_set"]},
+    "protocol_surface": {"type": "object", "additionalProperties": false, "required": ["frozen_files", "conformance_command", "processes", "fixture_count", "canonical_output_sha256", "serialized_run_sha256", "canonical_bytes", "public_symbols_changed", "protocol_changed"]},
+    "holds": {"type": "array", "uniqueItems": true},
+    "remote_actions": {"const": 0},
+    "result": {"const": "pass"}
+  }
+}
