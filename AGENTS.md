@@ -9,15 +9,15 @@ Read and follow, in order:
 1. `spec/NIP_DRAFT.md`;
 2. `spec/NOSTR_AUTOMERGE_V1_SPEC.md` and focused contracts under `spec/`;
 3. `spec/requirements.json`, approved ADRs, and fixture expectations;
-4. `docs/execution/rcl/nostr_automerge_v1_multi_rcld_v18.md`;
+4. `docs/execution/rcl/nostr_automerge_v1_multi_rcld_v19.md`;
 5. the active RCLD and checkpoint in that governing document;
 6. `implementation/COMMIT_SEQUENCE.md`.
 
-For the active sealed-boundary assurance follow-up, also read
-`spec/remediation_v18_authority.json`,
-`implementation/runtime_ledger_v18.json`, and
-`docs/execution/remediation_v18/baseline.md`. RCLD 134 through RCLD 140 append
-to the completed v17 history and supersede its terminal decision only for
+For the active assurance-closure follow-up, also read
+`spec/remediation_v19_authority.json`,
+`implementation/runtime_ledger_v19.json`, and
+`docs/execution/remediation_v19/baseline.md`. RCLD 141 through RCLD 146 append
+to the completed v18 history and supersede its terminal decision only for
 current implementation status. Historical evidence remains immutable.
 
 The completed historical plan
@@ -43,7 +43,7 @@ all affected authority and implementations.
 - Cross-implementation checkpoints preserve their owning histories. Commit an
   authorized TypeScript source slice in its owning private history before
   committing the corresponding Rust coordination or attestation slice.
-- Do not edit the NIP document during RCLDs 134 through 140.
+- Do not edit the NIP document during RCLDs 141 through 146.
 
 ## Naming
 

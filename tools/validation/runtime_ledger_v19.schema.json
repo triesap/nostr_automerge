@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "authority", "cursor", "findings", "candidate_roles", "independent", "predecessors"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.runtime_ledger.v19.v1"},
+    "status": {"enum": ["active", "code_complete_publication_held"]},
+    "authority": {"const": "spec/remediation_v19_authority.json"},
+    "cursor": {"type": "object", "additionalProperties": false, "required": ["completed_rclds", "active_rcld", "next_rcld", "last_planned_rcld", "remaining_rcld_count"]},
+    "findings": {"type": "object", "additionalProperties": false, "required": ["open", "held"]},
+    "candidate_roles": {"type": "object", "additionalProperties": false, "required": ["source_candidate", "execution_base_candidate", "proof_artifact_commit", "mutation_artifact_commit", "final_inventory_commit", "evidence_graph_commit", "public_qualification_commit", "independent_assurance_commit", "terminal_artifact_commit", "clean_attestation_commit"]},
+    "independent": {"type": "object", "additionalProperties": false, "required": ["rcld", "completed", "candidate", "public_detail"]},
+    "predecessors": {"type": "array"}
+  }
+}

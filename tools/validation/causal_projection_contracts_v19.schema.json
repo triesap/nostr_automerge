@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "proof_events", "successful_order", "failed_charge_order", "helpers", "helper_mutations", "direct_sites", "provenance_mutations", "property_codes", "public_minimum_mutations", "independent_minimum_mutations", "public_expected_sites", "independent_expected_sites", "source_derived_counts", "marker_selected_properties", "identity_only_mutation_kills", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_contracts.v19.v1"},
+    "proof_events": {"type": "array", "minItems": 6, "maxItems": 6, "uniqueItems": true},
+    "successful_order": {"type": "array", "minItems": 5, "maxItems": 5},
+    "failed_charge_order": {"const": ["ChargeAttempt"]},
+    "helpers": {"type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true},
+    "helper_mutations": {"type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true},
+    "direct_sites": {"type": "array", "minItems": 7, "maxItems": 7, "uniqueItems": true},
+    "provenance_mutations": {"type": "array", "minItems": 5, "maxItems": 5, "uniqueItems": true},
+    "property_codes": {"type": "array", "minItems": 13, "maxItems": 13, "uniqueItems": true},
+    "public_minimum_mutations": {"const": 40},
+    "independent_minimum_mutations": {"const": 19},
+    "public_expected_sites": {"const": 68},
+    "independent_expected_sites": {"const": 142},
+    "source_derived_counts": {"const": true},
+    "marker_selected_properties": {"const": false},
+    "identity_only_mutation_kills": {"const": false},
+    "result": {"const": "pass"}
+  }
+}

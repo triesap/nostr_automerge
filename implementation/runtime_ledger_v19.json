@@ -1,0 +1,37 @@
+{
+  "schema": "nostr_automerge.runtime_ledger.v19.v1",
+  "status": "active",
+  "authority": "spec/remediation_v19_authority.json",
+  "cursor": {
+    "completed_rclds": [],
+    "active_rcld": 141,
+    "next_rcld": 141,
+    "last_planned_rcld": 146,
+    "remaining_rcld_count": 6
+  },
+  "findings": {
+    "open": ["FINDING_130", "FINDING_131", "FINDING_132", "FINDING_133"],
+    "held": ["FINDING_080"]
+  },
+  "candidate_roles": {
+    "source_candidate": null,
+    "execution_base_candidate": "4cc1bb5060b7477214eb22cf7b086735e4a70b7a",
+    "proof_artifact_commit": null,
+    "mutation_artifact_commit": null,
+    "final_inventory_commit": null,
+    "evidence_graph_commit": null,
+    "public_qualification_commit": null,
+    "independent_assurance_commit": null,
+    "terminal_artifact_commit": null,
+    "clean_attestation_commit": null
+  },
+  "independent": {
+    "rcld": 145,
+    "completed": false,
+    "candidate": null,
+    "public_detail": "opaque_only"
+  },
+  "predecessors": [
+    {"rcld":140,"candidate":"4cc1bb5060b7477214eb22cf7b086735e4a70b7a","owner_class":"public","result":"pass"}
+  ]
+}

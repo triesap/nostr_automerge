@@ -8984,3 +8984,16 @@ Historical v17 records remain immutable.
 5. RCLD 138 binds committed evidence and completes public qualification.
 6. RCLD 139 completes independently owned compatibility evidence.
 7. RCLD 140 imports opaque evidence and records the held terminal state.
+
+## Causal-projection assurance closure v19
+
+The append-only v19 continuation is governed by
+`docs/execution/rcl/nostr_automerge_v1_multi_rcld_v19.md`. Its optimized
+sequence is RCLD 141 through RCLD 146. Historical v18 records remain immutable.
+
+1. RCLD 141 appends authority, reproductions, contracts, and v18 execution mapping.
+2. RCLD 142 replaces proof aliases with independent exact production-path events.
+3. RCLD 143 executes runtime-derived complete mutation qualification.
+4. RCLD 144 binds final public evidence and runs qualification twice.
+5. RCLD 145 supplies independently produced opaque compatibility assurance.
+6. RCLD 146 imports opaque evidence and completes terminal descendant attestation.

@@ -1,0 +1,19 @@
+{
+  "schema": "nostr_automerge.causal_projection_contracts.v19.v1",
+  "proof_events": ["ChargeAttempt", "ChargeAccepted", "TargetDispatched", "TargetReturned", "CompletionObserved", "PublicationCompleted"],
+  "successful_order": ["ChargeAttempt", "ChargeAccepted", "TargetDispatched", "TargetReturned", "CompletionObserved"],
+  "failed_charge_order": ["ChargeAttempt"],
+  "helpers": ["perform_projection_build_operation", "perform_actor_decision_operation", "perform_causal_next_operation", "metered_frontier_operation"],
+  "helper_mutations": ["target_before_charge", "completion_before_target", "target_after_failed_charge", "completion_after_failed_charge", "double_target", "site_swap", "counter_mismatch"],
+  "direct_sites": ["ActorStateRead", "PredecessorCandidateRead", "ActorIdentityDecision", "SequenceRelationDecision", "StoredCounterRead", "ExpectedStartComparison", "CheckedAdvance"],
+  "provenance_mutations": ["typed_budget_identity", "cancellation_identity", "unexpected_error_identity", "publication_after_stop", "alternate_consumer_bypass"],
+  "property_codes": ["TYPED_BUDGET_EXHAUSTED_IDENTITY", "TYPED_CANCELLED_IDENTITY", "UNEXPECTED_WORK_ERROR_IDENTITY", "CHARGE_AFTER_OPERATION", "OPERATION_OBSERVATION_BEFORE_TARGET", "SITE_TARGET_BEFORE_CHARGE", "TARGET_AFTER_STOP", "OBSERVATION_AFTER_STOP", "PUBLICATION_AFTER_STOP", "TARGET_EXECUTION_COUNT_MISMATCH", "SITE_ID_MISMATCH", "COUNTER_MISMATCH", "ALTERNATE_CONSUMER_BYPASS"],
+  "public_minimum_mutations": 40,
+  "independent_minimum_mutations": 19,
+  "public_expected_sites": 68,
+  "independent_expected_sites": 142,
+  "source_derived_counts": true,
+  "marker_selected_properties": false,
+  "identity_only_mutation_kills": false,
+  "result": "pass"
+}

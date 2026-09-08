@@ -309,6 +309,11 @@ const PYTHON_VALIDATORS: &[(&str, &str)] = &[
     ),
     ("remediation_v17", "scripts/validate_remediation_v17.py"),
     ("remediation_v18", "scripts/validate_remediation_v18.py"),
+    ("remediation_v19", "scripts/validate_remediation_v19.py"),
+    (
+        "causal_projection_contracts_v19",
+        "scripts/validate_causal_projection_contracts_v19.py",
+    ),
     (
         "causal_projection_contracts_v18",
         "scripts/validate_causal_projection_contracts_v18.py",
@@ -556,6 +561,7 @@ pub(crate) fn validate_repository(root: &Path) -> Result<ValidationReport, Strin
     let v12_active = root.join("spec/remediation_v12_authority.json").is_file();
     let v13_active = root.join("spec/remediation_v13_authority.json").is_file();
     let v18_active = root.join("spec/remediation_v18_authority.json").is_file();
+    let v19_active = root.join("spec/remediation_v19_authority.json").is_file();
     for (name, script) in PYTHON_VALIDATORS {
         if followup_active && followup_historical_validator(name) {
             continue;
@@ -567,6 +573,9 @@ pub(crate) fn validate_repository(root: &Path) -> Result<ValidationReport, Strin
             continue;
         }
         if v18_active && v18_historical_validator(name) {
+            continue;
+        }
+        if v19_active && v19_historical_validator(name) {
             continue;
         }
         let output = Command::new("python3")
@@ -715,6 +724,10 @@ fn v18_historical_validator(name: &str) -> bool {
     )
 }
 
+fn v19_historical_validator(name: &str) -> bool {
+    name == "remediation_v18" || (name.contains("causal_projection") && !name.contains("_v19"))
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::Path;
@@ -757,6 +770,8 @@ mod tests {
         assert!(names.contains(&"remediation_v13"));
         assert!(names.contains(&"remediation_v17"));
         assert!(names.contains(&"remediation_v18"));
+        assert!(names.contains(&"remediation_v19"));
+        assert!(names.contains(&"causal_projection_contracts_v19"));
         assert!(names.contains(&"causal_projection_contracts_v18"));
         assert!(names.contains(&"causal_projection_boundary_v18"));
         assert!(names.contains(&"causal_projection_inventory_v18"));
