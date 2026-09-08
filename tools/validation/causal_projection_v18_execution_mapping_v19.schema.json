@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "approved_baseline", "public_terminal", "approved_step_count", "public_step_mapping", "independent_steps", "independent_mapping", "actual_public_commits", "deviations", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_v18_execution_mapping.v19.v1"},
+    "status": {"const": "historical_execution_mapped"},
+    "approved_baseline": {"const": "8673ff8546b9e9d57218c15a4b81890d82137184"},
+    "public_terminal": {"const": "4cc1bb5060b7477214eb22cf7b086735e4a70b7a"},
+    "approved_step_count": {"const": 43},
+    "public_step_mapping": {"type": "object"},
+    "independent_steps": {"const": ["step_1551", "step_1552", "step_1553"]},
+    "independent_mapping": {"type": "object"},
+    "actual_public_commits": {"type": "array", "minItems": 21, "maxItems": 21, "uniqueItems": true},
+    "deviations": {"type": "array", "minItems": 5, "uniqueItems": true},
+    "result": {"const": "pass"}
+  }
+}
