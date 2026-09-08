@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.github.io/nostr-automerge/schemas/causal_projection_public_qualification_v19.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "execution_mode", "evidence_graph", "distribution_transition", "execution_base", "repetitions", "aggregate", "frozen", "holds", "remote_actions", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_public_qualification.v19.v1"},
+    "status": {"const": "final"},
+    "execution_mode": {"const": "two_clean_repetitions"},
+    "evidence_graph": {"type": "object"},
+    "distribution_transition": {"type": "object"},
+    "execution_base": {"type": "object"},
+    "repetitions": {"type": "array", "minItems": 2, "maxItems": 2},
+    "aggregate": {"type": "object"},
+    "frozen": {"type": "object"},
+    "holds": {"type": "array", "minItems": 8, "maxItems": 8, "uniqueItems": true},
+    "remote_actions": {"const": 0},
+    "result": {"const": "pass"}
+  }
+}

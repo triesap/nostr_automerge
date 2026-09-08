@@ -1,0 +1,112 @@
+{
+  "schema": "nostr_automerge.distribution_v19_transition.v1",
+  "status": "actual_zero_change",
+  "evidence_graph": {
+    "path": "reports/causal_projection_evidence_graph_v19.json",
+    "candidate": "ac24566ae4b96bc1ac17b0c87b7ae70cbb9f939f",
+    "sha256": "0b0c5cd2e54805cd888bcb04306b921f7e31737b5524282f1d57b5dba7a6d4f3"
+  },
+  "release_boundary": {
+    "path": "reports/causal_projection_release_boundary_v19.json",
+    "candidate": "6760c58c2fcf754c03f6b21ff0bfa2fd21113a57",
+    "sha256": "4f91369b5e1a7a85328d729dd26afc29946b43765c8a48220cddb5c5ea5d28d8"
+  },
+  "execution_base": {
+    "candidate": "7013445e488daf8c781559adccf722e054814681",
+    "tree": "9c79e5528e946f58b3ae030a5391dde8ee011631",
+    "runner_sha256": "a28ba6a808c9b84654923dc85fd8607977d7accc1b5d92ae317f98c5b08ddce4",
+    "schema_sha256": "eab66eb750eb97768bb6bba9bab8da383dc5f38fec1ef67ad3524476ef005957",
+    "report_absent": "true"
+  },
+  "prior_transition": {
+    "path": "spec/distribution_v18_transition.json",
+    "sha256": "1408b71c6e7ee31a99e6e0436c4ed290467675a67f517bc0be082b10149a5153"
+  },
+  "selected_manifest": {
+    "path": "fixtures/distribution/manifest_v16.json",
+    "sha256": "7890fe2532da48ca84e54f5b1b883a38fd1a60ff58bb2999a056025335a4b5d3"
+  },
+  "selected_lock": {
+    "path": "fixtures/distribution/manifest_v16.lock.json",
+    "sha256": "9e09dfd2de706d320c3bcd7cfe45b2f9a7560d5e9354809d2a41e5f52a2fba90"
+  },
+  "actual_runs": [
+    {
+      "ordinal": 1,
+      "argv": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "run",
+        "--quiet",
+        "-p",
+        "nostr_automerge_conformance",
+        "--locked",
+        "--",
+        "run_distribution",
+        "fixtures/distribution/manifest_v16.json"
+      ],
+      "cwd": ".",
+      "exit_status": 0,
+      "stdout_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "scenarios": 204,
+      "delivery_orders": 8,
+      "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+      "result": "pass"
+    },
+    {
+      "ordinal": 2,
+      "argv": [
+        "cargo",
+        "extbuild",
+        "run",
+        "--",
+        "cargo",
+        "run",
+        "--quiet",
+        "-p",
+        "nostr_automerge_conformance",
+        "--locked",
+        "--",
+        "run_distribution",
+        "fixtures/distribution/manifest_v16.json"
+      ],
+      "cwd": ".",
+      "exit_status": 0,
+      "stdout_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "scenarios": 204,
+      "delivery_orders": 8,
+      "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+      "result": "pass"
+    }
+  ],
+  "affected_fixture_ids": [],
+  "counts": {
+    "requirements": 156,
+    "scenarios": 204,
+    "signed_events": 771,
+    "delivery_orders": 8,
+    "processes": 2,
+    "affected": 0
+  },
+  "identity": {
+    "process_bytes_identical": true,
+    "signed_events_byte_identical": true,
+    "ample_reports_byte_identical": true,
+    "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+    "serialized_run_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344"
+  },
+  "derivation": {
+    "actual_processes_executed": true,
+    "production_semantics_changed": false,
+    "runtime_budget_change": false,
+    "assurance_only_change": true,
+    "synthetic_version_rebinding": false,
+    "new_manifest_created": false
+  },
+  "result": "pass"
+}
