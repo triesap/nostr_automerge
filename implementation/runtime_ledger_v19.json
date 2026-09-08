@@ -3,19 +3,19 @@
   "status": "active",
   "authority": "spec/remediation_v19_authority.json",
   "cursor": {
-    "completed_rclds": [141],
-    "active_rcld": 142,
-    "next_rcld": 142,
+    "completed_rclds": [141, 142],
+    "active_rcld": 143,
+    "next_rcld": 143,
     "last_planned_rcld": 146,
-    "remaining_rcld_count": 5
+    "remaining_rcld_count": 4
   },
   "findings": {
     "open": ["FINDING_130", "FINDING_131", "FINDING_132", "FINDING_133"],
     "held": ["FINDING_080"]
   },
   "candidate_roles": {
-    "source_candidate": null,
-    "execution_base_candidate": "4cc1bb5060b7477214eb22cf7b086735e4a70b7a",
+    "source_candidate": "a8f8651c26a0ac7822e1e5d61f3aafa3fec53d1f",
+    "execution_base_candidate": "7050d3abf4104d5772e05b037a5799904de031f2",
     "proof_artifact_commit": null,
     "mutation_artifact_commit": null,
     "final_inventory_commit": null,

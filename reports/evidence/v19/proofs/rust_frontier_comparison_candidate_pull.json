@@ -1,0 +1,69 @@
+{
+  "schema": "nostr_automerge.causal_projection_proof_trace.v19.v1",
+  "authority": "spec/causal_projection_contracts_v19.json",
+  "inventory_row_id": "rust.frontier_comparison.candidate_pull",
+  "source_candidate": "a8f8651c26a0ac7822e1e5d61f3aafa3fec53d1f",
+  "execution_base_candidate": "7050d3abf4104d5772e05b037a5799904de031f2",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "nostr_automerge",
+    "--lib",
+    "graph::actor_state::tests::causal_projection_v17_site_frontier_candidate_pull",
+    "--locked",
+    "--",
+    "--exact",
+    "--nocapture"
+  ],
+  "cwd": ".",
+  "environment": {
+    "target_routing": "extbuild",
+    "output_capture": "complete_redacted_stdout_and_stderr_with_raw_hashes",
+    "source_state": "clean_committed_base"
+  },
+  "exit_status": 0,
+  "test_result": "passed",
+  "stdout": "\nrunning 1 test\nv18-proof-json={\"site_id\":\"CandidatePull\",\"phase\":\"frontier_comparison\",\"family\":\"CandidatePull\",\"counter\":\"GraphEdge\",\"requested_site\":\"CandidatePull\",\"observed_completed_site\":\"CandidatePull\",\"n_minus_one_result\":\"BudgetExhausted\",\"n_result\":\"requested_site_completed\",\"n_plus_one_result\":\"requested_site_completed\",\"cancelled_result\":\"Cancelled\",\"unexpected_error_identity\":\"exact\",\"target_count_at_n_minus_one\":0,\"completion_observation_count_at_n_minus_one\":0,\"publication_count_at_n_minus_one\":0,\"charge_attempt_count_at_n_minus_one\":1,\"count_scope\":\"post_failed_charge_suffix\"}\nv19-proof-json={\"site_id\":\"CandidatePull\",\"phase\":\"frontier_comparison\",\"family\":\"CandidatePull\",\"counter\":\"GraphEdge\",\"requested_site\":\"CandidatePull\",\"n_minus_one_result\":\"BudgetExhausted\",\"n_minus_one_events\":[\"ChargeAttempt\"],\"n_result\":\"requested_site_completed\",\"n_events\":[\"ChargeAttempt\", \"ChargeAccepted\", \"TargetDispatched\", \"TargetReturned\", \"CompletionObserved\"],\"n_plus_one_result\":\"requested_site_completed\",\"n_plus_one_events\":[\"ChargeAttempt\", \"ChargeAccepted\", \"TargetDispatched\", \"TargetReturned\", \"CompletionObserved\"],\"cancelled_result\":\"Cancelled\",\"cancelled_events\":[\"ChargeAttempt\"],\"unexpected_error_identity\":\"exact\",\"unexpected_events\":[\"ChargeAttempt\"],\"count_scope\":\"requested_operation_window\",\"event_counts_derived\":true}\ntest graph::actor_state::tests::causal_projection_v17_site_frontier_candidate_pull ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 551 filtered out; finished in 0.00s\n\n",
+  "stderr": "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s\n     Running unittests src/lib.rs (<local-path>)\n",
+  "raw_stdout_sha256": "ed5a84c1c5935e4a6e5a72cade85b9d547f6f38bf6b3ff54b440d29b74c1b1eb",
+  "raw_stderr_sha256": "977f22d6a1c85b25a1b52dc02fd9f56f8fa8a92cfd04f9e3c0312dea9d932049",
+  "trace": {
+    "site_id": "CandidatePull",
+    "phase": "frontier_comparison",
+    "family": "CandidatePull",
+    "counter": "GraphEdge",
+    "requested_site": "CandidatePull",
+    "n_minus_one_result": "BudgetExhausted",
+    "n_minus_one_events": [
+      "ChargeAttempt"
+    ],
+    "n_result": "requested_site_completed",
+    "n_events": [
+      "ChargeAttempt",
+      "ChargeAccepted",
+      "TargetDispatched",
+      "TargetReturned",
+      "CompletionObserved"
+    ],
+    "n_plus_one_result": "requested_site_completed",
+    "n_plus_one_events": [
+      "ChargeAttempt",
+      "ChargeAccepted",
+      "TargetDispatched",
+      "TargetReturned",
+      "CompletionObserved"
+    ],
+    "cancelled_result": "Cancelled",
+    "cancelled_events": [
+      "ChargeAttempt"
+    ],
+    "unexpected_error_identity": "exact",
+    "unexpected_events": [
+      "ChargeAttempt"
+    ],
+    "count_scope": "requested_operation_window",
+    "event_counts_derived": true
+  },
+  "result": "pass"
+}

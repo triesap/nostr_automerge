@@ -1,0 +1,69 @@
+{
+  "schema": "nostr_automerge.causal_projection_proof_trace.v19.v1",
+  "authority": "spec/causal_projection_contracts_v19.json",
+  "inventory_row_id": "rust.frontier_comparison.candidate_kind_comparison",
+  "source_candidate": "a8f8651c26a0ac7822e1e5d61f3aafa3fec53d1f",
+  "execution_base_candidate": "7050d3abf4104d5772e05b037a5799904de031f2",
+  "command": [
+    "cargo",
+    "test",
+    "-p",
+    "nostr_automerge",
+    "--lib",
+    "graph::actor_state::tests::causal_projection_v17_site_frontier_candidate_kind_comparison",
+    "--locked",
+    "--",
+    "--exact",
+    "--nocapture"
+  ],
+  "cwd": ".",
+  "environment": {
+    "target_routing": "extbuild",
+    "output_capture": "complete_redacted_stdout_and_stderr_with_raw_hashes",
+    "source_state": "clean_committed_base"
+  },
+  "exit_status": 0,
+  "test_result": "passed",
+  "stdout": "\nrunning 1 test\nv18-proof-json={\"site_id\":\"CandidateKindComparison\",\"phase\":\"frontier_comparison\",\"family\":\"CandidateKindComparison\",\"counter\":\"GraphNode\",\"requested_site\":\"CandidateKindComparison\",\"observed_completed_site\":\"CandidateKindComparison\",\"n_minus_one_result\":\"BudgetExhausted\",\"n_result\":\"requested_site_completed\",\"n_plus_one_result\":\"requested_site_completed\",\"cancelled_result\":\"Cancelled\",\"unexpected_error_identity\":\"exact\",\"target_count_at_n_minus_one\":0,\"completion_observation_count_at_n_minus_one\":0,\"publication_count_at_n_minus_one\":0,\"charge_attempt_count_at_n_minus_one\":1,\"count_scope\":\"post_failed_charge_suffix\"}\nv19-proof-json={\"site_id\":\"CandidateKindComparison\",\"phase\":\"frontier_comparison\",\"family\":\"CandidateKindComparison\",\"counter\":\"GraphNode\",\"requested_site\":\"CandidateKindComparison\",\"n_minus_one_result\":\"BudgetExhausted\",\"n_minus_one_events\":[\"ChargeAttempt\"],\"n_result\":\"requested_site_completed\",\"n_events\":[\"ChargeAttempt\", \"ChargeAccepted\", \"TargetDispatched\", \"TargetReturned\", \"CompletionObserved\"],\"n_plus_one_result\":\"requested_site_completed\",\"n_plus_one_events\":[\"ChargeAttempt\", \"ChargeAccepted\", \"TargetDispatched\", \"TargetReturned\", \"CompletionObserved\"],\"cancelled_result\":\"Cancelled\",\"cancelled_events\":[\"ChargeAttempt\"],\"unexpected_error_identity\":\"exact\",\"unexpected_events\":[\"ChargeAttempt\"],\"count_scope\":\"requested_operation_window\",\"event_counts_derived\":true}\ntest graph::actor_state::tests::causal_projection_v17_site_frontier_candidate_kind_comparison ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 551 filtered out; finished in 0.00s\n\n",
+  "stderr": "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.04s\n     Running unittests src/lib.rs (<local-path>)\n",
+  "raw_stdout_sha256": "579c3a675c56129393f20a5338c5b83ad4621e4784c6f4c3869bd2e2dedc4242",
+  "raw_stderr_sha256": "8ab3b86144c0d910e8ebab94682c689001843e0a63b1dd30a76ee6adf61e6d06",
+  "trace": {
+    "site_id": "CandidateKindComparison",
+    "phase": "frontier_comparison",
+    "family": "CandidateKindComparison",
+    "counter": "GraphNode",
+    "requested_site": "CandidateKindComparison",
+    "n_minus_one_result": "BudgetExhausted",
+    "n_minus_one_events": [
+      "ChargeAttempt"
+    ],
+    "n_result": "requested_site_completed",
+    "n_events": [
+      "ChargeAttempt",
+      "ChargeAccepted",
+      "TargetDispatched",
+      "TargetReturned",
+      "CompletionObserved"
+    ],
+    "n_plus_one_result": "requested_site_completed",
+    "n_plus_one_events": [
+      "ChargeAttempt",
+      "ChargeAccepted",
+      "TargetDispatched",
+      "TargetReturned",
+      "CompletionObserved"
+    ],
+    "cancelled_result": "Cancelled",
+    "cancelled_events": [
+      "ChargeAttempt"
+    ],
+    "unexpected_error_identity": "exact",
+    "unexpected_events": [
+      "ChargeAttempt"
+    ],
+    "count_scope": "requested_operation_window",
+    "event_counts_derived": true
+  },
+  "result": "pass"
+}
