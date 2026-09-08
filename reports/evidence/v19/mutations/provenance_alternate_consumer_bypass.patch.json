@@ -1,0 +1,7 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_patch.v19.v1",
+  "mutation_id": "provenance.alternate_consumer_bypass",
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 6ad9a61f..02dc7f4e 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -795,16 +795,7 @@ impl TrustedEpochProjection<'_> {\n         mut charge: impl FnMut(ActorDecisionDescriptor) -> Result<(), E>,\n         mut observed: impl FnMut(ActorDecisionObservation),\n     ) -> Result<(), MeteredActorStateError<E>> {\n-        let actor_state = perform_actor_decision_operation(\n-            ActorDecisionSite::ActorStateRead,\n-            &mut charge,\n-            &mut observed,\n-            || {\n-                #[cfg(test)]\n-                v19_record_direct_target(\"ActorStateRead\");\n-                self.actor_states.get(&candidate.actor).copied()\n-            },\n-        )?;\n+        let actor_state = self.actor_states.get(&candidate.actor).copied();\n \n         let predecessor = if let Some(state) = actor_state {\n             perform_actor_decision_operation(\n",
+  "result": "pass"
+}

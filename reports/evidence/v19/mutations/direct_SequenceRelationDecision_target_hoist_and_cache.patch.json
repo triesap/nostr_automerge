@@ -1,0 +1,7 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_patch.v19.v1",
+  "mutation_id": "direct.SequenceRelationDecision.target_hoist_and_cache",
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 6ad9a61f..432c12ba 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -843,11 +843,7 @@ impl TrustedEpochProjection<'_> {\n             ));\n         }\n \n-        let sequence_relation = perform_actor_decision_operation(\n-            ActorDecisionSite::SequenceRelationDecision,\n-            &mut charge,\n-            &mut observed,\n-            || {\n+        let cached_sequence_relation_decision = {\n                 #[cfg(test)]\n                 v19_record_direct_target(\"SequenceRelationDecision\");\n                 match (actor_relation, actor_state) {\n@@ -871,7 +867,12 @@ impl TrustedEpochProjection<'_> {\n                     }\n                     _ => SequenceRelation::GapOrMissingPredecessor,\n                 }\n-            },\n+            };\n+        let sequence_relation = perform_actor_decision_operation(\n+            ActorDecisionSite::SequenceRelationDecision,\n+            &mut charge,\n+            &mut observed,\n+            || cached_sequence_relation_decision,\n         )?;\n \n         match sequence_relation {\n",
+  "result": "pass"
+}

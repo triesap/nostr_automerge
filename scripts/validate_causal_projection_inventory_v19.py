@@ -7,8 +7,10 @@ import argparse
 import copy
 import hashlib
 import json
+import re
 import subprocess
 import sys
+import textwrap
 from pathlib import Path
 from typing import Any
 
@@ -53,6 +55,53 @@ def candidate_source() -> str:
     )
     require(completed.returncode == 0, "SOURCE_CANDIDATE_MISSING")
     return completed.stdout
+
+
+def assurance_normalized_current(source: str) -> str:
+    """Remove only the v19 test-only direct-target assurance layer."""
+
+    sites = [
+        "ActorStateRead", "PredecessorCandidateRead", "ActorIdentityDecision",
+        "SequenceRelationDecision", "StoredCounterRead", "ExpectedStartComparison",
+        "CheckedAdvance", "CandidateKindComparison", "MemberCountRead",
+    ]
+    for site in sites:
+        match = re.search(
+            rf'#\[cfg\(test\)\]\n[ \t]+v19_record_direct_target\("{site}"\);',
+            source,
+        )
+        require(match is not None, "DIRECT_PROBE_MISSING:" + site)
+        marker = match.group()
+        marker_start = match.start()
+        opening = source.rfind("|| {", 0, marker_start)
+        require(opening >= 0, "DIRECT_PROBE_CLOSURE:" + site)
+        depth = 0
+        closing = None
+        for index in range(opening + 3, len(source)):
+            if source[index] == "{":
+                depth += 1
+            elif source[index] == "}":
+                depth -= 1
+                if depth == 0:
+                    closing = index
+                    break
+        require(closing is not None, "DIRECT_PROBE_CLOSE:" + site)
+        inner = source[opening + 4:closing]
+        require(inner.count(marker) == 1, "DIRECT_PROBE_SCOPE:" + site)
+        inner = inner.replace(marker, "", 1)
+        normalized = textwrap.dedent(
+            "\n".join(line for line in inner.splitlines() if line.strip())
+        )
+        line_start = source.rfind("\n", 0, opening) + 1
+        indent = source[line_start:opening]
+        normalized = normalized.replace("\n", "\n" + indent)
+        source = source[:opening] + "|| " + normalized + source[closing + 1:]
+
+    guard_start = source.find("#[cfg(test)]\ntype V19DirectTargetSink")
+    guard_end = source.find("/// Immutable accepted-closure facts", guard_start)
+    require(guard_start >= 0 and guard_end > guard_start, "DIRECT_PROBE_GUARD")
+    source = source[:guard_start] + source[guard_end:]
+    return discovery.production(source)
 
 
 def derive_rows(source: str) -> list[dict[str, Any]]:
@@ -107,7 +156,7 @@ def validate(report: Any, schema: Any, committed_source: str, current_source: st
     require(type(report) is dict and list(report) == TOP_FIELDS, "REPORT_SHAPE")
     require(report == expected, "REPORT_DERIVATION_MISMATCH")
     require(
-        discovery.production(current_source) == discovery.production(committed_source),
+        assurance_normalized_current(current_source) == discovery.production(committed_source),
         "SOURCE_CANDIDATE_DRIFT",
     )
     rows = report["rows"]

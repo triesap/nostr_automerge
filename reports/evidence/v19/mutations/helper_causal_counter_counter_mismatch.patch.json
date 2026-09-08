@@ -1,0 +1,7 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_patch.v19.v1",
+  "mutation_id": "helper.causal_counter.counter_mismatch",
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 6ad9a61f..4c9a1d09 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -416,7 +416,10 @@ fn perform_causal_next_operation<T, E>(\n     observed: &mut impl FnMut(CausalNextObservation),\n     perform: impl FnOnce() -> T,\n ) -> Result<T, MeteredActorStateError<E>> {\n-    let descriptor = site.descriptor();\n+    let descriptor = CausalNextDescriptor {\n+        counter: WorkCounter::GraphEdge,\n+        ..site.descriptor()\n+    };\n     charge(descriptor).map_err(MeteredActorStateError::Work)?;\n     #[cfg(test)]\n     v19_record_proof_event(V19ProofEvent::TargetDispatched {\n",
+  "result": "pass"
+}

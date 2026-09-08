@@ -1,0 +1,7 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_patch.v19.v1",
+  "mutation_id": "direct.ActorIdentityDecision.target_hoist_and_cache",
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 6ad9a61f..00438e18 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -821,11 +821,7 @@ impl TrustedEpochProjection<'_> {\n             None\n         };\n \n-        let actor_relation = perform_actor_decision_operation(\n-            ActorDecisionSite::ActorIdentityDecision,\n-            &mut charge,\n-            &mut observed,\n-            || {\n+        let cached_actor_identity_decision = {\n                 #[cfg(test)]\n                 v19_record_direct_target(\"ActorIdentityDecision\");\n                 match (actor_state, predecessor) {\n@@ -835,7 +831,12 @@ impl TrustedEpochProjection<'_> {\n                     }\n                     _ => ActorIdentityRelation::InvalidPredecessor,\n                 }\n-            },\n+            };\n+        let actor_relation = perform_actor_decision_operation(\n+            ActorDecisionSite::ActorIdentityDecision,\n+            &mut charge,\n+            &mut observed,\n+            || cached_actor_identity_decision,\n         )?;\n         if actor_relation == ActorIdentityRelation::InvalidPredecessor {\n             return Err(MeteredActorStateError::State(\n",
+  "result": "pass"
+}

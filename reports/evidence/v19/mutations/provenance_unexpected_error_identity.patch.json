@@ -1,0 +1,7 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_patch.v19.v1",
+  "mutation_id": "provenance.unexpected_error_identity",
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 6ad9a61f..fa24cae6 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -417,7 +417,8 @@ fn perform_causal_next_operation<T, E>(\n     perform: impl FnOnce() -> T,\n ) -> Result<T, MeteredActorStateError<E>> {\n     let descriptor = site.descriptor();\n-    charge(descriptor).map_err(MeteredActorStateError::Work)?;\n+    charge(descriptor)\n+        .map_err(|_| MeteredActorStateError::State(ActorStateError::NoncanonicalInput))?;\n     #[cfg(test)]\n     v19_record_proof_event(V19ProofEvent::TargetDispatched {\n         site_id: descriptor.site_id,\n",
+  "result": "pass"
+}

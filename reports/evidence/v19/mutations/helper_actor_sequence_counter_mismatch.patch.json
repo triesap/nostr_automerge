@@ -1,0 +1,7 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_patch.v19.v1",
+  "mutation_id": "helper.actor_sequence.counter_mismatch",
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 6ad9a61f..2430d677 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -306,7 +306,10 @@ fn perform_actor_decision_operation<T, E>(\n     observed: &mut impl FnMut(ActorDecisionObservation),\n     perform: impl FnOnce() -> T,\n ) -> Result<T, MeteredActorStateError<E>> {\n-    let descriptor = site.descriptor();\n+    let descriptor = ActorDecisionDescriptor {\n+        counter: WorkCounter::GraphEdge,\n+        ..site.descriptor()\n+    };\n     charge(descriptor).map_err(MeteredActorStateError::Work)?;\n     #[cfg(test)]\n     v19_record_proof_event(V19ProofEvent::TargetDispatched {\n",
+  "result": "pass"
+}

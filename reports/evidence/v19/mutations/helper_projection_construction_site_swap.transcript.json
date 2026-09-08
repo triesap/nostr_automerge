@@ -1,0 +1,96 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_transcript.v19.v1",
+  "authority": "spec/causal_projection_contracts_v19.json",
+  "mutation_id": "helper.projection_construction.site_swap",
+  "campaign": "helper",
+  "inventory_row_id": "rust.projection_construction.member_count_read",
+  "helper": "perform_projection_build_operation",
+  "kind": "site_swap",
+  "expected_property_code": "SITE_ID_MISMATCH",
+  "actual_property_code": "SITE_ID_MISMATCH",
+  "source_candidate": "a8f8651c26a0ac7822e1e5d61f3aafa3fec53d1f",
+  "execution_base_candidate": "8d14a3cbfddd80da4c621cdbb346997619b57b95",
+  "patch_artifact": "reports/evidence/v19/mutations/helper_projection_construction_site_swap.patch.json",
+  "patch_sha256": "b7d65af59c90de250e2b832f352e87e5f5623c494eeed94479b3dfbfb277bcf7",
+  "compile": {
+    "argv": [
+      "cargo",
+      "extbuild",
+      "run",
+      "--",
+      "cargo",
+      "check",
+      "-p",
+      "nostr_automerge",
+      "--lib",
+      "--locked"
+    ],
+    "cwd": ".",
+    "environment": {
+      "inherit": true,
+      "overrides": {
+        "PYTHONDONTWRITEBYTECODE": "1"
+      }
+    },
+    "exit_status": 0,
+    "stdout": "",
+    "stderr": "   Compiling proc-macro2 v1.0.107\n   Compiling unicode-ident v1.0.24\n   Compiling quote v1.0.47\n    Checking stable_deref_trait v1.2.1\n    Checking typenum v1.20.1\n   Compiling libc v0.2.189\n    Checking cfg-if v1.0.4\n    Checking writeable v0.6.3\n   Compiling version_check v0.9.5\n    Checking litemap v0.8.2\n   Compiling icu_normalizer_data v2.2.0\n   Compiling icu_properties_data v2.2.0\n    Checking utf8_iter v1.0.4\n   Compiling shlex v2.0.1\n   Compiling find-msvc-tools v0.1.9\n   Compiling serde v1.0.219\n    Checking rand_core v0.10.1\n   Compiling generic-array v0.14.7\n   Compiling getrandom v0.4.3\n   Compiling cc v1.4.0\n   Compiling thiserror v2.0.19\n   Compiling crc32fast v1.5.0\n    Checking smallvec v1.15.2\n    Checking adler2 v2.0.1\n    Checking hybrid-array v0.4.14\n    Checking once_cell v1.21.4\n    Checking const-oid v0.10.2\n    Checking simd-adler32 v0.3.10\n    Checking tracing-core v0.1.36\n    Checking crypto-common v0.2.2\n    Checking block-buffer v0.12.1\n    Checking miniz_oxide v0.8.9\n    Checking chacha20 v0.10.2\n   Compiling secp256k1-sys v0.11.0\n    Checking tinyvec_macros v0.1.1\n   Compiling syn v2.0.119\n   Compiling syn v3.0.3\n    Checking digest v0.11.3\n    Checking percent-encoding v2.3.2\n   Compiling serde_json v1.0.142\n    Checking leb128 v0.2.7\n    Checking pin-project-lite v0.2.17\n    Checking either v1.17.0\n    Checking form_urlencoded v1.2.2\n    Checking tinyvec v1.12.0\n    Checking itertools v0.14.0\n    Checking block-buffer v0.10.4\n    Checking crypto-common v0.1.7\n    Checking unicode-segmentation v1.13.3\n    Checking memchr v2.8.3\n    Checking digest v0.10.7\n    Checking hex v0.4.3\n    Checking itoa v1.0.18\n    Checking ryu v1.0.23\n    Checking cpufeatures v0.3.0\n    Checking flate2 v1.1.9\n    Checking cpufeatures v0.2.17\n    Checking sha2 v0.11.0\n    Checking rustc-hash v2.1.3\n    Checking base64 v0.22.1\n    Checking sha2 v0.10.9\n   Compiling displaydoc v0.2.7\n   Compiling thiserror-impl v2.0.19\n    Checking rand v0.10.2\n   Compiling synstructure v0.13.2\n    Checking hexane v0.2.1\n   Compiling zerofrom-derive v0.1.7\n   Compiling yoke-derive v0.8.2\n   Compiling zerovec-derive v0.11.3\n   Compiling serde_derive v1.0.219\n   Compiling tracing-attributes v0.1.31\n    Checking zerofrom v0.1.8\n    Checking tracing v0.1.44\n    Checking secp256k1 v0.31.1\n    Checking yoke v0.8.3\n    Checking zerovec v0.11.6\n    Checking zerotrie v0.2.4\n    Checking smol_str v0.3.2\n    Checking automerge v0.10.0\n    Checking tinystr v0.8.3\n    Checking potential_utf v0.1.5\n    Checking icu_collections v2.2.0\n    Checking icu_locale_core v2.2.0\n    Checking icu_provider v2.2.0\n    Checking icu_properties v2.2.0\n    Checking icu_normalizer v2.2.0\n    Checking idna_adapter v1.2.2\n    Checking idna v1.1.0\n    Checking url v2.5.4\n    Checking nostr_automerge v0.1.0-alpha.0 (<local-path>)\nwarning: unused variable: `site`\n   --> crates/nostr_automerge/src/graph/actor_state.rs:714:5\n    |\n714 |     site: ProjectionBuildSite,\n    |     ^^^^ help: if this is intentional, prefix it with an underscore: `_site`\n    |\n    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default\n\nwarning: `nostr_automerge` (lib) generated 1 warning (run `cargo fix --lib -p nostr_automerge` to apply 1 suggestion)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 8.00s\n",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_sha256": "6dac8e23ce552edcfbd0d7eca2a181d4ceed2db52721854e5759020f848ea85a",
+    "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "raw_stderr_sha256": "de7fafce9cb29e24752e4ffc444bdb97df102cec93a9b2c28e2d86e97c90e1bc"
+  },
+  "owner_test": null,
+  "property": {
+    "argv": [
+      "python3",
+      "scripts/validate_causal_projection_properties_v19.py",
+      "--root",
+      ".",
+      "--property",
+      "SITE_ID_MISMATCH",
+      "--expect-failure"
+    ],
+    "cwd": ".",
+    "environment": {
+      "inherit": true,
+      "overrides": {
+        "PYTHONDONTWRITEBYTECODE": "1"
+      }
+    },
+    "exit_status": 1,
+    "stdout": "\nrunning 1 test\nv19-mutation-property=SITE_ID_MISMATCH\ntest graph::actor_state::tests::v19_runtime_helper_mutation_oracle ... FAILED\n\nfailures:\n\nfailures:\n    graph::actor_state::tests::v19_runtime_helper_mutation_oracle\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 556 filtered out; finished in 0.00s\n\nFAIL: SITE_ID_MISMATCH\n",
+    "stderr": "   Compiling stable_deref_trait v1.2.1\n   Compiling typenum v1.20.1\n   Compiling cfg-if v1.0.4\n   Compiling writeable v0.6.3\n   Compiling litemap v0.8.2\n   Compiling utf8_iter v1.0.4\n   Compiling libc v0.2.189\n   Compiling icu_normalizer_data v2.2.0\n   Compiling icu_properties_data v2.2.0\n   Compiling zerofrom v0.1.8\n   Compiling smallvec v1.15.2\n   Compiling rand_core v0.10.1\n   Compiling serde v1.0.219\n   Compiling simd-adler32 v0.3.10\n   Compiling once_cell v1.21.4\n   Compiling const-oid v0.10.2\n   Compiling yoke v0.8.3\n   Compiling adler2 v2.0.1\n   Compiling chacha20 v0.10.2\n   Compiling thiserror v2.0.19\n   Compiling crc32fast v1.5.0\n   Compiling pin-project-lite v0.2.17\n   Compiling either v1.17.0\n   Compiling zerovec v0.11.6\n   Compiling zerotrie v0.2.4\n   Compiling miniz_oxide v0.8.9\n   Compiling tracing-core v0.1.36\n   Compiling percent-encoding v2.3.2\n   Compiling leb128 v0.2.7\n   Compiling tinyvec_macros v0.1.1\n   Compiling secp256k1-sys v0.11.0\n   Compiling getrandom v0.4.3\n   Compiling cpufeatures v0.3.0\n   Compiling tinyvec v1.12.0\n   Compiling form_urlencoded v1.2.2\n   Compiling itertools v0.14.0\n   Compiling hexane v0.2.1\n   Compiling cpufeatures v0.2.17\n   Compiling memchr v2.8.3\n   Compiling rand v0.10.2\n   Compiling itoa v1.0.18\n   Compiling hybrid-array v0.4.14\n   Compiling generic-array v0.14.7\n   Compiling flate2 v1.1.9\n   Compiling tinystr v0.8.3\n   Compiling potential_utf v0.1.5\n   Compiling tracing v0.1.44\n   Compiling hex v0.4.3\n   Compiling icu_locale_core v2.2.0\n   Compiling icu_collections v2.2.0\n   Compiling unicode-segmentation v1.13.3\n   Compiling crypto-common v0.2.2\n   Compiling block-buffer v0.12.1\n   Compiling rustc-hash v2.1.3\n   Compiling ryu v1.0.23\n   Compiling secp256k1 v0.31.1\n   Compiling block-buffer v0.10.4\n   Compiling crypto-common v0.1.7\n   Compiling base64 v0.22.1\n   Compiling digest v0.10.7\n   Compiling sha2 v0.10.9\n   Compiling digest v0.11.3\n   Compiling icu_provider v2.2.0\n   Compiling sha2 v0.11.0\n   Compiling icu_normalizer v2.2.0\n   Compiling icu_properties v2.2.0\n   Compiling smol_str v0.3.2\n   Compiling serde_json v1.0.142\n   Compiling automerge v0.10.0\n   Compiling idna_adapter v1.2.2\n   Compiling idna v1.1.0\n   Compiling url v2.5.4\n   Compiling nostr_automerge v0.1.0-alpha.0 (<local-path>)\nwarning: unused variable: `site`\n   --> crates/nostr_automerge/src/graph/actor_state.rs:714:5\n    |\n714 |     site: ProjectionBuildSite,\n    |     ^^^^ help: if this is intentional, prefix it with an underscore: `_site`\n    |\n    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default\n\nwarning: `nostr_automerge` (lib test) generated 1 warning (run `cargo fix --lib -p nostr_automerge --tests` to apply 1 suggestion)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.20s\n     Running unittests src/lib.rs (<local-path>)\nerror: test failed, to rerun pass `-p nostr_automerge --lib`\n",
+    "stdout_sha256": "3b8ef3810673319a9185747dbcef062b24e0554b35ce2b487dc40e7bdb2394d1",
+    "stderr_sha256": "82263232df16a1eb78421a9231b061eb262cdd6e7e9ca096f584c667c88dd88c",
+    "raw_stdout_sha256": "3b8ef3810673319a9185747dbcef062b24e0554b35ce2b487dc40e7bdb2394d1",
+    "raw_stderr_sha256": "82263232df16a1eb78421a9231b061eb262cdd6e7e9ca096f584c667c88dd88c"
+  },
+  "restoration": {
+    "argv": [
+      "git",
+      "diff",
+      "--quiet",
+      "--",
+      "crates/nostr_automerge/src/graph/actor_state.rs"
+    ],
+    "cwd": ".",
+    "environment": {
+      "inherit": true,
+      "overrides": {
+        "PYTHONDONTWRITEBYTECODE": "1"
+      }
+    },
+    "exit_status": 0,
+    "stdout": "",
+    "stderr": "",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "isolated_worktree": true,
+  "shared_helper_unchanged": false,
+  "survivor": false,
+  "result": "killed"
+}

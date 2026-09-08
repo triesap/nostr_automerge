@@ -1,0 +1,7 @@
+{
+  "schema": "nostr_automerge.causal_projection_mutation_patch.v19.v1",
+  "mutation_id": "helper.projection_construction.double_target",
+  "encoding": "unified_diff_utf8",
+  "patch": "diff --git a/crates/nostr_automerge/src/graph/actor_state.rs b/crates/nostr_automerge/src/graph/actor_state.rs\nindex 6ad9a61f..5528ddf3 100644\n--- a/crates/nostr_automerge/src/graph/actor_state.rs\n+++ b/crates/nostr_automerge/src/graph/actor_state.rs\n@@ -1424,11 +1424,15 @@ fn build_trusted_epoch_projection_observed<'a, E>(\n         ProjectionBuildSite::MemberCountRead,\n         &mut charge,\n         &mut built,\n-        || {\n+        || { let first_result = {\n             #[cfg(test)]\n             v19_record_direct_target(\"MemberCountRead\");\n             source.member_count()\n-        },\n+        }; let _second_result = {\n+            #[cfg(test)]\n+            v19_record_direct_target(\"MemberCountRead\");\n+            source.member_count()\n+        }; first_result },\n     )?;\n     let input_is_canonical = perform_projection_build_operation(\n         ProjectionBuildSite::AcceptedCountMatches,\n",
+  "result": "pass"
+}
