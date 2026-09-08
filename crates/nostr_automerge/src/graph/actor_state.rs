@@ -86,6 +86,83 @@ pub(crate) enum MeteredActorStateError<E> {
     State(ActorStateError),
 }
 
+#[cfg(test)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum V19ProofEvent {
+    ChargeAttempt {
+        site_id: &'static str,
+        counter: WorkCounter,
+    },
+    ChargeAccepted {
+        site_id: &'static str,
+        counter: WorkCounter,
+    },
+    TargetDispatched {
+        site_id: &'static str,
+        counter: WorkCounter,
+    },
+    TargetReturned {
+        site_id: &'static str,
+        counter: WorkCounter,
+    },
+    CompletionObserved {
+        site_id: &'static str,
+        counter: WorkCounter,
+    },
+    PublicationCompleted,
+}
+
+#[cfg(test)]
+type V19ProofSink = std::rc::Rc<std::cell::RefCell<Vec<V19ProofEvent>>>;
+
+#[cfg(test)]
+std::thread_local! {
+    static V19_PROOF_SINKS: std::cell::RefCell<Vec<V19ProofSink>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+}
+
+#[cfg(test)]
+struct V19ProofTraceGuard {
+    sink: V19ProofSink,
+}
+
+#[cfg(test)]
+impl V19ProofTraceGuard {
+    fn install() -> Self {
+        let sink = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        V19_PROOF_SINKS.with(|sinks| sinks.borrow_mut().push(std::rc::Rc::clone(&sink)));
+        Self { sink }
+    }
+
+    fn events(&self) -> Vec<V19ProofEvent> {
+        self.sink.borrow().clone()
+    }
+}
+
+#[cfg(test)]
+impl Drop for V19ProofTraceGuard {
+    fn drop(&mut self) {
+        V19_PROOF_SINKS.with(|sinks| {
+            let removed = sinks.borrow_mut().pop();
+            assert!(
+                removed
+                    .as_ref()
+                    .is_some_and(|sink| std::rc::Rc::ptr_eq(sink, &self.sink)),
+                "v19 proof trace guards must be dropped in stack order"
+            );
+        });
+    }
+}
+
+#[cfg(test)]
+fn v19_record_proof_event(event: V19ProofEvent) {
+    V19_PROOF_SINKS.with(|sinks| {
+        if let Some(sink) = sinks.borrow().last() {
+            sink.borrow_mut().push(event);
+        }
+    });
+}
+
 /// Immutable accepted-closure facts used by authoritative epoch semantics.
 ///
 /// Construction is sealed in this module. Consumers receive only copied
@@ -178,7 +255,17 @@ fn perform_actor_decision_operation<T, E>(
 ) -> Result<T, MeteredActorStateError<E>> {
     let descriptor = site.descriptor();
     charge(descriptor).map_err(MeteredActorStateError::Work)?;
+    #[cfg(test)]
+    v19_record_proof_event(V19ProofEvent::TargetDispatched {
+        site_id: descriptor.site_id,
+        counter: descriptor.counter,
+    });
     let result = perform();
+    #[cfg(test)]
+    v19_record_proof_event(V19ProofEvent::TargetReturned {
+        site_id: descriptor.site_id,
+        counter: descriptor.counter,
+    });
     observed(ActorDecisionObservation {
         descriptor,
         kind: ActorDecisionObservationKind::TargetCompleted,
@@ -278,7 +365,17 @@ fn perform_causal_next_operation<T, E>(
 ) -> Result<T, MeteredActorStateError<E>> {
     let descriptor = site.descriptor();
     charge(descriptor).map_err(MeteredActorStateError::Work)?;
+    #[cfg(test)]
+    v19_record_proof_event(V19ProofEvent::TargetDispatched {
+        site_id: descriptor.site_id,
+        counter: descriptor.counter,
+    });
     let result = perform();
+    #[cfg(test)]
+    v19_record_proof_event(V19ProofEvent::TargetReturned {
+        site_id: descriptor.site_id,
+        counter: descriptor.counter,
+    });
     observed(CausalNextObservation {
         descriptor,
         kind: CausalNextObservationKind::TargetCompleted,
@@ -568,7 +665,17 @@ fn perform_projection_build_operation<T, E>(
 ) -> Result<T, MeteredActorStateError<E>> {
     let descriptor = site.descriptor();
     charge(descriptor).map_err(MeteredActorStateError::Work)?;
+    #[cfg(test)]
+    v19_record_proof_event(V19ProofEvent::TargetDispatched {
+        site_id: descriptor.site_id,
+        counter: descriptor.counter,
+    });
     let result = perform();
+    #[cfg(test)]
+    v19_record_proof_event(V19ProofEvent::TargetReturned {
+        site_id: descriptor.site_id,
+        counter: descriptor.counter,
+    });
     observed(ProjectionBuildObservation {
         descriptor,
         kind: ProjectionBuildObservationKind::TargetCompleted,
@@ -986,7 +1093,17 @@ fn metered_frontier_operation<E, T>(
 ) -> Result<T, MeteredActorStateError<E>> {
     let descriptor = site.descriptor();
     charge(descriptor).map_err(MeteredActorStateError::Work)?;
+    #[cfg(test)]
+    v19_record_proof_event(V19ProofEvent::TargetDispatched {
+        site_id: descriptor.site_id,
+        counter: descriptor.counter,
+    });
     let result = target();
+    #[cfg(test)]
+    v19_record_proof_event(V19ProofEvent::TargetReturned {
+        site_id: descriptor.site_id,
+        counter: descriptor.counter,
+    });
     observed(FrontierComparisonObservation {
         descriptor,
         kind: FrontierComparisonObservationKind::TargetCompleted,
@@ -1709,12 +1826,12 @@ pub(crate) mod tests {
         FrontierComparisonObservationKind, FrontierComparisonOperation, FrontierComparisonSite,
         MeteredActorStateError, ProjectionBuildDescriptor, ProjectionBuildObservation,
         ProjectionBuildObservationKind, ProjectionBuildOperation, ProjectionBuildSite,
-        ProjectionPublicationOperation, TrustedEpochProjection, build_trusted_epoch_projection,
-        build_trusted_epoch_projection_observed, initialize_actor_states,
-        initialize_actor_states_metered, metered_frontier_operation,
+        ProjectionPublicationOperation, TrustedEpochProjection, V19ProofEvent, V19ProofTraceGuard,
+        build_trusted_epoch_projection, build_trusted_epoch_projection_observed,
+        initialize_actor_states, initialize_actor_states_metered, metered_frontier_operation,
         perform_actor_decision_operation, perform_causal_next_operation,
         perform_projection_build_operation, reference_apply_empty_counter,
-        reference_apply_nonempty_counter,
+        reference_apply_nonempty_counter, v19_record_proof_event,
     };
     use crate::graph::change_candidate::ChangeCandidate;
     use crate::{ActorId, ChangeHash, Completion, DevicePublicKey, EventId, WorkCounter};
@@ -2031,6 +2148,222 @@ pub(crate) mod tests {
 
         assert_eq!(targets.get(), 0);
         assert_eq!(completions.get(), 0);
+    }
+
+    #[test]
+    fn v19_proof_trace_distinguishes_all_six_events_in_runtime_order() {
+        let guard = V19ProofTraceGuard::install();
+        let mut charge = |descriptor: ProjectionBuildDescriptor| {
+            v19_record_proof_event(V19ProofEvent::ChargeAttempt {
+                site_id: descriptor.site_id,
+                counter: descriptor.counter,
+            });
+            v19_record_proof_event(V19ProofEvent::ChargeAccepted {
+                site_id: descriptor.site_id,
+                counter: descriptor.counter,
+            });
+            Ok::<_, Completion>(())
+        };
+        let mut observed = |observation: ProjectionBuildObservation| {
+            v19_record_proof_event(V19ProofEvent::CompletionObserved {
+                site_id: observation.descriptor.site_id,
+                counter: observation.descriptor.counter,
+            });
+        };
+
+        let result = perform_projection_build_operation(
+            ProjectionBuildSite::MemberCountRead,
+            &mut charge,
+            &mut observed,
+            || 7,
+        );
+        assert_eq!(result, Ok(7));
+        v19_record_proof_event(V19ProofEvent::PublicationCompleted);
+
+        let descriptor = ProjectionBuildSite::MemberCountRead.descriptor();
+        assert_eq!(
+            guard.events(),
+            [
+                V19ProofEvent::ChargeAttempt {
+                    site_id: descriptor.site_id,
+                    counter: descriptor.counter,
+                },
+                V19ProofEvent::ChargeAccepted {
+                    site_id: descriptor.site_id,
+                    counter: descriptor.counter,
+                },
+                V19ProofEvent::TargetDispatched {
+                    site_id: descriptor.site_id,
+                    counter: descriptor.counter,
+                },
+                V19ProofEvent::TargetReturned {
+                    site_id: descriptor.site_id,
+                    counter: descriptor.counter,
+                },
+                V19ProofEvent::CompletionObserved {
+                    site_id: descriptor.site_id,
+                    counter: descriptor.counter,
+                },
+                V19ProofEvent::PublicationCompleted,
+            ]
+        );
+    }
+
+    #[test]
+    fn v19_target_probe_covers_all_physical_helpers_after_charge() {
+        let guard = V19ProofTraceGuard::install();
+
+        assert_eq!(
+            perform_actor_decision_operation(
+                ActorDecisionSite::ActorStateRead,
+                &mut |_| Ok::<_, Completion>(()),
+                &mut |_| {},
+                || (),
+            ),
+            Ok(())
+        );
+        assert_eq!(
+            perform_causal_next_operation(
+                CausalNextSite::StoredCounterRead,
+                &mut |_| Ok::<_, Completion>(()),
+                &mut |_| {},
+                || (),
+            ),
+            Ok(())
+        );
+        assert_eq!(
+            perform_projection_build_operation(
+                ProjectionBuildSite::MemberCountRead,
+                &mut |_| Ok::<_, Completion>(()),
+                &mut |_| {},
+                || (),
+            ),
+            Ok(())
+        );
+        assert_eq!(
+            metered_frontier_operation(
+                FrontierComparisonSite::CandidateKindComparison,
+                &mut |_| Ok::<_, Completion>(()),
+                &mut |_| {},
+                || (),
+            ),
+            Ok(())
+        );
+
+        let target_sites = guard
+            .events()
+            .into_iter()
+            .filter_map(|event| match event {
+                V19ProofEvent::TargetDispatched { site_id, .. } => Some(("dispatch", site_id)),
+                V19ProofEvent::TargetReturned { site_id, .. } => Some(("return", site_id)),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            target_sites,
+            [
+                ("dispatch", "ActorStateRead"),
+                ("return", "ActorStateRead"),
+                ("dispatch", "StoredCounterRead"),
+                ("return", "StoredCounterRead"),
+                ("dispatch", "MemberCountRead"),
+                ("return", "MemberCountRead"),
+                ("dispatch", "CandidateKindComparison"),
+                ("return", "CandidateKindComparison"),
+            ]
+        );
+    }
+
+    #[test]
+    fn v19_target_probe_is_nested_and_panic_safe() {
+        let outer = V19ProofTraceGuard::install();
+        v19_record_proof_event(V19ProofEvent::PublicationCompleted);
+        {
+            let inner = V19ProofTraceGuard::install();
+            v19_record_proof_event(V19ProofEvent::PublicationCompleted);
+            assert_eq!(inner.events(), [V19ProofEvent::PublicationCompleted]);
+        }
+        v19_record_proof_event(V19ProofEvent::PublicationCompleted);
+        assert_eq!(
+            outer.events(),
+            [
+                V19ProofEvent::PublicationCompleted,
+                V19ProofEvent::PublicationCompleted,
+            ]
+        );
+
+        let panic_guard = V19ProofTraceGuard::install();
+        let completion_called = Cell::new(false);
+        let panicked = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _ = perform_projection_build_operation(
+                ProjectionBuildSite::DependencyPull,
+                &mut |_| Ok::<_, Completion>(()),
+                &mut |_| completion_called.set(true),
+                || std::panic::resume_unwind(Box::new("injected target panic")),
+            );
+        }));
+        assert!(panicked.is_err());
+        assert!(!completion_called.get());
+        assert_eq!(
+            panic_guard.events(),
+            [V19ProofEvent::TargetDispatched {
+                site_id: "DependencyPull",
+                counter: WorkCounter::GraphEdge,
+            }]
+        );
+        drop(panic_guard);
+
+        let restored = V19ProofTraceGuard::install();
+        assert!(restored.events().is_empty());
+    }
+
+    #[test]
+    fn v19_target_probe_isolated_between_parallel_threads() {
+        let traces = [
+            ProjectionBuildSite::MemberCountRead,
+            ProjectionBuildSite::DependencyPull,
+        ]
+        .into_iter()
+        .map(|site| {
+            std::thread::spawn(move || {
+                let guard = V19ProofTraceGuard::install();
+                assert_eq!(
+                    perform_projection_build_operation(
+                        site,
+                        &mut |_| Ok::<_, Completion>(()),
+                        &mut |_| {},
+                        || (),
+                    ),
+                    Ok(())
+                );
+                guard.events()
+            })
+        })
+        .map(|handle| match handle.join() {
+            Ok(events) => events,
+            Err(error) => std::panic::resume_unwind(error),
+        })
+        .collect::<Vec<_>>();
+
+        for (events, site) in traces.into_iter().zip([
+            ProjectionBuildSite::MemberCountRead,
+            ProjectionBuildSite::DependencyPull,
+        ]) {
+            let descriptor = site.descriptor();
+            assert_eq!(
+                events,
+                [
+                    V19ProofEvent::TargetDispatched {
+                        site_id: descriptor.site_id,
+                        counter: descriptor.counter,
+                    },
+                    V19ProofEvent::TargetReturned {
+                        site_id: descriptor.site_id,
+                        counter: descriptor.counter,
+                    },
+                ]
+            );
+        }
     }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
