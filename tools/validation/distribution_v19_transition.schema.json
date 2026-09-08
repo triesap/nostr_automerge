@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triesap.github.io/nostr-automerge/schemas/distribution_v19_transition.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "evidence_graph", "release_boundary", "execution_base", "prior_transition", "selected_manifest", "selected_lock", "actual_runs", "affected_fixture_ids", "counts", "identity", "derivation", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.distribution_v19_transition.v1"},
+    "status": {"const": "actual_zero_change"},
+    "evidence_graph": {"type": "object"},
+    "release_boundary": {"type": "object"},
+    "execution_base": {"type": "object"},
+    "prior_transition": {"type": "object"},
+    "selected_manifest": {"type": "object"},
+    "selected_lock": {"type": "object"},
+    "actual_runs": {"type": "array", "minItems": 2, "maxItems": 2},
+    "affected_fixture_ids": {"type": "array", "maxItems": 0},
+    "counts": {"type": "object"},
+    "identity": {"type": "object"},
+    "derivation": {"type": "object"},
+    "result": {"const": "pass"}
+  }
+}

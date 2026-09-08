@@ -19,7 +19,7 @@
     "proof_artifact_commit": "7c5a1603c4ee9f92d541a8ff6fd66071806518df",
     "mutation_artifact_commit": "001bea9cb5edc8fb83aa972901f749f4707d59e1",
     "final_inventory_commit": "b489ef551ace84791f3d513dd5add0a5729b53a7",
-    "evidence_graph_commit": null,
+    "evidence_graph_commit": "ac24566ae4b96bc1ac17b0c87b7ae70cbb9f939f",
     "public_qualification_commit": null,
     "independent_assurance_commit": null,
     "terminal_artifact_commit": null,
