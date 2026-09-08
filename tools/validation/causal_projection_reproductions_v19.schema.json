@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "baseline", "proof_event_alias", "helper_matrix_gap", "property_oracle_gap", "execution_mapping_gap", "runtime_defect_observed", "result"],
+  "properties": {
+    "schema": {"const": "nostr_automerge.causal_projection_reproductions.v19.v1"},
+    "status": {"const": "expected_defects_confirmed"},
+    "baseline": {"const": "4cc1bb5060b7477214eb22cf7b086735e4a70b7a"},
+    "proof_event_alias": {"type": "object"},
+    "helper_matrix_gap": {"type": "object"},
+    "property_oracle_gap": {"type": "object"},
+    "execution_mapping_gap": {"type": "object"},
+    "runtime_defect_observed": {"const": false},
+    "result": {"const": "pass"}
+  }
+}
