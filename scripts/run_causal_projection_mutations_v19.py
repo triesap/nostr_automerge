@@ -350,12 +350,18 @@ def relative(path: Path) -> str:
 
 def property_code(completed: subprocess.CompletedProcess[str]) -> str:
     matches = re.findall(r"^FAIL: ([A-Z0-9_]+)$", completed.stdout + completed.stderr, re.MULTILINE)
-    require(len(matches) == 1, "PROPERTY_OUTPUT")
+    if len(matches) != 1:
+        diagnostic = public_transcript(completed.stdout + completed.stderr)[-4000:]
+        raise MutationError("PROPERTY_OUTPUT\n" + diagnostic)
     return matches[0]
 
 
 def execute_one(definition: dict[str, Any], source_candidate: str, execution_base: str) -> dict[str, Any]:
-    temp_root = Path(tempfile.mkdtemp(prefix="nostr-automerge-v19-mutant-"))
+    temp_root = Path(
+        tempfile.mkdtemp(
+            prefix="nostr-automerge-v19-mutant-", dir=ROOT.parents[2]
+        )
+    )
     worktree = temp_root / "worktree"
     try:
         require(run(["git", "worktree", "add", "--detach", str(worktree), execution_base], ROOT).returncode == 0, "WORKTREE_ADD")
