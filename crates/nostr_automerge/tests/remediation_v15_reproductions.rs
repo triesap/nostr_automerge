@@ -12,7 +12,9 @@ fn projection_builder() -> &'static str {
     else {
         return "";
     };
-    let Some((builder, _)) = after_declaration.split_once("#[cfg(test)]") else {
+    let Some((builder, _)) =
+        after_declaration.split_once("#[cfg(test)]\npub(crate) mod tests {")
+    else {
         return "";
     };
     builder
