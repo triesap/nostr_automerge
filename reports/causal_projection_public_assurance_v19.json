@@ -1,0 +1,131 @@
+{
+  "schema": "nostr_automerge.causal_projection_public_assurance.v19.v1",
+  "status": "public_scope_complete_private_pending",
+  "candidate_roles": {
+    "source_candidate": "a8f8651c26a0ac7822e1e5d61f3aafa3fec53d1f",
+    "proof_execution_base": "7050d3abf4104d5772e05b037a5799904de031f2",
+    "proof_artifact_commit": "7c5a1603c4ee9f92d541a8ff6fd66071806518df",
+    "mutation_execution_base": "8d14a3cbfddd80da4c621cdbb346997619b57b95",
+    "mutation_artifact_commit": "001bea9cb5edc8fb83aa972901f749f4707d59e1",
+    "final_inventory_commit": "b489ef551ace84791f3d513dd5add0a5729b53a7",
+    "evidence_graph_commit": "ac24566ae4b96bc1ac17b0c87b7ae70cbb9f939f",
+    "qualification_execution_base": "e3452781fe482418466335a61a280ebea39591c5",
+    "public_qualification_commit": "0735f7e23524764c889f4ec0cc9942c9e795740a"
+  },
+  "artifacts": [
+    {
+      "role": "v18_execution_mapping",
+      "path": "reports/causal_projection_v18_execution_mapping_v19.json",
+      "artifact_commit": "50457ab4efd482582291c77dd3c44d3e3ecc0adb",
+      "sha256": "41bb2d96e34ecefee89b86036b03a58306c19d9e4e0762915d34ecd489745a7d",
+      "result": "pass"
+    },
+    {
+      "role": "proofs",
+      "path": "reports/causal_projection_proofs_v19.json",
+      "artifact_commit": "7c5a1603c4ee9f92d541a8ff6fd66071806518df",
+      "sha256": "875876bf9937fa581f413a8180325f7a55e3eb1230ed4383f7da16df2036dc48",
+      "result": "pass"
+    },
+    {
+      "role": "mutations",
+      "path": "reports/causal_projection_mutations_v19.json",
+      "artifact_commit": "001bea9cb5edc8fb83aa972901f749f4707d59e1",
+      "sha256": "8a0e1a5c7d4f3c8e6c4b20a6928eda63a0f2d382b37db2ad5a992620ee1954fc",
+      "result": "pass"
+    },
+    {
+      "role": "catalogs",
+      "path": "reports/causal_projection_catalogs_v19.json",
+      "artifact_commit": "266e80b67e13ea377ea874bbd4b75ac4ca5898fa",
+      "sha256": "132dc6a539cf3d435cb528080482c13313144d461e33002d9a457cde191a4a42",
+      "result": "pass"
+    },
+    {
+      "role": "final_inventory",
+      "path": "reports/causal_projection_final_inventory_v19.json",
+      "artifact_commit": "b489ef551ace84791f3d513dd5add0a5729b53a7",
+      "sha256": "12d7d81d9370beb309c6f94846a884cb80c686fa18d3a5dd99b127649aad0308",
+      "result": "pass"
+    },
+    {
+      "role": "evidence_graph",
+      "path": "reports/causal_projection_evidence_graph_v19.json",
+      "artifact_commit": "ac24566ae4b96bc1ac17b0c87b7ae70cbb9f939f",
+      "sha256": "0b0c5cd2e54805cd888bcb04306b921f7e31737b5524282f1d57b5dba7a6d4f3",
+      "result": "pass"
+    },
+    {
+      "role": "distribution_transition",
+      "path": "spec/distribution_v19_transition.json",
+      "artifact_commit": "53f0bf69809cfdf2c59393dc9c3f696940ff7554",
+      "sha256": "e2cf7090b4d901deeeb77fe6f59d3a5ceaeee43ae397e92de001101ee5cd9aa4",
+      "result": "pass"
+    },
+    {
+      "role": "public_qualification",
+      "path": "reports/causal_projection_public_qualification_v19.json",
+      "artifact_commit": "0735f7e23524764c889f4ec0cc9942c9e795740a",
+      "sha256": "a66fb0b6dbbeeee68dd5efcb9e8223957d9baaa380c2b3c332fc23acadc0c65f",
+      "result": "pass"
+    }
+  ],
+  "counts": {
+    "source_sites": 68,
+    "proof_rows": 68,
+    "mutation_rows": 40,
+    "helper_matrix_cells": 28,
+    "direct_mutations": 7,
+    "provenance_mutations": 5,
+    "mutation_edges": 488,
+    "mapped_predecessor_steps": 43,
+    "mutation_survivors": 0
+  },
+  "qualification": {
+    "repetitions": 2,
+    "conformance_processes": 4,
+    "gate_executions": 18,
+    "scenarios": 204,
+    "signed_events": 771,
+    "delivery_orders": 8,
+    "byte_identical": true,
+    "changed": false
+  },
+  "findings": {
+    "public_scope_closed": [
+      "FINDING_130",
+      "FINDING_131",
+      "FINDING_132",
+      "FINDING_133"
+    ],
+    "global_closed": [
+      "FINDING_133"
+    ],
+    "independent_pending": [
+      "FINDING_130",
+      "FINDING_131",
+      "FINDING_132"
+    ],
+    "held": [
+      "FINDING_080"
+    ]
+  },
+  "completion": {
+    "public_complete": true,
+    "independent_complete": false,
+    "combined_complete": false,
+    "terminal_complete": false
+  },
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "deployment",
+    "remote_mutation"
+  ],
+  "remote_actions": 0,
+  "result": "pass"
+}

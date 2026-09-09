@@ -3,14 +3,14 @@
   "status": "active",
   "authority": "spec/remediation_v19_authority.json",
   "cursor": {
-    "completed_rclds": [141, 142, 143],
-    "active_rcld": 144,
-    "next_rcld": 144,
+    "completed_rclds": [141, 142, 143, 144],
+    "active_rcld": 145,
+    "next_rcld": 145,
     "last_planned_rcld": 146,
-    "remaining_rcld_count": 3
+    "remaining_rcld_count": 2
   },
   "findings": {
-    "open": ["FINDING_130", "FINDING_131", "FINDING_132", "FINDING_133"],
+    "open": ["FINDING_130", "FINDING_131", "FINDING_132"],
     "held": ["FINDING_080"]
   },
   "candidate_roles": {
@@ -20,7 +20,7 @@
     "mutation_artifact_commit": "001bea9cb5edc8fb83aa972901f749f4707d59e1",
     "final_inventory_commit": "b489ef551ace84791f3d513dd5add0a5729b53a7",
     "evidence_graph_commit": "ac24566ae4b96bc1ac17b0c87b7ae70cbb9f939f",
-    "public_qualification_commit": null,
+    "public_qualification_commit": "0735f7e23524764c889f4ec0cc9942c9e795740a",
     "independent_assurance_commit": null,
     "terminal_artifact_commit": null,
     "clean_attestation_commit": null
