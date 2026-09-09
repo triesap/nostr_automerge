@@ -1,0 +1,181 @@
+{
+  "schema": "nostr_automerge.causal_projection_clean_candidate.v19.v1",
+  "status": "code_complete_publication_held",
+  "checkpoint": "post_rcld_146_clean_candidate_attestation",
+  "terminal_artifact_commit": "5fc3fb38ede64397684b699f364c29f07bc23559",
+  "attestation_execution_base": {
+    "candidate": "76ad14b7216a0004160e75b3334a0a8ac74c3a5c",
+    "tree": "d871eec2d02cdc9f189c324f1f8a0b125ce4786b",
+    "parent_candidate": "5fc3fb38ede64397684b699f364c29f07bc23559",
+    "runner_sha256": "23a70aafb501b67f24cea54c23b75ac7f7d955b8f21918d8048c9260d6cdcf42",
+    "schema_sha256": "dd1d30c6f4d14d0b11cdf2892d37d858edad630941c4827ffee8220c7ef9ff72",
+    "execution_base_report_sha256": "8cacf8251173f9a224742d85693126a01ab4bd9b6d7699d3279076347dad0354",
+    "report_absent": true
+  },
+  "observation": {
+    "command": "git status --porcelain=v1 --untracked-files=all",
+    "pre_gate_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "post_gate_output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tracked_changes": 0,
+    "staged_changes": 0,
+    "untracked_paths": 0,
+    "result": "clean"
+  },
+  "verification": {
+    "execution_mode": "actual_twice_from_clean_E",
+    "runs": [
+      {
+        "ordinal": 1,
+        "gate": "standard",
+        "argv": [
+          "cargo",
+          "extbuild",
+          "run",
+          "--",
+          "python3",
+          "scripts/local_gate.py",
+          "standard"
+        ],
+        "cwd": ".",
+        "environment": {
+          "mode": "inherited",
+          "overrides": {}
+        },
+        "exit_status": 0,
+        "stdout_sha256": "497f9f29fbdd897a6892ea3bb6ca4d0a06c6901f0248c61572f365ac4c3a34cd",
+        "stderr_sha256": "e7d76b696cab776229d785500fe9b381569ebf73ccb97b87da2242107407b854",
+        "output_sha256": "9d6bf2ba3d16322f08a3d1c4f3636b1830421f84dcea76f96d3de79cf26d2bcf",
+        "result": "pass"
+      },
+      {
+        "ordinal": 1,
+        "gate": "conformance",
+        "argv": [
+          "cargo",
+          "extbuild",
+          "run",
+          "--",
+          "python3",
+          "scripts/local_gate.py",
+          "conformance"
+        ],
+        "cwd": ".",
+        "environment": {
+          "mode": "inherited",
+          "overrides": {}
+        },
+        "exit_status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "output_sha256": "456ff6b4196b81581c9d0a3aeecaea841cb0152d3bc98fe19406bd0906dcbc7f",
+        "result": "pass"
+      },
+      {
+        "ordinal": 2,
+        "gate": "standard",
+        "argv": [
+          "cargo",
+          "extbuild",
+          "run",
+          "--",
+          "python3",
+          "scripts/local_gate.py",
+          "standard"
+        ],
+        "cwd": ".",
+        "environment": {
+          "mode": "inherited",
+          "overrides": {}
+        },
+        "exit_status": 0,
+        "stdout_sha256": "15b777d461c19aecde4d580b83b7234aa134773298a6aff2f2d5971866239128",
+        "stderr_sha256": "307103a3d5ff2f230811951d0e37ebd2f1c3efd12013249b1a043b41c212e25d",
+        "output_sha256": "61f94e39a22c4be0f9747eaf2677b168f3f92001d975ce12730a9a951ab07c14",
+        "result": "pass"
+      },
+      {
+        "ordinal": 2,
+        "gate": "conformance",
+        "argv": [
+          "cargo",
+          "extbuild",
+          "run",
+          "--",
+          "python3",
+          "scripts/local_gate.py",
+          "conformance"
+        ],
+        "cwd": ".",
+        "environment": {
+          "mode": "inherited",
+          "overrides": {}
+        },
+        "exit_status": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "output_sha256": "456ff6b4196b81581c9d0a3aeecaea841cb0152d3bc98fe19406bd0906dcbc7f",
+        "result": "pass"
+      }
+    ],
+    "aggregate": {
+      "standard_runs": 2,
+      "conformance_runs": 2,
+      "conformance_processes": 4,
+      "result": "pass"
+    }
+  },
+  "terminal_artifacts": [
+    {
+      "path": "spec/remediation_v19_authority.json",
+      "sha256": "f92c5a9c92fc5967d6060ad420009dd5c690f0d61f0264c7cc8f4cf3220066dd"
+    },
+    {
+      "path": "spec/remediation_findings_v19.json",
+      "sha256": "523e5e9e97bae869e8978e4023ca4f5b9804e49eedd114c7d9a88972e0645f4f"
+    },
+    {
+      "path": "implementation/runtime_ledger_v19.json",
+      "sha256": "3015c23ea5c74f4c804562d6b81a4cf721950b6d8b2d3912c1eee93274917130"
+    },
+    {
+      "path": "reports/causal_projection_combined_assurance_v19.json",
+      "sha256": "091df28a6ae35ccce16ec2b17436d7009b6e26b5df7f47064fab324090102f7f"
+    },
+    {
+      "path": "reports/causal_projection_finding_closure_v19.json",
+      "sha256": "0384a03b16ca09d79a34f033adfc7a803d8b0eb2ede64522e029d6fd17878d62"
+    },
+    {
+      "path": "reports/causal_projection_completion_v19.json",
+      "sha256": "17f7d6de58e26249be74513e1b14b9b2717aeee4435ca4f90394a9a423dfd0eb"
+    },
+    {
+      "path": "reports/causal_projection_final_decision_v19.json",
+      "sha256": "dd583d80992af03d50f8caae472662fb6affeb3a03bccb8aae91568630e23f92"
+    }
+  ],
+  "lifecycle": {
+    "policy": "strict_T_E_A",
+    "terminal_artifact_commit": "5fc3fb38ede64397684b699f364c29f07bc23559",
+    "attestation_execution_base": "76ad14b7216a0004160e75b3334a0a8ac74c3a5c",
+    "terminal_to_execution_base": "strict_descendant",
+    "execution_base_to_attestation": "strict_descendant_required",
+    "self_reference": false,
+    "terminal_artifacts_mutated": false
+  },
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "deployment",
+    "remote_mutation"
+  ],
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "66094710641582d5ef932b0fcd65931ad0343cccc6a61773e2895e8af676fd4f"
+}
