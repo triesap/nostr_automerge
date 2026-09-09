@@ -1,0 +1,28 @@
+{
+  "schema": "nostr_automerge.causal_projection_finding_closure.v19.v1",
+  "status": "verified",
+  "rcld": 146,
+  "base_candidate": "493d7f8b4e97dc548e350bbe591cab24e75e1cc6",
+  "imports": {
+    "finding_registry_sha256": "12d8148728a4951b3765d1eaa8d718d66bc0528556322c6b679c643d690fdff5",
+    "runtime_ledger_sha256": "e091218284b09ef3ec0716b7e529e34d287bef338294512c92d34e16569d15e6",
+    "combined_assurance_sha256": "091df28a6ae35ccce16ec2b17436d7009b6e26b5df7f47064fab324090102f7f"
+  },
+  "findings": [
+    {"id":"FINDING_130","status":"closed","evidence_classes":["independent_events","exact_site_proofs","opaque_assurance"]},
+    {"id":"FINDING_131","status":"closed","evidence_classes":["helper_matrix","direct_mutations","provenance_mutations"]},
+    {"id":"FINDING_132","status":"closed","evidence_classes":["runtime_properties","neutral_controls","zero_survivors"]},
+    {"id":"FINDING_133","status":"closed","evidence_classes":["step_mapping","reverse_mapping","typed_deviations"]}
+  ],
+  "held_findings": ["FINDING_080"],
+  "counts": {
+    "closed": 4,
+    "open": 0,
+    "held": 1
+  },
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "b506793182c69e017b8bd562da4a1d02d6cec848a56442a18c4fa8fb3317704b"
+}
