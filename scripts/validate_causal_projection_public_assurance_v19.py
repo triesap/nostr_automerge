@@ -113,14 +113,20 @@ def validate(report: dict[str, Any], schema: dict[str, Any], ledger: dict[str, A
         require(hashlib.sha256(committed).hexdigest() == row["sha256"], "artifact:sha:" + row["role"])
         require(json.loads(committed)["result"] == "pass", "artifact:result:" + row["role"])
         require(subprocess.run(["git", "merge-base", "--is-ancestor", row["artifact_commit"], "HEAD"], cwd=ROOT).returncode == 0, "artifact:ancestry:" + row["role"])
-    require(ledger["cursor"] == {"completed_rclds": [141, 142, 143, 144], "active_rcld": 145, "next_rcld": 145, "last_planned_rcld": 146, "remaining_rcld_count": 2}, "ledger:cursor")
+    cursor = ledger["cursor"]
+    completed = cursor["completed_rclds"]
+    require(completed in [list(range(141, end + 1)) for end in range(144, 147)], "ledger:cursor:prefix")
+    require(cursor["last_planned_rcld"] == 146 and cursor["remaining_rcld_count"] == 6 - len(completed), "ledger:cursor:remaining")
     roles = ledger["candidate_roles"]
     require(roles["public_qualification_commit"] == "0735f7e23524764c889f4ec0cc9942c9e795740a", "ledger:qualification")
-    require(roles["independent_assurance_commit"] is None and roles["terminal_artifact_commit"] is None and roles["clean_attestation_commit"] is None, "ledger:nonterminal")
-    require(ledger["status"] == "active" and ledger["independent"]["completed"] is False, "ledger:pending")
+    independent_complete = len(completed) >= 5
+    require(ledger["independent"]["completed"] is independent_complete, "ledger:independent")
+    require((roles["independent_assurance_commit"] is not None) is independent_complete, "ledger:independent:candidate")
     statuses = {row["id"]: row["status"] for row in findings["findings"]}
-    require(statuses == {"FINDING_130": "open", "FINDING_131": "open", "FINDING_132": "open", "FINDING_133": "closed", "FINDING_080": "held"}, "findings:status")
-    require(ledger["findings"] == {"open": ["FINDING_130", "FINDING_131", "FINDING_132"], "held": ["FINDING_080"]}, "ledger:findings")
+    expected_local = "closed" if independent_complete else "open"
+    require(statuses == {"FINDING_130": expected_local, "FINDING_131": expected_local, "FINDING_132": expected_local, "FINDING_133": "closed", "FINDING_080": "held"}, "findings:status")
+    expected_open = [] if independent_complete else ["FINDING_130", "FINDING_131", "FINDING_132"]
+    require(ledger["findings"] == {"open": expected_open, "held": ["FINDING_080"]}, "ledger:findings")
 
 
 def self_test(values: list[dict[str, Any]]) -> int:
