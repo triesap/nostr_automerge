@@ -1,0 +1,90 @@
+{
+  "schema": "nostr_automerge.opaque_causal_projection.v19.v1",
+  "status": "code_complete_publication_held",
+  "candidate_roles": {
+    "authority_candidate": "5bcc190c7f95fc383da1ae18975b92e8fc42d905",
+    "source_candidate": "5bcc190c7f95fc383da1ae18975b92e8fc42d905",
+    "execution_base_candidate": "1600e60918ded3f30a218f8e067e741828d39015",
+    "proof_artifact_commit": "86ca5d03bd36a483fca16eb2656e9f5879c69e67",
+    "mutation_artifact_commit": "86ca5d03bd36a483fca16eb2656e9f5879c69e67",
+    "final_inventory_commit": "6512135a3d41e73629622f8b9f0ed8b147bb497a",
+    "evidence_graph_commit": "207721f76a847d52ad1c1c37b776eaba6a4ad93b",
+    "qualification_base_candidate": "19c5b466446eaeeb815344d150070854d27fa591",
+    "qualification_artifact_commit": "b314cd7726506e440c3ac5206986172b599f5d97"
+  },
+  "public_candidates": {
+    "contract_candidate": "a8f8651c26a0ac7822e1e5d61f3aafa3fec53d1f",
+    "evidence_graph_candidate": "ac24566ae4b96bc1ac17b0c87b7ae70cbb9f939f",
+    "transition_candidate": "53f0bf69809cfdf2c59393dc9c3f696940ff7554",
+    "qualification_candidate": "0735f7e23524764c889f4ec0cc9942c9e795740a",
+    "public_assurance_candidate": "156194f6453bd4f31da4eda512cf51361ec7c978"
+  },
+  "evidence_sha256": {
+    "authority": "40ba5d9eb2ae5fcf5e364c27482659bdd725130b5e4e180b22c361c74b236de6",
+    "proofs": "bcd26a863adb8546a77af7a2a80d894a83b367d7b8022ac4e0a7246063e4bb2b",
+    "mutations": "0ac7eb2e2f296469134fdb531b87cf6dd790169804daaeb7d78b0e23cd28a49e",
+    "inventory": "b99a07cded56af805a242345c0929b8390a9610b72ec2b8423a0bbac18e509a6",
+    "graph": "d76f34a1716af1f80d38af107900a322b63dec75e26579138b77ede5797499b8",
+    "qualification": "341da1a07e840ac48e29421a7887e6c904062f67012241aa002aec1ad532aad1"
+  },
+  "distribution_sha256": {
+    "dependency_lock": "d881757529b805b8ae4da935127730fe901b8b13a71382023be161016cd35a7d",
+    "requirements_lock": "aef0dd783078a1105a2b7f29113c99cb7ea1d1ed91105786f7ecea30f184b7c6",
+    "distribution_lock": "0fd1f73f1f47a4f1d32b9df031bc1a8b799b03644f45fbb749ced4eee7d596cf",
+    "private_manifest": "9594c85bb8fdd163ea1e58a8b4c06108ae0330ee48b27c7a4f80da24333fcc84",
+    "public_manifest": "7890fe2532da48ca84e54f5b1b883a38fd1a60ff58bb2999a056025335a4b5d3",
+    "public_lock": "9e09dfd2de706d320c3bcd7cfe45b2f9a7560d5e9354809d2a41e5f52a2fba90",
+    "public_transition": "e2cf7090b4d901deeeb77fe6f59d3a5ceaeee43ae397e92de001101ee5cd9aa4"
+  },
+  "counts": {
+    "source_sites": 142,
+    "proofs": 142,
+    "proof_runs": 710,
+    "helper_mutations": 7,
+    "abstract_helper_cells": 28,
+    "direct_mutations": 7,
+    "provenance_mutations": 5,
+    "mutations": 19,
+    "mutation_edges": 1711,
+    "mutation_survivors": 0,
+    "scenarios": 204,
+    "signed_events": 771,
+    "delivery_orders": 8,
+    "repetitions": 2,
+    "processes_per_repetition": 2,
+    "processes": 4,
+    "gates": 8,
+    "gate_executions": 16,
+    "affected": 0
+  },
+  "applicability_classes": [
+    "projection_construction",
+    "actor_sequence",
+    "causal_counter",
+    "frontier_comparison"
+  ],
+  "result_classes": [
+    "independent_charge_target_return_completion",
+    "typed_stop_identity_exact",
+    "source_derived_site_proofs",
+    "one_helper_seven_class_matrix",
+    "seven_site_local_direct_mutations",
+    "five_independent_provenance_mutations",
+    "behavior_derived_properties",
+    "bidirectional_evidence_complete",
+    "double_compatibility_qualification",
+    "distribution_byte_identical",
+    "independent_implementation_boundary"
+  ],
+  "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+  "serialized_run_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344",
+  "clean_target_scope": true,
+  "independent_implementation": true,
+  "public_api_changed": false,
+  "protocol_changed": false,
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "identity_sha256": "5f3dca11be0745a820a84e6ebddcd6f65e69bd0013b50321246c951051b0d56c"
+}
