@@ -1,0 +1,597 @@
+{
+  "schema": "nostr_automerge.causal_projection_public_qualification.v19.v1",
+  "status": "final",
+  "execution_mode": "two_clean_repetitions",
+  "evidence_graph": {
+    "path": "reports/causal_projection_evidence_graph_v19.json",
+    "candidate": "ac24566ae4b96bc1ac17b0c87b7ae70cbb9f939f",
+    "sha256": "0b0c5cd2e54805cd888bcb04306b921f7e31737b5524282f1d57b5dba7a6d4f3"
+  },
+  "distribution_transition": {
+    "path": "spec/distribution_v19_transition.json",
+    "candidate": "e3452781fe482418466335a61a280ebea39591c5",
+    "sha256": "e2cf7090b4d901deeeb77fe6f59d3a5ceaeee43ae397e92de001101ee5cd9aa4"
+  },
+  "execution_base": {
+    "candidate": "e3452781fe482418466335a61a280ebea39591c5",
+    "tree": "88a18dc1f1382f3dc182a28779c4ebea7685e4b1",
+    "runner_sha256": "e4f0ff1fda53e1c18e2de5d2caf7648ef3949ef4083dddf0331224ce36f1f1f9",
+    "schema_sha256": "d85ae653b5b01106d6c62049b9dca810528c4eebda7a88a44c0c4d7dd2e1b4e5",
+    "report_absent": "true"
+  },
+  "repetitions": [
+    {
+      "ordinal": 1,
+      "conformance": {
+        "process_count": 2,
+        "byte_identical": true,
+        "serialized_run_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344",
+        "processes": [
+          {
+            "ordinal": 1,
+            "argv": [
+              "cargo",
+              "extbuild",
+              "run",
+              "--",
+              "cargo",
+              "run",
+              "--quiet",
+              "-p",
+              "nostr_automerge_conformance",
+              "--locked",
+              "--",
+              "run_distribution",
+              "fixtures/distribution/manifest_v16.json"
+            ],
+            "cwd": ".",
+            "environment": {
+              "mode": "inherited",
+              "overrides": {}
+            },
+            "exit_status": 0,
+            "stdout_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "fixture_count": 204,
+            "delivery_permutations": 8,
+            "report_count": 204,
+            "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+            "result": "pass"
+          },
+          {
+            "ordinal": 2,
+            "argv": [
+              "cargo",
+              "extbuild",
+              "run",
+              "--",
+              "cargo",
+              "run",
+              "--quiet",
+              "-p",
+              "nostr_automerge_conformance",
+              "--locked",
+              "--",
+              "run_distribution",
+              "fixtures/distribution/manifest_v16.json"
+            ],
+            "cwd": ".",
+            "environment": {
+              "mode": "inherited",
+              "overrides": {}
+            },
+            "exit_status": 0,
+            "stdout_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "fixture_count": 204,
+            "delivery_permutations": 8,
+            "report_count": 204,
+            "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+            "result": "pass"
+          }
+        ]
+      },
+      "gates": [
+        {
+          "job": "remediation",
+          "argv": [
+            "cargo",
+            "extbuild",
+            "run",
+            "--",
+            "python3",
+            "scripts/local_gate.py",
+            "remediation"
+          ],
+          "cwd": ".",
+          "environment": {
+            "mode": "inherited",
+            "overrides": {}
+          },
+          "exit_status": 0,
+          "stdout_sha256": "6c16c7596ec8e9170cfe500d13aa081ee898ef81c4c8e1bd64a5643e41c4d262",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_sha256": "0ad8b4d1fc109fa671882946437a4e2ae6c535a183ef9b7b05463a8adfa99c5e",
+          "result": "pass"
+        },
+        {
+          "job": "policy",
+          "argv": [
+            "cargo",
+            "extbuild",
+            "run",
+            "--",
+            "python3",
+            "scripts/local_gate.py",
+            "policy"
+          ],
+          "cwd": ".",
+          "environment": {
+            "mode": "inherited",
+            "overrides": {}
+          },
+          "exit_status": 0,
+          "stdout_sha256": "183f276805cfea20a70e36067545d44afbf6a744ee2374e29090075f52757f74",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_sha256": "4f226fa015dd0313cafbc1f3a2183afa3d5f763213f0db0afb3f827250f42b6a",
+          "result": "pass"
+        },
+        {
+          "job": "standard",
+          "argv": [
+            "cargo",
+            "extbuild",
+            "run",
+            "--",
+            "python3",
+            "scripts/local_gate.py",
+            "standard"
+          ],
+          "cwd": ".",
+          "environment": {
+            "mode": "inherited",
+            "overrides": {}
+          },
+          "exit_status": 0,
+          "stdout_sha256": "69692dbe2f131ea24d041fb480d03a44d3b8ebf7b1cf184fe5ef2a1dddad655e",
+          "stderr_sha256": "4d609706051c840f6b4b3e236a2f673ef231c6ffa56bca9d6ad782c30b9161e6",
+          "output_sha256": "e706a6f2a21ea75bea5d6bc782c159132c81fbc3fcf716e65d98d49fc6908883",
+          "result": "pass"
+        },
+        {
+          "job": "conformance",
+          "argv": [
+            "cargo",
+            "extbuild",
+            "run",
+            "--",
+            "python3",
+            "scripts/local_gate.py",
+            "conformance"
+          ],
+          "cwd": ".",
+          "environment": {
+            "mode": "inherited",
+            "overrides": {}
+          },
+          "exit_status": 0,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_sha256": "456ff6b4196b81581c9d0a3aeecaea841cb0152d3bc98fe19406bd0906dcbc7f",
+          "result": "pass"
+        },
+        {
+          "job": "coverage",
+          "argv": [
+            "cargo",
+            "extbuild",
+            "run",
+            "--",
+            "python3",
+            "scripts/local_gate.py",
+            "coverage"
+          ],
+          "cwd": ".",
+          "environment": {
+            "mode": "inherited",
+            "overrides": {}
+          },
+          "exit_status": 0,
+          "stdout_sha256": "9402ed904d4e6050e8753fb888d2757ee3adc80afc599409412622c43c74e081",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_sha256": "ba76c688d9497af43912bd9aa1632526eea9a0bf4985077605c1ef241ebc0e6b",
+          "result": "pass"
+        },
+        {
+          "job": "supply_chain",
+          "argv": [
+            "cargo",
+            "extbuild",
+            "run",
+            "--",
+            "python3",
+            "scripts/local_gate.py",
+            "supply_chain"
+          ],
+          "cwd": ".",
+          "environment": {
+            "mode": "inherited",
+            "overrides": {}
+          },
+          "exit_status": 0,
+          "stdout_sha256": "f1a0fca39d4280363937aabd77783990ea6480bd9ca257816de3b68fc8efa845",
+          "stderr_sha256": "7b978eda369021853b60156007a81d20dc0d47ef86060f7e6c9d603c387dfdcc",
+          "output_sha256": "c52454e982802c39e676793a8c3ca9e1b5a5be37981e765000cfebaff1805936",
+          "result": "pass"
+        },
+        {
+          "job": "robustness",
+          "argv": [
+            "cargo",
+            "extbuild",
+            "run",
+            "--",
+            "python3",
+            "scripts/local_gate.py",
+            "robustness"
+          ],
+          "cwd": ".",
+          "environment": {
+            "mode": "inherited",
+            "overrides": {}
+          },
+          "exit_status": 0,
+          "stdout_sha256": "c69b9ad0b8f60cde75d36ee5a58d16653ccf3c56202b0687da09df4c84b23fa3",
+          "stderr_sha256": "a679da65b8a83bd9613e6008f1970f32fb9a8f050468511aaf2a60ba89b31e2f",
+          "output_sha256": "ffa125ddf5432b3466e439ac9c757244c5b628f9250eb4248a1961097d5e546b",
+          "result": "pass"
+        },
+        {
+          "job": "resource",
+          "argv": [
+            "cargo",
+            "extbuild",
+            "run",
+            "--",
+            "python3",
+            "scripts/local_gate.py",
+            "resource"
+          ],
+          "cwd": ".",
+          "environment": {
+            "mode": "inherited",
+            "overrides": {}
+          },
+          "exit_status": 0,
+          "stdout_sha256": "c9ee6cdc59122d5a943fd133eb45db0fce1fe622f61cda4770c0504cbe067800",
+          "stderr_sha256": "0203ac7235143219b87a89af00fb4e64e461cae5e59e98cbd2402aa924f678ce",
+          "output_sha256": "369c912aca85c2847a44158321927749a9ae9c685c1405ef20efe335cd86a241",
+          "result": "pass"
+        },
+        {
+          "job": "release_evidence",
+          "argv": [
+            "cargo",
+            "extbuild",
+            "run",
+            "--",
+            "python3",
+            "scripts/local_gate.py",
+            "release_evidence"
+          ],
+          "cwd": ".",
+          "environment": {
+            "mode": "inherited",
+            "overrides": {}
+          },
+          "exit_status": 0,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "2dae8e15af8f592b05054d879c64e9604fea270a5f6d77fe57329ddda57288b6",
+          "output_sha256": "19a55a94cb16da76611c62d97bf8d3649164ae785b41806ff65536b6ff02e7cf",
+          "result": "pass"
+        }
+      ],
+      "result": "pass"
+    },
+    {
+      "ordinal": 2,
+      "conformance": {
+        "process_count": 2,
+        "byte_identical": true,
+        "serialized_run_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344",
+        "processes": [
+          {
+            "ordinal": 1,
+            "argv": [
+              "cargo",
+              "extbuild",
+              "run",
+              "--",
+              "cargo",
+              "run",
+              "--quiet",
+              "-p",
+              "nostr_automerge_conformance",
+              "--locked",
+              "--",
+              "run_distribution",
+              "fixtures/distribution/manifest_v16.json"
+            ],
+            "cwd": ".",
+            "environment": {
+              "mode": "inherited",
+              "overrides": {}
+            },
+            "exit_status": 0,
+            "stdout_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "fixture_count": 204,
+            "delivery_permutations": 8,
+            "report_count": 204,
+            "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+            "result": "pass"
+          },
+          {
+            "ordinal": 2,
+            "argv": [
+              "cargo",
+              "extbuild",
+              "run",
+              "--",
+              "cargo",
+              "run",
+              "--quiet",
+              "-p",
+              "nostr_automerge_conformance",
+              "--locked",
+              "--",
+              "run_distribution",
+              "fixtures/distribution/manifest_v16.json"
+            ],
+            "cwd": ".",
+            "environment": {
+              "mode": "inherited",
+              "overrides": {}
+            },
+            "exit_status": 0,
+            "stdout_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344",
+            "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "fixture_count": 204,
+            "delivery_permutations": 8,
+            "report_count": 204,
+            "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+            "result": "pass"
+          }
+        ]
+      },
+      "gates": [
+        {
+          "job": "remediation",
+          "argv": [
+            "cargo",
+            "extbuild",
+            "run",
+            "--",
+            "python3",
+            "scripts/local_gate.py",
+            "remediation"
+          ],
+          "cwd": ".",
+          "environment": {
+            "mode": "inherited",
+            "overrides": {}
+          },
+          "exit_status": 0,
+          "stdout_sha256": "6c16c7596ec8e9170cfe500d13aa081ee898ef81c4c8e1bd64a5643e41c4d262",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_sha256": "0ad8b4d1fc109fa671882946437a4e2ae6c535a183ef9b7b05463a8adfa99c5e",
+          "result": "pass"
+        },
+        {
+          "job": "policy",
+          "argv": [
+            "cargo",
+            "extbuild",
+            "run",
+            "--",
+            "python3",
+            "scripts/local_gate.py",
+            "policy"
+          ],
+          "cwd": ".",
+          "environment": {
+            "mode": "inherited",
+            "overrides": {}
+          },
+          "exit_status": 0,
+          "stdout_sha256": "183f276805cfea20a70e36067545d44afbf6a744ee2374e29090075f52757f74",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_sha256": "4f226fa015dd0313cafbc1f3a2183afa3d5f763213f0db0afb3f827250f42b6a",
+          "result": "pass"
+        },
+        {
+          "job": "standard",
+          "argv": [
+            "cargo",
+            "extbuild",
+            "run",
+            "--",
+            "python3",
+            "scripts/local_gate.py",
+            "standard"
+          ],
+          "cwd": ".",
+          "environment": {
+            "mode": "inherited",
+            "overrides": {}
+          },
+          "exit_status": 0,
+          "stdout_sha256": "c8b7d6514ae581ea359fc4bf4570665a85256cdc5c0c33f6b4bba16c51529f6f",
+          "stderr_sha256": "dc884ee1ad357d11f1d79ae9c0d3167df3895131d56f7c1cf9506b869f631e13",
+          "output_sha256": "3c60ab1fd05ec1e7cf2d8b4d8140ab0766a56207cf5e1adf4b983e9e67749bc0",
+          "result": "pass"
+        },
+        {
+          "job": "conformance",
+          "argv": [
+            "cargo",
+            "extbuild",
+            "run",
+            "--",
+            "python3",
+            "scripts/local_gate.py",
+            "conformance"
+          ],
+          "cwd": ".",
+          "environment": {
+            "mode": "inherited",
+            "overrides": {}
+          },
+          "exit_status": 0,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_sha256": "456ff6b4196b81581c9d0a3aeecaea841cb0152d3bc98fe19406bd0906dcbc7f",
+          "result": "pass"
+        },
+        {
+          "job": "coverage",
+          "argv": [
+            "cargo",
+            "extbuild",
+            "run",
+            "--",
+            "python3",
+            "scripts/local_gate.py",
+            "coverage"
+          ],
+          "cwd": ".",
+          "environment": {
+            "mode": "inherited",
+            "overrides": {}
+          },
+          "exit_status": 0,
+          "stdout_sha256": "9402ed904d4e6050e8753fb888d2757ee3adc80afc599409412622c43c74e081",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_sha256": "ba76c688d9497af43912bd9aa1632526eea9a0bf4985077605c1ef241ebc0e6b",
+          "result": "pass"
+        },
+        {
+          "job": "supply_chain",
+          "argv": [
+            "cargo",
+            "extbuild",
+            "run",
+            "--",
+            "python3",
+            "scripts/local_gate.py",
+            "supply_chain"
+          ],
+          "cwd": ".",
+          "environment": {
+            "mode": "inherited",
+            "overrides": {}
+          },
+          "exit_status": 0,
+          "stdout_sha256": "f1a0fca39d4280363937aabd77783990ea6480bd9ca257816de3b68fc8efa845",
+          "stderr_sha256": "d0db22825c41c5423b0fa93d8b888b4148876486183494219acc64fd1984f46b",
+          "output_sha256": "53eef2eae0d79313df7c834f778d61920ca04101bfa62085457865f6d3f3fa45",
+          "result": "pass"
+        },
+        {
+          "job": "robustness",
+          "argv": [
+            "cargo",
+            "extbuild",
+            "run",
+            "--",
+            "python3",
+            "scripts/local_gate.py",
+            "robustness"
+          ],
+          "cwd": ".",
+          "environment": {
+            "mode": "inherited",
+            "overrides": {}
+          },
+          "exit_status": 0,
+          "stdout_sha256": "c69b9ad0b8f60cde75d36ee5a58d16653ccf3c56202b0687da09df4c84b23fa3",
+          "stderr_sha256": "93624c98457e984083ffa8ad7033bd21e5f00460732356802d341e8927a82e87",
+          "output_sha256": "1d5d3d040c89172ebf9bb936a77b5b5a6a8f7c3e568fdf11db12d9a66d717a70",
+          "result": "pass"
+        },
+        {
+          "job": "resource",
+          "argv": [
+            "cargo",
+            "extbuild",
+            "run",
+            "--",
+            "python3",
+            "scripts/local_gate.py",
+            "resource"
+          ],
+          "cwd": ".",
+          "environment": {
+            "mode": "inherited",
+            "overrides": {}
+          },
+          "exit_status": 0,
+          "stdout_sha256": "b4379be35e7589980fc06264dd0b56f702daf2ffb76d3f2aff8b01345dfee1b1",
+          "stderr_sha256": "8feedb4f4a7eb18579d6b65f971027327c0b171f2a28b225a0deb87a6094aa19",
+          "output_sha256": "a7461dfa87b3bae76710282ab4e1081d7787ca49e104391468c466d3dc004130",
+          "result": "pass"
+        },
+        {
+          "job": "release_evidence",
+          "argv": [
+            "cargo",
+            "extbuild",
+            "run",
+            "--",
+            "python3",
+            "scripts/local_gate.py",
+            "release_evidence"
+          ],
+          "cwd": ".",
+          "environment": {
+            "mode": "inherited",
+            "overrides": {}
+          },
+          "exit_status": 0,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "3173674e8d5b77bd6d97ca66d18618f34ba469f3d996d16fcdef92b4a7f57f13",
+          "output_sha256": "63635757fb5a9b64e956a0855d4b39583d4ef69ced73f76f8ce6170f40be896f",
+          "result": "pass"
+        }
+      ],
+      "result": "pass"
+    }
+  ],
+  "aggregate": {
+    "repetition_count": 2,
+    "conformance_processes": 4,
+    "gate_executions": 18,
+    "cross_repetition_conformance_byte_identical": true
+  },
+  "frozen": {
+    "requirements": 156,
+    "scenarios": 204,
+    "signed_events": 771,
+    "delivery_orders": 8,
+    "canonical_output_sha256": "e69c721549966b1b88dcde3296674d675169840c6e8ebd0f236a5c07bcfc6415",
+    "serialized_run_sha256": "000c52bde7102eaccec8cf65c875332e119fd25ccf4a2ac38973c456774a3344",
+    "changed": false
+  },
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "deployment",
+    "remote_mutation"
+  ],
+  "remote_actions": 0,
+  "result": "pass"
+}
