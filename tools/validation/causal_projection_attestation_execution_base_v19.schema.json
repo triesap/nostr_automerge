@@ -1,0 +1,39 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema","status","checkpoint","terminal_artifact_commit","terminal_artifacts","attestation_execution_base","lifecycle","holds","release_claimed","publication_claimed","remote_actions","result","result_identity_sha256"],
+  "properties": {
+    "schema":{"const":"nostr_automerge.causal_projection_attestation_execution_base.v19.v1"},
+    "status":{"const":"prepared"},
+    "checkpoint":{"const":"rcld_146_execution_base"},
+    "terminal_artifact_commit":{"$ref":"#/$defs/commit"},
+    "terminal_artifacts":{"type":"array","minItems":7,"maxItems":7,"items":{"$ref":"#/$defs/artifact"}},
+    "attestation_execution_base":{"type":"null"},
+    "lifecycle": {
+      "type":"object","additionalProperties":false,
+      "required":["policy","required_relationship","terminal_self_reference","execution_base_self_reference","terminal_artifacts_mutated"],
+      "properties": {
+        "policy":{"const":"strict_T_E_A"},
+        "required_relationship":{"const":"strict_descendant"},
+        "terminal_self_reference":{"const":false},
+        "execution_base_self_reference":{"const":false},
+        "terminal_artifacts_mutated":{"const":false}
+      }
+    },
+    "holds":{"const":["external_assurance","event_kind_allocation","nip_submission","production_qualification","publication","release","deployment","remote_mutation"]},
+    "release_claimed":{"const":false},
+    "publication_claimed":{"const":false},
+    "remote_actions":{"const":0},
+    "result":{"const":"pass"},
+    "result_identity_sha256":{"$ref":"#/$defs/hash"}
+  },
+  "$defs": {
+    "commit":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "hash":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "artifact": {
+      "type":"object","additionalProperties":false,"required":["path","sha256"],
+      "properties":{"path":{"type":"string","minLength":1},"sha256":{"$ref":"#/$defs/hash"}}
+    }
+  }
+}

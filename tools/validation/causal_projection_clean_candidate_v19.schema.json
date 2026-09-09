@@ -1,0 +1,76 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema","status","checkpoint","terminal_artifact_commit","attestation_execution_base","observation","verification","terminal_artifacts","lifecycle","holds","release_claimed","publication_claimed","remote_actions","result","result_identity_sha256"],
+  "properties": {
+    "schema":{"const":"nostr_automerge.causal_projection_clean_candidate.v19.v1"},
+    "status":{"const":"code_complete_publication_held"},
+    "checkpoint":{"const":"post_rcld_146_clean_candidate_attestation"},
+    "terminal_artifact_commit":{"$ref":"#/$defs/commit"},
+    "attestation_execution_base":{
+      "type":"object","additionalProperties":false,
+      "required":["candidate","tree","parent_candidate","runner_sha256","schema_sha256","execution_base_report_sha256","report_absent"],
+      "properties": {
+        "candidate":{"$ref":"#/$defs/commit"},
+        "tree":{"$ref":"#/$defs/commit"},
+        "parent_candidate":{"$ref":"#/$defs/commit"},
+        "runner_sha256":{"$ref":"#/$defs/hash"},
+        "schema_sha256":{"$ref":"#/$defs/hash"},
+        "execution_base_report_sha256":{"$ref":"#/$defs/hash"},
+        "report_absent":{"const":true}
+      }
+    },
+    "observation":{
+      "type":"object","additionalProperties":false,
+      "required":["command","pre_gate_output_sha256","post_gate_output_sha256","tracked_changes","staged_changes","untracked_paths","result"],
+      "properties": {
+        "command":{"const":"git status --porcelain=v1 --untracked-files=all"},
+        "pre_gate_output_sha256":{"$ref":"#/$defs/hash"},
+        "post_gate_output_sha256":{"$ref":"#/$defs/hash"},
+        "tracked_changes":{"const":0},
+        "staged_changes":{"const":0},
+        "untracked_paths":{"const":0},
+        "result":{"const":"clean"}
+      }
+    },
+    "verification":{
+      "type":"object","additionalProperties":false,
+      "required":["execution_mode","runs","aggregate"],
+      "properties": {
+        "execution_mode":{"const":"actual_twice_from_clean_E"},
+        "runs":{"type":"array","minItems":4,"maxItems":4,"items":{"$ref":"#/$defs/run"}},
+        "aggregate":{"type":"object"}
+      }
+    },
+    "terminal_artifacts":{"type":"array","minItems":7,"maxItems":7,"items":{"$ref":"#/$defs/artifact"}},
+    "lifecycle":{"type":"object"},
+    "holds":{"const":["external_assurance","event_kind_allocation","nip_submission","production_qualification","publication","release","deployment","remote_mutation"]},
+    "release_claimed":{"const":false},
+    "publication_claimed":{"const":false},
+    "remote_actions":{"const":0},
+    "result":{"const":"pass"},
+    "result_identity_sha256":{"$ref":"#/$defs/hash"}
+  },
+  "$defs": {
+    "commit":{"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "hash":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "artifact":{"type":"object","additionalProperties":false,"required":["path","sha256"],"properties":{"path":{"type":"string"},"sha256":{"$ref":"#/$defs/hash"}}},
+    "run":{
+      "type":"object","additionalProperties":false,
+      "required":["ordinal","gate","argv","cwd","environment","exit_status","stdout_sha256","stderr_sha256","output_sha256","result"],
+      "properties": {
+        "ordinal":{"type":"integer","minimum":1,"maximum":2},
+        "gate":{"enum":["standard","conformance"]},
+        "argv":{"type":"array","items":{"type":"string"}},
+        "cwd":{"const":"."},
+        "environment":{"type":"object"},
+        "exit_status":{"const":0},
+        "stdout_sha256":{"$ref":"#/$defs/hash"},
+        "stderr_sha256":{"$ref":"#/$defs/hash"},
+        "output_sha256":{"$ref":"#/$defs/hash"},
+        "result":{"const":"pass"}
+      }
+    }
+  }
+}
