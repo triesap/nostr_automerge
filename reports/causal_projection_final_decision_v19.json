@@ -1,0 +1,55 @@
+{
+  "schema": "nostr_automerge.causal_projection_final_decision.v19.v1",
+  "status": "code_complete_publication_held",
+  "rcld": 146,
+  "base_candidate": "75182a7c16c88e4240bc55ca9772ffecd9a9197a",
+  "imports": {
+    "completion_sha256": "17f7d6de58e26249be74513e1b14b9b2717aeee4435ca4f90394a9a423dfd0eb",
+    "authority_sha256": "f92c5a9c92fc5967d6060ad420009dd5c690f0d61f0264c7cc8f4cf3220066dd",
+    "finding_registry_sha256": "523e5e9e97bae869e8978e4023ca4f5b9804e49eedd114c7d9a88972e0645f4f",
+    "runtime_ledger_sha256": "3015c23ea5c74f4c804562d6b81a4cf721950b6d8b2d3912c1eee93274917130",
+    "combined_assurance_sha256": "091df28a6ae35ccce16ec2b17436d7009b6e26b5df7f47064fab324090102f7f",
+    "finding_closure_sha256": "0384a03b16ca09d79a34f033adfc7a803d8b0eb2ede64522e029d6fd17878d62"
+  },
+  "decision": {
+    "code_complete": true,
+    "local_findings_closed": true,
+    "rclds_complete": 6,
+    "unfinished_rclds": [],
+    "terminal_artifact_commit": null,
+    "attestation_execution_base": null,
+    "clean_candidate_attestation": "required_later",
+    "candidate_lifecycle": "strict_T_E_A"
+  },
+  "gates": [
+    {"name":"authority","result":"pass"},
+    {"name":"source_inventory","result":"pass"},
+    {"name":"independent_trace_proofs","result":"pass"},
+    {"name":"runtime_mutations","result":"pass"},
+    {"name":"final_inventory","result":"pass"},
+    {"name":"evidence_graph","result":"pass"},
+    {"name":"execution_mapping","result":"pass"},
+    {"name":"public_qualification","result":"pass"},
+    {"name":"private_qualification","result":"pass"},
+    {"name":"distribution_transition","result":"pass"},
+    {"name":"opaque_assurance","result":"pass"},
+    {"name":"combined_assurance","result":"pass"},
+    {"name":"finding_closure","result":"pass"},
+    {"name":"complete_specification","result":"pass"}
+  ],
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "deployment",
+    "remote_mutation"
+  ],
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "80b60dc3f002efe8180f2487a8a30385c1048a56b7ceb318ae5226d6996d8a20"
+}

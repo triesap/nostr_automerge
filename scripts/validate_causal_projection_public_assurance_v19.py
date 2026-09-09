@@ -137,7 +137,7 @@ def self_test(values: list[dict[str, Any]]) -> int:
         lambda r, _s, _l, _f: r.update(remote_actions=1),
         lambda r, _s, _l, _f: r["findings"]["held"].clear(),
         lambda _r, s, _l, _f: s.update(additionalProperties=True),
-        lambda _r, _s, l, _f: l["cursor"].update(remaining_rcld_count=0),
+        lambda _r, _s, l, _f: l["cursor"].update(remaining_rcld_count=99),
         lambda _r, _s, _l, f: f["findings"][3].update(status="open"),
     ]
     caught = 0

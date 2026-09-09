@@ -1,13 +1,13 @@
 {
   "schema": "nostr_automerge.runtime_ledger.v19.v1",
-  "status": "active",
+  "status": "code_complete_publication_held",
   "authority": "spec/remediation_v19_authority.json",
   "cursor": {
-    "completed_rclds": [141, 142, 143, 144, 145],
-    "active_rcld": 146,
-    "next_rcld": 146,
+    "completed_rclds": [141, 142, 143, 144, 145, 146],
+    "active_rcld": null,
+    "next_rcld": null,
     "last_planned_rcld": 146,
-    "remaining_rcld_count": 1
+    "remaining_rcld_count": 0
   },
   "findings": {
     "open": [],

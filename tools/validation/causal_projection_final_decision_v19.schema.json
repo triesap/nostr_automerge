@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema","status","rcld","base_candidate","imports","decision","gates","holds","release_claimed","publication_claimed","remote_actions","result","result_identity_sha256"],
+  "properties": {
+    "schema": {"const":"nostr_automerge.causal_projection_final_decision.v19.v1"},
+    "status": {"const":"code_complete_publication_held"},
+    "rcld": {"const":146},
+    "base_candidate": {"$ref":"#/$defs/commit"},
+    "imports": {
+      "type":"object",
+      "additionalProperties":false,
+      "required":["completion_sha256","authority_sha256","finding_registry_sha256","runtime_ledger_sha256","combined_assurance_sha256","finding_closure_sha256"],
+      "properties": {
+        "completion_sha256":{"$ref":"#/$defs/hash"},
+        "authority_sha256":{"$ref":"#/$defs/hash"},
+        "finding_registry_sha256":{"$ref":"#/$defs/hash"},
+        "runtime_ledger_sha256":{"$ref":"#/$defs/hash"},
+        "combined_assurance_sha256":{"$ref":"#/$defs/hash"},
+        "finding_closure_sha256":{"$ref":"#/$defs/hash"}
+      }
+    },
+    "decision": {
+      "type":"object",
+      "additionalProperties":false,
+      "required":["code_complete","local_findings_closed","rclds_complete","unfinished_rclds","terminal_artifact_commit","attestation_execution_base","clean_candidate_attestation","candidate_lifecycle"],
+      "properties": {
+        "code_complete":{"const":true},
+        "local_findings_closed":{"const":true},
+        "rclds_complete":{"const":6},
+        "unfinished_rclds":{"const":[]},
+        "terminal_artifact_commit":{"type":"null"},
+        "attestation_execution_base":{"type":"null"},
+        "clean_candidate_attestation":{"const":"required_later"},
+        "candidate_lifecycle":{"const":"strict_T_E_A"}
+      }
+    },
+    "gates": {
+      "type":"array","minItems":14,"maxItems":14,
+      "items": {
+        "type":"object","additionalProperties":false,
+        "required":["name","result"],
+        "properties":{"name":{"type":"string"},"result":{"const":"pass"}}
+      }
+    },
+    "holds": {"const":["external_assurance","event_kind_allocation","nip_submission","production_qualification","publication","release","deployment","remote_mutation"]},
+    "release_claimed": {"const":false},
+    "publication_claimed": {"const":false},
+    "remote_actions": {"const":0},
+    "result": {"const":"pass"},
+    "result_identity_sha256": {"$ref":"#/$defs/hash"}
+  },
+  "$defs": {
+    "commit": {"type":"string","pattern":"^[0-9a-f]{40}$"},
+    "hash": {"type":"string","pattern":"^[0-9a-f]{64}$"}
+  }
+}

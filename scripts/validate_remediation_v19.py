@@ -85,7 +85,7 @@ def validate(authority: dict[str, Any], findings: dict[str, Any], ledger: dict[s
     for key, path in (("nip_sha256", "spec/NIP_DRAFT.md"), ("requirements_sha256", "spec/requirements.json"), ("report_contract_sha256", "spec/REPORT_CONTRACT.md"), ("distribution_manifest_sha256", "fixtures/distribution/manifest_v16.json"), ("distribution_lock_sha256", "fixtures/distribution/manifest_v16.lock.json")):
         require(frozen[key] == sha(ROOT / path), "frozen:" + key)
     require(authority["holds"] == HOLDS and authority["remote_actions"] == 0, "authority:holds")
-    require(findings["schema"] == "nostr_automerge.remediation_findings.v19.v1" and findings["result"] == "pass", "findings:schema")
+    require(findings["schema"] == "nostr_automerge.remediation_findings.v19.v1" and findings["status"] in {"active", "code_complete_publication_held"} and findings["result"] == "pass", "findings:schema")
     rows = findings["findings"]
     require([row["id"] for row in rows] == FINDINGS + ["FINDING_080"], "findings:order")
     require(all(row["status"] in {"open", "closed"} for row in rows[:-1]) and rows[-1]["status"] == "held", "findings:state")
@@ -98,12 +98,13 @@ def validate(authority: dict[str, Any], findings: dict[str, Any], ledger: dict[s
     if len(completed) < 6:
         require(cursor["active_rcld"] == cursor["next_rcld"] == 141 + len(completed), "ledger:cursor")
     else:
-        require(cursor["active_rcld"] == 146 and cursor["next_rcld"] is None, "ledger:terminal")
+        require(cursor["active_rcld"] is None and cursor["next_rcld"] is None, "ledger:terminal")
     statuses = {row["id"]: row["status"] for row in rows}
     require(ledger["findings"]["open"] == [item for item in FINDINGS if statuses[item] == "open"], "ledger:findings")
     require(ledger["findings"]["held"] == ["FINDING_080"], "ledger:held")
     require(list(ledger["candidate_roles"]) == ["source_candidate", "execution_base_candidate", "proof_artifact_commit", "mutation_artifact_commit", "final_inventory_commit", "evidence_graph_commit", "public_qualification_commit", "independent_assurance_commit", "terminal_artifact_commit", "clean_attestation_commit"], "ledger:roles")
     require(ledger["independent"]["rcld"] == 145 and ledger["independent"]["public_detail"] == "opaque_only", "ledger:independent")
+    require(ledger["status"] == ("code_complete_publication_held" if len(completed) == 6 else "active"), "ledger:status")
     require(ledger["predecessors"] == [{"rcld": 140, "candidate": BASE, "owner_class": "public", "result": "pass"}], "ledger:predecessor")
 
 

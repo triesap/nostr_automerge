@@ -1,0 +1,40 @@
+{
+  "schema": "nostr_automerge.causal_projection_completion.v19.v1",
+  "status": "code_complete_publication_held",
+  "rcld": 146,
+  "base_candidate": "75182a7c16c88e4240bc55ca9772ffecd9a9197a",
+  "imports": {
+    "authority_sha256": "f92c5a9c92fc5967d6060ad420009dd5c690f0d61f0264c7cc8f4cf3220066dd",
+    "finding_registry_sha256": "523e5e9e97bae869e8978e4023ca4f5b9804e49eedd114c7d9a88972e0645f4f",
+    "runtime_ledger_sha256": "3015c23ea5c74f4c804562d6b81a4cf721950b6d8b2d3912c1eee93274917130",
+    "public_assurance_sha256": "e7494864e1818032ccbcaedbb3829788c87a8ec3ced03abb75db64cabe427b0b",
+    "opaque_assurance_sha256": "53bd0478aa66ad290cc787d865b77c58921e994bda5ec9c8c292227099ea71cb",
+    "combined_assurance_sha256": "091df28a6ae35ccce16ec2b17436d7009b6e26b5df7f47064fab324090102f7f",
+    "finding_closure_sha256": "0384a03b16ca09d79a34f033adfc7a803d8b0eb2ede64522e029d6fd17878d62"
+  },
+  "completion": {
+    "code_complete": true,
+    "local_findings_closed": true,
+    "completed_rclds": [141, 142, 143, 144, 145, 146],
+    "unfinished_rclds": [],
+    "terminal_artifact_commit": null,
+    "attestation_execution_base": null,
+    "clean_candidate_attestation": "required_later",
+    "candidate_lifecycle": "strict_T_E_A"
+  },
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "deployment",
+    "remote_mutation"
+  ],
+  "release_claimed": false,
+  "publication_claimed": false,
+  "remote_actions": 0,
+  "result": "pass",
+  "result_identity_sha256": "b50f9aafdb37533122b3cacfe1ca11ddbc09c408a3bdf69a25df02f24e424d8b"
+}

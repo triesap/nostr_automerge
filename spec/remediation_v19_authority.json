@@ -1,6 +1,6 @@
 {
   "schema": "nostr_automerge.remediation_v19_authority.v1",
-  "status": "active",
+  "status": "code_complete_publication_held",
   "reviewed_public": {
     "candidate": "4cc1bb5060b7477214eb22cf7b086735e4a70b7a",
     "tree": "7f26d0307e5b59adfbd6ba0afeb07644f6907792",
