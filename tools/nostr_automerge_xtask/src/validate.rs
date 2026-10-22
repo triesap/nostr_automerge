@@ -646,7 +646,15 @@ pub(crate) fn validate_repository(root: &Path) -> Result<ValidationReport, Strin
     let v13_active = root.join("spec/remediation_v13_authority.json").is_file();
     let v18_active = root.join("spec/remediation_v18_authority.json").is_file();
     let v19_active = root.join("spec/remediation_v19_authority.json").is_file();
+    let alignment_active = crate::alignment::active(root);
+    if alignment_active {
+        crate::alignment::validate(root)?;
+        validators.push("alignment_validation");
+    }
     for (name, script) in PYTHON_VALIDATORS {
+        if alignment_active {
+            break;
+        }
         if followup_active && followup_historical_validator(name) {
             continue;
         }

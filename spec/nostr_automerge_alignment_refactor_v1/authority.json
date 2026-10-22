@@ -1,0 +1,22 @@
+{
+  "schema": "nostr_automerge_alignment_refactor_v1.authority.1",
+  "program": "nostr_automerge_alignment_refactor_v1",
+  "reviewed_commit": "5085fd30f873396c8e882a8cd7c5aec241e73824",
+  "baseline_commit": "e2faf8fea65f23479a70009c5d9531b881838c0e",
+  "governing_plan": "docs/execution/rcl/nostr_automerge_alignment_refactor_v1.md",
+  "requirements": "spec/nostr_automerge_alignment_refactor_v1/requirements.json",
+  "steps": "implementation/nostr_automerge_alignment_refactor_v1/steps.json",
+  "ledger": "implementation/nostr_automerge_alignment_refactor_v1/ledger.json",
+  "validation_registry": "spec/nostr_automerge_alignment_refactor_v1/validation_registry.json",
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "deployment",
+    "remote_mutation"
+  ],
+  "bootstrap_deviation": "implementation/nostr_automerge_alignment_refactor_v1/deviations/bootstrap.md"
+}

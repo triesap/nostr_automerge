@@ -1,0 +1,2551 @@
+{
+  "schema": "nostr_automerge_alignment_refactor_v1.ledger.1",
+  "program": "nostr_automerge_alignment_refactor_v1",
+  "active_step": "NA-001",
+  "next_step": "NA-001",
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "deployment",
+    "remote_mutation"
+  ],
+  "bootstrap": {
+    "deviation": "implementation/nostr_automerge_alignment_refactor_v1/deviations/bootstrap.md",
+    "steps": [
+      "NA-001",
+      "NA-002",
+      "NA-003",
+      "NA-004",
+      "NA-005"
+    ],
+    "source_commit": null,
+    "receipt_commit": null
+  },
+  "steps": [
+    {
+      "id": "NA-001",
+      "alias": "G01",
+      "ordinal": 1,
+      "requirements": [
+        "NA-GOV-001",
+        "NA-GOV-002",
+        "NA-DOC-001",
+        "NA-REL-001"
+      ],
+      "depends_on": [],
+      "status": "active",
+      "report": null
+    },
+    {
+      "id": "NA-002",
+      "alias": "G02",
+      "ordinal": 2,
+      "requirements": [
+        "NA-GOV-001",
+        "NA-GOV-002",
+        "NA-GOV-003",
+        "NA-GOV-004",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-001"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-003",
+      "alias": "G03",
+      "ordinal": 3,
+      "requirements": [
+        "NA-GOV-001",
+        "NA-GOV-003",
+        "NA-REL-001"
+      ],
+      "depends_on": [
+        "NA-002"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-004",
+      "alias": "G04",
+      "ordinal": 4,
+      "requirements": [
+        "NA-GOV-001",
+        "NA-GOV-002",
+        "NA-VER-001"
+      ],
+      "depends_on": [
+        "NA-003"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-005",
+      "alias": "G05",
+      "ordinal": 5,
+      "requirements": [
+        "NA-GOV-001",
+        "NA-GOV-002",
+        "NA-GOV-004",
+        "NA-VER-001"
+      ],
+      "depends_on": [
+        "NA-004"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-006",
+      "alias": "G06",
+      "ordinal": 6,
+      "requirements": [
+        "NA-COMP-001",
+        "NA-CHK-001",
+        "NA-CHK-002",
+        "NA-GOV-002"
+      ],
+      "depends_on": [
+        "NA-005"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-007",
+      "alias": "G07",
+      "ordinal": 7,
+      "requirements": [
+        "NA-RES-001",
+        "NA-INT-004",
+        "NA-INT-007",
+        "NA-VER-005",
+        "NA-REL-001"
+      ],
+      "depends_on": [
+        "NA-006"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-008",
+      "alias": "G08",
+      "ordinal": 8,
+      "requirements": [
+        "NA-DOC-001",
+        "NA-GOV-004",
+        "NA-GOV-003"
+      ],
+      "depends_on": [
+        "NA-007"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-009",
+      "alias": "E28",
+      "ordinal": 9,
+      "requirements": [
+        "NA-VER-001"
+      ],
+      "depends_on": [
+        "NA-005"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-010",
+      "alias": "E01",
+      "ordinal": 10,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-003",
+        "NA-DOC-001"
+      ],
+      "depends_on": [
+        "NA-005"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-011",
+      "alias": "E02",
+      "ordinal": 11,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002"
+      ],
+      "depends_on": [
+        "NA-010"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-012",
+      "alias": "E03",
+      "ordinal": 12,
+      "requirements": [
+        "NA-EX-002"
+      ],
+      "depends_on": [
+        "NA-011",
+        "NA-001"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-013",
+      "alias": "E04",
+      "ordinal": 13,
+      "requirements": [
+        "NA-EX-002",
+        "NA-VER-001"
+      ],
+      "depends_on": [
+        "NA-012"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-014",
+      "alias": "E25",
+      "ordinal": 14,
+      "requirements": [
+        "NA-VER-002",
+        "NA-VER-001"
+      ],
+      "depends_on": [
+        "NA-013",
+        "NA-002",
+        "NA-006"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-015",
+      "alias": "E26",
+      "ordinal": 15,
+      "requirements": [
+        "NA-VER-002"
+      ],
+      "depends_on": [
+        "NA-014"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-016",
+      "alias": "C01",
+      "ordinal": 16,
+      "requirements": [
+        "NA-CORE-001",
+        "NA-CORE-002",
+        "NA-CORE-003",
+        "NA-CORE-004",
+        "NA-CORE-005",
+        "NA-CORE-006",
+        "NA-CHK-001",
+        "NA-CHK-002",
+        "NA-RES-001",
+        "NA-COMP-001",
+        "NA-CORE-007"
+      ],
+      "depends_on": [
+        "NA-008",
+        "NA-009"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-017",
+      "alias": "C02",
+      "ordinal": 17,
+      "requirements": [
+        "NA-CORE-001",
+        "NA-CORE-002",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-016"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-018",
+      "alias": "C03",
+      "ordinal": 18,
+      "requirements": [
+        "NA-CORE-002",
+        "NA-RES-001"
+      ],
+      "depends_on": [
+        "NA-017"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-019",
+      "alias": "C04",
+      "ordinal": 19,
+      "requirements": [
+        "NA-CORE-002"
+      ],
+      "depends_on": [
+        "NA-018"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-020",
+      "alias": "C05",
+      "ordinal": 20,
+      "requirements": [
+        "NA-CORE-002"
+      ],
+      "depends_on": [
+        "NA-019"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-021",
+      "alias": "C06",
+      "ordinal": 21,
+      "requirements": [
+        "NA-CORE-001",
+        "NA-CORE-002"
+      ],
+      "depends_on": [
+        "NA-020"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-022",
+      "alias": "C07",
+      "ordinal": 22,
+      "requirements": [
+        "NA-CORE-002",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-021"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-023",
+      "alias": "C08",
+      "ordinal": 23,
+      "requirements": [
+        "NA-CORE-002"
+      ],
+      "depends_on": [
+        "NA-022"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-024",
+      "alias": "C09",
+      "ordinal": 24,
+      "requirements": [
+        "NA-CORE-002",
+        "NA-RES-001"
+      ],
+      "depends_on": [
+        "NA-023"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-025",
+      "alias": "C10",
+      "ordinal": 25,
+      "requirements": [
+        "NA-CORE-006"
+      ],
+      "depends_on": [
+        "NA-024"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-026",
+      "alias": "C11",
+      "ordinal": 26,
+      "requirements": [
+        "NA-CORE-006"
+      ],
+      "depends_on": [
+        "NA-025"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-027",
+      "alias": "C12",
+      "ordinal": 27,
+      "requirements": [
+        "NA-CORE-006",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-026"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-028",
+      "alias": "C13",
+      "ordinal": 28,
+      "requirements": [
+        "NA-CORE-003",
+        "NA-RES-001"
+      ],
+      "depends_on": [
+        "NA-027"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-029",
+      "alias": "C14",
+      "ordinal": 29,
+      "requirements": [
+        "NA-CORE-003",
+        "NA-RES-001"
+      ],
+      "depends_on": [
+        "NA-028"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-030",
+      "alias": "C15",
+      "ordinal": 30,
+      "requirements": [
+        "NA-CORE-001",
+        "NA-CORE-002",
+        "NA-CORE-003"
+      ],
+      "depends_on": [
+        "NA-029"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-031",
+      "alias": "C16",
+      "ordinal": 31,
+      "requirements": [
+        "NA-CORE-002",
+        "NA-CORE-003",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-030"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-032",
+      "alias": "C61",
+      "ordinal": 32,
+      "requirements": [
+        "NA-CORE-007",
+        "NA-RES-001",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-031"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-033",
+      "alias": "C62",
+      "ordinal": 33,
+      "requirements": [
+        "NA-CORE-007",
+        "NA-RES-001"
+      ],
+      "depends_on": [
+        "NA-032"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-034",
+      "alias": "C63",
+      "ordinal": 34,
+      "requirements": [
+        "NA-CORE-007",
+        "NA-RES-001",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-033"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-035",
+      "alias": "C17",
+      "ordinal": 35,
+      "requirements": [
+        "NA-CORE-004",
+        "NA-RES-001",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-031"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-036",
+      "alias": "C18",
+      "ordinal": 36,
+      "requirements": [
+        "NA-CORE-004"
+      ],
+      "depends_on": [
+        "NA-035"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-037",
+      "alias": "C19",
+      "ordinal": 37,
+      "requirements": [
+        "NA-CORE-004",
+        "NA-RES-001"
+      ],
+      "depends_on": [
+        "NA-036"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-038",
+      "alias": "C20",
+      "ordinal": 38,
+      "requirements": [
+        "NA-CORE-004"
+      ],
+      "depends_on": [
+        "NA-037"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-039",
+      "alias": "C21",
+      "ordinal": 39,
+      "requirements": [
+        "NA-CORE-004"
+      ],
+      "depends_on": [
+        "NA-038"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-040",
+      "alias": "C22",
+      "ordinal": 40,
+      "requirements": [
+        "NA-CORE-004"
+      ],
+      "depends_on": [
+        "NA-039"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-041",
+      "alias": "C23",
+      "ordinal": 41,
+      "requirements": [
+        "NA-CORE-004"
+      ],
+      "depends_on": [
+        "NA-040"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-042",
+      "alias": "C24",
+      "ordinal": 42,
+      "requirements": [
+        "NA-CORE-004",
+        "NA-RES-001"
+      ],
+      "depends_on": [
+        "NA-041"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-043",
+      "alias": "C25",
+      "ordinal": 43,
+      "requirements": [
+        "NA-CORE-004"
+      ],
+      "depends_on": [
+        "NA-042"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-044",
+      "alias": "C26",
+      "ordinal": 44,
+      "requirements": [
+        "NA-CORE-004"
+      ],
+      "depends_on": [
+        "NA-043"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-045",
+      "alias": "C27",
+      "ordinal": 45,
+      "requirements": [
+        "NA-CORE-004",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-044"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-046",
+      "alias": "C28",
+      "ordinal": 46,
+      "requirements": [
+        "NA-CORE-004",
+        "NA-CORE-002"
+      ],
+      "depends_on": [
+        "NA-045"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-047",
+      "alias": "C29",
+      "ordinal": 47,
+      "requirements": [
+        "NA-CORE-004"
+      ],
+      "depends_on": [
+        "NA-046"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-048",
+      "alias": "C30",
+      "ordinal": 48,
+      "requirements": [
+        "NA-CORE-004",
+        "NA-CORE-002",
+        "NA-RES-001"
+      ],
+      "depends_on": [
+        "NA-047"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-049",
+      "alias": "C31",
+      "ordinal": 49,
+      "requirements": [
+        "NA-CORE-004",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-048"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-050",
+      "alias": "C32",
+      "ordinal": 50,
+      "requirements": [
+        "NA-RES-001",
+        "NA-CORE-004"
+      ],
+      "depends_on": [
+        "NA-049"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-051",
+      "alias": "C33",
+      "ordinal": 51,
+      "requirements": [
+        "NA-RES-001",
+        "NA-CORE-004"
+      ],
+      "depends_on": [
+        "NA-050"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-052",
+      "alias": "C34",
+      "ordinal": 52,
+      "requirements": [
+        "NA-CORE-001",
+        "NA-CORE-003",
+        "NA-CORE-004"
+      ],
+      "depends_on": [
+        "NA-051"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-053",
+      "alias": "E05",
+      "ordinal": 53,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002",
+        "NA-EX-003"
+      ],
+      "depends_on": [
+        "NA-013",
+        "NA-031"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-054",
+      "alias": "E06",
+      "ordinal": 54,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002",
+        "NA-EX-003"
+      ],
+      "depends_on": [
+        "NA-013",
+        "NA-053",
+        "NA-031",
+        "NA-024"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-055",
+      "alias": "E07",
+      "ordinal": 55,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002",
+        "NA-EX-003"
+      ],
+      "depends_on": [
+        "NA-013",
+        "NA-054",
+        "NA-052"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-056",
+      "alias": "E08",
+      "ordinal": 56,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002",
+        "NA-EX-003"
+      ],
+      "depends_on": [
+        "NA-013",
+        "NA-053",
+        "NA-034"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-057",
+      "alias": "C35",
+      "ordinal": 57,
+      "requirements": [
+        "NA-CORE-005",
+        "NA-CORE-002",
+        "NA-RES-001"
+      ],
+      "depends_on": [
+        "NA-052"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-058",
+      "alias": "C36",
+      "ordinal": 58,
+      "requirements": [
+        "NA-CORE-005",
+        "NA-CORE-002",
+        "NA-RES-001"
+      ],
+      "depends_on": [
+        "NA-057"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-059",
+      "alias": "C37",
+      "ordinal": 59,
+      "requirements": [
+        "NA-CORE-005",
+        "NA-CORE-002"
+      ],
+      "depends_on": [
+        "NA-058"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-060",
+      "alias": "C38",
+      "ordinal": 60,
+      "requirements": [
+        "NA-CORE-005",
+        "NA-CORE-006",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-059"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-061",
+      "alias": "C39",
+      "ordinal": 61,
+      "requirements": [
+        "NA-CORE-005",
+        "NA-RES-001"
+      ],
+      "depends_on": [
+        "NA-060"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-062",
+      "alias": "C40",
+      "ordinal": 62,
+      "requirements": [
+        "NA-CHK-001",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-061"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-063",
+      "alias": "C41",
+      "ordinal": 63,
+      "requirements": [
+        "NA-CHK-001",
+        "NA-RES-001"
+      ],
+      "depends_on": [
+        "NA-062"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-064",
+      "alias": "C42",
+      "ordinal": 64,
+      "requirements": [
+        "NA-CHK-001",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-063"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-065",
+      "alias": "C43",
+      "ordinal": 65,
+      "requirements": [
+        "NA-CHK-001",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-064"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-066",
+      "alias": "C44",
+      "ordinal": 66,
+      "requirements": [
+        "NA-CHK-002",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-065"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-067",
+      "alias": "C45",
+      "ordinal": 67,
+      "requirements": [
+        "NA-CHK-002",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-066"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-068",
+      "alias": "C46",
+      "ordinal": 68,
+      "requirements": [
+        "NA-CHK-002",
+        "NA-RES-001"
+      ],
+      "depends_on": [
+        "NA-067"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-069",
+      "alias": "C47",
+      "ordinal": 69,
+      "requirements": [
+        "NA-CHK-002",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-068"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-070",
+      "alias": "C48",
+      "ordinal": 70,
+      "requirements": [
+        "NA-CHK-002"
+      ],
+      "depends_on": [
+        "NA-069"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-071",
+      "alias": "C49",
+      "ordinal": 71,
+      "requirements": [
+        "NA-CHK-002",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-070"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-072",
+      "alias": "C50",
+      "ordinal": 72,
+      "requirements": [
+        "NA-CHK-002",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-071"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-073",
+      "alias": "C51",
+      "ordinal": 73,
+      "requirements": [
+        "NA-RES-001",
+        "NA-CHK-002"
+      ],
+      "depends_on": [
+        "NA-072"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-074",
+      "alias": "C52",
+      "ordinal": 74,
+      "requirements": [
+        "NA-RES-001",
+        "NA-CHK-001"
+      ],
+      "depends_on": [
+        "NA-073"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-075",
+      "alias": "C53",
+      "ordinal": 75,
+      "requirements": [
+        "NA-CORE-003",
+        "NA-RES-001"
+      ],
+      "depends_on": [
+        "NA-074"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-076",
+      "alias": "C54",
+      "ordinal": 76,
+      "requirements": [
+        "NA-CORE-004",
+        "NA-CORE-005",
+        "NA-CORE-006",
+        "NA-CHK-001",
+        "NA-CHK-002",
+        "NA-COMP-001",
+        "NA-CORE-007"
+      ],
+      "depends_on": [
+        "NA-075",
+        "NA-034",
+        "NA-014",
+        "NA-015"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-077",
+      "alias": "E09",
+      "ordinal": 77,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002"
+      ],
+      "depends_on": [
+        "NA-013",
+        "NA-055",
+        "NA-052"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-078",
+      "alias": "E10",
+      "ordinal": 78,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002"
+      ],
+      "depends_on": [
+        "NA-013",
+        "NA-056",
+        "NA-027"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-079",
+      "alias": "E11",
+      "ordinal": 79,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002"
+      ],
+      "depends_on": [
+        "NA-013",
+        "NA-078"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-080",
+      "alias": "E12",
+      "ordinal": 80,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002"
+      ],
+      "depends_on": [
+        "NA-013",
+        "NA-056",
+        "NA-024"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-081",
+      "alias": "E13",
+      "ordinal": 81,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002"
+      ],
+      "depends_on": [
+        "NA-013",
+        "NA-053"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-082",
+      "alias": "E14",
+      "ordinal": 82,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002"
+      ],
+      "depends_on": [
+        "NA-013",
+        "NA-056",
+        "NA-076",
+        "NA-065"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-083",
+      "alias": "E15",
+      "ordinal": 83,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002"
+      ],
+      "depends_on": [
+        "NA-013",
+        "NA-056",
+        "NA-075"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-084",
+      "alias": "E16",
+      "ordinal": 84,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002"
+      ],
+      "depends_on": [
+        "NA-013",
+        "NA-056"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-085",
+      "alias": "E17",
+      "ordinal": 85,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002"
+      ],
+      "depends_on": [
+        "NA-013",
+        "NA-083",
+        "NA-075"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-086",
+      "alias": "E18",
+      "ordinal": 86,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002"
+      ],
+      "depends_on": [
+        "NA-013",
+        "NA-054",
+        "NA-061"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-087",
+      "alias": "E19",
+      "ordinal": 87,
+      "requirements": [
+        "NA-EX-002",
+        "NA-VER-003"
+      ],
+      "depends_on": [
+        "NA-053"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-088",
+      "alias": "E27",
+      "ordinal": 88,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002",
+        "NA-VER-002"
+      ],
+      "depends_on": [
+        "NA-015",
+        "NA-076"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-089",
+      "alias": "C55",
+      "ordinal": 89,
+      "requirements": [
+        "NA-COMP-001",
+        "NA-CHK-001",
+        "NA-CHK-002"
+      ],
+      "depends_on": [
+        "NA-076",
+        "NA-088"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-090",
+      "alias": "C56",
+      "ordinal": 90,
+      "requirements": [
+        "NA-CORE-001",
+        "NA-CORE-002",
+        "NA-CORE-003",
+        "NA-CORE-006"
+      ],
+      "depends_on": [
+        "NA-089"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-091",
+      "alias": "C57",
+      "ordinal": 91,
+      "requirements": [
+        "NA-CORE-006",
+        "NA-CORE-005",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-090"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-092",
+      "alias": "C58",
+      "ordinal": 92,
+      "requirements": [
+        "NA-CORE-004",
+        "NA-CORE-003",
+        "NA-RES-001",
+        "NA-COMP-001"
+      ],
+      "depends_on": [
+        "NA-091"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-093",
+      "alias": "C59",
+      "ordinal": 93,
+      "requirements": [
+        "NA-CORE-003",
+        "NA-CORE-004",
+        "NA-CORE-005",
+        "NA-CORE-006",
+        "NA-CHK-001",
+        "NA-CHK-002",
+        "NA-COMP-001",
+        "NA-CORE-007"
+      ],
+      "depends_on": [
+        "NA-092"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-094",
+      "alias": "C60",
+      "ordinal": 94,
+      "requirements": [
+        "NA-CORE-001",
+        "NA-CORE-002",
+        "NA-CORE-003",
+        "NA-CORE-004",
+        "NA-CORE-005",
+        "NA-CORE-006",
+        "NA-CHK-001",
+        "NA-CHK-002",
+        "NA-RES-001",
+        "NA-COMP-001",
+        "NA-CORE-007"
+      ],
+      "depends_on": [
+        "NA-093"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-095",
+      "alias": "I01",
+      "ordinal": 95,
+      "requirements": [
+        "NA-INT-001"
+      ],
+      "depends_on": [
+        "NA-094",
+        "NA-034"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-096",
+      "alias": "I02",
+      "ordinal": 96,
+      "requirements": [
+        "NA-INT-001",
+        "NA-INT-003",
+        "NA-INT-004",
+        "NA-INT-005",
+        "NA-INT-007"
+      ],
+      "depends_on": [
+        "NA-095"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-097",
+      "alias": "I03",
+      "ordinal": 97,
+      "requirements": [
+        "NA-INT-001",
+        "NA-INT-002",
+        "NA-INT-003",
+        "NA-INT-004",
+        "NA-INT-005",
+        "NA-INT-006",
+        "NA-INT-007"
+      ],
+      "depends_on": [
+        "NA-096"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-098",
+      "alias": "I04",
+      "ordinal": 98,
+      "requirements": [
+        "NA-INT-001"
+      ],
+      "depends_on": [
+        "NA-097"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-099",
+      "alias": "I05",
+      "ordinal": 99,
+      "requirements": [
+        "NA-INT-001",
+        "NA-INT-005",
+        "NA-INT-007"
+      ],
+      "depends_on": [
+        "NA-098"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-100",
+      "alias": "I06",
+      "ordinal": 100,
+      "requirements": [
+        "NA-INT-007"
+      ],
+      "depends_on": [
+        "NA-099"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-101",
+      "alias": "I07",
+      "ordinal": 101,
+      "requirements": [
+        "NA-INT-002",
+        "NA-INT-005"
+      ],
+      "depends_on": [
+        "NA-100"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-102",
+      "alias": "I08",
+      "ordinal": 102,
+      "requirements": [
+        "NA-INT-002",
+        "NA-INT-003",
+        "NA-INT-005",
+        "NA-INT-007"
+      ],
+      "depends_on": [
+        "NA-101"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-103",
+      "alias": "I09",
+      "ordinal": 103,
+      "requirements": [
+        "NA-INT-003",
+        "NA-INT-004"
+      ],
+      "depends_on": [
+        "NA-102"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-104",
+      "alias": "I10",
+      "ordinal": 104,
+      "requirements": [
+        "NA-INT-003"
+      ],
+      "depends_on": [
+        "NA-103"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-105",
+      "alias": "I11",
+      "ordinal": 105,
+      "requirements": [
+        "NA-INT-001",
+        "NA-INT-003",
+        "NA-INT-005"
+      ],
+      "depends_on": [
+        "NA-104"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-106",
+      "alias": "I12",
+      "ordinal": 106,
+      "requirements": [
+        "NA-INT-003",
+        "NA-INT-004"
+      ],
+      "depends_on": [
+        "NA-105"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-107",
+      "alias": "I13",
+      "ordinal": 107,
+      "requirements": [
+        "NA-INT-003"
+      ],
+      "depends_on": [
+        "NA-106"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-108",
+      "alias": "I14",
+      "ordinal": 108,
+      "requirements": [
+        "NA-INT-003",
+        "NA-INT-005"
+      ],
+      "depends_on": [
+        "NA-107"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-109",
+      "alias": "I15",
+      "ordinal": 109,
+      "requirements": [
+        "NA-INT-004"
+      ],
+      "depends_on": [
+        "NA-108"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-110",
+      "alias": "I16",
+      "ordinal": 110,
+      "requirements": [
+        "NA-INT-004",
+        "NA-INT-007"
+      ],
+      "depends_on": [
+        "NA-109"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-111",
+      "alias": "I17",
+      "ordinal": 111,
+      "requirements": [
+        "NA-INT-004",
+        "NA-INT-007"
+      ],
+      "depends_on": [
+        "NA-110"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-112",
+      "alias": "I18",
+      "ordinal": 112,
+      "requirements": [
+        "NA-INT-003",
+        "NA-INT-004"
+      ],
+      "depends_on": [
+        "NA-111"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-113",
+      "alias": "I19",
+      "ordinal": 113,
+      "requirements": [
+        "NA-INT-004"
+      ],
+      "depends_on": [
+        "NA-112"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-114",
+      "alias": "I20",
+      "ordinal": 114,
+      "requirements": [
+        "NA-INT-004",
+        "NA-INT-005"
+      ],
+      "depends_on": [
+        "NA-113"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-115",
+      "alias": "I44",
+      "ordinal": 115,
+      "requirements": [
+        "NA-INT-002",
+        "NA-INT-003",
+        "NA-INT-004"
+      ],
+      "depends_on": [
+        "NA-114"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-116",
+      "alias": "I45",
+      "ordinal": 116,
+      "requirements": [
+        "NA-INT-002",
+        "NA-INT-003",
+        "NA-INT-004"
+      ],
+      "depends_on": [
+        "NA-115"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-117",
+      "alias": "I21",
+      "ordinal": 117,
+      "requirements": [
+        "NA-INT-002",
+        "NA-INT-005",
+        "NA-INT-007"
+      ],
+      "depends_on": [
+        "NA-116"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-118",
+      "alias": "I22",
+      "ordinal": 118,
+      "requirements": [
+        "NA-INT-002",
+        "NA-INT-004",
+        "NA-INT-005"
+      ],
+      "depends_on": [
+        "NA-117"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-119",
+      "alias": "I23",
+      "ordinal": 119,
+      "requirements": [
+        "NA-INT-002",
+        "NA-INT-005"
+      ],
+      "depends_on": [
+        "NA-118"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-120",
+      "alias": "I24",
+      "ordinal": 120,
+      "requirements": [
+        "NA-INT-002",
+        "NA-INT-003",
+        "NA-INT-004"
+      ],
+      "depends_on": [
+        "NA-119"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-121",
+      "alias": "I25",
+      "ordinal": 121,
+      "requirements": [
+        "NA-INT-002",
+        "NA-INT-005"
+      ],
+      "depends_on": [
+        "NA-120"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-122",
+      "alias": "I26",
+      "ordinal": 122,
+      "requirements": [
+        "NA-INT-005"
+      ],
+      "depends_on": [
+        "NA-121"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-123",
+      "alias": "I27",
+      "ordinal": 123,
+      "requirements": [
+        "NA-INT-002",
+        "NA-INT-005"
+      ],
+      "depends_on": [
+        "NA-122",
+        "NA-034"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-124",
+      "alias": "I28",
+      "ordinal": 124,
+      "requirements": [
+        "NA-INT-002",
+        "NA-INT-004",
+        "NA-INT-005"
+      ],
+      "depends_on": [
+        "NA-123"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-125",
+      "alias": "I29",
+      "ordinal": 125,
+      "requirements": [
+        "NA-INT-004",
+        "NA-INT-005"
+      ],
+      "depends_on": [
+        "NA-124"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-126",
+      "alias": "I30",
+      "ordinal": 126,
+      "requirements": [
+        "NA-INT-005"
+      ],
+      "depends_on": [
+        "NA-125"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-127",
+      "alias": "I31",
+      "ordinal": 127,
+      "requirements": [
+        "NA-INT-004",
+        "NA-INT-005",
+        "NA-INT-007"
+      ],
+      "depends_on": [
+        "NA-126"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-128",
+      "alias": "I32",
+      "ordinal": 128,
+      "requirements": [
+        "NA-INT-005",
+        "NA-INT-007"
+      ],
+      "depends_on": [
+        "NA-127"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-129",
+      "alias": "I33",
+      "ordinal": 129,
+      "requirements": [
+        "NA-INT-002",
+        "NA-INT-003",
+        "NA-INT-004",
+        "NA-INT-005"
+      ],
+      "depends_on": [
+        "NA-128"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-130",
+      "alias": "I34",
+      "ordinal": 130,
+      "requirements": [
+        "NA-INT-003",
+        "NA-INT-004",
+        "NA-INT-005"
+      ],
+      "depends_on": [
+        "NA-129"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-131",
+      "alias": "I35",
+      "ordinal": 131,
+      "requirements": [
+        "NA-INT-004",
+        "NA-INT-005",
+        "NA-INT-007"
+      ],
+      "depends_on": [
+        "NA-130"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-132",
+      "alias": "I36",
+      "ordinal": 132,
+      "requirements": [
+        "NA-INT-003",
+        "NA-INT-004"
+      ],
+      "depends_on": [
+        "NA-131"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-133",
+      "alias": "I37",
+      "ordinal": 133,
+      "requirements": [
+        "NA-INT-003",
+        "NA-INT-004",
+        "NA-INT-006",
+        "NA-INT-007"
+      ],
+      "depends_on": [
+        "NA-132"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-134",
+      "alias": "I38",
+      "ordinal": 134,
+      "requirements": [
+        "NA-INT-003",
+        "NA-INT-004",
+        "NA-INT-006"
+      ],
+      "depends_on": [
+        "NA-133"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-135",
+      "alias": "I39",
+      "ordinal": 135,
+      "requirements": [
+        "NA-INT-004",
+        "NA-INT-006",
+        "NA-INT-007"
+      ],
+      "depends_on": [
+        "NA-134"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-136",
+      "alias": "I40",
+      "ordinal": 136,
+      "requirements": [
+        "NA-INT-005",
+        "NA-INT-007"
+      ],
+      "depends_on": [
+        "NA-135"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-137",
+      "alias": "E20",
+      "ordinal": 137,
+      "requirements": [
+        "NA-EX-002",
+        "NA-VER-001"
+      ],
+      "depends_on": [
+        "NA-013",
+        "NA-119",
+        "NA-136"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-138",
+      "alias": "E21",
+      "ordinal": 138,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002",
+        "NA-EX-003"
+      ],
+      "depends_on": [
+        "NA-137",
+        "NA-055",
+        "NA-056",
+        "NA-136",
+        "NA-116"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-139",
+      "alias": "E22",
+      "ordinal": 139,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002",
+        "NA-EX-003"
+      ],
+      "depends_on": [
+        "NA-137",
+        "NA-054",
+        "NA-138",
+        "NA-132"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-140",
+      "alias": "E23",
+      "ordinal": 140,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002"
+      ],
+      "depends_on": [
+        "NA-137",
+        "NA-138",
+        "NA-139",
+        "NA-130"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-141",
+      "alias": "E24",
+      "ordinal": 141,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002"
+      ],
+      "depends_on": [
+        "NA-137",
+        "NA-082",
+        "NA-139",
+        "NA-135"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-142",
+      "alias": "I41",
+      "ordinal": 142,
+      "requirements": [
+        "NA-INT-001",
+        "NA-INT-002",
+        "NA-INT-003",
+        "NA-INT-004",
+        "NA-INT-005",
+        "NA-INT-006",
+        "NA-INT-007"
+      ],
+      "depends_on": [
+        "NA-136",
+        "NA-138",
+        "NA-139",
+        "NA-140",
+        "NA-141"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-143",
+      "alias": "I42",
+      "ordinal": 143,
+      "requirements": [
+        "NA-INT-001",
+        "NA-INT-002",
+        "NA-INT-003",
+        "NA-INT-004",
+        "NA-INT-005",
+        "NA-INT-006",
+        "NA-INT-007"
+      ],
+      "depends_on": [
+        "NA-142"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-144",
+      "alias": "I43",
+      "ordinal": 144,
+      "requirements": [
+        "NA-INT-001",
+        "NA-INT-002",
+        "NA-INT-003",
+        "NA-INT-004",
+        "NA-INT-005",
+        "NA-INT-006",
+        "NA-INT-007"
+      ],
+      "depends_on": [
+        "NA-143"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-145",
+      "alias": "E29",
+      "ordinal": 145,
+      "requirements": [
+        "NA-VER-001",
+        "NA-DOC-001"
+      ],
+      "depends_on": [
+        "NA-009",
+        "NA-013",
+        "NA-014",
+        "NA-076"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-146",
+      "alias": "E30",
+      "ordinal": 146,
+      "requirements": [
+        "NA-VER-003"
+      ],
+      "depends_on": [
+        "NA-094"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-147",
+      "alias": "E31",
+      "ordinal": 147,
+      "requirements": [
+        "NA-VER-003"
+      ],
+      "depends_on": [
+        "NA-146",
+        "NA-087"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-148",
+      "alias": "E32",
+      "ordinal": 148,
+      "requirements": [
+        "NA-VER-003"
+      ],
+      "depends_on": [
+        "NA-147"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-149",
+      "alias": "E33",
+      "ordinal": 149,
+      "requirements": [
+        "NA-VER-004"
+      ],
+      "depends_on": [
+        "NA-148",
+        "NA-009"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-150",
+      "alias": "E34",
+      "ordinal": 150,
+      "requirements": [
+        "NA-VER-004"
+      ],
+      "depends_on": [
+        "NA-149",
+        "NA-144"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-151",
+      "alias": "E35",
+      "ordinal": 151,
+      "requirements": [
+        "NA-VER-005"
+      ],
+      "depends_on": [
+        "NA-086",
+        "NA-082",
+        "NA-146",
+        "NA-076"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-152",
+      "alias": "E36",
+      "ordinal": 152,
+      "requirements": [
+        "NA-VER-005"
+      ],
+      "depends_on": [
+        "NA-009",
+        "NA-151"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-153",
+      "alias": "E37",
+      "ordinal": 153,
+      "requirements": [
+        "NA-VER-005",
+        "NA-VER-001"
+      ],
+      "depends_on": [
+        "NA-015",
+        "NA-145",
+        "NA-151",
+        "NA-132"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-154",
+      "alias": "E38",
+      "ordinal": 154,
+      "requirements": [
+        "NA-VER-005",
+        "NA-VER-004"
+      ],
+      "depends_on": [
+        "NA-009",
+        "NA-151",
+        "NA-075"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-155",
+      "alias": "E39",
+      "ordinal": 155,
+      "requirements": [
+        "NA-VER-005"
+      ],
+      "depends_on": [
+        "NA-151",
+        "NA-009"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-156",
+      "alias": "E40",
+      "ordinal": 156,
+      "requirements": [
+        "NA-VER-005",
+        "NA-VER-003"
+      ],
+      "depends_on": [
+        "NA-148",
+        "NA-009",
+        "NA-098"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-157",
+      "alias": "E41",
+      "ordinal": 157,
+      "requirements": [
+        "NA-VER-001",
+        "NA-EX-002"
+      ],
+      "depends_on": [
+        "NA-088",
+        "NA-145",
+        "NA-150",
+        "NA-152",
+        "NA-153",
+        "NA-154",
+        "NA-155",
+        "NA-156"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-158",
+      "alias": "E42",
+      "ordinal": 158,
+      "requirements": [
+        "NA-DOC-001",
+        "NA-EX-001",
+        "NA-REL-001"
+      ],
+      "depends_on": [
+        "NA-157",
+        "NA-053",
+        "NA-054",
+        "NA-055",
+        "NA-056",
+        "NA-077",
+        "NA-078",
+        "NA-079",
+        "NA-080",
+        "NA-081",
+        "NA-082",
+        "NA-083",
+        "NA-084",
+        "NA-085",
+        "NA-086",
+        "NA-138",
+        "NA-139",
+        "NA-140",
+        "NA-141",
+        "NA-088",
+        "NA-093"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-159",
+      "alias": "E43",
+      "ordinal": 159,
+      "requirements": [
+        "NA-EX-003",
+        "NA-EX-002"
+      ],
+      "depends_on": [
+        "NA-158",
+        "NA-138",
+        "NA-139"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-160",
+      "alias": "E44",
+      "ordinal": 160,
+      "requirements": [
+        "NA-EX-001",
+        "NA-EX-002"
+      ],
+      "depends_on": [
+        "NA-159"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-161",
+      "alias": "E45",
+      "ordinal": 161,
+      "requirements": [
+        "NA-VER-001",
+        "NA-VER-002",
+        "NA-VER-003",
+        "NA-VER-004"
+      ],
+      "depends_on": [
+        "NA-160",
+        "NA-076",
+        "NA-003"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-162",
+      "alias": "E46",
+      "ordinal": 162,
+      "requirements": [
+        "NA-VER-001",
+        "NA-VER-002",
+        "NA-VER-003",
+        "NA-VER-004"
+      ],
+      "depends_on": [
+        "NA-161"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-163",
+      "alias": "E47",
+      "ordinal": 163,
+      "requirements": [
+        "NA-VER-005",
+        "NA-VER-002"
+      ],
+      "depends_on": [
+        "NA-162",
+        "NA-152",
+        "NA-153",
+        "NA-154",
+        "NA-156"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-164",
+      "alias": "E48",
+      "ordinal": 164,
+      "requirements": [
+        "NA-VER-005",
+        "NA-REL-001"
+      ],
+      "depends_on": [
+        "NA-163",
+        "NA-007"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-165",
+      "alias": "G09",
+      "ordinal": 165,
+      "requirements": [
+        "NA-GOV-003",
+        "NA-GOV-002",
+        "NA-EX-001",
+        "NA-VER-005",
+        "NA-DOC-001",
+        "NA-REL-001"
+      ],
+      "depends_on": [
+        "NA-164"
+      ],
+      "status": "planned",
+      "report": null
+    },
+    {
+      "id": "NA-166",
+      "alias": "E49",
+      "ordinal": 166,
+      "requirements": [
+        "NA-DOC-001",
+        "NA-REL-001",
+        "NA-EX-001",
+        "NA-VER-005"
+      ],
+      "depends_on": [
+        "NA-164",
+        "NA-165"
+      ],
+      "status": "planned",
+      "report": null
+    }
+  ]
+}

@@ -8997,3 +8997,12 @@ sequence is RCLD 141 through RCLD 146. Historical v18 records remain immutable.
 4. RCLD 144 binds final public evidence and runs qualification twice.
 5. RCLD 145 supplies independently produced opaque compatibility assurance.
 6. RCLD 146 imports opaque evidence and completes terminal descendant attestation.
+
+# Current execution navigation
+
+The approved post-v19 program is
+`implementation/nostr_automerge_alignment_refactor_v1/COMMIT_SEQUENCE.md` with
+governing RCLD `docs/execution/rcl/nostr_automerge_alignment_refactor_v1.md`.
+The contents above retain the original append-only historical plan. Validate
+its historical fingerprint at its owning Git revision; do not infer current
+progress from this navigation file.

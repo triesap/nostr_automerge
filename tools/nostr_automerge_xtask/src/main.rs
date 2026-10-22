@@ -2,6 +2,7 @@
 
 use std::process::ExitCode;
 
+mod alignment;
 mod checkpoint_report;
 mod requirements;
 mod sbom;

@@ -9,11 +9,18 @@ Read and follow, in order:
 1. `spec/NIP_DRAFT.md`;
 2. `spec/NOSTR_AUTOMERGE_V1_SPEC.md` and focused contracts under `spec/`;
 3. `spec/requirements.json`, approved ADRs, and fixture expectations;
-4. `docs/execution/rcl/nostr_automerge_v1_multi_rcld_v19.md`;
+4. the adopted `spec/nostr_automerge_alignment_refactor_v1/` contracts and
+   `docs/execution/rcl/nostr_automerge_alignment_refactor_v1.md`;
 5. the active RCLD and checkpoint in that governing document;
-6. `implementation/COMMIT_SEQUENCE.md`.
+6. `implementation/nostr_automerge_alignment_refactor_v1/COMMIT_SEQUENCE.md`,
+   its authority and mechanically validated ledger.
 
-For the active assurance-closure follow-up, also read
+The alignment ledger governs the current post-v19 task. Preserve the recorded
+NA-001–NA-005 bootstrap exception before merging otherwise separate steps.
+Current specification/ledger validation and immutable historical evidence have
+distinct owners; a historical pass is not current runtime qualification.
+
+For the completed historical assurance-closure follow-up, also read
 `spec/remediation_v19_authority.json`,
 `implementation/runtime_ledger_v19.json`, and
 `docs/execution/remediation_v19/baseline.md`. RCLD 141 through RCLD 146 append

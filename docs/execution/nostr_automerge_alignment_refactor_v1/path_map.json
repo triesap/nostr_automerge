@@ -1,0 +1,171 @@
+{
+  "schema": "nostr_automerge.alignment_path_map.v1",
+  "program": "nostr_automerge_alignment_refactor_v1",
+  "reviewed_commit": "5085fd30f873396c8e882a8cd7c5aec241e73824",
+  "baseline_commit": "e2faf8fea65f23479a70009c5d9531b881838c0e",
+  "documents": [
+    {
+      "input_document": "specs/ACCEPTANCE_CRITERIA.md",
+      "original_sha256": "74f38d7868e2624fc282ec7a83fb3eb35ffab2315d75c523bd4cf0737c49c023",
+      "path": "spec/nostr_automerge_alignment_refactor_v1/ACCEPTANCE_CRITERIA.md",
+      "adopted_sha256": "5384ed5c7381a2dc93f3f03866c85bebf2916977cb5df28e9af5e3e2f8e501c0"
+    },
+    {
+      "input_document": "specs/API_CONTRACTS.md",
+      "original_sha256": "dae17c8aa20f1dad579731a3956e37b84d4d54f3fe3b898a7826f69584522a63",
+      "path": "spec/nostr_automerge_alignment_refactor_v1/API_CONTRACTS.md",
+      "adopted_sha256": "7f705c9f1e40de0c400212f33fd67fdea3489fc45f6363ba2e80e119c7e87562"
+    },
+    {
+      "input_document": "specs/ARCHITECTURE.md",
+      "original_sha256": "5ca345cc8dc5471bff9cb060897dbd60225ce216286f007dd9e2a34b250defa4",
+      "path": "spec/nostr_automerge_alignment_refactor_v1/ARCHITECTURE.md",
+      "adopted_sha256": "994077116d5839df966e520a299cab3144c332f99fb625a19550722b9974994f"
+    },
+    {
+      "input_document": "specs/COMPATIBILITY_AND_SAFETY.md",
+      "original_sha256": "b217d1eea87d729c62e491a75957283f411cce6f2992a6aa509a6c5c268be03e",
+      "path": "spec/nostr_automerge_alignment_refactor_v1/COMPATIBILITY_AND_SAFETY.md",
+      "adopted_sha256": "f1a141530f94fd66d386aa75ee44d528d1e1b77f9ddc31c7b6a33e25e01868db"
+    },
+    {
+      "input_document": "specs/DATA_MODEL.md",
+      "original_sha256": "b53e34ea03c3ed1d3b82b650a9645cd5f1002e66f4dfd2feb7dc1b418c846309",
+      "path": "spec/nostr_automerge_alignment_refactor_v1/DATA_MODEL.md",
+      "adopted_sha256": "af6dff9a463abe0552db36f34a911ad25b016fc719e618c53475f08f6c928dda"
+    },
+    {
+      "input_document": "specs/EXAMPLES_CATALOG.md",
+      "original_sha256": "ad91eb89854d174a3e9e1fa68f6d66505e9a7c437e26e6af09ebf74916743986",
+      "path": "spec/nostr_automerge_alignment_refactor_v1/EXAMPLES_CATALOG.md",
+      "adopted_sha256": "d42ee922ac4093f47217e7cae510d15cc977bc96a65a418bb2cc040db36fee4a"
+    },
+    {
+      "input_document": "specs/INTEGRATION_CONTRACT.md",
+      "original_sha256": "5c16bd48b57fe71510e390d506b529782e89f451ae4e89b51167f6f42b8186fc",
+      "path": "spec/nostr_automerge_alignment_refactor_v1/INTEGRATION_CONTRACT.md",
+      "adopted_sha256": "d2a574b7a9a7771435f557f29527029d3345b6c63ad9d34a9a3a8a56c4cd4b5b"
+    },
+    {
+      "input_document": "specs/PRODUCT_SPEC.md",
+      "original_sha256": "e358e1ac1158ae17c5f3328de088038d18d1ee9bee4a61ddeff001a6de350d1f",
+      "path": "spec/nostr_automerge_alignment_refactor_v1/PRODUCT_SPEC.md",
+      "adopted_sha256": "47c66d5b54ed319e02e196c801b9c6192bb0cf9112acbe5cde415588cceae9f3"
+    },
+    {
+      "input_document": "specs/examples_plan.json",
+      "original_sha256": "a0419709cd10e8e92750cb1184a90a84e721cac65f9429292dba22cc149a605c",
+      "path": "spec/nostr_automerge_alignment_refactor_v1/examples_plan.json",
+      "adopted_sha256": "a0419709cd10e8e92750cb1184a90a84e721cac65f9429292dba22cc149a605c"
+    },
+    {
+      "input_document": "specs/requirements.json",
+      "original_sha256": "b1b1266c848919a7b5e07f32fbf579433f46cb44a59f495a0c6cb582a240cc58",
+      "path": "spec/nostr_automerge_alignment_refactor_v1/requirements.json",
+      "adopted_sha256": "3ec1999cfca175990b5638562e6462a692e26dc804a118ea953882b016a5a658"
+    },
+    {
+      "input_document": "implementation/COMMIT_SEQUENCE.md",
+      "original_sha256": "3ba8012d858985867071de3c0cd4d4bc6b15fe2c2b1e56b39ba39dbc24a4a848",
+      "path": "implementation/nostr_automerge_alignment_refactor_v1/COMMIT_SEQUENCE.md",
+      "adopted_sha256": "bb588fb36cfd41cf717b1dc447c7bc81c0d0caee86254d5b1738397d6d0cfc62"
+    },
+    {
+      "input_document": "implementation/DEVIATIONS.md",
+      "original_sha256": "9fe418b18896658cd87a716313cd06ebb7577889f544ccc11e18fbd735444a69",
+      "path": "implementation/nostr_automerge_alignment_refactor_v1/DEVIATIONS.md",
+      "adopted_sha256": "7d3bbde088e2d595b5c5b77b3f7b3e2adab812272c40925de5637e34c8874dc3"
+    },
+    {
+      "input_document": "implementation/OPEN_QUESTIONS.md",
+      "original_sha256": "647d400b4c06d679275662dcb70e6ac596f3c5bc0f306fcfeaa1d41de29ca254",
+      "path": "implementation/nostr_automerge_alignment_refactor_v1/OPEN_QUESTIONS.md",
+      "adopted_sha256": "deef4885b1a185b38ad50e3c731ad5d833b085ae19b39358be4643a295560b48"
+    },
+    {
+      "input_document": "implementation/STATUS.md",
+      "original_sha256": "fb7dc94bd0e6a21e3a70593de9a1a50937755d94bb68448624db9222f844ecfa",
+      "path": "implementation/nostr_automerge_alignment_refactor_v1/STATUS.md",
+      "adopted_sha256": "9af33d4eab60040616cf0e3643aa2aaf740ed4fe19da05022d34c67cd33ee9de"
+    },
+    {
+      "input_document": "implementation/STEP_INDEX.md",
+      "original_sha256": "b390c9bd9be877bd42b6d93a2a3d083b9a556d8919fdb8a7306d6acccdf0cce0",
+      "path": "implementation/nostr_automerge_alignment_refactor_v1/STEP_INDEX.md",
+      "adopted_sha256": "e511ba506e2626fff95899243915e49ed629fd62994fdec0092e74e6e4cbd1a8"
+    },
+    {
+      "input_document": "implementation/STEP_REPORT_TEMPLATE.md",
+      "original_sha256": "d5c157f6fd5784819087df75f1f5062a32c4f1a994a9a29961228dddd54c543e",
+      "path": "implementation/nostr_automerge_alignment_refactor_v1/STEP_REPORT_TEMPLATE.md",
+      "adopted_sha256": "70b96aa1e192f9d7208f000d912dc3f81ed563defb1ea1b91789ebedc08535a1"
+    },
+    {
+      "input_document": "implementation/TEST_PLAN.md",
+      "original_sha256": "baef42b7807b9eb92977a578f415654363b3e886c05bf6591298c82f0b7921de",
+      "path": "implementation/nostr_automerge_alignment_refactor_v1/TEST_PLAN.md",
+      "adopted_sha256": "8c179ad807a16907dffba7a4cb410dc001ab89e4882b9f532a8a804f8a7ff8aa"
+    },
+    {
+      "input_document": "implementation/TRACEABILITY.csv",
+      "original_sha256": "6b60811889020a57c40800757a5999eb23c6365b79a5775f1baa2fa7b23385ab",
+      "path": "implementation/nostr_automerge_alignment_refactor_v1/TRACEABILITY.csv",
+      "adopted_sha256": "df7cac7b435c3e774f6a54c08fb63cb81f4b65b04a4e7e2fd8859b0b296db559"
+    },
+    {
+      "input_document": "implementation/VERIFICATION.md",
+      "original_sha256": "affff72875c5324a7aa0543962c2cc0591541a904bffca91fa77960dbe0b3f1b",
+      "path": "implementation/nostr_automerge_alignment_refactor_v1/VERIFICATION.md",
+      "adopted_sha256": "85b19917007bff0812c00aaea9c934aee9a60fd755c48582d21c167640ca9e0d"
+    },
+    {
+      "input_document": "implementation/step_aliases.json",
+      "original_sha256": "ba090379718410f4455a5a0e5e8b2f9518219dac663c91f4f7781f27b3fa37ad",
+      "path": "implementation/nostr_automerge_alignment_refactor_v1/step_aliases.json",
+      "adopted_sha256": "ba090379718410f4455a5a0e5e8b2f9518219dac663c91f4f7781f27b3fa37ad"
+    },
+    {
+      "input_document": "implementation/steps.json",
+      "original_sha256": "158a90bc6151ef45a9bee3396b611eebc2cb8d3e9cdebb788f93c6ba638c9d05",
+      "path": "implementation/nostr_automerge_alignment_refactor_v1/steps.json",
+      "adopted_sha256": "5d4c782c75b8e934a514528e4389233d0657a4b0872a966ca0d1e6c41b0135ca"
+    },
+    {
+      "input_document": "decisions/ADR-0001-core-and-companion-boundary.md",
+      "original_sha256": "76b1879a00908f7552037fd2023ab44f6ae2cd5437f59b66af4483cbfe19e462",
+      "path": "spec/nostr_automerge_alignment_refactor_v1/decisions/ADR-0001-core-and-companion-boundary.md",
+      "adopted_sha256": "8f316152f7fa8d752d0162d993dc724c7f35cfb931c2125d1bad53c3253404d0"
+    },
+    {
+      "input_document": "decisions/ADR-0002-authoritative-authoring-state.md",
+      "original_sha256": "64ece6ad075e412e699cc18880481b845bf1e9d3831d9f240faa36579fff13f1",
+      "path": "spec/nostr_automerge_alignment_refactor_v1/decisions/ADR-0002-authoritative-authoring-state.md",
+      "adopted_sha256": "809eed4f2f6ceba4cd05855bd570654bda095acb45c37ada0db6be940ec27637"
+    },
+    {
+      "input_document": "decisions/ADR-0003-checkpoint-framing-and-candidates.md",
+      "original_sha256": "888afbe548f9c5ed8a690f7dfe0df1e5fb39404f1c39dc5a75c1a2d4e9c34e81",
+      "path": "spec/nostr_automerge_alignment_refactor_v1/decisions/ADR-0003-checkpoint-framing-and-candidates.md",
+      "adopted_sha256": "ea72935e4c31cb84f9805abae36896755cf810a7230560867983c0e85513a8cb"
+    },
+    {
+      "input_document": "decisions/ADR-0004-durable-authoring-and-outbox.md",
+      "original_sha256": "dffa4814ea63a65d33e46a5ec0914318933f2a5a5ea4f3581e1c7be26563f622",
+      "path": "spec/nostr_automerge_alignment_refactor_v1/decisions/ADR-0004-durable-authoring-and-outbox.md",
+      "adopted_sha256": "ca23e535485804fc00b9977329a67f5144dfb93a566e3bacb7c4730b88953da5"
+    },
+    {
+      "input_document": "decisions/ADR-0005-executable-examples-and-evidence.md",
+      "original_sha256": "b3da707485f3fe5f6166ebd14951b33016f6fa6ce7c00e6e4e42bb837a91b484",
+      "path": "spec/nostr_automerge_alignment_refactor_v1/decisions/ADR-0005-executable-examples-and-evidence.md",
+      "adopted_sha256": "fbc9016633a4e3314f99123ef7fe1ce5e1cebef8ad89b4067880d0d917fa1487"
+    }
+  ],
+  "new_governing_plan": "docs/execution/rcl/nostr_automerge_alignment_refactor_v1.md",
+  "ledger": "implementation/nostr_automerge_alignment_refactor_v1/ledger.json",
+  "provenance": {
+    "findings": "docs/execution/nostr_automerge_alignment_refactor_v1/review_findings.md",
+    "historical_verification": "docs/execution/nostr_automerge_alignment_refactor_v1/review_verification_baseline.md",
+    "sources": "docs/execution/nostr_automerge_alignment_refactor_v1/sources.md"
+  }
+}

@@ -1,0 +1,365 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nostr_automerge_alignment_refactor_v1.ledger.1",
+  "description": "Shape contract. validate_plan.py additionally enforces original identities, prefix prerequisites, preserved holds, actual Git ancestry and source-before-observation evidence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "program",
+    "active_step",
+    "next_step",
+    "holds",
+    "bootstrap",
+    "steps"
+  ],
+  "properties": {
+    "schema": {
+      "const": "nostr_automerge_alignment_refactor_v1.ledger.1"
+    },
+    "program": {
+      "const": "nostr_automerge_alignment_refactor_v1"
+    },
+    "active_step": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^NA-[0-9]{3}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "next_step": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^NA-[0-9]{3}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "holds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "bootstrap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deviation",
+        "steps",
+        "source_commit",
+        "receipt_commit"
+      ],
+      "properties": {
+        "deviation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "steps": {
+          "const": [
+            "NA-001",
+            "NA-002",
+            "NA-003",
+            "NA-004",
+            "NA-005"
+          ]
+        },
+        "source_commit": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "receipt_commit": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "alias",
+          "ordinal",
+          "requirements",
+          "depends_on",
+          "status",
+          "report"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^NA-[0-9]{3}$"
+          },
+          "alias": {
+            "type": "string",
+            "minLength": 1
+          },
+          "ordinal": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 166
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^NA-[0-9]{3}$"
+            },
+            "uniqueItems": true
+          },
+          "status": {
+            "enum": [
+              "planned",
+              "active",
+              "complete",
+              "blocked"
+            ]
+          },
+          "report": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "source_commit",
+                  "observation_base",
+                  "files",
+                  "commands",
+                  "acceptance",
+                  "self_review",
+                  "review",
+                  "deviations",
+                  "unverified",
+                  "next_step_safety"
+                ],
+                "properties": {
+                  "source_commit": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{40}$"
+                  },
+                  "observation_base": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{40}$"
+                  },
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1
+                  },
+                  "commands": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "command",
+                        "kind",
+                        "status",
+                        "exit_code",
+                        "result",
+                        "evidence",
+                        "toolchain",
+                        "counts"
+                      ],
+                      "properties": {
+                        "command": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "kind": {
+                          "enum": [
+                            "executed",
+                            "historical_receipt_validation",
+                            "external_attestation"
+                          ]
+                        },
+                        "status": {
+                          "const": "passed"
+                        },
+                        "exit_code": {
+                          "const": 0
+                        },
+                        "result": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "evidence": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "toolchain": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "counts": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "tests",
+                            "scenarios"
+                          ],
+                          "properties": {
+                            "tests": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "scenarios": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "minItems": 1
+                  },
+                  "acceptance": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "criterion",
+                        "status",
+                        "evidence"
+                      ],
+                      "properties": {
+                        "criterion": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "status": {
+                          "const": "passed"
+                        },
+                        "evidence": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    },
+                    "minItems": 1
+                  },
+                  "self_review": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "status",
+                      "evidence"
+                    ],
+                    "properties": {
+                      "status": {
+                        "const": "passed"
+                      },
+                      "evidence": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  },
+                  "review": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "status",
+                      "evidence",
+                      "kind"
+                    ],
+                    "properties": {
+                      "status": {
+                        "const": "passed"
+                      },
+                      "evidence": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "kind": {
+                        "const": "fresh_adversarial"
+                      }
+                    }
+                  },
+                  "deviations": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "unverified": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "next_step_safety": {
+                    "enum": [
+                      "safe",
+                      "safe with documented pre-existing issue"
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "minItems": 166,
+      "maxItems": 166
+    }
+  }
+}

@@ -1,0 +1,254 @@
+{
+  "schema": "nostr_automerge_alignment_refactor_v1.aliases.1",
+  "aliases": {
+    "G01": "NA-001",
+    "G02": "NA-002",
+    "G03": "NA-003",
+    "G04": "NA-004",
+    "G05": "NA-005",
+    "G06": "NA-006",
+    "G07": "NA-007",
+    "G08": "NA-008",
+    "E28": "NA-009",
+    "E01": "NA-010",
+    "E02": "NA-011",
+    "E03": "NA-012",
+    "E04": "NA-013",
+    "E25": "NA-014",
+    "E26": "NA-015",
+    "C01": "NA-016",
+    "C02": "NA-017",
+    "C03": "NA-018",
+    "C04": "NA-019",
+    "C05": "NA-020",
+    "C06": "NA-021",
+    "C07": "NA-022",
+    "C08": "NA-023",
+    "C09": "NA-024",
+    "C10": "NA-025",
+    "C11": "NA-026",
+    "C12": "NA-027",
+    "C13": "NA-028",
+    "C14": "NA-029",
+    "C15": "NA-030",
+    "C16": "NA-031",
+    "C61": "NA-032",
+    "C62": "NA-033",
+    "C63": "NA-034",
+    "C17": "NA-035",
+    "C18": "NA-036",
+    "C19": "NA-037",
+    "C20": "NA-038",
+    "C21": "NA-039",
+    "C22": "NA-040",
+    "C23": "NA-041",
+    "C24": "NA-042",
+    "C25": "NA-043",
+    "C26": "NA-044",
+    "C27": "NA-045",
+    "C28": "NA-046",
+    "C29": "NA-047",
+    "C30": "NA-048",
+    "C31": "NA-049",
+    "C32": "NA-050",
+    "C33": "NA-051",
+    "C34": "NA-052",
+    "E05": "NA-053",
+    "E06": "NA-054",
+    "E07": "NA-055",
+    "E08": "NA-056",
+    "C35": "NA-057",
+    "C36": "NA-058",
+    "C37": "NA-059",
+    "C38": "NA-060",
+    "C39": "NA-061",
+    "C40": "NA-062",
+    "C41": "NA-063",
+    "C42": "NA-064",
+    "C43": "NA-065",
+    "C44": "NA-066",
+    "C45": "NA-067",
+    "C46": "NA-068",
+    "C47": "NA-069",
+    "C48": "NA-070",
+    "C49": "NA-071",
+    "C50": "NA-072",
+    "C51": "NA-073",
+    "C52": "NA-074",
+    "C53": "NA-075",
+    "C54": "NA-076",
+    "E09": "NA-077",
+    "E10": "NA-078",
+    "E11": "NA-079",
+    "E12": "NA-080",
+    "E13": "NA-081",
+    "E14": "NA-082",
+    "E15": "NA-083",
+    "E16": "NA-084",
+    "E17": "NA-085",
+    "E18": "NA-086",
+    "E19": "NA-087",
+    "E27": "NA-088",
+    "C55": "NA-089",
+    "C56": "NA-090",
+    "C57": "NA-091",
+    "C58": "NA-092",
+    "C59": "NA-093",
+    "C60": "NA-094",
+    "I01": "NA-095",
+    "I02": "NA-096",
+    "I03": "NA-097",
+    "I04": "NA-098",
+    "I05": "NA-099",
+    "I06": "NA-100",
+    "I07": "NA-101",
+    "I08": "NA-102",
+    "I09": "NA-103",
+    "I10": "NA-104",
+    "I11": "NA-105",
+    "I12": "NA-106",
+    "I13": "NA-107",
+    "I14": "NA-108",
+    "I15": "NA-109",
+    "I16": "NA-110",
+    "I17": "NA-111",
+    "I18": "NA-112",
+    "I19": "NA-113",
+    "I20": "NA-114",
+    "I44": "NA-115",
+    "I45": "NA-116",
+    "I21": "NA-117",
+    "I22": "NA-118",
+    "I23": "NA-119",
+    "I24": "NA-120",
+    "I25": "NA-121",
+    "I26": "NA-122",
+    "I27": "NA-123",
+    "I28": "NA-124",
+    "I29": "NA-125",
+    "I30": "NA-126",
+    "I31": "NA-127",
+    "I32": "NA-128",
+    "I33": "NA-129",
+    "I34": "NA-130",
+    "I35": "NA-131",
+    "I36": "NA-132",
+    "I37": "NA-133",
+    "I38": "NA-134",
+    "I39": "NA-135",
+    "I40": "NA-136",
+    "E20": "NA-137",
+    "E21": "NA-138",
+    "E22": "NA-139",
+    "E23": "NA-140",
+    "E24": "NA-141",
+    "I41": "NA-142",
+    "I42": "NA-143",
+    "I43": "NA-144",
+    "E29": "NA-145",
+    "E30": "NA-146",
+    "E31": "NA-147",
+    "E32": "NA-148",
+    "E33": "NA-149",
+    "E34": "NA-150",
+    "E35": "NA-151",
+    "E36": "NA-152",
+    "E37": "NA-153",
+    "E38": "NA-154",
+    "E39": "NA-155",
+    "E40": "NA-156",
+    "E41": "NA-157",
+    "E42": "NA-158",
+    "E43": "NA-159",
+    "E44": "NA-160",
+    "E45": "NA-161",
+    "E46": "NA-162",
+    "E47": "NA-163",
+    "E48": "NA-164",
+    "G09": "NA-165",
+    "E49": "NA-166"
+  },
+  "resolved_prerequisites": {
+    "ALIGNMENT_CURRENT_AUTHORITY_ROUTE": [
+      "NA-005"
+    ],
+    "CORE_PUBLIC_EVENT_DRAFTS": [
+      "NA-001"
+    ],
+    "CORE_REPORT_AUTHORING_BRIDGE": [
+      "NA-031"
+    ],
+    "CORE_ACTOR_CONTINUATION_FIXED": [
+      "NA-024"
+    ],
+    "CORE_FULL_OPERATION_API": [
+      "NA-052"
+    ],
+    "CORE_CONTROL_LIFECYCLE_CONTRACT": [
+      "NA-027"
+    ],
+    "CORE_CHECKPOINT_FIXES": [
+      "NA-076"
+    ],
+    "CORE_CHECKPOINT_AUTHORING": [
+      "NA-065"
+    ],
+    "CORE_RESOURCE_ACCOUNTING_CONTRACT": [
+      "NA-075"
+    ],
+    "CORE_BOUNDED_FAN_IN": [
+      "NA-061"
+    ],
+    "CURRENT_DISTRIBUTION_SELECTED": [
+      "NA-076"
+    ],
+    "PRIVATE_INTEROP_BOUNDARY_APPROVED": [
+      "NA-002"
+    ],
+    "CORE_CURRENT_PROOF_MANIFEST_READY": [
+      "NA-076"
+    ],
+    "CORE_PACKAGE_TEST_BOUNDARY_READY": [
+      "NA-094"
+    ],
+    "CORE_PUBLIC_API_DOCUMENTED": [
+      "NA-093"
+    ],
+    "INTEGRATION_TRANSPORT_CONTRACT": [
+      "NA-119"
+    ],
+    "INTEGRATION_RELAY_CLIENT_READY": [
+      "NA-136"
+    ],
+    "INTEGRATION_DURABLE_OUTBOX_READY": [
+      "NA-132"
+    ],
+    "INTEGRATION_RECOVERY_READY": [
+      "NA-130"
+    ],
+    "INTEGRATION_BACKUP_FORMAT_READY": [
+      "NA-135"
+    ],
+    "INTEGRATION_PLATFORM_STORAGE_CONTRACT": [
+      "NA-144"
+    ],
+    "INTEGRATION_DEPENDENCIES_PINNED": [
+      "NA-098"
+    ],
+    "ALIGNMENT_EVIDENCE_LIFECYCLE_READY": [
+      "NA-003"
+    ],
+    "EXTERNAL_QUALIFICATION_ENVIRONMENT_READY": [
+      "NA-152",
+      "NA-153",
+      "NA-154",
+      "NA-156"
+    ],
+    "ALIGNMENT_THREAT_MODEL_READY": [
+      "NA-007"
+    ],
+    "ALIGNMENT_FINAL_REQUIREMENTS_RECONCILED": [
+      "NA-165"
+    ]
+  }
+}

@@ -1,0 +1,193 @@
+{
+  "schema": "nostr_automerge_alignment_refactor_v1.example_plan.1",
+  "status": "planned_not_implemented",
+  "required_count": 19,
+  "priority_path": [
+    "signed_round_trip",
+    "authoring_resume",
+    "concurrent_offline_merge",
+    "dependency_recovery",
+    "relay_round_trip",
+    "durable_outbox"
+  ],
+  "scenarios": [
+    {
+      "id": "signed_round_trip",
+      "path": "examples/core/signed_round_trip/",
+      "layer": "core",
+      "lane": "core",
+      "step": "NA-053",
+      "alias": "E05",
+      "status": "planned"
+    },
+    {
+      "id": "authoring_resume",
+      "path": "examples/core/authoring_resume/",
+      "layer": "core",
+      "lane": "core",
+      "step": "NA-054",
+      "alias": "E06",
+      "status": "planned"
+    },
+    {
+      "id": "concurrent_offline_merge",
+      "path": "examples/core/concurrent_offline_merge/",
+      "layer": "core",
+      "lane": "core",
+      "step": "NA-055",
+      "alias": "E07",
+      "status": "planned"
+    },
+    {
+      "id": "data_model",
+      "path": "examples/core/data_model/",
+      "layer": "core",
+      "lane": "core",
+      "step": "NA-077",
+      "alias": "E09",
+      "status": "planned"
+    },
+    {
+      "id": "dependency_recovery",
+      "path": "examples/core/dependency_recovery/",
+      "layer": "core",
+      "lane": "core",
+      "step": "NA-056",
+      "alias": "E08",
+      "status": "planned"
+    },
+    {
+      "id": "authorization_lifecycle",
+      "path": "examples/core/authorization_lifecycle/",
+      "layer": "core",
+      "lane": "core",
+      "step": "NA-078",
+      "alias": "E10",
+      "status": "planned"
+    },
+    {
+      "id": "control_forks",
+      "path": "examples/core/control_forks/",
+      "layer": "core",
+      "lane": "core",
+      "step": "NA-079",
+      "alias": "E11",
+      "status": "planned"
+    },
+    {
+      "id": "device_equivocation",
+      "path": "examples/core/device_equivocation/",
+      "layer": "core",
+      "lane": "core",
+      "step": "NA-080",
+      "alias": "E12",
+      "status": "planned"
+    },
+    {
+      "id": "manifest_replacement",
+      "path": "examples/core/manifest_replacement/",
+      "layer": "core",
+      "lane": "core",
+      "step": "NA-081",
+      "alias": "E13",
+      "status": "planned"
+    },
+    {
+      "id": "verified_checkpoints",
+      "path": "examples/core/verified_checkpoints/",
+      "layer": "core",
+      "lane": "core",
+      "step": "NA-082",
+      "alias": "E14",
+      "status": "planned"
+    },
+    {
+      "id": "budgets_and_cancellation",
+      "path": "examples/core/budgets_and_cancellation/",
+      "layer": "core",
+      "lane": "core",
+      "step": "NA-083",
+      "alias": "E15",
+      "status": "planned"
+    },
+    {
+      "id": "invalid_and_unsupported",
+      "path": "examples/core/invalid_and_unsupported/",
+      "layer": "core",
+      "lane": "core",
+      "step": "NA-084",
+      "alias": "E16",
+      "status": "planned"
+    },
+    {
+      "id": "document_isolation",
+      "path": "examples/core/document_isolation/",
+      "layer": "core",
+      "lane": "core",
+      "step": "NA-085",
+      "alias": "E17",
+      "status": "planned"
+    },
+    {
+      "id": "frontier_fan_in",
+      "path": "examples/core/frontier_fan_in/",
+      "layer": "core",
+      "lane": "core",
+      "step": "NA-086",
+      "alias": "E18",
+      "status": "planned"
+    },
+    {
+      "id": "relay_round_trip",
+      "path": "examples/integration/relay_round_trip/",
+      "layer": "integration",
+      "lane": "local_relay",
+      "step": "NA-138",
+      "alias": "E21",
+      "status": "planned"
+    },
+    {
+      "id": "durable_outbox",
+      "path": "examples/integration/durable_outbox/",
+      "layer": "integration",
+      "lane": "local_relay",
+      "step": "NA-139",
+      "alias": "E22",
+      "status": "planned"
+    },
+    {
+      "id": "multi_relay_recovery",
+      "path": "examples/integration/multi_relay_recovery/",
+      "layer": "integration",
+      "lane": "local_relay",
+      "step": "NA-140",
+      "alias": "E23",
+      "status": "planned"
+    },
+    {
+      "id": "backup_restore",
+      "path": "examples/integration/backup_restore/",
+      "layer": "integration",
+      "lane": "local_relay",
+      "step": "NA-141",
+      "alias": "E24",
+      "status": "planned"
+    },
+    {
+      "id": "current_vectors",
+      "path": "examples/interop/current_vectors/",
+      "layer": "interop",
+      "lane": "interop_public",
+      "step": "NA-088",
+      "alias": "E27",
+      "status": "planned"
+    }
+  ],
+  "conditional_extensions": [
+    "extensions/nip77_reconciliation",
+    "extensions/external_signer",
+    "extensions/browser",
+    "extensions/private_transport",
+    "applications/collaborative_editor"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "schema": "nostr_automerge.alignment_source_map.v1",
+  "reviewed_commit": "5085fd30f873396c8e882a8cd7c5aec241e73824",
+  "baseline_commit": "e2faf8fea65f23479a70009c5d9531b881838c0e",
+  "historical_review_coverage": {
+    "rust_files": 177,
+    "python_scripts": 318,
+    "lines": 147518
+  },
+  "qualified_delta": {
+    "changed_files": 24,
+    "historical_json_and_signed_fixtures_changed": false
+  },
+  "areas": {
+    "authoring": "crates/nostr_automerge/src/authoring",
+    "adapter": "crates/nostr_automerge/src/automerge_adapter",
+    "checkpoints": "crates/nostr_automerge/src/checkpoint",
+    "evaluation": "crates/nostr_automerge/src/engine",
+    "control": "crates/nostr_automerge/src/control",
+    "graph": "crates/nostr_automerge/src/graph",
+    "evidence": "crates/nostr_automerge/src/evidence",
+    "conformance": "tools/nostr_automerge_conformance",
+    "repository_validation": "tools/nostr_automerge_xtask/src/validate.rs",
+    "legacy_validation": "scripts"
+  }
+}
