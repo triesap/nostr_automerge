@@ -12,6 +12,9 @@ Thanks for your interest in contributing to nostr_automerge.
 
 ## Development setup
 
+Use Rust 1.99.0, the pinned development toolchain and minimum supported version.
+The local runner manifest and Clippy MSRV must match that compiler floor.
+
 This repository is becoming a Rust workspace. Once the workspace foundation is
 present, the standard local checks are:
 

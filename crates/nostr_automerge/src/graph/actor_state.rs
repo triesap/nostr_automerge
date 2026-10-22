@@ -5295,7 +5295,7 @@ pub(crate) mod tests {
             Completion::BudgetExhausted,
         );
         assert_eq!(ample, Ok(()));
-        assert!(trace.chunks_exact(3).all(|events| {
+        assert!(trace.as_chunks::<3>().0.iter().all(|events| {
             matches!(events[0], FrontierTrace::Attempt(_))
                 && matches!(events[1], FrontierTrace::Charge(_))
                 && matches!(events[2], FrontierTrace::Operation(_))
@@ -6087,7 +6087,7 @@ pub(crate) mod tests {
         assert!(result.is_ok());
         assert!(!trace.is_empty());
         assert_eq!(trace.len() % 3, 0);
-        for events in trace.chunks_exact(3) {
+        for events in trace.as_chunks::<3>().0 {
             assert!(matches!(
                 events,
                 [

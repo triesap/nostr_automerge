@@ -78,7 +78,7 @@ def validate_report(value: object) -> None:
         "rust_toolchain_sha256": "rust-toolchain.toml",
     }
     for field, relative in expected_sources.items():
-        actual = historical_digest(relative) if field in {"fixture_generator_sha256", "runner_sha256"} else digest(relative)
+        actual = historical_digest(relative) if field in {"fixture_generator_sha256", "runner_sha256", "rust_toolchain_sha256"} else digest(relative)
         require(value[field] == actual, "report:source:" + field)
     require(value["scenario_count"] == 204 and value["fixture_rebinding_count"] == 9, "report:inventory")
     require(value["process_count"] == 2 and value["delivery_order_count"] == 8, "report:execution")
@@ -106,6 +106,7 @@ def self_test(report: dict[str, Any], schema: dict[str, Any]) -> int:
     for field, replacement in (
         ("base_candidate", "0" * 40), ("manifest_sha256", "0" * 64),
         ("manifest_lock_sha256", "0" * 64), ("runner_sha256", "0" * 64),
+        ("rust_toolchain_sha256", "0" * 64),
         ("scenario_count", 203), ("fixture_rebinding_count", 8),
         ("process_count", 1), ("delivery_order_count", 7),
         ("canonical_process_bytes", "different"), ("canonical_output_sha256", "0" * 64),

@@ -9108,7 +9108,9 @@ fn signed_change_ingest_requires_canonical_actor_hash_control_and_bytes() {
         include_str!("../../../fixtures/v1_draft/automerge_framing/compressed_change_chunk.hex")
             .trim()
             .as_bytes()
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|pair| {
                 u8::from_str_radix(std::str::from_utf8(pair).expect("hex pair"), 16)
                     .expect("fixture hex")

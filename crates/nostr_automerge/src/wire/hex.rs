@@ -13,7 +13,7 @@ pub(crate) fn decode_bytes<const N: usize>(value: &str) -> Result<[u8; N], HexEr
         return Err(HexError::InvalidLength);
     }
     let mut output = [0_u8; N];
-    for (index, pair) in input.chunks_exact(2).enumerate() {
+    for (index, pair) in input.as_chunks::<2>().0.iter().enumerate() {
         output[index] = (nibble(pair[0])? << 4) | nibble(pair[1])?;
     }
     Ok(output)

@@ -47,9 +47,19 @@ def canonical(value: object) -> bytes:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
 
 
+def historical_compiler_digest() -> str:
+    completed = subprocess.run(
+        ["git", "show", f"{SOURCE_CANDIDATE}:rust-toolchain.toml"],
+        cwd=ROOT, capture_output=True, check=False,
+    )
+    require(completed.returncode == 0, "source:candidate:rust-toolchain.toml")
+    return hashlib.sha256(completed.stdout).hexdigest()
+
+
 def expected_report() -> dict[str, object]:
     for path, expected in SOURCES.values():
-        require(hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == expected, "source:" + path)
+        actual = historical_compiler_digest() if path == "rust-toolchain.toml" else hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
+        require(actual == expected, "source:" + path)
     value = {
         "schema": "nostr_automerge.rust_conformance.v16.v1", "status": "pass", "source_candidate": SOURCE_CANDIDATE,
         **{field: expected for field, (_, expected) in SOURCES.items()},
@@ -74,6 +84,7 @@ def validate(report: object, schema: object) -> None:
 
 def self_test(report: dict, schema: dict) -> int:
     cases = [("report", lambda value: value.update(source_candidate="0" * 40)), ("report", lambda value: value.update(manifest_sha256="0" * 64)), ("report", lambda value: value.update(transition_sha256="0" * 64)), ("report", lambda value: value.update(fixture_rebinding_count=9)), ("report", lambda value: value.update(signed_event_count=770)), ("report", lambda value: value.update(process_count=1)), ("report", lambda value: value.update(canonical_output_sha256="0" * 64)), ("report", lambda value: value.update(serialized_run_sha256="0" * 64)), ("report", lambda value: value.update(deliberate_expectation_mismatch="accepted")), ("report", lambda value: value.update(result_identity_sha256="0" * 64)), ("report", lambda value: value.update(extra=False)), ("schema", lambda value: value.update(additionalProperties=True))]
+    cases.append(("report", lambda value: value.update(rust_toolchain_sha256="0" * 64)))
     caught = 0
     for target, mutate in cases:
         changed_report, changed_schema = copy.deepcopy(report), copy.deepcopy(schema)

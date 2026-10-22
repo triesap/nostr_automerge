@@ -96,6 +96,11 @@ policy permits them.
 
 ## Verification
 
+Current toolchain, package MSRV, Clippy and stable runner contracts use Rust
+1.99.0. Compiler maintenance is recorded in
+`implementation/deviations/rust_1_99_maintenance.md`; historical compiler reports
+remain evidence of their original candidates and must not be rewritten.
+
 GitHub-hosted workflows are prohibited. Tracked repository-owned commands
 contain the portable, reviewable gate logic. Any workflow orchestration is
 operator-owned, private, and external to this public repository; do not create

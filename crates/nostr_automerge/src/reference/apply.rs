@@ -53,7 +53,9 @@ mod tests {
         include_str!("../../../../fixtures/v1_draft/automerge_changes/basic/change.hex")
             .trim()
             .as_bytes()
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .filter_map(|pair| {
                 core::str::from_utf8(pair)
                     .ok()

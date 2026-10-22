@@ -214,7 +214,9 @@ mod tests {
             let bytes: Vec<u8> = encoded
                 .trim()
                 .as_bytes()
-                .chunks_exact(2)
+                .as_chunks::<2>()
+                .0
+                .iter()
                 .map(|pair| {
                     u8::from_str_radix(core::str::from_utf8(pair).expect("ASCII fixture"), 16)
                         .expect("hex fixture")

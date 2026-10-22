@@ -869,7 +869,7 @@ mod tests {
         let Ok(ample) = ample else { return };
         let trace = trace.into_inner();
         assert!(!trace.is_empty() && trace.len().is_multiple_of(2));
-        for pair in trace.chunks_exact(2) {
+        for pair in trace.as_chunks::<2>().0 {
             assert!(matches!(pair, [Trace::Charge(_), Trace::Operation(_)]));
         }
         let operations = trace

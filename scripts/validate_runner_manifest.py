@@ -13,7 +13,7 @@ EXPECTED_JOBS = [
     "robustness", "resource", "release_evidence",
 ]
 EXPECTED_TOOLS = {
-    "rust": "1.97.1",
+    "rust": "1.99.0",
     "rust_nightly": "nightly-2026-07-16",
     "cargo_llvm_cov": "0.8.7",
     "cargo_deny": "0.19.8",
