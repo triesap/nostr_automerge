@@ -1,8 +1,8 @@
 {
   "schema": "nostr_automerge_alignment_refactor_v1.ledger.1",
   "program": "nostr_automerge_alignment_refactor_v1",
-  "active_step": "NA-001",
-  "next_step": "NA-001",
+  "active_step": "NA-006",
+  "next_step": "NA-006",
   "holds": [
     "external_assurance",
     "event_kind_allocation",
@@ -22,7 +22,7 @@
       "NA-004",
       "NA-005"
     ],
-    "source_commit": null,
+    "source_commit": "8b69463e88715857b937e21643683655f3eb8437",
     "receipt_commit": null
   },
   "steps": [
@@ -37,8 +37,153 @@
         "NA-REL-001"
       ],
       "depends_on": [],
-      "status": "active",
-      "report": null
+      "status": "complete",
+      "report": {
+        "source_commit": "8b69463e88715857b937e21643683655f3eb8437",
+        "observation_base": "8b69463e88715857b937e21643683655f3eb8437",
+        "files": [
+          "docs/execution/nostr_automerge_alignment_refactor_v1/baseline.md",
+          "docs/execution/nostr_automerge_alignment_refactor_v1/baseline.json",
+          "docs/execution/nostr_automerge_alignment_refactor_v1/source_map.json",
+          "docs/execution/nostr_automerge_alignment_refactor_v1/review_findings.md",
+          "docs/execution/nostr_automerge_alignment_refactor_v1/review_verification_baseline.md",
+          "docs/execution/nostr_automerge_alignment_refactor_v1/sources.md"
+        ],
+        "commands": [
+          {
+            "command": "cargo fmt --all --check",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "formatting passed",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "cargo check --workspace --all-targets --locked",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "locked workspace all-target check passed",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "cargo test --workspace --all-targets --locked",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "786 passed; zero failed and ignored",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": 786,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "cargo run -p nostr_automerge_xtask --locked -- validate",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "55 current Python paths, unchanged historical wrapper, current plan and requirement coverage passed",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "git diff --check",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "clean committed source; no whitespace errors",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json clean-source inspection",
+            "toolchain": "Git 2.56.0",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "strict all-feature Clippy passed",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "cargo doc --workspace --no-deps --locked",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "workspace documentation built",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "cargo run --quiet -p nostr_automerge_conformance --locked -- run_distribution fixtures/distribution/manifest_v16.json",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "204 scenarios passed in each of two independent Rust processes; outputs identical; repeatability only",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-conformance.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": null,
+              "scenarios": 204
+            }
+          }
+        ],
+        "acceptance": [
+          {
+            "criterion": "Confirm reviewed SHA is available and ancestry/drift is explicit; verify v19 active/next are null and clean attestation is later than the terminal report.",
+            "status": "passed",
+            "evidence": "Reviewed 5085fd30 \u2192 qualified e2faf8fe \u2192 source S ancestry inspected; v19 active/next null, T\u2192E\u2192A ordered; complete compiler delta of 24 files reviewed in baseline/source map. See docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json"
+          },
+          {
+            "criterion": "Baseline results distinguish actual execution from receipt validation, known package/extbuild failures and unexecuted external lanes.",
+            "status": "passed",
+            "evidence": "Clean baseline and source standard gates executed; historical receipt validation and unexecuted independent/platform/native/sustained lanes explicitly separated. See docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json"
+          }
+        ],
+        "self_review": {
+          "status": "passed",
+          "evidence": "Complete source diff, 26 adoption hashes, exact legacy-prefix preservation, public-path scan, staged whitespace, clean source identity and actual logs independently inspected."
+        },
+        "review": {
+          "status": "passed",
+          "kind": "fresh_adversarial",
+          "evidence": "Fresh independent source review: all 11 original acceptance sets passed; all 50 source paths and 2,123 frozen blobs inspected; no blockers or warnings. Recorded in docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json"
+        },
+        "deviations": [
+          "implementation/nostr_automerge_alignment_refactor_v1/deviations/bootstrap.md"
+        ],
+        "unverified": [
+          "Known baseline F1\u2013F9 repairs and later independent/Linux/native/sustained qualification remain outstanding in their owning steps; no corresponding completion is claimed."
+        ],
+        "next_step_safety": "safe with documented pre-existing issue"
+      }
     },
     {
       "id": "NA-002",
@@ -54,8 +199,136 @@
       "depends_on": [
         "NA-001"
       ],
-      "status": "planned",
-      "report": null
+      "status": "complete",
+      "report": {
+        "source_commit": "8b69463e88715857b937e21643683655f3eb8437",
+        "observation_base": "8b69463e88715857b937e21643683655f3eb8437",
+        "files": [
+          "spec/nostr_automerge_alignment_refactor_v1/ACCEPTANCE_CRITERIA.md",
+          "spec/nostr_automerge_alignment_refactor_v1/API_CONTRACTS.md",
+          "spec/nostr_automerge_alignment_refactor_v1/ARCHITECTURE.md",
+          "spec/nostr_automerge_alignment_refactor_v1/COMPATIBILITY_AND_SAFETY.md",
+          "spec/nostr_automerge_alignment_refactor_v1/DATA_MODEL.md",
+          "spec/nostr_automerge_alignment_refactor_v1/EXAMPLES_CATALOG.md",
+          "spec/nostr_automerge_alignment_refactor_v1/INTEGRATION_CONTRACT.md",
+          "spec/nostr_automerge_alignment_refactor_v1/PRODUCT_SPEC.md",
+          "spec/nostr_automerge_alignment_refactor_v1/examples_plan.json",
+          "spec/nostr_automerge_alignment_refactor_v1/requirements.json",
+          "implementation/nostr_automerge_alignment_refactor_v1/COMMIT_SEQUENCE.md",
+          "implementation/nostr_automerge_alignment_refactor_v1/DEVIATIONS.md",
+          "implementation/nostr_automerge_alignment_refactor_v1/OPEN_QUESTIONS.md",
+          "implementation/nostr_automerge_alignment_refactor_v1/STATUS.md",
+          "implementation/nostr_automerge_alignment_refactor_v1/STEP_INDEX.md",
+          "implementation/nostr_automerge_alignment_refactor_v1/STEP_REPORT_TEMPLATE.md",
+          "implementation/nostr_automerge_alignment_refactor_v1/TEST_PLAN.md",
+          "implementation/nostr_automerge_alignment_refactor_v1/TRACEABILITY.csv",
+          "implementation/nostr_automerge_alignment_refactor_v1/VERIFICATION.md",
+          "implementation/nostr_automerge_alignment_refactor_v1/step_aliases.json",
+          "implementation/nostr_automerge_alignment_refactor_v1/steps.json",
+          "spec/nostr_automerge_alignment_refactor_v1/decisions/ADR-0001-core-and-companion-boundary.md",
+          "spec/nostr_automerge_alignment_refactor_v1/decisions/ADR-0002-authoritative-authoring-state.md",
+          "spec/nostr_automerge_alignment_refactor_v1/decisions/ADR-0003-checkpoint-framing-and-candidates.md",
+          "spec/nostr_automerge_alignment_refactor_v1/decisions/ADR-0004-durable-authoring-and-outbox.md",
+          "spec/nostr_automerge_alignment_refactor_v1/decisions/ADR-0005-executable-examples-and-evidence.md",
+          "docs/execution/nostr_automerge_alignment_refactor_v1/path_map.json",
+          "docs/execution/rcl/nostr_automerge_alignment_refactor_v1.md"
+        ],
+        "commands": [
+          {
+            "command": "cargo fmt --all --check",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "formatting passed",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "cargo check --workspace --all-targets --locked",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "locked workspace all-target check passed",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "cargo test --workspace --all-targets --locked",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "786 passed; zero failed and ignored",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": 786,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "cargo run -p nostr_automerge_xtask --locked -- validate",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "55 current Python paths, unchanged historical wrapper, current plan and requirement coverage passed",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "git diff --check",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "clean committed source; no whitespace errors",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json clean-source inspection",
+            "toolchain": "Git 2.56.0",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          }
+        ],
+        "acceptance": [
+          {
+            "criterion": "Every requirement ID is unique and every supplied contract has a canonical destination; no conditional extension becomes mandatory code.",
+            "status": "passed",
+            "evidence": "All 32 requirement families unique; 26 canonical adoption paths and hashes verified; conditional extensions retain conditional status. See docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json"
+          },
+          {
+            "criterion": "Compare frozen authority/fixture/report bytes with reviewed commit; unchanged behavior still passes baseline gates.",
+            "status": "passed",
+            "evidence": "All 2,123 frozen baseline blobs independently compared without differences; original legacy plan exact prefix retained; current standard and conformance passed. See docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json"
+          }
+        ],
+        "self_review": {
+          "status": "passed",
+          "evidence": "Complete source diff, 26 adoption hashes, exact legacy-prefix preservation, public-path scan, staged whitespace, clean source identity and actual logs independently inspected."
+        },
+        "review": {
+          "status": "passed",
+          "kind": "fresh_adversarial",
+          "evidence": "Fresh independent source review: all 11 original acceptance sets passed; all 50 source paths and 2,123 frozen blobs inspected; no blockers or warnings. Recorded in docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json"
+        },
+        "deviations": [
+          "implementation/nostr_automerge_alignment_refactor_v1/deviations/bootstrap.md"
+        ],
+        "unverified": [
+          "Known baseline F1\u2013F9 repairs and later independent/Linux/native/sustained qualification remain outstanding in their owning steps; no corresponding completion is claimed."
+        ],
+        "next_step_safety": "safe with documented pre-existing issue"
+      }
     },
     {
       "id": "NA-003",
@@ -69,8 +342,139 @@
       "depends_on": [
         "NA-002"
       ],
-      "status": "planned",
-      "report": null
+      "status": "complete",
+      "report": {
+        "source_commit": "8b69463e88715857b937e21643683655f3eb8437",
+        "observation_base": "8b69463e88715857b937e21643683655f3eb8437",
+        "files": [
+          "implementation/nostr_automerge_alignment_refactor_v1/ledger.json",
+          "spec/nostr_automerge_alignment_refactor_v1/authority.json",
+          "tools/validation/alignment_refactor_v1_ledger.schema.json",
+          "scripts/alignment_v1/validate_plan.py",
+          "scripts/alignment_v1/tests/test_plan.py"
+        ],
+        "commands": [
+          {
+            "command": "cargo fmt --all --check",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "formatting passed",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "cargo check --workspace --all-targets --locked",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "locked workspace all-target check passed",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "cargo test --workspace --all-targets --locked",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "786 passed; zero failed and ignored",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": 786,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "cargo run -p nostr_automerge_xtask --locked -- validate",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "55 current Python paths, unchanged historical wrapper, current plan and requirement coverage passed",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "git diff --check",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "clean committed source; no whitespace errors",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json clean-source inspection",
+            "toolchain": "Git 2.56.0",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "python3 -m unittest discover -s scripts/alignment_v1/tests -p test_plan.py",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "29 ledger controls passed",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-plan-tests.log",
+            "toolchain": "Python 3.14.8",
+            "counts": {
+              "tests": 29,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "python3 scripts/alignment_v1/validate_plan.py",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "166-step ledger passed with zero completion claims",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-plan.log",
+            "toolchain": "Python 3.14.8",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          }
+        ],
+        "acceptance": [
+          {
+            "criterion": "Positive fixture for a valid initial ledger and negative fixtures for duplicate IDs, two active steps, skipped prerequisites, false complete claims, missing commands and circular commit binding.",
+            "status": "passed",
+            "evidence": "29 positive/adversarial ledger controls passed, including duplicate/cursor/prerequisite/false-complete/missing-command/circular-source cases and valid source-before-observation fixture. See docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json"
+          },
+          {
+            "criterion": "Deviation records preserve original step identity and demonstrate evidence rather than accepting arbitrary reorder flags.",
+            "status": "passed",
+            "evidence": "Bootstrap, 1.99 and supplemental prerequisite deviations preserve 166 IDs, aliases, criteria and command sets; invalid deviations and changed semantic contracts rejected. See docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json"
+          }
+        ],
+        "self_review": {
+          "status": "passed",
+          "evidence": "Complete source diff, 26 adoption hashes, exact legacy-prefix preservation, public-path scan, staged whitespace, clean source identity and actual logs independently inspected."
+        },
+        "review": {
+          "status": "passed",
+          "kind": "fresh_adversarial",
+          "evidence": "Fresh independent source review: all 11 original acceptance sets passed; all 50 source paths and 2,123 frozen blobs inspected; no blockers or warnings. Recorded in docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json"
+        },
+        "deviations": [
+          "implementation/nostr_automerge_alignment_refactor_v1/deviations/bootstrap.md"
+        ],
+        "unverified": [
+          "Known baseline F1\u2013F9 repairs and later independent/Linux/native/sustained qualification remain outstanding in their owning steps; no corresponding completion is claimed."
+        ],
+        "next_step_safety": "safe with documented pre-existing issue"
+      }
     },
     {
       "id": "NA-004",
@@ -84,8 +488,111 @@
       "depends_on": [
         "NA-003"
       ],
-      "status": "planned",
-      "report": null
+      "status": "complete",
+      "report": {
+        "source_commit": "8b69463e88715857b937e21643683655f3eb8437",
+        "observation_base": "8b69463e88715857b937e21643683655f3eb8437",
+        "files": [
+          "docs/verification/historical_and_current.md",
+          "spec/nostr_automerge_alignment_refactor_v1/validation_registry.json",
+          "spec/nostr_automerge_alignment_refactor_v1/verification_contract.md"
+        ],
+        "commands": [
+          {
+            "command": "cargo fmt --all --check",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "formatting passed",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "cargo check --workspace --all-targets --locked",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "locked workspace all-target check passed",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "cargo test --workspace --all-targets --locked",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "786 passed; zero failed and ignored",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": 786,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "cargo run -p nostr_automerge_xtask --locked -- validate",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "55 current Python paths, unchanged historical wrapper, current plan and requirement coverage passed",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "git diff --check",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "clean committed source; no whitespace errors",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json clean-source inspection",
+            "toolchain": "Git 2.56.0",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          }
+        ],
+        "acceptance": [
+          {
+            "criterion": "Audit the registry against the complete xtask validator list and source-bound reports; no existing obligation is unclassified.",
+            "status": "passed",
+            "evidence": "378 exact original declarations, 57 selected paths and 9 local jobs reconstructed from immutable anchor objects; 55 paths stay current and current requirement coverage remains active. See docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json"
+          },
+          {
+            "criterion": "Verify planned historical execution can recover complete Git history without private paths or modifying owning artifacts.",
+            "status": "passed",
+            "evidence": "Unchanged historical wrapper actually ran with complete Git history in a temporary clean outside-source worktree; cleanup and private-path/output controls passed. See docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json"
+          }
+        ],
+        "self_review": {
+          "status": "passed",
+          "evidence": "Complete source diff, 26 adoption hashes, exact legacy-prefix preservation, public-path scan, staged whitespace, clean source identity and actual logs independently inspected."
+        },
+        "review": {
+          "status": "passed",
+          "kind": "fresh_adversarial",
+          "evidence": "Fresh independent source review: all 11 original acceptance sets passed; all 50 source paths and 2,123 frozen blobs inspected; no blockers or warnings. Recorded in docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json"
+        },
+        "deviations": [
+          "implementation/nostr_automerge_alignment_refactor_v1/deviations/bootstrap.md"
+        ],
+        "unverified": [
+          "Known baseline F1\u2013F9 repairs and later independent/Linux/native/sustained qualification remain outstanding in their owning steps; no corresponding completion is claimed."
+        ],
+        "next_step_safety": "safe with documented pre-existing issue"
+      }
     },
     {
       "id": "NA-005",
@@ -100,8 +607,159 @@
       "depends_on": [
         "NA-004"
       ],
-      "status": "planned",
-      "report": null
+      "status": "complete",
+      "report": {
+        "source_commit": "8b69463e88715857b937e21643683655f3eb8437",
+        "observation_base": "8b69463e88715857b937e21643683655f3eb8437",
+        "files": [
+          "tools/nostr_automerge_xtask/src/alignment.rs",
+          "tools/nostr_automerge_xtask/src/main.rs",
+          "tools/nostr_automerge_xtask/src/validate.rs",
+          "scripts/alignment_v1/validation.py",
+          "scripts/alignment_v1/tests/test_validation.py",
+          "AGENTS.md",
+          "implementation/COMMIT_SEQUENCE.md"
+        ],
+        "commands": [
+          {
+            "command": "cargo fmt --all --check",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "formatting passed",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "cargo check --workspace --all-targets --locked",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "locked workspace all-target check passed",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "cargo test --workspace --all-targets --locked",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "786 passed; zero failed and ignored",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": 786,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "cargo run -p nostr_automerge_xtask --locked -- validate",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "55 current Python paths, unchanged historical wrapper, current plan and requirement coverage passed",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-standard.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "git diff --check",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "clean committed source; no whitespace errors",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json clean-source inspection",
+            "toolchain": "Git 2.56.0",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "cargo test -p nostr_automerge_xtask --locked",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "4 passed; zero failed and ignored",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-xtask.log",
+            "toolchain": "Rust/Cargo 1.99.0; aarch64-apple-darwin",
+            "counts": {
+              "tests": 4,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "python3 -m unittest discover -s scripts/alignment_v1/tests -p test_plan.py",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "29 ledger controls passed",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-plan-tests.log",
+            "toolchain": "Python 3.14.8",
+            "counts": {
+              "tests": 29,
+              "scenarios": null
+            }
+          },
+          {
+            "command": "python3 scripts/alignment_v1/validate_plan.py",
+            "kind": "executed",
+            "status": "passed",
+            "exit_code": 0,
+            "result": "166-step ledger passed with zero completion claims",
+            "evidence": "docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json log:source-plan.log",
+            "toolchain": "Python 3.14.8",
+            "counts": {
+              "tests": null,
+              "scenarios": null
+            }
+          }
+        ],
+        "acceptance": [
+          {
+            "criterion": "Run historical receipt validation at its owning candidate and a current changed-source fixture through the new route; ensure wrong-source/current pass-file reuse fails.",
+            "status": "passed",
+            "evidence": "Actual historical route passed and current observation binds committed source 8b69463e and 2,588 inputs; stale HEAD/content/untracked/missing-input negative controls reject reuse. See docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json"
+          },
+          {
+            "criterion": "Mutation tests prove removed active checks or tampered historical artifacts are rejected; a previous code hash mismatch is not treated as new runtime execution.",
+            "status": "passed",
+            "evidence": "Removed obligations/routes, missing objects and frozen-artifact tampering rejected; runtime_campaigns_executed is false for receipt validation; current Rust tests/conformance separately executed. See docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json"
+          },
+          {
+            "criterion": "Check worktree cleanup, no private environment requirements and no accidental modification of historical artifacts.",
+            "status": "passed",
+            "evidence": "Failure/dirty-worktree cleanup and source/output alias controls passed; frozen blobs unchanged; public source has no private parent, runner or credentials dependency. See docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json"
+          }
+        ],
+        "self_review": {
+          "status": "passed",
+          "evidence": "Complete source diff, 26 adoption hashes, exact legacy-prefix preservation, public-path scan, staged whitespace, clean source identity and actual logs independently inspected."
+        },
+        "review": {
+          "status": "passed",
+          "kind": "fresh_adversarial",
+          "evidence": "Fresh independent source review: all 11 original acceptance sets passed; all 50 source paths and 2,123 frozen blobs inspected; no blockers or warnings. Recorded in docs/execution/nostr_automerge_alignment_refactor_v1/bootstrap_source_verification.json"
+        },
+        "deviations": [
+          "implementation/nostr_automerge_alignment_refactor_v1/deviations/bootstrap.md"
+        ],
+        "unverified": [
+          "Known baseline F1\u2013F9 repairs and later independent/Linux/native/sustained qualification remain outstanding in their owning steps; no corresponding completion is claimed."
+        ],
+        "next_step_safety": "safe with documented pre-existing issue"
+      }
     },
     {
       "id": "NA-006",
@@ -116,7 +774,7 @@
       "depends_on": [
         "NA-005"
       ],
-      "status": "planned",
+      "status": "active",
       "report": null
     },
     {

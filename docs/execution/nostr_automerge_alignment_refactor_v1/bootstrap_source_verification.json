@@ -1,0 +1,168 @@
+{
+  "schema": "nostr_automerge.alignment_bootstrap_source_verification.v1",
+  "source_commit": "8b69463e88715857b937e21643683655f3eb8437",
+  "source_tree": "7afb2719420dc1d0aea153df7830b657eb5947c2",
+  "parent": "e2faf8fea65f23479a70009c5d9531b881838c0e",
+  "source_was_clean": true,
+  "platform": "aarch64-apple-darwin",
+  "rustc": "rustc 1.99.0 (b940084d7 2026-09-28)",
+  "cargo": "cargo 1.99.0 (5f94df478 2026-08-27)",
+  "python": "3.14.8",
+  "git": "2.56.0",
+  "executions": [
+    {
+      "argv": [
+        "python3",
+        "scripts/local_gate.py",
+        "standard"
+      ],
+      "exit_code": 0,
+      "tests": 786,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "argv": [
+        "python3",
+        "scripts/local_gate.py",
+        "conformance"
+      ],
+      "exit_code": 0,
+      "processes": 2,
+      "scenarios_per_process": 204,
+      "outputs_identical": true,
+      "kind": "rust_repeatability"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "nostr_automerge_xtask",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "tests": 4
+    },
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts/alignment_v1/tests",
+        "-p",
+        "test_plan.py"
+      ],
+      "exit_code": 0,
+      "tests": 29
+    },
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts/alignment_v1/tests"
+      ],
+      "exit_code": 0,
+      "tests": 44
+    },
+    {
+      "argv": [
+        "python3",
+        "scripts/alignment_v1/validate_plan.py"
+      ],
+      "exit_code": 0,
+      "steps": 166
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "current_validation_observation": {
+    "current_candidate": {
+      "evidence_kind": "current_input_observation",
+      "head": "8b69463e88715857b937e21643683655f3eb8437",
+      "input_count": 2588,
+      "sha256": "a9bb65370539f910a79844c5bb75e6a5504a0d33564746bac3c29217a78cdae5"
+    },
+    "current_python_count": 55,
+    "historical_execution_kind": "receipt_validation",
+    "historical_validation_anchor": "e2faf8fea65f23479a70009c5d9531b881838c0e",
+    "result": "pass",
+    "runtime_campaigns_executed": false,
+    "schema": "nostr_automerge.alignment_validation_observation.v1"
+  },
+  "logs": [
+    {
+      "name": "source-standard.log",
+      "sha256": "9efad4b55a515e7878b1de3fbc6943bfb1cd6a0c5da102bb5f2fe1d74fb67df9",
+      "bytes": 82840
+    },
+    {
+      "name": "source-conformance.log",
+      "sha256": "404ca09b272c54a4063245a986b176c12f962df96b0ae2c0b02ca5a1cc4b6190",
+      "bytes": 346
+    },
+    {
+      "name": "source-xtask.log",
+      "sha256": "c5be6a7b12215c1d66ff80f42101b3434c60aa7b5353e28e64260ec8e69bd596",
+      "bytes": 1054
+    },
+    {
+      "name": "source-plan-tests.log",
+      "sha256": "a1c061228dcbd5cd106a3e10be3220fe44bc4ca5497ee108e622c284820a1a98",
+      "bytes": 474
+    },
+    {
+      "name": "source-python.log",
+      "sha256": "3de448d28ef997c0a92656ac715124e96e60651d606d88342af8da2c71f79f85",
+      "bytes": 489
+    },
+    {
+      "name": "source-plan.log",
+      "sha256": "0bd5395aebba1762137654040983141c5e0258d1665b266e9f87178fbece1e36",
+      "bytes": 436
+    }
+  ],
+  "log_policy": "Digests identify operator-local captures; no private log path or capture is a build dependency. Portable commands reproduce checks.",
+  "review": {
+    "kind": "fresh_adversarial",
+    "status": "passed",
+    "scope": "All 50 staged source paths; 11 original acceptance sets; 26 adoption hashes; 2,123 frozen blobs; no blockers or warnings. Reviewer ran read-only inspection; execution belongs to the orchestrator."
+  },
+  "immutability": {
+    "frozen_blobs_compared": 2123,
+    "changed": 0,
+    "legacy_plan_exact_prefix_preserved": true,
+    "core_lock_nip_fixtures_reports_changed": false
+  },
+  "observation_policy": "This following observation names existing source S only. Its own future commit hash is absent; bootstrap.receipt_commit remains null until later observed. Adoption hashes record initial source S, not future edits.",
+  "unverified": [
+    "Known F1\u2013F9 repairs",
+    "Independent interoperability",
+    "Native Linux",
+    "Native durability/real relay",
+    "Sustained campaigns",
+    "Extracted package qualification"
+  ],
+  "holds": [
+    "external_assurance",
+    "event_kind_allocation",
+    "nip_submission",
+    "production_qualification",
+    "publication",
+    "release",
+    "deployment",
+    "remote_mutation"
+  ],
+  "next_step": "NA-006"
+}
